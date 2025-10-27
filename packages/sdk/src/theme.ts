@@ -33,9 +33,6 @@ export const COLOR_VARIABLES = [
   "--sidebar-accent-foreground",
   "--sidebar-border",
   "--sidebar-ring",
-  "--primary-light",
-  "--primary-dark",
-  "--splash",
 ] as const;
 
 export const LAYOUT_VARIABLES = ["--radius", "--spacing"] as const;
@@ -79,8 +76,6 @@ export const DEFAULT_THEME: Theme = {
   variables: {
     "--background": "oklch(1 0 0)",
     "--foreground": "oklch(0.2050 0 0)",
-    "--primary-light": "#d0ec1a",
-    "--primary-dark": "#07401a",
     "--card": "oklch(0.9760 0 0)",
     "--card-foreground": "oklch(0.2050 0 0)",
     "--popover": "oklch(1 0 0)",
@@ -109,7 +104,7 @@ export const DEFAULT_THEME: Theme = {
     "--sidebar-accent-foreground": "oklch(0.2050 0 0)",
     "--sidebar-border": "oklch(0.9220 0 0)",
     "--sidebar-ring": "oklch(0.9220 0 0)",
-    "--radius": "0.625rem",
+    "--radius": "0.375rem",
     "--spacing": "0.25rem",
     "--shadow-x": "0",
     "--shadow-y": "1px",

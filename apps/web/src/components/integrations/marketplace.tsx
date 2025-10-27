@@ -97,7 +97,7 @@ export function VerifiedBadge() {
           <Icon
             name="verified"
             size={16}
-            className="absolute z-10 text-primary-light"
+            className="absolute z-10 text-primary"
             filled
           />
         </TooltipTrigger>

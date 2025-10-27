@@ -212,7 +212,7 @@ const Discover = () => {
                     <p className="text-sm text-white">{item.description}</p>
                   </div>
                   <Button
-                    className="absolute bottom-6 right-6 !hover:bg-primary-light"
+                    className="absolute bottom-6 right-6"
                     variant="default"
                   >
                     See app

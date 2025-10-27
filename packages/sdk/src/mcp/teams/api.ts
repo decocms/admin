@@ -80,14 +80,6 @@ const themeVariablesSchema = z.object({
     .string()
     .optional()
     .describe("Text color on primary elements (OKLCH/hex format)"),
-  "--primary-light": z
-    .string()
-    .optional()
-    .describe("Lighter variant of primary color (OKLCH/hex format)"),
-  "--primary-dark": z
-    .string()
-    .optional()
-    .describe("Darker variant of primary color (OKLCH/hex format)"),
   "--secondary": z
     .string()
     .optional()
@@ -174,12 +166,6 @@ const themeVariablesSchema = z.object({
     .string()
     .optional()
     .describe("Focus ring color for sidebar elements (OKLCH/hex format)"),
-  "--splash": z
-    .string()
-    .optional()
-    .describe(
-      "Background color for splash screen animation (OKLCH/hex format)",
-    ),
 });
 
 const fontSchema = z.union([

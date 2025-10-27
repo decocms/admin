@@ -40,7 +40,7 @@ import { ColorPicker } from "./color-picker.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
-import { lighten, darken } from "../../utils/color-utils.ts";
+import { LayoutVariantSelector } from "./layout-variant-selector.tsx";
 
 interface ThemeEditorFormValues {
   themeVariables?: Partial<Record<ThemeVariable, string>>;
@@ -60,16 +60,17 @@ const themeEditorSchema = z.object({
 const THEME_EDITOR_AI_RULES = [
   "You are helping the user customize their organization workspace theme. The Theme Editor allows editing organization-level themes that apply to all projects.",
   `Available theme variables and their purposes:
-- Brand Colors: Primary brand color (--primary), its foreground text (--primary-foreground), and variants (--primary-light, --primary-dark) for gradients and emphasis
+- Brand Colors: Primary brand color (--primary) and its foreground text (--primary-foreground) for buttons and highlights
 - Base Colors: Main background (--background) and text color (--foreground) - the foundation of the entire theme
 - Interactive Elements: Secondary actions (--secondary), accent highlights (--accent), and their respective text colors
 - Cards & Surfaces: Card backgrounds (--card), borders (--border), and input field borders (--input)
 - Feedback Colors: Destructive/error (--destructive), success (--success), warning (--warning) states with their text colors
 - Sidebar: All sidebar-related colors including background, text, accent, borders, and focus rings
-- Advanced: Popovers, muted text, and splash screen colors`,
+- Layout: Border radius (--radius) and spacing (--spacing) for consistent UI dimensions
+- Advanced: Popovers and muted text colors`,
   'Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.',
   "Use THEME_UPDATE_ORG to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
-  'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)" } } }',
+  'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)", "--radius": "0.5rem" } } }',
   "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
 ];
 
@@ -115,6 +116,20 @@ function ThemeVariableInput({
   );
 }
 
+// Layout variant options
+// Note: These values represent the base (rounded-md), all other sizes scale proportionally
+const RADIUS_OPTIONS = [
+  { label: "Tight", value: "0rem", description: "Sharp corners" },
+  { label: "Default", value: "0.375rem", description: "Balanced (Tailwind)" },
+  { label: "Relaxed", value: "0.5rem", description: "Soft corners" },
+];
+
+const SPACING_OPTIONS = [
+  { label: "Compact", value: "0.215rem", description: "Dense layout" },
+  { label: "Default", value: "0.25rem", description: "Balanced" },
+  { label: "Comfortable", value: "0.3rem", description: "Spacious" },
+];
+
 interface ThemeFormProps {
   colorGroups: Array<{
     name: string;
@@ -145,9 +160,50 @@ function ThemeForm({
   saveButtonText: _saveButtonText,
   extraActions,
 }: ThemeFormProps) {
+  const themeVariables = useWatch({
+    control: form.control,
+    name: "themeVariables",
+  });
+
+  const currentRadius =
+    themeVariables?.["--radius"] ||
+    DEFAULT_THEME.variables?.["--radius"] ||
+    "0.625rem";
+  const currentSpacing =
+    themeVariables?.["--spacing"] ||
+    DEFAULT_THEME.variables?.["--spacing"] ||
+    "0.25rem";
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Layout Variants Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-1 px-4">
+            <h3 className="text-lg font-semibold text-foreground">
+              Layout & Spacing
+            </h3>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <div className="grid grid-cols-2 gap-6 px-4">
+            <LayoutVariantSelector
+              label="Border Radius"
+              description="Corner roundness of UI elements"
+              value={currentRadius}
+              options={RADIUS_OPTIONS}
+              onChange={(value) => handleVariableChange("--radius", value)}
+            />
+            <LayoutVariantSelector
+              label="Spacing"
+              description="Base spacing between elements"
+              value={currentSpacing}
+              options={SPACING_OPTIONS}
+              onChange={(value) => handleVariableChange("--spacing", value)}
+            />
+          </div>
+        </div>
+
+        {/* Color Groups */}
         {colorGroups.map((group) => (
           <div key={group.name} className="space-y-4">
             <div className="flex items-center gap-2 pb-1 px-4">
@@ -249,8 +305,6 @@ export function ThemeEditorView() {
       "Brand Colors": [
         "--primary",
         "--primary-foreground",
-        "--primary-light",
-        "--primary-dark",
         "--background",
         "--foreground",
       ],
@@ -287,7 +341,6 @@ export function ThemeEditorView() {
         "--popover-foreground",
         "--muted",
         "--muted-foreground",
-        "--splash",
       ],
     };
 
@@ -451,31 +504,10 @@ export function ThemeEditorView() {
     // Apply preset to form
     const presetVariables = preset.theme.variables || {};
 
-    // Derive brand variants if missing to match our schema
-    const defaultPrimaryLight =
-      DEFAULT_THEME.variables?.["--primary-light"] || "#d0ec1a";
-    const defaultPrimaryDark =
-      DEFAULT_THEME.variables?.["--primary-dark"] || "#07401a";
-
-    const withDerived: Record<string, string> = { ...presetVariables };
-    const primary = withDerived["--primary"];
-    if (primary) {
-      if (!withDerived["--primary-light"])
-        withDerived["--primary-light"] = lighten(primary);
-      if (!withDerived["--primary-dark"])
-        withDerived["--primary-dark"] = darken(primary);
-    } else {
-      // Fallback to defaults if preset does not define primary
-      if (!withDerived["--primary-light"])
-        withDerived["--primary-light"] = defaultPrimaryLight;
-      if (!withDerived["--primary-dark"])
-        withDerived["--primary-dark"] = defaultPrimaryDark;
-    }
-
-    form.setValue("themeVariables", withDerived, { shouldDirty: true });
+    form.setValue("themeVariables", presetVariables, { shouldDirty: true });
 
     // Apply optimistic updates to CSS variables
-    Object.entries(withDerived).forEach(([key, value]) => {
+    Object.entries(presetVariables).forEach(([key, value]) => {
       if (value) {
         document.documentElement.style.setProperty(key, value);
       }

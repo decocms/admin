@@ -494,9 +494,9 @@ export function DocumentEditor({
         /* Table cell selection */
         .ProseMirror td.selectedCell,
         .ProseMirror th.selectedCell {
-          background: color-mix(in srgb, var(--primary-light) 15%, transparent);
-          border-color: var(--primary-light);
-          color: var(--primary-dark);
+          background: color-mix(in srgb, var(--primary) 15%, transparent);
+          border-color: var(--primary);
+          color: var(--primary-foreground);
         }
 
         /* Improve cell selection behavior */

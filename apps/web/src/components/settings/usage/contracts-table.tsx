@@ -271,7 +271,7 @@ function ContractInfo({
         {clausesToRender.map((clause, index) => {
           return (
             <div
-              className="bg-primary-foreground rounded-md px-2 py-1 text-xs text-primary-dark flex items-center gap-1"
+              className="bg-primary rounded-md px-2 py-1 text-xs text-primary-foreground flex items-center gap-1"
               key={index}
             >
               <span className="font-medium">× {clause.amount}</span>

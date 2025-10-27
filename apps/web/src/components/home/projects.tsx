@@ -367,7 +367,7 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="special" disabled={disabled}>
+        <Button variant="default" disabled={disabled}>
           <Icon name="add" size={16} />
           <span>New project</span>
         </Button>

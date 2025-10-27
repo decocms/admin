@@ -60,7 +60,7 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
                 isOpen={isEditModalOpen}
                 onOpenChange={setIsEditModalOpen}
                 triggerAction={
-                  <Button variant="special">
+                  <Button variant="default">
                     <Icon name="edit" className="h-4 w-4 mr-2" />
                     Edit Trigger
                   </Button>

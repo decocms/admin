@@ -114,7 +114,7 @@ export function DepositDialog() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="special"
+          variant="default"
           className="w-full"
           onClick={() =>
             trackEvent("wallet_add_credits_click", { userId: user?.id })
@@ -190,7 +190,7 @@ export function DepositDialog() {
           ) : null}
           <Button
             disabled={createCheckoutSession.isPending}
-            variant="special"
+            variant="default"
             onClick={async () => {
               if (!validateAmount()) return;
               const amount = parseInt(creditAmount);

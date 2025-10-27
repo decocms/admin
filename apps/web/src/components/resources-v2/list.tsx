@@ -575,7 +575,7 @@ function ResourcesV2ListTab({
                             setMutating(false);
                           }
                         }}
-                        variant="special"
+                        variant="default"
                         className="flex-1 h-9 rounded-none rounded-l-xl"
                         disabled={mutating}
                       >
@@ -591,7 +591,7 @@ function ResourcesV2ListTab({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
-                            variant="special"
+                            variant="default"
                             size="icon"
                             className="h-9 w-10 rounded-none rounded-r-xl border-l border-white/20"
                             disabled={mutating}
@@ -861,7 +861,7 @@ function ResourcesV2ListTab({
                           setMutating(false);
                         }
                       }}
-                      variant="special"
+                      variant="default"
                       className="h-9 rounded-xl w-full md:w-auto"
                       disabled={mutating}
                     >

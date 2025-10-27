@@ -378,7 +378,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                   <Button
                     type="button"
                     size="sm"
-                    variant="special"
+                    variant="default"
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
                     className="h-8 px-3 rounded-xl"

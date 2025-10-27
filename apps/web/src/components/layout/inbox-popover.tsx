@@ -47,7 +47,7 @@ function InviteItem({
   return (
     <div className="group flex items-center gap-3 px-1 py-2 hover:bg-muted/50 rounded-lg transition-colors">
       <Avatar className="size-5 rounded-md">
-        <AvatarFallback className="bg-primary-dark text-primary-light rounded-md text-xs">
+        <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-xs">
           {getInitial(invite.teamName)}
         </AvatarFallback>
       </Avatar>
@@ -72,7 +72,7 @@ function InviteItem({
         </Button>
         <Button
           size="icon"
-          variant="special"
+          variant="default"
           onClick={onAccept}
           disabled={loading !== null}
           className="size-8 rounded-xl"

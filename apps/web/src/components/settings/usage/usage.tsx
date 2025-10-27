@@ -248,7 +248,7 @@ export function Usage() {
             </CardContent>
           </Card>
 
-          <Card className="flex-1 p-6 rounded-xl bg-primary-dark text-primary-light">
+          <Card className="flex-1 p-6 rounded-xl bg-primary text-primary-foreground">
             <CardContent className="p-0">
               <div className="text-sm font-medium mb-2">Total Cost</div>
               <div className="text-4xl font-semibold">

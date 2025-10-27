@@ -69,7 +69,7 @@ export function AgentTriggers() {
           agentId={agentId}
           triggerAction={
             <Button
-              variant="special"
+              variant="default"
               title="Add Trigger"
               onClick={(e) => e.stopPropagation()}
             >
@@ -124,7 +124,7 @@ export function ListTriggersEmpty() {
         agentId={agentId}
         triggerAction={
           <Button
-            variant="special"
+            variant="default"
             title="Add Trigger"
             onClick={(e) => e.stopPropagation()}
           >

@@ -393,7 +393,7 @@ export function InstallStepsButtons({
         </Button>
       )}
       <Button
-        variant="special"
+        variant="default"
         onClick={
           isLoading || integrationState.isLoading
             ? undefined
@@ -868,7 +868,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
     }
 
     return (
-      <Button variant="special">
+      <Button variant="default">
         <span className="hidden md:inline">Install Apps</span>
       </Button>
     );

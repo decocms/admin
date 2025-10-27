@@ -86,8 +86,8 @@ export function ReportIssueButton() {
       <PopoverContent className="w-80 p-1 rounded-xl" align="end" side="bottom">
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center">
-              <Icon name="check" size={24} className="text-primary-dark" />
+            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+              <Icon name="check" size={24} className="text-primary-foreground" />
             </div>
             <div className="text-center space-y-1">
               <h3 className="text-sm font-medium">Thank you!</h3>
@@ -108,7 +108,7 @@ export function ReportIssueButton() {
               </div>
               <Button
                 size="icon"
-                variant="special"
+                variant="default"
                 onClick={handleSubmit}
                 disabled={reportIssue.isPending || !content.trim()}
                 className="w-8 h-8"

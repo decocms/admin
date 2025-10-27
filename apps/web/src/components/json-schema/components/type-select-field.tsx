@@ -245,7 +245,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                     isInstallingLoading
                   }
                   onClick={handleAddIntegration}
-                  variant="special"
+                  variant="default"
                 >
                   {isInstallingLoading ? (
                     <>

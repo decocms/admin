@@ -376,7 +376,7 @@ export default function InstalledAppsList() {
               >
                 Add custom
               </Button>
-              <Button asChild variant="special">
+              <Button asChild variant="default">
                 <Link to={workspaceLink(`/store`)}>Store</Link>
               </Button>
             </div>

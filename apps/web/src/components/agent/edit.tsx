@@ -209,7 +209,7 @@ function ActionButtons() {
 
       <Button
         className={hasChanges ? "inline-flex" : "hidden"}
-        variant="special"
+        variant="default"
         onClick={handleSubmit}
         disabled={!numberOfChanges || form.formState.isSubmitting}
       >

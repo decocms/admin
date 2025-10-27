@@ -92,7 +92,7 @@ function InviteCard({
             <Button
               onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
-              variant="special"
+              variant="default"
               size="sm"
               className="h-8"
             >
@@ -443,7 +443,7 @@ function TableView({
             <Button
               onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
-              variant="special"
+              variant="default"
               size="sm"
               className="h-8"
             >

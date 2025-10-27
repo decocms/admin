@@ -141,7 +141,7 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
     <Button
       type="button"
       disabled={isDisabled}
-      variant="special"
+      variant="default"
       onClick={handleStartWorkflow}
       className="min-w-[200px] flex items-center gap-2"
       title={

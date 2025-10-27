@@ -105,8 +105,8 @@ const ToolStatus = memo(function ToolStatus({
         };
       case "output-available":
         return {
-          icon: <Icon name="check" className="text-primary-dark" />,
-          iconBg: "bg-primary-light",
+          icon: <Icon name="check" className="text-primary-foreground" />,
+          iconBg: "bg-primary",
         };
       case "output-error":
         return {

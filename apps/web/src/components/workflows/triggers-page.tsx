@@ -23,7 +23,7 @@ export default function WorkflowsTriggersPage() {
                 Workflows
               </h1>
               <Button
-                variant="special"
+                variant="default"
                 onClick={() => setIsCreateModalOpen(true)}
                 className="h-9 rounded-xl"
               >

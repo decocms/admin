@@ -269,7 +269,7 @@ export const ToggleDecopilotButton = () => {
   }
 
   return (
-    <Button size="sm" variant="special" onClick={toggle}>
+    <Button size="sm" variant="default" onClick={toggle}>
       <AgentAvatar
         className="rounded-sm border-none"
         url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}

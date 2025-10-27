@@ -114,7 +114,8 @@ function FloatingPromptOptions({
             </Button>
             <Button
               size="sm"
-              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
+              variant="default"
+              className="gap-2"
               disabled={!numberOfChanges || prompt.readonly}
               onClick={() => {
                 onSubmit(form.getValues());

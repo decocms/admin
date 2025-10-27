@@ -84,15 +84,15 @@ export interface EventBannerProps {
 
 const CountdownBox = ({ value, label }: { value: string; label: string }) => (
   <div className="flex flex-col items-center justify-center gap-1">
-    <div className="text-sm @min-xl:text-lg font-medium text-dc-50">
+    <div className="text-sm @min-xl:text-lg font-medium text-neutral-50">
       {value}
     </div>
-    <div className="text-xs text-dc-300">{label}</div>
+    <div className="text-xs text-neutral-300">{label}</div>
   </div>
 );
 
 const Separator = () => (
-  <span className="text-sm @min-xl:text-lg font-semibold text-dc-300">:</span>
+  <span className="text-sm @min-xl:text-lg font-semibold text-neutral-300">:</span>
 );
 
 export function EventBanner({
@@ -139,7 +139,7 @@ export function EventBanner({
     <CountdownContext.Provider value={{ countdown }}>
       <div
         className={cn(
-          "relative w-full h-32 mb-10 bg-dc-900 rounded-lg overflow-hidden",
+          "relative w-full h-32 mb-10 bg-neutral-800 rounded-lg overflow-hidden",
           "flex items-center justify-between pl-32 pr-20 py-0 @container",
           className,
         )}
@@ -171,10 +171,10 @@ export function EventBanner({
           <>
             {/* Text content */}
             <div className="flex flex-col items-start leading-none relative z-10 shrink-0 text-nowrap max-w-[400px]">
-              <div className="font-mono flex flex-row items-center gap-2 text-sm text-dc-50 uppercase font-normal leading-none">
+              <div className="font-mono flex flex-row items-center gap-2 text-sm text-neutral-50 uppercase font-normal leading-none">
                 {currentState.subtitle}
                 {/* Date indicator */}
-                <div className="text-xs text-dc-300 uppercase tracking-wide">
+                <div className="text-xs text-neutral-300 uppercase tracking-wide">
                   {startDate.toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -189,7 +189,7 @@ export function EventBanner({
               </div>
 
               <div
-                className="font-sans text-xl font-normal text-[#d0ec1a] leading-8 whitespace-pre"
+                className="font-sans text-xl font-normal text-brand-green-light leading-8 whitespace-pre"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {currentState.title}
@@ -225,10 +225,10 @@ export function EventBanner({
             <div className="relative z-10 shrink-0">
               {isExternalLink ? (
                 <Button
-                  variant="special"
+                  variant="default"
                   size="default"
                   asChild
-                  className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
+                  className="w-[110px] bg-brand-green-light text-brand-green-dark"
                 >
                   <a
                     href={
@@ -252,14 +252,14 @@ export function EventBanner({
                 </Button>
               ) : (
                 <Button
-                  variant="special"
+                  variant="default"
                   size="default"
                   onClick={
                     typeof currentState.buttonAction === "function"
                       ? currentState.buttonAction
                       : undefined
                   }
-                  className="w-[110px] bg-[#d0ec1a] text-[#07401a]"
+                  className="w-[110px] bg-brand-green-light text-brand-green-dark"
                 >
                   {currentState.buttonText}
                 </Button>

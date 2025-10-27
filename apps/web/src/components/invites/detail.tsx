@@ -139,7 +139,7 @@ function InviteDetailContent() {
               <Button
                 onClick={handleAccept}
                 disabled={isLoading}
-                variant="special"
+                variant="default"
                 className="flex-1 h-10"
               >
                 {acceptInviteMutation.isPending ? (

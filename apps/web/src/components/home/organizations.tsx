@@ -200,7 +200,7 @@ function MyOrganizations() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Button
-              variant="special"
+              variant="default"
               onClick={() => setIsCreateDialogOpen(true)}
             >
               <Icon name="add" size={16} />

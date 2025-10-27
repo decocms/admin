@@ -431,7 +431,7 @@ function ConfigureConnectionInstanceForm({
               {hasBigDescription && (
                 <Button
                   className="w-fit mt-2"
-                  variant="special"
+                  variant="default"
                   onClick={() => setIsExpanded(!isExpanded)}
                 >
                   {isExpanded ? "Show less" : "Show more"}
@@ -453,7 +453,7 @@ function ConfigureConnectionInstanceForm({
             data.info?.provider !== "custom" &&
             (!data.instances || data.instances?.length === 0) ? (
               <Button
-                variant="special"
+                variant="default"
                 className="w-[250px] hidden md:flex"
                 onClick={handleAddConnection}
                 disabled={integrationState.isLoading || isInstallingLoading}

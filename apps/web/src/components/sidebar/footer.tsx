@@ -379,21 +379,21 @@ export function LoggedUser({
 const PlanColors = {
   [WELL_KNOWN_PLANS.FREE]: {
     background:
-      "bg-primary-light/30 hover:bg-primary-light/50 text-primary-dark",
-    sprite: "text-primary-light",
+      "bg-brand-green-light/30 hover:bg-brand-green-light/50 text-brand-green-dark",
+    sprite: "text-brand-green-light",
   },
   [WELL_KNOWN_PLANS.STARTER]: {
     background:
-      "bg-primary-light/30 hover:bg-primary-light/50 text-primary-dark",
-    sprite: "text-primary-light",
+      "bg-brand-green-light/30 hover:bg-brand-green-light/50 text-brand-green-dark",
+    sprite: "text-brand-green-light",
   },
   [WELL_KNOWN_PLANS.GROWTH]: {
-    background: "bg-yellow-light/30 hover:bg-yellow-light/50 text-yellow-dark",
-    sprite: "text-yellow-light",
+    background: "bg-brand-yellow-light/30 hover:bg-brand-yellow-light/50 text-brand-yellow-dark",
+    sprite: "text-brand-yellow-light",
   },
   [WELL_KNOWN_PLANS.SCALE]: {
-    background: "bg-purple-light/30 hover:bg-purple-light/50 text-purple-dark",
-    sprite: "text-purple-light",
+    background: "bg-brand-purple-light/30 hover:bg-brand-purple-light/50 text-brand-purple-dark",
+    sprite: "text-brand-purple-light",
   },
 };
 
@@ -430,9 +430,9 @@ function TeamPlanAndBalance() {
         <PlanIcon />
         {plan.title} PLAN
       </div>
-      <div className="z-20 flex items-center justify-between px-2 h-9 rounded-xl w-full text-sm bg-primary-foreground">
-        <span className="text-primary">Team Balance</span>
-        <span className="text-primary font-semibold">{account.balance}</span>
+      <div className="z-20 flex items-center justify-between px-2 h-9 rounded-xl w-full text-sm bg-sidebar">
+        <span className="text-sidebar-foreground">Team Balance</span>
+        <span className="text-sidebar-foreground font-semibold">{account.balance}</span>
       </div>
     </Link>
   );

@@ -556,7 +556,7 @@ function AgentsList() {
               onViewModeChange={setViewMode}
               ctaButton={
                 <Button
-                  variant="special"
+                  variant="default"
                   className="h-9 rounded-xl w-full md:w-auto"
                   onClick={handleCreate}
                 >

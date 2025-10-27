@@ -213,7 +213,7 @@ const Discover = () => {
                   </div>
                   <Button
                     className="absolute bottom-6 right-6 !hover:bg-primary-light"
-                    variant="special"
+                    variant="default"
                   >
                     See app
                   </Button>

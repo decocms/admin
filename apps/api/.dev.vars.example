@@ -22,6 +22,7 @@ DATABASE_URL=
 # Cloudflare
 CF_ACCOUNT_ID=
 CF_API_TOKEN=
+CF_API_BROWSER_RENDERING=  # Optional: Dedicated token with Browser Rendering permissions
 CF_ZONE_ID=
 CF_DISPATCH_NAMESPACE=
 CF_R2_ACCESS_KEY_ID=

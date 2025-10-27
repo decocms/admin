@@ -548,6 +548,19 @@ export function AgenticChatProvider({
         }
       }
 
+      // Handle browser screenshot captures - refresh gallery
+      if (toolCall.toolName === "BROWSER_SCREENSHOT") {
+        // Invalidate all screenshot queries to refresh the gallery
+        queryClient.invalidateQueries({
+          queryKey: ["browser-rendering", "screenshots", locator],
+        });
+
+        // Force immediate refetch
+        queryClient.refetchQueries({
+          queryKey: ["browser-rendering", "screenshots", locator],
+        });
+      }
+
       // Broadcast resource updates for auto-refresh
       if (
         /^DECO_RESOURCE_.*_(UPDATE|CREATE)$/.test(toolCall.toolName ?? "") &&

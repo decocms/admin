@@ -70,73 +70,63 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const extraHeaders = debugId
           ? { "x-trace-debug-id": debugId }
           : undefined;
-
         const client = await createServerClient(
           { connection },
           undefined,
           extraHeaders,
         );
 
-        try {
-          const { structuredContent, isError, content } = await client.callTool(
-            {
-              name: String(name),
-              arguments: args as Record<string, unknown>,
-            },
-            undefined,
-            {
-              timeout: 3000000,
-            },
-          );
+        const { structuredContent, isError, content } = await client.callTool(
+          {
+            name: String(name),
+            arguments: args as Record<string, unknown>,
+          },
+          undefined,
+          {
+            timeout: 3000000,
+          },
+        );
 
-          if (isError) {
-            // @ts-expect-error - content is not typed
-            const maybeErrorMessage = content?.[0]?.text;
-            const error =
-              typeof maybeErrorMessage === "string"
-                ? safeParse(maybeErrorMessage)
-                : null;
+        if (isError) {
+          // @ts-expect-error - content is not typed
+          const maybeErrorMessage = content?.[0]?.text;
+          const error =
+            typeof maybeErrorMessage === "string"
+              ? safeParse(maybeErrorMessage)
+              : null;
 
-            const throwableError =
-              error?.code && typeof options?.getErrorByStatusCode === "function"
-                ? options.getErrorByStatusCode(
-                    error.code,
-                    error.message,
-                    error.traceId,
-                  )
-                : null;
+          const throwableError =
+            error?.code && typeof options?.getErrorByStatusCode === "function"
+              ? options.getErrorByStatusCode(
+                  error.code,
+                  error.message,
+                  error.traceId,
+                )
+              : null;
 
-            if (throwableError) {
-              throw throwableError;
-            }
-
-            throw new Error(
-              `Tool ${String(name)} returned an error: ${JSON.stringify(
-                structuredContent ?? content,
-              )}`,
-            );
+          if (throwableError) {
+            throw throwableError;
           }
-          return structuredContent;
-        } finally {
-          await client.close();
+
+          throw new Error(
+            `Tool ${String(name)} returned an error: ${JSON.stringify(
+              structuredContent ?? content,
+            )}`,
+          );
         }
+        return structuredContent;
       }
 
       const listToolsFn = async () => {
         const client = await createServerClient({ connection });
+        const { tools } = await client.listTools();
 
-        try {
-          const { tools } = await client.listTools();
-
-          return tools as {
-            name: string;
-            inputSchema: any;
-            outputSchema?: any;
-            description: string;
-          }[];
-        } finally {
-          await client.close();
-        }
+        return tools as {
+          name: string;
+          inputSchema: any;
+          outputSchema?: any;
+          description: string;
+        }[];
       };
 
       async function listToolsOnce() {

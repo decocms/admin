@@ -1056,7 +1056,6 @@ app.post("/:org/:project/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
-// Handle /:org/:project/:integrationId/mcp/tool/:toolName for CDN filtering
 app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
@@ -1068,7 +1067,6 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
-// Handle /:org/:project/:branch/:integrationId/mcp/tool/:toolName for CDN filtering
 app.post(
   "/:org/:project/:branch/:integrationId/mcp/tool/:toolName",
   async (c) => {
@@ -1083,7 +1081,6 @@ app.post("/apps/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
-// Handle /apps/mcp/tool/:toolName for CDN filtering
 app.post("/apps/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
 

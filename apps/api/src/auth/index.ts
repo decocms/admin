@@ -54,7 +54,6 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
   return { headers, db };
 };
 
-// TODO: add LRU Cache
 export const getUser = async (
   ctx: AppContext,
 ): Promise<SupaUser | undefined> => {

@@ -17,19 +17,16 @@ import {
   type Agent,
   AgentSchema,
   BindingsSchema,
-  DECO_CMS_API_URL,
   INNATE_INTEGRATIONS,
   type Integration,
   IntegrationSchema,
   Locator,
   type MCPConnection,
   NEW_INTEGRATION_TEMPLATE,
-  ProjectLocator,
   UserInputError,
   WellKnownMcpGroups,
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
-import type { Workspace } from "../../path.ts";
 import { Json } from "../../storage/index.ts";
 import type { QueryResult } from "../../storage/supabase/client.ts";
 import { KnowledgeBaseID } from "../../utils/index.ts";
@@ -49,6 +46,7 @@ import {
   AppContext,
   Binding,
   createToolGroup,
+  DECO_CMS_API,
   MCPClient,
   NotFoundError,
   WellKnownBindings,
@@ -122,19 +120,26 @@ const formatId = (type: "i" | "a", uuid: string) => {
 };
 
 const agentAsIntegrationFor =
-  (workspace: string, token?: string) =>
-  (agent: Agent): Integration => ({
-    id: formatId("a", agent.id),
-    icon: agent.avatar,
-    name: agent.name,
-    description: agent.description,
-    connection: {
-      type: "HTTP",
-      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CMS_API_URL)
-        .href,
-      token,
-    },
-  });
+  (c: AppContext, token?: string) =>
+  (agent: Agent): Integration => {
+    assertHasLocator(c);
+    const locator = c.locator.value;
+
+    return {
+      id: formatId("a", agent.id),
+      icon: agent.avatar,
+      name: agent.name,
+      description: agent.description,
+      connection: {
+        type: "HTTP",
+        url: new URL(
+          `/${locator}/agents/${agent.id}/mcp`,
+          DECO_CMS_API(c, false),
+        ).href,
+        token,
+      },
+    };
+  };
 
 const createIntegrationManagementTool = createToolGroup("Integration", {
   name: "Integration Management",
@@ -164,8 +169,10 @@ export const callTool = createIntegrationManagementTool({
       connection = patchApiDecoChatTokenHTTPConnection(
         {
           type: "HTTP",
-          url: new URL(`${c.locator.value}/${input.id}/mcp`, DECO_CMS_API_URL)
-            .href,
+          url: new URL(
+            `${c.locator.value}/${input.id}/mcp`,
+            DECO_CMS_API(c, false),
+          ).href,
         },
         c.cookie,
       );
@@ -230,6 +237,7 @@ async function listToolsAndSortByName(
   },
   c: AppContext,
 ) {
+  console.log("listing tools for connection", connection);
   let result;
   if (appName) {
     const app = await getRegistryApp.handler({
@@ -285,12 +293,17 @@ export const listTools = createIntegrationManagementTool({
   },
 });
 
-const toKbIntegration = (
-  kb: string,
-  locator: ProjectLocator,
-  token?: string,
-) => {
-  const { url: workspaceMcpUrl } = projectUrlFromLocator(locator);
+const toKbIntegration = ({
+  kb,
+  ctx,
+  token,
+}: {
+  kb: string;
+  ctx: AppContext;
+  token?: string;
+}) => {
+  assertHasLocator(ctx);
+  const { url: workspaceMcpUrl } = projectUrlFromLocator(ctx);
   const url = new URL(workspaceMcpUrl);
   url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
   url.searchParams.set("name", kb);
@@ -304,25 +317,32 @@ const toKbIntegration = (
       token,
     },
     icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
-    workspace: Locator.adaptToRootSlug(locator),
+    workspace: Locator.adaptToRootSlug(ctx.locator.value),
     created_at: new Date().toISOString(),
   };
 };
 
-const projectUrlFromLocator = (locator: ProjectLocator) => {
+const projectUrlFromLocator = (c: AppContext) => {
+  assertHasLocator(c);
+  const locator = c.locator.value;
+  const base = DECO_CMS_API(c, false);
+
   const projectPath = `/${
     locator.startsWith("/") ? locator.slice(1) : locator
   }`;
-  return { url: new URL(`${projectPath}/mcp`, DECO_CMS_API_URL), projectPath };
+  return { url: new URL(`${projectPath}/mcp`, base), projectPath };
 };
 
 const virtualIntegrationsFor = (
-  locator: ProjectLocator,
+  c: AppContext,
   knowledgeBases: string[],
   token?: string,
 ) => {
+  assertHasLocator(c);
+  const locator = c.locator.value;
+  const base = DECO_CMS_API(c, false);
   // Create a virtual User Management integration
-  const rootMcp = new URL("/mcp", DECO_CMS_API_URL);
+  const rootMcp = new URL("/mcp", base);
   const userManagementIntegration = {
     id: formatId("i", WellKnownMcpGroups.User),
     name: "User Management",
@@ -336,9 +356,9 @@ const virtualIntegrationsFor = (
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
-  const { url: workspaceMcp } = projectUrlFromLocator(locator);
+  const { url: workspaceMcp } = projectUrlFromLocator(c);
 
-  const contractsMcp = new URL("/contracts/mcp", DECO_CMS_API_URL);
+  const contractsMcp = new URL("/contracts/mcp", base);
   const contractsIntegration = {
     id: formatId("i", WellKnownMcpGroups.Contracts),
     name: "Contracts Management",
@@ -369,7 +389,7 @@ const virtualIntegrationsFor = (
   };
 
   // Create a virtual Self integration for custom tools and workflows
-  const { projectPath } = projectUrlFromLocator(locator);
+  const { projectPath } = projectUrlFromLocator(c);
   const parsedLocator = Locator.parse(locator);
   const selfIntegration = {
     id: formatId("i", WellKnownMcpGroups.Self),
@@ -377,7 +397,7 @@ const virtualIntegrationsFor = (
     description: `Tools and workflows of the project ${parsedLocator.project} from ${parsedLocator.org}`,
     connection: {
       type: "HTTP",
-      url: new URL(`${projectPath}/self/mcp`, DECO_CMS_API_URL).href,
+      url: new URL(`${projectPath}/self/mcp`, base).href,
       // Don't include token - use cookie-based auth for API connections
     },
     icon: "https://assets.decocache.com/mcp/81d602bb-45e2-4361-b52a-23379520a34d/sandbox.png",
@@ -417,7 +437,11 @@ const virtualIntegrationsFor = (
     ...integrationGroups,
     contractsIntegration,
     ...knowledgeBases.map((kb) => {
-      return toKbIntegration(KnowledgeBaseID.format(kb), locator, token);
+      return toKbIntegration({
+        kb,
+        ctx: c,
+        token,
+      });
     }),
   ];
 };
@@ -467,7 +491,6 @@ export const listIntegrations = createIntegrationManagementTool({
   handler: async ({ binder, hideVirtual }, c) => {
     assertHasWorkspace(c);
     assertHasLocator(c);
-    const workspace = c.workspace.value;
 
     await assertWorkspaceResourceAccess(c);
     const projectId = await getProjectIdFromContext(c);
@@ -522,14 +545,12 @@ export const listIntegrations = createIntegrationManagementTool({
 
     // Build the result with all integrations
     const baseResult = [
-      ...(hideVirtual
-        ? []
-        : virtualIntegrationsFor(c.locator.value, [], c.token)),
+      ...(hideVirtual ? [] : virtualIntegrationsFor(c, [], c.token)),
       ...filteredIntegrations.map(mapIntegration),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
-        .map(agentAsIntegrationFor(workspace, c.token)),
+        .map(agentAsIntegrationFor(c, c.token)),
       ...Object.values(INNATE_INTEGRATIONS),
     ]
       .map((i) => IntegrationSchema.safeParse(i)?.data)
@@ -547,7 +568,7 @@ export const listIntegrations = createIntegrationManagementTool({
 
         const isVirtual =
           connection.type === "HTTP" &&
-          connection.url.startsWith(DECO_CMS_API_URL);
+          connection.url.startsWith(DECO_CMS_API(c, false));
 
         const tools = isVirtual
           ? await listToolsAndSortByName(
@@ -628,7 +649,11 @@ export const getIntegration = createIntegrationManagementTool({
       )
     ) {
       const parsed = IntegrationSchema.parse({
-        ...toKbIntegration(uuid, c.locator.value, c.token),
+        ...toKbIntegration({
+          kb: uuid,
+          ctx: c,
+          token: c.token,
+        }),
         id: formatId(type, uuid),
       });
       return {
@@ -741,11 +766,7 @@ export const getIntegration = createIntegrationManagementTool({
             .limit(1)
             .then((r) => r[0]);
 
-    const virtualIntegrations = virtualIntegrationsFor(
-      c.locator.value,
-      [],
-      c.token,
-    );
+    const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
 
     // Handle self integration - don't return tools
     if (id === formatId("i", WellKnownMcpGroups.Self)) {
@@ -781,10 +802,7 @@ export const getIntegration = createIntegrationManagementTool({
     }
 
     if (type === "a") {
-      const mapAgentToIntegration = agentAsIntegrationFor(
-        c.workspace.value as Workspace,
-        c.token,
-      );
+      const mapAgentToIntegration = agentAsIntegrationFor(c, c.token);
       const baseIntegration = IntegrationSchema.parse({
         ...mapAgentToIntegration(data as unknown as Agent),
         id: formatId(type, data.id),
@@ -1313,6 +1331,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
   ),
   handler: async (args, c) => {
     assertHasWorkspace(c);
+    assertHasLocator(c);
     await assertWorkspaceResourceAccess(c);
 
     let integration: Integration;
@@ -1321,8 +1340,8 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     );
     if (virtual) {
       const workspaceMcp = new URL(
-        `${c.workspace.value}/${virtual.group}/mcp`,
-        DECO_CMS_API_URL,
+        `/${c.locator.value}/${virtual.group}/mcp`,
+        DECO_CMS_API(c, false),
       );
       workspaceMcp.searchParams.set("group", virtual.group);
 

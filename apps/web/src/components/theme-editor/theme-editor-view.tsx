@@ -81,6 +81,30 @@ function ColorCard({ variable, onChange, label }: ColorCardProps) {
   );
 }
 
+interface OptionCardProps {
+  label: string;
+  value: string;
+  isActive: boolean;
+  onClick: () => void;
+  preview?: React.ReactNode;
+}
+
+function OptionCard({ label, value, isActive, onClick, preview }: OptionCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`aspect-square w-full border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-primary ${
+        isActive ? "border-primary bg-primary/5" : "border-border"
+      }`}
+    >
+      {preview}
+      <p className="text-base font-medium">{label}</p>
+      <p className="text-xs text-muted-foreground">{value}</p>
+    </button>
+  );
+}
+
 // Color group definitions with proper labels
 const COLOR_GROUP_CONFIGS = [
   {
@@ -506,13 +530,80 @@ export function ThemeEditorView() {
               </div>
             </DetailSection>
 
-            {/* Customize Section with Color Groups */}
+            {/* Customize Section with Radius, Spacing, and Color Groups */}
             <DetailSection title="Customize" titleSize="h2">
               <div className="space-y-4">
                 <p className="text-base text-muted-foreground">
                   Customize your workspace colors and branding
                 </p>
                 <div className="space-y-10">
+                  {/* Border Radius Options */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">Border Radius</h3>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+                      {[
+                        { label: "Sharp", value: "0rem" },
+                        { label: "Default", value: "0.375rem" },
+                        { label: "Medium", value: "0.5rem" },
+                        { label: "Rounded", value: "0.75rem" },
+                      ].map((option) => {
+                        const currentRadius = themeVariables?.["--radius"] || DEFAULT_THEME.variables?.["--radius"];
+                        return (
+                          <OptionCard
+                            key={option.value}
+                            label={option.label}
+                            value={option.value}
+                            isActive={currentRadius === option.value}
+                            onClick={() => handleVariableChange("--radius", option.value)}
+                            preview={
+                              <div 
+                                className="w-12 h-12 bg-primary"
+                                style={{ borderRadius: option.value }}
+                              />
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Spacing Options */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">Spacing</h3>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+                      {[
+                        { label: "Tight", value: "0.225rem" },
+                        { label: "Default", value: "0.25rem" },
+                        { label: "Comfortable", value: "0.3rem" },
+                      ].map((option) => {
+                        const currentSpacing = themeVariables?.["--spacing"] || DEFAULT_THEME.variables?.["--spacing"];
+                        return (
+                          <OptionCard
+                            key={option.value}
+                            label={option.label}
+                            value={option.value}
+                            isActive={currentSpacing === option.value}
+                            onClick={() => handleVariableChange("--spacing", option.value)}
+                            preview={
+                              <div className="flex gap-1 items-center justify-center">
+                                <div 
+                                  className="w-3 h-10 bg-primary"
+                                  style={{ marginRight: option.value }}
+                                />
+                                <div 
+                                  className="w-3 h-10 bg-primary"
+                                  style={{ marginRight: option.value }}
+                                />
+                                <div className="w-3 h-10 bg-primary" />
+                              </div>
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Color Groups */}
                   {COLOR_GROUP_CONFIGS.map((group) => (
                     <div key={group.title} className="space-y-2">
                       <h3 className="text-lg font-medium">{group.title}</h3>

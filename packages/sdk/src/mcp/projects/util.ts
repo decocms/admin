@@ -33,12 +33,14 @@ export async function getOrgIdFromContext(
   if (!c.locator?.org) {
     return null;
   }
+
   const org = await c.drizzle
     .select()
     .from(organizations)
-    .where(eq(organizations.slug, c.locator?.org))
+    .where(eq(organizations.slug, c.locator.org))
     .limit(1)
     .then((r) => r[0]);
+
   return org?.id ?? null;
 }
 

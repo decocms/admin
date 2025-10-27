@@ -64,9 +64,9 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
-import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { cors } from "hono/cors";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
@@ -223,18 +223,29 @@ const createMCPHandlerFor = (
           ? tool.outputSchema.schema
           : tool.outputSchema;
 
+      // Unwrap ZodEffects (from .refine(), .transform(), etc.) to get the base schema
+      const unwrapSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
+        if (schema instanceof z.ZodEffects) {
+          return unwrapSchema(schema.innerType());
+        }
+        return schema;
+      };
+
+      const baseInputSchema = unwrapSchema(evalInputSchema);
+      const baseOutputSchema = unwrapSchema(evalOutputSchema);
+
       server.registerTool(
         tool.name,
         {
           annotations: tool.annotations,
           description: tool.description,
           inputSchema:
-            "shape" in evalInputSchema
-              ? (evalInputSchema.shape as z.ZodRawShape)
+            "shape" in baseInputSchema
+              ? (baseInputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
           outputSchema:
-            evalOutputSchema && "shape" in evalOutputSchema
-              ? (evalOutputSchema.shape as z.ZodRawShape)
+            baseOutputSchema && "shape" in baseOutputSchema
+              ? (baseOutputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
@@ -537,6 +548,61 @@ const createMcpServerProxy = (c: Context) => {
   );
 };
 
+// Simplified logger with fixed minimum column widths
+app.use(async (c, next) => {
+  const { method } = c.req;
+  const url = new URL(c.req.url);
+  const pathname = url.pathname;
+
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+
+  // Color codes for status
+  const status = c.res.status;
+  let statusColor = "\x1b[0m"; // default
+  let statusSuffix = "";
+  if (status >= 200 && status < 300) {
+    statusColor = "\x1b[32m"; // green
+    statusSuffix = " OK";
+  } else if (status >= 300 && status < 400) {
+    statusColor = "\x1b[36m"; // cyan
+  } else if (status >= 400 && status < 500) {
+    statusColor = "\x1b[33m"; // yellow
+  } else if (status >= 500) {
+    statusColor = "\x1b[31m"; // red
+  }
+
+  // Check for cache status header (set by middleware)
+  // @ts-expect-error - custom context property set by user middleware
+  const cacheStatus: string | undefined = c.get("cacheStatus");
+  let cacheIndicator = "";
+  if (cacheStatus && typeof cacheStatus === "string") {
+    const [prefix, s] = cacheStatus.split(":");
+    let color = "\x1b[0m";
+    if (s === "hit") color = "\x1b[32m";
+    else if (s === "miss") color = "\x1b[31m";
+    else if (s === "dedup") color = "\x1b[33m";
+    cacheIndicator = ` \x1b[90m[${prefix}:\x1b[0m${color}${s}\x1b[90m]\x1b[0m`;
+  }
+
+  // Simple formatting with fixed widths - no complex alignment
+  // Format: [api] METHOD /path 200 OK (123ms) [auth:hit]
+  // Special highlighting for /tool/ paths
+  const toolMatch = pathname.match(/\/tool\/([^/]+)$/);
+  let formattedPath = pathname;
+  if (toolMatch) {
+    const basePath = pathname.replace(/\/tool\/[^/]+$/, "");
+    const toolName = toolMatch[1];
+    formattedPath = `${basePath}\x1b[96m/tool/\x1b[1m${toolName}\x1b[0m`;
+  }
+
+  // Log immediately with consistent formatting
+  console.log(
+    `\x1b[32m[api]\x1b[0m \x1b[1m${method}\x1b[0m ${formattedPath} ${statusColor}\x1b[1m${status}\x1b[0m${statusColor}${statusSuffix}\x1b[0m \x1b[90m(${ms}ms)\x1b[0m${cacheIndicator}`,
+  );
+});
+
 // Add logger middleware
 app.use(logger());
 
@@ -582,8 +648,14 @@ app.use(async (c, next) => {
 
 app.use(withActorsMiddleware);
 
-app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
-app.post(`/deconfig/mcp`, createMCPHandlerFor(DECONFIG_TOOLS));
+// Create handlers once and reuse them for multiple routes to reduce heap allocation
+const contractsMcpHandler = createMCPHandlerFor(CONTRACTS_TOOLS);
+app.post(`/contracts/mcp`, contractsMcpHandler);
+app.post(`/contracts/mcp/tool/:toolName`, contractsMcpHandler);
+
+const deconfigMcpHandler = createMCPHandlerFor(DECONFIG_TOOLS);
+app.post(`/deconfig/mcp`, deconfigMcpHandler);
+app.post(`/deconfig/mcp/tool/:toolName`, deconfigMcpHandler);
 app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   const appCtx = honoCtxToAppCtx(ctx);
   return await watchSSE(appCtx, {
@@ -601,7 +673,9 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   });
 });
 
-app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
+const globalMcpHandler = createMCPHandlerFor(GLOBAL_TOOLS);
+app.all("/mcp", globalMcpHandler);
+app.all("/mcp/tool/:toolName", globalMcpHandler);
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
@@ -956,26 +1030,39 @@ const createSelfTools = async (ctx: Context) => {
   return [...customTools, ...workflowTools];
 };
 
-app.all("/:org/:project/mcp", createMCPHandlerFor(projectTools));
+const projectMcpHandler = createMCPHandlerFor(projectTools);
+app.all("/:org/:project/mcp", projectMcpHandler);
+app.all("/:org/:project/mcp/tool/:toolName", projectMcpHandler);
 
-app.all("/:org/:project/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));
+const agentMcpHandler = createMCPHandlerFor(AGENT_TOOLS);
+app.all("/:org/:project/agents/:agentId/mcp", agentMcpHandler);
+app.all("/:org/:project/agents/:agentId/mcp/tool/:toolName", agentMcpHandler);
 
 // Tool call endpoint handlers
-app.post("/tools/call/:tool", createToolCallHandlerFor(GLOBAL_TOOLS));
+const globalToolCallHandler = createToolCallHandlerFor(GLOBAL_TOOLS);
+app.post("/tools/call/:tool", globalToolCallHandler);
 
+const projectToolCallHandler = createToolCallHandlerFor(projectTools);
+app.post("/:org/:project/tools/call/:tool", projectToolCallHandler);
+
+const emailMcpHandler = createMCPHandlerFor(EMAIL_TOOLS);
+app.post(`/:org/:project/${WellKnownMcpGroups.Email}/mcp`, emailMcpHandler);
 app.post(
-  "/:org/:project/tools/call/:tool",
-  createToolCallHandlerFor(projectTools),
+  `/:org/:project/${WellKnownMcpGroups.Email}/mcp/tool/:toolName`,
+  emailMcpHandler,
 );
 
-app.post(
-  `/:org/:project/${WellKnownMcpGroups.Email}/mcp`,
-  createMCPHandlerFor(EMAIL_TOOLS),
-);
-
-app.post("/:org/:project/self/mcp", createMCPHandlerFor(createSelfTools));
+const selfMcpHandler = createMCPHandlerFor(createSelfTools);
+app.post("/:org/:project/self/mcp", selfMcpHandler);
+app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /:org/:project/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   return mcpServerProxy.fetch(c.req.raw);
@@ -986,8 +1073,23 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
+// Handle /:org/:project/:branch/:integrationId/mcp/tool/:toolName for CDN filtering
+app.post(
+  "/:org/:project/:branch/:integrationId/mcp/tool/:toolName",
+  async (c) => {
+    const mcpServerProxy = await createMcpServerProxy(c);
+
+    return mcpServerProxy.fetch(c.req.raw);
+  },
+);
 
 app.post("/apps/mcp", async (c) => {
+  const mcpServerProxy = await createMcpServerProxyForAppName(c);
+
+  return mcpServerProxy.fetch(c.req.raw);
+});
+// Handle /apps/mcp/tool/:toolName for CDN filtering
+app.post("/apps/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
 
   return mcpServerProxy.fetch(c.req.raw);

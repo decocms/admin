@@ -12,6 +12,13 @@ export const setUserMiddleware: MiddlewareHandler<AppEnv> = async (
   const user = await getUser(ctx);
   if (user) {
     ctx.set("user", user);
+    // Pass cache status for logging
+    const cacheStatus = (user as unknown as { _cacheStatus?: string })
+      ._cacheStatus;
+    if (cacheStatus) {
+      // @ts-expect-error - cacheStatus is a custom property not in Vars type
+      ctx.set("cacheStatus", `auth:${cacheStatus}`);
+    }
   }
 
   endTime(ctx, "get-user");

@@ -71,8 +71,6 @@ export const watchSSE = async (env: AppContext, options?: WatchOpts) => {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*", // Add CORS if needed
-      "Access-Control-Allow-Headers": "Cache-Control",
     },
   });
 };

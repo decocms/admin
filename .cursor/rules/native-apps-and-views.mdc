@@ -71,12 +71,12 @@ import { getOrgIdFromContext } from "../projects/util.ts";
 export const updateOrgSetting = createTool({
   name: "SETTING_UPDATE_ORG",
   inputSchema: z.object({
-    orgId: z.number().optional(), // Make optional
+    // Do NOT include orgId in input - always resolve from context
     setting: settingSchema,
   }),
   handler: async (props, c) => {
-    // Auto-resolve from context if not provided
-    const orgId = props.orgId ?? await getOrgIdFromContext(c);
+    // Auto-resolve from context
+    const orgId = await getOrgIdFromContext(c);
     
     if (!orgId) {
       throw new Error("No organization context available");
@@ -99,9 +99,9 @@ export const updateOrgSetting = createTool({
 ```
 
 **Key Points**:
+- Do NOT accept `orgId` from input - always auto-resolve from context
 - Use `assertTeamResourceAccess` with **org slug**, not org ID
 - Authorization system expects slugs for team resources
-- Make `orgId` optional and auto-resolve from `c.locator.org`
 
 ### 1.4 Register Tools
 
@@ -110,14 +110,14 @@ Add to appropriate tool collection:
 ```typescript
 // packages/sdk/src/mcp/index.ts
 
-// For workspace-scoped features
+// For project-scoped features
 export const PROJECT_TOOLS = [
   // ...
   featureAPI.getSetting,
   featureAPI.updateSetting,
 ] as const;
 
-// For org-level features (if tools need workspace context)
+// For org-level features (if tools need project context)
 export const PROJECT_TOOLS = [
   // ...
   featureAPI.getOrgSetting,
@@ -443,48 +443,9 @@ useEffect(() => {
 }, []);
 ```
 
-## Step 6: Environment Variables
+## Step 6: Organization Layout Integration
 
-### 6.1 Frontend (Vite)
-
-```typescript
-// apps/web/.env
-VITE_USE_LOCAL_BACKEND=true
-
-// Access in code
-import.meta.env.VITE_USE_LOCAL_BACKEND === "true"
-```
-
-### 6.2 Backend (Cloudflare Workers)
-
-```toml
-# apps/api/wrangler.toml
-[vars]
-VITE_USE_LOCAL_BACKEND = true
-```
-
-```typescript
-// Access in code
-const { VITE_USE_LOCAL_BACKEND } = getEnv(ctx);
-```
-
-**Critical**: `import.meta.env` does NOT work in Cloudflare Workers. Use `getEnv(ctx)`.
-
-### 6.3 Dynamic API URL Resolution
-
-```typescript
-// packages/sdk/src/mcp/context.ts
-export const DECO_CMS_API = (ctx: AppContext, isDecoChat: boolean) =>
-  getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
-    ? "http://localhost:3001"
-    : isDecoChat
-      ? "https://api.deco.chat"
-      : "https://api.decocms.com";
-```
-
-## Step 7: Organization Layout Integration
-
-### 7.1 Add Context Providers
+### 6.1 Add Context Providers
 
 For org-level features that need AI chat:
 
@@ -506,20 +467,26 @@ export function OrgsLayout() {
 }
 ```
 
-### 7.2 Conditional Chat Panel
+### 6.2 Conditional Chat Panel
+
+Show AI chat panel only for specific routes where it makes sense:
 
 ```typescript
 import { useLocation } from "react-router";
 
 const location = useLocation();
-const isFeaturePage = location.pathname.endsWith('/feature-editor');
+
+// Example: Only show chat on theme-editor and settings pages
+const showChatPanel = 
+  location.pathname.endsWith('/theme-editor') ||
+  location.pathname.endsWith('/settings');
 
 return (
   <ResizablePanelGroup direction="horizontal">
     <ResizablePanel className="bg-background">
       <Outlet />
     </ResizablePanel>
-    {decopilotOpen && isFeaturePage && (
+    {decopilotOpen && showChatPanel && (
       <>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={30}>

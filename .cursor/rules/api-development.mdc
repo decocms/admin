@@ -116,12 +116,12 @@ import { getOrgIdFromContext } from "../projects/util.ts";
 export const updateOrgFeature = createTool({
   name: "FEATURE_UPDATE_ORG",
   inputSchema: z.object({
-    orgId: z.number().optional().describe("Auto-resolved from context if not provided"),
+    // Do NOT include orgId in input - always resolve from context
     featureData: FeatureSchema,
   }),
   handler: async (props, c) => {
     // 1. Auto-resolve org ID from context
-    const orgId = props.orgId ?? await getOrgIdFromContext(c);
+    const orgId = await getOrgIdFromContext(c);
     
     if (!orgId) {
       throw new Error("No organization context available");
@@ -133,14 +133,11 @@ export const updateOrgFeature = createTool({
       throw new Error("No organization slug in context");
     }
     
-    // ❌ WRONG - Authorization expects slugs, not IDs
-    // await assertTeamResourceAccess("TEAMS_UPDATE", orgId, c);
-    
     // ✅ CORRECT - Use slug from locator
     await assertTeamResourceAccess("TEAMS_UPDATE", orgSlug, c);
 
-    // 3. Use correct database client
-    const result = await c.drizzle  // Drizzle for org table
+    // 3. Use Drizzle for database operations
+    const result = await c.drizzle
       .update(organizations)
       .set({ feature: props.featureData })
       .where(eq(organizations.id, orgId))
@@ -152,28 +149,28 @@ export const updateOrgFeature = createTool({
 ```
 
 **Key Points**:
-- Make `orgId` optional in input schema
+- Do NOT accept `orgId` from input - always auto-resolve from context
 - Auto-resolve using `getOrgIdFromContext(c)`
 - Always use **org slug** for `assertTeamResourceAccess`, never numeric ID
-- Use `c.drizzle` for Drizzle ORM (organizations table)
-- Use `c.db` for Supabase operations (workspace tables)
+- Use `c.drizzle` for Drizzle ORM
 
-### 1.4 Database Client Selection
+### 1.4 Database Operations
 
-Choose the correct database client for your operation:
+**Prefer Drizzle ORM for all new code.** We're gradually migrating away from Supabase queries:
 
 ```typescript
-// ✅ Use c.db for Supabase operations (most workspace tables)
-const { data, error } = await c.db
-  .from(DECO_CHAT_FEATURE_TABLE)
-  .select(SELECT_FEATURE_QUERY)
-  .eq("workspace", workspace);
-
-// ✅ Use c.drizzle for Drizzle ORM (organizations, Turso)
+// ✅ PREFERRED - Use c.drizzle for Drizzle ORM
 const result = await c.drizzle
   .select()
   .from(organizations)
   .where(eq(organizations.id, orgId));
+
+// ⚠️ LEGACY - c.db (Supabase client) for existing queries only
+// Avoid using for new features
+const { data, error } = await c.db
+  .from(DECO_CHAT_FEATURE_TABLE)
+  .select(SELECT_FEATURE_QUERY)
+  .eq("workspace", workspace);
 
 if (error) throw error;  // Supabase pattern
 ```

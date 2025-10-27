@@ -342,49 +342,7 @@ const virtualIntegrationsFor = (group: string, workspace: boolean, apiUrl: strin
 };
 ```
 
-## 7. Environment Variables
-
-### Frontend vs Backend
-Critical difference between Vite and Cloudflare Workers:
-
-```typescript
-// ❌ WRONG - import.meta.env doesn't exist in Cloudflare Workers
-const apiUrl = import.meta.env.VITE_API_URL;
-
-// ✅ Frontend (Vite) - Use import.meta.env
-const apiUrl = import.meta.env.VITE_API_URL;
-
-// ✅ Backend (Workers) - Use getEnv(ctx)
-const apiUrl = getEnv(ctx).VITE_API_URL;
-```
-
-### Configuration Files
-```typescript
-// Frontend: apps/web/.env
-VITE_USE_LOCAL_BACKEND=true
-
-// Backend: apps/api/wrangler.toml
-[vars]
-VITE_USE_LOCAL_BACKEND = true
-```
-
-### Dynamic API URL Resolution
-```typescript
-// packages/sdk/src/mcp/context.ts
-export const DECO_CMS_API = (ctx: AppContext, isDecoChat: boolean) =>
-  getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
-    ? "http://localhost:3001"
-    : isDecoChat
-      ? "https://api.deco.chat"
-      : "https://api.decocms.com";
-
-// Usage in API handlers
-const getApiUrl = (c: AppContext): string => {
-  return DECO_CMS_API(c, false);
-};
-```
-
-## 8. Best Practices
+## 7. Best Practices
 
 ### Tool Development
 - Always use Zod schemas for input/output validation

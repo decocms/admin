@@ -6,8 +6,10 @@ import {
   useIntegrations,
   useTools,
   useUpdateTrigger,
-  DECO_CMS_API_URL,
+  MCPClient,
+  useSDK,
 } from "@deco/sdk";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -45,7 +47,6 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router";
 import { z } from "zod";
 import JsonSchemaForm from "../json-schema/index.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -145,6 +146,41 @@ const cronPresets = [
 
 function isValidCron(cron: string) {
   return /^(\S+\s+){4}\S+$/.test(cron);
+}
+
+// Hook for generating cron from natural language using AI
+function useGenerateCronFromNaturalLanguage() {
+  const { locator } = useSDK();
+
+  return useMutation<{ text: string }, Error, { naturalLanguage: string }>({
+    mutationFn: async ({ naturalLanguage }) => {
+      const client = MCPClient.forLocator(locator);
+      const result = await client.AI_GENERATE({
+        messages: [
+          {
+            role: "system",
+            content: `You are a cron expression generator. Convert natural language descriptions into valid cron expressions. 
+              
+Cron format: minute hour day-of-month month day-of-week (all in UTC)
+Examples:
+- "every 5 minutes" -> "*/5 * * * *"
+- "every hour" -> "0 * * * *"
+- "every day at 9am" -> "0 9 * * *"
+- "every Monday at 10am" -> "0 10 * * 1"
+
+Respond ONLY with the cron expression, nothing else. No explanations, no markdown, just the expression.`,
+          },
+          {
+            role: "user",
+            content: naturalLanguage,
+          },
+        ],
+        model: "gpt-4o-mini",
+      });
+
+      return result;
+    },
+  });
 }
 
 function JsonSchemaInput({
@@ -365,9 +401,9 @@ function CronSelectInput({
   const [selected, setSelected] = useState(cronPresets[0].value);
   const [custom, setCustom] = useState(selected === "custom" ? value : "");
   const [naturalLanguage, setNaturalLanguage] = useState("");
-  const [isConverting, setIsConverting] = useState(false);
   const [conversionError, setConversionError] = useState<string | null>(null);
-  const { org, project = "default" } = useParams();
+
+  const generateCronMutation = useGenerateCronFromNaturalLanguage();
 
   function handlePresetChange(val: string) {
     setSelected(val);
@@ -396,53 +432,14 @@ function CronSelectInput({
   async function handleConvertNaturalLanguage() {
     if (!naturalLanguage.trim()) return;
 
-    setIsConverting(true);
     setConversionError(null);
 
     try {
-      const response = await fetch(
-        `${DECO_CMS_API_URL}/${org}/${project}/tools/call/AI_GENERATE`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content: `You are a cron expression generator. Convert natural language descriptions into valid cron expressions. 
-              
-Cron format: minute hour day-of-month month day-of-week (all in UTC)
-Examples:
-- "every 5 minutes" -> "*/5 * * * *"
-- "every hour" -> "0 * * * *"
-- "every day at 9am" -> "0 9 * * *"
-- "every Monday at 10am" -> "0 10 * * 1"
+      const result = await generateCronMutation.mutateAsync({
+        naturalLanguage: naturalLanguage.trim(),
+      });
 
-Respond ONLY with the cron expression, nothing else. No explanations, no markdown, just the expression.`,
-              },
-              {
-                role: "user",
-                content: naturalLanguage,
-              },
-            ],
-            model: "gpt-4o-mini",
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to convert to cron expression");
-      }
-
-      const result = (await response.json()) as {
-        data?: {
-          text: string;
-        };
-      };
-      const cronExp = result.data?.text?.trim() || "";
+      const cronExp = result.text?.trim() || "";
 
       if (cronExp && isValidCron(cronExp)) {
         setCustom(cronExp);
@@ -459,8 +456,6 @@ Respond ONLY with the cron expression, nothing else. No explanations, no markdow
       setConversionError(
         "Failed to convert. Please try again or enter a cron expression manually.",
       );
-    } finally {
-      setIsConverting(false);
     }
   }
 
@@ -500,7 +495,7 @@ Respond ONLY with the cron expression, nothing else. No explanations, no markdow
                 }
               }}
               className="pr-10 text-xs h-8"
-              disabled={isConverting}
+              disabled={generateCronMutation.isPending}
             />
             <Button
               type="button"
@@ -508,9 +503,11 @@ Respond ONLY with the cron expression, nothing else. No explanations, no markdow
               variant="ghost"
               className="absolute right-0 top-0 h-8 w-8 p-0"
               onClick={handleConvertNaturalLanguage}
-              disabled={isConverting || !naturalLanguage.trim()}
+              disabled={
+                generateCronMutation.isPending || !naturalLanguage.trim()
+              }
             >
-              {isConverting ? (
+              {generateCronMutation.isPending ? (
                 <Spinner size="xs" />
               ) : (
                 <Icon name="auto_awesome" className="h-4 w-4 text-primary" />

@@ -6,6 +6,7 @@ import {
   useIntegrations,
   useTools,
   useUpdateTrigger,
+  DECO_CMS_API_URL,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -44,6 +45,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useParams } from "react-router";
 import { z } from "zod";
 import JsonSchemaForm from "../json-schema/index.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -362,6 +364,10 @@ function CronSelectInput({
 }) {
   const [selected, setSelected] = useState(cronPresets[0].value);
   const [custom, setCustom] = useState(selected === "custom" ? value : "");
+  const [naturalLanguage, setNaturalLanguage] = useState("");
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionError, setConversionError] = useState<string | null>(null);
+  const { org, project = "default" } = useParams();
 
   function handlePresetChange(val: string) {
     setSelected(val);
@@ -387,9 +393,81 @@ function CronSelectInput({
     }
   }
 
+  async function handleConvertNaturalLanguage() {
+    if (!naturalLanguage.trim()) return;
+
+    setIsConverting(true);
+    setConversionError(null);
+
+    try {
+      const response = await fetch(
+        `${DECO_CMS_API_URL}/${org}/${project}/tools/call/AI_GENERATE`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "system",
+                content: `You are a cron expression generator. Convert natural language descriptions into valid cron expressions. 
+              
+Cron format: minute hour day-of-month month day-of-week (all in UTC)
+Examples:
+- "every 5 minutes" -> "*/5 * * * *"
+- "every hour" -> "0 * * * *"
+- "every day at 9am" -> "0 9 * * *"
+- "every Monday at 10am" -> "0 10 * * 1"
+
+Respond ONLY with the cron expression, nothing else. No explanations, no markdown, just the expression.`,
+              },
+              {
+                role: "user",
+                content: naturalLanguage,
+              },
+            ],
+            model: "gpt-4o-mini",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to convert to cron expression");
+      }
+
+      const result = (await response.json()) as {
+        data?: {
+          text: string;
+        };
+      };
+      const cronExp = result.data?.text?.trim() || "";
+
+      if (cronExp && isValidCron(cronExp)) {
+        setCustom(cronExp);
+        setSelected("custom");
+        onChange(cronExp);
+        setNaturalLanguage("");
+      } else {
+        setConversionError(
+          "Could not generate a valid cron expression. Try being more specific.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to convert natural language to cron:", error);
+      setConversionError(
+        "Failed to convert. Please try again or enter a cron expression manually.",
+      );
+    } finally {
+      setIsConverting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <FormLabel htmlFor="cron-frequency">Frequency *</FormLabel>
+
       <Select value={selected} onValueChange={handlePresetChange}>
         <SelectTrigger id="cron-frequency" className="w-full">
           <SelectValue placeholder="Select frequency" />
@@ -402,15 +480,56 @@ function CronSelectInput({
           ))}
         </SelectContent>
       </Select>
+
       {selected === "custom" && (
-        <Input
-          type="text"
-          placeholder="Ex: */10 * * * *"
-          value={custom}
-          className="rounded-md font-mono"
-          onChange={handleCustomChange}
-          required={required}
-        />
+        <>
+          {/* AI Helper Input */}
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Describe in plain text: e.g., 'every 10 minutes'"
+              value={naturalLanguage}
+              onChange={(e) => {
+                setNaturalLanguage(e.target.value);
+                setConversionError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleConvertNaturalLanguage();
+                }
+              }}
+              className="pr-10 text-xs h-8"
+              disabled={isConverting}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="absolute right-0 top-0 h-8 w-8 p-0"
+              onClick={handleConvertNaturalLanguage}
+              disabled={isConverting || !naturalLanguage.trim()}
+            >
+              {isConverting ? (
+                <Spinner size="xs" />
+              ) : (
+                <Icon name="auto_awesome" className="h-4 w-4 text-primary" />
+              )}
+            </Button>
+          </div>
+          {conversionError && (
+            <div className="text-xs text-destructive">{conversionError}</div>
+          )}
+
+          <Input
+            type="text"
+            placeholder="Ex: */10 * * * *"
+            value={custom}
+            className="rounded-md font-mono"
+            onChange={handleCustomChange}
+            required={required}
+          />
+        </>
       )}
 
       {selected === "custom" && (

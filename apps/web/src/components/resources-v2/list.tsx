@@ -286,13 +286,11 @@ function ResourcesV2ListTab({
   const loading = listQuery.isLoading;
   const error = listQuery.isError ? (listQuery.error as Error).message : null;
 
-  // Duplicate handler
   const handleDuplicate = async (item: ResourceListItem) => {
     if (!integration) return;
     try {
       setMutating(true);
 
-      // For documents and other resources that may have additional data not in the list,
       // fetch the full resource first
       const readResult = await callTool(integration.connection, {
         name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_READ`,
@@ -305,7 +303,6 @@ function ResourcesV2ListTab({
         throw new Error("Could not fetch full resource data");
       }
 
-      // Create a copy with a modified name
       const originalName =
         (fullResourceData.name as string) || item.data?.name || "Untitled";
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -318,28 +315,12 @@ function ResourcesV2ListTab({
         description: fullResourceData.description ?? "",
       };
 
-      console.log("duplicatedData", duplicatedData);
-
-      // Create the duplicate
       const createResult = await callTool(integration.connection, {
         name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
         arguments: { data: duplicatedData },
       });
 
-      // Extract URI from response
-      const newUri =
-        (createResult as { uri?: string })?.uri ||
-        (createResult as { data?: { uri?: string } })?.data?.uri ||
-        (
-          createResult as {
-            structuredContent?: { uri?: string };
-          }
-        )?.structuredContent?.uri ||
-        (
-          createResult as {
-            content?: Array<{ text?: string }>;
-          }
-        )?.content?.[0]?.text;
+      const newUri = createResult?.structuredContent?.uri;
 
       if (!newUri) {
         throw new Error("No URI returned from create operation");
@@ -347,12 +328,10 @@ function ResourcesV2ListTab({
 
       toast.success(`${resourceName || "Resource"} duplicated successfully`);
 
-      // Invalidate list query to refresh
       queryClient.invalidateQueries({
         queryKey: ["resources-v2-list", integrationId, resourceName],
       });
 
-      // Navigate to the new resource
       navigateWorkspace(
         `rsc/${integrationId}/${resourceName}/${encodeURIComponent(newUri)}`,
       );

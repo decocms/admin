@@ -227,14 +227,7 @@ function ResourcesV2ListTab({
   );
 
   const listQuery = useQuery({
-    queryKey: KEYS.RESOURCES_LIST(
-      locator,
-      integrationId!,
-      resourceName!,
-      deferredQ,
-      sortKey ?? undefined,
-      sortDirection ?? undefined,
-    ),
+    queryKey: ["resources-v2-list", integrationId, resourceName, deferredQ],
     enabled: Boolean(integration && resourceName),
     staleTime: 0, // Always consider data stale so it refetches when invalidated
     refetchOnMount: "always", // Always refetch when component mounts

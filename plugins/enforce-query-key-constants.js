@@ -16,8 +16,17 @@ const enforceQueryKeyConstantsRule = {
       Property(node) {
         // Check for queryKey properties
         if (node.key.name === "queryKey" || node.key.value === "queryKey") {
+          // Get the actual value, unwrapping TypeScript assertions like "as const"
+          let valueNode = node.value;
+          if (
+            valueNode?.type === "TSAsExpression" ||
+            valueNode?.type === "TSTypeAssertion"
+          ) {
+            valueNode = valueNode.expression;
+          }
+
           // Check for inline array values
-          if (node.value?.type === "ArrayExpression") {
+          if (valueNode?.type === "ArrayExpression") {
             context.report({
               node: node.value,
               message:
@@ -27,10 +36,10 @@ const enforceQueryKeyConstantsRule = {
 
           // Check for non-KEYS constants
           if (
-            node.value?.type === "CallExpression" &&
-            node.value.callee?.type === "MemberExpression"
+            valueNode?.type === "CallExpression" &&
+            valueNode.callee?.type === "MemberExpression"
           ) {
-            const objectName = node.value.callee.object?.name;
+            const objectName = valueNode.callee.object?.name;
             if (objectName && objectName !== "KEYS") {
               context.report({
                 node: node.value,
@@ -57,8 +66,17 @@ const enforceQueryKeyConstantsRule = {
 
           if (!queryKeyProp) return;
 
+          // Get the actual value, unwrapping TypeScript assertions like "as const"
+          let valueNode = queryKeyProp.value;
+          if (
+            valueNode?.type === "TSAsExpression" ||
+            valueNode?.type === "TSTypeAssertion"
+          ) {
+            valueNode = valueNode.expression;
+          }
+
           // Check for inline arrays
-          if (queryKeyProp.value?.type === "ArrayExpression") {
+          if (valueNode?.type === "ArrayExpression") {
             context.report({
               node: queryKeyProp.value,
               message:
@@ -68,10 +86,10 @@ const enforceQueryKeyConstantsRule = {
 
           // Check for non-KEYS constants
           if (
-            queryKeyProp.value?.type === "CallExpression" &&
-            queryKeyProp.value.callee?.type === "MemberExpression"
+            valueNode?.type === "CallExpression" &&
+            valueNode.callee?.type === "MemberExpression"
           ) {
-            const objectName = queryKeyProp.value.callee.object?.name;
+            const objectName = valueNode.callee.object?.name;
             if (objectName && objectName !== "KEYS") {
               context.report({
                 node: queryKeyProp.value,

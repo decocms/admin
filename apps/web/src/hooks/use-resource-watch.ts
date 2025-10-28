@@ -1,4 +1,4 @@
-import { DECO_CMS_API_URL, useSDK } from "@deco/sdk";
+import { DECO_CMS_API_URL, KEYS, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef } from "react";
 import {
@@ -176,7 +176,7 @@ export function useResourceWatch({
 
   // Set up React Query for SSE connection management
   const query = useQuery({
-    queryKey: ["resource-watch", resourceUri, pathFilter] as const,
+    queryKey: KEYS.RESOURCE_WATCH(resourceUri, pathFilter),
     enabled: Boolean(watchUrl && enabled),
     gcTime: 0,
     staleTime: 0,

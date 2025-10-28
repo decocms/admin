@@ -253,6 +253,11 @@ export const KEYS = {
     locator,
   ],
   WORKFLOW_RUN_READ: (runUri: string) => ["workflow-run-read", runUri],
+  RESOURCE_WATCH: (resourceUri: string, pathFilter?: string) => [
+    "resource-watch",
+    resourceUri,
+    pathFilter,
+  ],
 
   // ============================================================================
   // ORG-SCOPED KEYS

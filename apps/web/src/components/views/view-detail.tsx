@@ -12,7 +12,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { toast } from "sonner";
 import { generateViewHTML } from "../../utils/view-template.ts";
@@ -25,6 +24,9 @@ import {
 import { EmptyState } from "../common/empty-state.tsx";
 import { ajvResolver } from "../json-schema/index.tsx";
 import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -56,12 +58,9 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const isDirty = codeDraft !== undefined && codeDraft !== effectiveView?.code;
 
   // Handlers for code editing
-  const handleCodeChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setCodeDraft(e.target.value);
-    },
-    [],
-  );
+  const handleCodeChange = useCallback((value: string) => {
+    setCodeDraft(value);
+  }, []);
 
   const handleSaveCode = useCallback(async () => {
     if (!effectiveView) {
@@ -271,70 +270,89 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
           <Icon name="dashboard" size={20} className="text-foreground" />
           <h2 className="text-sm font-medium">{effectiveView.name}</h2>
         </div>
-        {effectiveView.code && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "size-8 rounded-xl p-0",
-              isCodeViewerOpen && "bg-accent text-accent-foreground",
-            )}
-            onClick={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-            title="View Code"
-          >
-            <Icon
-              name="code"
-              size={20}
-              className={
-                isCodeViewerOpen ? "text-foreground" : "text-muted-foreground"
-              }
-            />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isCodeViewerOpen && isDirty && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleResetCode}
+                className="h-7 px-2 text-xs"
+              >
+                Reset
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleSaveCode}
+                className="h-7 px-3 text-xs gap-1"
+                disabled={updateViewMutation.isPending}
+              >
+                <Icon name="check" size={14} />
+                {updateViewMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </>
+          )}
+          {effectiveView.code && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "size-8 rounded-xl p-0",
+                isCodeViewerOpen && "bg-accent text-accent-foreground",
+              )}
+              onClick={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+              title="View Code"
+            >
+              <Icon
+                name="code"
+                size={20}
+                className={
+                  isCodeViewerOpen ? "text-foreground" : "text-muted-foreground"
+                }
+              />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Code Viewer Section - Shows when code button is clicked */}
       {isCodeViewerOpen && effectiveView.code ? (
-        <div className="flex-1 overflow-auto bg-background p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
-              View Code
-            </p>
-            {isDirty && (
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetCode}
-                  className="h-7 px-2 text-xs"
-                >
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={handleSaveCode}
-                  className="h-7 px-3 text-xs gap-1"
-                  disabled={updateViewMutation.isPending}
-                >
-                  <Icon name="check" size={14} />
-                  {updateViewMutation.isPending ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <Textarea
-              value={currentCode}
-              onChange={handleCodeChange}
-              className="font-mono text-xs min-h-[calc(100vh-200px)] resize-none overflow-auto"
-              spellCheck={false}
-              placeholder="Export a React component..."
-            />
-          </div>
+        <div className="flex-1 overflow-hidden w-full">
+          <CodeMirror
+            value={currentCode}
+            onChange={handleCodeChange}
+            extensions={[javascript({ jsx: true, typescript: true })]}
+            theme={oneDark}
+            height="100%"
+            className="h-full w-full text-sm"
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLineGutter: true,
+              highlightSpecialChars: true,
+              foldGutter: true,
+              drawSelection: true,
+              dropCursor: true,
+              allowMultipleSelections: true,
+              indentOnInput: true,
+              syntaxHighlighting: true,
+              bracketMatching: true,
+              closeBrackets: true,
+              autocompletion: true,
+              rectangularSelection: true,
+              crosshairCursor: true,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              closeBracketsKeymap: true,
+              searchKeymap: true,
+              foldKeymap: true,
+              completionKeymap: true,
+              lintKeymap: true,
+            }}
+          />
         </div>
       ) : (
         /* Preview Section - Shows when code viewer is closed */

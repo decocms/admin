@@ -68,9 +68,9 @@ const TreeNode = memo(function TreeNode({
         <div className="w-4 shrink-0" />
         <span className="min-w-0 flex-1 wrap-anywhere">
           {nodeKey && (
-            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
+            <span className="text-[#61afef] shrink-0">{nodeKey}: </span>
           )}
-          <span className="text-[#546E7A]">[Max Depth Reached]</span>
+          <span className="text-[#5c6370]">[Max Depth Reached]</span>
         </span>
       </div>
     );
@@ -86,18 +86,18 @@ const TreeNode = memo(function TreeNode({
         <div className="w-4 shrink-0" />
         <span className="min-w-0 flex-1 wrap-anywhere">
           {nodeKey && (
-            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
+            <span className="text-[#61afef] shrink-0">{nodeKey}: </span>
           )}
           {value === null ? (
-            <span className="text-[#C792EA]">null</span>
+            <span className="text-[#c678dd]">null</span>
           ) : typeof value === "boolean" ? (
-            <span className="text-[#C792EA]">{value.toString()}</span>
+            <span className="text-[#c678dd]">{value.toString()}</span>
           ) : typeof value === "number" ? (
-            <span className="text-[#F78C6C]">{value}</span>
+            <span className="text-[#d19a66]">{value}</span>
           ) : typeof value === "string" ? (
-            <span className="text-[#C3E88D]">{value}</span>
+            <span className="text-[#98c379]">{value}</span>
           ) : (
-            <span className="text-[#EEFFFF]">{String(value)}</span>
+            <span className="text-[#abb2bf]">{String(value)}</span>
           )}
         </span>
       </div>
@@ -119,18 +119,18 @@ const TreeNode = memo(function TreeNode({
         <Icon
           name="chevron_right"
           className={cn(
-            "w-4 h-4 text-[#546E7A] transition-transform shrink-0 mt-0.5",
+            "w-4 h-4 text-[#5c6370] transition-transform shrink-0 mt-0.5",
             isOpen && "rotate-90",
           )}
         />
         <div className="min-w-0 flex-1 wrap-anywhere">
           {nodeKey && (
-            <span className="text-[#82AAFF] shrink-0">{nodeKey}: </span>
+            <span className="text-[#61afef] shrink-0">{nodeKey}: </span>
           )}
-          <span className="text-[#546E7A]">
+          <span className="text-[#5c6370]">
             {valueType}{" "}
             {count !== null && (
-              <span className="text-[#89DDFF]">{`{${count}}`}</span>
+              <span className="text-[#56b6c2]">{`{${count}}`}</span>
             )}
           </span>
         </div>
@@ -150,7 +150,7 @@ function JsonTreeView({ data }: { data: unknown }) {
   return (
     <div
       className="p-4 text-sm overflow-auto rounded-lg h-full"
-      style={{ background: "#263238" }}
+      style={{ background: "#282c34" }}
     >
       <TreeNode value={data} level={0} />
     </div>
@@ -244,7 +244,7 @@ export function JsonViewer({
                   "p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0",
                   isFullHeight && "h-full",
                 )}
-                style={{ background: "#263238", color: "#EEFFFF" }}
+                style={{ background: "#282c34", color: "#abb2bf" }}
               >
                 <code className="select-text cursor-auto">
                   {jsonString || "Loading..."}
@@ -259,7 +259,7 @@ export function JsonViewer({
                     "p-4 text-xs whitespace-pre-wrap break-all rounded-lg m-0",
                     isFullHeight && "h-full",
                   )}
-                  style={{ background: "#263238", color: "#EEFFFF" }}
+                  style={{ background: "#282c34", color: "#abb2bf" }}
                 >
                   <code className="select-text cursor-auto">
                     {jsonString || "Loading..."}

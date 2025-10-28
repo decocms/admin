@@ -292,20 +292,33 @@ function ResourcesV2ListTab({
     try {
       setMutating(true);
 
-      // Use the data already available from the list item
-      const resourceData = item.data;
+      // For documents and other resources that may have additional data not in the list,
+      // fetch the full resource first
+      const readResult = await callTool(integration.connection, {
+        name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_READ`,
+        arguments: { uri: item.uri },
+      });
 
-      if (!resourceData || typeof resourceData !== "object") {
-        throw new Error("Resource data not available");
+      const fullResourceData = readResult?.structuredContent?.data;
+
+      if (!fullResourceData || typeof fullResourceData !== "object") {
+        throw new Error("Could not fetch full resource data");
       }
 
       // Create a copy with a modified name
-      const originalName = resourceData.name || "Untitled";
+      const originalName =
+        (fullResourceData.name as string) || item.data?.name || "Untitled";
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const duplicatedData = {
-        ...resourceData,
+
+      // Build the duplicated data with required fields guaranteed
+      const duplicatedData: Record<string, unknown> = {
+        ...fullResourceData,
         name: `${originalName} (Copy ${timestamp})`,
+        // Ensure description always has a default value (common required field)
+        description: fullResourceData.description ?? "",
       };
+
+      console.log("duplicatedData", duplicatedData);
 
       // Create the duplicate
       const createResult = await callTool(integration.connection, {

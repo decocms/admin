@@ -297,7 +297,7 @@ function ResourcesV2ListTab({
         arguments: { uri: item.uri },
       });
 
-      const fullResourceData = readResult?.structuredContent?.data;
+      const fullResourceData = (readResult as { structuredContent?: { data?: Record<string, unknown> } })?.structuredContent?.data;
 
       if (!fullResourceData || typeof fullResourceData !== "object") {
         throw new Error("Could not fetch full resource data");
@@ -320,7 +320,7 @@ function ResourcesV2ListTab({
         arguments: { data: duplicatedData },
       });
 
-      const newUri = createResult?.structuredContent?.uri;
+      const newUri = (createResult as { structuredContent?: { uri?: string } })?.structuredContent?.uri;
 
       if (!newUri) {
         throw new Error("No URI returned from create operation");

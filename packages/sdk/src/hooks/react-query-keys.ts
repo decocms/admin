@@ -328,17 +328,18 @@ export const KEYS = {
     "schema",
   ],
   TOOLS_SIMPLE: () => ["tools"],
-  MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => [
-    "tools",
-    connection.type,
-    // oxlint-disable-next-line no-explicit-any
-    (connection as any).url ||
-      // oxlint-disable-next-line no-explicit-any
-      (connection as any).tenant ||
-      // oxlint-disable-next-line no-explicit-any
-      (connection as any).name,
-    ignoreCache,
-  ],
+  MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => {
+    const identifier =
+      "url" in connection
+        ? connection.url
+        : "tenant" in connection
+          ? connection.tenant
+          : "name" in connection
+            ? connection.name
+            : "";
+
+    return ["tools", connection.type, identifier, ignoreCache];
+  },
   OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
   WALLET_SIMPLE: () => ["wallet"],
   GITHUB_STARS: () => ["github-stars"],

@@ -41,7 +41,10 @@ export const useLazyTeamMembers = (
   }, []);
 
   const query = useQuery({
-    queryKey: KEYS.TEAM_MEMBERS_WITH_ACTIVITY(teamId ?? -1, withActivity),
+    queryKey: KEYS.TEAM_MEMBERS_WITH_ACTIVITY(
+      teamId ?? -1,
+      withActivity ?? false,
+    ),
     queryFn: ({ signal }): Promise<TeamMembers> => {
       if (teamId === null) {
         return Promise.resolve({ members: [], invites: [] });

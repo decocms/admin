@@ -9,7 +9,7 @@ import {
   WorkflowDefinition,
   WorkflowDefinitionSchema,
 } from "../mcp/workflows/schemas.ts";
-import { resourceKeys } from "./query-keys.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for workflow
@@ -153,7 +153,7 @@ export const useWorkflow = (workflowUri: string) => {
   const { locator } = useSDK();
 
   const query = useQuery({
-    queryKey: resourceKeys.workflow(locator, workflowUri),
+    queryKey: KEYS.WORKFLOW_BY_URI(locator, workflowUri),
     queryFn: ({ signal }) => getWorkflowByUri(locator, workflowUri, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,

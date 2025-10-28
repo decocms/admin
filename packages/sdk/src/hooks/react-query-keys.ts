@@ -200,6 +200,59 @@ export const KEYS = {
     "documents-for-mentions",
     locator,
   ],
+  TOOL: (locator: ProjectLocator, uri: string) => ["tool", locator, uri],
+  DOCUMENT: (locator: ProjectLocator, uri: string) => [
+    "document",
+    locator,
+    uri,
+  ],
+  WORKFLOW_BY_URI: (locator: ProjectLocator, uri: string) => [
+    "workflow-by-uri-v2",
+    locator,
+    uri,
+  ],
+  VIEW: (locator: ProjectLocator, uri: string) => ["view", locator, uri],
+  TOOLS_LIST: (locator: ProjectLocator, integrationId: string) => [
+    "resources-v2-list",
+    locator,
+    integrationId,
+    "tool",
+  ],
+  DOCUMENTS_LIST: (locator: ProjectLocator, integrationId: string) => [
+    "resources-v2-list",
+    locator,
+    integrationId,
+    "document",
+  ],
+  WORKFLOWS_LIST: (locator: ProjectLocator, integrationId: string) => [
+    "resources-v2-list",
+    locator,
+    integrationId,
+    "workflow",
+  ],
+  VIEWS_LIST: (locator: ProjectLocator, integrationId: string) => [
+    "resources-v2-list",
+    locator,
+    integrationId,
+    "view",
+  ],
+  DOCUMENTS_SEARCH: (
+    locator: ProjectLocator,
+    term?: string,
+    page?: number,
+    pageSize?: number,
+  ) => ["documents", locator, term, page, pageSize],
+  WORKFLOW_RUNS_ALL: (locator: ProjectLocator) => ["workflow-runs", locator],
+  RECENT_WORKFLOW_RUNS: (
+    locator: ProjectLocator,
+    page?: number,
+    perPage?: number,
+  ) => ["recent-workflow-runs", locator, page, perPage],
+  RECENT_WORKFLOW_RUNS_ALL: (locator: ProjectLocator) => [
+    "recent-workflow-runs",
+    locator,
+  ],
+  WORKFLOW_RUN_READ: (runUri: string) => ["workflow-run-read", runUri],
 
   // ============================================================================
   // ORG-SCOPED KEYS
@@ -214,6 +267,13 @@ export const KEYS = {
     withActivity,
   ],
   TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
+  TEAM_ROLE: (teamId: number, roleId: number) => [
+    "roles",
+    "team",
+    teamId,
+    "role",
+    roleId,
+  ],
   ORG_THEME: (slug: string) => ["org-theme", slug],
   TEAM_THEME: (slug: string) => ["team-theme", slug],
 
@@ -266,3 +326,11 @@ export const KEYS = {
   WALLET_SIMPLE: () => ["wallet"],
   GITHUB_STARS: () => ["github-stars"],
 };
+
+/**
+ * Utility to extract integration ID from a resource URI
+ * @example parseIntegrationId("rsc://i:tools-management/tool/my-tool") => "i:tools-management"
+ */
+export function parseIntegrationId(uri: string): string {
+  return uri.split("/")[2];
+}

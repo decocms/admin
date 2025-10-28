@@ -33,7 +33,6 @@ export * from "./hooks/mcp.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/models.ts";
 export * from "./hooks/prompts.ts";
-export * from "./hooks/query-keys.ts";
 export * from "./hooks/registry.ts";
 export * from "./hooks/roles.ts";
 export {

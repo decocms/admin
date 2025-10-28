@@ -237,7 +237,6 @@ async function listToolsAndSortByName(
   },
   c: AppContext,
 ) {
-  console.log("listing tools for connection", connection);
   let result;
   if (appName) {
     const app = await getRegistryApp.handler({

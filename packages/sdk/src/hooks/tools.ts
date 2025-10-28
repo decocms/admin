@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import { ProjectLocator } from "../locator.ts";
+import { KEYS } from "./react-query-keys.ts";
 export interface MCPTool {
   name: string;
   description?: string;
@@ -61,17 +62,7 @@ export const callTool = (
 export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
   const response = useQuery({
     retry: false,
-    queryKey: [
-      "tools",
-      connection.type,
-      // oxlint-disable-next-line no-explicit-any
-      (connection as any).url ||
-        // oxlint-disable-next-line no-explicit-any
-        (connection as any).tenant ||
-        // oxlint-disable-next-line no-explicit-any
-        (connection as any).name,
-      ignoreCache,
-    ],
+    queryKey: KEYS.MCP_TOOLS(connection, ignoreCache),
     queryFn: ({ signal }) => listTools(connection, { signal }, ignoreCache),
   });
 

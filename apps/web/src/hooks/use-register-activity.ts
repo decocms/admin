@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { registerProjectActivity } from "@deco/sdk";
+import { KEYS, registerProjectActivity } from "@deco/sdk";
 
 export const useRegisterActivity = (org?: string, project?: string) => {
   const client = useQueryClient();
@@ -9,7 +9,7 @@ export const useRegisterActivity = (org?: string, project?: string) => {
     if (!org || !project) return;
     registerProjectActivity(org, project)
       .then(() => {
-        client.invalidateQueries({ queryKey: ["recent-projects"] });
+        client.invalidateQueries({ queryKey: KEYS.RECENT_PROJECTS() });
       })
       .catch((err) => {
         console.error("Failed to register project activity", err);

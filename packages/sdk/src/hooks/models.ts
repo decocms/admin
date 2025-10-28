@@ -18,7 +18,7 @@ import type {
   ListModelsInput,
   UpdateModelInput,
 } from "../mcp/models/api.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export type {

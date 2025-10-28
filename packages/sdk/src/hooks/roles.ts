@@ -6,14 +6,7 @@ import {
   updateTeamRole,
 } from "../crud/roles.ts";
 import type { GetTeamRoleParams, TeamRole } from "../crud/roles.ts";
-
-// Query keys
-export const ROLE_KEYS = {
-  all: ["roles"] as const,
-  team: (teamId: number) => [...ROLE_KEYS.all, "team", teamId] as const,
-  role: (teamId: number, roleId: number) =>
-    [...ROLE_KEYS.team(teamId), "role", roleId] as const,
-} as const;
+import { KEYS } from "./react-query-keys.ts";
 
 /**
  * Hook to get a specific team role
@@ -21,7 +14,7 @@ export const ROLE_KEYS = {
 export function useTeamRole(params: GetTeamRoleParams | null) {
   return useQuery({
     queryKey: params
-      ? ROLE_KEYS.role(params.teamId, params.roleId)
+      ? KEYS.ORG_ROLE(params.teamId, params.roleId)
       : ["roles", "null"],
     queryFn: (): Promise<TeamRole | null> =>
       params ? getTeamRole(params) : Promise.resolve(null),
@@ -41,14 +34,11 @@ export function useCreateTeamRole() {
     onSuccess: (data) => {
       // Invalidate and refetch team roles
       queryClient.invalidateQueries({
-        queryKey: ROLE_KEYS.team(data.team_id || 0),
+        queryKey: KEYS.ORG_ROLES(data.team_id || 0),
       });
 
       // Set the new role in cache
-      queryClient.setQueryData(
-        ROLE_KEYS.role(data.team_id || 0, data.id),
-        data,
-      );
+      queryClient.setQueryData(KEYS.ORG_ROLE(data.team_id || 0, data.id), data);
     },
   });
 }
@@ -64,12 +54,12 @@ export function useUpdateTeamRole() {
     onSuccess: (data, variables) => {
       // Invalidate and refetch team roles
       queryClient.invalidateQueries({
-        queryKey: ROLE_KEYS.team(variables.teamId),
+        queryKey: KEYS.ORG_ROLES(variables.teamId),
       });
 
       // Update the specific role in cache
       queryClient.setQueryData(
-        ROLE_KEYS.role(variables.teamId, variables.roleId),
+        KEYS.ORG_ROLE(variables.teamId, variables.roleId),
         data,
       );
     },
@@ -87,12 +77,12 @@ export function useDeleteTeamRole() {
     onSuccess: (_, variables) => {
       // Invalidate and refetch team roles
       queryClient.invalidateQueries({
-        queryKey: ROLE_KEYS.team(variables.teamId),
+        queryKey: KEYS.ORG_ROLES(variables.teamId),
       });
 
       // Remove the deleted role from cache
       queryClient.removeQueries({
-        queryKey: ROLE_KEYS.role(variables.teamId, variables.roleId),
+        queryKey: KEYS.ORG_ROLE(variables.teamId, variables.roleId),
       });
     },
   });

@@ -4,7 +4,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 
 export const useProfile = () => {
   return useSuspenseQuery({

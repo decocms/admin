@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { KEYS } from "@deco/sdk";
 
 const GITHUB_REPO = "deco-cx/chat";
 
@@ -13,7 +14,7 @@ async function fetchGitHubStars() {
 
 export function useGitHubStars() {
   return useQuery({
-    queryKey: ["github-stars"],
+    queryKey: KEYS.GITHUB_STARS(),
     queryFn: fetchGitHubStars,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

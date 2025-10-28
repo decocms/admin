@@ -6,7 +6,7 @@ import {
   getWalletAccount,
   getWorkspacePlan,
 } from "../crud/wallet.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 

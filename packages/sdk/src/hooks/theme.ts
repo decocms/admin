@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateOrgTheme } from "../crud/theme.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 import { Locator } from "../locator.ts";
 import type { Theme } from "@deco/sdk";

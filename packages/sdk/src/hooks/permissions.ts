@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 import { getRegistryApp } from "../crud/registry.ts";
 
@@ -38,11 +38,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     isLoading: isWorkspaceLoading,
     error: workspaceError,
   } = useQuery({
-    queryKey: [
-      ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
-      "permission-descriptions",
-      "workspace",
-    ],
+    queryKey: KEYS.WORKSPACE_PERMISSION_DESCRIPTIONS(locator),
     queryFn: async () => {
       // Get tools from workspace management integration (which contains most MCP tools)
       const result = await MCPClient.INTEGRATIONS_LIST_TOOLS({
@@ -68,7 +64,7 @@ export function usePermissionDescriptions(scopes: AppScope[]): {
     isLoading: isRegistryLoading,
     error: registryError,
   } = useQuery({
-    queryKey: ["registry-apps", uniqueApps],
+    queryKey: KEYS.REGISTRY_APPS(uniqueApps),
     queryFn: async () => {
       const results = await Promise.all(
         uniqueApps.map(async (appName) => {

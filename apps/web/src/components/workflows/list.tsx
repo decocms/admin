@@ -1,4 +1,4 @@
-import { useWorkflowRuns, useSDK, workflowExecutionKeys } from "@deco/sdk";
+import { KEYS, useSDK, useWorkflowRuns } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -135,10 +135,10 @@ function WorkflowRunsContent({
         );
 
         queryClient.invalidateQueries({
-          queryKey: workflowExecutionKeys.allRuns(locator),
+          queryKey: KEYS.WORKFLOW_RUNS_ALL(locator),
         });
         queryClient.invalidateQueries({
-          queryKey: workflowExecutionKeys.allRecentRuns(locator),
+          queryKey: KEYS.RECENT_WORKFLOW_RUNS_ALL(locator),
         });
       },
       [locator, queryClient],

@@ -19,7 +19,7 @@ import {
   updateMemberRole,
 } from "../crud/members.ts";
 import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useOrganizations } from "./teams.ts";
 import { type User, useSDK } from "../index.ts";
 
@@ -43,7 +43,7 @@ export const useTeamMembers = (
   { withActivity }: { withActivity?: boolean } = { withActivity: false },
 ) => {
   return useSuspenseQuery({
-    queryKey: KEYS.TEAM_MEMBERS(teamId ?? -1),
+    queryKey: KEYS.ORG_MEMBERS(teamId ?? -1),
     queryFn: ({ signal }): Promise<TeamMembers> => {
       if (teamId === null) {
         return Promise.resolve({ members: [], invites: [] });
@@ -72,7 +72,7 @@ export const useTeamMembersBySlug = (currentTeamSlug: string | null) => {
  */
 export const useTeamRoles = (teamId: number | null) => {
   return useSuspenseQuery({
-    queryKey: KEYS.TEAM_ROLES(teamId ?? -1),
+    queryKey: KEYS.ORG_ROLES(teamId ?? -1),
     queryFn: ({ signal }) =>
       typeof teamId === "number" ? getTeamRoles(teamId, signal) : [],
   });
@@ -100,7 +100,7 @@ export const useAcceptInvite = () => {
     mutationFn: (inviteId: string) => acceptInvite(inviteId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.MY_INVITES() });
-      queryClient.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      queryClient.invalidateQueries({ queryKey: KEYS.ORGANIZATIONS() });
     },
   });
 };
@@ -120,7 +120,7 @@ export const useRejectInvite = () => {
 
       variables.teamId !== undefined &&
         queryClient.invalidateQueries({
-          queryKey: KEYS.TEAM_MEMBERS(variables.teamId ?? -1),
+          queryKey: KEYS.ORG_MEMBERS(variables.teamId ?? -1),
         });
     },
   });
@@ -146,7 +146,7 @@ export const useInviteTeamMember = () => {
       }>;
     }) => inviteTeamMembers(teamId, invitees, locator),
     onSuccess: (_, { teamId }) => {
-      const membersKey = KEYS.TEAM_MEMBERS(teamId);
+      const membersKey = KEYS.ORG_MEMBERS(teamId);
       queryClient.invalidateQueries({ queryKey: membersKey });
     },
   });
@@ -163,7 +163,7 @@ export const useRemoveTeamMember = () => {
     mutationFn: ({ teamId, memberId }: { teamId: number; memberId: number }) =>
       removeTeamMember(teamId, memberId),
     onSuccess: (_, { teamId, memberId }) => {
-      const membersKey = KEYS.TEAM_MEMBERS(teamId);
+      const membersKey = KEYS.ORG_MEMBERS(teamId);
 
       queryClient.cancelQueries({ queryKey: membersKey });
       queryClient.setQueryData<{ members: Member[] }>(membersKey, (old) => ({
@@ -203,7 +203,7 @@ export const useUpdateMemberRole = () => {
       action: "grant" | "revoke";
     }) => updateMemberRole(teamId, userId, roleId, action),
     onSuccess: (_, { teamId, userId, roleId, action, roleName }) => {
-      const membersKey = KEYS.TEAM_MEMBERS(teamId);
+      const membersKey = KEYS.ORG_MEMBERS(teamId);
       const membersData = queryClient.getQueryData<TeamMembers>(membersKey);
 
       if (!membersData) return;

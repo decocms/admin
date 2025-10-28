@@ -15,12 +15,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import { DocumentDefinitionSchema } from "../mcp/documents/schemas.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
-import {
-  documentSearchKeys,
-  parseIntegrationId,
-  resourceKeys,
-  resourceListKeys,
-} from "./query-keys.ts";
+import { KEYS, parseIntegrationId } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 document names for documents
@@ -127,7 +122,7 @@ export function useDocumentByUriV2(uri: string) {
   }
 
   const query = useQuery({
-    queryKey: resourceKeys.document(locator, uri),
+    queryKey: KEYS.DOCUMENT(locator, uri),
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
@@ -138,14 +133,14 @@ export function useDocumentByUriV2(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific document query
         queryClient.invalidateQueries({
-          queryKey: resourceKeys.document(locator, uri),
+          queryKey: KEYS.DOCUMENT(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the document list
         const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.documents(locator, integrationId),
+          queryKey: KEYS.DOCUMENTS_LIST(locator, integrationId),
           refetchType: "all",
         });
       }
@@ -166,7 +161,7 @@ export function useDocumentSuspense(uri: string) {
   }
 
   const query = useSuspenseQuery({
-    queryKey: resourceKeys.document(locator, uri),
+    queryKey: KEYS.DOCUMENT(locator, uri),
     queryFn: ({ signal }) => getDocumentByUri(locator, uri, signal),
     retry: false,
   });
@@ -177,14 +172,14 @@ export function useDocumentSuspense(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific document query
         queryClient.invalidateQueries({
-          queryKey: resourceKeys.document(locator, uri),
+          queryKey: KEYS.DOCUMENT(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the document list
         const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.documents(locator, integrationId),
+          queryKey: KEYS.DOCUMENTS_LIST(locator, integrationId),
           refetchType: "all",
         });
       }
@@ -281,7 +276,7 @@ export function useDocuments(input?: {
   }
 
   return useQuery({
-    queryKey: documentSearchKeys.search(
+    queryKey: KEYS.DOCUMENTS_SEARCH(
       locator,
       input?.term,
       input?.page,

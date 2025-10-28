@@ -15,11 +15,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { ProjectLocator } from "../locator.ts";
 import type { ReadOutput } from "../mcp/resources-v2/schemas.ts";
 import { ToolDefinitionSchema } from "../mcp/tools/schemas.ts";
-import {
-  parseIntegrationId,
-  resourceKeys,
-  resourceListKeys,
-} from "./query-keys.ts";
+import { KEYS, parseIntegrationId } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 // Resources V2 tool names for tools
@@ -136,7 +132,7 @@ export function useTool(uri: string) {
   }
 
   const toolQuery = useQuery({
-    queryKey: resourceKeys.tool(locator, uri),
+    queryKey: KEYS.TOOL(locator, uri),
     queryFn: ({ signal }) => getToolByUri(locator, uri, signal),
     retry: false,
   });
@@ -147,14 +143,14 @@ export function useTool(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific tool query
         queryClient.invalidateQueries({
-          queryKey: resourceKeys.tool(locator, uri),
+          queryKey: KEYS.TOOL(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the tool list
         const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.tools(locator, integrationId),
+          queryKey: KEYS.TOOLS_LIST(locator, integrationId),
           refetchType: "all",
         });
       }
@@ -175,7 +171,7 @@ export function useToolSuspense(uri: string) {
   }
 
   const suspenseToolQuery = useSuspenseQuery({
-    queryKey: resourceKeys.tool(locator, uri),
+    queryKey: KEYS.TOOL(locator, uri),
     queryFn: ({ signal }) => getToolByUri(locator, uri, signal),
     retry: false,
   });
@@ -186,14 +182,14 @@ export function useToolSuspense(uri: string) {
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific tool query
         queryClient.invalidateQueries({
-          queryKey: resourceKeys.tool(locator, uri),
+          queryKey: KEYS.TOOL(locator, uri),
           refetchType: "all",
         });
 
         // Also invalidate the tool list
         const integrationId = parseIntegrationId(uri);
         queryClient.invalidateQueries({
-          queryKey: resourceListKeys.tools(locator, integrationId),
+          queryKey: KEYS.TOOLS_LIST(locator, integrationId),
           refetchType: "all",
         });
       }

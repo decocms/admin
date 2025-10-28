@@ -30,7 +30,7 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { useQueryClient } from "@tanstack/react-query";
-import { resourceKeys } from "@deco/sdk";
+import { KEYS } from "@deco/sdk";
 import { useWorkflowSync } from "./hooks.ts";
 import { WorkflowStepsList } from "./steps/list.tsx";
 import { ResetWorkflowButton } from "./reset-workflow-button.tsx";
@@ -198,7 +198,7 @@ export const Canvas = memo(function Canvas() {
 
     startTransition(() => {
       queryClient.invalidateQueries({
-        queryKey: resourceKeys.workflow(locator, resourceUri),
+        queryKey: KEYS.WORKFLOW_BY_URI(locator, resourceUri),
       });
     });
   }, [locator, resourceUri, queryClient]);

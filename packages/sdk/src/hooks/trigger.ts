@@ -18,7 +18,7 @@ import type {
   ListTriggersOutput,
   TriggerOutput,
 } from "../models/trigger.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export function useTrigger(

@@ -17,7 +17,7 @@ import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {
@@ -78,7 +78,7 @@ export const useUpdateIntegration = ({
           : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
       );
 
-      client.invalidateQueries({ queryKey: ["tools"] });
+      client.invalidateQueries({ queryKey: KEYS.TOOLS_SIMPLE() });
 
       onSuccess?.(result);
     },
@@ -191,11 +191,7 @@ export const useMarketplaceIntegrations = (options?: {
   const includeAllUnlisted = options?.includeAllUnlisted ?? false;
 
   return useSuspenseQuery<IntegrationsResult>({
-    queryKey: [
-      "integrations",
-      "marketplace",
-      includeAllUnlisted ? "all" : "public",
-    ],
+    queryKey: KEYS.INTEGRATIONS_MARKETPLACE(includeAllUnlisted),
     queryFn: () =>
       MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({
@@ -320,7 +316,7 @@ export const useMarketplaceAppSchema = (appName?: string) => {
   const canRunQuery = !!appName;
 
   return useQuery({
-    queryKey: ["integrations", "marketplace", appName, "schema"],
+    queryKey: KEYS.INTEGRATION_SCHEMA(appName || ""),
     queryFn: () =>
       canRunQuery
         ? MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({ appName })

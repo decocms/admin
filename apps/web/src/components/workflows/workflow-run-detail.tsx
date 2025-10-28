@@ -1,7 +1,8 @@
 import {
   callTool,
+  KEYS,
+  useSDK,
   useWorkflowByUriV2,
-  workflowExecutionKeys,
   WorkflowRunData,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -70,10 +71,11 @@ function JsonViewerWithTitle({
 
 export function useWorkflowRunQuery(enabled: boolean = false) {
   const { connection, resourceUri } = useResourceRoute();
+  const { locator } = useSDK();
   const runUri = resourceUri;
 
   const runQuery = useQuery({
-    queryKey: workflowExecutionKeys.read(runUri || ""),
+    queryKey: KEYS.WORKFLOW_RUN_READ(locator, runUri || ""),
     enabled: Boolean(connection && runUri && enabled),
     queryFn: async () => {
       if (!connection || !runUri) {

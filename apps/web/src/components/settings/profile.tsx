@@ -15,6 +15,7 @@ import { UserAvatar } from "../common/avatar/user.tsx";
 import { countries } from "@deco/sdk/utils" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
 import { useUser } from "../../hooks/use-user.ts";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 export interface Country {
   code: string;
@@ -100,7 +101,7 @@ export function ProfileSettings({
   const [fullPhone, setFullPhone] = useState(""); // full international number for saving
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [userIdCopied, setUserIdCopied] = useState(false);
+  const { handleCopy, copied: userIdCopied } = useCopy({ timeout: 3000 });
 
   function handleSave() {
     updateProfile.mutate(
@@ -118,9 +119,7 @@ export function ProfileSettings({
 
   function handleCopyUserId() {
     if (user?.id) {
-      navigator.clipboard.writeText(user.id);
-      setUserIdCopied(true);
-      setTimeout(() => setUserIdCopied(false), 3000);
+      handleCopy(user.id);
     }
   }
 

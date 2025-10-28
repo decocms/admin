@@ -1,6 +1,7 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
+import { useCopy } from "../../hooks/use-copy";
 
 export function CodeBlock({
   children,
@@ -9,20 +10,7 @@ export function CodeBlock({
   children: ReactNode;
   className?: string;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    if (typeof children === "string") {
-      navigator.clipboard.writeText(children);
-    } else {
-      // If children is not a string, attempt to convert it to a string
-      const text = String(children);
-      navigator.clipboard.writeText(text);
-    }
-
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
-  };
+  const { handleCopy, copied } = useCopy({ timeout: 3000 });
 
   return (
     <div className="relative group">
@@ -36,7 +24,7 @@ export function CodeBlock({
       </pre>
       <button
         type="button"
-        onClick={handleCopy}
+        onClick={() => handleCopy(String(children))}
         className="absolute top-0 right-0 p-2 cursor-pointer"
         aria-label="Copy to clipboard"
       >

@@ -27,11 +27,11 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 export const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
@@ -48,7 +48,7 @@ function CopyLinkButton({
   className: string;
   link: string;
 }) {
-  const [isCopied, setIsCopied] = useState(false);
+  const { handleCopy, copied } = useCopy();
 
   return (
     <Button
@@ -56,15 +56,10 @@ function CopyLinkButton({
       variant="outline"
       aria-label="Copy link"
       className={className}
-      onClick={() => {
-        navigator.clipboard.writeText(link);
-        setIsCopied(true);
-        setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      }}
+      onClick={() => handleCopy(link)}
+      title={copied ? "Copied" : "Copy link"}
     >
-      <Icon name={isCopied ? "check" : "link"} size={16} />
+      <Icon name={copied ? "check" : "link"} size={16} />
       Copy link
     </Button>
   );

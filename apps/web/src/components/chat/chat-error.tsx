@@ -5,12 +5,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { ExpandableDescription } from "../toolsets/description.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 function getErrorMessage(error: Error) {
   try {
@@ -26,6 +27,7 @@ const WELL_KNOWN_ERROR_MESSAGES = {
 
 export function ChatError() {
   const orgLink = useOrgLink();
+  const { handleCopy, copied } = useCopy();
   const { chat, retry, correlationIdRef } = useAgenticChat();
   const { error } = chat;
   const insufficientFunds = error?.message.includes(
@@ -39,8 +41,6 @@ export function ChatError() {
       });
     }
   }, [insufficientFunds, error]);
-
-  const [copied, setCopied] = useState(false);
 
   if (!error) {
     return null;
@@ -96,11 +96,7 @@ export function ChatError() {
                 <TooltipTrigger asChild>
                   <span
                     className="font-mono select-all cursor-pointer hover:underline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(correlationIdRef.current!);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1200);
-                    }}
+                    onClick={() => handleCopy(correlationIdRef.current!)}
                     onMouseDown={(e) => e.preventDefault()}
                     tabIndex={0}
                     role="button"

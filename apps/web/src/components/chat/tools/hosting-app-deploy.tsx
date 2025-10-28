@@ -12,6 +12,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { useMemo, useState } from "react";
 import { Preview } from "./render-preview.tsx";
+import { useCopy } from "../../../hooks/use-copy.ts";
 
 interface FileArg {
   path: string;
@@ -89,6 +90,8 @@ function KeyValueRow({
 
 function FileViewer({ files }: { files: FileArg[] }) {
   const [active, setActive] = useState<string | null>(null);
+  const { handleCopy, copied } = useCopy();
+
   return (
     <Accordion
       type="single"
@@ -121,14 +124,11 @@ function FileViewer({ files }: { files: FileArg[] }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigator.clipboard.writeText(file.content)}
+                  onClick={() => handleCopy(file.content)}
                   className="h-7 w-7 rounded-full"
-                  title="Copy file contents"
+                  title={copied ? "Copied" : "Copy file contents"}
                 >
-                  <Icon
-                    name="content_copy"
-                    className="text-sm text-muted-foreground"
-                  />
+                  <Icon name={copied ? "check" : "content_copy"} size={16} />
                 </Button>
               </div>
               <Separator />

@@ -3,9 +3,10 @@ import { memo, Suspense, useCallback, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { lazy, useState } from "react";
+import { lazy } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 
@@ -83,8 +84,7 @@ function LazyHighlighterFallback() {
 
 function Table(props: React.HTMLAttributes<HTMLTableElement>) {
   const tableRef = useRef<HTMLTableElement>(null);
-  const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { handleCopy, copied } = useCopy();
 
   const tableToCsv = useCallback((table: HTMLTableElement | null): string => {
     if (!table) return "";
@@ -107,11 +107,8 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
 
   const handleCopyCsv = useCallback(async () => {
     const csv = tableToCsv(tableRef.current);
-    await navigator.clipboard.writeText(csv);
-    setCopied(true);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
-  }, [tableToCsv]);
+    await handleCopy(csv);
+  }, [tableToCsv, handleCopy]);
 
   return (
     <>
@@ -235,16 +232,7 @@ function CodeBlock({
   language: string;
   content: string;
 }) {
-  const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    timeoutRef.current && clearTimeout(timeoutRef.current);
-    // @ts-ignore - setTimeout returns number in browser
-    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
-  };
+  const { handleCopy, copied } = useCopy();
 
   return (
     <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border grid">
@@ -255,7 +243,7 @@ function CodeBlock({
         <Button
           size="icon"
           variant="ghost"
-          onClick={handleCopy}
+          onClick={() => handleCopy(content)}
           aria-label="Copy code"
           className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
         >

@@ -5,29 +5,28 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
-function CopyButton({ value }: { value: unknown }) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy(e: React.MouseEvent) {
-    e.stopPropagation();
-    navigator.clipboard.writeText(
-      typeof value === "string" ? value : JSON.stringify(value, null, 2),
-    );
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  }
+export function CopyButton({ value }: { value: unknown }) {
+  const { handleCopy, copied } = useCopy();
+
   return (
     <Button
       size="icon"
       variant="ghost"
       className="ml-2"
-      onClick={handleCopy}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleCopy(
+          typeof value === "string" ? value : JSON.stringify(value, null, 2),
+        );
+      }}
       title={copied ? "Copied!" : "Copy to clipboard"}
     >
       <Icon name={copied ? "check" : "content_copy"} size={16} />

@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
-export function useCopy() {
+interface UseCopyProps {
+  timeout?: number;
+}
+
+export function useCopy({ timeout = 1200 }: UseCopyProps = {}) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
@@ -9,7 +14,8 @@ export function useCopy() {
     setCopied(true);
     timeoutRef.current && clearTimeout(timeoutRef.current);
     // @ts-ignore - setTimeout returns number in browser
-    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
+    timeoutRef.current = setTimeout(() => setCopied(false), timeout);
+    toast.success("Copied to clipboard");
   };
 
   return {

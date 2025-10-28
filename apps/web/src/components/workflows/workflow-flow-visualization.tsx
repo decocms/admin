@@ -17,7 +17,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -28,6 +27,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
+import { CopyButton } from "./detail.tsx";
 
 // Start Node Component
 function StartNode({ data }: { data: any }) {
@@ -80,30 +80,6 @@ function EndNode({ data }: { data: any }) {
         }}
       />
     </div>
-  );
-}
-
-// Copy Button Component (matches the one in detail.tsx)
-function CopyButton({ value }: { value: unknown }) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy(e: React.MouseEvent) {
-    e.stopPropagation();
-    navigator.clipboard.writeText(
-      typeof value === "string" ? value : JSON.stringify(value, null, 2),
-    );
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  }
-  return (
-    <Button
-      size="icon"
-      variant="ghost"
-      className="ml-2"
-      onClick={handleCopy}
-      title={copied ? "Copied!" : "Copy to clipboard"}
-    >
-      <Icon name={copied ? "check" : "content_copy"} size={16} />
-    </Button>
   );
 }
 

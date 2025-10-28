@@ -44,6 +44,7 @@ import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.
 import { ResourceHeader } from "../resources-v2/resource-header.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -82,15 +83,15 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
 const useCopyLink = (agentId: string) => {
   const { locator } = useSDK();
+  const { handleCopy } = useCopy();
 
   const copyLink = useCallback(() => {
     const link = getPublicChatLink(agentId, locator);
-    navigator.clipboard.writeText(link);
-  }, [agentId, locator]);
+    handleCopy(link);
+  }, [agentId, locator, handleCopy]);
 
   return copyLink;
 };
-
 function Actions({ agent }: { agent: Agent }) {
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const removeAgent = useRemoveAgent();

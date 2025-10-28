@@ -2,13 +2,13 @@ import type { UIMessage } from "@ai-sdk/react";
 import { useFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { FileUIPart, ToolUIPart } from "ai";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -39,6 +39,7 @@ const isToolPart = (part: UIMessage["parts"][number]): part is ToolUIPart => {
 export const ChatMessage = memo(function ChatMessage({
   message,
 }: ChatMessageProps) {
+  const { handleCopy: copyContent } = useCopy();
   const isUser = message.role === "user";
   const createdAt =
     (message.metadata as { createdAt?: string })?.createdAt ?? Date.now();
@@ -75,9 +76,8 @@ export const ChatMessage = memo(function ChatMessage({
       : "content" in message && typeof message.content === "string"
         ? message.content
         : "";
-    await navigator.clipboard.writeText(content);
-    toast("Copied to clipboard");
-  }, [message.parts, message]);
+    await copyContent(content);
+  }, [message.parts, message, copyContent]);
 
   const hasTextContent = useMemo(() => {
     return (
@@ -304,9 +304,9 @@ function TextPreviewCard({
   attachment: MessageAttachment;
   contentType: string;
 }) {
+  const { handleCopy, copied } = useCopy();
   const [text, setText] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,18 +327,6 @@ function TextPreviewCard({
       cancelled = true;
     };
   }, [attachment.url, expanded, text]);
-
-  async function handleCopy() {
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      toast("Copied to clipboard");
-    } catch {
-      // ignore
-    }
-  }
 
   return (
     <div className="relative group p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors w-full max-w-[480px]">
@@ -361,7 +349,11 @@ function TextPreviewCard({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={handleCopy}
+                onClick={() => {
+                  if (text) {
+                    handleCopy(text);
+                  }
+                }}
                 title={copied ? "Copied" : "Copy content"}
               >
                 <Icon name={copied ? "check" : "content_copy"} />

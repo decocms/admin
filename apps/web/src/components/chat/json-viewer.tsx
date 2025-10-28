@@ -3,6 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { lazy, memo, Suspense, useMemo, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 
@@ -171,16 +172,13 @@ export function JsonViewer({
   showControls = true,
   className,
 }: JsonViewerProps) {
+  const { handleCopy, copied } = useCopy();
   const [viewMode, setViewMode] = useState<"code" | "tree">(defaultView);
   const [showButtons, setShowButtons] = useState(false);
 
   const jsonString = useMemo(() => {
     return JSON.stringify(data, null, 2).replace(/"(\w+)":/g, '"$1":');
   }, [data]);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(jsonString);
-  };
 
   const isFullHeight = maxHeight === "100%";
 
@@ -222,15 +220,12 @@ export function JsonViewer({
             size="icon"
             onClick={(e) => {
               e.stopPropagation();
-              handleCopy();
+              handleCopy(jsonString);
             }}
             className="size-8 rounded-none rounded-r-md hover:bg-accent/50 transition-colors"
-            title="Copy JSON"
+            title={copied ? "Copied" : "Copy JSON"}
           >
-            <Icon
-              name="content_copy"
-              className="w-4 h-4 text-muted-foreground"
-            />
+            <Icon name={copied ? "check" : "content_copy"} size={16} />
           </Button>
         </div>
       )}

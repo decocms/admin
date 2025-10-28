@@ -176,7 +176,7 @@ export function useResourceWatch({
 
   // Set up React Query for SSE connection management
   const query = useQuery({
-    queryKey: KEYS.RESOURCE_WATCH(resourceUri, pathFilter),
+    queryKey: KEYS.RESOURCE_WATCH(locator, resourceUri, pathFilter),
     enabled: Boolean(watchUrl && enabled),
     gcTime: 0,
     staleTime: 0,

@@ -2,6 +2,7 @@ import {
   callTool,
   KEYS,
   useIntegration,
+  useSDK,
   useTools,
   AI_APP_PRD_TEMPLATE,
 } from "@deco/sdk";
@@ -79,6 +80,7 @@ function ResourcesV2ListTab({
   onTabChange?: (tabId: string) => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { locator } = useSDK();
   const integration = useIntegration(integrationId ?? "").data;
   const navigateWorkspace = useNavigateWorkspace();
   const queryClient = useQueryClient();
@@ -225,7 +227,12 @@ function ResourcesV2ListTab({
   );
 
   const listQuery = useQuery({
-    queryKey: KEYS.RESOURCES_LIST(integrationId!, resourceName!, deferredQ),
+    queryKey: KEYS.RESOURCES_LIST(
+      locator,
+      integrationId!,
+      resourceName!,
+      deferredQ,
+    ),
     enabled: Boolean(integration && resourceName),
     staleTime: 0, // Always consider data stale so it refetches when invalidated
     refetchOnMount: "always", // Always refetch when component mounts
@@ -274,10 +281,10 @@ function ResourcesV2ListTab({
     onNewEvent: useCallback(
       (_event: WatchEvent) => {
         queryClient.invalidateQueries({
-          queryKey: KEYS.RESOURCES_LIST(integrationId!, resourceName!),
+          queryKey: KEYS.RESOURCES_LIST(locator, integrationId!, resourceName!),
         });
       },
-      [integrationId, resourceName, queryClient],
+      [locator, integrationId, resourceName, queryClient],
     ),
   });
 
@@ -333,7 +340,7 @@ function ResourcesV2ListTab({
       toast.success(`${resourceName || "Resource"} duplicated successfully`);
 
       queryClient.invalidateQueries({
-        queryKey: KEYS.RESOURCES_LIST(integrationId!, resourceName!),
+        queryKey: KEYS.RESOURCES_LIST(locator, integrationId!, resourceName!),
       });
 
       navigateWorkspace(
@@ -629,6 +636,7 @@ function ResourcesV2ListTab({
 
                             queryClient.invalidateQueries({
                               queryKey: KEYS.RESOURCES_LIST(
+                                locator,
                                 integrationId!,
                                 resourceName!,
                               ),
@@ -718,6 +726,7 @@ function ResourcesV2ListTab({
 
                                 queryClient.invalidateQueries({
                                   queryKey: KEYS.RESOURCES_LIST(
+                                    locator,
                                     integrationId!,
                                     resourceName!,
                                   ),
@@ -796,6 +805,7 @@ function ResourcesV2ListTab({
 
                                 queryClient.invalidateQueries({
                                   queryKey: KEYS.RESOURCES_LIST(
+                                    locator,
                                     integrationId!,
                                     resourceName!,
                                   ),
@@ -908,6 +918,7 @@ function ResourcesV2ListTab({
                           // Invalidate list query so it refreshes when user navigates back
                           queryClient.invalidateQueries({
                             queryKey: KEYS.RESOURCES_LIST(
+                              locator,
                               integrationId!,
                               resourceName!,
                             ),

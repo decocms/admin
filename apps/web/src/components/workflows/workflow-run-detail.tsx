@@ -1,4 +1,10 @@
-import { callTool, KEYS, useWorkflowByUriV2, WorkflowRunData } from "@deco/sdk";
+import {
+  callTool,
+  KEYS,
+  useSDK,
+  useWorkflowByUriV2,
+  WorkflowRunData,
+} from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -65,10 +71,11 @@ function JsonViewerWithTitle({
 
 export function useWorkflowRunQuery(enabled: boolean = false) {
   const { connection, resourceUri } = useResourceRoute();
+  const { locator } = useSDK();
   const runUri = resourceUri;
 
   const runQuery = useQuery({
-    queryKey: KEYS.WORKFLOW_RUN_READ(runUri || ""),
+    queryKey: KEYS.WORKFLOW_RUN_READ(locator, runUri || ""),
     enabled: Boolean(connection && runUri && enabled),
     queryFn: async () => {
       if (!connection || !runUri) {

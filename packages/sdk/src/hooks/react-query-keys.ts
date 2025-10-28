@@ -252,12 +252,34 @@ export const KEYS = {
     "recent-workflow-runs",
     locator,
   ],
-  WORKFLOW_RUN_READ: (runUri: string) => ["workflow-run-read", runUri],
-  RESOURCE_WATCH: (resourceUri: string, pathFilter?: string) => [
-    "resource-watch",
-    resourceUri,
-    pathFilter,
+  WORKFLOW_RUN_READ: (locator: ProjectLocator, runUri: string) => [
+    "workflow-run-read",
+    locator,
+    runUri,
   ],
+  RESOURCE_WATCH: (
+    locator: ProjectLocator,
+    resourceUri: string,
+    pathFilter?: string,
+  ) => ["resource-watch", locator, resourceUri, pathFilter],
+  RESOURCES_LIST: (
+    locator: ProjectLocator,
+    integrationId: string,
+    resourceName: string,
+    search?: string,
+  ) => ["resources-v2-list", locator, integrationId, resourceName, search],
+  DECO_RESOURCE_READ: (
+    locator: ProjectLocator,
+    integrationId: string,
+    resourceName: string,
+    uri: string,
+  ) => ["deco-resource-read", locator, integrationId, resourceName, uri],
+  VIEW_RENDER_SINGLE: (
+    locator: ProjectLocator,
+    integrationId: string,
+    uri: string,
+    toolName?: string,
+  ) => ["view-render-single", locator, integrationId, uri, toolName],
 
   // ============================================================================
   // ORG-SCOPED KEYS
@@ -300,21 +322,6 @@ export const KEYS = {
     appName,
     "schema",
   ],
-  RESOURCES_LIST: (
-    integrationId: string,
-    resourceName: string,
-    search?: string,
-  ) => ["resources-v2-list", integrationId, resourceName, search],
-  DECO_RESOURCE_READ: (
-    integrationId: string,
-    resourceName: string,
-    uri: string,
-  ) => ["deco-resource-read", integrationId, resourceName, uri],
-  VIEW_RENDER_SINGLE: (
-    integrationId: string,
-    uri: string,
-    toolName?: string,
-  ) => ["view-render-single", integrationId, uri, toolName],
   TOOLS_SIMPLE: () => ["tools"],
   MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => [
     "tools",

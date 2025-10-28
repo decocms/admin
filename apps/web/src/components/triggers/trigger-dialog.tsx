@@ -6,7 +6,10 @@ import {
   useIntegrations,
   useTools,
   useUpdateTrigger,
+  MCPClient,
+  useSDK,
 } from "@deco/sdk";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -143,6 +146,41 @@ const cronPresets = [
 
 function isValidCron(cron: string) {
   return /^(\S+\s+){4}\S+$/.test(cron);
+}
+
+// Hook for generating cron from natural language using AI
+function useGenerateCronFromNaturalLanguage() {
+  const { locator } = useSDK();
+
+  return useMutation<{ text: string }, Error, { naturalLanguage: string }>({
+    mutationFn: async ({ naturalLanguage }) => {
+      const client = MCPClient.forLocator(locator);
+      const result = await client.AI_GENERATE({
+        messages: [
+          {
+            role: "system",
+            content: `You are a cron expression generator. Convert natural language descriptions into valid cron expressions. 
+              
+Cron format: minute hour day-of-month month day-of-week (all in UTC)
+Examples:
+- "every 5 minutes" -> "*/5 * * * *"
+- "every hour" -> "0 * * * *"
+- "every day at 9am" -> "0 9 * * *"
+- "every Monday at 10am" -> "0 10 * * 1"
+
+Respond ONLY with the cron expression, nothing else. No explanations, no markdown, just the expression.`,
+          },
+          {
+            role: "user",
+            content: naturalLanguage,
+          },
+        ],
+        model: "gpt-4o-mini",
+      });
+
+      return result;
+    },
+  });
 }
 
 function JsonSchemaInput({
@@ -362,6 +400,10 @@ function CronSelectInput({
 }) {
   const [selected, setSelected] = useState(cronPresets[0].value);
   const [custom, setCustom] = useState(selected === "custom" ? value : "");
+  const [naturalLanguage, setNaturalLanguage] = useState("");
+  const [conversionError, setConversionError] = useState<string | null>(null);
+
+  const generateCronMutation = useGenerateCronFromNaturalLanguage();
 
   function handlePresetChange(val: string) {
     setSelected(val);
@@ -387,9 +429,40 @@ function CronSelectInput({
     }
   }
 
+  async function handleConvertNaturalLanguage() {
+    if (!naturalLanguage.trim()) return;
+
+    setConversionError(null);
+
+    try {
+      const result = await generateCronMutation.mutateAsync({
+        naturalLanguage: naturalLanguage.trim(),
+      });
+
+      const cronExp = result.text?.trim() || "";
+
+      if (cronExp && isValidCron(cronExp)) {
+        setCustom(cronExp);
+        setSelected("custom");
+        onChange(cronExp);
+        setNaturalLanguage("");
+      } else {
+        setConversionError(
+          "Could not generate a valid cron expression. Try being more specific.",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to convert natural language to cron:", error);
+      setConversionError(
+        "Failed to convert. Please try again or enter a cron expression manually.",
+      );
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <FormLabel htmlFor="cron-frequency">Frequency *</FormLabel>
+
       <Select value={selected} onValueChange={handlePresetChange}>
         <SelectTrigger id="cron-frequency" className="w-full">
           <SelectValue placeholder="Select frequency" />
@@ -402,15 +475,58 @@ function CronSelectInput({
           ))}
         </SelectContent>
       </Select>
+
       {selected === "custom" && (
-        <Input
-          type="text"
-          placeholder="Ex: */10 * * * *"
-          value={custom}
-          className="rounded-md font-mono"
-          onChange={handleCustomChange}
-          required={required}
-        />
+        <>
+          {/* AI Helper Input */}
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Describe in plain text: e.g., 'every 10 minutes'"
+              value={naturalLanguage}
+              onChange={(e) => {
+                setNaturalLanguage(e.target.value);
+                setConversionError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleConvertNaturalLanguage();
+                }
+              }}
+              className="pr-10 text-xs h-8"
+              disabled={generateCronMutation.isPending}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="absolute right-0 top-0 h-8 w-8 p-0"
+              onClick={handleConvertNaturalLanguage}
+              disabled={
+                generateCronMutation.isPending || !naturalLanguage.trim()
+              }
+            >
+              {generateCronMutation.isPending ? (
+                <Spinner size="xs" />
+              ) : (
+                <Icon name="auto_awesome" className="h-4 w-4 text-primary" />
+              )}
+            </Button>
+          </div>
+          {conversionError && (
+            <div className="text-xs text-destructive">{conversionError}</div>
+          )}
+
+          <Input
+            type="text"
+            placeholder="Ex: */10 * * * *"
+            value={custom}
+            className="rounded-md font-mono"
+            onChange={handleCustomChange}
+            required={required}
+          />
+        </>
       )}
 
       {selected === "custom" && (

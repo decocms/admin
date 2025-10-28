@@ -183,6 +183,16 @@ function ResourcesV2ListTab({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
+                    handleDuplicate(row);
+                  }}
+                  disabled={mutating}
+                >
+                  <Icon name="content_copy" className="w-4 h-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
                     navigateWorkspace(
                       `rsc/${integrationId}/${resourceName}/${encodeURIComponent(row.uri)}`,
                     );
@@ -275,6 +285,66 @@ function ResourcesV2ListTab({
   // Mutations show loading on the button itself, not full-page
   const loading = listQuery.isLoading;
   const error = listQuery.isError ? (listQuery.error as Error).message : null;
+
+  const handleDuplicate = async (item: ResourceListItem) => {
+    if (!integration) return;
+    try {
+      setMutating(true);
+
+      // fetch the full resource first
+      const readResult = await callTool(integration.connection, {
+        name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_READ`,
+        arguments: { uri: item.uri },
+      });
+
+      const fullResourceData = (
+        readResult as { structuredContent?: { data?: Record<string, unknown> } }
+      )?.structuredContent?.data;
+
+      if (!fullResourceData || typeof fullResourceData !== "object") {
+        throw new Error("Could not fetch full resource data");
+      }
+
+      const originalName =
+        (fullResourceData.name as string) || item.data?.name || "Untitled";
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      // Build the duplicated data with required fields guaranteed
+      const duplicatedData: Record<string, unknown> = {
+        ...fullResourceData,
+        name: `${originalName} (Copy ${timestamp})`,
+        // Ensure description always has a default value (common required field)
+        description: fullResourceData.description ?? "",
+      };
+
+      const createResult = await callTool(integration.connection, {
+        name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
+        arguments: { data: duplicatedData },
+      });
+
+      const newUri = (createResult as { structuredContent?: { uri?: string } })
+        ?.structuredContent?.uri;
+
+      if (!newUri) {
+        throw new Error("No URI returned from create operation");
+      }
+
+      toast.success(`${resourceName || "Resource"} duplicated successfully`);
+
+      queryClient.invalidateQueries({
+        queryKey: ["resources-v2-list", integrationId, resourceName],
+      });
+
+      navigateWorkspace(
+        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(newUri)}`,
+      );
+    } catch (error) {
+      console.error(`Failed to duplicate ${resourceName}:`, error);
+      toast.error(`Failed to duplicate ${resourceName}. Please try again.`);
+    } finally {
+      setMutating(false);
+    }
+  };
 
   // Delete handler
   const handleDelete = async (uri: string) => {
@@ -937,6 +1007,19 @@ function ResourcesV2ListTab({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicate(it);
+                                }}
+                                disabled={mutating}
+                              >
+                                <Icon
+                                  name="content_copy"
+                                  className="w-4 h-4 mr-2"
+                                />
+                                Duplicate
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();

@@ -265,11 +265,8 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   return (
     <div className="h-full w-full flex flex-col bg-white">
       {/* Header with code viewer toggle */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-base-border">
-        <div className="flex items-center gap-2">
-          <Icon name="dashboard" size={20} className="text-foreground" />
-          <h2 className="text-sm font-medium">{effectiveView.name}</h2>
-        </div>
+      <div className="flex items-center justify-between px-2 h-10 border-b border-base-border">
+        <h2 className="text-sm font-regular">{effectiveView.name}</h2>
         <div className="flex items-center gap-2">
           {isCodeViewerOpen && isDirty && (
             <>

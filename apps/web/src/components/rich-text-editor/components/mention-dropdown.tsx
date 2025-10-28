@@ -37,6 +37,8 @@ export const MentionDropdown = forwardRef<
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   // Map from renderIndex to original items array index
   const renderToOriginalIndex = useRef<Map<number, number>>(new Map());
+  // Track the total number of rendered items
+  const totalRenderedItems = useRef(0);
   // Track double space timing
   const lastSpaceTimeRef = useRef(0);
 
@@ -62,13 +64,17 @@ export const MentionDropdown = forwardRef<
   };
 
   const upHandler = () => {
-    const newIndex = (selectedIndex + items.length - 1) % items.length;
+    const total = totalRenderedItems.current;
+    if (total === 0) return;
+    const newIndex = (selectedIndex + total - 1) % total;
     setSelectedIndex(newIndex);
     scrollSelectedIntoView(newIndex);
   };
 
   const downHandler = () => {
-    const newIndex = (selectedIndex + 1) % items.length;
+    const total = totalRenderedItems.current;
+    if (total === 0) return;
+    const newIndex = (selectedIndex + 1) % total;
     setSelectedIndex(newIndex);
     scrollSelectedIntoView(newIndex);
   };
@@ -79,9 +85,6 @@ export const MentionDropdown = forwardRef<
 
   useEffect(() => {
     setSelectedIndex(0);
-    // Reset refs array and index mapping when items change
-    itemRefs.current = itemRefs.current.slice(0, items.length);
-    renderToOriginalIndex.current.clear();
     // Reset double space tracking when items change
     lastSpaceTimeRef.current = 0;
   }, [items]);
@@ -147,6 +150,11 @@ export const MentionDropdown = forwardRef<
     );
   }
 
+  // Clear and rebuild the mapping at the start of each render
+  renderToOriginalIndex.current.clear();
+  itemRefs.current = [];
+  let renderIndex = -1;
+
   return (
     <div className="bg-background border border-border rounded-lg shadow-lg min-w-[300px] max-w-[400px] overflow-hidden">
       <ScrollArea
@@ -179,8 +187,6 @@ export const MentionDropdown = forwardRef<
                 groups[pos].indices.push(idx);
               }
             });
-
-            let renderIndex = -1;
 
             return groups.map((group) => (
               <div key={`group-${group.integration.id}`} className="mb-1">
@@ -224,7 +230,7 @@ export const MentionDropdown = forwardRef<
                               url={group.integration.icon}
                               fallback={group.integration.name}
                               size="xs"
-                              className="flex-shrink-0 w-4 h-4"
+                              className="shrink-0 w-4 h-4"
                             />
                           )}
                           <span className="text-xs font-semibold truncate">
@@ -248,7 +254,7 @@ export const MentionDropdown = forwardRef<
                               url={group.integration.icon}
                               fallback={group.integration.name}
                               size="xs"
-                              className="flex-shrink-0 w-4 h-4"
+                              className="shrink-0 w-4 h-4"
                             />
                           )}
                           <span className="text-xs font-semibold truncate">
@@ -320,6 +326,11 @@ export const MentionDropdown = forwardRef<
         </div>
         <ScrollBar orientation="vertical" />
       </ScrollArea>
+      {/* Update total rendered items after render */}
+      {(() => {
+        totalRenderedItems.current = renderIndex + 1;
+        return null;
+      })()}
     </div>
   );
 });

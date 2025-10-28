@@ -178,7 +178,7 @@ const markdownComponents = {
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre
       {...props}
-      className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded"
+      className="flex w-full min-w-0 my-4 bg-muted rounded overflow-hidden"
     >
       <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
         {props.children}
@@ -235,7 +235,7 @@ function CodeBlock({
   const { handleCopy, copied } = useCopy();
 
   return (
-    <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border grid">
+    <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border grid min-w-0">
       <div className="flex items-center justify-between p-1 pl-4 bg-muted border-b border-border">
         <span className="text-xs font-mono uppercase text-muted-foreground tracking-widest select-none">
           {language ? language : "text"}

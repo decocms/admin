@@ -170,7 +170,11 @@ export function ProjectLayout() {
                             {decopilotOpen && !isAgentDetailPage && (
                               <>
                                 <ResizableHandle withHandle />
-                                <ResizablePanel defaultSize={30}>
+                                <ResizablePanel
+                                  defaultSize={30}
+                                  minSize={20}
+                                  className="min-w-0"
+                                >
                                   <Suspense fallback={<MainChatSkeleton />}>
                                     <DecopilotChat />
                                   </Suspense>
@@ -351,22 +355,22 @@ export function DefaultBreadcrumb({
               if (!hasLink) {
                 return (
                   <Fragment key={`${index}`}>
-                    <BreadcrumbItem className="flex-shrink-0">
+                    <BreadcrumbItem className="shrink-0">
                       <span className="truncate">{item.label}</span>
                     </BreadcrumbItem>
-                    <BreadcrumbSeparator className="flex-shrink-0" />
+                    <BreadcrumbSeparator className="shrink-0" />
                   </Fragment>
                 );
               }
 
               return (
                 <Fragment key={`${item.link}-${index}`}>
-                  <BreadcrumbItem className="flex-shrink-0">
+                  <BreadcrumbItem className="shrink-0">
                     <BreadcrumbLink asChild href={link} className="truncate">
                       <Link to={link}>{item.label}</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator className="flex-shrink-0 " />
+                  <BreadcrumbSeparator className="shrink-0 " />
                 </Fragment>
               );
             })

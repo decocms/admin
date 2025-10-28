@@ -4,6 +4,10 @@ import type { ProjectLocator } from "../index.ts";
 import type { Binder, MCPConnection } from "../models/mcp.ts";
 
 export const KEYS = {
+  // ============================================================================
+  // PROJECT-SCOPED KEYS
+  // These queries require a ProjectLocator (org/project context)
+  // ============================================================================
   FILE: (locator: ProjectLocator, path: string) => ["file", locator, path],
   AGENT: (locator: ProjectLocator, agentId?: string) => [
     "agent",
@@ -24,6 +28,11 @@ export const KEYS = {
     locator,
     integrationId,
     ...(binder ? [binder] : []),
+  ],
+  INTEGRATION_API_KEY: (locator: ProjectLocator, integrationId: string) => [
+    "integration-api-key",
+    locator,
+    integrationId,
   ],
   CHANNELS: (locator: ProjectLocator, channelId?: string) => [
     "channels",
@@ -49,6 +58,21 @@ export const KEYS = {
       options.limit,
     ];
   },
+  THREAD: (locator: ProjectLocator, threadId: string) => [
+    "thread",
+    locator,
+    threadId,
+  ],
+  THREAD_MESSAGES: (locator: ProjectLocator, threadId: string) => [
+    "thread-messages",
+    locator,
+    threadId,
+  ],
+  THREAD_TOOLS: (locator: ProjectLocator, threadId: string) => [
+    "thread-tools",
+    locator,
+    threadId,
+  ],
   TOOLS: (locator: ProjectLocator, agentId: string, threadId: string) => [
     "tools",
     locator,
@@ -64,20 +88,12 @@ export const KEYS = {
     options.limit,
     options.resourceId,
   ],
-  TEAMS: () => ["teams"],
-  PROJECTS: (org: string) => ["projects", org],
-  RECENT_PROJECTS: () => ["recent-projects"],
-  ORGANIZATION: (slug: string) => ["team", slug],
-  ORG_THEME: (slug: string) => ["org-theme", slug],
   TEAM_VIEWS: (locator: ProjectLocator, integrationId: string) => [
     "team-views",
     locator,
     integrationId,
   ],
   WORKSPACE_VIEWS: (locator: ProjectLocator) => ["workspace-views", locator],
-  TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
-  TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
-  MY_INVITES: () => ["my_invites"],
   MODELS: (locator: ProjectLocator, options?: ListModelsInput) => [
     "models",
     locator,
@@ -95,22 +111,6 @@ export const KEYS = {
     locator,
     triggerId,
   ],
-  THREAD: (locator: ProjectLocator, threadId: string) => [
-    "thread",
-    locator,
-    threadId,
-  ],
-  THREAD_MESSAGES: (locator: ProjectLocator, threadId: string) => [
-    "thread-messages",
-    locator,
-    threadId,
-  ],
-  THREAD_TOOLS: (locator: ProjectLocator, threadId: string) => [
-    "thread-tools",
-    locator,
-    threadId,
-  ],
-  PROFILE: () => ["profile"],
   PROMPTS: (
     locator: ProjectLocator,
     ids?: string[],
@@ -156,12 +156,12 @@ export const KEYS = {
     locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
   ) => ["wallet-contracts-commits", locator, range],
-  INTEGRATION_API_KEY: (locator: ProjectLocator, integrationId: string) => [
-    "integration-api-key",
-    locator,
-    integrationId,
-  ],
   WORKSPACE_PLAN: (locator: ProjectLocator) => ["workspace-plan", locator],
+  WORKSPACE_PERMISSION_DESCRIPTIONS: (locator: ProjectLocator) => [
+    ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
+    "permission-descriptions",
+    "workspace",
+  ],
   WORKFLOWS: (locator: ProjectLocator, page?: number, per_page?: number) => [
     "workflows",
     locator,
@@ -184,31 +184,6 @@ export const KEYS = {
     workflowName: string,
     instanceId: string,
   ) => ["workflow-status", locator, workflowName, instanceId],
-  KNOWLEDGE_FILES: (locator: ProjectLocator, connectionUrl: string) => [
-    "knowledge_files",
-    locator,
-    connectionUrl,
-  ],
-  GITHUB_STARS: () => ["github-stars"],
-  INTEGRATIONS_MARKETPLACE: () => ["integrations", "marketplace"],
-  INTEGRATION_SCHEMA: (appName: string) => [
-    "integrations",
-    "marketplace",
-    appName,
-    "schema",
-  ],
-  TEAM_THEME: (slug: string) => ["team-theme", slug],
-  RESOURCES_LIST: (
-    integrationId: string,
-    resourceName: string,
-    search?: string,
-  ) => ["resources-v2-list", integrationId, resourceName, search],
-  REGISTRY_APP: (appName: string) => ["registry-app", appName],
-  REGISTRY_APPS: (apps: string[]) => ["registry-apps", apps],
-  DOCUMENTS_FOR_MENTIONS: (locator: ProjectLocator) => [
-    "documents-for-mentions",
-    locator,
-  ],
   WORKFLOW_NAMES: (locator: ProjectLocator) => ["workflow-names", locator],
   WORKFLOW_RUNS: (
     locator: ProjectLocator,
@@ -216,30 +191,66 @@ export const KEYS = {
     page?: number,
     perPage?: number,
   ) => ["workflow-runs", locator, workflowName, page, perPage],
-  OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
+  KNOWLEDGE_FILES: (locator: ProjectLocator, connectionUrl: string) => [
+    "knowledge_files",
+    locator,
+    connectionUrl,
+  ],
+  DOCUMENTS_FOR_MENTIONS: (locator: ProjectLocator) => [
+    "documents-for-mentions",
+    locator,
+  ],
+
+  // ============================================================================
+  // ORG-SCOPED KEYS
+  // These queries require an organization/team identifier
+  // ============================================================================
+  PROJECTS: (org: string) => ["projects", org],
+  ORGANIZATION: (slug: string) => ["team", slug],
+  TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
   TEAM_MEMBERS_WITH_ACTIVITY: (teamId: number, withActivity: boolean) => [
     "team-members",
     teamId,
     withActivity,
   ],
-  WALLET_SIMPLE: () => ["wallet"],
-  TOOLS_SIMPLE: () => ["tools"],
+  TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
+  ORG_THEME: (slug: string) => ["org-theme", slug],
+  TEAM_THEME: (slug: string) => ["team-theme", slug],
+
+  // ============================================================================
+  // ROOT-SCOPED KEYS
+  // These queries don't require project or org context
+  // ============================================================================
+  PROFILE: () => ["profile"],
+  MY_INVITES: () => ["my_invites"],
+  TEAMS: () => ["teams"],
+  RECENT_PROJECTS: () => ["recent-projects"],
   PROJECTS_SIMPLE: () => ["projects"],
+  REGISTRY_APP: (appName: string) => ["registry-app", appName],
+  REGISTRY_APPS: (apps: string[]) => ["registry-apps", apps],
+  INTEGRATIONS_MARKETPLACE: () => ["integrations", "marketplace"],
+  INTEGRATION_SCHEMA: (appName: string) => [
+    "integrations",
+    "marketplace",
+    appName,
+    "schema",
+  ],
+  RESOURCES_LIST: (
+    integrationId: string,
+    resourceName: string,
+    search?: string,
+  ) => ["resources-v2-list", integrationId, resourceName, search],
   DECO_RESOURCE_READ: (
     integrationId: string,
     resourceName: string,
     uri: string,
   ) => ["deco-resource-read", integrationId, resourceName, uri],
-  WORKSPACE_PERMISSION_DESCRIPTIONS: (locator: ProjectLocator) => [
-    ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
-    "permission-descriptions",
-    "workspace",
-  ],
   VIEW_RENDER_SINGLE: (
     integrationId: string,
     uri: string,
     toolName?: string,
   ) => ["view-render-single", integrationId, uri, toolName],
+  TOOLS_SIMPLE: () => ["tools"],
   MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => [
     "tools",
     connection.type,
@@ -251,4 +262,7 @@ export const KEYS = {
       (connection as any).name,
     ignoreCache,
   ],
+  OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
+  WALLET_SIMPLE: () => ["wallet"],
+  GITHUB_STARS: () => ["github-stars"],
 };

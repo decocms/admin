@@ -342,19 +342,6 @@ const virtualIntegrationsFor = (
   const base = DECO_CMS_API(c, false);
   // Create a virtual User Management integration
   const rootMcp = new URL("/mcp", base);
-  const userManagementIntegration = {
-    id: formatId("i", WellKnownMcpGroups.User),
-    name: "User Management",
-    description: "Manage your teams, invites and profile",
-    connection: {
-      type: "HTTP",
-      url: rootMcp.href,
-      token,
-    },
-    icon: "https://i.imgur.com/GD4o7vx.png",
-    workspace: Locator.adaptToRootSlug(locator),
-    created_at: new Date().toISOString(),
-  };
   const { url: workspaceMcp } = projectUrlFromLocator(c);
 
   const contractsMcp = new URL("/contracts/mcp", base);
@@ -368,21 +355,6 @@ const virtualIntegrationsFor = (
       token,
     },
     icon: "https://assets.decocache.com/mcp/10b5e8b4-a4e2-4868-8a7d-8cf9b46f0d79/contract.png",
-    workspace: Locator.adaptToRootSlug(locator),
-    created_at: new Date().toISOString(),
-  };
-
-  // Create a virtual Workspace Management integration
-  const workspaceManagementIntegration = {
-    id: formatId("i", "workspace-management"),
-    name: "Workspace Management",
-    description: "Manage your agents, integrations and threads",
-    connection: {
-      type: "HTTP",
-      url: workspaceMcp.href,
-      token,
-    },
-    icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
     workspace: Locator.adaptToRootSlug(locator),
     created_at: new Date().toISOString(),
   };
@@ -430,8 +402,6 @@ const virtualIntegrationsFor = (
   );
 
   return [
-    userManagementIntegration,
-    workspaceManagementIntegration,
     selfIntegration,
     ...integrationGroups,
     contractsIntegration,

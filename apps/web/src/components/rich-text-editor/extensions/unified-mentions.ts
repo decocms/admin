@@ -27,12 +27,33 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
     options;
   const toolMap = new Map<string, Tool>(tools.map((tool) => [tool.id, tool]));
 
+  // Helper function to sort tools by relevance
+  const sortToolsByRelevance = (toolsToSort: Tool[], query: string): Tool[] => {
+    const ql = query.toLowerCase();
+    return toolsToSort.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+
+      // Exact match wins
+      if (aName === ql && bName !== ql) return -1;
+      if (bName === ql && aName !== ql) return 1;
+
+      // Starts with query is second best
+      if (aName.startsWith(ql) && !bName.startsWith(ql)) return -1;
+      if (bName.startsWith(ql) && !aName.startsWith(ql)) return 1;
+
+      // Otherwise maintain original order
+      return 0;
+    });
+  };
+
   const suggestion: Partial<SuggestionOptions<MentionItem>> = {
     char: "@",
     allowSpaces: true,
     items: (props) => {
       const { query } = props;
       const ql = query?.toLowerCase() ?? "";
+
       const filteredTools = tools.filter((tool) => {
         return (
           tool.name.toLowerCase().includes(ql) ||
@@ -40,7 +61,10 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           tool.integration.name.toLowerCase().includes(ql)
         );
       });
-      const toolItems: MentionItem[] = filteredTools
+
+      const sortedTools = sortToolsByRelevance(filteredTools, ql);
+
+      const toolItems: MentionItem[] = sortedTools
         .map(
           (tool): MentionItem => ({
             id: tool.id,
@@ -51,6 +75,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           }),
         )
         .slice(0, 10);
+
       return toolItems;
     },
     command: ({ editor, range, props }) => {
@@ -226,13 +251,17 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
         toolsArg: Tool[],
       ): MentionItem[] => {
         const ql = query?.toLowerCase() ?? "";
+
         const filtered = toolsArg.filter(
           (tool) =>
             tool.name.toLowerCase().includes(ql) ||
             tool.description?.toLowerCase().includes(ql) ||
             tool.integration.name.toLowerCase().includes(ql),
         );
-        return filtered
+
+        const sortedTools = sortToolsByRelevance(filtered, ql);
+
+        const toolItems = sortedTools
           .map(
             (tool): MentionItem => ({
               id: tool.id,
@@ -243,6 +272,8 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             }),
           )
           .slice(0, 10);
+
+        return toolItems;
       };
 
       return {

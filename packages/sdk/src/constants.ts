@@ -608,9 +608,7 @@ check if the agent is active and configure the agent.
     description: "I can help you with this prompt.",
     model: DEFAULT_MODEL.id,
     visibility: "PUBLIC",
-    tools_set: {
-      "i:workspace-management": ["PROMPTS_GET", "PROMPTS_UPDATE"],
-    },
+    tools_set: {},
     views: [],
     instructions: `
 You are an assistant specialized in helping users craft clear, effective prompts for AI models.

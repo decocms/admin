@@ -110,6 +110,7 @@ export const GLOBAL_TOOLS = [
   integrationsAPI.listTools,
   registryAPI.getRegistryApp,
   utilsAPI.httpFetch,
+  utilsAPI.nowDateTime,
 ] as const;
 
 // Tools tied to an specific workspace

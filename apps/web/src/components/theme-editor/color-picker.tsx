@@ -390,19 +390,6 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   const [open, setOpen] = useState(false);
 
-  // Update internal state when value prop changes from outside
-  useEffect(() => {
-    if (isEditingRef.current) return;
-
-    const hex = parseColorToHex(value)
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toUpperCase();
-    if (hex !== color.hex && hex.length === 6) {
-      const hsl = hexToHsl({ hex });
-      setColor({ ...hsl, hex });
-    }
-  }, [value, color.hex]);
-
   // Convert hex to the specified output format
   const formatColorOutput = useCallback(
     (
@@ -433,6 +420,30 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
     },
     [outputFormat],
   );
+
+  const [inputValue, setInputValue] = useState(() =>
+    formatColorOutput(color.hex),
+  );
+
+  // Sync input value with formatted output when not editing
+  useEffect(() => {
+    if (!isEditingRef.current) {
+      setInputValue(formatColorOutput(color.hex));
+    }
+  }, [color.hex, formatColorOutput]);
+
+  // Update internal state when value prop changes from outside
+  useEffect(() => {
+    if (isEditingRef.current) return;
+
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+    if (hex !== color.hex && hex.length === 6) {
+      const hsl = hexToHsl({ hex });
+      setColor({ ...hsl, hex });
+    }
+  }, [value, color.hex]);
 
   // Mark as editing and reset timeout
   const markAsEditing = useCallback(() => {
@@ -471,6 +482,23 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
         onChange(formatColorOutput(hexFormatted));
         return newColor;
       });
+    },
+    [formatColorOutput, onChange, markAsEditing],
+  );
+
+  const handleInputChange = useCallback(
+    (value: string) => {
+      markAsEditing();
+      setInputValue(value);
+
+      const hex = parseColorToHex(value)
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+      if (hex.length === 6) {
+        const hsl = hexToHsl({ hex });
+        setColor({ ...hsl, hex });
+        onChange(formatColorOutput(hex));
+      }
     },
     [formatColorOutput, onChange, markAsEditing],
   );
@@ -569,7 +597,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                 onValueChange={(v) => {
                   const newFormat = v as typeof outputFormat;
                   setOutputFormat(newFormat);
-                  onChange(formatColorOutput(color.hex, newFormat));
+                  const formatted = formatColorOutput(color.hex, newFormat);
+                  setInputValue(formatted);
+                  onChange(formatted);
                 }}
               >
                 <SelectTrigger className="w-[100px]">
@@ -584,8 +614,8 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               </Select>
               <div className="relative flex-1">
                 <Input
-                  value={formatColorOutput(color.hex)}
-                  readOnly
+                  value={inputValue}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   className="pr-[38px]"
                 />
                 <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">

@@ -3,13 +3,18 @@ import {
   useRecentResources,
   useSDK,
   useViewByUriV2,
+  useUpdateView,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import type { JSONSchema7 } from "json-schema";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { toast } from "sonner";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
 import {
@@ -40,6 +45,54 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const projectKey = typeof locator === "string" ? locator : undefined;
   const { addRecent } = useRecentResources(projectKey);
   const hasTrackedRecentRef = useRef(false);
+  const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
+  const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
+  const updateViewMutation = useUpdateView();
+
+  // Current code value = draft OR saved value
+  const currentCode = codeDraft ?? effectiveView?.code ?? "";
+
+  // isDirty = draft exists and differs from saved value
+  const isDirty = codeDraft !== undefined && codeDraft !== effectiveView?.code;
+
+  // Handlers for code editing
+  const handleCodeChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setCodeDraft(e.target.value);
+    },
+    [],
+  );
+
+  const handleSaveCode = useCallback(async () => {
+    if (!effectiveView) {
+      toast.error("View not found");
+      return;
+    }
+
+    try {
+      await updateViewMutation.mutateAsync({
+        uri: resourceUri,
+        params: {
+          name: effectiveView.name,
+          description: effectiveView.description,
+          code: currentCode,
+          inputSchema: effectiveView.inputSchema,
+          importmap: effectiveView.importmap,
+          icon: effectiveView.icon,
+          tags: effectiveView.tags,
+        },
+      });
+      setCodeDraft(undefined);
+      toast.success("View code updated successfully");
+    } catch (error) {
+      console.error("Failed to save view code:", error);
+      toast.error("Failed to save view code");
+    }
+  }, [effectiveView, resourceUri, currentCode, updateViewMutation]);
+
+  const handleResetCode = useCallback(() => {
+    setCodeDraft(undefined);
+  }, []);
 
   // Initialize form if view has inputSchema
   const inputSchema = effectiveView?.inputSchema as JSONSchema7 | undefined;
@@ -140,23 +193,24 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   }, [resourceUri]);
 
   // Generate HTML from React code on the client side
+  // Use currentCode (which includes draft) for preview
   const htmlValue = useMemo(() => {
-    if (!effectiveView?.code || !org || !project) return null;
+    if (!currentCode || !org || !project) return null;
 
     try {
       return generateViewHTML(
-        effectiveView.code,
+        currentCode,
         DECO_CMS_API_URL,
         org,
         project,
         window.location.origin, // Pass current admin app origin as trusted origin
-        effectiveView.importmap,
+        effectiveView?.importmap,
       );
     } catch (error) {
       console.error("Failed to generate view HTML:", error);
       return null;
     }
-  }, [effectiveView?.code, effectiveView?.importmap, org, project]);
+  }, [currentCode, effectiveView?.importmap, org, project]);
 
   // Reference to iframe element for postMessage
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -210,31 +264,104 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   }
 
   return (
-    <div className="h-full w-full flex bg-white">
-      {/* Preview Section - Takes remaining space */}
-      <div className="flex-1 overflow-hidden relative">
-        {htmlValue ? (
-          <PreviewIframe
-            ref={iframeRef}
-            srcDoc={htmlValue}
-            title="View Preview"
-            className="w-full h-full border-0"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full p-8">
-            <div className="text-center">
-              <Icon
-                name="visibility_off"
-                size={48}
-                className="mx-auto mb-4 text-muted-foreground"
-              />
-              <p className="text-sm text-muted-foreground">
-                No React code to preview
-              </p>
-            </div>
-          </div>
+    <div className="h-full w-full flex flex-col bg-white">
+      {/* Header with code viewer toggle */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-base-border">
+        <div className="flex items-center gap-2">
+          <Icon name="dashboard" size={20} className="text-foreground" />
+          <h2 className="text-sm font-medium">{effectiveView.name}</h2>
+        </div>
+        {effectiveView.code && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-8 rounded-xl p-0",
+              isCodeViewerOpen && "bg-accent text-accent-foreground",
+            )}
+            onClick={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+            title="View Code"
+          >
+            <Icon
+              name="code"
+              size={20}
+              className={
+                isCodeViewerOpen ? "text-foreground" : "text-muted-foreground"
+              }
+            />
+          </Button>
         )}
       </div>
+
+      {/* Code Viewer Section - Shows when code button is clicked */}
+      {isCodeViewerOpen && effectiveView.code ? (
+        <div className="flex-1 overflow-auto bg-background p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
+              View Code
+            </p>
+            {isDirty && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetCode}
+                  className="h-7 px-2 text-xs"
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleSaveCode}
+                  className="h-7 px-3 text-xs gap-1"
+                  disabled={updateViewMutation.isPending}
+                >
+                  <Icon name="check" size={14} />
+                  {updateViewMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <Textarea
+              value={currentCode}
+              onChange={handleCodeChange}
+              className="font-mono text-xs min-h-[calc(100vh-200px)] resize-none overflow-auto"
+              spellCheck={false}
+              placeholder="Export a React component..."
+            />
+          </div>
+        </div>
+      ) : (
+        /* Preview Section - Shows when code viewer is closed */
+        <div className="flex-1 overflow-hidden relative">
+          {htmlValue ? (
+            <PreviewIframe
+              ref={iframeRef}
+              srcDoc={htmlValue}
+              title="View Preview"
+              className="w-full h-full border-0"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full p-8">
+              <div className="text-center">
+                <Icon
+                  name="visibility_off"
+                  size={48}
+                  className="mx-auto mb-4 text-muted-foreground"
+                />
+                <p className="text-sm text-muted-foreground">
+                  No React code to preview
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

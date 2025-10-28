@@ -185,11 +185,11 @@ export function ChatMessages({
   const isEmpty = messages.length === 0;
 
   return (
-    <div className={cn("w-full min-w-0 relative", className)}>
+    <div className={cn("w-full min-w-0 max-w-full relative overflow-hidden", className)}>
       {isEmpty ? (
         <EmptyState />
       ) : (
-        <div className="flex flex-col gap-6 min-w-0">
+        <div className="flex flex-col gap-6 min-w-0 max-w-full">
           {messages.map((message, index) => (
             <ChatMessage
               key={message.id}

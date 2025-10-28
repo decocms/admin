@@ -1,5 +1,4 @@
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
@@ -19,8 +18,8 @@ export const MainChatSkeleton = ({
   className,
 }: Pick<MainChatProps, "showInput" | "className"> = {}) => {
   return (
-    <div className={`w-full flex flex-col h-full ${className ?? ""}`}>
-      <ScrollArea className="flex-1 min-h-0">
+    <div className={`w-full flex flex-col h-full min-w-0 ${className ?? ""}`}>
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="w-full min-w-0">
           {/* Empty state skeleton - centered */}
           <div className="h-full flex flex-col justify-between py-12">
@@ -45,7 +44,7 @@ export const MainChatSkeleton = ({
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
       {showInput && (
         <div className="flex-none w-full mx-auto p-2">
           <div className="relative rounded-md w-full mx-auto">
@@ -79,15 +78,15 @@ export const MainChat = ({
   contentClassName,
 }: MainChatProps = {}) => {
   return (
-    <div className={`w-full flex flex-col h-full ${className ?? ""}`}>
-      <ScrollArea className="flex-1 min-h-0">
+    <div className={`w-full flex flex-col h-full min-w-0 ${className ?? ""}`}>
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <ChatMessages
           initialScrollBehavior={initialScrollBehavior}
           className={contentClassName}
         />
-      </ScrollArea>
+      </div>
       {showInput && (
-        <div className="flex-none p-2">
+        <div className="flex-none p-2 min-w-0">
           <ChatInput />
         </div>
       )}

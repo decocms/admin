@@ -7,16 +7,17 @@ export const KEYS = {
   // ============================================================================
   // PROJECT-SCOPED KEYS
   // These queries require a ProjectLocator (org/project context)
+  // Locator is ALWAYS the first item in the array for easy cache invalidation
   // ============================================================================
-  FILE: (locator: ProjectLocator, path: string) => ["file", locator, path],
+  FILE: (locator: ProjectLocator, path: string) => [locator, "file", path],
   AGENT: (locator: ProjectLocator, agentId?: string) => [
-    "agent",
     locator,
+    "agent",
     agentId,
   ],
   INTEGRATION: (locator: ProjectLocator, integrationId?: string) => [
-    "integration",
     locator,
+    "integration",
     integrationId,
   ],
   INTEGRATION_TOOLS: (
@@ -24,33 +25,33 @@ export const KEYS = {
     integrationId: string,
     binder?: Binder,
   ) => [
-    "integration-tools",
     locator,
+    "integration-tools",
     integrationId,
     ...(binder ? [binder] : []),
   ],
   INTEGRATION_API_KEY: (locator: ProjectLocator, integrationId: string) => [
-    "integration-api-key",
     locator,
+    "integration-api-key",
     integrationId,
   ],
   CHANNELS: (locator: ProjectLocator, channelId?: string) => [
-    "channels",
     locator,
+    "channels",
     channelId,
   ],
   BINDINGS: (locator: ProjectLocator, binder: Binder) => [
-    "bindings",
     locator,
+    "bindings",
     binder,
   ],
   THREADS: (locator: ProjectLocator, options?: ThreadFilterOptions) => {
     if (!options) {
-      return ["threads", locator];
+      return [locator, "threads"];
     }
     return [
-      "threads",
       locator,
+      "threads",
       options.agentId,
       options.resourceId,
       options.orderBy,
@@ -59,29 +60,29 @@ export const KEYS = {
     ];
   },
   THREAD: (locator: ProjectLocator, threadId: string) => [
-    "thread",
     locator,
+    "thread",
     threadId,
   ],
   THREAD_MESSAGES: (locator: ProjectLocator, threadId: string) => [
-    "thread-messages",
     locator,
+    "thread-messages",
     threadId,
   ],
   THREAD_TOOLS: (locator: ProjectLocator, threadId: string) => [
-    "thread-tools",
     locator,
+    "thread-tools",
     threadId,
   ],
   TOOLS: (locator: ProjectLocator, agentId: string, threadId: string) => [
-    "tools",
     locator,
+    "tools",
     agentId,
     threadId,
   ],
   AUDITS: (locator: ProjectLocator, options: ThreadFilterOptions) => [
-    "audit",
     locator,
+    "audit",
     options.agentId,
     options.orderBy,
     options.cursor,
@@ -89,26 +90,26 @@ export const KEYS = {
     options.resourceId,
   ],
   TEAM_VIEWS: (locator: ProjectLocator, integrationId: string) => [
-    "team-views",
     locator,
+    "team-views",
     integrationId,
   ],
-  WORKSPACE_VIEWS: (locator: ProjectLocator) => ["workspace-views", locator],
+  WORKSPACE_VIEWS: (locator: ProjectLocator) => [locator, "workspace-views"],
   MODELS: (locator: ProjectLocator, options?: ListModelsInput) => [
-    "models",
     locator,
+    "models",
     options?.excludeDisabled || false,
     options?.excludeAuto || false,
   ],
-  MODEL: (locator: ProjectLocator, id: string) => ["model", locator, id],
+  MODEL: (locator: ProjectLocator, id: string) => [locator, "model", id],
   TRIGGERS: (locator: ProjectLocator, agentId = "") => [
-    "triggers",
     locator,
+    "triggers",
     agentId,
   ],
   TRIGGER: (locator: ProjectLocator, triggerId: string) => [
-    "trigger",
     locator,
+    "trigger",
     triggerId,
   ],
   PROMPTS: (
@@ -117,60 +118,62 @@ export const KEYS = {
     resolveMentions?: boolean,
     excludeIds?: string[],
   ) => [
-    "prompts",
     locator,
+    "prompts",
     ...(ids ? ids.sort() : []),
     `${resolveMentions ?? false}`,
     ...(excludeIds ? excludeIds.sort() : []),
   ],
-  PROMPT: (locator: ProjectLocator, id: string) => ["prompts", locator, id],
+  PROMPT: (locator: ProjectLocator, id: string) => [locator, "prompts", id],
   PROMPTS_SEARCH: (
     locator: ProjectLocator,
     query: string,
     limit: number = 10,
     offset: number = 0,
-  ) => ["prompts", locator, query, limit, offset],
+  ) => [locator, "prompts", query, limit, offset],
   PROMPT_VERSIONS: (locator: ProjectLocator, id: string) => [
-    "prompt-versions",
     locator,
+    "prompt-versions",
     id,
   ],
-  WALLET: (locator: ProjectLocator) => ["wallet", locator],
+  WALLET: (locator: ProjectLocator) => [locator, "wallet"],
   WALLET_USAGE_AGENTS: (
     locator: ProjectLocator,
     range: "day" | "week" | "month",
-  ) => ["wallet-usage-agents", locator, range],
+  ) => [locator, "wallet-usage-agents", range],
   WALLET_USAGE_THREADS: (
     locator: ProjectLocator,
     range: "day" | "week" | "month",
-  ) => ["wallet-usage-threads", locator, range],
+  ) => [locator, "wallet-usage-threads", range],
   WALLET_BILLING_HISTORY: (
     locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
-  ) => ["wallet-billing-history", locator, range],
+  ) => [locator, "wallet-billing-history", range],
   WALLET_CONTRACTS_PRE_AUTHORIZATIONS: (
     locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
-  ) => ["wallet-contracts-pre-authorizations", locator, range],
+  ) => [locator, "wallet-contracts-pre-authorizations", range],
   WALLET_CONTRACTS_COMMITS: (
     locator: ProjectLocator,
     range: "day" | "week" | "month" | "year",
-  ) => ["wallet-contracts-commits", locator, range],
-  WORKSPACE_PLAN: (locator: ProjectLocator) => ["workspace-plan", locator],
+  ) => [locator, "wallet-contracts-commits", range],
+  WORKSPACE_PLAN: (locator: ProjectLocator) => [locator, "workspace-plan"],
   WORKSPACE_PERMISSION_DESCRIPTIONS: (locator: ProjectLocator) => [
-    ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
+    locator,
+    "integration-tools",
+    "workspace-management",
     "permission-descriptions",
     "workspace",
   ],
   WORKFLOWS: (locator: ProjectLocator, page?: number, per_page?: number) => [
-    "workflows",
     locator,
+    "workflows",
     page,
     per_page,
   ],
   WORKFLOW: (locator: ProjectLocator, workflowName: string) => [
-    "workflow",
     locator,
+    "workflow",
     workflowName,
   ],
   WORKFLOW_INSTANCES: (
@@ -178,61 +181,61 @@ export const KEYS = {
     workflowName: string,
     page?: number,
     per_page?: number,
-  ) => ["workflow-instances", locator, workflowName, page, per_page],
+  ) => [locator, "workflow-instances", workflowName, page, per_page],
   WORKFLOW_STATUS: (
     locator: ProjectLocator,
     workflowName: string,
     instanceId: string,
-  ) => ["workflow-status", locator, workflowName, instanceId],
-  WORKFLOW_NAMES: (locator: ProjectLocator) => ["workflow-names", locator],
+  ) => [locator, "workflow-status", workflowName, instanceId],
+  WORKFLOW_NAMES: (locator: ProjectLocator) => [locator, "workflow-names"],
   WORKFLOW_RUNS: (
     locator: ProjectLocator,
     workflowName: string,
     page?: number,
     perPage?: number,
-  ) => ["workflow-runs", locator, workflowName, page, perPage],
+  ) => [locator, "workflow-runs", workflowName, page, perPage],
   KNOWLEDGE_FILES: (locator: ProjectLocator, connectionUrl: string) => [
-    "knowledge_files",
     locator,
+    "knowledge_files",
     connectionUrl,
   ],
   DOCUMENTS_FOR_MENTIONS: (locator: ProjectLocator) => [
+    locator,
     "documents-for-mentions",
-    locator,
   ],
-  TOOL: (locator: ProjectLocator, uri: string) => ["tool", locator, uri],
+  TOOL: (locator: ProjectLocator, uri: string) => [locator, "tool", uri],
   DOCUMENT: (locator: ProjectLocator, uri: string) => [
-    "document",
     locator,
+    "document",
     uri,
   ],
   WORKFLOW_BY_URI: (locator: ProjectLocator, uri: string) => [
-    "workflow-by-uri-v2",
     locator,
+    "workflow-by-uri-v2",
     uri,
   ],
-  VIEW: (locator: ProjectLocator, uri: string) => ["view", locator, uri],
+  VIEW: (locator: ProjectLocator, uri: string) => [locator, "view", uri],
   TOOLS_LIST: (locator: ProjectLocator, integrationId: string) => [
-    "resources-v2-list",
     locator,
+    "resources-v2-list",
     integrationId,
     "tool",
   ],
   DOCUMENTS_LIST: (locator: ProjectLocator, integrationId: string) => [
-    "resources-v2-list",
     locator,
+    "resources-v2-list",
     integrationId,
     "document",
   ],
   WORKFLOWS_LIST: (locator: ProjectLocator, integrationId: string) => [
-    "resources-v2-list",
     locator,
+    "resources-v2-list",
     integrationId,
     "workflow",
   ],
   VIEWS_LIST: (locator: ProjectLocator, integrationId: string) => [
-    "resources-v2-list",
     locator,
+    "resources-v2-list",
     integrationId,
     "view",
   ],
@@ -241,45 +244,45 @@ export const KEYS = {
     term?: string,
     page?: number,
     pageSize?: number,
-  ) => ["documents", locator, term, page, pageSize],
-  WORKFLOW_RUNS_ALL: (locator: ProjectLocator) => ["workflow-runs", locator],
+  ) => [locator, "documents", term, page, pageSize],
+  WORKFLOW_RUNS_ALL: (locator: ProjectLocator) => [locator, "workflow-runs"],
   RECENT_WORKFLOW_RUNS: (
     locator: ProjectLocator,
     page?: number,
     perPage?: number,
-  ) => ["recent-workflow-runs", locator, page, perPage],
+  ) => [locator, "recent-workflow-runs", page, perPage],
   RECENT_WORKFLOW_RUNS_ALL: (locator: ProjectLocator) => [
-    "recent-workflow-runs",
     locator,
+    "recent-workflow-runs",
   ],
   WORKFLOW_RUN_READ: (locator: ProjectLocator, runUri: string) => [
-    "workflow-run-read",
     locator,
+    "workflow-run-read",
     runUri,
   ],
   RESOURCE_WATCH: (
     locator: ProjectLocator,
     resourceUri: string,
     pathFilter?: string,
-  ) => ["resource-watch", locator, resourceUri, pathFilter],
+  ) => [locator, "resource-watch", resourceUri, pathFilter],
   RESOURCES_LIST: (
     locator: ProjectLocator,
     integrationId: string,
     resourceName: string,
     search?: string,
-  ) => ["resources-v2-list", locator, integrationId, resourceName, search],
+  ) => [locator, "resources-v2-list", integrationId, resourceName, search],
   DECO_RESOURCE_READ: (
     locator: ProjectLocator,
     integrationId: string,
     resourceName: string,
     uri: string,
-  ) => ["deco-resource-read", locator, integrationId, resourceName, uri],
+  ) => [locator, "deco-resource-read", integrationId, resourceName, uri],
   VIEW_RENDER_SINGLE: (
     locator: ProjectLocator,
     integrationId: string,
     uri: string,
     toolName?: string,
-  ) => ["view-render-single", locator, integrationId, uri, toolName],
+  ) => [locator, "view-render-single", integrationId, uri, toolName],
 
   // ============================================================================
   // ORG-SCOPED KEYS

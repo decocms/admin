@@ -183,6 +183,16 @@ function ResourcesV2ListTab({
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
+                    handleDuplicate(row);
+                  }}
+                  disabled={mutating}
+                >
+                  <Icon name="content_copy" className="w-4 h-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
                     navigateWorkspace(
                       `rsc/${integrationId}/${resourceName}/${encodeURIComponent(row.uri)}`,
                     );
@@ -275,6 +285,73 @@ function ResourcesV2ListTab({
   // Mutations show loading on the button itself, not full-page
   const loading = listQuery.isLoading;
   const error = listQuery.isError ? (listQuery.error as Error).message : null;
+
+  // Duplicate handler
+  const handleDuplicate = async (item: ResourceListItem) => {
+    if (!integration) return;
+    try {
+      setMutating(true);
+
+      // Use the data already available from the list item
+      const resourceData = item.data;
+
+      if (!resourceData || typeof resourceData !== "object") {
+        throw new Error("Resource data not available");
+      }
+
+      // Create a copy with a modified name
+      const originalName = resourceData.name || "Untitled";
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const duplicatedData = {
+        ...resourceData,
+        name: `${originalName} (Copy ${timestamp})`,
+      };
+
+      // Create the duplicate
+      const createResult = await callTool(integration.connection, {
+        name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
+        arguments: { data: duplicatedData },
+      });
+
+      // Extract URI from response
+      const newUri =
+        (createResult as { uri?: string })?.uri ||
+        (createResult as { data?: { uri?: string } })?.data?.uri ||
+        (
+          createResult as {
+            structuredContent?: { uri?: string };
+          }
+        )?.structuredContent?.uri ||
+        (
+          createResult as {
+            content?: Array<{ text?: string }>;
+          }
+        )?.content?.[0]?.text;
+
+      if (!newUri) {
+        throw new Error("No URI returned from create operation");
+      }
+
+      toast.success(`${resourceName || "Resource"} duplicated successfully`);
+
+      // Invalidate list query to refresh
+      queryClient.invalidateQueries({
+        queryKey: ["resources-v2-list", integrationId, resourceName],
+      });
+
+      // Navigate to the new resource
+      navigateWorkspace(
+        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(newUri)}`,
+      );
+    } catch (error) {
+      console.error(`Failed to duplicate ${resourceName}:`, error);
+      toast.error(
+        `Failed to duplicate ${resourceName}. Please try again.`,
+      );
+    } finally {
+      setMutating(false);
+    }
+  };
 
   // Delete handler
   const handleDelete = async (uri: string) => {
@@ -937,6 +1014,19 @@ function ResourcesV2ListTab({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicate(it);
+                                }}
+                                disabled={mutating}
+                              >
+                                <Icon
+                                  name="content_copy"
+                                  className="w-4 h-4 mr-2"
+                                />
+                                Duplicate
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();

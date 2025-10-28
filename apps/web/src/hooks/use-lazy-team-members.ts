@@ -41,7 +41,7 @@ export const useLazyTeamMembers = (
   }, []);
 
   const query = useQuery({
-    queryKey: KEYS.TEAM_MEMBERS_WITH_ACTIVITY(
+    queryKey: KEYS.ORG_MEMBERS_WITH_ACTIVITY(
       teamId ?? -1,
       withActivity ?? false,
     ),

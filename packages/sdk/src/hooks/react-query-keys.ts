@@ -286,26 +286,28 @@ export const KEYS = {
 
   // ============================================================================
   // ORG-SCOPED KEYS
-  // These queries require an organization/team identifier
+  // These queries require an organization identifier
   // ============================================================================
   PROJECTS: (org: string) => ["projects", org],
-  ORGANIZATION: (slug: string) => ["team", slug],
-  TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
-  TEAM_MEMBERS_WITH_ACTIVITY: (teamId: number, withActivity: boolean) => [
-    "team-members",
-    teamId,
+  ORGANIZATION: (slug: string) => ["organizations", slug],
+  ORG_MEMBERS: (slugOrId: string | number) => [
+    "organizations",
+    slugOrId,
+    "members",
+  ],
+  ORG_MEMBERS_WITH_ACTIVITY: (orgId: number, withActivity: boolean) => [
+    "organization-members",
+    orgId,
     withActivity,
   ],
-  TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
-  TEAM_ROLE: (teamId: number, roleId: number) => [
+  ORG_ROLES: (orgId: number) => ["organizations", orgId, "roles"],
+  ORG_ROLE: (orgId: number, roleId: number) => [
+    "organizations",
+    orgId,
     "roles",
-    "team",
-    teamId,
-    "role",
     roleId,
   ],
-  ORG_THEME: (slug: string) => ["org-theme", slug],
-  TEAM_THEME: (slug: string) => ["team-theme", slug],
+  ORG_THEME: (slug: string) => ["organizations", slug, "theme"],
 
   // ============================================================================
   // ROOT-SCOPED KEYS
@@ -313,7 +315,7 @@ export const KEYS = {
   // ============================================================================
   PROFILE: () => ["profile"],
   MY_INVITES: () => ["my_invites"],
-  TEAMS: () => ["teams"],
+  ORGANIZATIONS: () => ["organizations"],
   RECENT_PROJECTS: () => ["recent-projects"],
   PROJECTS_SIMPLE: () => ["projects"],
   REGISTRY_APP: (appName: string) => ["registry-app", appName],

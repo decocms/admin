@@ -49,7 +49,7 @@ export const useOrganizations = (options: { searchQuery?: string } = {}) => {
 
   const queryResult = useSuspenseQuery({
     // Once filtering is done server-side, update the queryKey to KEYS.TEAMS(options.query)
-    queryKey: KEYS.TEAMS(),
+    queryKey: KEYS.ORGANIZATIONS(),
     queryFn: ({ signal }) => listTeams({ signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
@@ -177,7 +177,7 @@ export function useCreateTeam() {
   return useMutation({
     mutationFn: (input: CreateTeamInput) => createTeam(input),
     onSuccess: (result) => {
-      client.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      client.invalidateQueries({ queryKey: KEYS.ORGANIZATIONS() });
       client.setQueryData(["team", result.slug], result);
     },
   });
@@ -188,7 +188,7 @@ export function useUpdateTeam() {
   return useMutation({
     mutationFn: (input: UpdateTeamInput) => updateTeam(input),
     onSuccess: (result) => {
-      client.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      client.invalidateQueries({ queryKey: KEYS.ORGANIZATIONS() });
       client.setQueryData(["team", result.slug], result);
     },
   });
@@ -199,7 +199,7 @@ export function useDeleteTeam() {
   return useMutation({
     mutationFn: (teamId: number) => deleteTeam(teamId),
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      client.invalidateQueries({ queryKey: KEYS.ORGANIZATIONS() });
       // Remove all team caches (by id or slug if needed)
     },
   });

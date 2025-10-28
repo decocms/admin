@@ -191,7 +191,7 @@ export function useUpdateOrgSetting() {
       // Invalidate related caches
       if (locator) {
         const { org } = Locator.parse(locator);
-        client.invalidateQueries({ queryKey: KEYS.TEAM_THEME(org) });
+        client.invalidateQueries({ queryKey: KEYS.ORG_THEME(org) });
       }
     },
   });

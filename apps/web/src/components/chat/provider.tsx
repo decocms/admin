@@ -567,7 +567,6 @@ export function AgenticChatProvider({
 
         // Force refetch the team theme immediately
         queryClient.refetchQueries({ queryKey: KEYS.ORG_THEME(org) });
-        queryClient.refetchQueries({ queryKey: KEYS.TEAM_THEME(org) });
 
         // Dispatch event for immediate UI update (same as save button)
         window.dispatchEvent(new CustomEvent("theme-updated"));

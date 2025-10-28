@@ -141,7 +141,11 @@ export function OrgsLayout() {
                             {decopilotOpen && isThemeEditorPage && (
                               <>
                                 <ResizableHandle withHandle />
-                                <ResizablePanel defaultSize={30} minSize={20} className="min-w-0">
+                                <ResizablePanel
+                                  defaultSize={30}
+                                  minSize={20}
+                                  className="min-w-0"
+                                >
                                   <Suspense fallback={<MainChatSkeleton />}>
                                     <DecopilotChat />
                                   </Suspense>

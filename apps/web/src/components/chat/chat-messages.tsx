@@ -185,7 +185,12 @@ export function ChatMessages({
   const isEmpty = messages.length === 0;
 
   return (
-    <div className={cn("w-full min-w-0 max-w-full relative overflow-hidden", className)}>
+    <div
+      className={cn(
+        "w-full min-w-0 max-w-full relative overflow-hidden",
+        className,
+      )}
+    >
       {isEmpty ? (
         <EmptyState />
       ) : (

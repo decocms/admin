@@ -78,7 +78,7 @@ export const useUpdateIntegration = ({
           : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
       );
 
-      client.invalidateQueries({ queryKey: ["tools"] });
+      client.invalidateQueries({ queryKey: KEYS.TOOLS_SIMPLE() });
 
       onSuccess?.(result);
     },
@@ -188,7 +188,7 @@ export const useMarketplaceIntegrations = () => {
   const { locator } = useSDK();
 
   return useSuspenseQuery<IntegrationsResult>({
-    queryKey: ["integrations", "marketplace"],
+    queryKey: KEYS.INTEGRATIONS_MARKETPLACE(),
     queryFn: () =>
       MCPClient.forLocator(locator)
         .DECO_INTEGRATIONS_SEARCH({ query: "" })
@@ -310,7 +310,7 @@ export const useMarketplaceAppSchema = (appName?: string) => {
   const canRunQuery = !!appName;
 
   return useQuery({
-    queryKey: ["integrations", "marketplace", appName, "schema"],
+    queryKey: KEYS.INTEGRATION_SCHEMA(appName || ""),
     queryFn: () =>
       canRunQuery
         ? MCPClient.forLocator(locator).DECO_GET_APP_SCHEMA({ appName })

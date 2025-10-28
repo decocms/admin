@@ -1,4 +1,5 @@
 import {
+  KEYS,
   NotFoundError,
   WELL_KNOWN_AGENTS,
   useAgentData,
@@ -148,7 +149,7 @@ function UnifiedChat() {
                 className="text-xs"
                 onClick={() => {
                   client.invalidateQueries({
-                    queryKey: ["threads", locator, agentId],
+                    queryKey: KEYS.THREADS(locator, { agentId }),
                   });
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,

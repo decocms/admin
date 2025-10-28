@@ -151,7 +151,7 @@ export function useDeleteProject() {
     mutationFn: (input: DeleteProjectInput) => deleteProject(input),
     onSuccess: () => {
       // Invalidate all projects queries to refresh
-      client.invalidateQueries({ queryKey: ["projects"] });
+      client.invalidateQueries({ queryKey: KEYS.PROJECTS_SIMPLE() });
       // Invalidate recent projects to refresh
       client.invalidateQueries({ queryKey: KEYS.RECENT_PROJECTS() });
     },

@@ -1,6 +1,7 @@
 import {
   getRegistryApp,
   Integration,
+  KEYS,
   listIntegrations,
   useSDK,
 } from "@deco/sdk";
@@ -9,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 export const useOptionsLoader = (type: string) => {
   const { locator } = useSDK();
   const { data, isPending, refetch } = useQuery({
-    queryKey: ["optionsLoader", type],
+    queryKey: KEYS.OPTIONS_LOADER(type),
     refetchOnWindowFocus: true,
     staleTime: 0,
     queryFn: async () => {

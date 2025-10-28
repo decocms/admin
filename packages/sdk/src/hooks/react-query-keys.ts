@@ -1,7 +1,7 @@
 import type { ListModelsInput } from "../crud/model.ts";
 import type { ThreadFilterOptions } from "../crud/thread.ts";
 import type { ProjectLocator } from "../index.ts";
-import type { Binder } from "../models/mcp.ts";
+import type { Binder, MCPConnection } from "../models/mcp.ts";
 
 export const KEYS = {
   FILE: (locator: ProjectLocator, path: string) => ["file", locator, path],
@@ -188,5 +188,67 @@ export const KEYS = {
     "knowledge_files",
     locator,
     connectionUrl,
+  ],
+  GITHUB_STARS: () => ["github-stars"],
+  INTEGRATIONS_MARKETPLACE: () => ["integrations", "marketplace"],
+  INTEGRATION_SCHEMA: (appName: string) => [
+    "integrations",
+    "marketplace",
+    appName,
+    "schema",
+  ],
+  TEAM_THEME: (slug: string) => ["team-theme", slug],
+  RESOURCES_LIST: (
+    integrationId: string,
+    resourceName: string,
+    search?: string,
+  ) => ["resources-v2-list", integrationId, resourceName, search],
+  REGISTRY_APP: (appName: string) => ["registry-app", appName],
+  REGISTRY_APPS: (apps: string[]) => ["registry-apps", apps],
+  DOCUMENTS_FOR_MENTIONS: (locator: ProjectLocator) => [
+    "documents-for-mentions",
+    locator,
+  ],
+  WORKFLOW_NAMES: (locator: ProjectLocator) => ["workflow-names", locator],
+  WORKFLOW_RUNS: (
+    locator: ProjectLocator,
+    workflowName: string,
+    page?: number,
+    perPage?: number,
+  ) => ["workflow-runs", locator, workflowName, page, perPage],
+  OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
+  TEAM_MEMBERS_WITH_ACTIVITY: (teamId: number, withActivity: boolean) => [
+    "team-members",
+    teamId,
+    withActivity,
+  ],
+  WALLET_SIMPLE: () => ["wallet"],
+  TOOLS_SIMPLE: () => ["tools"],
+  PROJECTS_SIMPLE: () => ["projects"],
+  DECO_RESOURCE_READ: (
+    integrationId: string,
+    resourceName: string,
+    uri: string,
+  ) => ["deco-resource-read", integrationId, resourceName, uri],
+  WORKSPACE_PERMISSION_DESCRIPTIONS: (locator: ProjectLocator) => [
+    ...KEYS.INTEGRATION_TOOLS(locator, "workspace-management"),
+    "permission-descriptions",
+    "workspace",
+  ],
+  VIEW_RENDER_SINGLE: (
+    integrationId: string,
+    uri: string,
+    toolName?: string,
+  ) => ["view-render-single", integrationId, uri, toolName],
+  MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => [
+    "tools",
+    connection.type,
+    // oxlint-disable-next-line no-explicit-any
+    (connection as any).url ||
+      // oxlint-disable-next-line no-explicit-any
+      (connection as any).tenant ||
+      // oxlint-disable-next-line no-explicit-any
+      (connection as any).name,
+    ignoreCache,
   ],
 };

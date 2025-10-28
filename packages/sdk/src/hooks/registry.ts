@@ -1,6 +1,7 @@
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { getRegistryApp } from "../crud/registry.ts";
+import { KEYS } from "./react-query-keys.ts";
 
 export class RegistryAppNotFoundError extends Error {
   constructor(message: string) {
@@ -22,7 +23,7 @@ export const useRegistryApp = (params: {
   const useQueryMode =
     mode.current === "suspense" ? useSuspenseQuery : useQuery;
   return useQueryMode({
-    queryKey: ["registry-app", params.app],
+    queryKey: KEYS.REGISTRY_APP(params.app),
     queryFn: async () => {
       if (!params.app) {
         return null;
@@ -48,7 +49,7 @@ export const useRegistryApp = (params: {
  */
 export const maybeRegistryApp = (params: { app: string }) => {
   const { data, error } = useSuspenseQuery({
-    queryKey: ["registry-app", params.app],
+    queryKey: KEYS.REGISTRY_APP(params.app),
     queryFn: async () => {
       if (!params.app) {
         return null;

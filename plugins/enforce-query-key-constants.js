@@ -51,7 +51,8 @@ const enforceQueryKeyConstantsRule = {
           node.arguments[0]?.type === "ObjectExpression"
         ) {
           const queryKeyProp = node.arguments[0].properties.find(
-            (prop) => prop.key.name === "queryKey" || prop.key.value === "queryKey"
+            (prop) =>
+              prop.key.name === "queryKey" || prop.key.value === "queryKey",
           );
 
           if (!queryKeyProp) return;

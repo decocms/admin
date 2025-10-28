@@ -1,4 +1,4 @@
-import { callTool, useIntegration, useTools } from "@deco/sdk";
+import { callTool, KEYS, useIntegration, useTools } from "@deco/sdk";
 import type { ReadOutput } from "@deco/sdk/mcp";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useQuery } from "@tanstack/react-query";
@@ -90,7 +90,11 @@ function ResourcesV2Detail() {
 
   const resourceReadQuery = useQuery({
     enabled: Boolean(integration && resourceName && decodedUri),
-    queryKey: ["deco-resource-read", integrationId, resourceName, decodedUri],
+    queryKey: KEYS.DECO_RESOURCE_READ(
+      integrationId!,
+      resourceName!,
+      decodedUri!,
+    ),
     queryFn: async () => {
       const result = await callTool(integration!.connection, {
         name: `DECO_RESOURCE_${resourceName!.toUpperCase()}_READ`,
@@ -129,12 +133,11 @@ function ResourcesV2Detail() {
 
   // View render query - moved from ResourcesV2DetailTab
   const viewQuery = useQuery({
-    queryKey: [
-      "view-render-single",
-      integrationId,
-      decodedUri,
+    queryKey: KEYS.VIEW_RENDER_SINGLE(
+      integrationId!,
+      decodedUri!,
       viewRenderTool?.name,
-    ],
+    ),
     enabled: Boolean(integration && decodedUri && viewRenderTool),
     queryFn: async () => {
       const result = await callTool(integration!.connection, {

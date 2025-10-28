@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { getTeamMembers } from "@deco/sdk";
+import { getTeamMembers, KEYS } from "@deco/sdk";
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
 
@@ -41,7 +41,7 @@ export const useLazyTeamMembers = (
   }, []);
 
   const query = useQuery({
-    queryKey: ["team-members", teamId ?? -1, withActivity],
+    queryKey: KEYS.TEAM_MEMBERS_WITH_ACTIVITY(teamId ?? -1, withActivity),
     queryFn: ({ signal }): Promise<TeamMembers> => {
       if (teamId === null) {
         return Promise.resolve({ members: [], invites: [] });

@@ -6,6 +6,7 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
+import { KEYS } from "./react-query-keys.ts";
 
 /**
  * Hook to get all unique workflow names in the workspace
@@ -14,7 +15,7 @@ export const useWorkflowNames = () => {
   const { locator } = useSDK();
 
   const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["workflow-names", locator],
+    queryKey: KEYS.WORKFLOW_NAMES(locator),
     queryFn: async ({ signal }) => {
       const result = await listWorkflowNames(locator, signal);
       return result;
@@ -43,7 +44,7 @@ export const useWorkflowRuns = (
   const { locator } = useSDK();
 
   const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["workflow-runs", locator, workflowName, page, per_page],
+    queryKey: KEYS.WORKFLOW_RUNS(locator, workflowName, page, per_page),
     queryFn: async ({ signal }) => {
       const result = await listWorkflowRuns(
         locator,
@@ -68,7 +69,7 @@ export const useWorkflowRuns = (
 export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
   const { locator } = useSDK();
   return useSuspenseQuery({
-    queryKey: ["workflow-status", locator, workflowName, instanceId],
+    queryKey: KEYS.WORKFLOW_STATUS(locator, workflowName, instanceId),
     queryFn: ({ signal }) =>
       getWorkflowStatus(locator, { workflowName, instanceId }, signal),
     retry: (failureCount, error) =>

@@ -25,6 +25,7 @@ import { createSlashCommands } from "../editor/slash-commands.tsx";
 import type { ProjectLocator } from "@deco/sdk";
 import {
   type Integration,
+  KEYS,
   useIntegrations,
   callTool,
   useIntegration,
@@ -59,7 +60,7 @@ export function DocumentEditor({
 
   // Fetch all documents for mentions
   const { data: _documentsData = [] } = useQuery({
-    queryKey: ["documents-for-mentions", locator],
+    queryKey: KEYS.DOCUMENTS_FOR_MENTIONS(locator),
     queryFn: async () => {
       if (!documentsIntegration?.connection) return [];
       try {

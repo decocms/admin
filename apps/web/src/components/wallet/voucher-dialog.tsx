@@ -8,7 +8,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { redeemWalletVoucher, useSDK } from "@deco/sdk";
+import { KEYS, redeemWalletVoucher, useSDK } from "@deco/sdk";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -21,7 +21,7 @@ export function VoucherDialog() {
   const { mutate: redeemVoucher, isPending } = useMutation({
     mutationFn: () => redeemWalletVoucher({ locator: locator, voucher }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.WALLET_SIMPLE() });
       setIsOpen(false);
       setVoucher("");
     },

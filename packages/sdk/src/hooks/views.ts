@@ -56,7 +56,10 @@ export function getViewByUri(
 export interface ViewUpsertParamsV2 {
   name: string;
   description?: string;
-  html: string;
+  code?: string;
+  html?: string;
+  inputSchema?: Record<string, unknown>;
+  importmap?: Record<string, string>;
   icon?: string;
   tags?: string[];
 }

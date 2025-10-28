@@ -345,9 +345,7 @@ function ResourcesV2ListTab({
       );
     } catch (error) {
       console.error(`Failed to duplicate ${resourceName}:`, error);
-      toast.error(
-        `Failed to duplicate ${resourceName}. Please try again.`,
-      );
+      toast.error(`Failed to duplicate ${resourceName}. Please try again.`);
     } finally {
       setMutating(false);
     }

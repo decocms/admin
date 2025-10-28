@@ -333,7 +333,7 @@ function ResourcesV2ListTab({
       toast.success(`${resourceName || "Resource"} duplicated successfully`);
 
       queryClient.invalidateQueries({
-        queryKey: ["resources-v2-list", integrationId, resourceName],
+        queryKey: KEYS.RESOURCES_LIST(integrationId!, resourceName!),
       });
 
       navigateWorkspace(

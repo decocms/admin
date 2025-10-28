@@ -245,7 +245,7 @@ export function ThemeEditorView() {
 
   // Track previous values for undo functionality
   const previousValuesRef = useRef<Record<string, string>>({});
-  
+
   // Track current theme in a ref to avoid recreating handleVariableChange
   const currentThemeRef = useRef<Theme | undefined>(currentTheme);
 

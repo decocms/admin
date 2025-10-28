@@ -381,7 +381,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   // Initialize from controlled prop
   const [color, setColor] = useState<Color>(() => {
-    const hex = parseColorToHex(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
     const hsl = hexToHsl({ hex });
     return { ...hsl, hex };
   });
@@ -392,7 +394,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   useEffect(() => {
     if (isEditingRef.current) return;
 
-    const hex = parseColorToHex(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
     if (hex !== color.hex && hex.length === 6) {
       const hsl = hexToHsl({ hex });
       setColor({ ...hsl, hex });
@@ -401,7 +405,10 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   // Convert hex to the specified output format
   const formatColorOutput = useCallback(
-    (hex: string, format: "hex" | "oklch" | "hsl" | "rgb" = outputFormat): string => {
+    (
+      hex: string,
+      format: "hex" | "oklch" | "hsl" | "rgb" = outputFormat,
+    ): string => {
       if (format === "oklch") {
         const r = Number.parseInt(hex.slice(0, 2), 16);
         const g = Number.parseInt(hex.slice(2, 4), 16);
@@ -430,11 +437,11 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   // Mark as editing and reset timeout
   const markAsEditing = useCallback(() => {
     isEditingRef.current = true;
-    
+
     if (editingTimeoutRef.current) {
       clearTimeout(editingTimeoutRef.current);
     }
-    
+
     // Stop marking as editing after 500ms of no changes
     editingTimeoutRef.current = window.setTimeout(() => {
       isEditingRef.current = false;
@@ -450,20 +457,23 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
     };
   }, []);
 
-  const handleColorChange = useCallback((partial: Partial<Color>) => {
-    markAsEditing();
-    setColor((prev) => {
-      const value = { ...prev, ...partial };
-      const hexFormatted = hslToHex({
-        h: value.h,
-        s: value.s,
-        l: value.l,
+  const handleColorChange = useCallback(
+    (partial: Partial<Color>) => {
+      markAsEditing();
+      setColor((prev) => {
+        const value = { ...prev, ...partial };
+        const hexFormatted = hslToHex({
+          h: value.h,
+          s: value.s,
+          l: value.l,
+        });
+        const newColor = { ...value, hex: hexFormatted };
+        onChange(formatColorOutput(hexFormatted));
+        return newColor;
       });
-      const newColor = { ...value, hex: hexFormatted };
-      onChange(formatColorOutput(hexFormatted));
-      return newColor;
-    });
-  }, [formatColorOutput, onChange, markAsEditing]);
+    },
+    [formatColorOutput, onChange, markAsEditing],
+  );
 
   return (
     <>
@@ -514,7 +524,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             <div className="flex items-center gap-2 w-full">
               <div
                 className="h-5 w-5 rounded-md border border-border shrink-0"
-                style={{ backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)` }}
+                style={{
+                  backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
+                }}
               />
               <span className="truncate text-sm">{value}</span>
             </div>
@@ -552,8 +564,8 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               }}
             />
             <div className="flex gap-1 w-full">
-              <Select 
-                value={outputFormat} 
+              <Select
+                value={outputFormat}
                 onValueChange={(v) => {
                   const newFormat = v as typeof outputFormat;
                   setOutputFormat(newFormat);
@@ -579,7 +591,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                 <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">
                   <div
                     className="size-7 rounded-md border border-border"
-                    style={{ backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)` }}
+                    style={{
+                      backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
+                    }}
                   />
                 </div>
               </div>

@@ -14,7 +14,7 @@ import {
   type UpdatePromptInput,
 } from "../crud/prompts.ts";
 import { InternalServerError } from "../errors.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export const usePrompts = (input?: {

@@ -7,7 +7,7 @@ import {
   knowledgeListFiles,
 } from "../crud/knowledge.ts";
 import type { Integration } from "../index.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 
 const getConnectionUrl = ({ connection }: ForConnection) =>
   connection && "url" in connection ? connection.url : "";

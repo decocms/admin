@@ -19,7 +19,7 @@ import {
   updateMemberRole,
 } from "../crud/members.ts";
 import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useOrganizations } from "./teams.ts";
 import { type User, useSDK } from "../index.ts";
 

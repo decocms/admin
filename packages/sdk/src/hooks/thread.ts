@@ -20,7 +20,7 @@ import {
   updateThreadMetadata,
   updateThreadTitle,
 } from "../crud/thread.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 /** Hook for fetching thread details */

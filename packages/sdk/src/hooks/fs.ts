@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteFile, listFiles, readFile, writeFile } from "../crud/fs.tsx";
 import { useSDK } from "../index.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 
 export const useFile = (path: string) => {
   const { locator } = useSDK();

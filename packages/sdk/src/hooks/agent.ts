@@ -18,7 +18,7 @@ import {
 } from "../crud/agent.ts";
 import { InternalServerError } from "../errors.ts";
 import type { Agent } from "../models/agent.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateAgent = () => {

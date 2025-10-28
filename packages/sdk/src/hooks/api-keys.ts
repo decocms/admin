@@ -6,7 +6,7 @@ import {
   type ApiKeyClaims,
 } from "../crud/keys.ts";
 import { useSDK } from "./store.tsx";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { Statement } from "../models/index.ts";
 
 export const useCreateAPIKey = () => {

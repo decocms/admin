@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 import { getRegistryApp } from "../crud/registry.ts";
 

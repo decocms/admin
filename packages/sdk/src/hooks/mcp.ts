@@ -17,7 +17,7 @@ import { MCPClient } from "../fetcher.ts";
 import { ProjectLocator } from "../locator.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {

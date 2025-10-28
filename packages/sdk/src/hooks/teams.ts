@@ -31,7 +31,7 @@ import {
   deleteProject,
   type DeleteProjectInput,
 } from "../crud/projects.ts";
-import { KEYS } from "./api.ts";
+import { KEYS } from "./react-query-keys.ts";
 import { InternalServerError } from "../errors.ts";
 import { DEFAULT_THEME } from "../theme.ts";
 import { useSDK } from "./store.tsx";

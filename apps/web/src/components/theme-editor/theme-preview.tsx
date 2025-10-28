@@ -96,9 +96,7 @@ export function ThemePreview() {
           <Alert variant="destructive" className="items-center">
             <Icon name="error" className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              Something went wrong
-            </AlertDescription>
+            <AlertDescription>Something went wrong</AlertDescription>
           </Alert>
         </CardContent>
       </Card>

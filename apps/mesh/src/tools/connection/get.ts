@@ -42,7 +42,7 @@ export const CONNECTION_GET = defineTool({
       id: connection.id,
       name: connection.name,
       description: connection.description,
-      scope: connection.projectId ? 'project' : 'organization',
+      scope: (connection.projectId ? 'project' : 'organization') as 'organization' | 'project',
       status: connection.status,
       connectionType: connection.connectionType,
       connectionUrl: connection.connectionUrl,

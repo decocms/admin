@@ -114,15 +114,14 @@ app.use('*', async (c, next) => {
 // Routes
 // ============================================================================
 
-// Mount proxy routes
-// Organization-scoped: /mcp/:connectionId
-// Project-scoped: /:project/mcp/:connectionId
+// Mount MCP proxy routes
+// Connection IDs are globally unique UUIDs, so no project prefix needed
+// Format: /mcp/:connectionId
 app.route('/mcp', proxyRoutes);
-app.route('/:project/mcp', proxyRoutes);
 
-// TODO: Mount tool execution routes (Task 13)
-// app.route('/mcp/tools', toolRoutes);
-// app.route('/:project/mcp/tools', toolRoutes);
+// TODO: Mount management tool routes for MCP protocol (optional)
+// These would expose PROJECT_CREATE, CONNECTION_CREATE, etc. via MCP protocol
+// For MVP, tools can be called directly via REST or programmatically
 
 // ============================================================================
 // Error Handlers

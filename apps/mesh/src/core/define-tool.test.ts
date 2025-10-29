@@ -10,11 +10,13 @@ const createMockContext = (): MeshContext => ({
     user: { id: 'user_1', email: '[email protected]', name: 'Test', role: 'admin' },
   },
   storage: {
-    projects: null,
-    connections: null,
+    projects: null as any,
+    connections: null as any,
     auditLogs: {
       log: vi.fn().mockResolvedValue(undefined),
-    },
+      query: vi.fn().mockResolvedValue([]),
+    } as any,
+    roles: null as any,
   },
   vault: null as any,
   authInstance: null,
@@ -255,7 +257,7 @@ describe('defineTool', () => {
       });
 
       const ctx = createMockContext();
-      ctx.storage.auditLogs = undefined;
+      ctx.storage.auditLogs = null as any;
 
       // Should not throw
       await expect(tool.execute({}, ctx)).resolves.toBeDefined();

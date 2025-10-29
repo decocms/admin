@@ -81,18 +81,25 @@ export interface RequestMetadata {
 // Storage Interfaces
 // ============================================================================
 
+// Forward declare storage types
+import type { AuditLogStorage } from '../storage/audit-log';
+import type { ConnectionStorage } from '../storage/connection';
+import type { ProjectStorage } from '../storage/project';
+import type { RoleStorage } from '../storage/role';
+
 /**
  * Storage interfaces aggregation
- * Individual storage implementations will be added as they're created
+ * 
+ * Note: 
+ * - Policies handled by Better Auth permissions directly
+ * - API Keys (tokens) managed by Better Auth API Key plugin
+ * - Token revocation handled by Better Auth (deleteApiKey)
  */
 export interface MeshStorage {
-  projects: any; // ProjectStorage
-  connections: any; // ConnectionStorage
-  policies?: any; // PolicyStorage (to be implemented)
-  roles?: any; // RoleStorage (to be implemented)
-  tokens?: any; // AccessTokenStorage (to be implemented)
-  tokenRevocations?: any; // TokenRevocationStorage (to be implemented)
-  auditLogs?: any; // AuditLogStorage (to be implemented)
+  projects: ProjectStorage;
+  connections: ConnectionStorage;
+  auditLogs: AuditLogStorage;
+  roles: RoleStorage;
 }
 
 // ============================================================================

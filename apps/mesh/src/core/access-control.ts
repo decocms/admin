@@ -39,7 +39,7 @@ export class ForbiddenError extends Error {
  * - Admin plugin (role-based permissions)
  * - API Key plugin (key-based permissions)
  */
-export class AccessControl {
+export class AccessControl implements Disposable {
   private _granted: boolean = false;
 
   constructor(
@@ -51,12 +51,21 @@ export class AccessControl {
     private connectionId?: string // For connection-specific checks
   ) { }
 
+  [Symbol.dispose](): void {
+    this._granted = false;
+  }
+
   /**
    * Grant access unconditionally
    * Use for manual overrides, admin actions, or custom validation
    */
-  grant(): void {
+  grant(): Disposable {
     this._granted = true;
+    return {
+      [Symbol.dispose]: () => {
+        this._granted = false;
+      },
+    };
   }
 
   /**

@@ -1,0 +1,40 @@
+# Auth configuration (contains secrets)
+auth-config.json
+
+# Database files
+data/
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Temporary files
+/tmp/
+

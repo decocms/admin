@@ -70,9 +70,10 @@ export const WorkflowDefinitionStepCard = memo(
       return undefined;
     }, [execution]);
 
-
     const hasInputs = useMemo(() => {
-      const properties = stepData.definition?.inputSchema?.properties as Record<string, unknown> | undefined;
+      const properties = stepData.definition?.inputSchema?.properties as
+        | Record<string, unknown>
+        | undefined;
       return properties && Object.keys(properties).length > 0;
     }, [stepData.definition]);
 

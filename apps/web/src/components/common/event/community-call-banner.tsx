@@ -8,9 +8,9 @@ const WORKSHOP_URL = "https://luma.com/e2qlb9j4";
 const LEFT_BACKGROUND_IMAGE = "/img/banner-decoration-2.svg";
 const RIGHT_BACKGROUND_IMAGE = "/img/banner-decoration-1.svg";
 
-// Workshop Build in Public event - October 29, 2025, 5PM-7PM BRT
-const WORKSHOP_START_DATE = new Date(2025, 9, 29, 17, 0, 0, 0); // Month is 0-indexed (9 = October)
-const WORKSHOP_END_DATE = new Date(2025, 9, 29, 19, 0, 0, 0);
+// Workshop Build in Public event - November 5, 2025, 5PM-6PM BRT
+const WORKSHOP_START_DATE = new Date(2025, 10, 5, 17, 0, 0, 0); // Month is 0-indexed (10 = November)
+const WORKSHOP_END_DATE = new Date(2025, 10, 5, 18, 0, 0, 0);
 
 function getNextFridayAt2PM(now: Date = new Date()): {
   startDate: Date;

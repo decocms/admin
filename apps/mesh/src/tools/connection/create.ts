@@ -18,7 +18,7 @@ const connectionSchema = z.discriminatedUnion('type', [
     type: z.literal('SSE'),
     url: z.string().url(),
     token: z.string().optional(),
-    headers: z.record(z.string()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
   }),
   z.object({
     type: z.literal('Websocket'),
@@ -37,7 +37,7 @@ export const CONNECTION_CREATE = defineTool({
     icon: z.string().url().optional(),
     projectId: z.string().nullable().optional(), // null = org-scoped, undefined = use context
     connection: connectionSchema,
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
   }),
   
   outputSchema: z.object({
@@ -79,7 +79,7 @@ export const CONNECTION_CREATE = defineTool({
     return {
       id: connection.id,
       name: connection.name,
-      scope: connection.projectId ? 'project' : 'organization',
+      scope: (connection.projectId ? 'project' : 'organization') as 'organization' | 'project',
       status: connection.status,
     };
   },

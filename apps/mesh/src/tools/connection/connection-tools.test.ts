@@ -25,6 +25,8 @@ describe('Connection Tools', () => {
       storage: {
         projects: new ProjectStorage(db),
         connections: new ConnectionStorage(db),
+        auditLogs: null as any,
+        roles: null as any,
       },
       vault: null as any,
       authInstance: null,
@@ -147,7 +149,9 @@ describe('Connection Tools', () => {
     });
 
     it('should include connection details', async () => {
-      const result = await CONNECTION_LIST.execute({}, ctx);
+      const result = await CONNECTION_LIST.execute({
+        scope: 'all',
+      }, ctx);
 
       const conn = result.connections[0];
       expect(conn).toHaveProperty('id');

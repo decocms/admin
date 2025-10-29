@@ -25,6 +25,8 @@ describe('Project Tools', () => {
       storage: {
         projects: new ProjectStorage(db),
         connections: new ConnectionStorage(db),
+        auditLogs: null as any,
+        roles: null as any,
       },
       vault: null as any,
       authInstance: null,

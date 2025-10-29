@@ -492,8 +492,18 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           throw new NotFoundError(`Resource not found: ${uri}`);
         }
 
-        // Validate new data against schema
-        const validatedData = dataSchema.parse(data);
+        // Merge existing data with updates BEFORE validation
+        // This prevents default values from overwriting existing data
+        const mergedData = {
+          ...existingData,
+          ...data,
+          id: resourceId,
+          updated_at: new Date().toISOString(),
+          updated_by: c.user?.id ? String(c.user.id) : undefined,
+        };
+
+        // Now validate the complete merged data
+        const validatedData = dataSchema.parse(mergedData);
 
         // Run semantic validation if provided
         if (semanticValidate) {
@@ -504,14 +514,7 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
           );
         }
 
-        // Merge existing data with updates
-        const updatedData = {
-          ...existingData,
-          ...validatedData,
-          id: resourceId,
-          updated_at: new Date().toISOString(),
-          updated_by: c.user?.id ? String(c.user.id) : undefined,
-        };
+        const updatedData = validatedData;
 
         const fileContent = JSON.stringify(updatedData, null, 2);
         const startPutFile = performance.now();
@@ -532,12 +535,25 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
 
         console.log(`PUT_FILE took ${performance.now() - startPutFile}ms`);
 
+        // Extract timestamps from the merged data
+        const created_at =
+          typeof (updatedData as Record<string, unknown>).created_at ===
+          "string"
+            ? (updatedData as Record<string, unknown>).created_at
+            : new Date().toISOString();
+        const created_by =
+          typeof (updatedData as Record<string, unknown>).created_by ===
+          "string"
+            ? (updatedData as Record<string, unknown>).created_by
+            : undefined;
+
         return {
           uri,
           data: validatedData,
-          created_at: existingData.created_at as string,
-          updated_at: updatedData.updated_at,
-          created_by: existingData.created_by as string,
+          created_at: created_at as string,
+          updated_at: (updatedData as Record<string, unknown>)
+            .updated_at as string,
+          created_by: created_by as string | undefined,
           updated_by: c.user?.id ? String(c.user.id) : undefined,
         };
       },

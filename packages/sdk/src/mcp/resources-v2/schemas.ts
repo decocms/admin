@@ -141,7 +141,11 @@ export function createCreateOutputSchema<T extends z.ZodTypeAny>(
 export function createUpdateInputSchema<T extends z.ZodTypeAny>(dataSchema: T) {
   return z.object({
     uri: ResourceUriSchema.describe("URI of the resource to update"),
-    data: dataSchema.describe("Updated resource data"),
+    data: (dataSchema as unknown as z.AnyZodObject)
+      .partial()
+      .describe(
+        "Partial resource data to update. Only provided fields will be updated.",
+      ),
   });
 }
 

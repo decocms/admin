@@ -13,9 +13,9 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { auth } from '../auth';
 import { createMeshContextFactory } from '../core/context-factory';
+import type { MeshContext } from '../core/mesh-context';
 import { getDb } from '../database';
 import { meter, tracer } from '../observability';
-import type { MeshContext } from '../core/mesh-context';
 import proxyRoutes from './routes/proxy';
 
 // Define Hono variables type
@@ -98,14 +98,14 @@ app.use('*', async (c, next) => {
     return await next();
   } catch (error) {
     const err = error as Error;
-    
+
     if (err.name === 'UnauthorizedError') {
       return c.json({ error: err.message }, 401);
     }
     if (err.name === 'NotFoundError') {
       return c.json({ error: err.message }, 404);
     }
-    
+
     throw error;
   }
 });

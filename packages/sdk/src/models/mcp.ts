@@ -82,6 +82,8 @@ export const IntegrationSchema = z.object({
       ),
     )
     .nullish(),
+  /** Whether the app is unlisted (hidden from marketplace) */
+  unlisted: z.boolean().optional(),
 });
 
 /**

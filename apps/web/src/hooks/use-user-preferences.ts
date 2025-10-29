@@ -7,6 +7,7 @@ export interface UserPreferences {
   defaultModel: string;
   showDecopilot: boolean;
   pdfSummarization: boolean;
+  storeAdminMode: boolean;
 }
 
 export const userPreferencesLabels = {
@@ -17,6 +18,10 @@ export const userPreferencesLabels = {
   sendReasoning: {
     label: "Send Reasoning",
     description: "Send reasoning to the AI model.",
+  },
+  storeAdminMode: {
+    label: "Store Admin Mode",
+    description: "Enable admin features in the Store to manage app visibility.",
   },
 };
 
@@ -32,6 +37,7 @@ export function useUserPreferences() {
         sendReasoning: true,
         showDecopilot: false,
         pdfSummarization: true,
+        storeAdminMode: false,
       },
     });
 

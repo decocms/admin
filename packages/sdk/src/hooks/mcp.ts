@@ -184,14 +184,24 @@ interface IntegrationsResult {
   >;
 }
 
-export const useMarketplaceIntegrations = () => {
+export const useMarketplaceIntegrations = (options?: {
+  includeAllUnlisted?: boolean;
+}) => {
   const { locator } = useSDK();
+  const includeAllUnlisted = options?.includeAllUnlisted ?? false;
 
   return useSuspenseQuery<IntegrationsResult>({
-    queryKey: ["integrations", "marketplace"],
+    queryKey: [
+      "integrations",
+      "marketplace",
+      includeAllUnlisted ? "all" : "public",
+    ],
     queryFn: () =>
       MCPClient.forLocator(locator)
-        .DECO_INTEGRATIONS_SEARCH({ query: "" })
+        .DECO_INTEGRATIONS_SEARCH({
+          query: "",
+          includeAllUnlisted,
+        })
         .then((r: IntegrationsResult | string) =>
           typeof r === "string" ? { integrations: [] } : r,
         ),

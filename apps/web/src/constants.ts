@@ -123,6 +123,13 @@ export const WELL_KNOWN_EMAIL_DOMAINS = new Set([
   "mailbox.org", // Privacy-focused
 ]);
 
+export const DECO_ADMIN_EMAIL_DOMAINS = [
+  "deco.cx",
+  "decocms.com",
+  "carcara.tech",
+  "caracara.tech",
+] as const;
+
 export const POSTHOG_PROJECT_API_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 
 export const POSTHOG_ORIGIN = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;

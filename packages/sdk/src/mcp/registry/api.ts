@@ -6,6 +6,7 @@ import { UserInputError } from "../../errors.ts";
 import { MCPConnectionSchema } from "../../models/mcp.ts";
 import {
   assertHasWorkspace,
+  assertPrincipalIsUser,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
@@ -24,7 +25,7 @@ const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
   "deco_chat_apps_registry_tools" as const;
 
 // Apps to omit from marketplace/discover
-const OMITTED_APPS = [
+export const OMITTED_APPS = [
   "9cecc7d6-d114-44b4-96e3-d4d06faf2c2f",
   "4c5aeb03-6b3d-4b58-bb14-4a0d7ecd4d14",
   "f5fe9093-67a6-416c-8fac-b77d3edf52e0",
@@ -42,7 +43,7 @@ type DbApp = typeof registryApps.$inferSelect & { tools: DbTool[] } & {
   scope: Pick<typeof registryScopes.$inferSelect, "scope_name">;
 };
 
-const Mappers = {
+export const Mappers = {
   mapTool: (tool: DbTool) => ({
     id: tool.id,
     name: tool.name,
@@ -72,7 +73,7 @@ const Mappers = {
   }),
 };
 
-const Filters = {
+export const Filters = {
   searchApp: (query?: string) => {
     return query
       ? {
@@ -537,5 +538,146 @@ export const publishApp = createTool({
     );
 
     return Mappers.mapApp(data);
+  },
+});
+
+const DECO_ADMIN_EMAIL_DOMAINS = [
+  "deco.cx",
+  "decocms.com",
+  "carcara.tech",
+  "caracara.tech",
+] as const;
+
+function assertIsDecoAdmin(c: AppContext): void {
+  assertPrincipalIsUser(c);
+
+  const email = c.user.email?.toLowerCase();
+  if (!email) {
+    throw new UserInputError("User email not found");
+  }
+
+  const isAdmin = DECO_ADMIN_EMAIL_DOMAINS.some((domain) =>
+    email.endsWith(`@${domain}`),
+  );
+
+  if (!isAdmin) {
+    throw new UserInputError(
+      "This operation is restricted to Deco administrators",
+    );
+  }
+}
+
+export const listAllAppsAdmin = createTool({
+  name: "REGISTRY_LIST_ALL_APPS_ADMIN",
+  description:
+    "List ALL apps in the registry including unlisted ones - restricted to Deco administrators only",
+  inputSchema: z.lazy(() =>
+    z.object({
+      search: z
+        .string()
+        .optional()
+        .describe("Search term to filter apps by name or description"),
+      scopeName: z.string().optional().describe("Filter apps by scope name"),
+    }),
+  ),
+  outputSchema: z.lazy(() => z.object({ apps: z.array(RegistryAppSchema) })),
+  handler: async ({ search, scopeName }, c) => {
+    // Check admin first - admins can access any workspace
+    assertIsDecoAdmin(c);
+
+    // Admins bypass workspace access check by granting access manually
+    c.resourceAccess.grant();
+
+    const apps = await c.drizzle.query.registryApps.findMany({
+      where: {
+        AND: [
+          Filters.searchApp(search),
+          scopeName
+            ? {
+                scope: { scope_name: scopeName },
+              }
+            : {},
+        ],
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+      orderBy: (a, { desc }) => desc(a.created_at),
+    });
+
+    // Filter out omitted apps
+    const filteredApps = apps.filter((app) => !OMITTED_APPS.includes(app.id));
+
+    return {
+      apps: filteredApps.map(Mappers.mapApp),
+    };
+  },
+});
+
+export const updateAppVisibility = createTool({
+  name: "REGISTRY_UPDATE_APP_VISIBILITY",
+  description:
+    "Update app visibility settings (unlisted/verified) - restricted to Deco administrators only",
+  inputSchema: z.lazy(() =>
+    z.object({
+      appId: z.string().describe("The registry app ID to update"),
+      unlisted: z
+        .boolean()
+        .optional()
+        .describe("If true, hides the app from all users in the marketplace"),
+      verified: z
+        .boolean()
+        .optional()
+        .describe("If true, marks the app as verified by Deco"),
+      friendlyName: z
+        .string()
+        .optional()
+        .describe("A friendly display name for the app"),
+      icon: z.string().optional().describe("URL to an icon for the app"),
+      description: z.string().optional().describe("A description of the app"),
+    }),
+  ),
+  outputSchema: z.lazy(() => RegistryAppSchema),
+  handler: async (
+    { appId, unlisted, verified, friendlyName, icon, description },
+    c,
+  ) => {
+    // Check admin first - admins can access any workspace
+    assertIsDecoAdmin(c);
+
+    // Admins bypass workspace access check by granting access manually
+    c.resourceAccess.grant();
+
+    const updates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (unlisted !== undefined) updates.unlisted = unlisted;
+    if (verified !== undefined) updates.verified = verified;
+    if (friendlyName !== undefined)
+      updates.friendly_name = friendlyName?.trim() || null;
+    if (icon !== undefined) updates.icon = icon?.trim() || null;
+    if (description !== undefined)
+      updates.description = description?.trim() || null;
+
+    const { error: updateError } = await c.db
+      .from("deco_chat_apps_registry")
+      .update(updates)
+      .eq("id", appId);
+
+    if (updateError) {
+      throw new UserInputError(`Failed to update app: ${updateError.message}`);
+    }
+
+    const updated = (await c.drizzle.query.registryApps.findFirst({
+      where: { id: appId },
+      with: { tools: true, scope: { columns: { scope_name: true } } },
+    })) as DbApp | undefined;
+
+    if (!updated) {
+      throw new UserInputError("App not found");
+    }
+
+    return Mappers.mapApp(updated);
   },
 });

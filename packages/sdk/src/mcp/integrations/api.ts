@@ -58,6 +58,7 @@ import {
 } from "../projects/util.ts";
 import {
   getRegistryApp,
+  listAllAppsAdmin,
   listRegistryApps,
   type RegistryApp,
 } from "../registry/api.ts";
@@ -1066,6 +1067,13 @@ It's always handy to search for installed integrations with no query, since all 
         .describe("Whether to show contracts")
         .optional()
         .default(false),
+      includeAllUnlisted: z
+        .boolean()
+        .describe(
+          "Include all unlisted apps regardless of workspace (admin only)",
+        )
+        .optional()
+        .default(false),
     }),
   ),
   outputSchema: z.lazy(() =>
@@ -1082,13 +1090,14 @@ It's always handy to search for installed integrations with no query, since all 
         .describe("The Integrations that match the query"),
     }),
   ),
-  handler: async ({ query, showContracts }, c) => {
+  handler: async ({ query, showContracts, includeAllUnlisted }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const registry = await listRegistryApps.handler({
-      search: query,
-    });
+    // Use admin tool if user wants all unlisted apps
+    const registry = includeAllUnlisted
+      ? await listAllAppsAdmin.handler({ search: query })
+      : await listRegistryApps.handler({ search: query });
 
     const registryList = registry.apps
       .map((app) => {
@@ -1105,6 +1114,7 @@ It's always handy to search for installed integrations with no query, since all 
           provider: MARKETPLACE_PROVIDER,
           metadata: app.metadata,
           verified: app.verified,
+          unlisted: app.unlisted,
           connection:
             app.connection || ({ type: "HTTP", url: "" } as MCPConnection),
         };

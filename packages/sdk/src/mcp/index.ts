@@ -152,6 +152,8 @@ export const PROJECT_TOOLS = [
   registryAPI.listPublishedApps,
   registryAPI.listRegistryScopes,
   registryAPI.publishApp,
+  registryAPI.listAllAppsAdmin,
+  registryAPI.updateAppVisibility,
   triggersAPI.getTrigger,
   triggersAPI.listTriggers,
   triggersAPI.createTrigger,

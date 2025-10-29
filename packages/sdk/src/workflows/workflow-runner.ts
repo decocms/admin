@@ -272,6 +272,9 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
         ? state.authorization
         : undefined;
 
+    const config =
+      "options" in stepDef ? (stepDef.options ?? {}) : DEFAULT_CONFIG;
+
     // The new schema structure has def containing the code definition
     const runnable: Runnable = async (input, state) => {
       if (!stepDef.def.execute) {
@@ -343,7 +346,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
 
     return {
       name: stepDef.def.name,
-      config: DEFAULT_CONFIG,
+      config,
       fn: runnable,
     };
   }

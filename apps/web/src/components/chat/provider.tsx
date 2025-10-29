@@ -555,7 +555,7 @@ export function AgenticChatProvider({
       }
 
       // Handle theme updates - trigger UI reload immediately
-      if (toolCall.toolName === "THEME_UPDATE_ORG") {
+      if (toolCall.toolName === "UPDATE_ORG_THEME") {
         const { org } = Locator.parse(locator);
 
         // Invalidate all org-theme and team-theme queries

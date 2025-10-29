@@ -49,7 +49,7 @@ const THEME_EDITOR_AI_RULES = [
 - Layout: Border radius (--radius) and spacing (--spacing) for consistent UI dimensions
 - Advanced: Popovers and muted text colors`,
   'Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.',
-  "Use THEME_UPDATE_ORG to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
+  "Use UPDATE_ORG_THEME to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
   'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)", "--radius": "0.5rem" } } }',
   "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
 ];
@@ -314,7 +314,7 @@ export function ThemeEditorView() {
       id: crypto.randomUUID(),
       type: "toolset" as const,
       integrationId: "i:theme-management",
-      enabledTools: ["THEME_GET_ORG", "THEME_UPDATE_ORG"],
+      enabledTools: ["UPDATE_ORG_THEME"],
     });
 
     // Add HTTP Fetch tool for fetching inspiration/color palettes

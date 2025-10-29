@@ -16,6 +16,7 @@
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@supabase/ssr": "0.6.1",
     "@supabase/supabase-js": "2.49.4",
+    "@openrouter/ai-sdk-provider": "^1.2.0",
     "ai": "^5.0.61",
     "cloudflare": "^4.5.0",
     "hono": "^4.7.7",

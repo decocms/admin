@@ -75,7 +75,7 @@ export function ViewDialogTrigger({
           {displayName}
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-7xl w-[95vw] h-[95vh] flex flex-col p-0 gap-0">
+      <DialogContent className="!max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Icon name="view_list" size={20} className="text-primary" />

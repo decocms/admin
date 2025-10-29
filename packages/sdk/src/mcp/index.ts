@@ -408,8 +408,9 @@ export {
 
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";
-export type {
-  ReadOutput,
-  ResourceItem,
-  SearchOutput,
+export {
+  createItemSchema,
+  type ReadOutput,
+  type ResourceItem,
+  type SearchOutput,
 } from "./resources-v2/schemas.ts";

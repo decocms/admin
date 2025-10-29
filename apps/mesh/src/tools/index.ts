@@ -45,3 +45,6 @@ export function getTool(name: string) {
   return TOOL_MAP[name as keyof typeof TOOL_MAP];
 }
 
+// Re-export toMCPToolDefinition for exposing tools via MCP protocol
+export { toMCPToolDefinition } from '../core/define-tool';
+

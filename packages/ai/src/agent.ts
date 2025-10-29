@@ -898,20 +898,28 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   async createThread(thread: Thread): Promise<Thread> {
     const storage = await this._getMemoryStore();
     const now = new Date();
+    // Convert Metadata to Record<string, unknown> for storage compatibility
+    const metadataForStorage: Record<string, unknown> | undefined =
+      thread.metadata
+        ? (thread.metadata as unknown as Record<string, unknown>)
+        : undefined;
     const threadData = {
-      id: thread.threadId,
+      id: thread.id,
       resourceId: thread.resourceId,
       title: thread.title || "New chat",
-      metadata: thread.metadata,
+      metadata: metadataForStorage,
       createdAt: now,
       updatedAt: now,
     };
     await storage.saveThread({ thread: threadData });
     return {
-      threadId: threadData.id,
+      id: threadData.id,
       resourceId: threadData.resourceId,
       title: threadData.title,
-      metadata: threadData.metadata,
+      // Cast back to Metadata since we know it has the correct shape
+      metadata: thread.metadata,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
   }
 

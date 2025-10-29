@@ -213,9 +213,9 @@ function AgentChatModeSwitch() {
 
   // Get current chat mode from URL (default to 'agent')
   const currentMode =
-    (searchParams.get("chat") as "agent" | "decopilot") || "agent";
+    (searchParams.get("chat") as "agent" | "decochat") || "agent";
 
-  const handleModeChange = (mode: "agent" | "decopilot") => {
+  const handleModeChange = (mode: "agent" | "decochat") => {
     const newParams = new URLSearchParams(location.search);
     newParams.set("chat", mode);
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
@@ -241,13 +241,13 @@ function AgentChatModeSwitch() {
       </Button>
       <Button
         size="sm"
-        variant={currentMode === "decopilot" ? "default" : "outline"}
-        onClick={() => handleModeChange("decopilot")}
+        variant={currentMode === "decochat" ? "default" : "outline"}
+        onClick={() => handleModeChange("decochat")}
         className="flex items-center gap-1.5"
       >
         <AgentAvatar
           className="rounded-sm border-none"
-          url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+          url={WELL_KNOWN_AGENTS.decochatAgent.avatar}
           fallback={
             <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
           }
@@ -266,7 +266,7 @@ export const ToggleDecopilotButton = () => {
     <Button size="sm" variant="default" onClick={toggle}>
       <AgentAvatar
         className="rounded-sm border-none"
-        url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+        url={WELL_KNOWN_AGENTS.decochatAgent.avatar}
         fallback={
           <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
         }

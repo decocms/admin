@@ -2,29 +2,62 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
   type ReactNode,
 } from "react";
-import { useLocation } from "react-router";
+import { deleteThreadMessages, useSDK } from "@deco/sdk";
 
 /**
- * Simplified thread data - only stores ID and route association
+ * Custom hook that combines useState with an effect callback
+ * The effect callback is called whenever the state changes
+ */
+function useStateWithEffect<T>(
+  initialValue: T | (() => T),
+  effect: (value: T) => void,
+): [T, (value: T | ((prevValue: T) => T)) => void] {
+  const [state, setState] = useState(initialValue);
+
+  const setStateWithEffect = useCallback(
+    (value: T | ((prevValue: T) => T)) => {
+      setState((prevState) => {
+        const newState =
+          typeof value === "function"
+            ? (value as (prevValue: T) => T)(prevState)
+            : value;
+        effect(newState);
+        return newState;
+      });
+    },
+    [effect],
+  );
+
+  return [state, setStateWithEffect];
+}
+
+/**
+ * Thread data - stores ID, route, and agent association
  */
 export interface ThreadData {
   id: string;
   route: string;
+  agentId: string;
   createdAt: number;
+  updatedAt: number;
 }
 
 interface ThreadManagerContextValue {
   threads: Map<string, ThreadData>;
   activeThreadId: string | null;
-  getThreadForRoute: (route: string) => ThreadData | null;
-  getAllThreadsForRoute: (route: string) => ThreadData[];
+  getThreadForRoute: (route: string, agentId: string) => ThreadData | null;
+  getAllThreadsForRoute: (route: string, agentId: string) => ThreadData[];
   getActiveThread: () => ThreadData | null;
-  createNewThread: (route: string) => ThreadData;
+  createNewThread: (
+    route: string,
+    agentId: string,
+    threadId?: string,
+  ) => ThreadData;
   switchToThread: (threadId: string) => void;
+  deleteThread: (threadId: string) => void;
 }
 
 const ThreadManagerContext = createContext<ThreadManagerContextValue | null>(
@@ -40,61 +73,66 @@ const STORAGE_KEY = "decopilot-thread-routes";
 export function ThreadManagerProvider({
   children,
 }: ThreadManagerProviderProps) {
-  const location = useLocation();
+  const { locator } = useSDK();
 
-  // Load threads from localStorage
-  const [threads, setThreads] = useState<Map<string, ThreadData>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return new Map(Object.entries(parsed));
+  // Load threads from localStorage with automatic persistence
+  const [threads, setThreads] = useStateWithEffect<Map<string, ThreadData>>(
+    () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return new Map(Object.entries(parsed));
+        }
+      } catch (error) {
+        console.error("[ThreadManager] Failed to load threads:", error);
       }
-    } catch (error) {
-      console.error("[ThreadManager] Failed to load threads:", error);
-    }
-    return new Map();
-  });
+      return new Map();
+    },
+    (newThreads) => {
+      // Persist to localStorage whenever threads change
+      try {
+        const obj = Object.fromEntries(newThreads);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+      } catch (error) {
+        console.error("[ThreadManager] Failed to persist threads:", error);
+      }
+    },
+  );
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
-  // Persist threads to localStorage
-  useEffect(() => {
-    try {
-      const obj = Object.fromEntries(threads);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-    } catch (error) {
-      console.error("[ThreadManager] Failed to persist threads:", error);
-    }
-  }, [threads]);
-
-  // Get the active thread for a route (respects manual thread switching)
+  // Get the active thread for a route and agent (respects manual thread switching)
   const getThreadForRoute = useCallback(
-    (route: string): ThreadData | null => {
-      // First check if the active thread belongs to this route
+    (route: string, agentId: string): ThreadData | null => {
+      // First check if the active thread belongs to this route and agent
       if (activeThreadId) {
         const activeThread = threads.get(activeThreadId);
-        if (activeThread && activeThread.route === route) {
+        if (
+          activeThread &&
+          activeThread.route === route &&
+          activeThread.agentId === agentId
+        ) {
           return activeThread;
         }
       }
 
-      // Otherwise, return the most recent thread for this route
+      // Otherwise, return the most recent thread for this route and agent
       const routeThreads = Array.from(threads.values())
-        .filter((t) => t.route === route)
-        .sort((a, b) => b.createdAt - a.createdAt);
+        .filter((t) => t.route === route && t.agentId === agentId)
+        .sort((a, b) => b.updatedAt - a.updatedAt);
 
       return routeThreads.length > 0 ? routeThreads[0] : null;
     },
     [threads, activeThreadId],
   );
 
-  // Get all threads for a route (sorted by creation time, newest first)
+  // Get all threads for a route and agent (sorted by update time, newest first)
   const getAllThreadsForRoute = useCallback(
-    (route: string): ThreadData[] => {
+    (route: string, agentId: string): ThreadData[] => {
       return Array.from(threads.values())
-        .filter((t) => t.route === route)
-        .sort((a, b) => b.createdAt - a.createdAt);
+        .filter((t) => t.route === route && t.agentId === agentId)
+        .sort((a, b) => b.updatedAt - a.updatedAt);
     },
     [threads],
   );
@@ -105,56 +143,63 @@ export function ThreadManagerProvider({
     return threads.get(activeThreadId) || null;
   }, [activeThreadId, threads]);
 
-  // Create a new thread for a route
-  const createNewThread = useCallback((route: string): ThreadData => {
-    const newId = crypto.randomUUID();
-    const newThread: ThreadData = {
-      id: newId,
-      route,
-      createdAt: Date.now(),
-    };
-
-    setThreads((prev) => new Map(prev).set(newId, newThread));
-    setActiveThreadId(newId);
-
-    return newThread;
-  }, []);
-
-  // Switch to an existing thread
-  const switchToThread = useCallback((threadId: string) => {
-    setActiveThreadId(threadId);
-  }, []);
-
-  // Auto-create/activate thread for current route (only when route changes)
-  useEffect(() => {
-    const currentRoute = location.pathname;
-
-    // Get all threads for this route
-    const routeThreads = Array.from(threads.values())
-      .filter((t) => t.route === currentRoute)
-      .sort((a, b) => b.createdAt - a.createdAt);
-
-    if (routeThreads.length > 0) {
-      // If there's an active thread for this route, keep it
-      // Otherwise, activate the most recent thread
-      const activeThread = threads.get(activeThreadId || "");
-      if (!activeThread || activeThread.route !== currentRoute) {
-        setActiveThreadId(routeThreads[0].id);
-      }
-    } else {
-      // Create new thread for this route
-      const newId = crypto.randomUUID();
+  // Create a new thread for a route and agent (or reuse existing threadId)
+  const createNewThread = useCallback(
+    (route: string, agentId: string, threadId?: string): ThreadData => {
+      const newId = threadId || crypto.randomUUID();
+      const now = Date.now();
       const newThread: ThreadData = {
         id: newId,
-        route: currentRoute,
-        createdAt: Date.now(),
+        route,
+        agentId,
+        createdAt: now,
+        updatedAt: now,
       };
+
       setThreads((prev) => new Map(prev).set(newId, newThread));
       setActiveThreadId(newId);
-    }
-    // Only depend on location.pathname to avoid re-running when activeThreadId changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+
+      return newThread;
+    },
+    [],
+  );
+
+  // Switch to an existing thread and update its updatedAt timestamp
+  const switchToThread = useCallback((threadId: string) => {
+    setActiveThreadId(threadId);
+    setThreads((prev) => {
+      const thread = prev.get(threadId);
+      if (thread) {
+        const updated = new Map(prev);
+        updated.set(threadId, { ...thread, updatedAt: Date.now() });
+        return updated;
+      }
+      return prev;
+    });
+  }, []);
+
+  // Delete a thread
+  const deleteThread = useCallback(
+    (threadId: string) => {
+      setThreads((prev) => {
+        const updated = new Map(prev);
+        updated.delete(threadId);
+        return updated;
+      });
+      // If we're deleting the active thread, clear the active thread
+      if (activeThreadId === threadId) {
+        setActiveThreadId(null);
+      }
+      // Also delete from IndexedDB
+      deleteThreadMessages(threadId, locator).catch((error) => {
+        console.error(
+          "[ThreadManager] Failed to delete thread from IndexedDB:",
+          error,
+        );
+      });
+    },
+    [activeThreadId, locator],
+  );
 
   const value: ThreadManagerContextValue = {
     threads,
@@ -164,6 +209,7 @@ export function ThreadManagerProvider({
     getActiveThread,
     createNewThread,
     switchToThread,
+    deleteThread,
   };
 
   return (

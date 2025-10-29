@@ -1,7 +1,7 @@
 /* oxlint-disable no-explicit-any */
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { Actor } from "@deco/actors";
-import type { Thread } from "@deco/sdk/storage";
+import type { Thread } from "@deco/sdk";
 import type {
   GenerateOptions,
   MessageMetadata,

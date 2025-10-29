@@ -8,6 +8,7 @@ import {
   getTraceDebugId,
   KEYS,
   Locator,
+  saveThreadMessages,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -38,7 +39,7 @@ import {
   type RefObject,
 } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
-import { useBlocker } from "react-router";
+import { useBlocker, useLocation } from "react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
@@ -100,6 +101,7 @@ export interface AgenticChatProviderProps {
   model?: string;
   useOpenRouter?: boolean;
   sendReasoning?: boolean;
+  useDecopilotAgent?: boolean;
 
   // UI options
   uiOptions?: Partial<UiOptions>;
@@ -281,9 +283,11 @@ export function AgenticChatProvider({
   model: defaultModel,
   useOpenRouter,
   sendReasoning,
+  useDecopilotAgent,
   uiOptions,
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
+  const { pathname } = useLocation();
   const { contextItems: threadContextItems } = useThreadContext();
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
@@ -402,30 +406,69 @@ export function AgenticChatProvider({
   }, [form, initialAgent]);
 
   // Memoize the transport to prevent unnecessary re-creation
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
+  const transport = useMemo(() => {
+    // Use new Decopilot streaming endpoint if preference is enabled
+    if (useDecopilotAgent) {
+      return new DefaultChatTransport({
+        api: new URL(`${locator}/agents/decopilot/stream`, DECO_CMS_API_URL)
+          .href,
         credentials: "include",
-        headers: {
-          "x-deno-isolate-instance-id": agentRoot,
-          "x-trace-debug-id": getTraceDebugId(),
-        },
         prepareSendMessagesRequest: ({
           messages,
           requestMetadata,
         }: {
           messages: UIMessage[];
           requestMetadata?: unknown;
-        }) => ({
-          body: {
-            metadata: { threadId: threadId ?? agentId },
-            args: [messages.slice(-1), requestMetadata],
-          },
-        }),
+        }) => {
+          // Parse requestMetadata to extract values
+          // oxlint-disable-next-line no-explicit-any
+          const metadata = requestMetadata as any;
+          const modelId = metadata?.model || defaultModel;
+          const useOpenRouterValue = metadata?.bypassOpenRouter === false; // bypassOpenRouter: false means use OpenRouter
+
+          return {
+            body: {
+              messages,
+              model: {
+                id: modelId,
+                useOpenRouter: useOpenRouterValue,
+              },
+              temperature: metadata?.temperature,
+              maxOutputTokens: metadata?.maxTokens,
+              maxStepCount: metadata?.maxSteps,
+              maxWindowSize: metadata?.lastMessages,
+              system: metadata?.instructions,
+              context: metadata?.context,
+              tools: metadata?.tools,
+              threadId: threadId ?? agentId,
+            },
+          };
+        },
+      });
+    }
+
+    // Use original actor-based streaming for regular agents
+    return new DefaultChatTransport({
+      api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
+      credentials: "include",
+      headers: {
+        "x-deno-isolate-instance-id": agentRoot,
+        "x-trace-debug-id": getTraceDebugId(),
+      },
+      prepareSendMessagesRequest: ({
+        messages,
+        requestMetadata,
+      }: {
+        messages: UIMessage[];
+        requestMetadata?: unknown;
+      }) => ({
+        body: {
+          metadata: { threadId: threadId ?? agentId },
+          args: [messages.slice(-1), requestMetadata],
+        },
       }),
-    [agentRoot, threadId, agentId],
-  );
+    });
+  }, [useDecopilotAgent, locator, agentRoot, threadId, agentId, defaultModel]);
 
   // Initialize chat
   const chat = useChat({
@@ -455,6 +498,24 @@ export function AgenticChatProvider({
         setFinishReason(finishReason);
       } else {
         setFinishReason(null);
+      }
+
+      // Save messages to IndexedDB when decopilot transport is active
+      if (useDecopilotAgent) {
+        saveThreadMessages(
+          threadId,
+          chat.messages,
+          {
+            agentId,
+            route: pathname,
+          },
+          locator,
+        ).catch((error) => {
+          console.error(
+            "[AgenticChatProvider] Failed to save messages to IndexedDB:",
+            error,
+          );
+        });
       }
 
       // Send notification if user is not viewing the app
@@ -677,7 +738,32 @@ export function AgenticChatProvider({
       });
 
       // Send message with metadata in options
-      return chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
+      const sendPromise =
+        chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
+
+      // Save user message to IndexedDB when decopilot transport is active
+      // Note: We save the user message immediately, AI response will be saved in onFinish
+      if (useDecopilotAgent) {
+        sendPromise.then(() => {
+          // After send completes, save updated messages to IndexedDB
+          saveThreadMessages(
+            threadId,
+            [...chat.messages, message],
+            {
+              agentId,
+              route: pathname,
+            },
+            locator,
+          ).catch((error) => {
+            console.error(
+              "[AgenticChatProvider] Failed to save user message to IndexedDB:",
+              error,
+            );
+          });
+        });
+      }
+
+      return sendPromise;
     },
     [
       mergedUiOptions.readOnly,
@@ -685,6 +771,7 @@ export function AgenticChatProvider({
       defaultModel,
       useOpenRouter,
       sendReasoning,
+      useDecopilotAgent,
       agent.model,
       agent.instructions,
       agent.tools_set,
@@ -693,8 +780,10 @@ export function AgenticChatProvider({
       agent.max_tokens,
       agent.memory?.last_messages,
       chat.sendMessage,
+      chat.messages,
       threadId,
       agentId,
+      pathname,
       setIsLoading,
       threadContextItems,
     ],

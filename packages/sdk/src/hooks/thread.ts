@@ -12,13 +12,12 @@ import type { UIMessage } from "ai";
 import { useCallback, useEffect } from "react";
 import {
   getThread,
-  getThreadMessages,
   listThreads,
+  updateThreadMetadata,
+  updateThreadTitle,
   type Thread,
   type ThreadFilterOptions,
   type ThreadList,
-  updateThreadMetadata,
-  updateThreadTitle,
 } from "../crud/thread.ts";
 import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
@@ -29,23 +28,6 @@ export const useThread = (threadId: string) => {
   return useSuspenseQuery({
     queryKey: KEYS.THREAD(locator, threadId),
     queryFn: ({ signal }) => getThread(locator, threadId, { signal }),
-  });
-};
-
-/** Hook for fetching messages from a thread */
-export const useThreadMessages = (
-  threadId: string,
-  { shouldFetch }: { shouldFetch?: boolean } = {},
-) => {
-  const { locator } = useSDK();
-  return useSuspenseQuery({
-    queryKey: KEYS.THREAD_MESSAGES(locator, threadId),
-    queryFn: ({ signal }) =>
-      shouldFetch !== false
-        ? getThreadMessages(locator, threadId, { signal })
-        : { messages: [] },
-    staleTime: 0,
-    gcTime: 0,
   });
 };
 
@@ -287,20 +269,20 @@ export const useDeleteThread = (threadId: string) => {
 
 const channel = new EventTarget();
 
-export interface Options {
+export interface MessagesSentOptions {
   messages: UIMessage[];
   threadId: string;
   agentId: string;
 }
 
-export const dispatchMessages = (options: Options) => {
+export const dispatchMessages = (options: MessagesSentOptions) => {
   channel.dispatchEvent(new CustomEvent("message", { detail: options }));
 };
 
-const useMessagesSentEffect = (cb: (options: Options) => void) => {
+const useMessagesSentEffect = (cb: (options: MessagesSentOptions) => void) => {
   useEffect(() => {
     const handler = (event: Event) => {
-      const options = (event as CustomEvent).detail as Options;
+      const options = (event as CustomEvent).detail as MessagesSentOptions;
       cb(options);
     };
 

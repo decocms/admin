@@ -129,6 +129,9 @@ function OptionsForm({
                   type="number"
                   {...form.register("retries.limit", {
                     valueAsNumber: true,
+                    min: 0,
+                    validate: (value) =>
+                      Number.isInteger(value) || "Must be an integer",
                   })}
                 />
               </FormControl>
@@ -140,6 +143,9 @@ function OptionsForm({
                   type="number"
                   {...form.register("retries.delay", {
                     valueAsNumber: true,
+                    min: 0,
+                    validate: (value) =>
+                      Number.isInteger(value) || "Must be an integer",
                   })}
                 />
               </FormControl>

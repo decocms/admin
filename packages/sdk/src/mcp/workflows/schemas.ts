@@ -89,9 +89,11 @@ export const WorkflowStepDefinitionSchema = z.object({
       timeout: z
         .number()
         .positive()
-        .default(Infinity)
+        .default(300_000) // 5 minutes
         .optional()
-        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+        .describe(
+          "Maximum execution time in milliseconds (default: 5 minutes)",
+        ),
     })
     .optional()
     .describe("Options for the step"),

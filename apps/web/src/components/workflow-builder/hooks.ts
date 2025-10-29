@@ -38,6 +38,8 @@ export function useWorkflowSync(
         })),
         // Include step input mappings (e.g., "@input.name" or "@previous-step.output")
         input: s.input,
+        options: s.options,
+        views: s.views,
       })),
     });
 

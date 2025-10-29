@@ -125,6 +125,7 @@ function detectWorkflowChanges(
       outputSchema: currentStep.def.outputSchema,
       execute: currentStep.def.execute,
       dependencies: currentStep.def.dependencies,
+      options: JSON.stringify(currentStep.options ?? {}),
     });
     const incomingDef = JSON.stringify({
       name: incomingStep.def.name,
@@ -134,6 +135,7 @@ function detectWorkflowChanges(
       outputSchema: incomingStep.def.outputSchema,
       execute: incomingStep.def.execute,
       dependencies: incomingStep.def.dependencies,
+      options: JSON.stringify(incomingStep.options ?? {}),
     });
     if (currentDef !== incomingDef) {
       hasOtherChanges = true;

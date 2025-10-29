@@ -108,6 +108,7 @@ export * from "./models/project.ts";
 export * from "./errors.ts";
 export * from "./theme.ts";
 export * from "./utils/index.ts";
+export * from "./utils/workflows.ts";
 export * from "./storage/index.ts";
 export * from "./views-pinning.ts";
 export * from "./views.ts";

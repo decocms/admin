@@ -118,6 +118,8 @@ export function useWorkflowStepData(stepName: string) {
         state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
         EMPTY_VIEWS,
       execution: state.stepExecutions[stepName],
+      options: state.workflow.steps.find((s) => s.def.name === stepName)
+        ?.options,
       definition: state.workflow.steps.find((s) => s.def.name === stepName)
         ?.def,
     }),

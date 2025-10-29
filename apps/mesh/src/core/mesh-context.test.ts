@@ -20,7 +20,7 @@ const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
     roles: null as any,
   },
   vault: null as any,
-  authInstance: null,
+  authInstance: null as any,
   access: null as any,
   db: null as any,
   tracer: null as any,

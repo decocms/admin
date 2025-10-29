@@ -11,7 +11,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import {
@@ -30,7 +29,6 @@ import { SelectConnectionDialog } from "../integrations/select-connection-dialog
 import { IntegrationListItem } from "../toolsets/selector.tsx";
 
 const ADVANCED_INTEGRATIONS = [
-  ...LEGACY_INTEGRATIONS,
   KnowledgeBaseID.format("standard"),
   "DECO_INTEGRATIONS",
   "DECO_UTILS",

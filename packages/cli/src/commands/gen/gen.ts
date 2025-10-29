@@ -138,18 +138,6 @@ function isValidJavaScriptPropertyName(name: string): boolean {
 type KeyInfo = { type: string; key: string };
 
 const CONTRACTS_BINDING = "@deco/contracts";
-const DEFAULT_BINDINGS: DecoBinding[] = [
-  {
-    name: "DECO_CHAT_WORKSPACE_API",
-    integration_id: "i:workspace-management",
-    type: "mcp",
-  },
-  {
-    name: "DECO_CHAT_API",
-    integration_id: "i:user-management",
-    type: "mcp",
-  },
-];
 
 type MCPResult<T> =
   | T
@@ -205,7 +193,6 @@ export const genEnv = async ({
     const props = await Promise.all(
       [
         ...bindings,
-        ...DEFAULT_BINDINGS,
         ...(selfUrl
           ? [
               {

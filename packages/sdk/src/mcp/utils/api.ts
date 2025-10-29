@@ -10,6 +10,15 @@ const createHTTPTool = createToolGroup("HTTP", {
   workspace: false,
 });
 
+// Create a custom tool group for DateTime utilities
+const createDateTimeTool = createToolGroup("Time", {
+  name: "Time",
+  description:
+    "Date and time utility functions for getting current time information.",
+  icon: "https://assets.webdraw.app/uploads/utils.png",
+  workspace: false,
+});
+
 // Maximum size for binary responses (10MB)
 const MAX_BINARY_SIZE = 10 * 1024 * 1024;
 
@@ -200,5 +209,46 @@ export const httpFetch = createHTTPTool({
     } finally {
       clearTimeout(timeoutId);
     }
+  },
+});
+
+/**
+ * NOW_DATETIME
+ *
+ * A tool that provides current date and time information in multiple formats.
+ */
+export const nowDateTime = createDateTimeTool({
+  name: "NOW_DATETIME",
+  description:
+    "Get current date and time in human-readable format, ISO 8601, and Unix timestamp",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    formatted: z.string().describe("Human-readable date and time"),
+    iso: z.string().describe("ISO 8601 format"),
+    timestamp: z.number().describe("Unix timestamp in milliseconds"),
+  }),
+  handler: async (_, c) => {
+    c.resourceAccess.grant();
+
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    };
+
+    // Use en-US for consistent formatting across all environments
+    const formatted = new Intl.DateTimeFormat("en-US", options).format(now);
+
+    return {
+      formatted,
+      iso: now.toISOString(),
+      timestamp: now.getTime(),
+    };
   },
 });

@@ -1079,10 +1079,8 @@ function RoleDialogContent({
     }
   }, [selectedTab]);
 
-  const availableIntegrations = integrations.filter(
-    (i) =>
-      i.id.startsWith("i:") &&
-      !["i:user-management", "i:workspace-management"].includes(i.id),
+  const availableIntegrations = integrations.filter((i) =>
+    i.id.startsWith("i:"),
   );
 
   // Use deferred values for search to prevent blocking input

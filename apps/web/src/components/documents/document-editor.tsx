@@ -118,8 +118,6 @@ export function DocumentEditor({
     return (integrations as IntegrationWithTools[])
       .filter(
         (integration) =>
-          // Filter out workspace-management to avoid duplicate tools
-          integration.id !== "i:workspace-management" &&
           integration.tools &&
           Array.isArray(integration.tools) &&
           integration.tools.length > 0,
@@ -152,9 +150,6 @@ export function DocumentEditor({
     const SEARCH_TOOL_RE = /^DECO_RESOURCE_[A-Z_]+_SEARCH$/;
     return (integrations as IntegrationWithTools[])
       .filter((integration) => {
-        // Filter out workspace-management to avoid duplicate document results
-        if (integration.id === "i:workspace-management") return false;
-
         const toolsList = integration.tools ?? [];
         return toolsList.some((t) => SEARCH_TOOL_RE.test(t.name));
       })

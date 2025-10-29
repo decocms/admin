@@ -20,7 +20,6 @@ import {
 } from "@deco/sdk";
 import { AppName } from "@deco/sdk/common";
 import { useEffect, useMemo } from "react";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import {
   addIntegrationUpdateListener,
   type IntegrationMessage,
@@ -300,10 +299,6 @@ export function useGroupedApps({ filter }: { filter: string }) {
     const apps: GroupedApp[] = [];
 
     for (const [key, integrations] of Object.entries(grouped)) {
-      if (LEGACY_INTEGRATIONS.some((id) => key.endsWith(id))) {
-        continue;
-      }
-
       if (WELL_KNOWN_APPS[key]) {
         apps.push({ ...WELL_KNOWN_APPS[key], instances: integrations.length });
         continue;

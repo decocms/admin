@@ -17,7 +17,6 @@ export const WellKnownMcpGroups = {
   Model: "model-management",
   OAuth: "oauth-management",
   Prompt: "prompt-management",
-  User: "user-management",
   Registry: "registry-management",
   Sandbox: "code-sandbox",
   Team: "team-management",
@@ -30,6 +29,7 @@ export const WellKnownMcpGroups = {
   Workflows: "workflows-management",
   Self: "self",
   Theme: "theme-management",
+  Time: "time",
 } as const;
 
 type Groups = typeof WellKnownMcpGroups;
@@ -55,7 +55,6 @@ export const WellKnownAppNames = {
   "model-management": "ai-models",
   "oauth-management": "oauth-management",
   "prompt-management": "prompts",
-  "user-management": "users",
   "registry-management": "registry",
   "code-sandbox": "code-sandbox",
   "team-management": "teams",
@@ -66,6 +65,7 @@ export const WellKnownAppNames = {
   "tools-management": "tools",
   http: "http",
   "workflows-management": "workflows",
+  time: "time",
   // Note: "theme-management" is not included as it's a native feature, not a registry app
 } satisfies Partial<WellKnownMcpGroupRecord>;
 

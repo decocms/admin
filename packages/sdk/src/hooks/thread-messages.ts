@@ -44,7 +44,7 @@ export function useThreadMessages(
 
   // Use different query keys for backend vs IndexedDB to avoid conflicts
   const queryKey = isDecopilot
-    ? ["decopilot-messages", threadId]
+    ? ["decopilot-messages", locator, threadId]
     : KEYS.THREAD_MESSAGES(locator, threadId);
 
   return useQuery({
@@ -52,7 +52,7 @@ export function useThreadMessages(
     queryFn: async () => {
       if (isDecopilot) {
         // Fetch from IndexedDB for decopilot
-        const messages = await getDecopilotThreadMessages(threadId);
+        const messages = await getDecopilotThreadMessages(threadId, locator);
         return { messages: messages || [] };
       } else {
         // Fetch from backend API for other agents

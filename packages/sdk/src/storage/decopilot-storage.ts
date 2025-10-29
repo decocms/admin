@@ -23,9 +23,11 @@ export interface ThreadMetadata {
  */
 export async function getDecopilotThreadMessages(
   threadId: string,
+  namespace?: string,
 ): Promise<UIMessage[] | null> {
   try {
-    const messages = await get<UIMessage[]>(`${MESSAGES_PREFIX}${threadId}`);
+    const key = `${MESSAGES_PREFIX}${namespace ? `${namespace}:` : ""}${threadId}`;
+    const messages = await get<UIMessage[]>(key);
     return messages || null;
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get messages:", error);
@@ -40,15 +42,16 @@ export async function saveThreadMessages(
   threadId: string,
   messages: UIMessage[],
   metadata?: Partial<ThreadMetadata>,
+  namespace?: string,
 ): Promise<void> {
   try {
+    const ns = namespace ? `${namespace}:` : "";
     // Save messages
-    await set(`${MESSAGES_PREFIX}${threadId}`, messages);
+    await set(`${MESSAGES_PREFIX}${ns}${threadId}`, messages);
 
     // Update thread metadata
-    const existingMeta = await get<ThreadMetadata>(
-      `${THREAD_META_PREFIX}${threadId}`,
-    );
+    const metaKey = `${THREAD_META_PREFIX}${ns}${threadId}`;
+    const existingMeta = await get<ThreadMetadata>(metaKey);
     const now = Date.now();
 
     const updatedMeta: ThreadMetadata = {
@@ -60,7 +63,7 @@ export async function saveThreadMessages(
       messageCount: messages.length,
     };
 
-    await set(`${THREAD_META_PREFIX}${threadId}`, updatedMeta);
+    await set(metaKey, updatedMeta);
   } catch (error) {
     console.error("[DecopilotStorage] Failed to save messages:", error);
     throw error;
@@ -70,10 +73,14 @@ export async function saveThreadMessages(
 /**
  * Delete messages for a thread from IndexedDB
  */
-export async function deleteThreadMessages(threadId: string): Promise<void> {
+export async function deleteThreadMessages(
+  threadId: string,
+  namespace?: string,
+): Promise<void> {
   try {
-    await del(`${MESSAGES_PREFIX}${threadId}`);
-    await del(`${THREAD_META_PREFIX}${threadId}`);
+    const ns = namespace ? `${namespace}:` : "";
+    await del(`${MESSAGES_PREFIX}${ns}${threadId}`);
+    await del(`${THREAD_META_PREFIX}${ns}${threadId}`);
   } catch (error) {
     console.error("[DecopilotStorage] Failed to delete messages:", error);
     throw error;
@@ -85,9 +92,13 @@ export async function deleteThreadMessages(threadId: string): Promise<void> {
  */
 export async function getThreadMetadata(
   threadId: string,
+  namespace?: string,
 ): Promise<ThreadMetadata | null> {
   try {
-    const meta = await get<ThreadMetadata>(`${THREAD_META_PREFIX}${threadId}`);
+    const ns = namespace ? `${namespace}:` : "";
+    const meta = await get<ThreadMetadata>(
+      `${THREAD_META_PREFIX}${ns}${threadId}`,
+    );
     return meta || null;
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get metadata:", error);
@@ -98,14 +109,14 @@ export async function getThreadMetadata(
 /**
  * Get all thread IDs from IndexedDB
  */
-export async function getAllThreadIds(): Promise<string[]> {
+export async function getAllThreadIds(namespace?: string): Promise<string[]> {
   try {
+    const ns = namespace ? `${namespace}:` : "";
+    const prefix = `${MESSAGES_PREFIX}${ns}`;
     const allKeys = await keys();
     const threadIds = allKeys
-      .filter(
-        (key) => typeof key === "string" && key.startsWith(MESSAGES_PREFIX),
-      )
-      .map((key) => (key as string).replace(MESSAGES_PREFIX, ""));
+      .filter((key) => typeof key === "string" && key.startsWith(prefix))
+      .map((key) => (key as string).replace(prefix, ""));
     return threadIds;
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get thread IDs:", error);
@@ -116,13 +127,16 @@ export async function getAllThreadIds(): Promise<string[]> {
 /**
  * Clear all decopilot data from IndexedDB
  */
-export async function clearAllThreads(): Promise<void> {
+export async function clearAllThreads(namespace?: string): Promise<void> {
   try {
+    const ns = namespace ? `${namespace}:` : "";
+    const messagesPrefix = `${MESSAGES_PREFIX}${ns}`;
+    const metaPrefix = `${THREAD_META_PREFIX}${ns}`;
     const allKeys = await keys();
     const decopilotKeys = allKeys.filter(
       (key) =>
         typeof key === "string" &&
-        (key.startsWith(MESSAGES_PREFIX) || key.startsWith(THREAD_META_PREFIX)),
+        (key.startsWith(messagesPrefix) || key.startsWith(metaPrefix)),
     );
 
     await Promise.all(decopilotKeys.map((key) => del(key)));

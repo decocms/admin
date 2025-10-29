@@ -440,6 +440,7 @@ export function AgenticChatProvider({
               system: metadata?.instructions,
               context: metadata?.context,
               tools: metadata?.tools,
+              threadId: threadId ?? agentId,
             },
           };
         },
@@ -499,12 +500,17 @@ export function AgenticChatProvider({
         setFinishReason(null);
       }
 
-      // Save messages to IndexedDB for decopilot agent
-      if (agentId === WELL_KNOWN_AGENTS.decopilotAgent.id) {
-        saveThreadMessages(threadId, chat.messages, {
-          agentId,
-          route: pathname,
-        }).catch((error) => {
+      // Save messages to IndexedDB when decopilot transport is active
+      if (useDecopilotAgent) {
+        saveThreadMessages(
+          threadId,
+          chat.messages,
+          {
+            agentId,
+            route: pathname,
+          },
+          locator,
+        ).catch((error) => {
           console.error(
             "[AgenticChatProvider] Failed to save messages to IndexedDB:",
             error,
@@ -735,15 +741,20 @@ export function AgenticChatProvider({
       const sendPromise =
         chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
 
-      // Save user message to IndexedDB for decopilot agent
+      // Save user message to IndexedDB when decopilot transport is active
       // Note: We save the user message immediately, AI response will be saved in onFinish
-      if (agentId === WELL_KNOWN_AGENTS.decopilotAgent.id) {
+      if (useDecopilotAgent) {
         sendPromise.then(() => {
           // After send completes, save updated messages to IndexedDB
-          saveThreadMessages(threadId, [...chat.messages, message], {
-            agentId,
-            route: pathname,
-          }).catch((error) => {
+          saveThreadMessages(
+            threadId,
+            [...chat.messages, message],
+            {
+              agentId,
+              route: pathname,
+            },
+            locator,
+          ).catch((error) => {
             console.error(
               "[AgenticChatProvider] Failed to save user message to IndexedDB:",
               error,
@@ -760,6 +771,7 @@ export function AgenticChatProvider({
       defaultModel,
       useOpenRouter,
       sendReasoning,
+      useDecopilotAgent,
       agent.model,
       agent.instructions,
       agent.tools_set,

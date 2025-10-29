@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { deleteThreadMessages } from "@deco/sdk";
+import { deleteThreadMessages, useSDK } from "@deco/sdk";
 
 /**
  * Custom hook that combines useState with an effect callback
@@ -73,6 +73,8 @@ const STORAGE_KEY = "decopilot-thread-routes";
 export function ThreadManagerProvider({
   children,
 }: ThreadManagerProviderProps) {
+  const { locator } = useSDK();
+
   // Load threads from localStorage with automatic persistence
   const [threads, setThreads] = useStateWithEffect<Map<string, ThreadData>>(
     () => {
@@ -189,14 +191,14 @@ export function ThreadManagerProvider({
         setActiveThreadId(null);
       }
       // Also delete from IndexedDB
-      deleteThreadMessages(threadId).catch((error) => {
+      deleteThreadMessages(threadId, locator).catch((error) => {
         console.error(
           "[ThreadManager] Failed to delete thread from IndexedDB:",
           error,
         );
       });
     },
-    [activeThreadId],
+    [activeThreadId, locator],
   );
 
   const value: ThreadManagerContextValue = {

@@ -72,6 +72,7 @@ const DecopilotStreamRequestSchema = z.object({
 
   system: z.string().optional(),
   tools: z.record(z.array(z.string())).optional(), // Integration ID -> Tool names mapping
+  threadId: z.string().optional(), // Thread ID for attribution and tracking
 });
 
 export type DecopilotStreamRequest = z.infer<
@@ -337,7 +338,9 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     DecopilotStreamRequestSchema.safeParse(rawBody);
 
   if (!success) {
-    throw new UserInputError(`Invalid request body: ${error.format()}`);
+    throw new UserInputError(
+      `Invalid request body: ${JSON.stringify(error.format())}`,
+    );
   }
 
   const {
@@ -350,6 +353,7 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     system,
     context,
     tools,
+    threadId,
   } = data;
 
   // Convert UIMessages to CoreMessages using AI SDK helper
@@ -396,8 +400,6 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
 
   const messagesToSend = [...contextMessages, ...prunedMessages];
 
-  console.log(systemPrompt);
-
   // Call streamText with validated and transformed parameters from Zod schema
   const stream = streamText({
     model: llm,
@@ -417,7 +419,7 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
       const usagePromise = wallet.computeLLMUsage({
         userId: ctx.user?.id as string | undefined,
         usage: result.usage as LanguageModelUsage,
-        threadId: crypto.randomUUID(), // Generate a thread ID for tracking
+        threadId: threadId ?? crypto.randomUUID(),
         model: model.id || DEFAULT_MODEL.id,
         modelId: model.id || DEFAULT_MODEL.id,
         workspace: ctx.workspace?.value as Workspace,

@@ -330,7 +330,11 @@ export const KEYS = {
   PROJECTS_SIMPLE: () => ["projects"],
   REGISTRY_APP: (appName: string) => ["registry-app", appName],
   REGISTRY_APPS: (apps: string[]) => ["registry-apps", apps],
-  INTEGRATIONS_MARKETPLACE: () => ["integrations", "marketplace"],
+  INTEGRATIONS_MARKETPLACE: (includeAllUnlisted?: boolean) => [
+    "integrations",
+    "marketplace",
+    includeAllUnlisted ? "all" : "public",
+  ],
   INTEGRATION_SCHEMA: (appName: string) => [
     "integrations",
     "marketplace",

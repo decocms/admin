@@ -1135,8 +1135,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     for (const [_integrationId, toolSet] of Object.entries(toolsets)) {
       for (const [toolName, toolDef] of Object.entries(toolSet)) {
         if (toolName in convertedTools) {
-          throw new Error(
-            `Tool ${toolName} already exists on this agent. Please remove it from the agent's toolset.`,
+          console.warn(
+            `Tool ${toolName} already exists on this agent. Don't worry, @gimenes is already fixing this on another PR`,
           );
         }
 

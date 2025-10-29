@@ -1,6 +1,6 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 // @ts-ignore - correct
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism/index.js";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism/index.js";
 
 interface LazyHighlighterProps {
   language: string;
@@ -16,13 +16,13 @@ function LazyHighlighter({
   return (
     <SyntaxHighlighter
       language={language || "text"}
-      style={tomorrow}
+      style={oneDark}
       customStyle={{
         margin: 0,
         padding: "1rem",
         fontSize: "0.8rem",
         borderRadius: "0.5rem",
-        background: "#263238",
+        background: "#282c34",
         position: "relative",
         overflowX: "hidden",
         overflowY: "visible",

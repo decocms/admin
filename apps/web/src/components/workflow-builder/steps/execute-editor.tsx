@@ -4,10 +4,12 @@ import {
   useWorkflowActions,
   useExecuteDraft,
 } from "../../../stores/workflows/hooks.ts";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { toast } from "sonner";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 interface StepExecuteEditorProps {
   stepName: string;
@@ -28,8 +30,8 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
   const isDirty = draft !== undefined && draft !== stepDefinition?.execute;
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setExecuteDraft(stepName, e.target.value);
+    (value: string) => {
+      setExecuteDraft(stepName, value);
     },
     [stepName, setExecuteDraft],
   );
@@ -89,22 +91,46 @@ export const StepExecuteEditor = memo(function StepExecuteEditor({
           </div>
         )}
       </div>
-      <div className="relative">
-        <Textarea
+      <div className="relative space-y-2">
+        <CodeMirror
           value={currentValue}
           onChange={handleChange}
-          className="font-mono text-xs min-h-[300px] resize-y"
-          placeholder="Export a default async function..."
-          spellCheck={false}
+          extensions={[javascript({ jsx: true, typescript: true })]}
+          theme={oneDark}
+          height="300px"
+          className="text-sm border border-border rounded-lg overflow-hidden"
+          basicSetup={{
+            lineNumbers: true,
+            highlightActiveLineGutter: true,
+            highlightSpecialChars: true,
+            foldGutter: true,
+            drawSelection: true,
+            dropCursor: true,
+            allowMultipleSelections: true,
+            indentOnInput: true,
+            syntaxHighlighting: true,
+            bracketMatching: true,
+            closeBrackets: true,
+            autocompletion: true,
+            rectangularSelection: true,
+            crosshairCursor: true,
+            highlightActiveLine: true,
+            highlightSelectionMatches: true,
+            closeBracketsKeymap: true,
+            searchKeymap: true,
+            foldKeymap: true,
+            completionKeymap: true,
+            lintKeymap: true,
+          }}
         />
-        <div className="mt-2 text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground space-y-1">
           <p>
             Export a default async function:{" "}
             <code className="text-xs bg-muted px-1 py-0.5 rounded">
               (input, ctx) =&gt; Promise&lt;output&gt;
             </code>
           </p>
-          <p className="mt-1">
+          <p>
             Access tools via{" "}
             <code className="text-xs bg-muted px-1 py-0.5 rounded">
               ctx.env[integrationId][toolName]()

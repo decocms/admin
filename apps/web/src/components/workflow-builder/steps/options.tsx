@@ -137,7 +137,12 @@ function OptionsForm({
               </FormControl>
             </FormItem>
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="uppercase text-xs">Delay</FormLabel>
+              <FormLabel className="uppercase text-xs">
+                Delay{" "}
+                <small className="text-[10px] text-muted-foreground">
+                  in milliseconds
+                </small>
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"

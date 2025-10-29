@@ -13,7 +13,7 @@ import {
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type ReactNode, Suspense, useState } from "react";
-import { Outlet, useLocation, useParams } from "react-router";
+import { Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
@@ -62,10 +62,6 @@ export function OrgsLayout() {
     });
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
   const { open: decopilotOpen } = useDecopilotOpen();
-  const location = useLocation();
-
-  // Only show chat on theme editor page
-  const isThemeEditorPage = location.pathname.endsWith("/theme-editor");
 
   const { org } = useParams();
 
@@ -138,7 +134,7 @@ export function OrgsLayout() {
                                 </Suspense>
                               </ScrollArea>
                             </ResizablePanel>
-                            {decopilotOpen && isThemeEditorPage && (
+                            {decopilotOpen && (
                               <>
                                 <ResizableHandle withHandle />
                                 <ResizablePanel

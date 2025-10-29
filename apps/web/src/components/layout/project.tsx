@@ -197,11 +197,6 @@ export function ProjectLayout() {
   );
 }
 
-const useIsProjectContext = () => {
-  const { org, project } = useParams();
-  return !!org && !!project;
-};
-
 function AgentChatModeSwitch() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -265,12 +260,7 @@ function AgentChatModeSwitch() {
 }
 
 export const ToggleDecopilotButton = () => {
-  const isProjectContext = useIsProjectContext();
   const { toggle } = useDecopilotOpen();
-
-  if (!isProjectContext) {
-    return null;
-  }
 
   return (
     <Button size="sm" variant="default" onClick={toggle}>
@@ -289,12 +279,7 @@ export const ToggleDecopilotButton = () => {
 
 export const TopbarControls = () => {
   const location = useLocation();
-  const isProjectContext = useIsProjectContext();
   const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
-
-  if (!isProjectContext) {
-    return null;
-  }
 
   if (isAgentDetailPage) {
     // Show chat mode switch on agent detail pages

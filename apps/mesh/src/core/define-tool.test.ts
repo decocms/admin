@@ -19,7 +19,7 @@ const createMockContext = (): MeshContext => ({
     roles: null as any,
   },
   vault: null as any,
-  authInstance: null,
+  authInstance: null as any,
   access: {
     granted: vi.fn().mockReturnValue(true),
     check: vi.fn().mockResolvedValue(undefined),

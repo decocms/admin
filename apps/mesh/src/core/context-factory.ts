@@ -18,7 +18,7 @@ import { AuditLogStorage } from '../storage/audit-log';
 import { RoleStorage } from '../storage/role';
 import type { Database } from '../storage/types';
 import { AccessControl } from './access-control';
-import type { BetterAuthInstance, MeshContext } from './mesh-context';
+import type { MeshContext, BetterAuthInstance } from './mesh-context';
 import { CredentialVault } from '../encryption/credential-vault';
 
 // ============================================================================
@@ -115,13 +115,13 @@ export function createMeshContextFactory(
 
         auth = {
           apiKey: {
-            id: result.key.id,
-            name: result.key.name,
-            userId: result.key.userId,
-            permissions: result.key.permissions || {},
-            metadata: result.key.metadata,
-            remaining: result.key.remaining,
-            expiresAt: result.key.expiresAt,
+            id: result.key?.id || '',
+            name: result.key?.name || '',
+            userId: result.key?.userId || '',
+            permissions: result.key?.permissions || {},
+            metadata: result.key?.metadata || undefined,
+            remaining: result.key?.remaining || undefined,
+            expiresAt: result.key?.expiresAt || undefined,
           },
         };
       }

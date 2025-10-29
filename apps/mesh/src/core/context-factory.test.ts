@@ -33,7 +33,7 @@ describe('createMeshContextFactory', () => {
     ...overrides,
   });
 
-  const createMockAuth = () => ({
+  const createMockAuth = (): any => ({
     api: {
       verifyApiKey: vi.fn().mockResolvedValue({
         valid: true,
@@ -67,7 +67,7 @@ describe('createMeshContextFactory', () => {
     it('should create MeshContext from Hono context', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null, // No auth for this test
+        auth: null as any, // No auth for this test
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -96,7 +96,7 @@ describe('createMeshContextFactory', () => {
     it('should derive base URL from request', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -120,7 +120,7 @@ describe('createMeshContextFactory', () => {
     it('should populate request metadata', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -152,7 +152,7 @@ describe('createMeshContextFactory', () => {
     it('should be organization-scoped when path starts with /mcp', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -175,7 +175,7 @@ describe('createMeshContextFactory', () => {
     it('should extract project slug from path', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -212,7 +212,7 @@ describe('createMeshContextFactory', () => {
     it('should throw NotFoundError for non-existent project', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -237,7 +237,7 @@ describe('createMeshContextFactory', () => {
     it('should create storage adapters', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -264,7 +264,7 @@ describe('createMeshContextFactory', () => {
     it('should create AccessControl instance', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,

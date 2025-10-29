@@ -61,7 +61,7 @@ type Provider = {
 /**
  * Supported providers for the AI Gateway
  */
-const providers: Record<string, Provider> = {
+export const providers: Record<string, Provider> = {
   anthropic: {
     supportsOpenRouter: false, // generateObject fails when using openrouter.
     creator: anthropic,

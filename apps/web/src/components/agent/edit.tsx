@@ -69,8 +69,8 @@ interface PreviewContextValue {
   showPreview: boolean;
   togglePreview: () => void;
   isMobile: boolean;
-  chatMode: "agent" | "decopilot";
-  setChatMode: (mode: "agent" | "decopilot") => void;
+  chatMode: "agent" | "decochat";
+  setChatMode: (mode: "agent" | "decochat") => void;
 }
 
 const PreviewContext = createContext<PreviewContextValue | undefined>(
@@ -122,10 +122,10 @@ function UnifiedChat() {
   const focusChat = useFocusChat();
   const { chatMode } = usePreviewContext();
   const isEmpty = messages.length === 0;
-  // Decopilot mode doesn't show threads or new thread buttons
-  const isDecopilotMode = chatMode === "decopilot";
-  const showNewThread = !isDecopilotMode && !isEmpty && !hasChanges;
-  const showThreadsButton = !isDecopilotMode;
+  // Decochat mode doesn't show threads or new thread buttons
+  const isDecochatMode = chatMode === "decochat";
+  const showNewThread = !isDecochatMode && !isEmpty && !hasChanges;
+  const showThreadsButton = !isDecochatMode;
 
   return (
     <div className="flex flex-col h-full min-w-[320px] bg-sidebar relative">
@@ -305,21 +305,21 @@ function ChatWithProvider({
 }) {
   const { chatMode } = usePreviewContext();
   // Use the threadId prop directly for agent mode
-  // Separate stable threadId for decopilot mode using useState to maintain state when switching
-  const [decopilotThreadId] = useState(() => crypto.randomUUID());
+  // Separate stable threadId for decochat mode using useState to maintain state when switching
+  const [decochatThreadId] = useState(() => crypto.randomUUID());
 
-  // Get the agent being edited for decopilot context
+  // Get the agent being edited for decochat context
   const { data: editingAgent } = useAgentData(agentId || "");
 
-  // Decopilot-specific hooks
+  // Decochat-specific hooks
   const { threadState, clearThreadState } = useDecopilotThread();
 
-  // Use threadState.threadId when available for decopilot mode
-  const effectiveDecopilotThreadId = threadState.threadId ?? decopilotThreadId;
+  // Use threadState.threadId when available for decochat mode
+  const effectiveDecochatThreadId = threadState.threadId ?? decochatThreadId;
 
-  // Only use initial input if there's an actual message and we're in decopilot mode
+  // Only use initial input if there's an actual message and we're in decochat mode
   const shouldUseInitialInput =
-    chatMode === "decopilot" &&
+    chatMode === "decochat" &&
     threadState.initialMessage &&
     threadState.autoSend;
 
@@ -328,11 +328,11 @@ function ChatWithProvider({
 
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
-    chatMode === "decopilot" ? WELL_KNOWN_AGENTS.decopilotAgent.id : agentId;
+    chatMode === "decochat" ? WELL_KNOWN_AGENTS.decochatAgent.id : agentId;
 
-  // Prepare decopilot context when in decopilot mode
-  const decopilotContextValue = useMemo(() => {
-    if (chatMode !== "decopilot" || !editingAgent) return {};
+  // Prepare decochat context when in decochat mode
+  const decochatContextValue = useMemo(() => {
+    if (chatMode !== "decochat" || !editingAgent) return {};
 
     const rules: string[] = [
       `You are helping with agent editing and configuration. The current agent being edited is "${editingAgent.name}". Focus on operations related to agent configuration, tool management, knowledge base integration, and agent optimization.`,
@@ -346,7 +346,7 @@ function ChatWithProvider({
   const threadContextItems = useMemo(() => {
     const items = [];
 
-    if (chatMode !== "decopilot") {
+    if (chatMode !== "decochat") {
       // In agent chat mode, add the agent's toolset
       const agentToolSet = editingAgent?.tools_set ?? {};
 
@@ -362,10 +362,10 @@ function ChatWithProvider({
       return items;
     }
 
-    // In decopilot mode, add rules about agent editing
-    if (decopilotContextValue.rules) {
+    // In decochat mode, add rules about agent editing
+    if (decochatContextValue.rules) {
       items.push(
-        ...decopilotContextValue.rules.map((text) => ({
+        ...decochatContextValue.rules.map((text) => ({
           type: "rule" as const,
           text,
           id: crypto.randomUUID(),
@@ -374,7 +374,7 @@ function ChatWithProvider({
     }
 
     return items;
-  }, [chatMode, editingAgent?.tools_set, decopilotContextValue.rules]);
+  }, [chatMode, editingAgent?.tools_set, decochatContextValue.rules]);
 
   // Set context items in thread context
   useSetThreadContextEffect(threadContextItems);
@@ -382,21 +382,21 @@ function ChatWithProvider({
   if (!chatAgentId) return null;
 
   const { data: serverAgent } = useAgentData(agentId);
-  const { data: decopilotAgent } = useAgentData(
-    WELL_KNOWN_AGENTS.decopilotAgent.id,
+  const { data: decochatAgent } = useAgentData(
+    WELL_KNOWN_AGENTS.decochatAgent.id,
   );
 
   // Fetch required data for providers
   const agentRoot = useAgentRoot(agentId);
-  const decopilotRoot = useAgentRoot(WELL_KNOWN_AGENTS.decopilotAgent.id);
+  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
   const { preferences } = useUserPreferences();
   const { data: { messages: agentThreadMessages } = { messages: [] } } =
     useThreadMessages(threadId, {
       shouldFetch: chatMode === "agent",
     });
-  const { data: { messages: decopilotThreadMessages } = { messages: [] } } =
-    useThreadMessages(effectiveDecopilotThreadId, {
-      shouldFetch: chatMode === "decopilot",
+  const { data: { messages: decochatThreadMessages } = { messages: [] } } =
+    useThreadMessages(effectiveDecochatThreadId, {
+      shouldFetch: chatMode === "decochat",
     });
 
   const handleSaveAgent = useSaveAgent();
@@ -405,7 +405,7 @@ function ChatWithProvider({
   // This way both chats maintain their state
   return (
     <div className="h-full w-full">
-      {/* Agent chat - hidden when in decopilot mode */}
+      {/* Agent chat - hidden when in decochat mode */}
       <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
         {serverAgent && (
           <Suspense fallback={null}>
@@ -433,20 +433,20 @@ function ChatWithProvider({
         )}
       </div>
 
-      {/* Decopilot chat - hidden when in agent mode */}
-      <div className={chatMode === "decopilot" ? "block h-full" : "hidden"}>
-        {decopilotAgent && (
+      {/* Decochat - hidden when in agent mode */}
+      <div className={chatMode === "decochat" ? "block h-full" : "hidden"}>
+        {decochatAgent && (
           <Suspense fallback={null}>
             <AgenticChatProvider
-              key={effectiveDecopilotThreadId}
-              agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-              threadId={effectiveDecopilotThreadId}
-              agent={decopilotAgent}
-              agentRoot={decopilotRoot}
+              key={effectiveDecochatThreadId}
+              agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
+              threadId={effectiveDecochatThreadId}
+              agent={decochatAgent}
+              agentRoot={decochatRoot}
               model={preferences.defaultModel}
               useOpenRouter={preferences.useOpenRouter}
               sendReasoning={preferences.sendReasoning}
-              initialMessages={decopilotThreadMessages}
+              initialMessages={decochatThreadMessages}
               initialInput={
                 shouldUseInitialInput
                   ? (threadState.initialMessage ?? undefined)
@@ -564,13 +564,13 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   const togglePreview = () => setShowPreview((prev) => !prev);
 
-  // Chat mode state (agent chat vs decopilot chat)
+  // Chat mode state (agent chat vs decochat chat)
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const urlChatMode =
-    (searchParams.get("chat") as "agent" | "decopilot") || "agent";
+    (searchParams.get("chat") as "agent" | "decochat") || "agent";
 
-  const [chatMode, setChatMode] = useState<"agent" | "decopilot">(urlChatMode);
+  const [chatMode, setChatMode] = useState<"agent" | "decochat">(urlChatMode);
 
   // Sync with URL changes
   useEffect(() => {

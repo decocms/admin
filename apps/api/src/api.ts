@@ -86,6 +86,7 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
+import { handleDecopilotStream } from "./decopilot-stream.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -1052,6 +1053,9 @@ app.post(
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
 app.post("/:org/:project/self/mcp", selfMcpHandler);
 app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
+
+// Decopilot streaming endpoint
+app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
 
 app.post("/:org/:project/:integrationId/mcp", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);

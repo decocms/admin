@@ -68,6 +68,13 @@ export class WebhookEventIgnoredError extends HttpError {
   }
 }
 
+export class PaymentRequiredError extends HttpError {
+  override code = 402;
+  constructor(message: string = "Payment required", traceId?: string) {
+    super(message, traceId);
+  }
+}
+
 export const getErrorByStatusCode = (
   statusCode: number,
   message?: string,
@@ -80,6 +87,10 @@ export const getErrorByStatusCode = (
 
   if (statusCode === 401) {
     return new UnauthorizedError(message, traceId);
+  }
+
+  if (statusCode === 402) {
+    return new PaymentRequiredError(message, traceId);
   }
 
   if (statusCode === 403) {

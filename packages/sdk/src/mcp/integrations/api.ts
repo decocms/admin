@@ -157,7 +157,8 @@ const integrationCallToolInputSchema = IntegrationSchema.pick({
 
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
-  description: "Call a given tool",
+  description:
+    "Call a tool from an integration. If you have the integration ID (from INTEGRATIONS_LIST or INTEGRATIONS_GET), prefer using 'id' over 'connection'. The ID ensures you're calling the correct configured integration. Use 'connection' only when you need to call a tool from a new or unconfigured integration.",
   inputSchema: z.lazy(() => integrationCallToolInputSchema),
   handler: async (input, c) => {
     c.resourceAccess.grant();

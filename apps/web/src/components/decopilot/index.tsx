@@ -1,9 +1,4 @@
-import {
-  WELL_KNOWN_AGENTS,
-  useAgentData,
-  useAgentRoot,
-  useThreadMessages,
-} from "@deco/sdk";
+import { WELL_KNOWN_AGENTS, useAgentRoot, useThreadMessages } from "@deco/sdk";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,28 +8,31 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { AgenticChatProvider } from "../chat/provider.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
+import { ModeSelector } from "./mode-selector.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
 import { useThreadManager } from "./thread-manager-context.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
-const agentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
+const decochatAgentId = WELL_KNOWN_AGENTS.decochatAgent.id;
+const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
 
 /**
  * Custom hook to generate a thread title from the first message
  */
 function useThreadTitle(
   threadId: string | undefined,
+  agentId: string,
   fallback: string = "New chat",
 ) {
-  const { data: messages } = useThreadMessages(threadId ?? "", {
+  const { data: messages } = useThreadMessages(threadId ?? "", agentId, {
     shouldFetch: !!threadId,
   });
 
@@ -68,21 +66,25 @@ function ThreadItemSkeleton() {
 
 function ThreadItem({
   threadId,
+  agentId,
   isActive,
   onClick,
+  onDelete,
   timestamp,
 }: {
   threadId: string;
+  agentId: string;
   isActive: boolean;
   onClick: () => void;
+  onDelete: () => void;
   timestamp: number;
 }) {
-  const displayTitle = useThreadTitle(threadId, "New Thread");
+  const displayTitle = useThreadTitle(threadId, agentId, "New Thread");
 
   return (
     <DropdownMenuItem
       onClick={onClick}
-      className="flex items-center justify-between"
+      className="flex items-center justify-between group/item"
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <Icon
@@ -96,32 +98,50 @@ function ThreadItem({
         />
         <span className="text-sm truncate">{displayTitle}</span>
       </div>
-      <span className="text-xs text-muted-foreground shrink-0 ml-2">
-        {timeAgo(timestamp, {
-          format: "short",
-          maxDays: 7,
-          fallbackFormat: (date) => date.toLocaleDateString(),
-        })}
-      </span>
+      <div className="flex items-center gap-1 shrink-0 ml-2">
+        <span className="text-xs text-muted-foreground">
+          {timeAgo(timestamp, {
+            format: "short",
+            maxDays: 7,
+            fallbackFormat: (date) => date.toLocaleDateString(),
+          })}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="flex size-5 items-center justify-center rounded p-0.5 opacity-0 group-hover/item:opacity-100 hover:bg-destructive/10 transition-all cursor-pointer"
+          title="Delete thread"
+        >
+          <Icon
+            name="delete"
+            size={14}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+          />
+        </button>
+      </div>
     </DropdownMenuItem>
   );
 }
 
-function ThreadSelector() {
+function ThreadSelector({ agentId }: { agentId: string }) {
   const { pathname } = useLocation();
   const {
     getAllThreadsForRoute,
     getThreadForRoute,
     createNewThread,
     switchToThread,
+    deleteThread,
   } = useThreadManager();
 
-  const allThreads = getAllThreadsForRoute(pathname);
-  const currentThread = getThreadForRoute(pathname);
-  const currentThreadTitle = useThreadTitle(currentThread?.id);
+  const allThreads = getAllThreadsForRoute(pathname, agentId);
+  const currentThread = getThreadForRoute(pathname, agentId);
+  const currentThreadTitle = useThreadTitle(currentThread?.id, agentId);
 
   function handleNewThread() {
-    createNewThread(pathname);
+    createNewThread(pathname, agentId);
   }
 
   function handleSwitchThread(threadId: string) {
@@ -151,9 +171,11 @@ function ThreadSelector() {
             <Suspense key={thread.id} fallback={<ThreadItemSkeleton />}>
               <ThreadItem
                 threadId={thread.id}
+                agentId={agentId}
                 isActive={thread.id === currentThread?.id}
                 onClick={() => handleSwitchThread(thread.id)}
-                timestamp={thread.createdAt}
+                onDelete={() => deleteThread(thread.id)}
+                timestamp={thread.updatedAt}
               />
             </Suspense>
           ))}
@@ -180,31 +202,43 @@ export function DecopilotChat() {
   const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
   const { setOpen } = useDecopilotOpen();
+  const [mode, setMode] = useState<"decochat" | "decopilot">("decochat");
 
-  // Get the thread for the current route
-  const currentThread = getThreadForRoute(pathname);
+  // Select agent based on mode
+  const agentId = mode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
-  // Fetch required data
-  const { data: agent } = useAgentData(agentId);
+  // Get or create the thread for the current route and agent
+  const currentThread = useMemo(() => {
+    const existingThread = getThreadForRoute(pathname, agentId);
+    if (existingThread) {
+      return existingThread;
+    }
+    return createNewThread(pathname, agentId);
+  }, [pathname, agentId, getThreadForRoute, createNewThread]);
+
+  // Get agent from inline constants (both are well-known agents)
+  const agent =
+    mode === "decopilot"
+      ? WELL_KNOWN_AGENTS.decopilotAgent
+      : WELL_KNOWN_AGENTS.decochatAgent;
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
-  const { data } = useThreadMessages(currentThread?.id || "", {
-    shouldFetch: !!currentThread?.id,
-  });
-  const threadMessages = data?.messages ?? [];
 
-  // If no thread yet or agent not loaded, show a loading state
-  if (!currentThread || !agent) {
+  // Use unified hook that handles both backend and IndexedDB based on agentId
+  const { data: threadData } = useThreadMessages(
+    currentThread?.id || "",
+    agentId,
+    { shouldFetch: !!currentThread?.id },
+  );
+
+  const threadMessages = threadData?.messages ?? [];
+
+  // If no thread yet, show a loading state
+  if (!currentThread) {
     return (
       <div className="flex h-full w-full flex-col">
-        <div className="flex h-10 items-center gap-2 border-b border-border px-2">
-          <div className="flex items-center gap-2">
-            <img
-              src={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
-              alt={WELL_KNOWN_AGENTS.decopilotAgent.name}
-              className="size-5 rounded-md border border-border"
-            />
-          </div>
+        <div className="flex h-10 items-center gap-3 border-b border-border px-2">
+          <ModeSelector mode={mode} onModeChange={setMode} />
         </div>
         <MainChatSkeleton />
       </div>
@@ -213,22 +247,15 @@ export function DecopilotChat() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Header with agent info and thread controls */}
-      <div className="flex h-10 items-center gap-2 border-b border-border px-2">
-        <div className="flex items-center gap-2">
-          <img
-            src={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
-            alt={WELL_KNOWN_AGENTS.decopilotAgent.name}
-            className="size-5 rounded-md border border-border"
-          />
-          <span className="text-sm">decochat</span>
-          <span className="text-sm text-muted-foreground">/</span>
-          <ThreadSelector />
-        </div>
+      {/* Header with mode selector and thread controls */}
+      <div className="flex h-10 items-center gap-3 border-b border-border px-2">
+        <ModeSelector mode={mode} onModeChange={setMode} />
+        <span className="text-sm text-muted-foreground">/</span>
+        <ThreadSelector agentId={agentId} />
         <div className="flex flex-1 items-center justify-end gap-1">
           <button
             type="button"
-            onClick={() => createNewThread(pathname)}
+            onClick={() => createNewThread(pathname, agentId)}
             className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
             title="New thread"
           >
@@ -257,7 +284,7 @@ export function DecopilotChat() {
       <div className="flex-1 min-h-0">
         <Suspense fallback={<MainChatSkeleton />}>
           <AgenticChatProvider
-            key={currentThread.id}
+            key={`${currentThread.id}-${mode}`}
             agentId={agentId}
             threadId={currentThread.id}
             agent={agent}
@@ -265,6 +292,7 @@ export function DecopilotChat() {
             model={preferences.defaultModel}
             useOpenRouter={preferences.useOpenRouter}
             sendReasoning={preferences.sendReasoning}
+            useDecopilotAgent={mode === "decopilot"}
             initialMessages={threadMessages}
             initialInput={threadState.initialMessage || undefined}
             autoSend={threadState.autoSend}

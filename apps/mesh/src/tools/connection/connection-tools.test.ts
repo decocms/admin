@@ -29,7 +29,7 @@ describe('Connection Tools', () => {
         roles: null as any,
       },
       vault: null as any,
-      authInstance: null,
+      authInstance: null as any,
       access: {
         granted: () => true,
         check: async () => {},

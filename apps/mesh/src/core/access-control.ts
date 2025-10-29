@@ -1,0 +1,190 @@
+/**
+ * Access Control for MCP Mesh
+ * 
+ * Uses Better Auth's permission system for authorization.
+ * Follows a grant-based model:
+ * 1. Tools call ctx.access.check() to verify permissions
+ * 2. If allowed, access is granted internally
+ * 3. Middleware verifies that access was granted
+ * 4. Tools can manually grant access for custom logic
+ */
+
+import type { Permission } from '../storage/types';
+
+// Forward declaration (will be replaced with actual Better Auth type)
+export type BetterAuthInstance = any;
+
+// ============================================================================
+// Errors
+// ============================================================================
+
+/**
+ * Custom error for access denial
+ */
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ForbiddenError';
+  }
+}
+
+// ============================================================================
+// AccessControl Class
+// ============================================================================
+
+/**
+ * AccessControl using Better Auth's permission system
+ * 
+ * Works with both:
+ * - Admin plugin (role-based permissions)
+ * - API Key plugin (key-based permissions)
+ */
+export class AccessControl {
+  private _granted: boolean = false;
+
+  constructor(
+    private auth: BetterAuthInstance,
+    private userId?: string,
+    private toolName?: string,
+    private permissions?: Permission, // From API key
+    private role?: string, // From user session
+    private connectionId?: string // For connection-specific checks
+  ) { }
+
+  /**
+   * Grant access unconditionally
+   * Use for manual overrides, admin actions, or custom validation
+   */
+  grant(): void {
+    this._granted = true;
+  }
+
+  /**
+   * Check permissions and grant access if allowed
+   * 
+   * @param resources - Resources to check (OR logic)
+   * If omitted, checks the current tool name
+   * 
+   * @throws ForbiddenError if access is denied
+   * 
+   * @example
+   * await ctx.access.check(); // Check current tool
+   * await ctx.access.check('conn_<UUID>'); // Check connection access
+   * await ctx.access.check('TOOL1', 'TOOL2'); // Check TOOL1 OR TOOL2
+   */
+  async check(...resources: string[]): Promise<void> {
+    // If already granted, skip check
+    if (this._granted) {
+      return;
+    }
+
+    // Determine what to check
+    const resourcesToCheck = resources.length > 0
+      ? resources
+      : this.toolName ? [this.toolName] : [];
+
+    if (resourcesToCheck.length === 0) {
+      throw new ForbiddenError('No resources specified for access check');
+    }
+
+    // Try each resource - if ANY succeeds, grant access (OR logic)
+    for (const resource of resourcesToCheck) {
+      const hasAccess = await this.checkResource(resource);
+      if (hasAccess) {
+        this.grant();
+        return;
+      }
+    }
+
+    // No permission found
+    throw new ForbiddenError(
+      `Access denied to: ${resourcesToCheck.join(', ')}`
+    );
+  }
+
+  /**
+   * Check if user has permission to access a resource
+   */
+  private async checkResource(resource: string): Promise<boolean> {
+    // No user or permissions = deny
+    if (!this.userId && !this.permissions) {
+      return false;
+    }
+
+    // Admin role bypasses all checks
+    if (this.role === 'admin') {
+      return true;
+    }
+
+    // Build permission check
+    const permissionToCheck: Permission = {
+      [resource]: ['*'], // Check for any action
+    };
+
+    // If checking a specific connection, also check that
+    if (this.connectionId) {
+      permissionToCheck[this.connectionId] = [resource];
+    }
+
+    try {
+      // Use Better Auth's permission checking if available
+      if (this.userId && this.auth?.api?.userHasPermission) {
+        const result = await this.auth.api.userHasPermission({
+          body: {
+            userId: this.userId,
+            role: this.role,
+            permissions: this.permissions,
+            permission: permissionToCheck,
+          },
+        });
+
+        return result.data?.has === true;
+      }
+
+      // Fallback to manual check
+      return this.manualPermissionCheck(resource);
+    } catch (error) {
+      // Fallback to manual check on error
+      return this.manualPermissionCheck(resource);
+    }
+  }
+
+  /**
+   * Fallback manual permission check
+   * Used when Better Auth API is unavailable or for API key-only auth
+   */
+  private manualPermissionCheck(resource: string): boolean {
+    if (!this.permissions || Object.keys(this.permissions).length === 0) {
+      return false;
+    }
+
+    // Check permissions object
+    for (const [key, actions] of Object.entries(this.permissions)) {
+      // If checking specific connection, skip others
+      if (this.connectionId && key !== this.connectionId) {
+        continue;
+      }
+
+      // Check if key matches the resource
+      if (key === resource) {
+        // Resource matches - check if actions include wildcard or specific action
+        return actions.includes('*') || actions.length > 0;
+      }
+
+      // Check if actions list includes this resource (for connection-based permissions)
+      if (actions.includes(resource)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if access was granted
+   */
+  granted(): boolean {
+    return this._granted;
+  }
+}
+

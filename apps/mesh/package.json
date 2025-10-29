@@ -6,7 +6,8 @@
     "dev": "bun --hot run src/index.ts",
     "start": "bun run src/index.ts",
     "db:generate": "bun run src/database/generate.ts",
-    "db:migrate": "bun run src/database/migrate.ts"
+    "db:migrate": "bun run src/database/migrate.ts",
+    "test": "bun test ."
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.4",

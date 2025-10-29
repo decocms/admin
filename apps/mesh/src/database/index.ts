@@ -7,10 +7,10 @@
  * The dialect is specified ONCE at initialization, not in schema files.
  */
 
+import { existsSync, mkdirSync } from 'fs';
 import { Kysely, PostgresDialect } from 'kysely';
 import { BunWorkerDialect } from 'kysely-bun-worker';
 import { Pool } from 'pg';
-import { mkdirSync, existsSync } from 'fs';
 import type { Database as DatabaseSchema } from '../storage/types';
 
 /**

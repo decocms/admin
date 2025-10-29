@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createDatabase, closeDatabase } from './index';
 import { mkdtempSync, rmSync } from 'fs';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { closeDatabase, createDatabase } from './index';
 
 describe('Database Factory', () => {
   let tempDir: string;
-  
+
   beforeAll(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'mesh-test-'));
   });
-  
+
   afterAll(() => {
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -19,9 +19,9 @@ describe('Database Factory', () => {
     it('should create SQLite database from file:// URL', async () => {
       const dbPath = join(tempDir, 'test-file.db');
       const db = createDatabase(`file:${dbPath}`);
-      
+
       expect(db).toBeDefined();
-      
+
       // Test that database is functional (will fail without migrations, but db exists)
       try {
         await db.selectFrom('projects' as any).selectAll().execute();
@@ -29,14 +29,14 @@ describe('Database Factory', () => {
         // Expected - table doesn't exist without migrations
         expect(error).toBeDefined();
       }
-      
+
       await closeDatabase(db);
     });
 
     it('should create SQLite database from sqlite:// URL', async () => {
       const dbPath = join(tempDir, 'test-sqlite.db');
       const db = createDatabase(`sqlite://${dbPath}`);
-      
+
       expect(db).toBeDefined();
       await closeDatabase(db);
     });
@@ -56,14 +56,14 @@ describe('Database Factory', () => {
     it('should create directory if not exists for SQLite', async () => {
       const dbPath = join(tempDir, 'nested', 'dir', 'test.db');
       const db = createDatabase(`file:${dbPath}`);
-      
+
       expect(db).toBeDefined();
       await closeDatabase(db);
     });
 
     it('should handle in-memory SQLite database', async () => {
       const db = createDatabase(':memory:');
-      
+
       expect(db).toBeDefined();
       await closeDatabase(db);
     });
@@ -72,7 +72,7 @@ describe('Database Factory', () => {
   describe('closeDatabase', () => {
     it('should close database connection', async () => {
       const db = createDatabase(':memory:');
-      
+
       // Should not throw
       await closeDatabase(db);
       expect(true).toBe(true);

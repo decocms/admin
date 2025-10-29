@@ -115,7 +115,7 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
         await mutateAsync(
           {
             uri: workflowUri,
-            input: firstStepInput as Record<string, unknown>,
+            input: (firstStepInput as Record<string, unknown>) || {},
           },
           {
             onSuccess: (data) => {

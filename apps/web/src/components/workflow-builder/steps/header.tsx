@@ -42,9 +42,11 @@ export const StepHeader = memo(function StepHeader({
   );
 
   const handleRunStep = useCallback(async () => {
-    if (currentInput && typeof currentInput === "object") {
-      await runStep(currentInput as Record<string, unknown>);
+    if (!currentInput) {
+      await runStep({});
+      return;
     }
+    await runStep(currentInput as Record<string, unknown>);
   }, [runStep, currentInput]);
 
   const handleToggleExecuteEditor = useCallback(() => {

@@ -70,17 +70,25 @@ export const WorkflowDefinitionStepCard = memo(
       return undefined;
     }, [execution]);
 
+
+    const hasInputs = useMemo(() => {
+      const properties = stepData.definition?.inputSchema?.properties as Record<string, unknown> | undefined;
+      return properties && Object.keys(properties).length > 0;
+    }, [stepData.definition]);
+
     return (
       <div className="rounded-xl p-1 bg-card shadow-xs min-w-0">
         <StepHeader stepName={stepName} status={status} />
         <div className="bg-background rounded-xl shadow-xs overflow-hidden min-w-0">
           {isExecuteEditorOpen && <StepExecuteEditor stepName={stepName} />}
-          <div className="border-b border-base-border bg-background p-4 space-y-3 min-w-0 overflow-hidden">
-            <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
-              Inputs
-            </p>
-            <WorkflowStepInput stepName={stepName} />
-          </div>
+          {hasInputs && (
+            <div className="border-b border-base-border bg-background p-4 space-y-3 min-w-0 overflow-hidden">
+              <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
+                Inputs
+              </p>
+              <WorkflowStepInput stepName={stepName} />
+            </div>
+          )}
           <StepContent
             stepName={stepName}
             output={stepData.output}

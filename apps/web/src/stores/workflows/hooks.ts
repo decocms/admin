@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useWorkflowStore } from "./provider";
+import { Store } from "./store";
 
 // Stable empty array to prevent reference instability in selectors
 export const EMPTY_VIEWS: readonly string[] = [];
@@ -111,20 +112,15 @@ export function useWorkflowStepExecution(stepName: string) {
 // Memoized complex selector
 export function useWorkflowStepData(stepName: string) {
   const selector = useMemo(
-    () =>
-      (state: {
-        stepOutputs: Record<string, unknown>;
-        stepExecutions: Record<string, unknown>;
-        workflow: { steps: Array<{ def: { name: string }; views?: string[] }> };
-      }) => ({
-        output: state.stepOutputs[stepName],
-        views:
-          state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
-          EMPTY_VIEWS,
-        execution: state.stepExecutions[stepName],
-        definition: state.workflow.steps.find((s) => s.def.name === stepName)
-          ?.def,
-      }),
+    () => (state: Store) => ({
+      output: state.stepOutputs[stepName],
+      views:
+        state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
+        EMPTY_VIEWS,
+      execution: state.stepExecutions[stepName],
+      definition: state.workflow.steps.find((s) => s.def.name === stepName)
+        ?.def,
+    }),
     [stepName],
   );
 

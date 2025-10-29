@@ -469,6 +469,7 @@ function WorkspaceViews() {
   const wellKnownItems = [
     "Tools",
     "Views",
+    "Database",
     "Workflows",
     "Documents",
     "Agents",
@@ -506,6 +507,7 @@ function WorkspaceViews() {
     "Workflows",
     "Tools",
     "Views",
+    "Database",
     "Files",
     ...(project ? [] : ["Theme"]),
   ];

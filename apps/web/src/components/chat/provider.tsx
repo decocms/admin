@@ -745,6 +745,13 @@ export function AgenticChatProvider({
     [wrappedSendMessage],
   );
 
+  // Only reset if form is not dirty (no unsaved changes)
+  useEffect(() => {
+    if (!form.formState.isDirty) {
+      form.reset(initialAgent);
+    }
+  }, [initialAgent, form]);
+
   // Auto-send initialInput when autoSend is true
   useEffect(() => {
     if (autoSend && input && chat.messages.length === 0) {

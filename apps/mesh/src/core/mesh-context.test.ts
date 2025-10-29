@@ -1,21 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   type MeshContext,
-  isProjectScoped,
-  isOrganizationScoped,
   getProjectId,
-  requireProjectScope,
   getUserId,
   isAuthenticated,
+  isOrganizationScoped,
+  isProjectScoped,
   requireAuth,
+  requireProjectScope,
 } from './mesh-context';
 
 // Helper to create mock context
 const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
   auth: {},
   storage: {
-    projects: null,
-    connections: null,
+    projects: null as any,
+    connections: null as any,
+    auditLogs: null as any,
+    roles: null as any,
   },
   vault: null as any,
   authInstance: null,

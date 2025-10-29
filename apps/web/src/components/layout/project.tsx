@@ -277,13 +277,30 @@ export const ToggleDecopilotButton = () => {
   );
 };
 
+const WELL_KNOWN_ORG_PATHS = [
+  "/settings",
+  "/theme-editor",
+  "/models",
+  "/usage",
+  "/members",
+  "/billing",
+];
+
+const useIsProjectContext = () => {
+  const { org, project } = useParams();
+  return !!org && !!project;
+};
+
 export const TopbarControls = () => {
   const location = useLocation();
+  const isProjectContext = useIsProjectContext();
   const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
-  const isRoot = location.pathname === "/";
+  const isWellKnownOrgPath = WELL_KNOWN_ORG_PATHS.some((path) =>
+    location.pathname.endsWith(path),
+  );
 
-  if (isRoot) {
+  if (!isProjectContext && !isWellKnownOrgPath) {
     return null;
   }
 

@@ -28,6 +28,7 @@ import {
   asEnv,
   validate,
 } from "../mcp/tools/utils.ts";
+import { DEFAULT_WORKFLOW_STEP_CONFIG } from "../utils/workflows.ts";
 
 // Import ref resolution utilities
 // Note: These will need to be moved to the SDK package for proper import
@@ -211,15 +212,6 @@ export interface WorkflowRunnerProps<T = unknown> {
   };
 }
 
-const DEFAULT_CONFIG: WorkflowStepConfig = {
-  retries: {
-    limit: 2,
-    delay: 2000,
-    backoff: "exponential",
-  },
-  timeout: "5 minutes",
-};
-
 export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
   protected bindingsCtx: BindingsContext;
   protected executionCtx: ExecutionContext;
@@ -272,7 +264,7 @@ export class WorkflowRunner extends WorkflowEntrypoint<Bindings> {
         ? state.authorization
         : undefined;
 
-    const config = stepDef.options ?? DEFAULT_CONFIG;
+    const config = stepDef.options ?? DEFAULT_WORKFLOW_STEP_CONFIG;
 
     // The new schema structure has def containing the code definition
     const runnable: Runnable = async (input, state) => {

@@ -12,6 +12,7 @@ import {
 import { useWorkflowStore } from "../../../stores/workflows/provider.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import type { Store } from "../../../stores/workflows/store.ts";
+import { StepOptions } from "./options.tsx";
 
 interface StepHeaderProps {
   stepName: string;
@@ -67,8 +68,9 @@ export const StepHeader = memo(function StepHeader({
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <div className="flex items-center gap-2 w-full">
             <StepTitle stepName={stepName} description={description} />
-            {type === "definition" ? (
+            {type === "definition" && (
               <div className="flex items-center gap-2 shrink-0">
+                <StepOptions stepName={stepName} />
                 <Button
                   type="button"
                   variant="ghost"
@@ -112,7 +114,7 @@ export const StepHeader = memo(function StepHeader({
                   )}
                 </Button>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

@@ -5,17 +5,18 @@ export const RetriesSchema = z.object({
     .number()
     .int()
     .min(0)
-    .default(0)
-    .describe("Number of retry attempts for this step (default: 0)"),
+    .default(2)
+    .describe("Number of retry attempts for this step (default: 2)"),
   delay: z
     .number()
     .int()
     .min(0)
-    .default(0)
-    .describe("Delay in milliseconds between retry attempts (default: 0)"),
+    .default(2000)
+    .describe("Delay in milliseconds between retry attempts (default: 2000)"),
   backoff: z
     .enum(["constant", "linear", "exponential"])
-    .describe("Backoff strategy for retry attempts (default: constant)"),
+    .default("exponential")
+    .describe("Backoff strategy for retry attempts (default: exponential)"),
 });
 
 // Code step definition - includes both definition and execution state

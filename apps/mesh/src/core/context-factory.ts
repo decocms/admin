@@ -14,9 +14,12 @@ import type { Context } from 'hono';
 import type { Kysely } from 'kysely';
 import { ConnectionStorage } from '../storage/connection';
 import { ProjectStorage } from '../storage/project';
+import { AuditLogStorage } from '../storage/audit-log';
+import { RoleStorage } from '../storage/role';
 import type { Database } from '../storage/types';
 import { AccessControl } from './access-control';
-import type { BetterAuthInstance, CredentialVault, MeshContext } from './mesh-context';
+import type { BetterAuthInstance, MeshContext } from './mesh-context';
+import { CredentialVault } from '../encryption/credential-vault';
 
 // ============================================================================
 // Configuration
@@ -75,16 +78,15 @@ export function createMeshContextFactory(
   const storage = {
     projects: new ProjectStorage(config.db),
     connections: new ConnectionStorage(config.db),
-    // Add other storage classes as implemented
-    policies: undefined,
-    roles: undefined,
-    tokens: undefined,
-    tokenRevocations: undefined,
-    auditLogs: undefined,
+    auditLogs: new AuditLogStorage(config.db),
+    roles: new RoleStorage(config.db),
+    // Note: Policies handled by Better Auth permissions directly
+    // Note: API keys (tokens) managed by Better Auth API Key plugin
+    // Note: Token revocation handled by Better Auth (deleteApiKey)
   };
 
-  // Create vault instance (placeholder - to be implemented in Task 10)
-  const vault: CredentialVault = null as any;
+  // Create vault instance for credential encryption
+  const vault = new CredentialVault(config.encryption.key);
 
   // Return factory function
   return async (c: Context): Promise<MeshContext> => {

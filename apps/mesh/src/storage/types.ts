@@ -10,7 +10,7 @@
  * - Access control via roles and permissions, not explicit membership
  */
 
-import type { Generated, ColumnType } from 'kysely';
+import type { ColumnType } from 'kysely';
 
 // ============================================================================
 // Type Utilities
@@ -46,11 +46,15 @@ export type Permission = Record<string, string[]>;
 // Core Entity Interfaces
 // ============================================================================
 
+// ============================================================================
+// Database Table Definitions (for Kysely schema)
+// ============================================================================
+
 /**
- * User - Organization member
+ * User table definition - Organization member
  * Managed by Better Auth, but defined here for reference
  */
-export interface User {
+export interface UserTable {
   id: string;
   email: string;
   name: string;
@@ -60,10 +64,10 @@ export interface User {
 }
 
 /**
- * Project - Namespace-scoped resources (like Kubernetes namespaces)
+ * Project table definition - Namespace-scoped resources (like Kubernetes namespaces)
  * Projects isolate resources, not users
  */
-export interface Project {
+export interface ProjectTable {
   id: string;
   slug: string; // URL-safe, unique within organization
   name: string;
@@ -73,11 +77,39 @@ export interface Project {
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
 
+// ============================================================================
+// Runtime Entity Types (for application code)
+// ============================================================================
+
 /**
- * MCP Connection - Connection to an MCP service
- * Can be organization-scoped (shared) or project-scoped (isolated)
+ * User entity - Runtime representation
  */
-export interface MCPConnection {
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * Project entity - Runtime representation
+ */
+export interface Project {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  ownerId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * MCP Connection table definition
+ */
+export interface MCPConnectionTable {
   id: string;
   projectId: string | null; // null = organization-scoped, string = project-scoped
   createdById: string; // User who created this connection
@@ -86,24 +118,53 @@ export interface MCPConnection {
   icon: string | null;
   appName: string | null;
   appId: string | null;
-  
+
   // Connection details
   connectionType: 'HTTP' | 'SSE' | 'Websocket';
   connectionUrl: string;
   connectionToken: string | null; // Encrypted
   connectionHeaders: JsonObject<Record<string, string>> | null;
-  
+
   // OAuth config for downstream MCP (if MCP supports OAuth)
   oauthConfig: JsonObject<OAuthConfig> | null;
-  
+
   // Metadata and discovery
   metadata: JsonObject<Record<string, any>> | null;
   tools: JsonArray<ToolDefinition[]> | null; // Discovered tools from MCP
   bindings: JsonArray<string[]> | null; // Detected bindings (CHAT, EMAIL, etc.)
-  
+
   status: 'active' | 'inactive' | 'error';
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
+}
+
+/**
+ * MCP Connection entity - Runtime representation
+ */
+export interface MCPConnection {
+  id: string;
+  projectId: string | null;
+  createdById: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  appName: string | null;
+  appId: string | null;
+
+  connectionType: 'HTTP' | 'SSE' | 'Websocket';
+  connectionUrl: string;
+  connectionToken: string | null;
+  connectionHeaders: Record<string, string> | null;
+
+  oauthConfig: OAuthConfig | null;
+
+  metadata: Record<string, any> | null;
+  tools: ToolDefinition[] | null;
+  bindings: string[] | null;
+
+  status: 'active' | 'inactive' | 'error';
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 /**
@@ -130,10 +191,9 @@ export interface ToolDefinition {
 }
 
 /**
- * Role - Named set of permissions
- * Can be project-specific
+ * Role table definition
  */
-export interface Role {
+export interface RoleTable {
   id: string;
   projectId: string; // Roles can be project-specific
   name: string;
@@ -144,10 +204,9 @@ export interface Role {
 }
 
 /**
- * API Key - For programmatic access
- * Managed by Better Auth API Key plugin
+ * API Key table definition
  */
-export interface ApiKey {
+export interface ApiKeyTable {
   id: string;
   userId: string; // Owner of this API key
   name: string;
@@ -161,28 +220,72 @@ export interface ApiKey {
 }
 
 /**
- * Audit Log - Track all operations
+ * Audit Log table definition
  */
-export interface AuditLog {
+export interface AuditLogTable {
   id: string;
   projectId: string | null; // null = organization-level action
   userId: string | null;
   connectionId: string | null;
   toolName: string; // Tool that was called
-  allowed: boolean; // Whether access was granted
+  allowed: number; // SQLite boolean (0 or 1)
   duration: number | null; // Execution time in ms
   timestamp: ColumnType<Date, Date | string, never>;
   requestMetadata: JsonObject<Record<string, any>> | null;
 }
 
+/**
+ * Role entity - Runtime representation
+ */
+export interface Role {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  permissions: Permission;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * API Key entity - Runtime representation
+ */
+export interface ApiKey {
+  id: string;
+  userId: string;
+  name: string;
+  hashedKey: string;
+  permissions: Permission;
+  expiresAt: Date | string | null;
+  remaining: number | null;
+  metadata: Record<string, any> | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * Audit Log entity - Runtime representation
+ */
+export interface AuditLog {
+  id: string;
+  projectId: string | null;
+  userId: string | null;
+  connectionId: string | null;
+  toolName: string;
+  allowed: boolean;
+  duration: number | null;
+  timestamp: Date | string;
+  requestMetadata: Record<string, any> | null;
+}
+
 // ============================================================================
-// OAuth Tables (for MCP OAuth server)
+// OAuth Table Definitions (for MCP OAuth server)
 // ============================================================================
 
 /**
- * OAuth Client (RFC 7591 - Dynamic Client Registration)
+ * OAuth Client table definition (RFC 7591 - Dynamic Client Registration)
  */
-export interface OAuthClient {
+export interface OAuthClientTable {
   id: string;
   clientId: string; // Unique
   clientSecret: string | null; // Hashed, null for public clients
@@ -196,9 +299,9 @@ export interface OAuthClient {
 }
 
 /**
- * OAuth Authorization Code (PKCE support)
+ * OAuth Authorization Code table definition (PKCE support)
  */
-export interface OAuthAuthorizationCode {
+export interface OAuthAuthorizationCodeTable {
   code: string; // Primary key
   clientId: string; // Foreign key
   userId: string;
@@ -211,9 +314,9 @@ export interface OAuthAuthorizationCode {
 }
 
 /**
- * OAuth Refresh Token
+ * OAuth Refresh Token table definition
  */
-export interface OAuthRefreshToken {
+export interface OAuthRefreshTokenTable {
   token: string; // Primary key
   clientId: string; // Foreign key
   userId: string;
@@ -223,9 +326,9 @@ export interface OAuthRefreshToken {
 }
 
 /**
- * Downstream Token - Cache tokens from downstream MCPs
+ * Downstream Token table definition - Cache tokens from downstream MCPs
  */
-export interface DownstreamToken {
+export interface DownstreamTokenTable {
   id: string; // Primary key
   connectionId: string; // Foreign key
   userId: string | null; // Null for client_credentials tokens
@@ -238,26 +341,90 @@ export interface DownstreamToken {
 }
 
 // ============================================================================
+// OAuth Runtime Entity Types
+// ============================================================================
+
+/**
+ * OAuth Client entity - Runtime representation
+ */
+export interface OAuthClient {
+  id: string;
+  clientId: string;
+  clientSecret: string | null;
+  clientName: string;
+  redirectUris: string[];
+  grantTypes: string[];
+  scope: string | null;
+  clientUri: string | null;
+  logoUri: string | null;
+  createdAt: Date | string;
+}
+
+/**
+ * OAuth Authorization Code entity - Runtime representation
+ */
+export interface OAuthAuthorizationCode {
+  code: string;
+  clientId: string;
+  userId: string;
+  redirectUri: string;
+  scope: string | null;
+  codeChallenge: string | null;
+  codeChallengeMethod: string | null;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+}
+
+/**
+ * OAuth Refresh Token entity - Runtime representation
+ */
+export interface OAuthRefreshToken {
+  token: string;
+  clientId: string;
+  userId: string;
+  scope: string | null;
+  expiresAt: Date | string | null;
+  createdAt: Date | string;
+}
+
+/**
+ * Downstream Token entity - Runtime representation
+ */
+export interface DownstreamToken {
+  id: string;
+  connectionId: string;
+  userId: string | null;
+  accessToken: string;
+  refreshToken: string | null;
+  scope: string | null;
+  expiresAt: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// ============================================================================
 // Database Schema
 // ============================================================================
 
 /**
  * Complete database schema
  * All tables exist within the organization scope (database boundary)
+ * 
+ * NOTE: This uses *Table types with ColumnType for proper Kysely type mapping
  */
 export interface Database {
   // Core tables (all within organization scope)
-  users: User; // Organization members
-  projects: Project; // Namespaces within organization
-  connections: MCPConnection; // MCP connections (org or project scoped)
-  roles: Role; // Roles with permissions
-  api_keys: ApiKey; // Better Auth API keys
-  audit_logs: AuditLog; // Audit trail
-  
+  users: UserTable; // Organization members
+  projects: ProjectTable; // Namespaces within organization
+  connections: MCPConnectionTable; // MCP connections (org or project scoped)
+  roles: RoleTable; // Roles with permissions
+  api_keys: ApiKeyTable; // Better Auth API keys
+  audit_logs: AuditLogTable; // Audit trail
+
   // OAuth tables (for MCP OAuth server)
-  oauth_clients: OAuthClient;
-  oauth_authorization_codes: OAuthAuthorizationCode;
-  oauth_refresh_tokens: OAuthRefreshToken;
-  downstream_tokens: DownstreamToken;
+  oauth_clients: OAuthClientTable;
+  oauth_authorization_codes: OAuthAuthorizationCodeTable;
+  oauth_refresh_tokens: OAuthRefreshTokenTable;
+  downstream_tokens: DownstreamTokenTable;
 }
 

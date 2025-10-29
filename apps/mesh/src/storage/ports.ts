@@ -5,7 +5,7 @@
  * Following the Ports & Adapters (Hexagonal Architecture) pattern.
  */
 
-import type { MCPConnection, Project, OAuthConfig, ToolDefinition } from './types';
+import type { MCPConnection, OAuthConfig, Project } from './types';
 
 // ============================================================================
 // Connection Storage Port

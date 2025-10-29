@@ -7,8 +7,8 @@
 
 import type { Kysely } from 'kysely';
 import { nanoid } from 'nanoid';
-import type { Database, MCPConnection } from './types';
 import type { ConnectionStoragePort, CreateConnectionData, UpdateConnectionData } from './ports';
+import type { Database, MCPConnection } from './types';
 
 export class ConnectionStorage implements ConnectionStoragePort {
   constructor(private db: Kysely<Database>) { }

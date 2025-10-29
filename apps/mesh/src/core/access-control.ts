@@ -10,9 +10,9 @@
  */
 
 import type { Permission } from '../storage/types';
+import { BetterAuthInstance } from './mesh-context';
 
 // Forward declaration (will be replaced with actual Better Auth type)
-export type BetterAuthInstance = any;
 
 // ============================================================================
 // Errors
@@ -141,16 +141,22 @@ export class AccessControl implements Disposable {
         const result = await this.auth.api.userHasPermission({
           body: {
             userId: this.userId,
-            role: this.role,
-            permissions: this.permissions,
+            role: this.role as 'user' | 'admin' | undefined,
             permission: permissionToCheck,
           },
         });
 
-        return result.data?.has === true;
+        // Better Auth can return { data: { has: boolean } } or just { success: boolean }
+        // If it returns a valid result, use it; otherwise fall back to manual
+        if (result) {
+          const hasPermission = (result as any).data?.has === true || (result as any).success === true;
+          if (hasPermission) {
+            return true;
+          }
+        }
       }
 
-      // Fallback to manual check
+      // Fallback to manual check (when no Better Auth or permission denied)
       return this.manualPermissionCheck(resource);
     } catch (error) {
       // Fallback to manual check on error
@@ -174,13 +180,14 @@ export class AccessControl implements Disposable {
         continue;
       }
 
-      // Check if key matches the resource
+      // Check if key matches the resource exactly
       if (key === resource) {
-        // Resource matches - check if actions include wildcard or specific action
+        // Resource key matches - allow if has wildcard or any actions
         return actions.includes('*') || actions.length > 0;
       }
 
       // Check if actions list includes this resource (for connection-based permissions)
+      // Example: { 'conn_123': ['SEND_MESSAGE'] } checking for 'SEND_MESSAGE'
       if (actions.includes(resource)) {
         return true;
       }

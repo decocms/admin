@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AccessControl, ForbiddenError } from './access-control';
 
-const createMockAuth = () => ({
+const createMockAuth = (): any => ({
   api: {
     userHasPermission: vi.fn(),
   },
@@ -316,7 +316,7 @@ describe('AccessControl', () => {
 
     it('should fall back to manual check when Better Auth not configured', async () => {
       const ac = new AccessControl(
-        null, // No auth instance
+        null as any, // No auth instance
         'user_1',
         undefined,
         { 'TEST_TOOL': ['*'] },

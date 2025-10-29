@@ -16,12 +16,9 @@ import type { Kysely } from 'kysely';
 import type { CredentialVault } from '../encryption/credential-vault';
 import type { Database, Permission } from '../storage/types';
 import type { AccessControl } from './access-control';
-
+export type { BetterAuthInstance } from '@/auth';
 // Re-export for consumers
 export type { AccessControl, CredentialVault };
-
-// Forward declaration for Better Auth (will be replaced when implemented)
-export type BetterAuthInstance = any;
 
 // ============================================================================
 // Authentication State
@@ -82,10 +79,15 @@ export interface RequestMetadata {
 // ============================================================================
 
 // Forward declare storage types
+import { BetterAuthInstance } from '@/auth';
 import type { AuditLogStorage } from '../storage/audit-log';
 import type { ConnectionStorage } from '../storage/connection';
 import type { ProjectStorage } from '../storage/project';
 import type { RoleStorage } from '../storage/role';
+
+// Better Auth instance type - flexible for testing
+// In production, this is the actual Better Auth instance
+// In tests, can be a partial mock
 
 /**
  * Storage interfaces aggregation

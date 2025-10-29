@@ -281,6 +281,12 @@ export const TopbarControls = () => {
   const location = useLocation();
   const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
+  const isRoot = location.pathname === "/";
+
+  if (isRoot) {
+    return null;
+  }
+
   if (isAgentDetailPage) {
     // Show chat mode switch on agent detail pages
     return <AgentChatModeSwitch />;

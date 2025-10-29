@@ -58,6 +58,7 @@ export default async function(input, ctx) {
     
     // CRITICAL: Return ALL properties from outputSchema
     // Check actual tool response structure - don't assume property names!
+    // You don't need to access .structuredContent here, it's already in the result
     return { 
       poem: result.object?.poem || '', 
     };
@@ -230,7 +231,7 @@ export default async function(input, ctx) {
 
 **Important Rules:**
 1. **Function signature is \`(input, ctx)\`** - Input is first parameter
-2. **Return value MUST match outputSchema** - Include ALL properties
+2. **Return value MUST match outputSchema** - Include ALL properties, you don't need to access .structuredContent in the return, it's already in the result
 3. **Always use try/catch** - Return safe defaults on error
 4. **Use optional chaining** - Don't assume tool response structure
 

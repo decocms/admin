@@ -33,6 +33,7 @@ import {
   CollapsibleContent,
 } from "@deco/ui/components/collapsible.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 export function StepOptions({ stepName }: { stepName: string }) {
   const step = useWorkflowStepData(stepName);
@@ -72,15 +73,22 @@ function OptionsForm({
   const { mutateAsync, isPending } = useUpsertWorkflow();
 
   const handleSave = async (data: typeof DEFAULT_WORKFLOW_STEP_CONFIG) => {
-    await mutateAsync({
-      ...workflow,
-      steps: workflow.steps.map((step) => {
-        if (step.def.name === stepName) {
-          return { ...step, options: data };
-        }
-        return step;
-      }),
-    });
+    try {
+      await mutateAsync({
+        ...workflow,
+        steps: workflow.steps.map((step) => {
+          if (step.def.name === stepName) {
+            return { ...step, options: data };
+          }
+          return step;
+        }),
+      });
+      form.reset(data);
+      toast.success("Options saved successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save options");
+    }
   };
   const [isRetriesOpen, setIsRetriesOpen] = useState(true);
   const form = useForm<typeof DEFAULT_WORKFLOW_STEP_CONFIG>({
@@ -93,6 +101,7 @@ function OptionsForm({
   const backoff = form.watch("retries.backoff");
   const formState = form.formState;
   const isDirty = formState.isDirty;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-2">

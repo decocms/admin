@@ -29,10 +29,9 @@ The frontend will automatically wrap this code in a complete HTML template with:
 - Tailwind CSS v4 design tokens
 - **Input data as props** - The App component receives any input data (e.g., workflow step output) as props
 - Global \`callTool(params)\` function for invoking tools
-  - Takes an object with \`toolName\` (string) and \`input\` (object) properties
-  - Supports both regular tools (e.g., \`"INTEGRATIONS_LIST"\`) and resource tools (URIs like \`"rsc://integration/tool/NAME"\`)
-  - Both types are called the same way - the API handles routing
-  - Example: \`await callTool({ toolName: 'INTEGRATIONS_LIST', input: {} })\`
+  - Takes an object with \`integrationId\` (string), \`toolName\` (string), and \`input\` (object, required) properties
+  - Always calls INTEGRATIONS_CALL_TOOL internally
+  - Example: \`await callTool({ integrationId: 'i:integration-management', toolName: 'INTEGRATIONS_LIST', input: {} })\`
 
 Security Notes:
 - Views are rendered in isolated iframes with sandbox attributes
@@ -132,7 +131,7 @@ export const App = (props) => {
 - ✅ React-compatible runtime with automatic JSX transform (no \`import React\` needed)
 - ✅ Tailwind CSS v4 design tokens (already available)
 - ✅ **Input data as props** (e.g., from workflow step output, passed via iframe postMessage)
-- ✅ Global \`callTool({ toolName, input })\` function (supports regular and resource tools - always available)
+- ✅ Global \`callTool({ integrationId, toolName, input })\` function (always calls INTEGRATIONS_CALL_TOOL - always available)
 - ✅ Import maps for React modules
 
 **Your code must define an App component that receives props:**
@@ -151,6 +150,7 @@ export const App = (props) => {
     setLoading(true);
     try {
       const result = await callTool({
+        integrationId: 'i:integration-management',
         toolName: 'INTEGRATIONS_LIST',
         input: {}
       });
@@ -229,46 +229,54 @@ export const App = () => {
 
 ## Calling Tools
 
-Use the global \`callTool()\` function to invoke any tool. This function is **always available** and doesn't need to be imported.
+Use the global \`callTool()\` function to invoke any tool. This function is **always available** and doesn't need to be imported. It always calls INTEGRATIONS_CALL_TOOL internally.
 
 ### API Signature
 
 \`\`\`typescript
 callTool(params: {
-  toolName: string;  // Required: Tool name or resource URI
-  input: object;     // Required: Parameters for the tool (use {} if none needed)
+  integrationId: string;  // Required: Integration ID (e.g., 'i:integration-management')
+  toolName: string;       // Required: Tool name to call
+  input: object;          // Required: Parameters for the tool (use {} if none needed)
 }): Promise<any>
 \`\`\`
 
-### Tool Types
+### Getting Integration IDs
 
-Both types of tools are called the same way, but serve different purposes:
-
-**Regular Tools** - Standard workspace tools (most common):
-- Use the tool name directly (e.g., \`"INTEGRATIONS_LIST"\`)
-- Workspace-specific tools from installed integrations
-- Most integration tools fall into this category
-
-**Resource Tools** - Tools that operate on resources (advanced):
-- Use a resource URI starting with \`rsc://\` (e.g., \`"rsc://tools-management/tool/TOOL_SEARCH"\`)
-- Dynamic tools that work with workspace resources
-- Used for CRUD operations on resources like tools, workflows, documents, etc.
+To call a tool, you need the integration ID. Common integration IDs include:
+- \`i:integration-management\` - For integration management tools (INTEGRATIONS_LIST, INTEGRATIONS_GET, etc.)
+- \`i:databases-management\` - For database management tools
+- \`i:agents-management\` - For agent management tools
+- \`i:workflows-management\` - For workflow management tools
+- Other integration IDs - Get them from INTEGRATIONS_LIST tool
 
 ### Usage Examples
 
-**Regular tool call (most common):**
+**Call a tool without parameters:**
 \`\`\`jsx
-// Call a regular workspace tool
+// Call INTEGRATIONS_LIST to get all integrations
 const integrations = await callTool({
+  integrationId: 'i:integration-management',
   toolName: 'INTEGRATIONS_LIST',
   input: {}  // Empty object when tool requires no parameters
 });
 \`\`\`
 
-**Regular tool with parameters:**
+**Call a tool with parameters:**
 \`\`\`jsx
-const user = await callTool({
-  toolName: 'USER_GET',
+// Call INTEGRATIONS_GET with an integration ID
+const integration = await callTool({
+  integrationId: 'i:integration-management',
+  toolName: 'INTEGRATIONS_GET',
+  input: {
+    id: 'i:some-integration'
+  }
+});
+
+// Call a tool from a specific integration
+const result = await callTool({
+  integrationId: 'i:some-integration-id',
+  toolName: 'TOOL_NAME',
   input: {
     userId: '123',
     includeProfile: true
@@ -276,12 +284,13 @@ const user = await callTool({
 });
 \`\`\`
 
-**Resource tool call (advanced):**
+**Use empty object when no parameters needed:**
 \`\`\`jsx
-// Call a resource tool using URI
-const tools = await callTool({
-  toolName: 'rsc://tools-management/tool/TOOL_SEARCH',
-  input: { query: 'database' }
+// input is required - use {} when the tool needs no parameters
+const data = await callTool({
+  integrationId: 'i:integration-management',
+  toolName: 'INTEGRATIONS_LIST',
+  input: {}
 });
 \`\`\`
 
@@ -289,8 +298,9 @@ const tools = await callTool({
 \`\`\`jsx
 try {
   const result = await callTool({
-    toolName: 'DATA_PROCESS',
-    input: { data: myData }
+    integrationId: 'i:integration-management',
+    toolName: 'INTEGRATIONS_LIST',
+    input: {}
   });
   console.log('Success:', result);
 } catch (error) {
@@ -300,16 +310,12 @@ try {
 
 ### Important Notes
 
-- Both \`toolName\` and \`input\` are **required** parameters
-- \`toolName\` must be a string:
-  - **Regular tools**: Use the tool name directly (e.g., \`"INTEGRATIONS_LIST"\`)
-  - **Resource tools**: Use a URI starting with \`rsc://\` (e.g., \`"rsc://tools-management/tool/TOOL_SEARCH"\`)
-- \`input\` must be an object (not an array). Use \`{}\` if the tool needs no parameters
-- Both regular and resource tools are called the same way - the API handles routing automatically
+- \`integrationId\`, \`toolName\`, and \`input\` are **required** parameters
+- \`input\` must be an object (not an array) - use \`{}\` if the tool needs no parameters
+- The function always calls INTEGRATIONS_CALL_TOOL internally - you don't need to specify this
 - The function returns a Promise that resolves with the tool's result
 - Errors are thrown if parameters are invalid or if the API call fails
-
-**For complete tool calling documentation, refer to the TOOL_CALL.md guide.**
+- Use INTEGRATIONS_LIST to discover available integrations and their IDs
 
 ## Styling with Tailwind CSS v4
 
@@ -437,6 +443,7 @@ export const App = (props) => {
     if (!props.metrics) {
       const loadMetrics = async () => {
         const data = await callTool({
+          integrationId: 'i:integration-management',
           toolName: 'GET_METRICS',
           input: {}
         });
@@ -474,6 +481,7 @@ export const App = (props) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const res = await callTool({
+      integrationId: 'i:integration-management',
       toolName: 'SUBMIT_FORM',
       input: formData
     });
@@ -543,7 +551,7 @@ You can update any of the following:
 - Import new React hooks if needed: \`import { useState, useEffect, ... } from 'react'\`
 - Include new state and effects
 - Add event handlers and interactivity
-- Integrate tool calls with \`callTool({ toolName: 'TOOL_NAME', input: {} })\`
+- Integrate tool calls with \`callTool({ integrationId: 'i:integration-id', toolName: 'TOOL_NAME', input: {} })\`
 - Enhance user interactions
 
 **Improving design:**

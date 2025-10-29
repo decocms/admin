@@ -174,7 +174,7 @@ const createDecopilotTools = (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
             await integrationsCallToolTool.handler(input);
 
           // Prefer content over structuredContent because this will be feed directly to the LLM.
-          return Array.isArray(content)
+          return Array.isArray(content) && content.length > 0
             ? { isError, content }
             : { isError, ...rest }; // this ...rest is important for non compliant tools
         }),

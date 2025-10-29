@@ -32,11 +32,83 @@ function escapeScriptTags(code: string): string {
  * @param apiBase - API base URL
  * @param ws - Workspace/organization name
  * @param proj - Project name
+ * @param trustedOrigin - The trusted origin for postMessage validation
  */
-function createSDK(apiBase: string, ws: string, proj: string) {
+function createSDK(
+  apiBase: string,
+  ws: string,
+  proj: string,
+  trustedOrigin: string,
+) {
+  // Initialize view data (will be populated by parent window via postMessage)
+  // @ts-expect-error - This function will be stringified and run in the iframe context
+  window.viewData = {};
+
+  // Compute expected origin from document.referrer with strict validation
+  const expectedOrigin = (() => {
+    try {
+      if (document.referrer) {
+        const referrerOrigin = new URL(document.referrer).origin;
+        // Verify that referrer matches the trusted origin
+        if (referrerOrigin === trustedOrigin) {
+          return referrerOrigin;
+        }
+        console.warn(
+          "View Security Warning: document.referrer origin does not match trustedOrigin. " +
+            "Referrer: " +
+            referrerOrigin +
+            ", Expected: " +
+            trustedOrigin,
+        );
+      }
+    } catch (e) {
+      console.warn("Failed to parse document.referrer:", e);
+    }
+
+    // Fallback to configured trusted origin when referrer is absent or mismatched
+    // This is safer than using window.location.origin which could be attacker-controlled
+    console.info(
+      "Using configured trustedOrigin for postMessage validation: " +
+        trustedOrigin,
+    );
+    return trustedOrigin;
+  })();
+
+  // Listen for data from parent window with strict origin and source validation
+  window.addEventListener("message", function (event) {
+    // Validate message type, source, and origin before processing
+    if (
+      event.data &&
+      event.data.type === "VIEW_DATA" &&
+      event.source === window.parent &&
+      event.origin === expectedOrigin
+    ) {
+      // @ts-expect-error - This function will be stringified and run in the iframe context
+      window.viewData = event.data.payload;
+      // Dispatch custom event so React can re-render with new props
+      window.dispatchEvent(
+        new CustomEvent("viewDataUpdated", { detail: event.data.payload }),
+      );
+    } else if (event.data && event.data.type === "VIEW_DATA") {
+      // Log rejected messages for debugging (without exposing sensitive data)
+      console.warn(
+        "View Security: Rejected VIEW_DATA message. " +
+          "Origin: " +
+          event.origin +
+          " (expected: " +
+          expectedOrigin +
+          "), " +
+          "Source valid: " +
+          (event.source === window.parent),
+      );
+    }
+    // Silently ignore other message types
+  });
+
   // Global SDK functions
   // @ts-ignore - This function will be stringified and run in the iframe context
   window.callTool = async function (params: {
+    integrationId: string;
     toolName: string;
     input: Record<string, unknown>;
   }) {
@@ -45,13 +117,20 @@ function createSDK(apiBase: string, ws: string, proj: string) {
         "callTool Error: Expected an object parameter.\n\n" +
           "Usage:\n" +
           "  await callTool({\n" +
+          '    integrationId: "integration-id",\n' +
           '    toolName: "TOOL_NAME",\n' +
           "    input: { }\n" +
           "  });",
       );
     }
 
-    const { toolName, input } = params;
+    const { integrationId, toolName, input } = params;
+
+    if (!integrationId || typeof integrationId !== "string") {
+      throw new Error(
+        'callTool Error: "integrationId" is required and must be a string.',
+      );
+    }
 
     if (!toolName || typeof toolName !== "string") {
       throw new Error(
@@ -59,25 +138,30 @@ function createSDK(apiBase: string, ws: string, proj: string) {
       );
     }
 
-    if (
-      input === undefined ||
-      input === null ||
-      typeof input !== "object" ||
-      Array.isArray(input)
-    ) {
+    if (input === undefined || input === null) {
       throw new Error(
         'callTool Error: "input" is required and must be an object.',
       );
     }
 
+    if (typeof input !== "object" || Array.isArray(input)) {
+      throw new Error(
+        'callTool Error: "input" must be an object (not an array).',
+      );
+    }
+
     try {
+      // Call INTEGRATIONS_CALL_TOOL with the proper structure
       const response = await fetch(
-        apiBase + "/" + ws + "/" + proj + "/tools/call/" + toolName,
+        apiBase + "/" + ws + "/" + proj + "/tools/call/INTEGRATIONS_CALL_TOOL",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(input),
+          body: JSON.stringify({
+            id: integrationId,
+            params: { name: toolName, arguments: input },
+          }),
         },
       );
 
@@ -226,66 +310,11 @@ export function generateViewHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DECO View</title>
-
-  <!-- Initialize view data (will be populated by parent window via postMessage) -->
-  <script>
-    window.viewData = {};
-    
-    // Configured trusted origin for postMessage validation
-    const trustedOrigin = '${trustedOrigin}';
-    
-    // Compute expected origin from document.referrer with strict validation
-    const expectedOrigin = (() => {
-      try {
-        if (document.referrer) {
-          const referrerOrigin = new URL(document.referrer).origin;
-          // Verify that referrer matches the trusted origin
-          if (referrerOrigin === trustedOrigin) {
-            return referrerOrigin;
-          }
-          console.warn(
-            'View Security Warning: document.referrer origin does not match trustedOrigin. ' +
-            'Referrer: ' + referrerOrigin + ', Expected: ' + trustedOrigin
-          );
-        }
-      } catch (e) {
-        console.warn('Failed to parse document.referrer:', e);
-      }
-      
-      // Fallback to configured trusted origin when referrer is absent or mismatched
-      // This is safer than using window.location.origin which could be attacker-controlled
-      console.info('Using configured trustedOrigin for postMessage validation: ' + trustedOrigin);
-      return trustedOrigin;
-    })();
-    
-    // Listen for data from parent window with strict origin and source validation
-    window.addEventListener('message', function(event) {
-      // Validate message type, source, and origin before processing
-      if (
-        event.data && 
-        event.data.type === 'VIEW_DATA' &&
-        event.source === window.parent &&
-        event.origin === expectedOrigin
-      ) {
-        window.viewData = event.data.payload;
-        // Dispatch custom event so React can re-render with new props
-        window.dispatchEvent(new CustomEvent('viewDataUpdated', { detail: event.data.payload }));
-      } else if (event.data && event.data.type === 'VIEW_DATA') {
-        // Log rejected messages for debugging (without exposing sensitive data)
-        console.warn(
-          'View Security: Rejected VIEW_DATA message. ' +
-          'Origin: ' + event.origin + ' (expected: ' + expectedOrigin + '), ' +
-          'Source valid: ' + (event.source === window.parent)
-        );
-      }
-      // Silently ignore other message types
-    });
-  </script>
+  <title>DECO View  </title>
 
   <!-- View SDK -->
   <script>
-    (${createSDK.toString()})('${apiBase}', '${ws}', '${proj}');
+    (${createSDK.toString()})('${apiBase}', '${ws}', '${proj}', '${trustedOrigin}');
   </script>
   
   <!-- Import Maps for Module Resolution -->

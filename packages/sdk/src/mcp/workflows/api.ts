@@ -465,10 +465,9 @@ export function createWorkflowBindingImpl({
           },
         };
       }
-      const parsedStep = WorkflowStepDefinitionSchema.parse(finalStep);
       const newWorkflow = {
         ...workflow,
-        steps: [...workflow.steps, parsedStep],
+        steps: [...workflow.steps, finalStep],
       };
       await resourceWorkflowUpdate(workflowUri, newWorkflow);
 

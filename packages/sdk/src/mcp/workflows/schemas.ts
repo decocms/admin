@@ -1,5 +1,24 @@
 import z from "zod";
 
+export const RetriesSchema = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(0)
+    .default(2)
+    .describe("Number of retry attempts for this step (default: 2)"),
+  delay: z
+    .number()
+    .int()
+    .min(0)
+    .default(2000)
+    .describe("Delay in milliseconds between retry attempts (default: 2000)"),
+  backoff: z
+    .enum(["constant", "linear", "exponential"])
+    .default("exponential")
+    .describe("Backoff strategy for retry attempts (default: exponential)"),
+});
+
 // Code step definition - includes both definition and execution state
 export const CodeStepDefinitionSchema = z.object({
   name: z
@@ -64,6 +83,18 @@ export const WorkflowStepDefinitionSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe("Execution output of the step (if it has been run)"),
+  options: z
+    .object({
+      retries: RetriesSchema.optional(),
+      timeout: z
+        .number()
+        .positive()
+        .default(Infinity)
+        .optional()
+        .describe("Maximum execution time in milliseconds (default: Infinity)"),
+    })
+    .optional()
+    .describe("Options for the step"),
   views: z
     .array(z.string())
     .optional()

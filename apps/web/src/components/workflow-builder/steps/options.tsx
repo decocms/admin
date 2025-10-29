@@ -189,6 +189,8 @@ function OptionsForm({
               type="number"
               {...form.register("timeout", {
                 valueAsNumber: true,
+                min: 1,
+                validate: (value) => value > 0 || "Timeout must be positive",
               })}
             />
           </FormControl>

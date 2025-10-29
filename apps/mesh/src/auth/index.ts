@@ -10,7 +10,7 @@
  */
 
 import { betterAuth, BetterAuthOptions } from 'better-auth';
-import { admin, apiKey, mcp } from 'better-auth/plugins';
+import { admin, apiKey, mcp, openAPI } from 'better-auth/plugins';
 import { existsSync, readFileSync } from 'fs';
 import { BunWorkerDialect } from 'kysely-bun-worker';
 
@@ -49,6 +49,10 @@ export const auth = betterAuth({
     url: getDatabaseUrl(),
   }),
 
+  emailAndPassword: {
+    enabled: true,
+  },
+
   // Load optional configuration from file
   ...loadAuthConfig(),
 
@@ -76,6 +80,10 @@ export const auth = betterAuth({
       defaultRole: 'user',
       adminRoles: ['admin'],
     }),
+
+    // OpenAPI plugin for API documentation
+    // https://www.better-auth.com/docs/plugins/openAPI
+    openAPI(),
   ],
 });
 

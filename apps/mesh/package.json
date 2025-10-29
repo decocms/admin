@@ -23,6 +23,8 @@
     "hono": "^4.10.3",
     "kysely": "^0.28.8",
     "kysely-bun-worker": "^0.6.0",
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "fetch-to-node": "^2.1.0",
     "nanoid": "^5.1.6",
     "pg": "^8.16.3",
     "zod": "^4.1.12",

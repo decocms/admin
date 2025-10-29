@@ -1,9 +1,6 @@
 ---
-description: 
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-
     You are an expert in TypeScript, Vite, React, and Tailwind and Shadcn, with a deep understanding of best practices and performance optimization techniques in these technologies.
   
     Code Style and Structure

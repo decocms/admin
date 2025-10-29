@@ -1,7 +1,5 @@
 ---
-description: 
-globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 # deco CMS — Open Source Admin for Internal AI Apps
 

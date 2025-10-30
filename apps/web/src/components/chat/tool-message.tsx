@@ -161,7 +161,7 @@ const ToolStatus = memo(function ToolStatus({
     return null;
   }, [input]);
 
-  const { versionForPart, canRevert, revertLabel, onConfirmRevert } =
+  const { canRevert, revertLabel, onConfirmRevert } =
     useVersionRevertControls(toolName, part, uri);
 
   const statusText = useMemo(() => {
@@ -835,5 +835,5 @@ function useVersionRevertControls(
     }
   }, [revertToVersion, versionForPart]);
 
-  return { versionForPart, canRevert, revertLabel, onConfirmRevert } as const;
+  return { canRevert, revertLabel, onConfirmRevert } as const;
 }

@@ -11,12 +11,33 @@ export function truncateHash(hash: string, length = 8): string {
   return `#${hash.slice(0, length)}`;
 }
 
+/**
+ * Extract the actual tool name from a potentially namespaced tool name
+ * Handles both "TOOL_NAME" and "integration_id__TOOL_NAME" formats
+ */
+function extractActualToolName(toolName: string | undefined | null): string {
+  if (!toolName) return "";
+  // Check if the name contains the double underscore separator
+  const separatorIndex = toolName.lastIndexOf("__");
+  if (separatorIndex === -1) {
+    return toolName;
+  }
+  return toolName.substring(separatorIndex + 2);
+}
+
 export function isResourceUpdateTool(toolName: string | undefined | null) {
-  return /^DECO_RESOURCE_.*_UPDATE$/.test(toolName ?? "");
+  const actualToolName = extractActualToolName(toolName);
+  return /^DECO_RESOURCE_.*_UPDATE$/.test(actualToolName);
 }
 
 export function isResourceReadTool(toolName: string | undefined | null) {
-  return /^DECO_RESOURCE_.*_READ$/.test(toolName ?? "");
+  const actualToolName = extractActualToolName(toolName);
+  return /^DECO_RESOURCE_.*_READ$/.test(actualToolName);
+}
+
+export function isResourceUpdateOrCreateTool(toolName: string | undefined | null) {
+  const actualToolName = extractActualToolName(toolName);
+  return /^DECO_RESOURCE_.*_(UPDATE|CREATE)$/.test(actualToolName);
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -39,7 +60,16 @@ export function extractUpdateDataFromInput(input: any): unknown {
 
 export function deriveUpdateToolFromRead(readToolName?: string | null) {
   if (!readToolName) return null;
-  if (!/^DECO_RESOURCE_.*_READ$/.test(readToolName)) return null;
+  const actualToolName = extractActualToolName(readToolName);
+  if (!/^DECO_RESOURCE_.*_READ$/.test(actualToolName)) return null;
+  
+  // If it was namespaced, preserve the namespace
+  const separatorIndex = readToolName.lastIndexOf("__");
+  if (separatorIndex !== -1) {
+    const namespace = readToolName.substring(0, separatorIndex);
+    return `${namespace}__${actualToolName.replace(/_READ$/, "_UPDATE")}`;
+  }
+  
   return readToolName.replace(/_READ$/, "_UPDATE");
 }
 

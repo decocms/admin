@@ -1,4 +1,5 @@
 import type { ToolUIPart } from "ai";
+import type { ProjectLocator } from "@deco/sdk";
 
 // Minimal representation of a tool call payload we want to persist for replay
 export interface PersistedToolCall {
@@ -31,7 +32,7 @@ export interface VersionHistoryActions {
   ) => Promise<VersionEntry>;
   getVersions: (uri: string) => VersionEntry[];
   findByHash: (hash: string) => { uri: string; version: VersionEntry } | null;
-  revertToVersion: (hash: string, locator: string) => Promise<void>;
+  revertToVersion: (hash: string, locator: ProjectLocator) => Promise<void>;
   clearUri: (uri: string) => void;
 }
 

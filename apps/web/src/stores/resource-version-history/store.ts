@@ -1,10 +1,10 @@
-import { MCPClient } from "@deco/sdk";
-import { notifyResourceUpdate } from "@deco/sdk";
+import { MCPClient, notifyResourceUpdate, type ProjectLocator } from "@deco/sdk";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { parseToolName } from "../../utils/tool-namespace.ts";
 import type { VersionEntry, VersionHistoryStore } from "./types.ts";
-import { extractUpdateDataFromInput, hashContent } from "./utils.ts";
+import { hashContent } from "./utils.ts";
 
 const MAX_VERSIONS_PER_RESOURCE = 30;
 const EMPTY_VERSIONS: VersionEntry[] = [];
@@ -64,7 +64,7 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
           return null;
         },
 
-        async revertToVersion(hash, locator) {
+        async revertToVersion(hash, locator: ProjectLocator) {
           const match = get().actions.findByHash(hash);
           if (!match) {
             toast.error("Version not found");
@@ -101,9 +101,25 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
 
             // oxlint-disable-next-line no-explicit-any
             const client = MCPClient.forLocator<any>(locator, "/mcp");
-            // Dynamic tool execution using the same tool name
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await (client as any)[toolName](payload);
+            
+            // Handle namespaced tool names (e.g., "i:workspace-management__DECO_RESOURCE_XXX_UPDATE")
+            const parsedToolName = parseToolName(toolName);
+            let result;
+
+            if (parsedToolName) {
+              // Tool name is namespaced, call via INTEGRATIONS_CALL_TOOL
+              result = await client.INTEGRATIONS_CALL_TOOL({
+                id: parsedToolName.integrationId,
+                params: {
+                  name: parsedToolName.toolName,
+                  arguments: payload,
+                },
+              });
+            } else {
+              // Tool name is not namespaced, use old direct call method
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              result = await (client as any)[toolName](payload);
+            }
 
             // Notify and toast on success
             notifyResourceUpdate(uri);

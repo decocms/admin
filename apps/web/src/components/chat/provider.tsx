@@ -55,6 +55,7 @@ import {
   extractUpdateDataFromInput,
   isResourceReadTool,
   isResourceUpdateTool,
+  isResourceUpdateOrCreateTool,
   deriveUpdateToolFromRead,
 } from "../../stores/resource-version-history/utils.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
@@ -701,7 +702,7 @@ export function AgenticChatProvider({
 
       // Broadcast resource updates for auto-refresh
       if (
-        /^DECO_RESOURCE_.*_(UPDATE|CREATE)$/.test(toolCall.toolName ?? "") &&
+        isResourceUpdateOrCreateTool(toolCall.toolName) &&
         toolCall.input &&
         typeof toolCall.input === "object" &&
         "uri" in toolCall.input &&

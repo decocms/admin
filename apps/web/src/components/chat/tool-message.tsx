@@ -6,6 +6,22 @@ import {
   CollapsibleTrigger,
 } from "@deco/ui/components/collapsible.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
 import { memo, useMemo, useRef, useState, useCallback } from "react";
@@ -21,6 +37,11 @@ import {
   HostingAppToolLike,
 } from "./tools/hosting-app-deploy.tsx";
 import { Preview } from "./tools/render-preview.tsx";
+import {
+  truncateHash,
+  useGetVersions,
+  useRevertToVersion,
+} from "../../stores/resource-version-history/index.ts";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -127,6 +148,25 @@ const ToolStatus = memo(function ToolStatus({
   const hasOutput = state === "output-available";
   const hasError = state === "output-error";
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Version history integration
+  const uri: string | null = useMemo(() => {
+    if (input && typeof input === "object") {
+      const maybeUri =
+        (input as { uri?: unknown; resource?: unknown }).uri ??
+        (input as { resource?: unknown }).resource;
+      return typeof maybeUri === "string" ? maybeUri : null;
+    }
+    return null;
+  }, [input]);
+
+  const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
+    toolName,
+    part,
+    uri,
+  );
+
   const statusText = useMemo(() => {
     switch (state) {
       case "input-streaming":
@@ -167,12 +207,13 @@ const ToolStatus = memo(function ToolStatus({
         "flex flex-col relative",
         isSingle && "p-2.5 hover:bg-accent/25 rounded-2xl",
       )}
-      onClick={isSingle ? onClick : undefined}
+      onClick={undefined}
     >
       <div className="flex items-start gap-2">
-        <button
-          type="submit"
-          onClick={isSingle ? undefined : onClick}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onClick}
           className={cn(
             "w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
             !isSingle && "hover:bg-accent rounded-lg p-2",
@@ -206,13 +247,38 @@ const ToolStatus = memo(function ToolStatus({
                   {statusText}
                 </div>
               </div>
-              <Icon
-                className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
-                name="chevron_right"
-              />
+              <div className="ml-auto flex items-center gap-1">
+                {canRevert && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          <Icon name="undo" className="text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>Revert to {revertLabel}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <Icon
+                  className={cn("text-sm", isExpanded && "rotate-90")}
+                  name="chevron_right"
+                />
+              </div>
             </div>
           </div>
-        </button>
+        </div>
       </div>
 
       {isExpanded && (
@@ -258,6 +324,34 @@ const ToolStatus = memo(function ToolStatus({
             </div>
           )}
         </div>
+      )}
+
+      {/* Confirmation dialog */}
+      {canRevert && (
+        <AlertDialog open={confirmOpen}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Revert Resource Version</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will restore the resource to version {revertLabel}.
+                Continue?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmOpen(false);
+                  onConfirmRevert();
+                }}
+              >
+                Revert
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
@@ -709,3 +803,40 @@ export const ToolMessage = memo(function ToolMessage({
     </div>
   );
 });
+
+// Local hook to encapsulate revert availability and handler
+function useVersionRevertControls(
+  toolName: string,
+  part: ToolUIPart,
+  uri: string | null,
+) {
+  const revertToVersion = useRevertToVersion();
+  const versions = useGetVersions(uri || "");
+  const versionForPart = useMemo(() => {
+    if (!uri) return null;
+    return (
+      versions.find((v) => v.toolCall?.toolCallId === part.toolCallId) || null
+    );
+  }, [versions, uri, part.toolCallId]);
+
+  const canRevert = Boolean(
+    uri &&
+      part.state === "output-available" &&
+      (/^DECO_RESOURCE_.*_UPDATE$/.test(toolName) ||
+        /^DECO_RESOURCE_.*_READ$/.test(toolName)) &&
+      versionForPart,
+  );
+
+  const revertLabel = useMemo(
+    () => (versionForPart ? truncateHash(versionForPart.hash) : ""),
+    [versionForPart, truncateHash],
+  );
+
+  const onConfirmRevert = useCallback(() => {
+    if (versionForPart) {
+      revertToVersion(versionForPart.hash);
+    }
+  }, [revertToVersion, versionForPart]);
+
+  return { canRevert, revertLabel, onConfirmRevert } as const;
+}

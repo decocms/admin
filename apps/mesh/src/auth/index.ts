@@ -64,6 +64,8 @@ export const auth = betterAuth({
     // https://www.better-auth.com/docs/plugins/mcp
     mcp({
       loginPage: '/sign-in',
+      // Note: Authorization page (/authorize) is served as static HTML
+      // Better Auth will redirect there based on loginPage flow
     }),
 
     // API Key plugin for direct tool access

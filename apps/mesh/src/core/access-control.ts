@@ -55,6 +55,10 @@ export class AccessControl implements Disposable {
     this._granted = false;
   }
 
+  setToolName(toolName: string): void {
+    this.toolName = toolName;
+  }
+
   /**
    * Grant access unconditionally
    * Use for manual overrides, admin actions, or custom validation
@@ -127,7 +131,6 @@ export class AccessControl implements Disposable {
 
     // Build permission check
     const permissionToCheck: Permission = {
-      [resource]: ['*'], // Check for any action
     };
 
     // If checking a specific connection, also check that
@@ -156,6 +159,7 @@ export class AccessControl implements Disposable {
         }
       }
 
+
       // Fallback to manual check (when no Better Auth or permission denied)
       return this.manualPermissionCheck(resource);
     } catch (error) {
@@ -180,17 +184,9 @@ export class AccessControl implements Disposable {
         continue;
       }
 
-      // Check if key matches the resource exactly
-      if (key === resource) {
-        // Resource key matches - allow if has wildcard or any actions
-        return actions.includes('*') || actions.length > 0;
-      }
+      // Resource key matches - allow if has wildcard or any actions
+      return actions.includes(resource) || actions.includes('*');
 
-      // Check if actions list includes this resource (for connection-based permissions)
-      // Example: { 'conn_123': ['SEND_MESSAGE'] } checking for 'SEND_MESSAGE'
-      if (actions.includes(resource)) {
-        return true;
-      }
     }
 
     return false;

@@ -76,7 +76,14 @@ export const useBidcForTopWindow = <T extends z.ZodTypeAny>({
   onMessage: (message: z.infer<T>) => void;
 }) => {
   const channel = useBidcChannel({
-    createChannelFn: () => createChannel(),
+    createChannelFn: () => {
+      try {
+        return createChannel();
+      } catch (error) {
+        console.error("Error creating channel for top window", error);
+        return undefined;
+      }
+    },
     messageSchema,
     onMessage,
   });

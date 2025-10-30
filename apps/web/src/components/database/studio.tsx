@@ -56,7 +56,7 @@ export default function DatabaseStudio() {
 
   // Listen for DATABASES_RUN_SQL tool calls with CREATE TABLE
   useToolCallListener((toolCall) => {
-    if (toolCall.toolName === "DATABASES_RUN_SQL") {
+    if (toolCall.toolName.endsWith("DATABASES_RUN_SQL")) {
       const input = toolCall.input as { sql?: string } | undefined;
       const sql = input?.sql;
 

@@ -379,13 +379,13 @@ export function LoggedUser({
 const PlanColors = {
   [WELL_KNOWN_PLANS.FREE]: {
     background:
-      "bg-brand-green-light/30 hover:bg-brand-green-light/50 text-brand-green-dark",
-    sprite: "text-brand-green-light",
+      "bg-chart-1/15 hover:bg-chart-1/25 text-chart-1",
+    sprite: "text-chart-1/25",
   },
   [WELL_KNOWN_PLANS.STARTER]: {
     background:
-      "bg-brand-green-light/30 hover:bg-brand-green-light/50 text-brand-green-dark",
-    sprite: "text-brand-green-light",
+      "bg-chart-1/15 hover:bg-chart-1/25 text-chart-1 mix-blend-multiply",
+    sprite: "text-chart-1/25",
   },
   [WELL_KNOWN_PLANS.GROWTH]: {
     background:

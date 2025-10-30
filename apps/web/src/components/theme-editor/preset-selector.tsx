@@ -30,40 +30,40 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
       <div
         className="h-[205px] relative"
         style={{
-          backgroundColor: vars["--background"] || "#ffffff",
+          backgroundColor: vars["--background"],
         }}
       >
         {/* Header */}
         <div
           className="h-8 border-b flex items-center justify-between px-2"
           style={{
-            borderColor: vars["--border"] || "#e5e5e5",
+            borderColor: vars["--border"],
           }}
         >
           <div className="flex items-center gap-2">
             <div
               className="size-2.5 rounded-sm opacity-15"
               style={{
-                backgroundColor: vars["--muted-foreground"] || "#737373",
+                backgroundColor: vars["--muted-foreground"],
               }}
             />
             <div
               className="h-3 w-1 opacity-30"
               style={{
-                backgroundColor: vars["--muted-foreground"] || "#737373",
+                backgroundColor: vars["--muted-foreground"],
               }}
             />
             <div className="flex items-center gap-1">
               <div
                 className="size-2.5 rounded-sm opacity-15"
                 style={{
-                  backgroundColor: vars["--muted-foreground"] || "#737373",
+                  backgroundColor: vars["--muted-foreground"],
                 }}
               />
               <div
                 className="h-1.5 w-8 rounded-sm opacity-25"
                 style={{
-                  backgroundColor: vars["--foreground"] || "#262626",
+                  backgroundColor: vars["--foreground"],
                 }}
               />
             </div>
@@ -76,25 +76,25 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
           <div
             className="w-[60px] border-r p-1 flex flex-col gap-1 overflow-hidden"
             style={{
-              borderColor: vars["--border"] || "#e5e5e5",
+              borderColor: vars["--border"],
             }}
           >
             <div
               className="p-0.5 rounded flex items-center justify-center gap-1"
               style={{
-                backgroundColor: vars["--accent"] || "#f5f5f5",
+                backgroundColor: vars["--accent"],
               }}
             >
               <div
                 className="size-2.5 rounded-sm opacity-15"
                 style={{
-                  backgroundColor: vars["--muted-foreground"] || "#737373",
+                  backgroundColor: vars["--muted-foreground"],
                 }}
               />
               <div
                 className="h-1.5 w-8 rounded-sm opacity-25"
                 style={{
-                  backgroundColor: vars["--foreground"] || "#262626",
+                  backgroundColor: vars["--foreground"],
                 }}
               />
             </div>
@@ -106,13 +106,13 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
                 <div
                   className="size-2.5 rounded-sm opacity-15"
                   style={{
-                    backgroundColor: vars["--muted-foreground"] || "#737373",
+                    backgroundColor: vars["--muted-foreground"],
                   }}
                 />
                 <div
                   className="h-1.5 w-8 rounded-sm opacity-25"
                   style={{
-                    backgroundColor: vars["--foreground"] || "#262626",
+                    backgroundColor: vars["--foreground"],
                   }}
                 />
               </div>
@@ -126,20 +126,20 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
               <div
                 className="h-2 w-8 rounded-sm opacity-25"
                 style={{
-                  backgroundColor: vars["--foreground"] || "#262626",
+                  backgroundColor: vars["--foreground"],
                 }}
               />
               <div className="flex gap-0.5">
                 <div
                   className="h-2 w-8 rounded-sm"
                   style={{
-                    backgroundColor: vars["--secondary"] || "#f5f5f5",
+                    backgroundColor: vars["--secondary"],
                   }}
                 />
                 <div
                   className="h-2 w-8 rounded-sm"
                   style={{
-                    backgroundColor: vars["--primary"] || "#d0ec1a",
+                    backgroundColor: vars["--primary"],
                   }}
                 />
               </div>
@@ -152,7 +152,7 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
                   key={i}
                   className="h-2 w-5 rounded-sm"
                   style={{
-                    backgroundColor: vars["--accent"] || "#f5f5f5",
+                    backgroundColor: vars["--accent"],
                   }}
                 />
               ))}
@@ -165,7 +165,7 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
                   key={i}
                   className={cn("flex gap-1 py-2", i < 3 && "border-b")}
                   style={{
-                    borderColor: vars["--border"] || "#e5e5e5",
+                    borderColor: vars["--border"],
                   }}
                 >
                   {[1, 2, 3].map((j) => (
@@ -174,7 +174,7 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
                       className="h-1.5 w-[70px] rounded-sm opacity-15"
                       style={{
                         backgroundColor:
-                          vars["--muted-foreground"] || "#737373",
+                          vars["--muted-foreground"],
                       }}
                     />
                   ))}
@@ -189,32 +189,32 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
       <div
         className="border-t flex items-center gap-2.5 px-3 py-2"
         style={{
-          borderColor: vars["--border"] || "#e5e5e5",
+          borderColor: vars["--border"],
         }}
       >
         <div className="flex -space-x-1.5">
           <div
             className="size-[18px] rounded-full border-2 border-background"
             style={{
-              backgroundColor: vars["--primary"] || preset.colors[0],
+              backgroundColor: vars["--primary"],
             }}
           />
           <div
             className="size-[18px] rounded-full border-2 border-background"
             style={{
-              backgroundColor: vars["--secondary"] || preset.colors[1],
+              backgroundColor: vars["--secondary"],
             }}
           />
           <div
             className="size-[18px] rounded-full border-2 border-background"
             style={{
-              backgroundColor: vars["--accent"] || preset.colors[2],
+              backgroundColor: vars["--accent"],
             }}
           />
           <div
             className="size-[18px] rounded-full border-2 border-background"
             style={{
-              backgroundColor: vars["--border"] || "#e5e5e5",
+              backgroundColor: vars["--border"],
             }}
           />
         </div>

@@ -9,11 +9,11 @@
  */
 
 import type { Theme } from "@deco/sdk";
+import { DEFAULT_THEME } from "@deco/sdk";
 
 export interface ThemePreset {
   id: string;
   name: string;
-  colors: string[]; // Array of 3 colors for preview dots
   theme: Theme;
 }
 
@@ -22,56 +22,11 @@ export const THEME_PRESETS = [
   {
     id: "default",
     name: "Deco",
-    colors: ["#333333", "#f7f7f7", "#8e8e8e"],
-    theme: {
-      variables: {
-        "--background": "oklch(1 0 0)",
-        "--foreground": "oklch(0.205 0 0)",
-        "--card": "oklch(0.976 0 0)",
-        "--card-foreground": "oklch(0.205 0 0)",
-        "--popover": "oklch(1 0 0)",
-        "--popover-foreground": "oklch(0.205 0 0)",
-        "--primary": "oklch(0.8916 0.2037 118.17)",
-        "--primary-foreground": "oklch(0.3266 0.0858 149.2)",
-        "--secondary": "oklch(0.97 0 0)",
-        "--secondary-foreground": "oklch(0.205 0 0)",
-        "--muted": "oklch(0.97 0 0)",
-        "--muted-foreground": "oklch(0.556 0 0)",
-        "--accent": "oklch(0.97 0 0)",
-        "--accent-foreground": "oklch(0.205 0 0)",
-        "--destructive": "oklch(0.577 0.245 27.325)",
-        "--destructive-foreground": "oklch(1 0 0)",
-        "--success": "oklch(0.654 0.184 142)",
-        "--success-foreground": "oklch(0.263 0.71 137)",
-        "--warning": "oklch(0.877 0.184 99)",
-        "--warning-foreground": "oklch(0.51 0.14 77)",
-        "--border": "oklch(0.882 0 0)",
-        "--input": "oklch(0.922 0 0)",
-        "--ring": "oklch(0.268 0.007 34.298)",
-        "--chart-1": "oklch(0.646 0.222 41.116)",
-        "--chart-2": "oklch(0.6 0.118 184.704)",
-        "--chart-3": "oklch(0.398 0.07 227.392)",
-        "--chart-4": "oklch(0.828 0.189 84.429)",
-        "--chart-5": "oklch(0.769 0.188 70.08)",
-        "--sidebar": "oklch(1 0 0)",
-        "--sidebar-foreground": "oklch(0.205 0 0)",
-        "--sidebar-accent": "oklch(0.97 0 0)",
-        "--sidebar-accent-foreground": "oklch(0.205 0 0)",
-        "--sidebar-border": "oklch(0.882 0 0)",
-        "--radius": "0.375rem",
-        "--spacing": "0.25rem",
-        "--shadow-x": "0",
-        "--shadow-y": "1px",
-        "--shadow-blur": "3px",
-        "--shadow-spread": "0px",
-        "--shadow-opacity": "0.1",
-      },
-    },
+    theme: DEFAULT_THEME,
   },
   {
     id: "modern-minimal",
     name: "Modern Minimal",
-    colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
     theme: {
       variables: {
         "--background": "#ffffff",
@@ -120,7 +75,6 @@ export const THEME_PRESETS = [
   {
     id: "twitter",
     name: "Twitter",
-    colors: ["#1e9df1", "#7856ff", "#ff6c44"],
     theme: {
       variables: {
         "--background": "#ffffff",
@@ -169,7 +123,6 @@ export const THEME_PRESETS = [
   {
     id: "amethyst-haze",
     name: "Amethyst Haze",
-    colors: ["#8a79ab", "#e6a5b8", "#77b8a1"],
     theme: {
       variables: {
         "--background": "#f8f7fa",
@@ -218,7 +171,6 @@ export const THEME_PRESETS = [
   {
     id: "catppuccin",
     name: "Catppuccin",
-    colors: ["#8839ef", "#04a5e5", "#40a02b"],
     theme: {
       variables: {
         "--background": "#eff1f5",
@@ -267,7 +219,6 @@ export const THEME_PRESETS = [
   {
     id: "kodama-grove",
     name: "Kodama Grove",
-    colors: ["#84cc16", "#a3e635", "#bef264"],
     theme: {
       variables: {
         "--background": "#fbfff3",
@@ -316,7 +267,6 @@ export const THEME_PRESETS = [
   {
     id: "quantum-rose",
     name: "Quantum Rose",
-    colors: ["#e11d48", "#be123c", "#9f1239"],
     theme: {
       variables: {
         "--background": "#fff0f3",
@@ -365,7 +315,6 @@ export const THEME_PRESETS = [
   {
     id: "elegant-luxury",
     name: "Elegant Luxury",
-    colors: ["#d4af37", "#c99a2e", "#b8860b"],
     theme: {
       variables: {
         "--background": "#1c1917",
@@ -414,7 +363,6 @@ export const THEME_PRESETS = [
   {
     id: "mocha-mousse",
     name: "Mocha Mousse",
-    colors: ["#A37764", "#8A655A", "#C39E88"],
     theme: {
       variables: {
         "--background": "#F1F0E5",
@@ -463,7 +411,6 @@ export const THEME_PRESETS = [
   {
     id: "notebook",
     name: "Notebook",
-    colors: ["#606060", "#dedede", "#f3eac8"],
     theme: {
       variables: {
         "--background": "#f9f9f9",
@@ -512,7 +459,6 @@ export const THEME_PRESETS = [
   {
     id: "graphite",
     name: "Graphite",
-    colors: ["#606060", "#909090", "#c0c0c0"],
     theme: {
       variables: {
         "--background": "#f0f0f0",
@@ -561,7 +507,6 @@ export const THEME_PRESETS = [
   {
     id: "cosmic-night",
     name: "Cosmic Night",
-    colors: ["#a855f7", "#c084fc", "#e9d5ff"],
     theme: {
       variables: {
         "--background": "#0f0a1f",
@@ -610,7 +555,6 @@ export const THEME_PRESETS = [
   {
     id: "nature",
     name: "Nature",
-    colors: ["#10b981", "#34d399", "#6ee7b7"],
     theme: {
       variables: {
         "--background": "#f0fdf4",
@@ -659,7 +603,6 @@ export const THEME_PRESETS = [
   {
     id: "amber-minimal",
     name: "Amber Minimal",
-    colors: ["#f59e0b", "#fbbf24", "#fcd34d"],
     theme: {
       variables: {
         "--background": "#fffbeb",
@@ -708,7 +651,6 @@ export const THEME_PRESETS = [
   {
     id: "solar-dusk",
     name: "Solar Dusk",
-    colors: ["#ea580c", "#f97316", "#fb923c"],
     theme: {
       variables: {
         "--background": "#fff7ed",
@@ -757,7 +699,6 @@ export const THEME_PRESETS = [
   {
     id: "perpetuity",
     name: "Perpetuity",
-    colors: ["#06b6d4", "#0891b2", "#0e7490"],
     theme: {
       variables: {
         "--background": "#ecfeff",
@@ -806,7 +747,6 @@ export const THEME_PRESETS = [
   {
     id: "tangerine",
     name: "Tangerine",
-    colors: ["#f97316", "#fb923c", "#fdba74"],
     theme: {
       variables: {
         "--background": "#fff7ed",
@@ -855,7 +795,6 @@ export const THEME_PRESETS = [
   {
     id: "bold-tech",
     name: "Bold Tech",
-    colors: ["#7c3aed", "#8b5cf6", "#a78bfa"],
     theme: {
       variables: {
         "--background": "#0f0a1a",
@@ -904,7 +843,6 @@ export const THEME_PRESETS = [
   {
     id: "supabase",
     name: "Supabase",
-    colors: ["#3ecf8e", "#10b981", "#06b6d4"],
     theme: {
       variables: {
         "--background": "#0f1729",
@@ -953,7 +891,6 @@ export const THEME_PRESETS = [
   {
     id: "claymorphism",
     name: "Claymorphism",
-    colors: ["#6366f1", "#8b5cf6", "#ec4899"],
     theme: {
       variables: {
         "--background": "#f3f4f6",
@@ -1002,7 +939,6 @@ export const THEME_PRESETS = [
   {
     id: "neo-brutalism",
     name: "Neo Brutalism",
-    colors: ["#ff6b6b", "#4ecdc4", "#ffe66d"],
     theme: {
       variables: {
         "--background": "#ffffff",
@@ -1051,7 +987,6 @@ export const THEME_PRESETS = [
   {
     id: "cyberpunk",
     name: "Cyberpunk",
-    colors: ["#ff00ff", "#00ffff", "#ff0099"],
     theme: {
       variables: {
         "--background": "#0a0a1a",
@@ -1100,7 +1035,6 @@ export const THEME_PRESETS = [
   {
     id: "pastel-dreams",
     name: "Pastel Dreams",
-    colors: ["#c7b3e5", "#b3d4e5", "#e5b3d4"],
     theme: {
       variables: {
         "--background": "#faf8ff",
@@ -1149,7 +1083,6 @@ export const THEME_PRESETS = [
   {
     id: "doom-64",
     name: "Doom 64",
-    colors: ["#b71c1c", "#556b2f", "#4682b4"],
     theme: {
       variables: {
         "--background": "#cccccc",
@@ -1198,7 +1131,6 @@ export const THEME_PRESETS = [
   {
     id: "violet-bloom",
     name: "Violet Bloom",
-    colors: ["#7033ff", "#4ac885", "#fd822b"],
     theme: {
       variables: {
         "--background": "#fdfdfd",
@@ -1247,7 +1179,6 @@ export const THEME_PRESETS = [
   {
     id: "bubblegum",
     name: "Bubblegum",
-    colors: ["#d04f99", "#84d2e2", "#fbe2a7"],
     theme: {
       variables: {
         "--background": "#f6e6ee",
@@ -1296,7 +1227,6 @@ export const THEME_PRESETS = [
   {
     id: "clean-slate",
     name: "Clean Slate",
-    colors: ["#64748b", "#94a3b8", "#cbd5e1"],
     theme: {
       variables: {
         "--background": "#f8fafc",
@@ -1345,7 +1275,6 @@ export const THEME_PRESETS = [
   {
     id: "retro-arcade",
     name: "Retro Arcade",
-    colors: ["#ff6b6b", "#4ecdc4", "#ffe66d"],
     theme: {
       variables: {
         "--background": "#1a1a2e",

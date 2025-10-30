@@ -11,8 +11,6 @@ import type { JSONSchema7 } from "json-schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { toast } from "sonner";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
@@ -27,6 +25,11 @@ import { generateDefaultValues } from "../json-schema/utils/generate-default-val
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
+import {
+  ResourceDetailHeader,
+  CodeAction,
+  SaveDiscardActions,
+} from "../common/resource-detail-header.tsx";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -265,56 +268,27 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   return (
     <div className="h-full w-full flex flex-col bg-white">
       {/* Header with code viewer toggle */}
-      <div className="flex items-center justify-between px-2 h-10 border-b border-base-border">
-        <h2 className="text-sm font-regular">{effectiveView.name}</h2>
-        <div className="flex items-center gap-2">
-          {isCodeViewerOpen && isDirty && (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleResetCode}
-                className="h-7 px-2 text-xs"
-              >
-                Reset
-              </Button>
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleSaveCode}
-                className="h-7 px-3 text-xs gap-1"
-                disabled={updateViewMutation.isPending}
-              >
-                <Icon name="check" size={14} />
-                {updateViewMutation.isPending ? "Saving..." : "Save"}
-              </Button>
-            </>
-          )}
-          {effectiveView.code && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "size-8 rounded-xl p-0",
-                isCodeViewerOpen && "bg-accent text-accent-foreground",
-              )}
-              onClick={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-              title="View Code"
-            >
-              <Icon
-                name="code"
-                size={20}
-                className={
-                  isCodeViewerOpen ? "text-foreground" : "text-muted-foreground"
-                }
+      <ResourceDetailHeader
+        title={effectiveView.name}
+        actions={
+          <>
+            {isCodeViewerOpen && (
+              <SaveDiscardActions
+                hasChanges={isDirty}
+                onSave={handleSaveCode}
+                onDiscard={handleResetCode}
+                isSaving={updateViewMutation.isPending}
+                discardLabel="Reset"
               />
-            </Button>
-          )}
-        </div>
-      </div>
+            )}
+            <CodeAction
+              isOpen={isCodeViewerOpen}
+              onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+              hasCode={!!effectiveView.code}
+            />
+          </>
+        }
+      />
 
       {/* Code Viewer Section - Shows when code button is clicked */}
       {isCodeViewerOpen && effectiveView.code ? (

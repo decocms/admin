@@ -49,10 +49,10 @@ export const SaveWorkflowButton = memo(function SaveWorkflowButton() {
   return (
     <Button
       type="button"
-      variant="default"
+      variant="outline"
+      size="xs"
       onClick={handleSave}
       disabled={!hasChanges || isPending}
-      className="flex items-center gap-2"
       title={
         !hasChanges
           ? "No unsaved changes"
@@ -68,7 +68,7 @@ export const SaveWorkflowButton = memo(function SaveWorkflowButton() {
         </>
       ) : (
         <>
-          <Icon name="save" size={18} />
+          <Icon name="save" />
           Save
         </>
       )}

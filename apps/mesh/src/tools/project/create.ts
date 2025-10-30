@@ -4,7 +4,7 @@
  * Create a new project (namespace) in the organization
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
 import { getUserId, requireAuth } from '../../core/mesh-context';
 

@@ -11,6 +11,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { serveStatic } from 'hono/bun';
 import { auth } from '../auth';
 import { createMeshContextFactory } from '../core/context-factory';
 import type { MeshContext } from '../core/mesh-context';
@@ -41,7 +42,7 @@ app.use('/*', cors({
   },
   credentials: true,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'mcp-protocol-version'],
 }));
 
 // Request logging
@@ -60,6 +61,22 @@ app.get('/health', (c) => {
 });
 
 // ============================================================================
+// Static Files - Authentication Pages
+// ============================================================================
+
+// Serve sign-in page at /sign-in
+app.get('/sign-in', serveStatic({ path: './public/sign-in.html' }));
+
+// Serve authorization consent page at /authorize
+app.get('/authorize', serveStatic({ path: './public/authorize.html' }));
+
+// Serve OAuth test/debug page
+app.get('/oauth-test', serveStatic({ path: './public/oauth-test.html' }));
+
+// Serve API keys management page
+app.get('/api-keys', serveStatic({ path: './public/api-keys.html' }));
+
+// ============================================================================
 // Better Auth Routes
 // ============================================================================
 
@@ -67,12 +84,29 @@ app.get('/health', (c) => {
 // This automatically handles:
 // - /.well-known/oauth-authorization-server
 // - /.well-known/oauth-protected-resource
-// - /api/auth/oauth/authorize
-// - /api/auth/oauth/token
-// - /api/auth/oauth/register (Dynamic Client Registration)
-// - /api/auth/mcp/session
 
-app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw));
+// Mount Better Auth handler for ALL /api/auth/* routes
+// This handles:
+// - /api/auth/sign-in/email, /api/auth/sign-up/email
+// - /api/auth/session
+// - /api/auth/authorize (OAuth authorization endpoint)
+// - /api/auth/token (OAuth token endpoint)  
+// - /api/auth/register (Dynamic Client Registration)
+// - All other Better Auth endpoints
+app.all('/api/auth/*', async (c) => {
+  console.log('[Better Auth] Request:', c.req.method, c.req.path);
+  const response = await auth.handler(c.req.raw);
+  console.log('[Better Auth] Response:', response?.status);
+  return response;
+});
+
+// Mount OAuth discovery metadata endpoints
+import { oAuthDiscoveryMetadata, oAuthProtectedResourceMetadata } from "better-auth/plugins";
+const handleOAuthProtectedResourceMetadata = oAuthProtectedResourceMetadata(auth);
+const handleOAuthDiscoveryMetadata = oAuthDiscoveryMetadata(auth);
+
+app.get('/.well-known/oauth-protected-resource/*', (c) => handleOAuthProtectedResourceMetadata(c.req.raw));
+app.get('/.well-known/oauth-authorization-server/*', (c) => handleOAuthDiscoveryMetadata(c.req.raw));
 
 // ============================================================================
 // MeshContext Injection Middleware
@@ -94,6 +128,7 @@ const createContext = createMeshContextFactory({
 // Inject MeshContext into requests
 app.use('*', async (c, next) => {
   try {
+    console.log("SS");
     const ctx = await createContext(c);
     c.set('meshContext', ctx);
     return await next();
@@ -115,21 +150,24 @@ app.use('*', async (c, next) => {
 // Routes
 // ============================================================================
 
-app.use("/mcp", async (c, next) => {
+app.use('/mcp', async (c, next) => {
+
   const session = await auth.api.getMcpSession({
-    headers: c.req.raw.headers
-  })
+    headers: c.req.raw.headers,
+  });
   if (!session) {
     const origin = new URL(c.req.url).origin;
-    //this is important and you must return 401
+
+
     return c.res = new Response(null, {
       status: 401,
       headers: {
-        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/api/auth/.well-known/oauth-protected-resource"`
+        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/.well-known/oauth-protected-resource"`
       }
     })
   }
   return await next();
+
 })
 // Mount management tools MCP server at /mcp (no connectionId)
 // This exposes PROJECT_*, CONNECTION_* tools via MCP protocol
@@ -153,11 +191,13 @@ app.onError((err, c) => {
   }, 500);
 });
 
-// 404 handler
+// 404 handler with helpful message for OAuth endpoints
 app.notFound((c) => {
+  const path = c.req.path;
+
   return c.json({
     error: 'Not Found',
-    path: c.req.path,
+    path,
   }, 404);
 });
 

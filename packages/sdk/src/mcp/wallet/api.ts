@@ -1,5 +1,6 @@
 import type { ClientOf } from "@deco/sdk/http";
 import { z } from "zod";
+import { WebCache } from "../../cache/index.ts";
 import { InternalServerError, UserInputError } from "../../errors.ts";
 import { Markup } from "../../plan.ts";
 import { isRequired } from "../../utils/fns.ts";
@@ -13,6 +14,7 @@ import {
   MicroDollar,
   type WalletAPI,
   WellKnownWallets,
+  WellKnownTransactions,
 } from "./index.ts";
 import { getPlan } from "./plans.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
@@ -208,6 +210,82 @@ const createTool = createToolGroup("Wallet", {
   icon: "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
 });
 
+// Cache for tracking if wallets have received their welcome credit rewards
+const userCreditsRewardsCache = new WebCache<boolean>(
+  "wallet_user_credits_rewards",
+  WebCache.MAX_SAFE_TTL,
+);
+
+/**
+ * Ensures that the workspace receives their $2 welcome credit reward
+ * Uses idempotent PUT with well-known transaction ID to prevent duplicates
+ */
+async function ensureCreditRewards(
+  wallet: ClientOf<WalletAPI>,
+  workspace: string,
+) {
+  const operation = {
+    type: "WorkspaceGenCreditReward" as const,
+    amount: "2_000000", // $2 in microdollars
+    workspace,
+    transactionId: WellKnownTransactions.freeTwoDollars(
+      encodeURIComponent(workspace),
+    ),
+  };
+
+  let retries = 3;
+  while (retries > 0) {
+    const response = await wallet["PUT /transactions/:id"](
+      { id: operation.transactionId },
+      { body: operation },
+    );
+
+    response?.body?.cancel().catch(() => {});
+
+    if (response.ok || response.status === 304) {
+      // Success or already exists (304 Not Modified)
+      return;
+    }
+
+    // Retry on conflict
+    if (response.status === 409) {
+      retries--;
+      if (retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+    }
+
+    throw new Error(
+      `Failed to ensure credit rewards: ${JSON.stringify(operation)}`,
+    );
+  }
+}
+
+/**
+ * Checks cache and ensures credit rewards are given if needed
+ */
+async function rewardFreeCreditsIfNeeded(
+  wallet: ClientOf<WalletAPI>,
+  workspace: string,
+) {
+  const wasRewarded = await userCreditsRewardsCache.get(workspace);
+
+  if (wasRewarded) {
+    // User was already rewarded, skip
+    return;
+  }
+
+  try {
+    await ensureCreditRewards(wallet, workspace);
+    // Mark as rewarded in cache
+    await userCreditsRewardsCache.set(workspace, true);
+  } catch (error) {
+    console.error("Failed to ensure credit rewards", error);
+    // Don't throw - we still want to return the balance even if rewards failed
+  }
+}
+
 export const organizationWalletWorkspace = (
   locator: ProjectLocator,
   userId?: unknown,
@@ -241,6 +319,10 @@ export const getWalletAccount = createTool({
     await assertWorkspaceResourceAccess(c);
 
     const wallet = getWalletClient(c);
+    const workspace = organizationWalletWorkspace(c.locator.value, c.user.id);
+
+    // Ensure the workspace receives their $2 welcome credit reward on first access
+    await rewardFreeCreditsIfNeeded(wallet, workspace);
 
     const walletId = organizationWalletId(c.locator.value, c.user.id);
     const data = await Account.fetch(wallet, walletId);

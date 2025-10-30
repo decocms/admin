@@ -9,6 +9,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   useWorkflow,
   useWorkflowStepData,
+  useWorkflowUri,
 } from "../../../stores/workflows/hooks.ts";
 import { useMemo, useState } from "react";
 import { DEFAULT_WORKFLOW_STEP_CONFIG, useUpsertWorkflow } from "@deco/sdk";
@@ -70,20 +71,24 @@ function OptionsForm({
   stepName: string;
 }) {
   const workflow = useWorkflow();
+  const workflowUri = useWorkflowUri();
   const { mutateAsync, isPending } = useUpsertWorkflow();
 
   const handleSave = async (data: typeof DEFAULT_WORKFLOW_STEP_CONFIG) => {
     try {
+      const updatedWorkflow = {
+        ...workflow,
+        steps: workflow.steps.map((step) => {
+          if (step.def.name === stepName) {
+            return { ...step, options: data };
+          }
+          return step;
+        }),
+      };
+
       await mutateAsync({
-        workflow: {
-          ...workflow,
-          steps: workflow.steps.map((step) => {
-            if (step.def.name === stepName) {
-              return { ...step, options: data };
-            }
-            return step;
-          }),
-        },
+        workflow: updatedWorkflow,
+        uri: workflowUri,
       });
       form.reset(data);
       toast.success("Options saved successfully");

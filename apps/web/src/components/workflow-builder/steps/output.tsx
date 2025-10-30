@@ -248,6 +248,7 @@ function CreateViewButton({ stepName }: { stepName: string }) {
   }, [contextItems, defaultContextItems]);
 
   const handleCreateView = useCallback(() => {
+    setOpen(false);
     const threadId = crypto.randomUUID();
     setContextItems(uniqueContextItems);
     setThreadState({

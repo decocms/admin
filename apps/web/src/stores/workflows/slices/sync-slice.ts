@@ -9,8 +9,8 @@ type WorkflowWithUri = WorkflowDefinition & { uri?: string };
 
 export interface SyncSlice {
   isDirty: boolean;
-  lastServerVersion: WorkflowDefinition | null;
-  pendingServerUpdate: WorkflowDefinition | null;
+  lastServerVersion: WorkflowWithUri | null;
+  pendingServerUpdate: WorkflowWithUri | null;
   handleExternalUpdate: (serverWorkflow: WorkflowWithUri) => {
     applied: boolean;
     reason: string;
@@ -331,8 +331,7 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
       // Clear only the specific stepInputs that changed
       set({
         workflow: pendingServerUpdate,
-        workflowUri:
-          (pendingServerUpdate as WorkflowWithUri).uri || get().workflowUri,
+        workflowUri: pendingServerUpdate.uri || get().workflowUri,
         lastServerVersion: pendingServerUpdate,
         isDirty: false,
         pendingServerUpdate: null,

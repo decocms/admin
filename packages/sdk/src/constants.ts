@@ -82,9 +82,9 @@ type Capability = "reasoning" | "image-upload" | "file-upload" | "web-search";
  */
 export const WELL_KNOWN_MODELS: readonly Model[] = [
   {
-    id: "anthropic:claude-haiku-4-5-20251001",
-    model: "anthropic:claude-haiku-4-5-20251001",
-    name: "Claude Haiku 4.5",
+    id: "anthropic:claude-sonnet-4.5",
+    model: "anthropic:claude-sonnet-4.5",
+    name: "Claude Sonnet 4.5",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     byDeco: true,
@@ -92,9 +92,9 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     hasCustomKey: false,
   },
   {
-    id: "anthropic:claude-sonnet-4.5",
-    model: "anthropic:claude-sonnet-4.5",
-    name: "Claude Sonnet 4.5",
+    id: "anthropic:claude-haiku-4-5-20251001",
+    model: "anthropic:claude-haiku-4-5-20251001",
+    name: "Claude Haiku 4.5",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     byDeco: true,

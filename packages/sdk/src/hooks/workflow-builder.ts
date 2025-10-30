@@ -95,13 +95,15 @@ export function useWorkflowBuilder(workflow: Workflow) {
         // Convert new step format to old format temporarily
         // TODO: Remove this conversion when backend supports new format
         await upsertWorkflow.mutateAsync({
-          name: workflowToSave.name,
-          description: workflowToSave.description,
-          steps: workflowToSave.steps.map((step) => ({
-            def: step.def,
-            input: step.input,
-            output: step.output,
-          })),
+          workflow: {
+            name: workflowToSave.name,
+            description: workflowToSave.description,
+            steps: workflowToSave.steps.map((step) => ({
+              def: step.def,
+              input: step.input,
+              output: step.output,
+            })),
+          },
         });
         console.log("Workflow saved successfully:", workflowToSave.name);
         return true;

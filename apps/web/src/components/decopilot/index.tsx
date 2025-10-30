@@ -8,7 +8,8 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { unstable_batchedUpdates } from "react-dom";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { timeAgo } from "../../utils/time-ago.ts";
@@ -135,7 +136,6 @@ function ThreadSelector({ agentId }: { agentId: string }) {
     switchToThread,
     deleteThread,
   } = useThreadManager();
-
   const allThreads = getAllThreadsForRoute(pathname, agentId);
   const currentThread = getThreadForRoute(pathname, agentId);
   const currentThreadTitle = useThreadTitle(currentThread?.id, agentId);
@@ -199,7 +199,12 @@ function ThreadSelector({ agentId }: { agentId: string }) {
 
 function DecopilotChatContent() {
   const { threadState, clearThreadState } = useDecopilotThread();
-  const { getThreadForRoute, createNewThread } = useThreadManager();
+  const {
+    getThreadForRoute,
+    createNewThread,
+    getAllThreadsForRoute,
+    switchToThread,
+  } = useThreadManager();
   const { pathname } = useLocation();
   const { setOpen } = useDecopilotOpen();
   const [mode, setMode] = useState<"decochat" | "decopilot">("decochat");
@@ -207,14 +212,97 @@ function DecopilotChatContent() {
   // Select agent based on mode
   const agentId = mode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
-  // Get or create the thread for the current route and agent
+  // Track the previous threadId to detect changes
+  const previousThreadIdRef = useRef<string | null>(threadState.threadId);
+  const threadCreationRef = useRef<(() => void) | null>(null);
+
+  // Derive which thread ID we should use (pure computation - no side effects)
+  const targetThreadId = useMemo(() => {
+    // If threadState.threadId is provided and changed, use that
+    if (
+      threadState.threadId &&
+      previousThreadIdRef.current !== threadState.threadId
+    ) {
+      const newThreadId = threadState.threadId;
+      previousThreadIdRef.current = newThreadId;
+
+      // Store creation function for later execution (outside render)
+      threadCreationRef.current = () => {
+        const routeThreads = getAllThreadsForRoute(pathname, agentId);
+        const existingThread = routeThreads.find((t) => t.id === newThreadId);
+
+        if (!existingThread) {
+          createNewThread(pathname, agentId, newThreadId);
+        } else {
+          switchToThread(newThreadId);
+        }
+      };
+
+      return newThreadId;
+    }
+
+    // Update the ref for next comparison
+    previousThreadIdRef.current = threadState.threadId;
+
+    // Get existing thread for route/agent
+    const thread = getThreadForRoute(pathname, agentId);
+    if (thread) return thread.id;
+
+    // No thread exists - will be created outside render
+    const newThreadId = crypto.randomUUID();
+    threadCreationRef.current = () => {
+      createNewThread(pathname, agentId, newThreadId);
+    };
+    return newThreadId;
+  }, [
+    pathname,
+    agentId,
+    getThreadForRoute,
+    getAllThreadsForRoute,
+    createNewThread,
+    switchToThread,
+    threadState.threadId,
+  ]);
+
+  // Execute thread creation outside of render using useEffect
+  // This runs after React finishes rendering when targetThreadId changes
+  useEffect(() => {
+    if (!threadCreationRef.current) return;
+
+    const createFn = threadCreationRef.current;
+    threadCreationRef.current = null;
+
+    const rafId = requestAnimationFrame(() => {
+      unstable_batchedUpdates(() => {
+        createFn();
+      });
+    });
+
+    // Cleanup: cancel RAF if component unmounts or effect re-runs
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [targetThreadId]);
+
+  // Get or create the thread data (pure computation)
   const currentThread = useMemo(() => {
-    const existingThread = getThreadForRoute(pathname, agentId);
+    // Check if thread already exists
+    const routeThreads = getAllThreadsForRoute(pathname, agentId);
+    const existingThread = routeThreads.find((t) => t.id === targetThreadId);
+
     if (existingThread) {
       return existingThread;
     }
-    return createNewThread(pathname, agentId);
-  }, [pathname, agentId, getThreadForRoute, createNewThread]);
+
+    // Return a placeholder thread object (will be replaced after creation)
+    return {
+      id: targetThreadId,
+      route: pathname,
+      agentId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+  }, [pathname, agentId, getAllThreadsForRoute, targetThreadId]);
 
   // Get agent from inline constants (both are well-known agents)
   const agent =
@@ -225,13 +313,16 @@ function DecopilotChatContent() {
   const { preferences } = useUserPreferences();
 
   // Use unified hook that handles both backend and IndexedDB based on agentId
-  const { data: threadData } = useThreadMessages(
-    currentThread?.id || "",
-    agentId,
-    { shouldFetch: !!currentThread?.id },
-  );
+  const { data: threadData } = useThreadMessages(currentThread.id, agentId, {
+    shouldFetch: !!currentThread.id,
+  });
 
   const threadMessages = threadData?.messages ?? [];
+
+  const initialInput =
+    threadState.threadId === currentThread.id
+      ? threadState.initialMessage
+      : undefined;
 
   // If no thread yet, show a loading state
   if (!currentThread) {
@@ -284,7 +375,7 @@ function DecopilotChatContent() {
       <div className="flex-1 min-h-0">
         <Suspense fallback={<MainChatSkeleton />}>
           <AgenticChatProvider
-            key={`${currentThread.id}-${mode}`}
+            key={`${currentThread.id}-${mode}-${threadState.threadId}`}
             agentId={agentId}
             threadId={currentThread.id}
             agent={agent}
@@ -294,7 +385,7 @@ function DecopilotChatContent() {
             sendReasoning={preferences.sendReasoning}
             useDecopilotAgent={mode === "decopilot"}
             initialMessages={threadMessages}
-            initialInput={threadState.initialMessage || undefined}
+            initialInput={initialInput ?? undefined}
             autoSend={threadState.autoSend}
             onAutoSendComplete={clearThreadState}
             uiOptions={{

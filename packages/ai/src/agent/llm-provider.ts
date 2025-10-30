@@ -70,6 +70,7 @@ export const providers: Record<string, Provider> = {
       "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
       "claude-sonnet-4": "claude-sonnet-4-20250514",
       "claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
+      "claude-haiku-4.5": "claude-haiku-4-5-20251001",
     } satisfies Partial<Record<string, ModelsOf<AnthropicProvider>>>,
     tokenLimit: {
       default: 200_000,

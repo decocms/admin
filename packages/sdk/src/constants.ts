@@ -92,6 +92,16 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     hasCustomKey: false,
   },
   {
+    id: "anthropic:claude-haiku-4-5-20251001",
+    model: "anthropic:claude-haiku-4-5-20251001",
+    name: "Claude Haiku 4.5",
+    logo: LOGOS.anthropic,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
+  {
     id: "openai:gpt-4.1-mini",
     model: "openai:gpt-4.1-mini",
     name: "OpenAI GPT-4.1 mini",

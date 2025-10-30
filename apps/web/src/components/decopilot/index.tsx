@@ -127,7 +127,13 @@ function ThreadItem({
   );
 }
 
-function ThreadSelector({ agentId }: { agentId: string }) {
+function ThreadSelector({
+  agentId,
+  onThreadChange,
+}: {
+  agentId: string;
+  onThreadChange?: () => void;
+}) {
   const { pathname } = useLocation();
   const {
     getAllThreadsForRoute,
@@ -143,10 +149,12 @@ function ThreadSelector({ agentId }: { agentId: string }) {
 
   function handleNewThread() {
     createNewThread(pathname, agentId);
+    onThreadChange?.();
   }
 
   function handleSwitchThread(threadId: string) {
     switchToThread(threadId);
+    onThreadChange?.();
   }
 
   return (
@@ -175,7 +183,10 @@ function ThreadSelector({ agentId }: { agentId: string }) {
                 agentId={agentId}
                 isActive={thread.id === currentThread?.id}
                 onClick={() => handleSwitchThread(thread.id)}
-                onDelete={() => deleteThread(thread.id)}
+                onDelete={() => {
+                  deleteThread(thread.id);
+                  onThreadChange?.();
+                }}
                 timestamp={thread.updatedAt}
               />
             </Suspense>
@@ -200,7 +211,8 @@ function ThreadSelector({ agentId }: { agentId: string }) {
 
 function DecopilotChatContent() {
   const { threadState, clearThreadState } = useDecopilotThread();
-  const { getThreadForRoute, createNewThread } = useThreadManager();
+  const { getThreadForRoute, createNewThread, getAllThreadsForRoute } =
+    useThreadManager();
   const { pathname } = useLocation();
   const { setOpen } = useDecopilotOpen();
   const { value: storedMode, update: setStoredMode } = useLocalStorage<
@@ -218,14 +230,10 @@ function DecopilotChatContent() {
   const agentId =
     storedMode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
-  // Get or create the thread for the current route and agent
-  const currentThread = useMemo(() => {
-    const existingThread = getThreadForRoute(pathname, agentId);
-    if (existingThread) {
-      return existingThread;
-    }
-    return createNewThread(pathname, agentId);
-  }, [pathname, agentId, getThreadForRoute, createNewThread]);
+  // Just read the thread - don't create during render
+  const currentThread = getThreadForRoute(pathname, agentId);
+  const allThreads = getAllThreadsForRoute(pathname, agentId);
+  const needsInitialThread = allThreads.length === 0;
 
   // Get agent from inline constants (both are well-known agents)
   const agent =
@@ -244,14 +252,28 @@ function DecopilotChatContent() {
 
   const threadMessages = threadData?.messages ?? [];
 
-  // If no thread yet, show a loading state
+  // If no thread yet, show create thread button
   if (!currentThread) {
     return (
       <div className="flex h-full w-full flex-col">
         <div className="flex h-10 items-center gap-3 border-b border-border px-2">
           <ModeSelector mode={storedMode} onModeChange={handleModeChange} />
         </div>
-        <MainChatSkeleton />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              {needsInitialThread ? "No threads yet" : "No active thread"}
+            </p>
+            <button
+              type="button"
+              onClick={() => createNewThread(pathname, agentId)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Icon name="add" size={16} />
+              <span>Start new thread</span>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -262,11 +284,14 @@ function DecopilotChatContent() {
       <div className="flex h-10 items-center gap-3 border-b border-border px-2">
         <ModeSelector mode={storedMode} onModeChange={handleModeChange} />
         <span className="text-sm text-muted-foreground">/</span>
-        <ThreadSelector agentId={agentId} />
+        <ThreadSelector agentId={agentId} onThreadChange={clearThreadState} />
         <div className="flex flex-1 items-center justify-end gap-1">
           <button
             type="button"
-            onClick={() => createNewThread(pathname, agentId)}
+            onClick={() => {
+              createNewThread(pathname, agentId);
+              clearThreadState();
+            }}
             className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
             title="New thread"
           >

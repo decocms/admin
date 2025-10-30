@@ -59,6 +59,7 @@ import {
 } from "../../stores/resource-version-history/utils.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
 import { useThreadManager } from "../decopilot/thread-manager-context.tsx";
+import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 
 interface UiOptions {
   showModelSelector: boolean;
@@ -317,6 +318,7 @@ export function AgenticChatProvider({
   const queryClient = useQueryClient();
   const { locator } = useSDK();
   const { createNewThread } = useThreadManager();
+  const { setThreadState } = useDecopilotThread();
 
   const [state, dispatch] = useReducer(chatStateReducer, {
     finishReason: null,
@@ -1040,16 +1042,25 @@ export function AgenticChatProvider({
     }
 
     function handleCreateNewThreadWithMessage(event: Event) {
-      console.log({ event });
       const customEvent = event as CustomEvent<{
         message: string;
         contextItems: ContextItem[];
       }>;
       const { message, contextItems } = customEvent.detail;
 
-      setInput(message);
-      setContextItems(contextItems);
-      createNewThread(pathname, agentId);
+      if (typeof message === "string" && message.trim()) {
+        if (contextItems && contextItems.length > 0) {
+          setContextItems(contextItems);
+        }
+        const threadId = crypto.randomUUID();
+
+        setThreadState({
+          initialMessage: message,
+          autoSend: false,
+          threadId,
+        });
+        createNewThread(pathname, agentId, threadId);
+      }
     }
 
     window.addEventListener("decopilot:sendTextMessage", handleSendTextMessage);
@@ -1069,8 +1080,12 @@ export function AgenticChatProvider({
       window.removeEventListener("decopilot:appendError", handleAppendError);
       window.removeEventListener("decopilot:clearError", handleClearError);
       window.removeEventListener("decopilot:showError", handleShowError);
+      window.removeEventListener(
+        "decopilot:createNewThreadWithMessage",
+        handleCreateNewThreadWithMessage,
+      );
     };
-  }, [showError, clearError, appendError, wrappedSendMessage]);
+  }, [pathname, agentId]); // Only pathname and agentId as dependencies
 
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,

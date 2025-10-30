@@ -13,12 +13,12 @@ export const ResetWorkflowButton = memo(function ResetWorkflowButton() {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ghost"
+      size="xs"
       onClick={handleReset}
-      className="flex items-center gap-2"
       title="Clear local changes and resync with server"
     >
-      <Icon name="refresh" size={18} />
+      <Icon name="undo" />
       Reset
     </Button>
   );

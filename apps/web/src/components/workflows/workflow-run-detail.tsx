@@ -25,6 +25,7 @@ import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { WorkflowRunStepCard } from "../workflow-builder/steps/card.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { ResourceDetailHeader } from "../common/resource-detail-header.tsx";
 
 function JsonViewerWithTitle({
   data,
@@ -190,14 +191,24 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
     >
       <ScrollArea className="h-full w-full">
         <div className="flex flex-col">
-          {/* Header with status and metadata */}
+          {/* Header */}
+          <ResourceDetailHeader title={headerTitle} />
+
+          {/* Status and metadata */}
           <DetailSection>
-            {/* Title and Status */}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h1 className="text-2xl font-medium">{headerTitle}</h1>
+            {/* Status Badge and Workflow Name */}
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={badgeVariant} className="capitalize">
                 {status}
               </Badge>
+              {workflow.name && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-sm text-muted-foreground">
+                    {workflow.name}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Metadata Row */}

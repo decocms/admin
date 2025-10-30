@@ -220,7 +220,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="w-full mx-auto relative flex flex-col pb-2.5 pt-0 px-0">
+    <div className="w-full mx-auto relative flex flex-col">
       {/* Error Banner */}
       {runtimeError && (
         <ErrorBanner

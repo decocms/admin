@@ -24,6 +24,7 @@ import { appendRuntimeError, clearRuntimeError } from "../chat/provider.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
+import { ResourceDetailHeader } from "../common/resource-detail-header.tsx";
 
 // Tool type inferred from the Zod schema
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -214,80 +215,74 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
     <ScrollArea className="h-full w-full">
       <div className="flex flex-col">
         {/* Header */}
-        <DetailSection>
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-medium">{effectiveTool.name}</h1>
-              {effectiveTool.description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {effectiveTool.description}
-                </p>
-              )}
-            </div>
-          </div>
+        <ResourceDetailHeader title={effectiveTool.name} />
 
-          {/* Execution stats (show after execution) */}
-          {executionResult !== null &&
-          typeof executionStats.latency === "number" ? (
-            <div className="flex items-center gap-4 flex-wrap text-sm">
-              <div className="flex items-center gap-2">
-                <Icon
-                  name="schedule"
-                  size={16}
-                  className="text-muted-foreground"
-                />
-                <span className="font-mono text-sm">
-                  {executionStats.latency}ms
-                </span>
+        {/* Execution stats and errors - only show after execution */}
+        {executionResult !== null && (
+          <DetailSection>
+            {/* Execution stats (show after execution) */}
+            {executionResult !== null &&
+            typeof executionStats.latency === "number" ? (
+              <div className="flex items-center gap-4 flex-wrap text-sm">
+                <div className="flex items-center gap-2">
+                  <Icon
+                    name="schedule"
+                    size={16}
+                    className="text-muted-foreground"
+                  />
+                  <span className="font-mono text-sm">
+                    {executionStats.latency}ms
+                  </span>
+                </div>
+
+                {executionStats.byteSize ? (
+                  <>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name="storage"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                      <span className="font-mono text-sm">
+                        {executionStats.byteSize} bytes
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+
+                {executionStats.estimatedTokens ? (
+                  <>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name="token"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                      <span className="font-mono text-sm">
+                        ~{executionStats.estimatedTokens} tokens
+                      </span>
+                    </div>
+                  </>
+                ) : null}
               </div>
+            ) : null}
 
-              {executionStats.byteSize ? (
-                <>
-                  <div className="h-3 w-px bg-border" />
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name="storage"
-                      size={16}
-                      className="text-muted-foreground"
-                    />
-                    <span className="font-mono text-sm">
-                      {executionStats.byteSize} bytes
-                    </span>
-                  </div>
-                </>
-              ) : null}
-
-              {executionStats.estimatedTokens ? (
-                <>
-                  <div className="h-3 w-px bg-border" />
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name="token"
-                      size={16}
-                      className="text-muted-foreground"
-                    />
-                    <span className="font-mono text-sm">
-                      ~{executionStats.estimatedTokens} tokens
-                    </span>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* Error Alert */}
-          {executionResult?.error ? (
-            <Alert className="bg-destructive/5 border-none">
-              <Icon name="error" className="h-4 w-4 text-destructive" />
-              <AlertTitle className="text-destructive">Error</AlertTitle>
-              <AlertDescription className="text-destructive">
-                {typeof executionResult.error === "string"
-                  ? executionResult.error
-                  : JSON.stringify(executionResult.error)}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </DetailSection>
+            {/* Error Alert */}
+            {executionResult?.error ? (
+              <Alert className="bg-destructive/5 border-none">
+                <Icon name="error" className="h-4 w-4 text-destructive" />
+                <AlertTitle className="text-destructive">Error</AlertTitle>
+                <AlertDescription className="text-destructive">
+                  {typeof executionResult.error === "string"
+                    ? executionResult.error
+                    : JSON.stringify(executionResult.error)}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </DetailSection>
+        )}
 
         {/* Input Form */}
         <DetailSection title="Input">

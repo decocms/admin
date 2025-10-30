@@ -8,6 +8,7 @@ import {
   useIsDirty,
   useHandleSaveSuccess,
   useWorkflow,
+  useWorkflowUri,
 } from "../../stores/workflows/hooks.ts";
 
 export const SaveWorkflowButton = memo(function SaveWorkflowButton() {
@@ -15,6 +16,7 @@ export const SaveWorkflowButton = memo(function SaveWorkflowButton() {
   const handleSaveSuccess = useHandleSaveSuccess();
   const { mutateAsync, isPending } = useUpsertWorkflow();
   const workflow = useWorkflow();
+  const workflowUri = useWorkflowUri();
 
   const handleSave = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -22,15 +24,20 @@ export const SaveWorkflowButton = memo(function SaveWorkflowButton() {
       e.stopPropagation();
 
       try {
-        await mutateAsync(workflow);
-        handleSaveSuccess(workflow);
+        const response = await mutateAsync({
+          workflow: workflow,
+          uri: workflowUri,
+        });
+        // Server returns { uri, data, ... } where data is the WorkflowDefinition
+        const savedWorkflow = { ...response.data, uri: response.uri };
+        handleSaveSuccess(savedWorkflow);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to save workflow",
         );
       }
     },
-    [handleSaveSuccess, mutateAsync, workflow],
+    [handleSaveSuccess, mutateAsync, workflow, workflowUri],
   );
 
   return (

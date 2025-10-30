@@ -91,41 +91,41 @@ export function createMeshContextFactory(
   // Return factory function
   return async (c: Context): Promise<MeshContext> => {
     // Extract API key from Authorization header
-    const authHeader = c.req.header('Authorization');
-    const key = authHeader?.replace('Bearer ', '');
+    // const authHeader = c.req.header('Authorization');
+    // const key = authHeader?.replace('Bearer ', '');
 
-    let auth: MeshContext['auth'] = {};
+    const auth: MeshContext['auth'] = {};
 
-    if (key) {
-      // Verify API key with Better Auth
-      // For now, we'll skip this since Better Auth isn't set up yet
-      // This will be implemented in Task 09
+    // if (key) {
+    //   // Verify API key with Better Auth
+    //   // For now, we'll skip this since Better Auth isn't set up yet
+    //   // This will be implemented in Task 09
 
-      // Placeholder for Better Auth verification
-      if (config.auth?.api?.verifyApiKey) {
-        const result = await config.auth.api.verifyApiKey({
-          body: { key },
-        });
+    //   // Placeholder for Better Auth verification
+    //   if (config.auth?.api?.verifyApiKey) {
+    //     const result = await config.auth.api.verifyApiKey({
+    //       body: { key },
+    //     });
 
-        if (!result.valid) {
-          throw new UnauthorizedError(
-            result.error?.message || 'Invalid API key'
-          );
-        }
+    //     if (!result.valid) {
+    //       throw new UnauthorizedError(
+    //         result.error?.message || 'Invalid API key'
+    //       );
+    //     }
 
-        auth = {
-          apiKey: {
-            id: result.key?.id || '',
-            name: result.key?.name || '',
-            userId: result.key?.userId || '',
-            permissions: result.key?.permissions || {},
-            metadata: result.key?.metadata || undefined,
-            remaining: result.key?.remaining || undefined,
-            expiresAt: result.key?.expiresAt || undefined,
-          },
-        };
-      }
-    }
+    //     auth = {
+    //       apiKey: {
+    //         id: result.key?.id || '',
+    //         name: result.key?.name || '',
+    //         userId: result.key?.userId || '',
+    //         permissions: result.key?.permissions || {},
+    //         metadata: result.key?.metadata || undefined,
+    //         remaining: result.key?.remaining || undefined,
+    //         expiresAt: result.key?.expiresAt || undefined,
+    //       },
+    //     };
+    //   }
+    // }
 
     // Extract project from path (e.g., /:projectSlug/mcp/...)
     const projectSlug = extractProjectSlug(c.req.path);

@@ -21,5 +21,7 @@ export * from "./models.ts";
 export * from "./resources-workflow.ts";
 export * from "./resources-tools.ts";
 export * from "./documents.ts";
+export * from "./workflows.ts";
+export * from "./views.ts";
 export * from "./use-recent-resources.ts";
 export * from "./use-pinned-resources.ts";

@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 
+export interface ToolCallEvent {
+  toolName: string;
+  input?: unknown;
+}
+
 /**
  * Hook to listen for tool calls and execute callbacks.
  * This replaces the onToolCall prop from the old DecopilotProvider.
@@ -15,7 +20,7 @@ import type { MutableRefObject } from "react";
  * ```
  */
 export function useToolCallListener(
-  callback: (toolCall: { toolName: string }) => void,
+  callback: (toolCall: ToolCallEvent) => void,
 ) {
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
@@ -38,7 +43,7 @@ export function useToolCallListener(
  * Internal hook for the chat provider to trigger all registered listeners
  */
 export function useTriggerToolCallListeners() {
-  return (toolCall: { toolName: string }) => {
+  return (toolCall: ToolCallEvent) => {
     if (globalThis.__toolCallListeners) {
       globalThis.__toolCallListeners.forEach((callbackRef) => {
         callbackRef.current?.(toolCall);
@@ -47,7 +52,7 @@ export function useTriggerToolCallListeners() {
   };
 }
 
-type ToolCallCallback = (toolCall: { toolName: string }) => void;
+type ToolCallCallback = (toolCall: ToolCallEvent) => void;
 
 declare global {
   // eslint-disable-next-line no-var

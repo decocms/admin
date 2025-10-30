@@ -1,8 +1,10 @@
 import { DECO_CMS_API_URL, useIntegration, useTools } from "@deco/sdk";
 import { useMemo } from "react";
 import { useParams } from "react-router";
+import { useState } from "react";
 import { PreviewIframe } from "../agent/preview.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
+import { useToolCallListener } from "../../hooks/use-tool-call-listener.ts";
 
 export default function DatabaseStudio() {
   const { org, project } = useParams<{ org: string; project: string }>();
@@ -50,6 +52,21 @@ export default function DatabaseStudio() {
 
   // Inject context into the current route's thread
   useSetThreadContextEffect(threadContextItems);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for DATABASES_RUN_SQL tool calls with CREATE TABLE
+  useToolCallListener((toolCall) => {
+    if (toolCall.toolName === "DATABASES_RUN_SQL") {
+      const input = toolCall.input as { sql?: string } | undefined;
+      const sql = input?.sql;
+
+      // Check if SQL contains CREATE TABLE (case insensitive)
+      if (sql && /CREATE\s+TABLE/i.test(sql)) {
+        // Force iframe refresh by updating the key
+        setRefreshKey((prev) => prev + 1);
+      }
+    }
+  });
 
   if (!org || !project) {
     return null;
@@ -60,6 +77,7 @@ export default function DatabaseStudio() {
   return (
     <div className="h-[calc(100vh-48px)] w-full">
       <PreviewIframe
+        key={refreshKey}
         src={studioUrl}
         title="Database Studio"
         className="w-full h-full border-0"

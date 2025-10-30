@@ -272,7 +272,15 @@ export const KEYS = {
     search?: string,
     sortBy?: string,
     sortOrder?: string,
-  ) => [locator, "resources-v2-list", integrationId, resourceName, search, sortBy, sortOrder],
+  ) => [
+    locator,
+    "resources-v2-list",
+    integrationId,
+    resourceName,
+    search,
+    sortBy,
+    sortOrder,
+  ],
   DECO_RESOURCE_READ: (
     locator: ProjectLocator,
     integrationId: string,

@@ -2,9 +2,19 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@deco/ui/components/tabs.tsx";
-import { useEffect, useState, useCallback, createContext, useContext } from "react";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@deco/ui/components/tabs.tsx";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import type { RuntimeErrorEntry } from "../chat/provider.tsx";
 
 export interface ConsoleLog {
@@ -25,10 +35,10 @@ interface ConsoleContextValue {
   warningCount: number;
 }
 
-const ConsoleContext = createContext<ConsoleContextValue>({ 
-  logs: [], 
-  errorCount: 0, 
-  warningCount: 0 
+const ConsoleContext = createContext<ConsoleContextValue>({
+  logs: [],
+  errorCount: 0,
+  warningCount: 0,
 });
 
 export function useConsoleState() {
@@ -83,8 +93,15 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
       setLogs((prev) => [...prev, logEntry]);
     }
 
-    window.addEventListener("decopilot:appendError", handleRuntimeError as EventListener);
-    return () => window.removeEventListener("decopilot:appendError", handleRuntimeError as EventListener);
+    window.addEventListener(
+      "decopilot:appendError",
+      handleRuntimeError as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "decopilot:appendError",
+        handleRuntimeError as EventListener,
+      );
   }, []);
 
   // Clear logs when cleared
@@ -94,7 +111,8 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
     }
 
     window.addEventListener("decopilot:clearError", handleClearError);
-    return () => window.removeEventListener("decopilot:clearError", handleClearError);
+    return () =>
+      window.removeEventListener("decopilot:clearError", handleClearError);
   }, []);
 
   // Add welcome log on mount
@@ -125,7 +143,7 @@ interface ViewConsoleProps {
 }
 
 export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
-  const { logs, errorCount, warningCount } = useConsoleState();
+  const { logs, errorCount } = useConsoleState();
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState("console");
   const [showErrors, setShowErrors] = useState(true);
@@ -135,6 +153,37 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   const handleClear = useCallback(() => {
     window.dispatchEvent(new CustomEvent("decopilot:clearError"));
   }, []);
+
+  const formatTime = useCallback((timestamp: string) => {
+    const date = new Date(timestamp);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
+  }, []);
+
+  const handleCopyLogs = useCallback(() => {
+    const logText = logs
+      .map((log) => {
+        const time = formatTime(log.timestamp);
+        const source = log.source
+          ? ` [${log.source}:${log.line}:${log.column}]`
+          : "";
+        const stack = log.stack ? `\n${log.stack}` : "";
+        return `[${time}] ${log.type.toUpperCase()}: ${log.message}${source}${stack}`;
+      })
+      .join("\n\n");
+
+    navigator.clipboard
+      .writeText(logText)
+      .then(() => {
+        // Could show a toast here if desired
+        console.log("Logs copied to clipboard");
+      })
+      .catch((err) => {
+        console.error("Failed to copy logs:", err);
+      });
+  }, [logs, formatTime]);
 
   // Filter logs
   const filteredLogs = logs.filter((log) => {
@@ -151,14 +200,6 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
     return null;
   }
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    const seconds = date.getSeconds().toString().padStart(2, "0");
-    return `${hours}:${minutes}:${seconds}`;
-  };
-
   const getLogIcon = (type: ConsoleLog["type"]) => {
     switch (type) {
       case "error":
@@ -168,9 +209,13 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
       case "info":
         return <Icon name="info" size={14} className="text-blue-600" />;
       case "navigation":
-        return <Icon name="arrow_forward" size={14} className="text-blue-600" />;
+        return (
+          <Icon name="arrow_forward" size={14} className="text-blue-600" />
+        );
       case "click":
-        return <Icon name="ads_click" size={14} className="text-muted-foreground" />;
+        return (
+          <Icon name="ads_click" size={14} className="text-muted-foreground" />
+        );
       default:
         return null;
     }
@@ -179,7 +224,11 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   return (
     <div className="h-96 bg-background border-t border-border flex flex-col shrink-0">
       {/* Tabs Header */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col h-full"
+      >
         <div className="border-b border-border bg-muted/30 flex items-center justify-between">
           <TabsList className="h-9 bg-transparent border-0 rounded-none justify-start gap-0">
             <TabsTrigger
@@ -215,7 +264,10 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
           </Button>
         </div>
 
-        <TabsContent value="console" className="flex-1 flex flex-col mt-0 overflow-hidden">
+        <TabsContent
+          value="console"
+          className="flex-1 flex flex-col mt-0 overflow-hidden"
+        >
           {/* Filter Bar */}
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/20">
             <Icon name="search" size={16} className="text-muted-foreground" />
@@ -257,6 +309,15 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={handleCopyLogs}
+                className="h-7 w-7"
+                title="Copy logs to clipboard"
+              >
+                <Icon name="content_copy" size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleClear}
                 className="h-7 w-7"
                 title="Clear console"
@@ -270,7 +331,9 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
           <ScrollArea className="flex-1">
             <div className="font-mono text-xs">
               {filteredLogs.length === 0 ? (
-                <div className="p-4 text-muted-foreground italic">No messages</div>
+                <div className="p-4 text-muted-foreground italic">
+                  No messages
+                </div>
               ) : (
                 filteredLogs.map((log) => (
                   <div
@@ -283,7 +346,9 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                     <span className="text-muted-foreground shrink-0 mt-0.5 tabular-nums text-xs">
                       {formatTime(log.timestamp)}
                     </span>
-                    <div className="shrink-0 mt-0.5">{getLogIcon(log.type)}</div>
+                    <div className="shrink-0 mt-0.5">
+                      {getLogIcon(log.type)}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div
                         className={`break-words text-xs ${
@@ -321,15 +386,24 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="network" className="flex-1 flex items-center justify-center mt-0">
-          <div className="text-sm text-muted-foreground">Network monitoring coming soon</div>
+        <TabsContent
+          value="network"
+          className="flex-1 flex items-center justify-center mt-0"
+        >
+          <div className="text-sm text-muted-foreground">
+            Network monitoring coming soon
+          </div>
         </TabsContent>
 
-        <TabsContent value="tools" className="flex-1 flex items-center justify-center mt-0">
-          <div className="text-sm text-muted-foreground">Tool inspector coming soon</div>
+        <TabsContent
+          value="tools"
+          className="flex-1 flex items-center justify-center mt-0"
+        >
+          <div className="text-sm text-muted-foreground">
+            Tool inspector coming soon
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-

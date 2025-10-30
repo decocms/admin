@@ -30,7 +30,11 @@ import {
   CodeAction,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
-import { ViewConsole, useConsoleState, ViewConsoleProvider } from "./view-console.tsx";
+import {
+  ViewConsole,
+  useConsoleState,
+  ViewConsoleProvider,
+} from "./view-console.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 
@@ -39,17 +43,17 @@ interface ViewDetailProps {
   data?: unknown;
 }
 
-function ConsoleToggleButton({ 
-  isOpen, 
-  onToggle 
-}: { 
-  isOpen: boolean; 
+function ConsoleToggleButton({
+  isOpen,
+  onToggle,
+}: {
+  isOpen: boolean;
   onToggle: () => void;
 }) {
   const consoleState = useConsoleState();
   const errorCount = consoleState?.errorCount ?? 0;
   const warningCount = consoleState?.warningCount ?? 0;
-  
+
   return (
     <Button
       type="button"
@@ -59,8 +63,8 @@ function ConsoleToggleButton({
       className={`size-6 p-0 relative ${isOpen ? "bg-accent" : ""}`}
       title="Toggle Console"
     >
-      <Icon 
-        name="terminal" 
+      <Icon
+        name="terminal"
         className={isOpen ? "text-foreground" : "text-muted-foreground"}
       />
       {errorCount > 0 && (
@@ -93,13 +97,13 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
-  
+
   // Persist console open state
   const { value: isConsoleOpen, update: setIsConsoleOpen } = useLocalStorage({
     key: "deco-view-console-open",
     defaultValue: false,
   });
-  
+
   const updateViewMutation = useUpdateView();
 
   // Current code value = draft OR saved value
@@ -343,75 +347,80 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
           }
         />
 
-      {/* Code Viewer Section - Shows when code button is clicked */}
-      {isCodeViewerOpen && effectiveView.code ? (
-        <div className="flex-1 overflow-hidden w-full">
-          <CodeMirror
-            value={currentCode}
-            onChange={handleCodeChange}
-            extensions={[javascript({ jsx: true, typescript: true })]}
-            theme={oneDark}
-            height="100%"
-            className="h-full w-full text-sm"
-            basicSetup={{
-              lineNumbers: true,
-              highlightActiveLineGutter: true,
-              highlightSpecialChars: true,
-              foldGutter: true,
-              drawSelection: true,
-              dropCursor: true,
-              allowMultipleSelections: true,
-              indentOnInput: true,
-              syntaxHighlighting: true,
-              bracketMatching: true,
-              closeBrackets: true,
-              autocompletion: true,
-              rectangularSelection: true,
-              crosshairCursor: true,
-              highlightActiveLine: true,
-              highlightSelectionMatches: true,
-              closeBracketsKeymap: true,
-              searchKeymap: true,
-              foldKeymap: true,
-              completionKeymap: true,
-              lintKeymap: true,
-            }}
-          />
-        </div>
-      ) : (
-        /* Preview Section - Shows when code viewer is closed */
-        <div className="flex-1 overflow-hidden relative flex flex-col">
-          <div className={`flex-1 overflow-hidden ${isConsoleOpen ? "flex-none" : ""}`} style={isConsoleOpen ? { height: "calc(100% - 24rem)" } : undefined}>
-            {htmlValue ? (
-              <PreviewIframe
-                ref={iframeRef}
-                srcDoc={htmlValue}
-                title="View Preview"
-                className="w-full h-full border-0"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full p-8">
-                <div className="text-center">
-                  <Icon
-                    name="visibility_off"
-                    size={48}
-                    className="mx-auto mb-4 text-muted-foreground"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    No React code to preview
-                  </p>
-                </div>
-              </div>
-            )}
+        {/* Code Viewer Section - Shows when code button is clicked */}
+        {isCodeViewerOpen && effectiveView.code ? (
+          <div className="flex-1 overflow-hidden w-full">
+            <CodeMirror
+              value={currentCode}
+              onChange={handleCodeChange}
+              extensions={[javascript({ jsx: true, typescript: true })]}
+              theme={oneDark}
+              height="100%"
+              className="h-full w-full text-sm"
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLineGutter: true,
+                highlightSpecialChars: true,
+                foldGutter: true,
+                drawSelection: true,
+                dropCursor: true,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                syntaxHighlighting: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: true,
+                rectangularSelection: true,
+                crosshairCursor: true,
+                highlightActiveLine: true,
+                highlightSelectionMatches: true,
+                closeBracketsKeymap: true,
+                searchKeymap: true,
+                foldKeymap: true,
+                completionKeymap: true,
+                lintKeymap: true,
+              }}
+            />
           </div>
-          
-          {/* Console - Shows when preview is active */}
-          <ViewConsole 
-            isOpen={isConsoleOpen} 
-            onClose={() => setIsConsoleOpen(false)}
-          />
-        </div>
-      )}
+        ) : (
+          /* Preview Section - Shows when code viewer is closed */
+          <div className="flex-1 overflow-hidden relative flex flex-col">
+            <div
+              className={`flex-1 overflow-hidden ${isConsoleOpen ? "flex-none" : ""}`}
+              style={
+                isConsoleOpen ? { height: "calc(100% - 24rem)" } : undefined
+              }
+            >
+              {htmlValue ? (
+                <PreviewIframe
+                  ref={iframeRef}
+                  srcDoc={htmlValue}
+                  title="View Preview"
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full p-8">
+                  <div className="text-center">
+                    <Icon
+                      name="visibility_off"
+                      size={48}
+                      className="mx-auto mb-4 text-muted-foreground"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      No React code to preview
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Console - Shows when preview is active */}
+            <ViewConsole
+              isOpen={isConsoleOpen}
+              onClose={() => setIsConsoleOpen(false)}
+            />
+          </div>
+        )}
       </div>
     </ViewConsoleProvider>
   );

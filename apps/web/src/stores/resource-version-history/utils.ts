@@ -35,7 +35,9 @@ export function isResourceReadTool(toolName: string | undefined | null) {
   return /^DECO_RESOURCE_.*_READ$/.test(actualToolName);
 }
 
-export function isResourceUpdateOrCreateTool(toolName: string | undefined | null) {
+export function isResourceUpdateOrCreateTool(
+  toolName: string | undefined | null,
+) {
   const actualToolName = extractActualToolName(toolName);
   return /^DECO_RESOURCE_.*_(UPDATE|CREATE)$/.test(actualToolName);
 }
@@ -62,15 +64,13 @@ export function deriveUpdateToolFromRead(readToolName?: string | null) {
   if (!readToolName) return null;
   const actualToolName = extractActualToolName(readToolName);
   if (!/^DECO_RESOURCE_.*_READ$/.test(actualToolName)) return null;
-  
+
   // If it was namespaced, preserve the namespace
   const separatorIndex = readToolName.lastIndexOf("__");
   if (separatorIndex !== -1) {
     const namespace = readToolName.substring(0, separatorIndex);
     return `${namespace}__${actualToolName.replace(/_READ$/, "_UPDATE")}`;
   }
-  
+
   return readToolName.replace(/_READ$/, "_UPDATE");
 }
-
-

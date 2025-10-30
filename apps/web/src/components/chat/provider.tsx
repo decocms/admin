@@ -47,9 +47,7 @@ import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
-import {
-  useAddVersion,
-} from "../../stores/resource-version-history/index.ts";
+import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import {
   extractResourceUriFromInput,
   extractUpdateDataFromInput,
@@ -607,9 +605,10 @@ export function AgenticChatProvider({
                 readCheckpointRef.current.set(finalUri, serialized);
 
                 // Persist a baseline version the first time we see this resource in this browser
-                const existing = createResourceVersionHistoryStore
-                  .getState()
-                  .history[finalUri];
+                const existing =
+                  createResourceVersionHistoryStore.getState().history[
+                    finalUri
+                  ];
                 if (!existing || existing.length === 0) {
                   const assumedUpdateTool = deriveUpdateToolFromRead(
                     (part as { toolName?: string }).toolName,
@@ -644,7 +643,8 @@ export function AgenticChatProvider({
             typeof (part as { input?: unknown }).input === "object"
           ) {
             const input = (part as { input: Record<string, unknown> }).input;
-            const resourceUri = (input.uri as string) || (input.resource as string);
+            const resourceUri =
+              (input.uri as string) || (input.resource as string);
 
             if (typeof resourceUri === "string") {
               notifyResourceUpdate(resourceUri);
@@ -717,9 +717,8 @@ export function AgenticChatProvider({
               const checkpoint = readCheckpointRef.current.get(uri);
               if (checkpoint) {
                 // Persist a checkpoint if baseline does not already exist
-                const existing = createResourceVersionHistoryStore
-                  .getState()
-                  .history[uri];
+                const existing =
+                  createResourceVersionHistoryStore.getState().history[uri];
                 if (!existing || existing.length === 0) {
                   // Persist a checkpoint version using the current update tool as the replay vehicle
                   void addVersion(

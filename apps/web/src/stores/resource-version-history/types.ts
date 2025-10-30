@@ -39,5 +39,3 @@ export interface VersionHistoryActions {
 export interface VersionHistoryStore extends VersionHistoryState {
   actions: VersionHistoryActions;
 }
-
-

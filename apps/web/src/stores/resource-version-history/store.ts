@@ -1,4 +1,8 @@
-import { MCPClient, notifyResourceUpdate, type ProjectLocator } from "@deco/sdk";
+import {
+  MCPClient,
+  notifyResourceUpdate,
+  type ProjectLocator,
+} from "@deco/sdk";
 import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -42,9 +46,10 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
 
           set((state) => {
             const current = state.history[uri] ?? [];
-            const next = current.length >= MAX_VERSIONS_PER_RESOURCE
-              ? [...current.slice(1), version]
-              : [...current, version];
+            const next =
+              current.length >= MAX_VERSIONS_PER_RESOURCE
+                ? [...current.slice(1), version]
+                : [...current, version];
             return { history: { ...state.history, [uri]: next } };
           });
 
@@ -79,7 +84,8 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
           }
 
           // Prefer the original toolName if present; fallback to generic UPDATE pattern
-          const toolName = version.toolCall?.toolName ?? inferUpdateToolNameFromUri(uri);
+          const toolName =
+            version.toolCall?.toolName ?? inferUpdateToolNameFromUri(uri);
 
           if (!toolName) {
             toast.error("Unable to infer update tool");
@@ -88,9 +94,11 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
 
           try {
             // Re-execute the stored tool call exactly as it was, but ensure data is the stored content
-            const inputBase = (version.toolCall?.input && typeof version.toolCall.input === "object")
-              ? { ...(version.toolCall.input as Record<string, unknown>) }
-              : { uri };
+            const inputBase =
+              version.toolCall?.input &&
+              typeof version.toolCall.input === "object"
+                ? { ...(version.toolCall.input as Record<string, unknown>) }
+                : { uri };
 
             // Ensure required shape { uri, data }
             const payload = {
@@ -101,7 +109,7 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
 
             // oxlint-disable-next-line no-explicit-any
             const client = MCPClient.forLocator<any>(locator, "/mcp");
-            
+
             // Handle namespaced tool names (e.g., "i:workspace-management__DECO_RESOURCE_XXX_UPDATE")
             const parsedToolName = parseToolName(toolName);
             let result;
@@ -178,5 +186,3 @@ export function useVersions(uri: string) {
     (s) => s.history[uri] ?? EMPTY_VERSIONS,
   );
 }
-
-

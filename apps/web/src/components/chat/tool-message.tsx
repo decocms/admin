@@ -1,3 +1,4 @@
+import { useIntegrations } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Collapsible,
@@ -7,7 +8,13 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState, useCallback } from "react";
+import { IntegrationIcon } from "../integrations/common.tsx";
+import {
+  extractToolName,
+  parseToolName,
+  getStatusStyles,
+} from "../../utils/tool-namespace.ts";
 import { JsonViewer } from "./json-viewer.tsx";
 import {
   HostingAppDeploy,
@@ -41,18 +48,25 @@ const CUSTOM_UI_TOOLS = new Set([
   "HOSTING_APP_DEPLOY",
   "RENDER",
   "GENERATE_IMAGE",
+  "READ_MCP",
+  "CALL_TOOL",
 ]);
 
 // Helper to extract toolName from ToolUIPart (handles both static and dynamic tools)
 function getToolName(part: ToolUIPart): string {
+  let rawToolName: string;
+
   if ("toolName" in part && typeof part.toolName === "string") {
-    return part.toolName;
+    rawToolName = part.toolName;
+  } else if (part.type.startsWith("tool-")) {
+    // Extract from type: "tool-TOOL_NAME" -> "TOOL_NAME"
+    rawToolName = part.type.substring(5);
+  } else {
+    return "UNKNOWN_TOOL";
   }
-  // Extract from type: "tool-TOOL_NAME" -> "TOOL_NAME"
-  if (part.type.startsWith("tool-")) {
-    return part.type.substring(5);
-  }
-  return "UNKNOWN_TOOL";
+
+  // Parse namespaced tool name to extract just the tool name for display
+  return extractToolName(rawToolName);
 }
 
 // Hook to memoize tool name extraction
@@ -73,53 +87,62 @@ function useIsCustomUITool(part: ToolUIPart): boolean {
 
 const ToolStatus = memo(function ToolStatus({
   part,
-  isLast,
   isSingle,
 }: {
   part: ToolUIPart;
-  isLast: boolean;
   isSingle: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const { state, input, output, errorText } = part;
 
+  // Get raw tool name to parse integration ID
+  const rawToolName = useMemo(() => {
+    if ("toolName" in part && typeof part.toolName === "string") {
+      return part.toolName;
+    }
+    if (part.type.startsWith("tool-")) {
+      return part.type.substring(5);
+    }
+    return null;
+  }, [part]);
+
   const toolName = useToolName(part);
+  const { data: integrations = [] } = useIntegrations();
+
+  // Parse integration ID from namespaced tool name
+  const integrationId = useMemo(() => {
+    if (!rawToolName) return null;
+    const parsed = parseToolName(rawToolName);
+    return parsed?.integrationId ?? null;
+  }, [rawToolName]);
+
+  // Find matching integration
+  const integration = useMemo(() => {
+    if (!integrationId) return null;
+    return integrations.find((i) => i.id === integrationId) ?? null;
+  }, [integrationId, integrations]);
+
   const isLoading = state === "input-streaming" || state === "input-available";
   const hasOutput = state === "output-available";
   const hasError = state === "output-error";
 
-  const statusConfig = useMemo(() => {
+  const statusText = useMemo(() => {
     switch (state) {
       case "input-streaming":
-        return {
-          icon: (
-            <Icon name="arrow_downward" className="text-muted-foreground" />
-          ),
-          iconBg: "bg-muted/30",
-        };
+        return "Generating input...";
       case "input-available":
-        return {
-          icon: <Icon name="arrow_upward" className="text-muted-foreground" />,
-          iconBg: "bg-muted/30",
-        };
+        return "Running the tool...";
       case "output-available":
-        return {
-          icon: <Icon name="check" className="text-primary-foreground" />,
-          iconBg: "bg-primary",
-        };
+        return "Done";
       case "output-error":
-        return {
-          icon: <Icon name="close" className="text-destructive" />,
-          iconBg: "bg-destructive/10",
-        };
+        return "Error";
       default:
-        return {
-          icon: "•",
-          iconBg: "bg-muted/30",
-        };
+        return "Unknown";
     }
   }, [state]);
+
+  const statusConfig = useMemo(() => getStatusStyles(state), [state]);
 
   const onClick = useCallback(() => {
     setIsExpanded((prev) => {
@@ -151,33 +174,37 @@ const ToolStatus = memo(function ToolStatus({
           type="submit"
           onClick={isSingle ? undefined : onClick}
           className={cn(
-            "w-full flex items-start gap-2 py-2 px-1 text-sm text-muted-foreground hover:text-foreground transition-colors",
+            "w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
             !isSingle && "hover:bg-accent rounded-lg p-2",
           )}
         >
-          <div className="relative flex flex-col items-center min-h-[20px]">
-            <div
-              className={cn(
-                "size-5 rounded-full flex items-center justify-center",
-                statusConfig.iconBg,
-              )}
-            >
-              {statusConfig.icon}
-            </div>
-            {!isLast && !isExpanded && (
-              <div className="w-[1px] h-[150%] bg-muted absolute top-5 left-1/2 transform -translate-x-1/2" />
-            )}
-          </div>
+          {integration ? (
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              size="sm"
+              className="shrink-0"
+            />
+          ) : (
+            <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "font-medium truncate max-w-[60vw] md:max-w-full",
-                  isLoading &&
-                    "bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent",
-                )}
-              >
-                {toolName}
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    "font-medium truncate max-w-[60vw] md:max-w-full",
+                    isLoading &&
+                      "bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent",
+                  )}
+                >
+                  {toolName}
+                </div>
+                <div
+                  className={cn("text-xs opacity-70", statusConfig.className)}
+                >
+                  {statusText}
+                </div>
               </div>
               <Icon
                 className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
@@ -370,6 +397,256 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
+// Shared expandable tool card component
+interface ExpandableToolCardProps {
+  part: ToolUIPart;
+  integration: { icon?: string; name?: string } | null;
+  toolName?: string;
+  toolDescription?: string;
+  statusText?: string;
+  children: React.ReactNode;
+}
+
+function ExpandableToolCard({
+  part,
+  integration,
+  toolName,
+  toolDescription: _toolDescription,
+  statusText: customStatusText,
+  children,
+}: ExpandableToolCardProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
+
+  const statusText = useMemo(() => {
+    if (customStatusText) return customStatusText;
+
+    switch (part.state) {
+      case "input-streaming":
+        return "Reading...";
+      case "input-available":
+        return "Reading...";
+      case "output-available":
+        return "Read";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [part.state, customStatusText]);
+
+  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
+
+  // Check if we should show expanded view (input states or manually expanded)
+  const shouldExpand = useMemo(() => {
+    return (
+      part.state === "input-streaming" ||
+      part.state === "input-available" ||
+      isManuallyExpanded
+    );
+  }, [part.state, isManuallyExpanded]);
+
+  const handleToggleExpand = useCallback(() => {
+    setIsManuallyExpanded((prev) => !prev);
+  }, []);
+
+  return (
+    <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
+      <button
+        type="button"
+        onClick={handleToggleExpand}
+        className={cn(
+          "flex items-center justify-between p-2 transition-colors cursor-pointer",
+          "hover:bg-muted",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          {integration ? (
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              size="sm"
+              className="size-5 shrink-0"
+            />
+          ) : (
+            <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+          )}
+          <span className="text-sm font-medium text-foreground">
+            {toolName || integration?.name || "Integration"}
+          </span>
+          <div className={cn("text-xs", statusConfig.className)}>
+            {statusText}
+          </div>
+        </div>
+        <Icon
+          name="expand_less"
+          className={cn(
+            "transition-transform duration-200",
+            shouldExpand ? "rotate-180" : "rotate-90",
+          )}
+        />
+      </button>
+
+      {shouldExpand && (
+        <div
+          ref={contentRef}
+          className="text-left space-y-3 w-full min-w-0 px-2 py-2 border-t"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom UI component for READ_MCP tool
+function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
+  const { data: integrations = [] } = useIntegrations();
+  const input = part.input as { id?: string } | undefined;
+  const integrationId = input?.id;
+
+  const integration = useMemo(() => {
+    if (!integrationId) return null;
+    return integrations.find((i) => i.id === integrationId) ?? null;
+  }, [integrationId, integrations]);
+
+  return (
+    <ExpandableToolCard
+      part={part}
+      integration={integration}
+      toolName={integration?.name}
+      toolDescription={integration?.description || undefined}
+    >
+      {/* Input Section */}
+      {part.input !== undefined && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+            <Icon name="arrow_downward" className="size-3" />
+            Input
+          </div>
+          <JsonViewer data={part.input} defaultView="tree" maxHeight="300px" />
+        </div>
+      )}
+
+      {/* Output Section */}
+      {part.state === "output-available" && part.output !== undefined && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+            <Icon name="arrow_upward" className="size-3" />
+            Output
+          </div>
+          <JsonViewer data={part.output} defaultView="tree" maxHeight="300px" />
+        </div>
+      )}
+
+      {/* Error Section */}
+      {part.state === "output-error" && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+            <Icon name="error_outline" className="size-3" />
+            Error
+          </div>
+          {part.errorText && (
+            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+              {part.errorText}
+            </div>
+          )}
+        </div>
+      )}
+    </ExpandableToolCard>
+  );
+}
+
+// Custom UI component for CALL_TOOL tool
+function CallToolUI({ part }: { part: ToolUIPart }) {
+  const { data: integrations = [] } = useIntegrations();
+  const input = part.input as
+    | {
+        id?: string;
+        params?: {
+          name?: string;
+          arguments?: Record<string, unknown>;
+        };
+      }
+    | undefined;
+  const integrationId = input?.id;
+  const toolName = input?.params?.name;
+
+  const integration = useMemo(() => {
+    if (!integrationId) return null;
+    return integrations.find((i) => i.id === integrationId) ?? null;
+  }, [integrationId, integrations]);
+
+  const toolDescription = useMemo(() => {
+    if (!integration?.tools || !toolName) return null;
+    const tool = integration.tools.find((t) => t.name === toolName);
+    return tool?.description || null;
+  }, [integration?.tools, toolName]);
+
+  const statusText = useMemo(() => {
+    switch (part.state) {
+      case "input-streaming":
+        return "Generating input...";
+      case "input-available":
+        return "Executing...";
+      case "output-available":
+        return "Done";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [part.state]);
+
+  return (
+    <ExpandableToolCard
+      part={part}
+      integration={integration}
+      toolName={toolName}
+      toolDescription={toolDescription || undefined}
+      statusText={statusText}
+    >
+      {/* Input Section */}
+      {part.input !== undefined && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+            <Icon name="arrow_downward" className="size-3" />
+            Input
+          </div>
+          <JsonViewer data={part.input} defaultView="tree" maxHeight="300px" />
+        </div>
+      )}
+
+      {/* Output Section */}
+      {part.state === "output-available" && part.output !== undefined && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+            <Icon name="arrow_upward" className="size-3" />
+            Output
+          </div>
+          <JsonViewer data={part.output} defaultView="tree" maxHeight="300px" />
+        </div>
+      )}
+
+      {/* Error Section */}
+      {part.state === "output-error" && (
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+            <Icon name="error_outline" className="size-3" />
+            Error
+          </div>
+          {part.errorText && (
+            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+              {part.errorText}
+            </div>
+          )}
+        </div>
+      )}
+    </ExpandableToolCard>
+  );
+}
+
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
@@ -387,6 +664,14 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
 
   if (toolName === "GENERATE_IMAGE") {
     return <GenerateImageToolUI part={part} />;
+  }
+
+  if (toolName === "READ_MCP") {
+    return <ReadMCPToolUI part={part} />;
+  }
+
+  if (toolName === "CALL_TOOL") {
+    return <CallToolUI part={part} />;
   }
 
   // For other tools, only show output when available
@@ -418,7 +703,7 @@ export const ToolMessage = memo(function ToolMessage({
         <CustomToolUI part={part} />
       ) : (
         <div className="flex flex-col gap-2 w-full border border-border rounded-2xl">
-          <ToolStatus part={part} isLast={true} isSingle={true} />
+          <ToolStatus part={part} isSingle={true} />
         </div>
       )}
     </div>

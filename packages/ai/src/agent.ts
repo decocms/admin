@@ -83,6 +83,7 @@ import type {
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
+import { formatToolName } from "./utils/tool-namespace.ts";
 import { getProviderOptions } from "./agent/provider-options.ts";
 
 const ANONYMOUS_INSTRUCTIONS =
@@ -1132,15 +1133,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ): Record<string, Tool> {
     const convertedTools: Record<string, Tool> = {};
 
-    for (const [_integrationId, toolSet] of Object.entries(toolsets)) {
+    for (const [integrationId, toolSet] of Object.entries(toolsets)) {
       for (const [toolName, toolDef] of Object.entries(toolSet)) {
-        if (toolName in convertedTools) {
-          console.warn(
-            `Tool ${toolName} already exists on this agent. Don't worry, @gimenes is already fixing this on another PR`,
-          );
-        }
-
-        convertedTools[toolName] = toolDef;
+        const namespacedName = formatToolName(integrationId, toolName);
+        convertedTools[namespacedName] = toolDef;
       }
     }
 

@@ -3,7 +3,7 @@
  * based on the agentId
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { WELL_KNOWN_AGENTS } from "../constants.ts";
 import { getThreadMessages as getBackendThreadMessages } from "../crud/thread.ts";
 import { getDecopilotThreadMessages } from "../storage/decopilot-storage.ts";
@@ -47,9 +47,13 @@ export function useThreadMessages(
     ? ["decopilot-messages", locator, threadId]
     : KEYS.THREAD_MESSAGES(locator, threadId);
 
-  return useQuery({
+  return useSuspenseQuery({
     queryKey,
     queryFn: async () => {
+      if (!shouldFetch || !threadId) {
+        return { messages: [] };
+      }
+
       if (isDecopilot) {
         // Fetch from IndexedDB for decopilot
         const messages = await getDecopilotThreadMessages(threadId, locator);
@@ -59,7 +63,6 @@ export function useThreadMessages(
         return await getBackendThreadMessages(locator, threadId, {});
       }
     },
-    enabled: shouldFetch && !!threadId,
     staleTime: 0, // Always check for fresh data
     refetchOnMount: true,
     refetchOnWindowFocus: !isDecopilot, // Don't refetch IndexedDB on window focus

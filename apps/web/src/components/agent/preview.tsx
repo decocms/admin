@@ -1,4 +1,4 @@
-import { callTool, useIntegration, useUpdateIntegration } from "@deco/sdk";
+import { callTool, useIntegration, useUpdateIntegration, useSDK, Locator } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -6,6 +6,7 @@ import {
   type IframeHTMLAttributes,
   forwardRef,
   useState,
+  useEffect,
 } from "react";
 import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
@@ -44,10 +45,11 @@ export function IFrameMessageHandler({ id }: { id: string }) {
       integrationId: "",
     });
   const { integrationId } = useParams();
+  const { locator } = useSDK();
   const { mutate: updateIntegration } = useUpdateIntegration();
   const { data: integration } = useIntegration(integrationId!);
 
-  useBidcOnIframe({
+  const channel = useBidcOnIframe({
     iframeIdOrElement: id,
     messageSchema: MessageSchema,
     onMessage: ({ type, payload }) => {
@@ -65,6 +67,38 @@ export function IFrameMessageHandler({ id }: { id: string }) {
       }
     },
   });
+
+  // Send parent context on iframe load
+  // The iframe will decide if it needs this information
+  useEffect(() => {
+    if (!channel || !locator) return;
+
+    const iframe = document.getElementById(id) as HTMLIFrameElement;
+    if (!iframe) return;
+
+    const handleLoad = () => {
+      const { org, project } = Locator.parse(locator);
+
+      if (org && project) {
+        // Send context to iframe - it will use it if needed
+        channel.send({
+          type: "parent_context",
+          payload: {
+            org,
+            project,
+          },
+        }).catch((err) => {
+          // Silently fail if iframe can't receive message
+          console.debug("Could not send parent context to iframe:", err);
+        });
+      }
+    };
+
+    iframe.addEventListener("load", handleLoad);
+    return () => {
+      iframe.removeEventListener("load", handleLoad);
+    };
+  }, [channel, id, locator]);
 
   return (
     <ReissueApiKeyDialog

@@ -45,6 +45,17 @@ import {
   useUIInstallIntegration,
 } from "../integrations/select-connection-dialog.tsx";
 import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
+import { useBidcForTopWindow } from "../../lib/bidc.ts";
+import * as z from "zod";
+
+// Schema for messages from parent window
+const ParentContextMessageSchema = z.object({
+  type: z.literal("parent_context"),
+  payload: z.object({
+    org: z.string(),
+    project: z.string(),
+  }),
+});
 
 const preSelectTeam = (teams: Team[], workspace_hint: string | undefined) => {
   if (teams.length === 1) {
@@ -553,6 +564,7 @@ const SelectProjectAppInstance = ({
   clientId,
   redirectUri,
   state,
+  autoConfirmIntegrationId,
 }: {
   app: RegistryApp;
   org: Team;
@@ -561,6 +573,7 @@ const SelectProjectAppInstance = ({
   clientId: string;
   redirectUri: string;
   state: string | undefined;
+  autoConfirmIntegrationId?: string | null;
 }) => {
   const installedIntegrations = useAppIntegrations(clientId);
   const createOAuthCode = useCreateOAuthCodeForIntegration();
@@ -580,6 +593,8 @@ const SelectProjectAppInstance = ({
       openIntegrationOnFinish: true,
     });
 
+  const autoConfirmRef = useRef(false);
+
   const createOAuthCodeAndRedirectBackToApp = async ({
     integrationId,
   }: {
@@ -593,6 +608,22 @@ const SelectProjectAppInstance = ({
     });
     globalThis.location.href = redirectTo;
   };
+
+  // Auto-confirm if integrationId is provided and there's only 1 integration
+  useEffect(() => {
+    if (
+      autoConfirmIntegrationId &&
+      installedIntegrations.length === 1 &&
+      !autoConfirmRef.current
+    ) {
+      autoConfirmRef.current = true;
+      console.log("Auto-confirming with single integration:", installedIntegrations[0].id);
+      createOAuthCodeAndRedirectBackToApp({
+        integrationId: installedIntegrations[0].id,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConfirmIntegrationId, installedIntegrations]);
 
   return (
     <div className="flex flex-col items-center justify-start h-full w-full py-6 overflow-y-auto">
@@ -786,12 +817,23 @@ function AppsOAuth({
 }: OAuthSearchParams) {
   const { data: registryApp } = useRegistryApp({ app: client_id });
   const { data: orgs } = useOrganizations();
+  const orgsRef = useRef(orgs);
   const [org, setOrg] = useState<Team | null>(() =>
     preSelectTeam(orgs, workspace_hint),
   );
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(
     null,
   );
+  const [isInIframe, setIsInIframe] = useState(false);
+  const [waitingForParentContext, setWaitingForParentContext] = useState(true);
+  const [autoConfirmIntegrationId, setAutoConfirmIntegrationId] = useState<
+    string | null
+  >(null);
+
+  // Keep orgsRef up to date
+  useEffect(() => {
+    orgsRef.current = orgs;
+  }, [orgs]);
 
   const selectedOrgSlug = useMemo(() => {
     if (!org) {
@@ -799,6 +841,58 @@ function AppsOAuth({
     }
     return org.slug;
   }, [org]);
+
+  // Check if we're in an iframe on mount
+  useEffect(() => {
+    const inIframe = globalThis.self !== globalThis.top;
+    setIsInIframe(inIframe);
+    
+    if (!inIframe) {
+      // Not in iframe, don't wait for parent context
+      setWaitingForParentContext(false);
+    }
+  }, []);
+
+  // Listen for parent context messages
+  useBidcForTopWindow({
+    messageSchema: ParentContextMessageSchema,
+    onMessage: ({ payload }) => {
+      console.log("Received parent context:", payload);
+      setWaitingForParentContext(false);
+
+      // Auto-select org and project based on parent context
+      const matchingOrg = orgsRef.current?.find((o) => o.slug === payload.org);
+      if (matchingOrg) {
+        setOrg(matchingOrg);
+        setSelectedProjectSlug(payload.project);
+        // Signal that we should auto-confirm if only 1 integration
+        setAutoConfirmIntegrationId("auto");
+      }
+    },
+  });
+
+  // Timeout after 2 seconds if no parent context received
+  useEffect(() => {
+    if (isInIframe && waitingForParentContext) {
+      const timeout = setTimeout(() => {
+        console.warn("Timeout waiting for parent context, showing UI");
+        setWaitingForParentContext(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isInIframe, waitingForParentContext]);
+
+  // Show loading state while waiting for parent context in iframe
+  if (isInIframe && waitingForParentContext) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <Spinner size="lg" />
+        <p className="text-sm text-muted-foreground">
+          Loading authorization...
+        </p>
+      </div>
+    );
+  }
 
   if (!orgs || orgs.length === 0 || !registryApp) {
     return <NoProjectFound />;
@@ -833,13 +927,13 @@ function AppsOAuth({
     );
   }
 
-  const workspace = Locator.from({
+  const locator = Locator.from({
     org: selectedOrgSlug,
     project: selectedProjectSlug,
   });
 
   return (
-    <SDKProvider locator={workspace}>
+    <SDKProvider locator={locator}>
       <SelectProjectAppInstance
         app={registryApp}
         org={org}
@@ -848,6 +942,7 @@ function AppsOAuth({
         clientId={client_id}
         redirectUri={redirect_uri}
         state={state}
+        autoConfirmIntegrationId={autoConfirmIntegrationId}
       />
     </SDKProvider>
   );

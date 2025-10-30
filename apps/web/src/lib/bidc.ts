@@ -2,29 +2,21 @@ import { createChannel } from "bidc";
 import { useEffect, useRef } from "react";
 import * as z from "zod";
 
-export const useBidcOnIframe = <T extends z.ZodTypeAny>({
-  iframeIdOrElement,
+function useBidcChannel<T extends z.ZodTypeAny>({
+  createChannelFn,
   messageSchema,
   onMessage,
 }: {
-  iframeIdOrElement: string | HTMLIFrameElement;
+  createChannelFn: () => ReturnType<typeof createChannel> | undefined;
   messageSchema: T;
   onMessage: (message: z.infer<T>) => void;
-}) => {
+}) {
   const channelRef = useRef<ReturnType<typeof createChannel>>(null);
 
   useEffect(() => {
-    const iframe =
-      typeof iframeIdOrElement === "string"
-        ? (document.getElementById(iframeIdOrElement) as HTMLIFrameElement)
-        : iframeIdOrElement;
+    const channel = createChannelFn();
+    if (!channel) return;
 
-    if (!iframe || !iframe.contentWindow) {
-      console.warn("No iframe or content window found");
-      return;
-    }
-
-    const channel = createChannel(iframe.contentWindow);
     channelRef.current = channel;
 
     const { receive, cleanup } = channel;
@@ -44,4 +36,50 @@ export const useBidcOnIframe = <T extends z.ZodTypeAny>({
   }, []);
 
   return channelRef.current;
+}
+
+export const useBidcOnIframe = <T extends z.ZodTypeAny>({
+  iframeIdOrElement,
+  messageSchema,
+  onMessage,
+}: {
+  iframeIdOrElement: string | HTMLIFrameElement;
+  messageSchema: T;
+  onMessage: (message: z.infer<T>) => void;
+}) => {
+  const channel = useBidcChannel({
+    createChannelFn: () => {
+      const iframe =
+        typeof iframeIdOrElement === "string"
+          ? (document.getElementById(iframeIdOrElement) as HTMLIFrameElement)
+          : iframeIdOrElement;
+
+      if (!iframe || !iframe.contentWindow) {
+        console.warn("No iframe or content window found");
+        return;
+      }
+
+      return createChannel(iframe.contentWindow);
+    },
+    messageSchema,
+    onMessage,
+  });
+
+  return channel;
 };
+
+export const useBidcForTopWindow = <T extends z.ZodTypeAny>({
+  messageSchema,
+  onMessage,
+}: {
+  messageSchema: T;
+  onMessage: (message: z.infer<T>) => void;
+}) => {
+  const channel = useBidcChannel({
+    createChannelFn: () => createChannel(),
+    messageSchema,
+    onMessage,
+  });
+
+  return channel;
+}

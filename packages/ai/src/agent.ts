@@ -1037,6 +1037,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
               console.error("Error getting agent", err);
               this._trackEvent("agent_mcp_client_error", {
                 error: serializeError(err),
+                hasMetadataMcpClient: !!this.metadata?.mcpClient,
+                hasAgentScoppedMcpClient: !!this.agentScoppedMcpClient,
                 method: "configuration",
                 agentId: this.agentId,
               });

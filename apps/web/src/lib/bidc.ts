@@ -82,4 +82,4 @@ export const useBidcForTopWindow = <T extends z.ZodTypeAny>({
   });
 
   return channel;
-}
+};

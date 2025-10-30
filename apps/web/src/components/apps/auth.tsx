@@ -617,7 +617,10 @@ const SelectProjectAppInstance = ({
       !autoConfirmRef.current
     ) {
       autoConfirmRef.current = true;
-      console.log("Auto-confirming with single integration:", installedIntegrations[0].id);
+      console.log(
+        "Auto-confirming with single integration:",
+        installedIntegrations[0].id,
+      );
       createOAuthCodeAndRedirectBackToApp({
         integrationId: installedIntegrations[0].id,
       });
@@ -846,7 +849,7 @@ function AppsOAuth({
   useEffect(() => {
     const inIframe = globalThis.self !== globalThis.top;
     setIsInIframe(inIframe);
-    
+
     if (!inIframe) {
       // Not in iframe, don't wait for parent context
       setWaitingForParentContext(false);

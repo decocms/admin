@@ -1,4 +1,10 @@
-import { callTool, useIntegration, useUpdateIntegration, useSDK, Locator } from "@deco/sdk";
+import {
+  callTool,
+  useIntegration,
+  useUpdateIntegration,
+  useSDK,
+  Locator,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -81,16 +87,18 @@ export function IFrameMessageHandler({ id }: { id: string }) {
 
       if (org && project) {
         // Send context to iframe - it will use it if needed
-        channel.send({
-          type: "parent_context",
-          payload: {
-            org,
-            project,
-          },
-        }).catch((err) => {
-          // Silently fail if iframe can't receive message
-          console.debug("Could not send parent context to iframe:", err);
-        });
+        channel
+          .send({
+            type: "parent_context",
+            payload: {
+              org,
+              project,
+            },
+          })
+          .catch((err) => {
+            // Silently fail if iframe can't receive message
+            console.debug("Could not send parent context to iframe:", err);
+          });
       }
     };
 

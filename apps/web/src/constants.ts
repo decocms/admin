@@ -137,8 +137,3 @@ export const POSTHOG_ORIGIN = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 // Uncomment this if you want to test event tracking in development
 // export const POSTHOG_SHOULD_TRACK = true;
 export const POSTHOG_SHOULD_TRACK = import.meta.env.MODE !== "development";
-
-export const LEGACY_INTEGRATIONS = [
-  "i:user-management",
-  "i:workspace-management",
-];

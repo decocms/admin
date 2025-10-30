@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createDatabase, closeDatabase } from '../../database';
-import { createTestSchema } from '../../storage/__test-helpers';
-import { PROJECT_CREATE, PROJECT_LIST, PROJECT_GET, PROJECT_UPDATE, PROJECT_DELETE } from './index';
 import type { Kysely } from 'kysely';
-import type { Database } from '../../storage/types';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { MeshContext } from '../../core/mesh-context';
+import { closeDatabase, createDatabase } from '../../database';
+import { createTestSchema } from '../../storage/__test-helpers';
 import { ConnectionStorage } from '../../storage/connection';
 import { ProjectStorage } from '../../storage/project';
+import type { Database } from '../../storage/types';
+import { PROJECT_CREATE, PROJECT_DELETE, PROJECT_GET, PROJECT_LIST, PROJECT_UPDATE } from './index';
 
 describe('Project Tools', () => {
   let db: Kysely<Database>;
@@ -29,23 +29,23 @@ describe('Project Tools', () => {
         roles: null as any,
       },
       vault: null as any,
-      authInstance: null,
+      authInstance: null as any,
       access: {
         granted: () => true,
-        check: async () => {},
-        grant: () => {},
+        check: async () => { },
+        grant: () => { },
       } as any,
       db,
       tracer: {
         startActiveSpan: (_name: string, _opts: any, fn: any) => fn({
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
+          setStatus: () => { },
+          recordException: () => { },
+          end: () => { },
         }),
       } as any,
       meter: {
-        createHistogram: () => ({ record: () => {} }),
-        createCounter: () => ({ add: () => {} }),
+        createHistogram: () => ({ record: () => { } }),
+        createCounter: () => ({ add: () => { } }),
       } as any,
       baseUrl: 'https://mesh.example.com',
       metadata: {
@@ -81,13 +81,13 @@ describe('Project Tools', () => {
         slug: 'Invalid Slug!', // Invalid - has spaces and special char
         name: 'Test',
       });
-      
+
       expect(result.success).toBe(false);
     });
 
     it('should require authentication', async () => {
       const noAuthCtx = { ...ctx, auth: {} };
-      
+
       await expect(PROJECT_CREATE.execute({
         slug: 'test',
         name: 'Test',

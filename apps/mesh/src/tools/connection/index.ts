@@ -10,12 +10,3 @@ export { CONNECTION_GET } from './get';
 export { CONNECTION_DELETE } from './delete';
 export { CONNECTION_TEST } from './test';
 
-// Tool registry for connection management
-export const CONNECTION_TOOLS = [
-  'CONNECTION_CREATE',
-  'CONNECTION_LIST',
-  'CONNECTION_GET',
-  'CONNECTION_DELETE',
-  'CONNECTION_TEST',
-] as const;
-

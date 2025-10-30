@@ -16,8 +16,8 @@ import { createMeshContextFactory } from '../core/context-factory';
 import type { MeshContext } from '../core/mesh-context';
 import { getDb } from '../database';
 import { meter, tracer } from '../observability';
+import managementRoutes from './routes/management';
 import proxyRoutes from './routes/proxy';
-
 // Define Hono variables type
 type Variables = {
   meshContext: MeshContext;
@@ -71,6 +71,7 @@ app.get('/health', (c) => {
 // - /api/auth/oauth/token
 // - /api/auth/oauth/register (Dynamic Client Registration)
 // - /api/auth/mcp/session
+
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 
 // ============================================================================
@@ -114,14 +115,29 @@ app.use('*', async (c, next) => {
 // Routes
 // ============================================================================
 
-// Mount MCP proxy routes
-// Connection IDs are globally unique UUIDs, so no project prefix needed
-// Format: /mcp/:connectionId
-app.route('/mcp', proxyRoutes);
+app.use("/mcp", async (c, next) => {
+  const session = await auth.api.getMcpSession({
+    headers: c.req.raw.headers
+  })
+  if (!session) {
+    const origin = new URL(c.req.url).origin;
+    //this is important and you must return 401
+    return c.res = new Response(null, {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/api/auth/.well-known/oauth-protected-resource"`
+      }
+    })
+  }
+  return await next();
+})
+// Mount management tools MCP server at /mcp (no connectionId)
+// This exposes PROJECT_*, CONNECTION_* tools via MCP protocol
+app.route('/mcp', managementRoutes);
 
-// TODO: Mount management tool routes for MCP protocol (optional)
-// These would expose PROJECT_CREATE, CONNECTION_CREATE, etc. via MCP protocol
-// For MVP, tools can be called directly via REST or programmatically
+// Mount MCP proxy routes at /mcp/:connectionId
+// Connection IDs are globally unique UUIDs
+app.route('/mcp', proxyRoutes);
 
 // ============================================================================
 // Error Handlers

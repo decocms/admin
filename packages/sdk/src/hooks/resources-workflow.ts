@@ -68,16 +68,19 @@ export function getWorkflowByUri(
 export function upsertWorkflow(
   locator: ProjectLocator,
   params: WorkflowDefinition,
-  signal?: AbortSignal,
+  options?: { uri?: string; signal?: AbortSignal },
 ) {
   const client = workspaceResourceClient(locator);
+  const { uri, signal } = options || {};
+
+  const workflowUri = uri || buildWorkflowUri(params.name);
 
   // Try update by URI first, fallback to create on not found
   // oxlint-disable-next-line no-explicit-any
   return (client as any)
     [RESOURCE_WORKFLOW.UPDATE](
       {
-        uri: buildWorkflowUri(params.name),
+        uri: workflowUri,
         data: {
           name: params.name,
           description: params.description,
@@ -167,8 +170,13 @@ export const useWorkflow = (workflowUri: string) => {
 export const useUpsertWorkflow = () => {
   const { locator } = useSDK();
   return useMutation({
-    mutationFn: async (params: WorkflowDefinition) => {
-      const result = await upsertWorkflow(locator, params);
+    mutationFn: async (params: {
+      workflow: WorkflowDefinition;
+      uri?: string;
+    }) => {
+      const result = await upsertWorkflow(locator, params.workflow, {
+        uri: params.uri,
+      });
       return result;
     },
     onSuccess: (data) => {

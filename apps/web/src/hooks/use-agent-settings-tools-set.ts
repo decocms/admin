@@ -43,7 +43,7 @@ export function useAgentSettingsToolsSet() {
           return;
         }
 
-        listTools(connection)
+        listTools(connection, {}, true)
           .then((result) => {
             // If fetching goes well, update the form again
             newToolsSet[integrationId] = result.tools.map((tool) => tool.name);

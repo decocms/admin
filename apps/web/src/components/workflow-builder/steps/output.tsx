@@ -123,14 +123,17 @@ const stepViewRule = ({
   outputSchema: Record<string, unknown>;
   stepName: string;
 }) => {
-  return {
-    type: "rule",
-    text: `Create a new view for the output of the step ${stepName}.
+  const text = `Create a new view for the output of the step ${stepName}.
     The view's inputSchema should match the outputSchema of the step.
     The outputSchema is: ${JSON.stringify(outputSchema)}
 
     After the view is created, add the view URI to the step "views" property.
-    `,
+    `;
+
+  return {
+    id: `rule-step-view-${stepName}`,
+    type: "rule",
+    text,
   } as RuleContextItem;
 };
 
@@ -155,6 +158,7 @@ function CreateViewButton({ stepName }: { stepName: string }) {
 
     if (!existingToolset) {
       return {
+        id: "toolset-workflows-management",
         type: "toolset",
         integrationId: "i:workflows-management",
         enabledTools: WORKFLOW_TOOLS,
@@ -179,10 +183,10 @@ function CreateViewButton({ stepName }: { stepName: string }) {
 
     if (!existingToolset) {
       return {
+        id: "toolset-views-management",
         type: "toolset",
         integrationId: "i:views-management",
         enabledTools: VIEWS_TOOLS,
-        id: crypto.randomUUID(),
       } as ToolsetContextItem;
     }
 
@@ -215,12 +219,32 @@ function CreateViewButton({ stepName }: { stepName: string }) {
   );
 
   const uniqueContextItems = useMemo(() => {
-    return [
-      ...new Set([
-        ...contextItems.filter((item) => item.type !== "toolset"),
-        ...defaultContextItems,
-      ]),
-    ];
+    // Start with non-toolset items from existing context
+    const nonToolsetItems = contextItems.filter(
+      (item) => item.type !== "toolset",
+    );
+
+    // Merge with default context items, deduplicating by id
+    const itemsMap = new Map<
+      string,
+      RuleContextItem | ToolsetContextItem | (typeof nonToolsetItems)[number]
+    >();
+
+    // Add existing items first
+    for (const item of nonToolsetItems) {
+      if (item.id) {
+        itemsMap.set(item.id, item);
+      }
+    }
+
+    // Add/override with default items (they take precedence for same IDs)
+    for (const item of defaultContextItems) {
+      if (item.id) {
+        itemsMap.set(item.id, item);
+      }
+    }
+
+    return Array.from(itemsMap.values());
   }, [contextItems, defaultContextItems]);
 
   const handleCreateView = useCallback(() => {

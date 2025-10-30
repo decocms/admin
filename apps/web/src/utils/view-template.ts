@@ -178,6 +178,70 @@ function createSDK(
     }
   };
 
+  // Intercept console methods to send logs to parent window
+  const originalConsole = {
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  console.log = function(...args) {
+    originalConsole.log.apply(console, args);
+    window.top?.postMessage({
+      type: "CONSOLE_LOG",
+      payload: {
+        level: "log",
+        message: args.map(arg => 
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(" "),
+        timestamp: new Date().toISOString(),
+      }
+    }, "*");
+  };
+
+  console.info = function(...args) {
+    originalConsole.info.apply(console, args);
+    window.top?.postMessage({
+      type: "CONSOLE_LOG",
+      payload: {
+        level: "info",
+        message: args.map(arg => 
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(" "),
+        timestamp: new Date().toISOString(),
+      }
+    }, "*");
+  };
+
+  console.warn = function(...args) {
+    originalConsole.warn.apply(console, args);
+    window.top?.postMessage({
+      type: "CONSOLE_LOG",
+      payload: {
+        level: "warn",
+        message: args.map(arg => 
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(" "),
+        timestamp: new Date().toISOString(),
+      }
+    }, "*");
+  };
+
+  console.error = function(...args) {
+    originalConsole.error.apply(console, args);
+    window.top?.postMessage({
+      type: "CONSOLE_LOG",
+      payload: {
+        level: "error",
+        message: args.map(arg => 
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(" "),
+        timestamp: new Date().toISOString(),
+      }
+    }, "*");
+  };
+
   // Catch runtime errors using window.onerror
   window.onerror = function (message, source, lineno, colno, error) {
     const errorData = {

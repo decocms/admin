@@ -30,10 +30,51 @@ import {
   CodeAction,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
+import { ViewConsole, useConsoleState, ViewConsoleProvider } from "./view-console.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
   data?: unknown;
+}
+
+function ConsoleToggleButton({ 
+  isOpen, 
+  onToggle 
+}: { 
+  isOpen: boolean; 
+  onToggle: () => void;
+}) {
+  const consoleState = useConsoleState();
+  const errorCount = consoleState?.errorCount ?? 0;
+  const warningCount = consoleState?.warningCount ?? 0;
+  
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="xs"
+      onClick={onToggle}
+      className={`size-6 p-0 relative ${isOpen ? "bg-accent" : ""}`}
+      title="Toggle Console"
+    >
+      <Icon 
+        name="terminal" 
+        className={isOpen ? "text-foreground" : "text-muted-foreground"}
+      />
+      {errorCount > 0 && (
+        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-600 text-white rounded-full text-[8px] font-bold flex items-center justify-center">
+          {errorCount}
+        </span>
+      )}
+      {warningCount > 0 && errorCount === 0 && (
+        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-yellow-500 text-white rounded-full text-[8px] font-bold flex items-center justify-center">
+          {warningCount}
+        </span>
+      )}
+    </Button>
+  );
 }
 
 /**
@@ -52,6 +93,13 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
+  
+  // Persist console open state
+  const { value: isConsoleOpen, update: setIsConsoleOpen } = useLocalStorage({
+    key: "deco-view-console-open",
+    defaultValue: false,
+  });
+  
   const updateViewMutation = useUpdateView();
 
   // Current code value = draft OR saved value
@@ -266,29 +314,34 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-white">
-      {/* Header with code viewer toggle */}
-      <ResourceDetailHeader
-        title={effectiveView.name}
-        actions={
-          <>
-            {isCodeViewerOpen && (
-              <SaveDiscardActions
-                hasChanges={isDirty}
-                onSave={handleSaveCode}
-                onDiscard={handleResetCode}
-                isSaving={updateViewMutation.isPending}
-                discardLabel="Reset"
+    <ViewConsoleProvider>
+      <div className="h-full w-full flex flex-col bg-white relative">
+        {/* Header with code viewer toggle */}
+        <ResourceDetailHeader
+          title={effectiveView.name}
+          actions={
+            <>
+              {isCodeViewerOpen && (
+                <SaveDiscardActions
+                  hasChanges={isDirty}
+                  onSave={handleSaveCode}
+                  onDiscard={handleResetCode}
+                  isSaving={updateViewMutation.isPending}
+                  discardLabel="Reset"
+                />
+              )}
+              <ConsoleToggleButton
+                isOpen={isConsoleOpen}
+                onToggle={() => setIsConsoleOpen(!isConsoleOpen)}
               />
-            )}
-            <CodeAction
-              isOpen={isCodeViewerOpen}
-              onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-              hasCode={!!effectiveView.code}
-            />
-          </>
-        }
-      />
+              <CodeAction
+                isOpen={isCodeViewerOpen}
+                onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+                hasCode={!!effectiveView.code}
+              />
+            </>
+          }
+        />
 
       {/* Code Viewer Section - Shows when code button is clicked */}
       {isCodeViewerOpen && effectiveView.code ? (
@@ -327,31 +380,40 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
         </div>
       ) : (
         /* Preview Section - Shows when code viewer is closed */
-        <div className="flex-1 overflow-hidden relative">
-          {htmlValue ? (
-            <PreviewIframe
-              ref={iframeRef}
-              srcDoc={htmlValue}
-              title="View Preview"
-              className="w-full h-full border-0"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center">
-                <Icon
-                  name="visibility_off"
-                  size={48}
-                  className="mx-auto mb-4 text-muted-foreground"
-                />
-                <p className="text-sm text-muted-foreground">
-                  No React code to preview
-                </p>
+        <div className="flex-1 overflow-hidden relative flex flex-col">
+          <div className={`flex-1 overflow-hidden ${isConsoleOpen ? "flex-none" : ""}`} style={isConsoleOpen ? { height: "calc(100% - 24rem)" } : undefined}>
+            {htmlValue ? (
+              <PreviewIframe
+                ref={iframeRef}
+                srcDoc={htmlValue}
+                title="View Preview"
+                className="w-full h-full border-0"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full p-8">
+                <div className="text-center">
+                  <Icon
+                    name="visibility_off"
+                    size={48}
+                    className="mx-auto mb-4 text-muted-foreground"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    No React code to preview
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          
+          {/* Console - Shows when preview is active */}
+          <ViewConsole 
+            isOpen={isConsoleOpen} 
+            onClose={() => setIsConsoleOpen(false)}
+          />
         </div>
       )}
-    </div>
+      </div>
+    </ViewConsoleProvider>
   );
 }
 

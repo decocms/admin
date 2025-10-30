@@ -12,9 +12,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -22,6 +20,12 @@ import { useSearchParams } from "react-router";
 import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
+import {
+  ResourceDetailHeader,
+  RefreshAction,
+  SaveDiscardActions,
+  CodeAction,
+} from "../common/resource-detail-header.tsx";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -289,104 +293,80 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full flex flex-col">
+      {/* Header */}
+      <ResourceDetailHeader
+        title={effectiveDocument.name}
+        actions={
+          <>
+            <RefreshAction
+              onRefresh={handleRefresh}
+              isRefreshing={isFetching}
+            />
+            <CodeAction
+              isOpen={editorMode === "raw"}
+              onToggle={() =>
+                setEditorMode((prev) => (prev === "raw" ? "pretty" : "raw"))
+              }
+              hasCode={true}
+            />
+            <SaveDiscardActions
+              hasChanges={hasChanges}
+              onSave={handleSave}
+              onDiscard={handleDiscard}
+              isSaving={updateMutation.isPending}
+            />
+          </>
+        }
+      />
+
       {/* Main content */}
-      <ScrollArea className="h-full w-full [&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="flex-1 w-full [&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full">
         <div className="w-full max-w-3xl mx-auto pt-12">
-          {/* Header section with title, description, and action buttons */}
+          {/* Editable title and description section */}
           <div className="p-2 sm:px-4 md:px-6">
-            <div className="flex items-start justify-between gap-4">
-              {/* Title and description */}
-              <div className="flex-1 min-w-0 space-y-2.5">
-                {/* Title - inline editable */}
-                <div
-                  ref={titleRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  role="textbox"
-                  aria-label="Document title"
-                  aria-multiline="false"
-                  tabIndex={0}
-                  onInput={(e) =>
-                    handleTitleChange(e.currentTarget.textContent || "")
+            <div className="flex-1 min-w-0 space-y-2.5">
+              {/* Title - inline editable */}
+              <div
+                ref={titleRef}
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-label="Document title"
+                aria-multiline="false"
+                tabIndex={0}
+                onInput={(e) =>
+                  handleTitleChange(e.currentTarget.textContent || "")
+                }
+                onBlur={(e) => {
+                  if (!e.currentTarget.textContent?.trim()) {
+                    e.currentTarget.textContent = "";
                   }
-                  onBlur={(e) => {
-                    if (!e.currentTarget.textContent?.trim()) {
-                      e.currentTarget.textContent = "";
-                    }
-                  }}
-                  className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
-                  data-placeholder="Untitled document"
-                />
+                }}
+                className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                data-placeholder="Untitled document"
+              />
 
-                {/* Description - inline editable */}
-                <div
-                  ref={descriptionRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  role="textbox"
-                  aria-label="Document description"
-                  aria-multiline="true"
-                  tabIndex={0}
-                  onInput={(e) =>
-                    handleDescriptionChange(e.currentTarget.textContent || "")
+              {/* Description - inline editable */}
+              <div
+                ref={descriptionRef}
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-label="Document description"
+                aria-multiline="true"
+                tabIndex={0}
+                onInput={(e) =>
+                  handleDescriptionChange(e.currentTarget.textContent || "")
+                }
+                onBlur={(e) => {
+                  if (!e.currentTarget.textContent?.trim()) {
+                    e.currentTarget.textContent = "";
                   }
-                  onBlur={(e) => {
-                    if (!e.currentTarget.textContent?.trim()) {
-                      e.currentTarget.textContent = "";
-                    }
-                  }}
-                  className="text-base text-muted-foreground outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
-                  data-placeholder="Add a description..."
-                />
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-1 shrink-0">
-                {/* Reload button - always visible */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleRefresh}
-                  disabled={isFetching}
-                  className="h-8 w-8 p-0 rounded-xl"
-                >
-                  <Icon
-                    name="refresh"
-                    size={16}
-                    className={cn(isFetching && "animate-spin")}
-                  />
-                </Button>
-
-                {/* Discard button - only visible when there are changes */}
-                {hasChanges && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleDiscard}
-                    disabled={updateMutation.isPending}
-                    className="h-8 px-3 rounded-xl"
-                  >
-                    Discard
-                  </Button>
-                )}
-
-                {/* Save button - only visible when there are changes */}
-                {hasChanges && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="default"
-                    onClick={handleSave}
-                    disabled={updateMutation.isPending}
-                    className="h-8 px-3 rounded-xl"
-                  >
-                    {updateMutation.isPending ? "Saving..." : "Save"}
-                  </Button>
-                )}
-              </div>
+                }}
+                className="text-base text-muted-foreground outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                data-placeholder="Add a description..."
+              />
             </div>
 
             {/* Tags section */}
@@ -466,21 +446,6 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Editor mode toggle */}
-          <div className="px-2 sm:px-4 md:px-6 pb-4">
-            <Tabs
-              value={editorMode}
-              onValueChange={(value) =>
-                setEditorMode(value as "pretty" | "raw")
-              }
-            >
-              <TabsList className="grid w-full max-w-[200px] grid-cols-2">
-                <TabsTrigger value="pretty">Pretty</TabsTrigger>
-                <TabsTrigger value="raw">Raw</TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
 
           {/* Document editor */}

@@ -12,6 +12,7 @@ import {
   startTransition,
 } from "react";
 import { EmptyState } from "../common/empty-state.tsx";
+import { DetailSection } from "../common/detail-section.tsx";
 import {
   useWorkflowDescription,
   useWorkflowFirstStepInput,
@@ -25,7 +26,6 @@ import {
 } from "../../stores/workflows/store.ts";
 import { WorkflowStoreContext } from "../../stores/workflows/provider.tsx";
 import type { StoreApi } from "zustand";
-import { DetailSection } from "../common/detail-section.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
@@ -35,6 +35,7 @@ import { useWorkflowSync } from "./hooks.ts";
 import { WorkflowStepsList } from "./steps/list.tsx";
 import { ResetWorkflowButton } from "./reset-workflow-button.tsx";
 import { SaveWorkflowButton } from "./save-workflow-button.tsx";
+import { ResourceDetailHeader } from "../common/resource-detail-header.tsx";
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
@@ -143,7 +144,6 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
       disabled={isDisabled}
       variant="default"
       onClick={handleStartWorkflow}
-      className="min-w-[200px] flex items-center gap-2"
       title={
         !hasFirstStepInput
           ? "Please configure the first step before starting"
@@ -152,11 +152,12 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
     >
       {isPending ? (
         <>
-          <Spinner size="xs" /> Starting...
+          <Spinner size="xs" />
+          Starting...
         </>
       ) : (
         <>
-          <Icon name="play_arrow" size={18} />
+          <Icon name="play_arrow" />
           Start Workflow
         </>
       )}
@@ -235,25 +236,27 @@ export const Canvas = memo(function Canvas() {
 
   return (
     <div className="h-full w-full flex flex-col">
+      <ResourceDetailHeader
+        title={workflowName}
+        actions={
+          <>
+            <ResetWorkflowButton />
+            <SaveWorkflowButton />
+          </>
+        }
+      />
+
       <DetailSection>
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="text-2xl font-medium">{workflowName}</h1>
-                  {workflowDescription && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {workflowDescription}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <h1 className="text-2xl font-medium">{workflowName}</h1>
+            {workflowDescription && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {workflowDescription}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            <ResetWorkflowButton />
-            <SaveWorkflowButton />
             <StartWorkflowButton />
           </div>
         </div>

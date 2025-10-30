@@ -233,13 +233,6 @@ function DecopilotChatContent() {
 
   const threadMessages = threadData?.messages ?? [];
 
-  const key = useMemo(() => {
-    if (threadState.threadId) {
-      return `${threadState.threadId}-${mode}`;
-    }
-    return `${currentThread?.id}-${mode}`;
-  }, [threadState.threadId, currentThread?.id, mode]);
-
   // If no thread yet, show a loading state
   if (!currentThread) {
     return (
@@ -291,7 +284,7 @@ function DecopilotChatContent() {
       <div className="flex-1 min-h-0">
         <Suspense fallback={<MainChatSkeleton />}>
           <AgenticChatProvider
-            key={key}
+            key={currentThread.id}
             agentId={agentId}
             threadId={currentThread.id}
             agent={agent}

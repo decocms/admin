@@ -203,11 +203,12 @@ function DecopilotChatContent() {
   const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
   const { setOpen } = useDecopilotOpen();
-  const { value: storedMode, update: setStoredMode } =
-    useLocalStorage<"decochat" | "decopilot">({
-      key: "decopilot:preferred-mode",
-      defaultValue: "decochat",
-    });
+  const { value: storedMode, update: setStoredMode } = useLocalStorage<
+    "decochat" | "decopilot"
+  >({
+    key: "decopilot:preferred-mode",
+    defaultValue: "decochat",
+  });
 
   function handleModeChange(nextMode: "decochat" | "decopilot") {
     setStoredMode(nextMode);

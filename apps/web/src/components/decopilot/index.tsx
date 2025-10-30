@@ -135,7 +135,7 @@ function ThreadSelector({ agentId }: { agentId: string }) {
     switchToThread,
     deleteThread,
   } = useThreadManager();
-
+  const { setThreadState } = useDecopilotThread();
   const allThreads = getAllThreadsForRoute(pathname, agentId);
   const currentThread = getThreadForRoute(pathname, agentId);
   const currentThreadTitle = useThreadTitle(currentThread?.id, agentId);
@@ -145,6 +145,11 @@ function ThreadSelector({ agentId }: { agentId: string }) {
   }
 
   function handleSwitchThread(threadId: string) {
+    setThreadState({
+      threadId,
+      initialMessage: null,
+      autoSend: false,
+    });
     switchToThread(threadId);
   }
 
@@ -210,10 +215,7 @@ function DecopilotChatContent() {
   // Get existing thread for the current route and agent (read-only)
   const existingThread = useMemo(() => {
     const thread = getThreadForRoute(pathname, agentId);
-    if (
-      thread &&
-      (threadState.threadId === null || threadState.threadId === thread.id)
-    ) {
+    if (thread && thread.id === threadState.threadId) {
       return thread;
     }
     return null;

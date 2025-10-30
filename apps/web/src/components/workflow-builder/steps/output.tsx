@@ -134,35 +134,84 @@ const stepViewRule = ({
   } as RuleContextItem;
 };
 
+const WORKFLOW_TOOLS = [
+  "DECO_WORKFLOW_EDIT_STEP",
+  "DECO_RESOURCE_WORKFLOW_READ",
+];
+const VIEWS_TOOLS = ["DECO_RESOURCE_VIEW_CREATE"];
+
 function CreateViewButton({ stepName }: { stepName: string }) {
   const step = useWorkflowStepData(stepName);
   const { setOpen } = useDecopilotOpen();
   const { setThreadState } = useDecopilotThread();
   const { contextItems, setContextItems } = useThreadContext();
 
-  const defaultContextItems = useMemo(
-    () => [
-      {
-        ...stepViewRule({
-          outputSchema: step?.definition?.outputSchema ?? {},
-          stepName,
-        }),
-      },
-      {
-        type: "toolset",
-        integrationId: "i:views-management",
-        enabledTools: ["DECO_RESOURCE_VIEW_CREATE"],
-      } as ToolsetContextItem,
-      {
+  const workflowsToolset = useMemo(() => {
+    const existingToolset = contextItems.find(
+      (item) =>
+        item.type === "toolset" &&
+        item.integrationId === "i:workflows-management",
+    );
+
+    if (!existingToolset) {
+      return {
         type: "toolset",
         integrationId: "i:workflows-management",
-        enabledTools: [
-          "DECO_WORKFLOW_EDIT_STEP",
-          "DECO_RESOURCE_WORKFLOW_READ",
-        ],
-      } as ToolsetContextItem,
+        enabledTools: WORKFLOW_TOOLS,
+      } as ToolsetContextItem;
+    }
+
+    const enabledTools = (
+      existingToolset as ToolsetContextItem
+    ).enabledTools.filter((tool) => !WORKFLOW_TOOLS.includes(tool));
+
+    return {
+      ...existingToolset,
+      enabledTools: [...enabledTools, ...WORKFLOW_TOOLS],
+    } as ToolsetContextItem;
+  }, [contextItems]);
+
+  const viewsToolset = useMemo(() => {
+    const existingToolset = contextItems.find(
+      (item) =>
+        item.type === "toolset" && item.integrationId === "i:views-management",
+    );
+
+    if (!existingToolset) {
+      return {
+        type: "toolset",
+        integrationId: "i:views-management",
+        enabledTools: VIEWS_TOOLS,
+        id: crypto.randomUUID(),
+      } as ToolsetContextItem;
+    }
+
+    const enabledTools = (
+      existingToolset as ToolsetContextItem
+    ).enabledTools.filter((tool) => !VIEWS_TOOLS.includes(tool));
+
+    return {
+      ...existingToolset,
+      enabledTools: [...enabledTools, ...VIEWS_TOOLS],
+    } as ToolsetContextItem;
+  }, [contextItems]);
+
+  const defaultContextItems = useMemo(
+    () => [
+      stepViewRule({
+        outputSchema: step?.definition?.outputSchema ?? {},
+        stepName,
+      }),
+      viewsToolset,
+      workflowsToolset,
     ],
-    [step?.definition?.outputSchema, step?.output, stepName],
+    [
+      step?.definition?.outputSchema,
+      step?.output,
+      stepName,
+      workflowsToolset,
+      viewsToolset,
+    ],
   );
 
   const uniqueContextItems = useMemo(() => {

@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { useViewByUriV2 } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 
 interface ViewDialogTriggerProps {
   resourceUri: string;
@@ -59,21 +60,14 @@ export function ViewDialogTrigger({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button
-          type="button"
-          className={`inline-flex items-center justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-            hasError
-              ? "border border-input bg-background hover:bg-muted"
-              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-          }`}
-        >
+        <Button type="button" variant="outline" size="sm" className="text-xs">
           <Icon
             name={hasError ? "warning" : "visibility"}
             size={12}
             className="mr-1"
           />
           {displayName}
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="!max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b shrink-0">

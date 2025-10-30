@@ -1,7 +1,17 @@
-import { EMPTY_VIEWS } from "../../../stores/workflows/hooks.ts";
+import {
+  EMPTY_VIEWS,
+  useWorkflowStepData,
+} from "../../../stores/workflows/hooks.ts";
 import { useMemo } from "react";
 import { JsonViewer } from "../../chat/json-viewer";
 import { ViewDialogTrigger } from "../../workflows/workflow-step-card";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useDecopilotOpen } from "../../layout/decopilot-layout.tsx";
+import { useDecopilotThread } from "../../decopilot/thread-context.tsx";
+import { useThreadContext } from "../../decopilot/thread-context-provider.tsx";
+import { RuleContextItem, ToolsetContextItem } from "../../chat/types.ts";
+import { useCallback } from "react";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -49,11 +59,16 @@ function deepParse(value: unknown, depth = 0): unknown {
 }
 
 interface StepOutputProps {
+  stepName: string;
   output: unknown;
   views?: readonly string[];
 }
 
-export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
+export function StepOutput({
+  stepName,
+  output,
+  views = EMPTY_VIEWS,
+}: StepOutputProps) {
   if (output === undefined || output === null) return null;
 
   const parsedOutput = useMemo(() => deepParse(output), [output]);
@@ -61,7 +76,7 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
 
   return (
     <div
-      className="px-4 pt-4 pb-2 flex flex-col gap-2 relative min-w-0 overflow-hidden"
+      className="px-4 pt-4 pb-2 flex flex-col gap-5 relative min-w-0 overflow-hidden"
       style={{
         backgroundImage: hasViews
           ? "linear-gradient(90deg, rgba(245, 245, 245, 0.5) 0%, rgba(245, 245, 245, 0.5) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)"
@@ -69,23 +84,115 @@ export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
         backgroundColor: hasViews ? undefined : "#ffffff",
       }}
     >
-      <div className="flex flex-col gap-2">
-        <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
-          Execution Result
-        </p>
-      </div>
+      <p className="font-mono text-sm text-muted-foreground uppercase leading-5">
+        Execution Result
+      </p>
 
-      {hasViews && (
-        <div className="flex flex-wrap items-center gap-3 px-0">
-          {views.map((view) => (
-            <ViewDialogTrigger key={view} resourceUri={view} output={output} />
-          ))}
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        {hasViews && (
+          <div
+            className="flex overflow-x-auto items-center gap-3 rounded-md"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {views.map((view, i) => (
+              <ViewDialogTrigger
+                key={`${view}-${i}`}
+                resourceUri={view}
+                output={output}
+              />
+            ))}
+          </div>
+        )}
+        <CreateViewButton stepName={stepName} />
+      </div>
 
       <div className="min-w-0 overflow-hidden">
         <JsonViewer data={parsedOutput} maxHeight="400px" defaultView="tree" />
       </div>
     </div>
+  );
+}
+
+const stepViewRule = ({
+  outputSchema,
+  stepName,
+}: {
+  outputSchema: Record<string, unknown>;
+  stepName: string;
+}) => {
+  return {
+    type: "rule",
+    text: `Create a new view for the output of the step ${stepName}.
+    The view's inputSchema should match the outputSchema of the step.
+    The outputSchema is: ${JSON.stringify(outputSchema)}
+
+    After the view is created, add the view URI to the step "views" property.
+    `,
+  } as RuleContextItem;
+};
+
+function CreateViewButton({ stepName }: { stepName: string }) {
+  const step = useWorkflowStepData(stepName);
+  const { setOpen } = useDecopilotOpen();
+  const { setThreadState } = useDecopilotThread();
+  const { contextItems, setContextItems } = useThreadContext();
+
+  const defaultContextItems = useMemo(
+    () => [
+      {
+        ...stepViewRule({
+          outputSchema: step?.definition?.outputSchema ?? {},
+          stepName,
+        }),
+      },
+      {
+        type: "toolset",
+        integrationId: "i:views-management",
+        enabledTools: ["DECO_RESOURCE_VIEW_CREATE"],
+      } as ToolsetContextItem,
+      {
+        type: "toolset",
+        integrationId: "i:workflows-management",
+        enabledTools: [
+          "DECO_WORKFLOW_EDIT_STEP",
+          "DECO_RESOURCE_WORKFLOW_READ",
+        ],
+      } as ToolsetContextItem,
+    ],
+    [step?.definition?.outputSchema, step?.output, stepName],
+  );
+
+  const uniqueContextItems = useMemo(() => {
+    return [
+      ...new Set([
+        ...contextItems.filter((item) => item.type !== "toolset"),
+        ...defaultContextItems,
+      ]),
+    ];
+  }, [contextItems, defaultContextItems]);
+
+  const handleCreateView = useCallback(() => {
+    const threadId = crypto.randomUUID();
+    setContextItems(uniqueContextItems);
+    setThreadState({
+      threadId,
+      initialMessage: `Please, create a view for the step "${stepName}"`,
+      autoSend: false,
+    });
+    setOpen(true);
+  }, [stepName, uniqueContextItems, setContextItems, setThreadState, setOpen]);
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="text-xs"
+      onClick={handleCreateView}
+    >
+      Create view
+      <Icon name="add" size={16} />
+    </Button>
   );
 }

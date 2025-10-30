@@ -408,18 +408,16 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
     },
 
     handleSaveSuccess: (savedWorkflow) => {
-      const state = get();
-      const draftStepNames = Object.keys(state.executeDrafts);
-
-      // Clear all execute drafts
-      for (const stepName of draftStepNames) {
-        state.clearExecuteDraft(stepName);
-      }
-
       // Update state with saved workflow
       set({
         workflow: savedWorkflow,
+        executeDrafts: {},
         lastServerVersion: savedWorkflow,
+        isDirty: false,
+      });
+
+      toast.success("Workflow saved", {
+        description: "Changes saved successfully",
       });
     },
   };

@@ -61,14 +61,16 @@ export const WorkflowStepInput = memo(
       },
     });
 
+    const isDirty = form.formState.isDirty;
+
     const handleBlur = useCallback(() => {
       startTransition(() => {
         const currentData = form.getValues();
-        if (currentData && Object.keys(currentData).length > 0) {
+        if (isDirty && currentData && Object.keys(currentData).length > 0) {
           actions.setStepInput(stepName, currentData);
         }
       });
-    }, [form, stepName, actions]);
+    }, [form, stepName, actions, isDirty]);
 
     // Early return if schema or properties are not available
     if (!stepInputSchema?.properties) {

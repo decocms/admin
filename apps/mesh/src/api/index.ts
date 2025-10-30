@@ -128,7 +128,6 @@ const createContext = createMeshContextFactory({
 // Inject MeshContext into requests
 app.use('*', async (c, next) => {
   try {
-    console.log("SS");
     const ctx = await createContext(c);
     c.set('meshContext', ctx);
     return await next();
@@ -155,6 +154,7 @@ app.use('/mcp', async (c, next) => {
   const session = await auth.api.getMcpSession({
     headers: c.req.raw.headers,
   });
+  console.log({session});
   if (!session) {
     const origin = new URL(c.req.url).origin;
 

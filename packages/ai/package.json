@@ -26,13 +26,8 @@
     "ai": "^5.0.61",
     "cloudflare": "^4.5.0",
     "croner": "^9.0.0",
-    "eventsource-parser": "^3.0.0",
     "hono": "^4.7.9",
     "json-schema-to-zod": "^2.6.1",
-    "nanoid": "^5.1.4",
-    "secure-json-parse": "^4.0.0",
-    "unpdf": "^1.0.5",
-    "uuid": "^11.1.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.4"
   },

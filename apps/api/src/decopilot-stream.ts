@@ -198,7 +198,6 @@ type ToolLike = {
 
 const INTEGRATIONS_DENY_LIST = new Set([
   "i:contracts-management",
-  "i:thread-management",
   "i:prompt-management",
   "i:oauth-management",
   "i:model-management",

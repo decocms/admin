@@ -241,7 +241,7 @@ async function ensureCreditRewards(
     );
 
     response?.body?.cancel().catch(() => {});
-    
+
     if (response.ok || response.status === 304) {
       // Success or already exists (304 Not Modified)
       return;

@@ -150,7 +150,6 @@ const WorkflowStepFieldComponent = function <
   const propertyName = name.split(".").pop() || name;
   const title =
     (schema.title as string | undefined) || formatPropertyName(propertyName);
-  const description = schema.description as string | undefined;
 
   // Filter available refs to only show compatible types
   const compatibleRefs = useMemo(() => {
@@ -261,12 +260,6 @@ const WorkflowStepFieldComponent = function <
             )}
           </FormControl>
 
-          {description &&
-            !isRefMode &&
-            fieldType !== "object" &&
-            fieldType !== "array" && (
-              <FormDescription>{description}</FormDescription>
-            )}
           {isRefMode && (
             <FormDescription className="text-primary/70">
               <Icon name="info" size={14} className="inline mr-1" />

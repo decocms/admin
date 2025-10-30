@@ -256,7 +256,7 @@ export function ContextResources({
           integration: integrationWithBetterName,
           enabledTools: item.enabledTools,
           integrationId: item.integrationId,
-          contextItemId: item.id,
+          contextItemId: item.id || crypto.randomUUID(),
         };
       })
       .filter((x) => !!x);

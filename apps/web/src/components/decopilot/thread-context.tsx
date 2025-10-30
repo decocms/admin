@@ -8,7 +8,7 @@ import {
 import { useSearchParams } from "react-router";
 
 export interface ThreadState {
-  threadId: string;
+  threadId: string | null;
   initialMessage: string | null;
   autoSend: boolean;
 }
@@ -61,7 +61,7 @@ export function DecopilotThreadProvider({
     const autoSend = searchParams.get("autoSend") === "true";
 
     return {
-      threadId: crypto.randomUUID(),
+      threadId: null,
       initialMessage: initialInput,
       autoSend: autoSend && Boolean(initialInput),
     };

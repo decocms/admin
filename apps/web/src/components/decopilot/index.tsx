@@ -8,7 +8,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { timeAgo } from "../../utils/time-ago.ts";
@@ -17,7 +17,7 @@ import { AgenticChatProvider } from "../chat/provider.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ModeSelector } from "./mode-selector.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
-import { useThreadManager } from "./thread-manager-context.tsx";
+import { ThreadData, useThreadManager } from "./thread-manager-context.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
@@ -207,14 +207,43 @@ function DecopilotChatContent() {
   // Select agent based on mode
   const agentId = mode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
-  // Get or create the thread for the current route and agent
-  const currentThread = useMemo(() => {
-    const existingThread = getThreadForRoute(pathname, agentId);
-    if (existingThread) {
-      return existingThread;
+  // Get existing thread for the current route and agent (read-only)
+  const existingThread = useMemo(() => {
+    const thread = getThreadForRoute(pathname, agentId);
+    if (
+      thread &&
+      (threadState.threadId === null || threadState.threadId === thread.id)
+    ) {
+      return thread;
     }
-    return createNewThread(pathname, agentId);
-  }, [pathname, agentId, getThreadForRoute, createNewThread]);
+    return null;
+  }, [pathname, agentId, getThreadForRoute, threadState]);
+
+  // State to hold the current thread (existing or newly created)
+  const [currentThread, setCurrentThread] = useState<ThreadData | null>(
+    existingThread,
+  );
+
+  // Create new thread in useEffect when needed (side effect, not during render)
+  useEffect(() => {
+    if (existingThread) {
+      setCurrentThread(existingThread);
+    } else {
+      // Only create if we don't already have a thread for this route/agent
+      const newThread = createNewThread(
+        pathname,
+        agentId,
+        threadState.threadId || undefined,
+      );
+      setCurrentThread(newThread);
+    }
+  }, [
+    existingThread,
+    pathname,
+    agentId,
+    createNewThread,
+    threadState.threadId,
+  ]);
 
   // Get agent from inline constants (both are well-known agents)
   const agent =

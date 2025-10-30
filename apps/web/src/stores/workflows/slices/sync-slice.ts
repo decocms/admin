@@ -3,15 +3,11 @@ import type { StateCreator } from "zustand";
 import type { Store } from "../store";
 import { toast } from "@deco/ui/components/sonner.tsx";
 
-// Extended workflow definition that includes the URI
-// This is used when receiving workflows from the server
-type WorkflowWithUri = WorkflowDefinition & { uri?: string };
-
 export interface SyncSlice {
   isDirty: boolean;
-  lastServerVersion: WorkflowWithUri | null;
-  pendingServerUpdate: WorkflowWithUri | null;
-  handleExternalUpdate: (serverWorkflow: WorkflowWithUri) => {
+  lastServerVersion: WorkflowDefinition | null;
+  pendingServerUpdate: WorkflowDefinition | null;
+  handleExternalUpdate: (serverWorkflow: WorkflowDefinition) => {
     applied: boolean;
     reason: string;
   };
@@ -19,7 +15,7 @@ export interface SyncSlice {
   dismissPendingUpdate: () => void;
   resetAndResync: () => void;
   getWorkflowToSave: () => WorkflowDefinition;
-  handleSaveSuccess: (savedWorkflow: WorkflowWithUri) => void;
+  handleSaveSuccess: (savedWorkflow: WorkflowDefinition) => void;
 }
 
 interface WorkflowChanges {
@@ -184,7 +180,6 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
         set(
           {
             workflow: serverWorkflow,
-            workflowUri: serverWorkflow.uri || get().workflowUri,
             lastServerVersion: serverWorkflow,
             pendingServerUpdate: null,
             isDirty: false, // Safe to reset since server confirmed our changes
@@ -203,7 +198,6 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
         set(
           {
             workflow: serverWorkflow,
-            workflowUri: serverWorkflow.uri || get().workflowUri,
             lastServerVersion: serverWorkflow,
             pendingServerUpdate: null,
           },
@@ -228,7 +222,6 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
         set(
           {
             workflow: serverWorkflow,
-            workflowUri: serverWorkflow.uri || get().workflowUri,
             lastServerVersion: serverWorkflow,
             pendingServerUpdate: null,
             // Keep isDirty state as-is since we're only updating views
@@ -331,7 +324,6 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
       // Clear only the specific stepInputs that changed
       set({
         workflow: pendingServerUpdate,
-        workflowUri: pendingServerUpdate.uri || get().workflowUri,
         lastServerVersion: pendingServerUpdate,
         isDirty: false,
         pendingServerUpdate: null,
@@ -416,16 +408,18 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
     },
 
     handleSaveSuccess: (savedWorkflow) => {
+      const state = get();
+      const draftStepNames = Object.keys(state.executeDrafts);
+
+      // Clear all execute drafts
+      for (const stepName of draftStepNames) {
+        state.clearExecuteDraft(stepName);
+      }
+
+      // Update state with saved workflow
       set({
         workflow: savedWorkflow,
-        workflowUri: savedWorkflow.uri || get().workflowUri,
-        executeDrafts: {},
         lastServerVersion: savedWorkflow,
-        isDirty: false,
-      });
-
-      toast.success("Workflow saved", {
-        description: "Changes saved successfully",
       });
     },
   };

@@ -196,6 +196,22 @@ type ToolLike = {
   outputSchema?: Record<string, unknown>;
 };
 
+const INTEGRATIONS_DENY_LIST = new Set([
+  "i:contracts-management",
+  "i:prompt-management",
+  "i:oauth-management",
+  "i:model-management",
+  "i:team-management",
+  "i:kb-management",
+  "i:hosting",
+  "i:deconfig-management",
+  "i:wallet-management",
+  "i:channel-management",
+  "i:integration-management",
+  "i:registry-management",
+  "DECO_UTILS",
+]);
+
 const listIntegrations = async (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
   if (!listIntegrationsTool) {
     throw new Error("INTEGRATIONS_LIST tool not found");
@@ -204,7 +220,7 @@ const listIntegrations = async (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
     listIntegrationsTool.handler({}),
   );
 
-  return items;
+  return items.filter((i) => !INTEGRATIONS_DENY_LIST.has(i.id));
 };
 
 const formatAvailableIntegrations = (items: Integration[]) =>

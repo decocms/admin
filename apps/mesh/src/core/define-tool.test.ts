@@ -1,7 +1,7 @@
 import { SpanStatusCode } from '@opentelemetry/api';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { defineTool, toMCPSchema, toMCPToolDefinition } from './define-tool';
+import { defineTool } from './define-tool';
 import type { MeshContext } from './mesh-context';
 
 // Mock MeshContext
@@ -309,67 +309,3 @@ describe('defineTool', () => {
     });
   });
 });
-
-describe('toMCPSchema', () => {
-  it('should convert Zod schema to JSON Schema', () => {
-    const schema = z.object({
-      name: z.string(),
-      age: z.number().optional(),
-    });
-
-    const jsonSchema = toMCPSchema(schema);
-
-    expect(jsonSchema).toBeDefined();
-    expect(typeof jsonSchema).toBe('object');
-    // zod-to-json-schema returns a valid JSON Schema object
-    expect(jsonSchema).toHaveProperty('type');
-  });
-
-  it('should handle complex schemas', () => {
-    const schema = z.object({
-      name: z.string(),
-      tags: z.array(z.string()),
-      metadata: z.record(z.string(), z.any()),
-    });
-
-    const jsonSchema = toMCPSchema(schema);
-
-    expect(jsonSchema).toBeDefined();
-    expect(typeof jsonSchema).toBe('object');
-  });
-});
-
-describe('toMCPToolDefinition', () => {
-  it('should create MCP tool definition', () => {
-    const tool = defineTool({
-      name: 'TEST',
-      description: 'Test tool',
-      inputSchema: z.object({ value: z.number() }),
-      outputSchema: z.object({ result: z.number() }),
-      handler: async () => ({ result: 0 }),
-    });
-
-    const mcpDef = toMCPToolDefinition(tool);
-
-    expect(mcpDef).toEqual({
-      name: 'TEST',
-      description: 'Test tool',
-      inputSchema: expect.any(Object),
-      outputSchema: expect.any(Object),
-    });
-  });
-
-  it('should work without output schema', () => {
-    const tool = defineTool({
-      name: 'NO_OUTPUT',
-      description: 'Test tool',
-      inputSchema: z.object({}),
-      handler: async () => undefined as any,
-    });
-
-    const mcpDef = toMCPToolDefinition(tool);
-
-    expect(mcpDef.outputSchema).toBeUndefined();
-  });
-});
-

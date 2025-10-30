@@ -21,7 +21,14 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { UseFormReturn } from "react-hook-form";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import {
@@ -575,6 +582,7 @@ const SelectProjectAppInstance = ({
   state: string | undefined;
   autoConfirmIntegrationId?: string | null;
 }) => {
+  console.log("SelectProjectAppInstance loaded");
   const installedIntegrations = useAppIntegrations(clientId);
   const createOAuthCode = useCreateOAuthCodeForIntegration();
   const installCreatingApiKeyAndIntegration =
@@ -612,7 +620,7 @@ const SelectProjectAppInstance = ({
   // Auto-confirm if integrationId is provided and there's only 1 integration
   useEffect(() => {
     if (
-      autoConfirmIntegrationId &&
+      autoConfirmIntegrationId === "auto" &&
       installedIntegrations.length === 1 &&
       !autoConfirmRef.current
     ) {
@@ -827,8 +835,12 @@ function AppsOAuth({
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(
     null,
   );
-  const [isInIframe, setIsInIframe] = useState(false);
-  const [waitingForParentContext, setWaitingForParentContext] = useState(true);
+
+  // Simple check - not reactive, just a one-time value
+  const inIframe = globalThis.self !== globalThis.top;
+
+  const [waitingForParentContext, setWaitingForParentContext] =
+    useState(inIframe);
   const [autoConfirmIntegrationId, setAutoConfirmIntegrationId] = useState<
     string | null
   >(null);
@@ -845,21 +857,8 @@ function AppsOAuth({
     return org.slug;
   }, [org]);
 
-  // Check if we're in an iframe on mount
-  useEffect(() => {
-    const inIframe = globalThis.self !== globalThis.top;
-    setIsInIframe(inIframe);
-
-    if (!inIframe) {
-      // Not in iframe, don't wait for parent context
-      setWaitingForParentContext(false);
-    }
-  }, []);
-
-  // Listen for parent context messages
-  useBidcForTopWindow({
-    messageSchema: ParentContextMessageSchema,
-    onMessage: ({ payload }) => {
+  const handleParentMessage = useCallback(
+    ({ payload }: { payload: { org: string; project: string } }) => {
       console.log("Received parent context:", payload);
       setWaitingForParentContext(false);
 
@@ -872,21 +871,30 @@ function AppsOAuth({
         setAutoConfirmIntegrationId("auto");
       }
     },
+    [],
+  );
+
+  // Listen for parent context messages
+  useBidcForTopWindow({
+    messageSchema: ParentContextMessageSchema,
+    onMessage: handleParentMessage,
   });
 
-  // Timeout after 2 seconds if no parent context received
+  // Set up timeout on mount - only if in iframe
   useEffect(() => {
-    if (isInIframe && waitingForParentContext) {
-      const timeout = setTimeout(() => {
-        console.warn("Timeout waiting for parent context, showing UI");
-        setWaitingForParentContext(false);
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isInIframe, waitingForParentContext]);
+    if (!inIframe || !waitingForParentContext) return;
+
+    const timeout = setTimeout(() => {
+      console.warn("Timeout waiting for parent context, showing UI");
+      setWaitingForParentContext(false);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
   // Show loading state while waiting for parent context in iframe
-  if (isInIframe && waitingForParentContext) {
+  if (inIframe && waitingForParentContext) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <Spinner size="lg" />

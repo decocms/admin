@@ -232,6 +232,8 @@ function ResourcesV2ListTab({
       integrationId!,
       resourceName!,
       deferredQ,
+      sortKey ?? undefined,
+      sortDirection ?? undefined,
     ),
     enabled: Boolean(integration && resourceName),
     staleTime: 0, // Always consider data stale so it refetches when invalidated
@@ -243,6 +245,8 @@ function ResourcesV2ListTab({
           term: deferredQ,
           page: 1,
           pageSize: 50,
+          sortBy: sortKey ?? undefined,
+          sortOrder: sortDirection ?? undefined,
         },
       })) as {
         structuredContent?: {
@@ -1069,7 +1073,7 @@ function ResourcesV2ListTab({
                       </div>
 
                       {/* Footer Section */}
-                      <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-shrink-0 flex-wrap gap-x-4 gap-y-1">
+                      <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-wrap gap-x-4 gap-y-1">
                         <div className="flex items-center gap-1">
                           <span className="text-muted-foreground">Updated</span>
                           <span className="text-foreground">

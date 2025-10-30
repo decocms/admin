@@ -402,37 +402,55 @@
       submitBtn.textContent = 'Signing in...';
       
       try {
+        // Important: We make a clean sign-in request WITHOUT OAuth context
+        // This prevents Better Auth from auto-completing the OAuth flow
+        // We'll handle the OAuth authorization separately via the consent page
         const response = await fetch('/api/auth/sign-in/email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
+          redirect: 'manual', // Don't follow redirects automatically
           body: JSON.stringify({
             email,
             password,
           }),
         });
 
-        const data = await response.json();
+        // Handle OAuth flow redirect (Better Auth returns 302 to client callback)
+        if (isOAuthFlow && (response.status === 302 || response.type === 'opaqueredirect')) {
+          // Better Auth is trying to redirect to client, but we want to show consent page first
+          // Redirect to our consent page instead
+          window.location.href = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
+          return;
+        }
 
-        if (!response.ok) {
+        // Parse response (only if not a redirect)
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (e) {
+          // Response might not be JSON if it's a redirect
+          if (!response.ok && response.status !== 302) {
+            throw new Error('Sign in failed');
+          }
+        }
+
+        if (!response.ok && response.status !== 302) {
           throw new Error(data.message || 'Sign in failed');
         }
 
-        // Success! Show message
-        showSuccess('Signed in successfully!');
-        
-        // If this is an OAuth flow, Better Auth should have set a session cookie
-        // Now we need to continue the OAuth authorization flow
+        // Success! Session cookie is set
+        // For OAuth flows, redirect to authorization page (consent UI)
+        // For normal sign-in, redirect to home
         if (isOAuthFlow) {
-          setTimeout(() => {
-            // Try to continue the OAuth flow by redirecting back to the authorize endpoint
-            // Better Auth MCP plugin should recognize the session and complete the flow
-            redirectToAuthorization();
-          }, 500);
+          const authorizeUrl = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
+          console.log('[Sign-In] OAuth flow detected, redirecting to consent page:', authorizeUrl);
+          // Redirect to authorization/consent page
+          window.location.href = authorizeUrl;
         } else {
-          // Normal sign-in, redirect to home
+          showSuccess('Signed in successfully!');
           setTimeout(() => {
             window.location.href = '/';
           }, 500);
@@ -470,6 +488,7 @@
             'Content-Type': 'application/json',
           },
           credentials: 'include',
+          redirect: 'manual', // Don't follow redirects automatically
           body: JSON.stringify({
             name,
             email,
@@ -477,22 +496,39 @@
           }),
         });
 
-        const data = await response.json();
+        // Handle OAuth flow redirect (Better Auth returns 302 to client callback)
+        if (isOAuthFlow && (response.status === 302 || response.type === 'opaqueredirect')) {
+          // Better Auth is trying to redirect to client, but we want to show consent page first
+          // Redirect to our consent page instead
+          window.location.href = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
+          return;
+        }
 
-        if (!response.ok) {
+        // Parse response (only if not a redirect)
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (e) {
+          // Response might not be JSON if it's a redirect
+          if (!response.ok && response.status !== 302) {
+            throw new Error('Sign up failed');
+          }
+        }
+
+        if (!response.ok && response.status !== 302) {
           throw new Error(data.message || 'Sign up failed');
         }
 
-        // Success! Show message and redirect
-        showSuccess('Account created successfully!');
-        
+        // Success! Session cookie is set
+        // For OAuth flows, redirect to authorization page (consent UI)
+        // For normal sign-up, redirect to home
         if (isOAuthFlow) {
-          // Redirect to OAuth authorization endpoint
-          setTimeout(() => {
-            redirectToAuthorization();
-          }, 500);
+          const authorizeUrl = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
+          console.log('[Sign-Up] OAuth flow detected, redirecting to consent page:', authorizeUrl);
+          // Redirect to authorization/consent page
+          window.location.href = authorizeUrl;
         } else {
-          // Redirect to home page
+          showSuccess('Account created successfully!');
           setTimeout(() => {
             window.location.href = '/';
           }, 500);

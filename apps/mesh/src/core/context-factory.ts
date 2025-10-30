@@ -62,6 +62,125 @@ export class NotFoundError extends Error {
 }
 
 // ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * OAuth Session from Better Auth MCP plugin
+ * Returned by auth.api.getMcpSession()
+ */
+interface OAuthSession {
+  id: string;
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: Date;
+  refreshTokenExpiresAt: Date;
+  clientId: string;
+  userId: string;
+  scopes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================================
+// Authentication Helpers
+// ============================================================================
+
+/**
+ * Parse OAuth scopes into Better Auth permission format
+ * 
+ * Input: "openid profile email mcp:*"
+ * Output: { "mcp": ["*"] }
+ * 
+ * Input: "openid profile email mcp:PROJECT_CREATE mcp:CONNECTION_LIST"
+ * Output: { "mcp": ["PROJECT_CREATE", "CONNECTION_LIST"] }
+ */
+function scopesToPermissions(scopes: string): Record<string, string[]> {
+  const permissions: Record<string, string[]> = {};
+
+  // Split scopes and filter for mcp: prefixed ones
+  const scopeList = scopes.split(' ').filter(s => s.trim());
+
+  for (const scope of scopeList) {
+    const [connection, tool] = scope.split(':');
+    if (connection && tool) {
+      if (!permissions[connection]) {
+        permissions[connection] = [];
+      }
+      permissions[connection].push(tool);
+    }
+  }
+
+  return permissions;
+}
+
+/**
+ * Authenticate request using either OAuth session or API key
+ * Returns unified authentication data
+ */
+async function authenticateRequest(
+  c: Context,
+  auth: BetterAuthInstance
+): Promise<{
+  user?: any;
+  permissions: Record<string, string[]>;
+  role?: string;
+  apiKeyId?: string;
+}> {
+  const authHeader = c.req.header('Authorization');
+
+  // Try OAuth session first (getMcpSession)
+  try {
+    const session = await auth.api.getMcpSession({
+      headers: c.req.raw.headers,
+    }) as OAuthSession | null;
+
+    if (session) {
+      // Parse OAuth scopes into permissions
+      const scopes = session.scopes || '';
+      const permissions = scopesToPermissions(`${scopes} mcp:*`);
+
+      // Load user from userId in session
+      const userId = session.userId;
+      return {
+        user: { id: userId }, // Minimal user object
+        permissions,
+      };
+    }
+  } catch (error) {
+    const err = error as Error;
+    console.log('[Auth] OAuth session check failed:', err.message);
+  }
+
+  // Try API Key authentication
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.replace('Bearer ', '').trim();
+      const result = await auth.api.verifyApiKey({
+        body: { key: token },
+      });
+
+      if (result?.valid && result.key) {
+        console.log('[Auth] API key authenticated:', {
+          keyName: result.key.name,
+          permissions: result.key.permissions,
+        });
+
+        return {
+          permissions: result.key.permissions || {},
+          apiKeyId: result.key.id,
+        };
+      }
+    } catch (error: any) {
+      console.log('[Auth] API key check failed:', error.message);
+    }
+  }
+
+  // No valid authentication found
+  throw new UnauthorizedError('Authentication required. Please provide a valid OAuth token or API key.');
+}
+
+// ============================================================================
 // Context Factory
 // ============================================================================
 
@@ -90,42 +209,22 @@ export function createMeshContextFactory(
 
   // Return factory function
   return async (c: Context): Promise<MeshContext> => {
-    // Extract API key from Authorization header
-    // const authHeader = c.req.header('Authorization');
-    // const key = authHeader?.replace('Bearer ', '');
+    // Authenticate request (OAuth session or API key)
+    const authResult = await authenticateRequest(c, config.auth);
 
-    const auth: MeshContext['auth'] = {};
+    // Build auth object for MeshContext
+    const auth: MeshContext['auth'] = {
+      user: authResult.user,
+    };
 
-    // if (key) {
-    //   // Verify API key with Better Auth
-    //   // For now, we'll skip this since Better Auth isn't set up yet
-    //   // This will be implemented in Task 09
-
-    //   // Placeholder for Better Auth verification
-    //   if (config.auth?.api?.verifyApiKey) {
-    //     const result = await config.auth.api.verifyApiKey({
-    //       body: { key },
-    //     });
-
-    //     if (!result.valid) {
-    //       throw new UnauthorizedError(
-    //         result.error?.message || 'Invalid API key'
-    //       );
-    //     }
-
-    //     auth = {
-    //       apiKey: {
-    //         id: result.key?.id || '',
-    //         name: result.key?.name || '',
-    //         userId: result.key?.userId || '',
-    //         permissions: result.key?.permissions || {},
-    //         metadata: result.key?.metadata || undefined,
-    //         remaining: result.key?.remaining || undefined,
-    //         expiresAt: result.key?.expiresAt || undefined,
-    //       },
-    //     };
-    //   }
-    // }
+    if (authResult.apiKeyId) {
+      auth.apiKey = {
+        id: authResult.apiKeyId,
+        name: '', // Not needed for access control
+        userId: '', // Not needed for access control
+        permissions: authResult.permissions,
+      };
+    }
 
     // Extract project from path (e.g., /:projectSlug/mcp/...)
     const projectSlug = extractProjectSlug(c.req.path);
@@ -165,14 +264,14 @@ export function createMeshContextFactory(
     const url = new URL(c.req.url);
     const baseUrl = `${url.protocol}//${url.host}`;
 
-    // Create AccessControl instance
+    // Create AccessControl instance with unified permissions
     const access = new AccessControl(
       config.auth,
       auth.user?.id,
       undefined, // toolName set later by defineTool
-      auth.apiKey?.permissions,
-      auth.user?.role,
-      undefined // connectionId set when proxying
+      authResult.permissions, // Unified permissions from OAuth or API key
+      authResult.role, // Role from OAuth session or undefined for API keys
+      "mcp" // connectionId set when proxying
     );
 
     return {

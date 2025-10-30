@@ -238,7 +238,7 @@ function DecopilotChatContent() {
       return `${threadState.threadId}-${mode}`;
     }
     return `${currentThread?.id}-${mode}`;
-  }, [threadState.threadId, currentThread?.id]);
+  }, [threadState.threadId, currentThread?.id, mode]);
 
   // If no thread yet, show a loading state
   if (!currentThread) {

@@ -32,6 +32,7 @@ app.post('/', async (c) => {
     inputSchema: tool.inputSchema,
     outputSchema: tool.outputSchema,
     handler: async (args: any) => {
+      ctx.access.setToolName(tool.name);
       // Execute the tool with the mesh context
       return await tool.execute(args, ctx);
     },

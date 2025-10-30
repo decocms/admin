@@ -61,6 +61,20 @@ app.get('/health', (c) => {
 });
 
 // ============================================================================
+// Tool Metadata API
+// ============================================================================
+
+import { MANAGEMENT_TOOLS, getToolsByCategory } from '../tools/registry';
+
+// Get all management tools (for OAuth consent UI)
+app.get('/api/tools/management', (c) => {
+  return c.json({
+    tools: MANAGEMENT_TOOLS,
+    grouped: getToolsByCategory(),
+  });
+});
+
+// ============================================================================
 // Static Files - Authentication Pages
 // ============================================================================
 
@@ -149,28 +163,9 @@ app.use('*', async (c, next) => {
 // Routes
 // ============================================================================
 
-app.use('/mcp', async (c, next) => {
-
-  const session = await auth.api.getMcpSession({
-    headers: c.req.raw.headers,
-  });
-  console.log({session});
-  if (!session) {
-    const origin = new URL(c.req.url).origin;
-
-
-    return c.res = new Response(null, {
-      status: 401,
-      headers: {
-        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/.well-known/oauth-protected-resource"`
-      }
-    })
-  }
-  return await next();
-
-})
 // Mount management tools MCP server at /mcp (no connectionId)
 // This exposes PROJECT_*, CONNECTION_* tools via MCP protocol
+// Authentication is handled by context-factory middleware above
 app.route('/mcp', managementRoutes);
 
 // Mount MCP proxy routes at /mcp/:connectionId

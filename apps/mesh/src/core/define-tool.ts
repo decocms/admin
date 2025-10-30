@@ -10,10 +10,9 @@
  * - Distributed tracing
  */
 
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import type { MeshContext } from './mesh-context';
 import { SpanStatusCode } from '@opentelemetry/api';
+import { z } from 'zod';
+import type { MeshContext } from './mesh-context';
 
 // ============================================================================
 // Tool Definition Types
@@ -166,40 +165,6 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
         }
       );
     },
-  };
-}
-
-// ============================================================================
-// MCP Schema Conversion
-// ============================================================================
-
-/**
- * Convert Zod schema to JSON Schema for MCP
- */
-export function toMCPSchema<T extends z.ZodType>(schema: T): object {
-  return zodToJsonSchema(schema, {
-    name: undefined,
-    $refStrategy: 'none',
-  });
-}
-
-/**
- * Get MCP tool definition from Tool
- * This format can be exposed directly via MCP protocol
- */
-export function toMCPToolDefinition<TInput extends z.ZodType, TOutput extends z.ZodType>(
-  tool: Tool<TInput, TOutput>
-): {
-  name: string;
-  description: string;
-  inputSchema: object;
-  outputSchema?: object;
-} {
-  return {
-    name: tool.name,
-    description: tool.description,
-    inputSchema: toMCPSchema(tool.inputSchema),
-    outputSchema: tool.outputSchema ? toMCPSchema(tool.outputSchema) : undefined,
   };
 }
 

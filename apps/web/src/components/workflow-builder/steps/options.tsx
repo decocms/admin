@@ -75,15 +75,13 @@ function OptionsForm({
   const handleSave = async (data: typeof DEFAULT_WORKFLOW_STEP_CONFIG) => {
     try {
       await mutateAsync({
-        workflow: {
-          ...workflow,
-          steps: workflow.steps.map((step) => {
-            if (step.def.name === stepName) {
-              return { ...step, options: data };
-            }
-            return step;
-          }),
-        },
+        ...workflow,
+        steps: workflow.steps.map((step) => {
+          if (step.def.name === stepName) {
+            return { ...step, options: data };
+          }
+          return step;
+        }),
       });
       form.reset(data);
       toast.success("Options saved successfully");

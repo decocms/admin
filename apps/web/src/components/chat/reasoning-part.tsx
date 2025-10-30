@@ -36,12 +36,12 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
   };
 
   return (
-    <div className="flex flex-col border border-border rounded-2xl overflow-hidden">
+    <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
       <button
         type="button"
         onClick={handleToggle}
         className={cn(
-          "flex items-center justify-between p-4 transition-colors",
+          "flex items-center justify-between p-2 transition-colors cursor-pointer",
           isPartStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
         )}
       >
@@ -52,8 +52,11 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
           </span>
         </div>
         <Icon
-          name={isExpanded ? "expand_less" : "expand_more"}
-          className="text-muted-foreground transition-transform duration-200"
+          name="expand_less"
+          className={cn(
+            "transition-transform duration-200",
+            isExpanded ? "rotate-180" : "rotate-90",
+          )}
         />
       </button>
       <div

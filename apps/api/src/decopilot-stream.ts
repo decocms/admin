@@ -157,16 +157,18 @@ const createDecopilotTools = (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
   }
 
   return {
-    INTEGRATIONS_GET: tool({
+    READ_MCP: tool({
       ...integrationsGetTool,
+      name: "READ_MCP",
       execute: (input) =>
         State.run(ctx, async () => {
           const { id, name, tools } = await integrationsGetTool.handler(input);
           return { id, name, tools };
         }),
     }),
-    INTEGRATIONS_CALL_TOOL: tool({
+    CALL_TOOL: tool({
       ...integrationsCallToolTool,
+      name: "CALL_TOOL",
       // @ts-expect-error - Tool type compatibility issue with AI SDK
       execute: (input) =>
         State.run(ctx, async () => {

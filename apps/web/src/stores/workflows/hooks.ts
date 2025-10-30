@@ -111,7 +111,9 @@ export function useWorkflowStepExecution(stepName: string) {
 
 // Memoized complex selector
 export function useWorkflowStepData(stepName: string) {
-  const stepNameWithoutId = stepName.split("-").slice(0, -1).join("-");
+  const lastHyphenIndex = stepName.lastIndexOf("-");
+  const stepNameWithoutId =
+    lastHyphenIndex !== -1 ? stepName.substring(0, lastHyphenIndex) : stepName;
   const selector = useMemo(
     () => (state: Store) => ({
       output:

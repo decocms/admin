@@ -8,7 +8,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { unstable_batchedUpdates } from "react-dom";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
@@ -264,17 +264,25 @@ function DecopilotChatContent() {
     threadState.threadId,
   ]);
 
-  // Execute thread creation outside of render using requestAnimationFrame
-  // This defers execution until after React finishes rendering
-  if (threadCreationRef.current) {
+  // Execute thread creation outside of render using useEffect
+  // This runs after React finishes rendering when targetThreadId changes
+  useEffect(() => {
+    if (!threadCreationRef.current) return;
+
     const createFn = threadCreationRef.current;
     threadCreationRef.current = null;
-    requestAnimationFrame(() => {
+
+    const rafId = requestAnimationFrame(() => {
       unstable_batchedUpdates(() => {
         createFn();
       });
     });
-  }
+
+    // Cleanup: cancel RAF if component unmounts or effect re-runs
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [targetThreadId]);
 
   // Get or create the thread data (pure computation)
   const currentThread = useMemo(() => {

@@ -331,7 +331,8 @@ export const createSyncSlice: StateCreator<Store, [], [], SyncSlice> = (
       // Clear only the specific stepInputs that changed
       set({
         workflow: pendingServerUpdate,
-        workflowUri: (pendingServerUpdate as WorkflowWithUri).uri || get().workflowUri,
+        workflowUri:
+          (pendingServerUpdate as WorkflowWithUri).uri || get().workflowUri,
         lastServerVersion: pendingServerUpdate,
         isDirty: false,
         pendingServerUpdate: null,

@@ -73,7 +73,7 @@ export function IntegrationListItem({
   searchTerm?: string;
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
-  const { data: toolsData, isLoading } = useTools(integration.connection);
+  const { data: toolsData, isLoading } = useTools(integration.connection, true);
 
   const total = toolsData?.tools?.length ?? 0;
 

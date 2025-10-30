@@ -338,7 +338,7 @@ export const KEYS = {
             ? connection.name
             : "";
 
-    return ["tools", connection.type, identifier, ignoreCache];
+    return ["tools", connection.type, identifier, `${!!ignoreCache}`];
   },
   OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
   WALLET_SIMPLE: () => ["wallet"],

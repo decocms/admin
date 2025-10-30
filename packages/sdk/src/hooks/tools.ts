@@ -59,11 +59,16 @@ export const callTool = (
   });
 };
 
-export function useTools(connection: MCPConnection, ignoreCache?: boolean) {
+export function useTools(connection: MCPConnection, ignoreCache = false) {
   const response = useQuery({
     retry: false,
     queryKey: KEYS.MCP_TOOLS(connection, ignoreCache),
     queryFn: ({ signal }) => listTools(connection, { signal }, ignoreCache),
+    refetchOnMount: ignoreCache,
+    refetchOnWindowFocus: ignoreCache,
+    refetchOnReconnect: ignoreCache,
+    staleTime: ignoreCache ? 0 : undefined,
+    gcTime: ignoreCache ? 0 : undefined,
   });
 
   return {

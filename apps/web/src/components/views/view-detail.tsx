@@ -198,10 +198,39 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
     }
   }, [effectiveView, resourceUri, projectKey, org, project, addRecent]);
 
+  // Define trusted origins for secure postMessage handling
+  const trustedOrigins = useMemo(() => {
+    const origins = new Set<string>();
+    
+    // Add the app's own origin
+    if (typeof window !== "undefined") {
+      origins.add(window.location.origin);
+    }
+    
+    // Allow null origin for sandboxed iframes with srcdoc
+    origins.add("null");
+    
+    return origins;
+  }, []);
+
   // Listen for messages from iframe (Fix with AI and Runtime Errors)
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      // Validate message structure
+      // Validate origin before processing any message data
+      const isTrustedOrigin = trustedOrigins.has(event.origin) || 
+        (typeof window !== "undefined" && event.origin === window.location.origin);
+
+      if (!isTrustedOrigin) {
+        console.warn("Rejected message from untrusted origin:", event.origin);
+        return;
+      }
+
+      // Validate event source
+      if (!event.source || typeof event.source !== "object") {
+        return;
+      }
+
+      // Now safe to access event.data
       if (!event.data || !event.data.type) {
         return;
       }
@@ -239,7 +268,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [resourceUri, effectiveView?.name]);
+  }, [resourceUri, effectiveView?.name, trustedOrigins]);
 
   // Clear errors when view changes
   useEffect(() => {

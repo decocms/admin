@@ -12,6 +12,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   createContext,
   useContext,
 } from "react";
@@ -52,9 +53,53 @@ interface ViewConsoleProviderProps {
 export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
   const [logs, setLogs] = useState<ConsoleLog[]>([]);
 
+  // Define trusted origins for postMessage validation
+  const trustedOrigins = useMemo(() => {
+    const origins = new Set<string>();
+    
+    // Add the app's own origin
+    if (typeof window !== "undefined") {
+      origins.add(window.location.origin);
+    }
+    
+    // Allow blob: origins (used by iframe with srcDoc)
+    // Note: blob URLs will have origin matching the parent origin
+    
+    // Allow null origin for sandboxed iframes with data: or srcdoc
+    origins.add("null");
+    
+    return origins;
+  }, []);
+
+  const isTrustedOrigin = useCallback((origin: string): boolean => {
+    // Check if origin matches trusted origins
+    if (trustedOrigins.has(origin)) {
+      return true;
+    }
+    
+    // Allow origins that match the app's origin (for blob: URLs)
+    if (typeof window !== "undefined" && origin === window.location.origin) {
+      return true;
+    }
+    
+    return false;
+  }, [trustedOrigins]);
+
   // Listen for console messages from iframe
   useEffect(() => {
     function handleConsoleMessage(event: MessageEvent) {
+      // Validate origin before processing any message data
+      if (!isTrustedOrigin(event.origin)) {
+        console.warn("Rejected console message from untrusted origin:", event.origin);
+        return;
+      }
+
+      // Validate event source (should be from a window)
+      if (!event.source || typeof event.source !== "object") {
+        return;
+      }
+
+      // Now safe to access event.data
       if (!event.data || !event.data.type) return;
 
       // Handle console logs from iframe
@@ -73,7 +118,7 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
 
     window.addEventListener("message", handleConsoleMessage);
     return () => window.removeEventListener("message", handleConsoleMessage);
-  }, []);
+  }, [isTrustedOrigin]);
 
   // Listen for runtime errors
   useEffect(() => {

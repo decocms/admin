@@ -206,7 +206,7 @@ export function ThreadsTable({
       sortDirection={sortDirection}
       onSort={handleSort}
       onRowClick={(thread) => {
-        navigate(`/audit/${thread.id}`);
+        navigate(`/agents/threads?thread=${thread.id}`);
       }}
     />
   );

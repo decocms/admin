@@ -197,7 +197,7 @@ function ThreadSelector({ agentId }: { agentId: string }) {
   );
 }
 
-export function DecopilotChat() {
+function DecopilotChatContent() {
   const { threadState, clearThreadState } = useDecopilotThread();
   const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
@@ -312,4 +312,13 @@ export function DecopilotChat() {
     </div>
   );
 }
+
+export function DecopilotChat() {
+  return (
+    <Suspense fallback={<MainChatSkeleton />}>
+      <DecopilotChatContent />
+    </Suspense>
+  );
+}
+
 DecopilotChat.displayName = "DefaultChat";

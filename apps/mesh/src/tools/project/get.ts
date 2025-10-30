@@ -4,7 +4,7 @@
  * Get project details by slug or ID
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
 
 export const PROJECT_GET = defineTool({

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Debug - MCP Mesh</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    h1 { color: #667eea; }
+    .section {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .warning { background: #fff3cd; color: #856404; }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 5px;
+      font-family: inherit;
+    }
+    button:hover { background: #5568d3; }
+    button.danger { background: #dc3545; }
+    button.danger:hover { background: #c82333; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 MCP Mesh Authentication Debug</h1>
+  
+  <div class="section">
+    <h2>Quick Actions</h2>
+    <button onclick="clearAllSessions()">🧹 Clear All Sessions & Cookies</button>
+    <button onclick="window.location.href='/sign-in'">🔐 Go to Sign In</button>
+    <button onclick="window.location.href='/api-keys'">🔑 Manage API Keys</button>
+    <button onclick="testMcpEndpoint()">🧪 Test /mcp Endpoint</button>
+  </div>
+
+  <div class="section">
+    <h2>1. Current Session Status</h2>
+    <button onclick="checkSession()">Check Session</button>
+    <div id="session-status" class="status"></div>
+    <pre id="session-data">Click button to check...</pre>
+  </div>
+
+  <div class="section">
+    <h2>2. Browser Storage</h2>
+    <button onclick="checkStorage()">Check Storage</button>
+    <button class="danger" onclick="clearStorage()">Clear Storage</button>
+    <pre id="storage-data">Click button to check...</pre>
+  </div>
+
+  <div class="section">
+    <h2>3. Cookies</h2>
+    <button onclick="checkCookies()">Check Cookies</button>
+    <button class="danger" onclick="clearCookies()">Clear Cookies</button>
+    <pre id="cookie-data">Click button to check...</pre>
+  </div>
+
+  <div class="section">
+    <h2>4. MCP Endpoint Test</h2>
+    <button onclick="testMcpEndpoint()">Test Without Auth</button>
+    <pre id="mcp-test">Click button to test...</pre>
+  </div>
+
+  <div class="section">
+    <h2>5. Server Logs</h2>
+    <p>Check your server console for authentication logs starting with <code>[MCP Auth]</code></p>
+  </div>
+
+  <script>
+    async function checkSession() {
+      const status = document.getElementById('session-status');
+      const data = document.getElementById('session-data');
+      
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const session = await response.json();
+          if (session?.user) {
+            status.className = 'status success';
+            status.textContent = '✅ Session Active';
+            data.textContent = JSON.stringify(session, null, 2);
+          } else {
+            status.className = 'status warning';
+            status.textContent = '⚠️ No Active Session (but endpoint responded OK)';
+            data.textContent = JSON.stringify(session, null, 2);
+          }
+        } else {
+          status.className = 'status error';
+          status.textContent = '❌ Not Logged In';
+          data.textContent = `HTTP ${response.status}: ${await response.text()}`;
+        }
+      } catch (error) {
+        status.className = 'status error';
+        status.textContent = '❌ Error';
+        data.textContent = error.message;
+      }
+    }
+
+    function checkStorage() {
+      const data = document.getElementById('storage-data');
+      const storage = {
+        localStorage: {},
+        sessionStorage: {}
+      };
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        storage.localStorage[key] = localStorage.getItem(key);
+      }
+      
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        storage.sessionStorage[key] = sessionStorage.getItem(key);
+      }
+      
+      data.textContent = JSON.stringify(storage, null, 2);
+    }
+
+    function clearStorage() {
+      if (confirm('Clear all localStorage and sessionStorage?')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        alert('✅ Storage cleared!');
+        checkStorage();
+      }
+    }
+
+    function checkCookies() {
+      const data = document.getElementById('cookie-data');
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      
+      if (cookies.length === 0 || cookies[0] === '') {
+        data.textContent = 'No cookies found';
+      } else {
+        data.textContent = cookies.join('\n');
+      }
+    }
+
+    function clearCookies() {
+      if (confirm('Clear all cookies?')) {
+        const cookies = document.cookie.split(';');
+        
+        for (let cookie of cookies) {
+          const name = cookie.split('=')[0].trim();
+          // Clear for all possible paths
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname + ';';
+        }
+        
+        alert('✅ Cookies cleared!');
+        checkCookies();
+      }
+    }
+
+    async function testMcpEndpoint() {
+      const data = document.getElementById('mcp-test');
+      data.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch('/mcp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'initialize',
+            id: 1,
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: {},
+              clientInfo: {
+                name: 'debug-test',
+                version: '1.0.0'
+              }
+            }
+          })
+        });
+        
+        const text = await response.text();
+        data.textContent = `HTTP ${response.status}\n\nHeaders:\n${
+          Array.from(response.headers.entries())
+            .map(([k, v]) => `${k}: ${v}`)
+            .join('\n')
+        }\n\nBody:\n${text}`;
+      } catch (error) {
+        data.textContent = 'Error: ' + error.message;
+      }
+    }
+
+    async function clearAllSessions() {
+      if (confirm('This will clear ALL sessions, cookies, and storage. Continue?')) {
+        // Clear storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear cookies
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          const name = cookie.split('=')[0].trim();
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname + ';';
+        }
+        
+        // Try to sign out via API
+        try {
+          await fetch('/api/auth/sign-out', {
+            method: 'POST',
+            credentials: 'include'
+          });
+        } catch (e) {
+          console.log('Sign out API error:', e);
+        }
+        
+        alert('✅ All sessions cleared! Reload the page.');
+        window.location.reload();
+      }
+    }
+
+    // Auto-check on load
+    window.addEventListener('load', () => {
+      checkSession();
+      checkStorage();
+      checkCookies();
+    });
+  </script>
+</body>
+</html>
+

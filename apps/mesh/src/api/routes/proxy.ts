@@ -26,6 +26,7 @@ import { Hono } from 'hono';
 import { AccessControl } from '../../core/access-control';
 import type { MeshContext } from '../../core/mesh-context';
 import { HttpServerTransport } from '../http-server-transport';
+import { compose } from '../utils/compose';
 
 // Define Hono variables type
 type Variables = {
@@ -35,32 +36,13 @@ type Variables = {
 const app = new Hono<{ Variables: Variables }>();
 
 // ============================================================================
-// Middleware Types & Composition
+// Middleware Types
 // ============================================================================
 
 type CallToolMiddleware = (
   request: CallToolRequest,
   next: () => Promise<CallToolResult>
 ) => Promise<CallToolResult>;
-
-/**
- * Compose middlewares (from @deco/sdk/mcp/middlewares.ts)
- */
-const compose = <TRequest, TResponse>(
-  ...middlewares: ((req: TRequest, next: () => Promise<TResponse>) => Promise<TResponse>)[]
-) => {
-  return function composedResolver(request: TRequest, finalHandler: () => Promise<TResponse>) {
-    const dispatch = (i: number): Promise<TResponse> => {
-      const middleware = middlewares[i];
-      if (!middleware) {
-        return finalHandler();
-      }
-      const next = () => dispatch(i + 1);
-      return middleware(request, next);
-    };
-    return dispatch(0);
-  };
-};
 
 // ============================================================================
 // Authorization Middleware
@@ -117,6 +99,8 @@ function withConnectionAuthorization(
 /**
  * Create MCP proxy for a downstream connection
  * Pattern from @deco/api proxy() function
+ * 
+ * Single server approach - tools from downstream are dynamically fetched and registered
  */
 async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Get connection details
@@ -166,13 +150,8 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Create authorization middleware
   const authMiddleware = withConnectionAuthorization(ctx, connectionId);
 
-  // Compose middlewares (without final handler)
+  // Compose middlewares
   const callToolPipeline = compose(authMiddleware);
-
-  const listTools = async (_: ListToolsRequest): Promise<ListToolsResult> => {
-    const client = await createClient();
-    return await client.listTools();
-  };
 
   // Create fetch function that handles MCP protocol
   const fetch = async (req: Request) => {
@@ -190,7 +169,16 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     // Connect server to transport
     await server.connect(transport);
 
-    // Set up request handlers
+    // Manually implement list_tools - fetch from downstream and return
+    server.server.setRequestHandler(
+      ListToolsRequestSchema,
+      async (_request: ListToolsRequest): Promise<ListToolsResult> => {
+        const client = await createClient();
+        return await client.listTools();
+      }
+    );
+
+    // Set up call tool handler with middleware
     server.server.setRequestHandler(
       CallToolRequestSchema,
       (request: CallToolRequest) => callToolPipeline(request, async (): Promise<CallToolResult> => {
@@ -233,11 +221,6 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
           }
         );
       })
-    );
-
-    server.server.setRequestHandler(
-      ListToolsRequestSchema,
-      listTools
     );
 
     // Handle the incoming message

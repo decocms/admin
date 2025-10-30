@@ -4,7 +4,7 @@
  * Delete a project
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
 
 export const PROJECT_DELETE = defineTool({

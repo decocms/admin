@@ -44,7 +44,9 @@ function getDatabaseUrl(): string {
  * Better Auth instance with MCP, API Key, and Admin plugins
  */
 export const auth = betterAuth({
-  baseURL: 'http://localhost:3000',
+  // Base URL for OAuth - will be overridden by request context
+  baseURL: process.env.BASE_URL || 'http://localhost:3000',
+
   // Better Auth can use BunWorkerDialect directly
   database: new BunWorkerDialect({
     url: getDatabaseUrl(),

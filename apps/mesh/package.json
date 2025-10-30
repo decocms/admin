@@ -7,7 +7,8 @@
     "start": "bun run src/index.ts",
     "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",
-    "test": "bun test ."
+    "test": "bun test .",
+    "better-auth:migrate": "bun node_modules/@better-auth/cli/dist/index.mjs migrate --config src/auth/index.ts"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.4",
@@ -31,6 +32,7 @@
     "zod-to-json-schema": "^3.24.1"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.3.34",
     "@types/bun": "^1.3.1",
     "@types/pg": "^8.15.6",
     "@vitest/coverage-v8": "^4.0.5",

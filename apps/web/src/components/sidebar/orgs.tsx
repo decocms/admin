@@ -25,8 +25,8 @@ function OrgViews() {
             navigateOrg("/");
           }}
         >
-          <Icon name="folder" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Projects</span>
+          <Icon name="widgets" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">MCPs</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 

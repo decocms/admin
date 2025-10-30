@@ -126,6 +126,10 @@ const OrgProjectList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/home/projects.tsx")),
 );
 
+const MCPsHome = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/mcps/mcps-home.tsx")),
+);
+
 const ProjectHome = lazy(() =>
   import("./components/home/project-home.tsx").then((mod) => ({
     default: mod.ProjectHome,
@@ -417,6 +421,10 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
+            Component: MCPsHome,
+          },
+          {
+            path: "projects",
             Component: OrgProjectList,
           },
           {

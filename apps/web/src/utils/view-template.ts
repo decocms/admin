@@ -127,9 +127,10 @@ function createSDK(
     const { integrationId, toolName, input } = params;
 
     if (!integrationId || typeof integrationId !== "string") {
-      throw new Error(
-        'callTool Error: "integrationId" is required and must be a string.',
+      console.warn(
+        'callTool Warning: "integrationId" is required and must be a string.',
       );
+      return undefined as unknown;
     }
 
     if (!toolName || typeof toolName !== "string") {

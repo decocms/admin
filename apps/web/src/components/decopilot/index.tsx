@@ -8,9 +8,10 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useLocation } from "react-router";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { AgenticChatProvider } from "../chat/provider.tsx";
@@ -202,10 +203,19 @@ function DecopilotChatContent() {
   const { getThreadForRoute, createNewThread } = useThreadManager();
   const { pathname } = useLocation();
   const { setOpen } = useDecopilotOpen();
-  const [mode, setMode] = useState<"decochat" | "decopilot">("decochat");
+  const { value: storedMode, update: setStoredMode } =
+    useLocalStorage<"decochat" | "decopilot">({
+      key: "decopilot:preferred-mode",
+      defaultValue: "decochat",
+    });
+
+  function handleModeChange(nextMode: "decochat" | "decopilot") {
+    setStoredMode(nextMode);
+  }
 
   // Select agent based on mode
-  const agentId = mode === "decopilot" ? decopilotAgentId : decochatAgentId;
+  const agentId =
+    storedMode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
   // Get or create the thread for the current route and agent
   const currentThread = useMemo(() => {
@@ -218,7 +228,7 @@ function DecopilotChatContent() {
 
   // Get agent from inline constants (both are well-known agents)
   const agent =
-    mode === "decopilot"
+    storedMode === "decopilot"
       ? WELL_KNOWN_AGENTS.decopilotAgent
       : WELL_KNOWN_AGENTS.decochatAgent;
   const agentRoot = useAgentRoot(agentId);
@@ -238,7 +248,7 @@ function DecopilotChatContent() {
     return (
       <div className="flex h-full w-full flex-col">
         <div className="flex h-10 items-center gap-3 border-b border-border px-2">
-          <ModeSelector mode={mode} onModeChange={setMode} />
+          <ModeSelector mode={storedMode} onModeChange={handleModeChange} />
         </div>
         <MainChatSkeleton />
       </div>
@@ -249,7 +259,7 @@ function DecopilotChatContent() {
     <div className="flex h-full w-full flex-col">
       {/* Header with mode selector and thread controls */}
       <div className="flex h-10 items-center gap-3 border-b border-border px-2">
-        <ModeSelector mode={mode} onModeChange={setMode} />
+        <ModeSelector mode={storedMode} onModeChange={handleModeChange} />
         <span className="text-sm text-muted-foreground">/</span>
         <ThreadSelector agentId={agentId} />
         <div className="flex flex-1 items-center justify-end gap-1">
@@ -284,7 +294,7 @@ function DecopilotChatContent() {
       <div className="flex-1 min-h-0">
         <Suspense fallback={<MainChatSkeleton />}>
           <AgenticChatProvider
-            key={`${currentThread.id}-${mode}`}
+            key={`${currentThread.id}-${storedMode}`}
             agentId={agentId}
             threadId={currentThread.id}
             agent={agent}
@@ -292,7 +302,7 @@ function DecopilotChatContent() {
             model={preferences.defaultModel}
             useOpenRouter={preferences.useOpenRouter}
             sendReasoning={preferences.sendReasoning}
-            useDecopilotAgent={mode === "decopilot"}
+            useDecopilotAgent={storedMode === "decopilot"}
             initialMessages={threadMessages}
             initialInput={threadState.initialMessage || undefined}
             autoSend={threadState.autoSend}

@@ -1,5 +1,4 @@
 import type { UIMessage } from "@ai-sdk/react";
-import { useFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -57,6 +56,7 @@ export const ChatMessage = memo(function ChatMessage({
     () =>
       message.parts
         ?.filter((part) => part.type === "file")
+        .filter((part) => !part.mediaType?.startsWith("image/"))
         .map((part) => ({
           contentType: part.mediaType,
           url: part.url,
@@ -194,16 +194,21 @@ export const ChatMessage = memo(function ChatMessage({
 });
 
 function ImagePart({ part }: { part: FileUIPart }) {
-  const { data: fileUrl } = useFile(part.url);
-
-  if (!fileUrl) return null;
-
   return (
-    <img
-      src={fileUrl}
-      alt={part.filename || "Uploaded image"}
-      className="rounded-lg max-h-[300px] object-cover"
-    />
+    <a
+      href={part.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative group flex items-center gap-2 rounded-xl"
+    >
+      <div className="relative">
+        <img
+          src={part.url}
+          alt={part.filename || "Uploaded image"}
+          className="rounded-lg max-h-[300px] object-cover"
+        />
+      </div>
+    </a>
   );
 }
 

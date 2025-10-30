@@ -1463,9 +1463,11 @@ function WorkspaceViews() {
     // Filter out pinned resource instances
     if (_isPinned(recent.id)) return false;
 
+    const isNativeView =
+      recent.type === "view" && mcpItems.some((item) => item.id === recent.id);
+
     // Filter out native views that are currently pinned (not unpinned)
-    if (recent.type === "view" && !_isNativeViewUnpinned(recent.id))
-      return false;
+    if (isNativeView && !_isNativeViewUnpinned(recent.id)) return false;
 
     return true;
   });

@@ -135,7 +135,6 @@ function ThreadSelector({ agentId }: { agentId: string }) {
     switchToThread,
     deleteThread,
   } = useThreadManager();
-  const { setThreadState } = useDecopilotThread();
   const allThreads = getAllThreadsForRoute(pathname, agentId);
   const currentThread = getThreadForRoute(pathname, agentId);
   const currentThreadTitle = useThreadTitle(currentThread?.id, agentId);
@@ -145,11 +144,6 @@ function ThreadSelector({ agentId }: { agentId: string }) {
   }
 
   function handleSwitchThread(threadId: string) {
-    setThreadState({
-      threadId,
-      initialMessage: null,
-      autoSend: false,
-    });
     switchToThread(threadId);
   }
 
@@ -213,39 +207,11 @@ function DecopilotChatContent() {
   const agentId = mode === "decopilot" ? decopilotAgentId : decochatAgentId;
 
   // Get existing thread for the current route and agent (read-only)
-  const existingThread = useMemo(() => {
+  const currentThread = useMemo(() => {
     const thread = getThreadForRoute(pathname, agentId);
-    if (thread && thread.id === threadState.threadId) {
-      return thread;
-    }
-    return null;
+    if (thread) return thread;
+    return createNewThread(pathname, agentId);
   }, [pathname, agentId, getThreadForRoute, threadState]);
-
-  // State to hold the current thread (existing or newly created)
-  const [currentThread, setCurrentThread] = useState<ThreadData | null>(
-    existingThread,
-  );
-
-  // Create new thread in useEffect when needed (side effect, not during render)
-  useEffect(() => {
-    if (existingThread) {
-      setCurrentThread(existingThread);
-    } else {
-      // Only create if we don't already have a thread for this route/agent
-      const newThread = createNewThread(
-        pathname,
-        agentId,
-        threadState.threadId || undefined,
-      );
-      setCurrentThread(newThread);
-    }
-  }, [
-    existingThread,
-    pathname,
-    agentId,
-    createNewThread,
-    threadState.threadId,
-  ]);
 
   // Get agent from inline constants (both are well-known agents)
   const agent =
@@ -257,9 +223,9 @@ function DecopilotChatContent() {
 
   // Use unified hook that handles both backend and IndexedDB based on agentId
   const { data: threadData } = useThreadMessages(
-    currentThread?.id || "",
+    currentThread.id,
     agentId,
-    { shouldFetch: !!currentThread?.id },
+    { shouldFetch: !!currentThread.id },
   );
 
   const threadMessages = threadData?.messages ?? [];

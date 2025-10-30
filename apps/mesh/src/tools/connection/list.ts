@@ -4,7 +4,7 @@
  * List all connections available (org + project scoped)
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
 import { getProjectId } from '../../core/mesh-context';
 

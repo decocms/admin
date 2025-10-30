@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorize Application - MCP Mesh</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 480px;
+      padding: 40px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .client-info {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .client-info h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .client-info p {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .permissions {
+      margin-bottom: 24px;
+    }
+
+    .permissions h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .permission-list {
+      list-style: none;
+    }
+
+    .permission-item {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .permission-item::before {
+      content: "✓";
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      margin-right: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-authorize {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-authorize:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-deny {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .btn-deny:hover:not(:disabled) {
+      background: #e0e0e0;
+    }
+
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .user-info {
+      text-align: center;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .user-info strong {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Authorize Application</h1>
+      <p>An application is requesting access to your MCP Mesh account</p>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div class="user-info" id="user-info">
+      Signed in as <strong id="user-email">loading...</strong>
+    </div>
+
+    <div class="client-info">
+      <h2 id="client-name">Application</h2>
+      <p>This application will be able to access your MCP Mesh resources according to the permissions below.</p>
+    </div>
+
+    <div class="permissions">
+      <h3>Requested Permissions</h3>
+      <ul class="permission-list" id="permissions">
+        <!-- Permissions will be populated by JavaScript -->
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-deny" id="btn-deny">Deny</button>
+      <button type="button" class="btn-authorize" id="btn-authorize">Authorize</button>
+    </div>
+  </div>
+
+  <script>
+    // Parse OAuth parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthParams = {
+      response_type: urlParams.get('response_type'),
+      client_id: urlParams.get('client_id'),
+      redirect_uri: urlParams.get('redirect_uri'),
+      state: urlParams.get('state'),
+      scope: urlParams.get('scope'),
+      code_challenge: urlParams.get('code_challenge'),
+      code_challenge_method: urlParams.get('code_challenge_method'),
+      resource: urlParams.get('resource'),
+    };
+
+    // Check if we have required OAuth parameters
+    if (!oauthParams.client_id || !oauthParams.redirect_uri || !oauthParams.state) {
+      showError('Invalid authorization request. Missing required parameters.');
+      document.getElementById('btn-authorize').disabled = true;
+    }
+
+    // Display scopes
+    const scopes = (oauthParams.scope || 'openid profile email').split(' ');
+    const permissionsEl = document.getElementById('permissions');
+    
+    const scopeDescriptions = {
+      'openid': 'Verify your identity',
+      'profile': 'Access your profile information',
+      'email': 'Access your email address',
+      'offline_access': 'Maintain access when you\'re offline',
+      'mcp': 'Access your MCP connections and resources',
+    };
+
+    scopes.forEach(scope => {
+      const li = document.createElement('li');
+      li.className = 'permission-item';
+      li.textContent = scopeDescriptions[scope] || scope;
+      permissionsEl.appendChild(li);
+    });
+
+    // Load user session
+    async function loadSession() {
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Not authenticated');
+        }
+
+        const session = await response.json();
+        
+        if (session?.user?.email) {
+          document.getElementById('user-email').textContent = session.user.email;
+        } else {
+          throw new Error('No session found');
+        }
+      } catch (error) {
+        // Redirect to sign-in with OAuth parameters
+        const params = new URLSearchParams(oauthParams);
+        window.location.href = `/sign-in?${params.toString()}`;
+      }
+    }
+
+    // Authorize button
+    document.getElementById('btn-authorize').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-authorize');
+      btn.disabled = true;
+      btn.textContent = 'Authorizing...';
+
+      try {
+        // Build authorization endpoint URL
+        const params = new URLSearchParams();
+        Object.entries(oauthParams).forEach(([key, value]) => {
+          if (value) {
+            params.append(key, value);
+          }
+        });
+        
+        // Add consent approval
+        params.append('consent', 'approved');
+
+        // Call Better Auth's authorization endpoint
+        const response = await fetch(`/api/auth/authorize?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || 'Authorization failed');
+        }
+
+        // Better Auth will redirect to the client's redirect_uri
+        // If it doesn't redirect automatically, we'll handle it
+        const redirectUrl = response.url;
+        if (redirectUrl && redirectUrl !== window.location.href) {
+          window.location.href = redirectUrl;
+        } else {
+          // Manual redirect fallback
+          const data = await response.json();
+          if (data.redirect_uri) {
+            window.location.href = data.redirect_uri;
+          }
+        }
+      } catch (error) {
+        showError(error.message || 'Authorization failed. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Authorize';
+      }
+    });
+
+    // Deny button
+    document.getElementById('btn-deny').addEventListener('click', () => {
+      // Redirect back to client with error
+      const redirectUrl = new URL(oauthParams.redirect_uri);
+      redirectUrl.searchParams.append('error', 'access_denied');
+      redirectUrl.searchParams.append('error_description', 'User denied authorization');
+      redirectUrl.searchParams.append('state', oauthParams.state);
+      
+      window.location.href = redirectUrl.toString();
+    });
+
+    // Helper functions
+    function showError(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.classList.add('show');
+    }
+
+    // Initialize
+    loadSession();
+  </script>
+</body>
+</html>
+

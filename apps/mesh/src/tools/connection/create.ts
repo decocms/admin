@@ -4,7 +4,7 @@
  * Create a new MCP connection (organization or project scoped)
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
 import { getUserId, requireAuth, getProjectId } from '../../core/mesh-context';
 

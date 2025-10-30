@@ -2,7 +2,6 @@ import { type Integration, useIntegrations } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 
 function CardsView({
   integrations,
@@ -13,33 +12,31 @@ function CardsView({
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-      {integrations.map((integration) =>
-        LEGACY_INTEGRATIONS.includes(integration.id) ? null : (
-          <Card
-            key={integration.id}
-            className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
-            onClick={() => onRowClick(integration)}
-          >
-            <CardContent className="p-4">
-              <div className="grid grid-cols-[min-content_1fr] gap-4">
-                <IntegrationIcon
-                  icon={integration.icon}
-                  name={integration.name}
-                  className="h-10 w-10"
-                />
-                <div className="grid grid-cols-1 gap-1">
-                  <div className="text-sm font-semibold truncate">
-                    {integration.name}
-                  </div>
-                  <div className="text-sm text-muted-foreground line-clamp-3">
-                    {integration.description}
-                  </div>
+      {integrations.map((integration) => (
+        <Card
+          key={integration.id}
+          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
+          onClick={() => onRowClick(integration)}
+        >
+          <CardContent className="p-4">
+            <div className="grid grid-cols-[min-content_1fr] gap-4">
+              <IntegrationIcon
+                icon={integration.icon}
+                name={integration.name}
+                className="h-10 w-10"
+              />
+              <div className="grid grid-cols-1 gap-1">
+                <div className="text-sm font-semibold truncate">
+                  {integration.name}
+                </div>
+                <div className="text-sm text-muted-foreground line-clamp-3">
+                  {integration.description}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ),
-      )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

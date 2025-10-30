@@ -28,6 +28,8 @@ export async function getDecopilotThreadMessages(
   try {
     const key = `${MESSAGES_PREFIX}${namespace ? `${namespace}:` : ""}${threadId}`;
     const messages = await get<UIMessage[]>(key);
+
+    console.log("[DecopilotStorage] Got messages:", key, messages);
     return messages || null;
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get messages:", error);
@@ -66,6 +68,51 @@ export async function saveThreadMessages(
     await set(metaKey, updatedMeta);
   } catch (error) {
     console.error("[DecopilotStorage] Failed to save messages:", error);
+    throw error;
+  }
+}
+
+/**
+ * Append a single message to a thread in IndexedDB
+ * More efficient than loading all messages and saving them back
+ */
+export async function appendThreadMessage(
+  threadId: string,
+  messages: UIMessage[],
+  metadata?: Partial<ThreadMetadata>,
+  namespace?: string,
+): Promise<void> {
+  try {
+    const ns = namespace ? `${namespace}:` : "";
+    const messagesKey = `${MESSAGES_PREFIX}${ns}${threadId}`;
+    const metaKey = `${THREAD_META_PREFIX}${ns}${threadId}`;
+
+    // Get existing messages and metadata
+    const [existingMessages, existingMeta] = await Promise.all([
+      get<UIMessage[]>(messagesKey),
+      get<ThreadMetadata>(metaKey),
+    ]);
+
+    const now = Date.now();
+    const updatedMessages = [...(existingMessages || []), ...messages];
+
+    // Update thread metadata
+    const updatedMeta: ThreadMetadata = {
+      threadId,
+      agentId: metadata?.agentId || existingMeta?.agentId || "decopilot",
+      route: metadata?.route || existingMeta?.route || "",
+      createdAt: existingMeta?.createdAt || now,
+      updatedAt: now,
+      messageCount: updatedMessages.length,
+    };
+
+    // Save both messages and metadata
+    await Promise.all([
+      set(messagesKey, updatedMessages),
+      set(metaKey, updatedMeta),
+    ]);
+  } catch (error) {
+    console.error("[DecopilotStorage] Failed to append message:", error);
     throw error;
   }
 }

@@ -286,6 +286,14 @@
   }
   .markdown-lg p {
     @apply my-4;
+
+  /* Keyboard shortcuts styling */
+  kbd {
+    @apply inline-flex items-center justify-center border border-border 
+      rounded-md bg-transparent text-muted-foreground font-normal select-none;
+    font-family:
+      "SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   @keyframes shimmer {

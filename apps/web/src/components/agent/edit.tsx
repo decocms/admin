@@ -295,14 +295,71 @@ function AgentConfigs() {
   );
 }
 
-// Wrapper component that provides the right agent based on chat mode
-function ChatWithProvider({
-  agentId,
-  threadId,
+// Decochat-specific component that fetches its own data
+function DecochatChat({
+  effectiveDecochatThreadId,
+  shouldUseInitialInput,
+  threadState,
+  clearThreadState,
+  preferences,
 }: {
-  agentId: string;
-  threadId: string;
+  effectiveDecochatThreadId: string;
+  shouldUseInitialInput: boolean;
+  threadState: { initialMessage?: string | null; autoSend?: boolean | null };
+  clearThreadState: () => void;
+  preferences: {
+    defaultModel?: string;
+    useOpenRouter?: boolean;
+    sendReasoning?: boolean;
+  };
 }) {
+  const { data: decochatAgent } = useAgentData(
+    WELL_KNOWN_AGENTS.decochatAgent.id,
+  );
+  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
+  const { data: { messages: decochatThreadMessages } = { messages: [] } } =
+    useThreadMessages(
+      effectiveDecochatThreadId,
+      WELL_KNOWN_AGENTS.decochatAgent.id,
+      {
+        shouldFetch: true,
+      },
+    );
+
+  if (!decochatAgent) return null;
+
+  return (
+    <AgenticChatProvider
+      key={effectiveDecochatThreadId}
+      agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
+      threadId={effectiveDecochatThreadId}
+      agent={decochatAgent}
+      agentRoot={decochatRoot}
+      model={preferences.defaultModel}
+      useOpenRouter={preferences.useOpenRouter}
+      sendReasoning={preferences.sendReasoning}
+      initialMessages={decochatThreadMessages}
+      initialInput={
+        shouldUseInitialInput
+          ? (threadState.initialMessage ?? undefined)
+          : undefined
+      }
+      autoSend={shouldUseInitialInput ? (threadState.autoSend ?? false) : false}
+      onAutoSendComplete={clearThreadState}
+      uiOptions={{
+        showEditAgent: false,
+        showModelSelector: true,
+        showThreadMessages: false,
+        showAgentVisibility: false,
+      }}
+    >
+      <UnifiedChat />
+    </AgenticChatProvider>
+  );
+}
+
+// Wrapper component that provides the right agent based on chat mode
+function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
   const { chatMode } = usePreviewContext();
   // Use the threadId prop directly for agent mode
   // Separate stable threadId for decochat mode using useState to maintain state when switching
@@ -318,10 +375,11 @@ function ChatWithProvider({
   const effectiveDecochatThreadId = threadState.threadId ?? decochatThreadId;
 
   // Only use initial input if there's an actual message and we're in decochat mode
-  const shouldUseInitialInput =
+  const shouldUseInitialInput = Boolean(
     chatMode === "decochat" &&
-    threadState.initialMessage &&
-    threadState.autoSend;
+      threadState.initialMessage &&
+      threadState.autoSend,
+  );
 
   // Note: contextTools and contextRules are now managed via ThreadContextProvider
   // onToolCall is replaced by useToolCallListener hook
@@ -381,88 +439,28 @@ function ChatWithProvider({
 
   if (!chatAgentId) return null;
 
-  const { data: serverAgent } = useAgentData(agentId);
-  const { data: decochatAgent } = useAgentData(
-    WELL_KNOWN_AGENTS.decochatAgent.id,
-  );
-
-  // Fetch required data for providers
-  const agentRoot = useAgentRoot(agentId);
-  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
   const { preferences } = useUserPreferences();
-  const { data: { messages: agentThreadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, {
-      shouldFetch: chatMode === "agent",
-    });
-  const { data: { messages: decochatThreadMessages } = { messages: [] } } =
-    useThreadMessages(effectiveDecochatThreadId, {
-      shouldFetch: chatMode === "decochat",
-    });
 
-  const handleSaveAgent = useSaveAgent();
-
-  // Render both providers but only show the active one
-  // This way both chats maintain their state
+  // For agent mode, use the outer provider context (no nested provider)
+  // For decochat mode, create a separate provider
   return (
     <div className="h-full w-full">
-      {/* Agent chat - hidden when in decochat mode */}
+      {/* Agent chat - uses outer provider context */}
       <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
-        {serverAgent && (
-          <Suspense fallback={null}>
-            <AgenticChatProvider
-              key={`agent-${agentId}-${threadId}`}
-              agentId={agentId}
-              threadId={threadId}
-              agent={serverAgent}
-              agentRoot={agentRoot}
-              model={preferences.defaultModel}
-              useOpenRouter={preferences.useOpenRouter}
-              sendReasoning={preferences.sendReasoning}
-              initialMessages={agentThreadMessages}
-              onSave={handleSaveAgent}
-              uiOptions={{
-                showEditAgent: false,
-                showModelSelector: false,
-                showThreadMessages: true,
-                showAgentVisibility: false,
-              }}
-            >
-              <UnifiedChat />
-            </AgenticChatProvider>
-          </Suspense>
-        )}
+        <UnifiedChat />
       </div>
 
-      {/* Decochat - hidden when in agent mode */}
+      {/* Decochat - has its own provider */}
       <div className={chatMode === "decochat" ? "block h-full" : "hidden"}>
-        {decochatAgent && (
+        {chatMode === "decochat" && (
           <Suspense fallback={null}>
-            <AgenticChatProvider
-              key={effectiveDecochatThreadId}
-              agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
-              threadId={effectiveDecochatThreadId}
-              agent={decochatAgent}
-              agentRoot={decochatRoot}
-              model={preferences.defaultModel}
-              useOpenRouter={preferences.useOpenRouter}
-              sendReasoning={preferences.sendReasoning}
-              initialMessages={decochatThreadMessages}
-              initialInput={
-                shouldUseInitialInput
-                  ? (threadState.initialMessage ?? undefined)
-                  : undefined
-              }
-              autoSend={shouldUseInitialInput ? threadState.autoSend : false}
-              onAutoSendComplete={clearThreadState}
-              uiOptions={{
-                showEditAgent: false,
-                showModelSelector: true,
-                showThreadMessages: false,
-                showAgentVisibility: false,
-              }}
-            >
-              <UnifiedChat />
-            </AgenticChatProvider>
+            <DecochatChat
+              effectiveDecochatThreadId={effectiveDecochatThreadId}
+              shouldUseInitialInput={shouldUseInitialInput}
+              threadState={threadState}
+              clearThreadState={clearThreadState}
+              preferences={preferences}
+            />
           </Suspense>
         )}
       </div>

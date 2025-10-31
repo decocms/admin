@@ -1,219 +1,236 @@
-<img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
+<img alt="deco CMS" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
 
-# decocms.com 
+<h1 align="center">DecoCMS Admin & MCP Mesh</h1>
 
-**decocms** is an open-source foundation for building AI-native software.\
-We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
-prototype, develop, and deploy AI-powered applications.
+<p align="center">
+<b>The open-source framework for scalable AI apps.</b><br />
+Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />
+<code>MCP-native · Edge-deployed · Production-ready</code>
+</p>
 
-**Official docs:** https://docs.deco.page
-
-> [!TIP]
-> If you have questions or want to learn more, please join our discord
-> community: https://decocms.com/discord
-
-## Who is it for?
-
-- **Vibecoders** prototyping ideas
-- **Agentic engineers** deploying scalable, secure, and sustainable production
-  systems
-
-## Why deco CMS?
-
-Our goal is simple: empower teams with Generative AI by giving builders the
-tools to create AI applications that scale beyond the initial demo and into the
-thousands of users, securely and cost-effectively.
-
-<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/3c37a237-0c33-4db5-9cfd-a11ff084752a/decocx1.png" />
-
-## Core capabilities
-
-- **Open-source Runtime** – Easily compose tools, workflows, and views within a
-  single codebase
-- **MCP Mesh (Model Context Protocol)** – Securely integrate models, data
-  sources, and APIs, with observability and cost control
-- **Unified TypeScript Stack** – Combine backend logic and custom React/Tailwind
-  frontends seamlessly using typed RPC
-- **Global, Modular Infrastructure** – Built on Cloudflare for low-latency,
-  infinitely scalable deployments. Self-host with your Cloudflare API Key
-- **Visual Workspace** – Build agents, connect tools, manage permissions, and
-  orchestrate everything built in code
-
-<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/2e6980db-296b-4972-b2d4-9f5265b6e74a/Usage-by-agent.png" />
+<p align="center">
+<a href="https://docs.deco.page">📘 Docs</a> ·
+<a href="https://decocms.com/discord">💬 Discord</a> ·
+<a href="https://decocms.com">🌐 decocms.com</a>
+</p>
 
 ---
 
-## Creating a new Deco project
+## Overview
 
-A Deco project extends a standard Cloudflare Worker with our building blocks and
-defaults for MCP servers.\
-It runs a type-safe API out of the box and can also serve views — front-end apps
-deployed alongside the server.
+**DecoCMS** is an open-source foundation for building **AI-native software** — from agent logic to UI to governance.  
+It unifies **Model Context Protocol (MCP)**, workflows, and frontends into one **TypeScript runtime** that runs anywhere: Cloudflare, AWS, or self-hosted.
 
-Currently, views can be any Vite app that outputs a static build. Soon, they’ll
-support components declared as tools, callable by app logic or LLMs.\
-Views can call server-side tools via typed RPC.
+This repository contains **Deco Admin**, the core **MCP Mesh engine** and control plane.  
+It’s where developers, teams, and organizations **declare, compose, and govern context** across all AI agents, workflows, and tools.
+
+> Think **Lovable + n8n + LangGraph**, but in one codebase.  
+> All in TypeScript. All deployable anywhere.
+
+---
+
+## 🚀 Core Concepts
+
+| Concept | Description |
+|----------|--------------|
+| **MCP Mesh** | A unified admin and runtime for composing, securing, and observing MCP servers. |
+| **Context Management** | A control plane that governs all agent contexts — policies, cost limits, audit logs, and credentials. |
+| **Unified Stack** | Backend tools, workflows, and React/Tailwind UIs share one codebase with typed RPC. |
+| **Governance-by-Design** | Built-in RBAC, API-key permissions, rate limits, and audit logging using Better Auth. |
+| **Observability** | OpenTelemetry traces, metrics, and cost analytics for every workflow and UI interaction. |
+| **Deploy Anywhere** | Runs on Cloudflare Workers, AWS, or locally with Bun/Deno — no lock-in, one command deploy. |
+
+---
+
+## 🧩 Architecture
+
+```
+
+apps/mesh/
+├── api/               # Hono HTTP layer and MCP proxy endpoints
+│   ├── middlewares/   # Auth, context, project scope, observability
+│   └── routes/        # /mcp, /mcp/:connectionId
+├── core/              # MeshContext, access control, defineTool
+├── tools/             # MCP-native management tools (PROJECT_*, CONNECTION_*, etc.)
+├── storage/           # Kysely database adapters (SQLite/Postgres)
+├── auth/              # Better Auth (OAuth + API keys)
+├── observability/     # OpenTelemetry tracing + metrics
+└── encryption/        # Credential vault and secure token handling
+
+````
+
+### Key Layers
+
+- **MeshContext** → The unified runtime interface passed to every tool.  
+  Gives access to auth, storage, vault, observability, and policy control.
+- **defineTool()** → Declarative, Zod-typed function for building MCP tools.  
+  Automatically validates, logs, traces, and audits each call.
+- **AccessControl** → Fine-grained authorization model (Better Auth + API keys).  
+  Supports `"mcp"` (management tools) and `"conn_<UUID>"` (connection-scoped tools).
+- **Proxy Layer** → Bridges local agents to remote MCP services with full OAuth 2.1 support.
+- **Observability** → Built-in OpenTelemetry integration for metrics, tracing, and cost analytics.
+
+---
+
+## 🕸️ The MCP Mesh
+
+The **MCP Mesh** is the secure hub for all your MCP connections.
+
+### Features
+
+- 🔐 **Centralized Connection Management** — connect all MCP servers with unified OAuth and API-key auth.
+- 👥 **Team & Role Permissions** — share connections safely with workspace or project scopes.
+- ⚙️ **Tool Composition** — orchestrate tools across services; reuse outputs as inputs.
+- 🧠 **MCP-native API** — every management operation is itself an MCP tool (`PROJECT_LIST`, `CONNECTION_CREATE`, etc.).
+- 📊 **Observability** — trace every run, view cost and error metrics per tool.
+- 💾 **Zero-config Local Deploy** — single `DATABASE_URL`, runs on Bun with embedded SQLite.
+
+---
+
+## 🧠 Example: Define a Tool
+
+```ts
+import { z } from "zod";
+import { defineTool } from "~/core/define-tool";
+
+export const CONNECTION_CREATE = defineTool({
+  name: "CONNECTION_CREATE",
+  description: "Create a new MCP connection",
+  inputSchema: z.object({
+    name: z.string().min(1),
+    connection: z.object({
+      type: z.enum(["HTTP", "SSE", "Websocket"]),
+      url: z.string().url(),
+      token: z.string().optional(),
+    }),
+  }),
+  outputSchema: z.object({
+    id: z.string(),
+    scope: z.enum(["workspace", "project"]),
+    status: z.enum(["active", "inactive"]),
+  }),
+  handler: async (input, ctx) => {
+    await ctx.access.check(); // Verify permission
+    const conn = await ctx.storage.connections.create({
+      projectId: ctx.project?.id ?? null,
+      ...input,
+      createdById: ctx.auth.user!.id,
+    });
+    return { id: conn.id, scope: conn.projectId ? "project" : "workspace", status: conn.status };
+  },
+});
+````
+
+✅ Type-safe
+✅ Audited and observable
+✅ Accessible via MCP at `/mcp` or `/mcp/:connectionId`
+
+---
+
+## 🔑 Authentication & Permissions
+
+Built on **Better Auth**, integrating:
+
+* **OAuth 2.1 for MCP clients** (Claude Desktop, Cursor, etc.)
+* **API Keys** with rate limits, spend caps, and metadata
+* **Admin Plugin** for role-based access control (RBAC)
+* **Scoped Permissions** (`"mcp"` for management tools, `"conn_<UUID>"` for downstream connections)
+
+Example permission model:
+
+```json
+{
+  "mcp": ["PROJECT_CREATE", "PROJECT_LIST", "CONNECTION_CREATE"],
+  "conn_123e4567-e89b-12d3-a456-426614174000": ["SEND_MESSAGE", "LIST_THREADS"]
+}
+```
+
+---
+
+## 📈 Observability
+
+Integrated **OpenTelemetry** instrumentation:
+
+* `tool.execution.duration` — histogram of execution time
+* `tool.execution.errors` — counter per tool
+* `connection.proxy.requests` — proxy request metrics
+* Distributed traces from UI → Agent → Downstream MCP
+
+Export to OTLP collectors, Datadog, or Cloudflare Logs.
+
+---
+
+## 🧰 Development
 
 ### Requirements
 
-- Your preferred JavaScript runtime:
-  - Recommended: [Bun](https://bun.sh)
-  - Supported: [Node.js](https://nodejs.org), [Deno](https://deno.land)
+* [Bun](https://bun.sh) (recommended) or Node/Deno
+* [Wrangler](https://developers.cloudflare.com/workers/wrangler/install/) (for deploys)
 
-### Quick Start
+### Create a new project
 
-1. Create your project
-
-```
+```bash
 npm create deco
+cd my-app
+npm run dev
 ```
 
-or
+Runs locally on [http://localhost:8787](http://localhost:8787)
+Deploy to Cloudflare with:
 
-```
-bun create deco
-```
-
-> This will prompt you to log in or to create an account on
-> [decocms.com](https://decocms.com).
-
-2. Enter the project directory and start the dev server
-
-```
-cd <my-project-directory>
-npm install
-npm run dev               # → http://localhost:8787 (hot reload)
-```
-
-> Need pre‑built MCP integrations? Explore
-> [deco-cx/apps](https://github.com/deco-cx/apps).
-
-## Project Layout
-
-```
-my-project/
-├── server/         # MCP tools & workflows (Cloudflare Workers)
-│   ├── main.ts
-│   ├── deco.gen.ts  # Typed bindings (auto-generated)
-│   └── wrangler.toml
-├── view/           # React + Tailwind UI (optional)
-│   └── src/
-├── package.json    # Root workspace scripts
-└── README.md
-```
-
-> Skip `view/` if you don’t need a frontend.
-
-## CLI Essentials
-
-| Command         | Purpose                                  |
-| --------------- | ---------------------------------------- |
-| `deco dev`      | Run server & UI with hot reload          |
-| `deco deploy`   | Deploy to Cloudflare Workers             |
-| `deco gen`      | Generate types for external integrations |
-| `deco gen:self` | Generate types for your own tools        |
-
-> For full command list: `deco --help` or see the
-> [CLI README](packages/cli/README.md)
-
-## Building Blocks
-
-A Deco project is built using **tools** and **workflows** — the core primitives
-for connecting integrations, APIs, models, and business logic.
-
-### Tools
-
-Atomic functions that call external APIs, databases, or AI models. All templates
-include the necessary imports from the Deco Workers runtime.
-
-```ts
-import { createTool, Env, z } from "deco/mod.ts";
-
-const createMyTool = (env: Env) =>
-  createTool({
-    id: "MY_TOOL",
-    description: "Describe what it does",
-    inputSchema: z.object({ query: z.string() }),
-    outputSchema: z.object({ answer: z.string() }),
-    execute: async ({ context }) => {
-      const res = await env.OPENAI.CHAT_COMPLETIONS({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: context.query }],
-      });
-      return { answer: res.choices[0].message.content };
-    },
-  });
-```
-
-> Tools can be used independently or within workflows. **Golden rule:** one tool
-> call per step — keep logic in the workflow.
-
----
-
-### Workflows
-
-Orchestrate tools using **Mastra** operators like `.then`, `.parallel`,
-`.branch`, and `.dountil`.
-
-> Tip: Add [Mastra docs](https://github.com/deco-cx/mastra) to your AI code
-> assistant for autocomplete and examples.
-
-```ts
-import { createStepFromTool, createWorkflow } from "deco/mod.ts";
-
-return createWorkflow({
-  id: "HELLO_WORLD",
-  inputSchema: z.object({ name: z.string() }),
-  outputSchema: z.object({ greeting: z.string() }),
-})
-  .then(createStepFromTool(createMyTool(env)))
-  .map(({ inputData }) => ({ greeting: `Hello, ${inputData.answer}!` }))
-  .commit();
+```bash
+deco deploy
 ```
 
 ---
 
-### Views
+## 🏗️ Tech Stack
 
-Build **React + Tailwind** frontends served by the same Cloudflare Worker.
-
-- Routing with [TanStack Router](https://tanstack.com/router)
-- Typed RPC via `@deco/workers-runtime/client`
-- Preconfigured with `shadcn/ui` and `lucide-react`
-
----
-
-## Development Flow
-
-1. Add an integration via the [decocms.com dashboard](https://decocms.com)
-   _(improved UX coming soon)_
-2. Run `npm run gen` → updates `deco.gen.ts` with typed clients
-3. Write tools in `server/main.ts`
-4. Compose workflows using `.map`, `.branch`, `.parallel`, etc.
-5. _(Optional)_ Run `npm run gen:self` → typed RPC clients for your tools
-6. Build views in `/view` and call workflows via the typed client
-7. Run locally
-
-   ```bash
-   npm run dev   # → http://localhost:8787
-   ```
-
-8. Deploy to Cloudflare
-
-   ```bash
-   npm run deploy
-   ```
+| Layer               | Technology                                                |
+| ------------------- | --------------------------------------------------------- |
+| Runtime             | Cloudflare Workers / Bun                                  |
+| Language            | TypeScript                                                |
+| Auth                | [Better Auth](https://better-auth.com) (OAuth + API Key)  |
+| Database            | [Kysely](https://kysely.dev) (SQLite → Postgres)          |
+| Web Framework       | [Hono](https://hono.dev)                                  |
+| Observability       | [OpenTelemetry](https://opentelemetry.io)                 |
+| Frontend (optional) | React + Tailwind + TanStack Router                        |
+| Build               | Vite / Bun                                                |
+| Protocol            | [Model Context Protocol](https://modelcontextprotocol.io) |
 
 ---
 
-## How to Contribute (WIP)
+## 🧩 Comparison: Metorial vs Deco
 
-We welcome contributions! Check out [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
-guidelines and tips.
+|               | **Metorial**                        | **DecoCMS**                                        |
+| ------------- | ----------------------------------- | -------------------------------------------------- |
+| Focus         | Integration platform for agentic AI | Full-stack AI framework (agents + UI + governance) |
+| Language      | Go + TS mix                         | 100 % TypeScript                                   |
+| Hosting       | Docker-based                        | Cloudflare / edge-first                            |
+| Protocol      | MCP client integration              | MCP-native runtime + admin                         |
+| Auth          | Basic API keys                      | Better Auth (OAuth 2.1 + RBAC + API keys)          |
+| Observability | Dashboard only                      | Full OpenTelemetry tracing                         |
+| UI            | Separate React dashboard            | Shared React/Tailwind workspace                    |
+| Goal          | Connect AI to APIs                  | Ship production AI apps with UI, workflow & policy |
 
 ---
 
-Made with ❤️ by the Deco community — helping teams build AI-native systems that
-scale.
+## 🤝 Contributing
 
+We welcome contributions from the community.
+Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup and PR guidelines.
 
+> 🧭 Roadmap highlights
+>
+> * Multi-tenant admin dashboard
+> * Connection marketplace (installable MCP apps)
+> * Agent cost governance and spend caps
+> * Native view components callable as tools
+> * Edge live debugger (real-time traces)
+
+---
+
+<div align="center">
+  <sub>Made with ❤️ by the <a href="https://decocms.com">Deco</a> community.<br/>Building the future of AI-native software — open, typed, and governed.</sub>
+</div>
+```

@@ -5,6 +5,7 @@ import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { useTrackNativeViewVisit, useSDK, type View } from "@deco/sdk";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { NEW_VIEW_PROMPT } from "@deco/sdk";
 
 /**
  * Views resource list component that renders the ResourcesV2List
@@ -72,6 +73,7 @@ export function ViewsResourceList({
         },
       ]}
       activeTab={activeTab}
+      resourceRules={[NEW_VIEW_PROMPT]}
     />
   );
 }

@@ -5,8 +5,7 @@
  * on views, including creation, reading, updating, and management.
  */
 
-export const VIEW_PROMPT = `
-You are helping the user manage a view. You can read the view content, update its HTML and metadata, and delete it. Always confirm destructive actions before executing them. Help the user create valid HTML with proper structure.
+export const VIEW_PROMPT = `You are helping the user manage a view. You can read the view content, update its HTML and metadata, and delete it. Always confirm destructive actions before executing them. Help the user create valid HTML with proper structure.
 
 // Call a tool from a specific integration
 const result = await callTool({
@@ -20,7 +19,23 @@ const result = await callTool({
 
 ** Use structuredContent if available, otherwise use the result as is **
 const data = result.structuredContent || result;
+`;
 
+export const NEW_VIEW_PROMPT = `You are helping the user create a new view. You can create a new view with React code.
+
+// Call a tool from a specific integration
+const result = await callTool({
+  integrationId: 'i:some-integration-id',
+  toolName: 'TOOL_NAME',
+  input: {
+    userId: '123',
+    includeProfile: true
+  }
+});
+
+** Use structuredContent if available, otherwise use the result as is **
+setData(result.structuredContent || result);
+const data = result.structuredContent || result;
 `;
 
 export const VIEW_SEARCH_PROMPT = `Search views in the workspace.
@@ -302,6 +317,7 @@ const result = await callTool({
 });
 
 ** Use structuredContent if available, otherwise use the result as is **
+setData(result.structuredContent || result);
 const data = result.structuredContent || result;
 \`\`\`
 

@@ -240,7 +240,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
  * Route: POST /mcp/:connectionId
  * Connection IDs are globally unique UUIDs (no project prefix needed)
  */
-app.post('/:connectionId', async (c) => {
+app.all('/:connectionId', async (c) => {
   const connectionId = c.req.param('connectionId');
   const ctx = c.get('meshContext');
 

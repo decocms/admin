@@ -36,7 +36,7 @@ export function useWorkflowSteps() {
 }
 
 export function useWorkflow() {
-  return useWorkflowStore((state) => state.workflow, Object.is);
+  return useWorkflowStore((state) => state.workflow);
 }
 
 export function useWorkflowStepOutputs() {

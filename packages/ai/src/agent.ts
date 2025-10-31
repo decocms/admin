@@ -1034,13 +1034,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         : await client
             .AGENTS_GET({ id: this.agentId })
             .catch((err: unknown) => {
-              console.error("Error getting agent", err);
+              console.error("agent_mcp_client_error", err);
               this._trackEvent("agent_mcp_client_error", {
                 error: serializeError(err),
                 hasMetadataMcpClient: !!this.metadata?.mcpClient,
                 hasAgentScoppedMcpClient: !!this.agentScoppedMcpClient,
                 method: "configuration",
                 agentId: this.agentId,
+                locator: this.locator,
+                workspace: this.workspace,
+                user: this.metadata?.user,
+                userCookie: this.metadata?.userCookie,
               });
               return null;
             });

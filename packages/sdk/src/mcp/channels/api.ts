@@ -344,13 +344,13 @@ export const getChannel = createTool({
 });
 
 const createWebhookTrigger = async (agentId: string, c: AppContext) => {
-  assertHasWorkspace(c);
+  assertHasLocator(c);
   const triggerId = crypto.randomUUID();
 
   // Create new trigger
   const trigger = await c
     .stub(Trigger)
-    .new(`${c.workspace.value}/triggers/${triggerId}`)
+    .new(`/${c.locator.value}/triggers/${triggerId}`)
     .create({
       id: triggerId,
       type: "webhook" as const,

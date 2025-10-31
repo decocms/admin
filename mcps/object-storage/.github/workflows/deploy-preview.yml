@@ -1,0 +1,85 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Deco CLI
+        run: bun install -g deco-cli
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Deploy
+        id: deploy
+        run: deco deploy -y --no-promote ./dist/server -t ${{ secrets.DECO_DEPLOY_TOKEN }}
+        env:
+          DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: steps.deploy.outputs.preview_url
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const previewUrl = "${{ steps.deploy.outputs.preview_url }}";
+
+            const comment = `## 🚀 Preview Deployment Ready!
+
+            Your changes have been deployed to a preview environment:
+
+            **🔗 [View Preview](${previewUrl})**
+
+            This preview will be automatically updated with new commits to this PR.
+
+            ---
+            <sub>Deployed from commit: \`${context.sha.substring(0, 7)}\`</sub>`;
+
+            // Check if we already have a preview comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(comment =>
+              comment.body.includes('🚀 Preview Deployment Ready!')
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }

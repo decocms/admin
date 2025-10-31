@@ -1,0 +1,31 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Deco CLI
+        run: bun install -g deco-cli
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Deploy
+        run: deco deploy -y ./dist/server -t ${{ secrets.DECO_DEPLOY_TOKEN }}
+        env:
+          DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}

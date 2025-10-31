@@ -66,6 +66,7 @@ export const auth = betterAuth({
       loginPage: '/sign-in',
       // Note: Authorization page (/authorize) is served as static HTML
       // Better Auth will redirect there based on loginPage flow
+      oidcConfig: { scopes: ['self:*'], metadata: { scopes_supported: ["self:*"] }, loginPage: '/sign-in' }
     }),
 
     // API Key plugin for direct tool access

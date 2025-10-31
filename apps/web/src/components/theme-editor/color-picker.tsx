@@ -6,6 +6,13 @@ import {
 } from "@deco/ui/components/popover.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 
 type hsl = {
   h: number;
@@ -19,22 +26,10 @@ type hex = {
 
 type Color = hsl & hex;
 
-const HashtagIcon = (props: React.ComponentPropsWithoutRef<"svg">) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      {...props}
-    >
-      <path
-        fillRule="evenodd"
-        d="M11.097 1.515a.75.75 0 0 1 .589.882L10.666 7.5h4.47l1.079-5.397a.75.75 0 1 1 1.47.294L16.665 7.5h3.585a.75.75 0 0 1 0 1.5h-3.885l-1.2 6h3.585a.75.75 0 0 1 0 1.5h-3.885l-1.08 5.397a.75.75 0 1 1-1.47-.294l1.02-5.103h-4.47l-1.08 5.397a.75.75 0 1 1-1.47-.294l1.02-5.103H3.75a.75.75 0 0 1 0-1.5h3.885l1.2-6H5.25a.75.75 0 0 1 0-1.5h3.885l1.08-5.397a.75.75 0 0 1 .882-.588ZM10.365 9l-1.2 6h4.47l1.2-6h-4.47Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-};
+function toHex(x: number): string {
+  const hex = x.toString(16);
+  return hex.length === 1 ? `0${hex}` : hex;
+}
 
 function hslToHex({ h, s, l }: hsl) {
   s /= 100;
@@ -47,11 +42,6 @@ function hslToHex({ h, s, l }: hsl) {
   const r = Math.round(255 * f(0));
   const g = Math.round(255 * f(8));
   const b = Math.round(255 * f(4));
-
-  const toHex = (x: number) => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? `0${hex}` : hex;
-  };
 
   return `${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
 }
@@ -211,10 +201,6 @@ function parseColorToHex(color: string): string {
       const c = Number.parseFloat(match[2]);
       const h = Number.parseFloat(match[3]);
       const { r, g, b } = oklchToRgb(l, c, h);
-      const toHex = (x: number) => {
-        const hex = x.toString(16);
-        return hex.length === 1 ? `0${hex}` : hex;
-      };
       return `${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
     }
   }
@@ -237,10 +223,6 @@ function parseColorToHex(color: string): string {
       const r = Number.parseInt(match[1]);
       const g = Number.parseInt(match[2]);
       const b = Number.parseInt(match[3]);
-      const toHex = (x: number) => {
-        const hex = x.toString(16);
-        return hex.length === 1 ? `0${hex}` : hex;
-      };
       return `${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
     }
   }
@@ -381,80 +363,53 @@ const DraggableColorCanvas = ({
   );
 };
 
-function sanitizeHex(val: string) {
-  const sanitized = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  return sanitized;
-}
-
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
 }
 
-export function ColorPicker({
-  value,
-  onChange,
-  label: _label,
-}: ColorPickerProps) {
-  // Store the original format to maintain it on output
-  const [originalFormat, setOriginalFormat] = useState<
+export function ColorPicker({ value, onChange }: ColorPickerProps) {
+  // Track if user is actively editing to prevent external updates
+  const isEditingRef = useRef<boolean>(false);
+  const editingTimeoutRef = useRef<number | undefined>(undefined);
+
+  // User-selected output format
+  const [outputFormat, setOutputFormat] = useState<
     "hex" | "oklch" | "hsl" | "rgb"
-  >(() => {
-    if (value.startsWith("#")) return "hex";
-    if (value.startsWith("oklch(")) return "oklch";
-    if (value.startsWith("hsl(")) return "hsl";
-    if (value.startsWith("rgb(")) return "rgb";
-    return "hex";
-  });
+  >("hex");
 
   // Initialize from controlled prop
   const [color, setColor] = useState<Color>(() => {
-    const hex = sanitizeHex(parseColorToHex(value));
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
     const hsl = hexToHsl({ hex });
     return { ...hsl, hex };
   });
 
   const [open, setOpen] = useState(false);
 
-  // Update internal state when value prop changes from outside
-  useEffect(() => {
-    const hex = sanitizeHex(parseColorToHex(value));
-    if (hex !== color.hex && hex.length === 6) {
-      const hsl = hexToHsl({ hex });
-      setColor({ ...hsl, hex });
-
-      // Update format tracking
-      if (value.startsWith("#")) setOriginalFormat("hex");
-      else if (value.startsWith("oklch(")) setOriginalFormat("oklch");
-      else if (value.startsWith("hsl(")) setOriginalFormat("hsl");
-      else if (value.startsWith("rgb(")) setOriginalFormat("rgb");
-    }
-  }, [value, color.hex]);
-
-  // Convert hex to the appropriate output format
+  // Convert hex to the specified output format
   const formatColorOutput = useCallback(
-    (hex: string): string => {
-      if (originalFormat === "hex") {
-        return `#${hex}`;
-      }
-
-      if (originalFormat === "oklch") {
-        // Convert hex to RGB then to OKLCH
+    (
+      hex: string,
+      format: "hex" | "oklch" | "hsl" | "rgb" = outputFormat,
+    ): string => {
+      if (format === "oklch") {
         const r = Number.parseInt(hex.slice(0, 2), 16);
         const g = Number.parseInt(hex.slice(2, 4), 16);
         const b = Number.parseInt(hex.slice(4, 6), 16);
         const { l, c, h } = rgbToOklch(r, g, b);
-        // Format with proper precision
         return `oklch(${l.toFixed(2)} ${c.toFixed(4)} ${h.toFixed(2)})`;
       }
 
-      if (originalFormat === "hsl") {
+      if (format === "hsl") {
         const hsl = hexToHsl({ hex });
         return `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
       }
 
-      if (originalFormat === "rgb") {
+      if (format === "rgb") {
         const r = Number.parseInt(hex.slice(0, 2), 16);
         const g = Number.parseInt(hex.slice(2, 4), 16);
         const b = Number.parseInt(hex.slice(4, 6), 16);
@@ -463,36 +418,90 @@ export function ColorPicker({
 
       return `#${hex}`;
     },
-    [originalFormat],
+    [outputFormat],
   );
 
-  // Update from hex input
-  const handleHexInputChange = (newVal: string) => {
-    const hex = sanitizeHex(newVal);
-    if (hex.length === 6) {
+  const [inputValue, setInputValue] = useState(() =>
+    formatColorOutput(color.hex),
+  );
+
+  // Sync input value with formatted output when not editing
+  useEffect(() => {
+    if (!isEditingRef.current) {
+      setInputValue(formatColorOutput(color.hex));
+    }
+  }, [color.hex, formatColorOutput]);
+
+  // Update internal state when value prop changes from outside
+  useEffect(() => {
+    if (isEditingRef.current) return;
+
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+    if (hex !== color.hex && hex.length === 6) {
       const hsl = hexToHsl({ hex });
       setColor({ ...hsl, hex });
-      onChange(formatColorOutput(hex));
-    } else if (hex.length < 6) {
-      setColor((prev) => ({ ...prev, hex }));
     }
-  };
+  }, [value, color.hex]);
 
-  const handleColorChange = (partial: Partial<Color>) => {
-    setColor((prev) => {
-      const value = { ...prev, ...partial };
-      const hexFormatted = hslToHex({
-        h: value.h,
-        s: value.s,
-        l: value.l,
+  // Mark as editing and reset timeout
+  const markAsEditing = useCallback(() => {
+    isEditingRef.current = true;
+
+    if (editingTimeoutRef.current) {
+      clearTimeout(editingTimeoutRef.current);
+    }
+
+    // Stop marking as editing after 500ms of no changes
+    editingTimeoutRef.current = window.setTimeout(() => {
+      isEditingRef.current = false;
+    }, 500);
+  }, []);
+
+  // Cleanup editing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleColorChange = useCallback(
+    (partial: Partial<Color>) => {
+      markAsEditing();
+      setColor((prev) => {
+        const value = { ...prev, ...partial };
+        const hexFormatted = hslToHex({
+          h: value.h,
+          s: value.s,
+          l: value.l,
+        });
+        const newColor = { ...value, hex: hexFormatted };
+        onChange(formatColorOutput(hexFormatted));
+        return newColor;
       });
-      const newColor = { ...value, hex: hexFormatted };
-      onChange(formatColorOutput(hexFormatted));
-      return newColor;
-    });
-  };
+    },
+    [formatColorOutput, onChange, markAsEditing],
+  );
 
-  const displayColor = `hsl(${color.h}, ${color.s}%, ${color.l}%)`;
+  const handleInputChange = useCallback(
+    (value: string) => {
+      markAsEditing();
+      setInputValue(value);
+
+      const hex = parseColorToHex(value)
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+      if (hex.length === 6) {
+        const hsl = hexToHsl({ hex });
+        setColor({ ...hsl, hex });
+        onChange(formatColorOutput(hex));
+      }
+    },
+    [formatColorOutput, onChange, markAsEditing],
+  );
 
   return (
     <>
@@ -543,7 +552,9 @@ export function ColorPicker({
             <div className="flex items-center gap-2 w-full">
               <div
                 className="h-5 w-5 rounded-md border border-border shrink-0"
-                style={{ backgroundColor: displayColor }}
+                style={{
+                  backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
+                }}
               />
               <span className="truncate text-sm">{value}</span>
             </div>
@@ -569,34 +580,52 @@ export function ColorPicker({
                   hsl(360, 100%, 50%))`,
               }}
               onChange={(e) => {
+                markAsEditing();
                 const hue = e.target.valueAsNumber;
                 setColor((prev) => {
                   const { hex: _hex, ...rest } = { ...prev, h: hue };
                   const hexFormatted = hslToHex({ ...rest });
                   const newColor = { ...rest, hex: hexFormatted };
-                  onChange(`#${hexFormatted}`);
+                  onChange(formatColorOutput(hexFormatted));
                   return newColor;
                 });
               }}
             />
-            <div className="relative h-fit w-full">
-              <div className="absolute inset-y-0 flex items-center px-[5px]">
-                <HashtagIcon className="size-4 text-muted-foreground" />
-              </div>
-              <Input
-                className="pl-[26px] pr-[38px]"
-                value={color.hex}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  handleHexInputChange(e.target.value);
+            <div className="flex gap-1 w-full">
+              <Select
+                value={outputFormat}
+                onValueChange={(v) => {
+                  const newFormat = v as typeof outputFormat;
+                  setOutputFormat(newFormat);
+                  const formatted = formatColorOutput(color.hex, newFormat);
+                  setInputValue(formatted);
+                  onChange(formatted);
                 }}
-              />
-              <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">
-                <div
-                  className="size-7 rounded-md border border-border"
-                  style={{
-                    backgroundColor: displayColor,
-                  }}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hex">HEX</SelectItem>
+                  <SelectItem value="hsl">HSL</SelectItem>
+                  <SelectItem value="oklch">OKLCH</SelectItem>
+                  <SelectItem value="rgb">RGB</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  className="pr-[38px]"
                 />
+                <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">
+                  <div
+                    className="size-7 rounded-md border border-border"
+                    style={{
+                      backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>

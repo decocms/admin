@@ -246,8 +246,12 @@ export function ThemeEditorView() {
   // Track previous values for undo functionality
   const previousValuesRef = useRef<Record<string, string>>({});
 
+  // Track current theme in a ref to avoid recreating handleVariableChange
+  const currentThemeRef = useRef<Theme | undefined>(currentTheme);
+
   // Update form when theme changes
   useEffect(() => {
+    currentThemeRef.current = currentTheme;
     form.reset({
       themeVariables: currentTheme?.variables ?? {},
     });
@@ -340,7 +344,7 @@ export function ThemeEditorView() {
       // Store the ORIGINAL saved value from currentTheme only once
       // This way undo always goes back to the saved theme, not the -1 change
       if (!(key in previousValuesRef.current)) {
-        const savedValue = currentTheme?.variables?.[key];
+        const savedValue = currentThemeRef.current?.variables?.[key];
         if (savedValue) {
           previousValuesRef.current[key] = savedValue;
         }
@@ -370,7 +374,7 @@ export function ThemeEditorView() {
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
       }, 100);
     },
-    [form, currentTheme],
+    [form],
   );
 
   async function onSubmit(data: ThemeEditorFormValues) {

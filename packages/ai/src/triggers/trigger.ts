@@ -170,9 +170,9 @@ export class Trigger {
   public get agentId(): string {
     // Only certain trigger types have agentId
     if (this.data && "agentId" in this.data) {
-      return `${this.workspace}/Agents/${this.data.agentId}`;
+      return `/${this.locator}/Agents/${this.data.agentId}`;
     }
-    return `${this.workspace}/Agents/${WELL_KNOWN_AGENT_IDS.teamAgent}`;
+    return `/${this.locator}/Agents/${WELL_KNOWN_AGENT_IDS.teamAgent}`;
   }
 
   private _createContext(): AppContext {

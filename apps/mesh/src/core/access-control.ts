@@ -19,7 +19,17 @@ import { BetterAuthInstance } from './mesh-context';
 // ============================================================================
 
 /**
- * Custom error for access denial
+ * Custom error for unauthenticated requests (401)
+ */
+export class UnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+/**
+ * Custom error for access denial (403)
  */
 export class ForbiddenError extends Error {
   constructor(message: string) {
@@ -48,7 +58,7 @@ export class AccessControl implements Disposable {
     private toolName?: string,
     private permissions?: Permission, // From API key
     private role?: string, // From user session
-    private connectionId?: string // For connection-specific checks
+    private connectionId: string = "self" // For connection-specific checks
   ) { }
 
   [Symbol.dispose](): void {
@@ -78,7 +88,8 @@ export class AccessControl implements Disposable {
    * @param resources - Resources to check (OR logic)
    * If omitted, checks the current tool name
    * 
-   * @throws ForbiddenError if access is denied
+   * @throws UnauthorizedError if not authenticated (401)
+   * @throws ForbiddenError if access is denied (403)
    * 
    * @example
    * await ctx.access.check(); // Check current tool
@@ -89,6 +100,11 @@ export class AccessControl implements Disposable {
     // If already granted, skip check
     if (this._granted) {
       return;
+    }
+
+    // Check if authenticated first (401)
+    if (!this.userId && (!this.permissions || Object.keys(this.permissions).length === 0)) {
+      throw new UnauthorizedError('Authentication required. Please provide a valid OAuth token or API key.');
     }
 
     // Determine what to check
@@ -184,9 +200,15 @@ export class AccessControl implements Disposable {
         continue;
       }
 
-      // Resource key matches - allow if has wildcard or any actions
-      return actions.includes(resource) || actions.includes('*');
+      // Check if resource matches the permission key (e.g., checking 'conn_123' access)
+      if (key === resource && actions.length > 0) {
+        return true;
+      }
 
+      // Check if resource is in actions array or has wildcard
+      if (actions.includes(resource) || actions.includes('*')) {
+        return true;
+      }
     }
 
     return false;

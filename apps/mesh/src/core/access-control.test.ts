@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AccessControl, ForbiddenError } from './access-control';
+import { AccessControl, ForbiddenError, UnauthorizedError } from './access-control';
 
 const createMockAuth = (): any => ({
   api: {
@@ -29,7 +29,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         'TEST_TOOL',
-        { 'TEST_TOOL': ['*'] }, // Has permission
+        { 'self': ['TEST_TOOL'] }, // Has permission on self connection
         'user'
       );
 
@@ -42,7 +42,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         'TEST_TOOL',
-        { 'OTHER_TOOL': ['*'] }, // Wrong permission
+        { 'self': ['OTHER_TOOL'] }, // Has OTHER_TOOL but not TEST_TOOL
         'user'
       );
 
@@ -55,7 +55,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         'MY_TOOL',
-        { 'MY_TOOL': ['execute'] },
+        { 'self': ['MY_TOOL'] }, // Permission on self connection
         'user'
       );
 
@@ -69,10 +69,11 @@ describe('AccessControl', () => {
         'user_1',
         undefined,
         { 'conn_123': ['SEND_MESSAGE'] },
-        'user'
+        'user',
+        'conn_123' // Checking conn_123
       );
 
-      await ac.check('conn_123');
+      await ac.check('SEND_MESSAGE');
       expect(ac.granted()).toBe(true);
     });
 
@@ -81,7 +82,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         undefined,
-        { 'TOOL2': ['*'] },
+        { 'self': ['TOOL2'] }, // Has TOOL2 on self connection
         'user'
       );
 
@@ -147,10 +148,11 @@ describe('AccessControl', () => {
         'user_1',
         undefined,
         { 'conn_123': ['*'] }, // Wildcard
-        'user'
+        'user',
+        'conn_123' // Checking conn_123
       );
 
-      await ac.check('conn_123');
+      await ac.check('SOME_TOOL');
       expect(ac.granted()).toBe(true);
     });
 
@@ -163,7 +165,7 @@ describe('AccessControl', () => {
         undefined
       );
 
-      await expect(ac.check()).rejects.toThrow(ForbiddenError);
+      await expect(ac.check()).rejects.toThrow(UnauthorizedError);
     });
   });
 
@@ -184,7 +186,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         'TEST_TOOL',
-        { 'TEST_TOOL': ['*'] },
+        { 'self': ['TEST_TOOL'] }, // Permission on self connection
         'user'
       );
 
@@ -217,7 +219,7 @@ describe('AccessControl', () => {
         createMockAuth(),
         'user_1',
         undefined,
-        { 'EXACT_MATCH': ['action'] },
+        { 'self': ['EXACT_MATCH'] }, // Permission on self connection
         'user'
       );
 
@@ -231,7 +233,8 @@ describe('AccessControl', () => {
         'user_1',
         undefined,
         { 'conn_123': ['SEND_MESSAGE', 'LIST_THREADS'] },
-        'user'
+        'user',
+        'conn_123' // Checking conn_123
       );
 
       await ac.check('SEND_MESSAGE');
@@ -305,7 +308,7 @@ describe('AccessControl', () => {
         mockAuth,
         'user_1',
         undefined,
-        { 'TEST_TOOL': ['*'] },
+        { 'self': ['TEST_TOOL'] }, // Permission on self connection
         'user'
       );
 
@@ -319,7 +322,7 @@ describe('AccessControl', () => {
         null as any, // No auth instance
         'user_1',
         undefined,
-        { 'TEST_TOOL': ['*'] },
+        { 'self': ['TEST_TOOL'] }, // Permission on self connection
         'user'
       );
 

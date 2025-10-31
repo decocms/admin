@@ -89,16 +89,16 @@ interface OAuthSession {
 /**
  * Parse OAuth scopes into Better Auth permission format
  * 
- * Input: "openid profile email mcp:*"
- * Output: { "mcp": ["*"] }
+ * Input: "openid profile email self:*"
+ * Output: { "self": ["*"] }
  * 
- * Input: "openid profile email mcp:PROJECT_CREATE mcp:CONNECTION_LIST"
- * Output: { "mcp": ["PROJECT_CREATE", "CONNECTION_LIST"] }
+ * Input: "openid profile email self:PROJECT_CREATE self:CONNECTION_LIST"
+ * Output: { "self": ["PROJECT_CREATE", "CONNECTION_LIST"] }
  */
 function scopesToPermissions(scopes: string): Record<string, string[]> {
   const permissions: Record<string, string[]> = {};
 
-  // Split scopes and filter for mcp: prefixed ones
+  // Split scopes and filter for self: prefixed ones
   const scopeList = scopes.split(' ').filter(s => s.trim());
 
   for (const scope of scopeList) {
@@ -176,8 +176,12 @@ async function authenticateRequest(
     }
   }
 
-  // No valid authentication found
-  throw new UnauthorizedError('Authentication required. Please provide a valid OAuth token or API key.');
+  // No valid authentication found - return empty auth data
+  // Access control will check this and throw UnauthorizedError if needed
+  return {
+    user: undefined,
+    permissions: {},
+  };
 }
 
 // ============================================================================
@@ -238,21 +242,6 @@ export function createMeshContextFactory(
         throw new NotFoundError(`Project not found: ${projectSlug}`);
       }
 
-      // Verify API key has project access
-      if (auth.apiKey) {
-        const hasProjectAccess =
-          auth.apiKey.permissions['mcp']?.some(tool =>
-            tool.startsWith('PROJECT_')
-          ) ||
-          auth.apiKey.permissions[`project:${foundProject.id}`]?.length > 0;
-
-        if (!hasProjectAccess) {
-          throw new UnauthorizedError(
-            `API key does not have access to project: ${projectSlug}`
-          );
-        }
-      }
-
       project = {
         id: foundProject.id,
         slug: foundProject.slug,
@@ -271,7 +260,6 @@ export function createMeshContextFactory(
       undefined, // toolName set later by defineTool
       authResult.permissions, // Unified permissions from OAuth or API key
       authResult.role, // Role from OAuth session or undefined for API keys
-      "mcp" // connectionId set when proxying
     );
 
     return {

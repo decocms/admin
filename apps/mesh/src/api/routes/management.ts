@@ -22,7 +22,7 @@ const app = new Hono<{ Variables: Variables }>();
  * Route: POST /mcp
  * Exposes all PROJECT_* and CONNECTION_* tools via MCP protocol
  */
-app.post('/', async (c) => {
+app.all('/', async (c) => {
   const ctx = c.get('meshContext');
 
   // Convert ALL_TOOLS to ToolDefinition format

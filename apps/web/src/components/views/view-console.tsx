@@ -1,5 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -56,41 +57,47 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
   // Define trusted origins for postMessage validation
   const trustedOrigins = useMemo(() => {
     const origins = new Set<string>();
-    
+
     // Add the app's own origin
     if (typeof window !== "undefined") {
       origins.add(window.location.origin);
     }
-    
+
     // Allow blob: origins (used by iframe with srcDoc)
     // Note: blob URLs will have origin matching the parent origin
-    
+
     // Allow null origin for sandboxed iframes with data: or srcdoc
     origins.add("null");
-    
+
     return origins;
   }, []);
 
-  const isTrustedOrigin = useCallback((origin: string): boolean => {
-    // Check if origin matches trusted origins
-    if (trustedOrigins.has(origin)) {
-      return true;
-    }
-    
-    // Allow origins that match the app's origin (for blob: URLs)
-    if (typeof window !== "undefined" && origin === window.location.origin) {
-      return true;
-    }
-    
-    return false;
-  }, [trustedOrigins]);
+  const isTrustedOrigin = useCallback(
+    (origin: string): boolean => {
+      // Check if origin matches trusted origins
+      if (trustedOrigins.has(origin)) {
+        return true;
+      }
+
+      // Allow origins that match the app's origin (for blob: URLs)
+      if (typeof window !== "undefined" && origin === window.location.origin) {
+        return true;
+      }
+
+      return false;
+    },
+    [trustedOrigins],
+  );
 
   // Listen for console messages from iframe
   useEffect(() => {
     function handleConsoleMessage(event: MessageEvent) {
       // Validate origin before processing any message data
       if (!isTrustedOrigin(event.origin)) {
-        console.warn("Rejected console message from untrusted origin:", event.origin);
+        console.warn(
+          "Rejected console message from untrusted origin:",
+          event.origin,
+        );
         return;
       }
 
@@ -272,29 +279,23 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="flex flex-col h-full"
+        className="flex flex-col h-full gap-0"
       >
-        <div className="border-b border-border bg-muted/30 flex items-center justify-between">
-          <TabsList className="h-9 bg-transparent border-0 rounded-none justify-start gap-0">
-            <TabsTrigger
-              value="console"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground px-4 relative"
-            >
+        <div className="relative">
+          <TabsList variant="underline" className="w-full">
+            <TabsTrigger value="console" variant="underline" className="gap-2">
               Console
               {errorCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-destructive rounded-full" />
+                <Badge
+                  variant="destructive"
+                  className="size-2 p-0 rounded-full"
+                ></Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger
-              value="network"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground px-4"
-            >
+            <TabsTrigger value="network" variant="underline">
               Network
             </TabsTrigger>
-            <TabsTrigger
-              value="tools"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground px-4"
-            >
+            <TabsTrigger value="tools" variant="underline">
               Tools
             </TabsTrigger>
           </TabsList>
@@ -302,7 +303,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-7 w-7 mr-2"
+            className="h-7 w-7 absolute right-2 top-1/2 -translate-y-1/2"
             title="Close console"
           >
             <Icon name="close" size={14} />
@@ -314,7 +315,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
           className="flex-1 flex flex-col mt-0 overflow-hidden"
         >
           {/* Filter Bar */}
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/20">
+          <div className="flex items-center px-4 py-2 border-b border-border bg-muted/20">
             <Icon name="search" size={16} className="text-muted-foreground" />
             <Input
               value={filter}

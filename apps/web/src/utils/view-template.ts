@@ -196,7 +196,7 @@ function createSDK(
         },
         2,
       );
-    } catch (error) {
+    } catch {
       // Fallback for non-serializable objects
       try {
         return String(obj);
@@ -217,7 +217,7 @@ function createSDK(
   console.log = function (...args) {
     // Always call original console first
     originalConsole.log.apply(console, args);
-    
+
     // Safely serialize and send to parent
     try {
       window.top?.postMessage(
@@ -244,7 +244,7 @@ function createSDK(
   console.info = function (...args) {
     // Always call original console first
     originalConsole.info.apply(console, args);
-    
+
     // Safely serialize and send to parent
     try {
       window.top?.postMessage(
@@ -271,7 +271,7 @@ function createSDK(
   console.warn = function (...args) {
     // Always call original console first
     originalConsole.warn.apply(console, args);
-    
+
     // Safely serialize and send to parent
     try {
       window.top?.postMessage(
@@ -298,7 +298,7 @@ function createSDK(
   console.error = function (...args) {
     // Always call original console first
     originalConsole.error.apply(console, args);
-    
+
     // Safely serialize and send to parent
     try {
       window.top?.postMessage(

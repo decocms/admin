@@ -140,6 +140,9 @@ export const App = (props) => {
 import { useState } from 'react';
 
 export const App = (props) => {
+  // ALWAYS log props on mount for debugging
+  console.log('[MyView] Component mounted with props:', props);
+  
   // Access any input data passed to the view via props
   // For example, from a workflow step: props.stepOutput, props.data, etc.
   
@@ -148,15 +151,17 @@ export const App = (props) => {
   
   const fetchData = async () => {
     setLoading(true);
+    console.log('[MyView] Calling INTEGRATIONS_LIST tool');
     try {
       const result = await callTool({
         integrationId: 'i:integration-management',
         toolName: 'INTEGRATIONS_LIST',
         input: {}
       });
+      console.log('[MyView] Tool result:', result);
       setData(result);
     } catch (error) {
-      console.error(error);
+      console.error('[MyView] Tool call failed:', error);
     } finally {
       setLoading(false);
     }
@@ -330,6 +335,62 @@ Use Tailwind utility classes directly in your JSX:
 </div>
 \`\`\`
 
+## Debugging & Console Logs
+
+**CRITICAL: Always include comprehensive console logs for debugging.** Views run in isolated iframes, making debugging difficult without proper logging. Add console.log statements for:
+
+1. **Initial render & props** - Log all props received when component mounts:
+   \`\`\`jsx
+   export const App = (props) => {
+     console.log('[ViewName] Component mounted with props:', props);
+     // ... component code
+   };
+   \`\`\`
+
+2. **Tool calls** - Log before calling tools, after receiving results, and on errors:
+   \`\`\`jsx
+   const fetchData = async () => {
+     console.log('[ViewName] Calling tool:', { integrationId: 'i:...', toolName: 'TOOL_NAME' });
+     try {
+       const result = await callTool({ integrationId: 'i:...', toolName: 'TOOL_NAME', input: {} });
+       console.log('[ViewName] Tool result:', result);
+       setData(result);
+     } catch (error) {
+       console.error('[ViewName] Tool call failed:', error);
+     }
+   };
+   \`\`\`
+
+3. **State changes** - Log important state updates:
+   \`\`\`jsx
+   const handleSubmit = (data) => {
+     console.log('[ViewName] Form submitted with data:', data);
+     setFormData(data);
+   };
+   \`\`\`
+
+4. **Data transformations** - Log before/after processing data:
+   \`\`\`jsx
+   useEffect(() => {
+     if (rawData) {
+       console.log('[ViewName] Processing raw data:', rawData);
+       const processed = transformData(rawData);
+       console.log('[ViewName] Processed data:', processed);
+       setProcessedData(processed);
+     }
+   }, [rawData]);
+   \`\`\`
+
+5. **Error conditions** - Always log errors with context:
+   \`\`\`jsx
+   if (!requiredProp) {
+     console.error('[ViewName] Missing required prop:', 'requiredProp');
+     return <div>Error: Missing required data</div>;
+   }
+   \`\`\`
+
+**Log naming convention:** Prefix all logs with \`[ViewName]\` for easy filtering in browser console.
+
 ## Best Practices
 
 1. **Import hooks** - Always import React hooks you need: \`import { useState, useEffect } from 'react'\`
@@ -344,6 +405,7 @@ Use Tailwind utility classes directly in your JSX:
 10. **Add descriptions** - Help others understand the view's purpose
 11. **Tag appropriately** - Use tags for easier discovery and organization
 12. **Keep it simple** - Focus on the component logic, not boilerplate
+13. **Add console logs** - ALWAYS include comprehensive logging for debugging (see Debugging section above)
 
 ## Common Use Cases
 
@@ -382,16 +444,24 @@ Use Tailwind utility classes directly in your JSX:
 import { useState } from 'react';
 
 export const App = (props) => {
+  console.log('[UserProfile] Component mounted with props:', props);
+  
   const { user, showActions = false } = props;
   const [isEditing, setIsEditing] = useState(false);
   
   if (!user) {
+    console.error('[UserProfile] Missing required prop: user');
     return (
       <div className="p-6 text-center text-gray-500">
         No user data provided
       </div>
     );
   }
+  
+  const handleEditToggle = () => {
+    console.log('[UserProfile] Edit mode toggled:', !isEditing);
+    setIsEditing(!isEditing);
+  };
   
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -415,7 +485,7 @@ export const App = (props) => {
         {showActions && (
           <div className="flex gap-2 pt-4 border-t">
             <button
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={handleEditToggle}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               {isEditing ? 'Cancel' : 'Edit'}
@@ -436,20 +506,31 @@ export const App = (props) => {
 import { useState, useEffect } from 'react';
 
 export const App = (props) => {
+  console.log('[Dashboard] Component mounted with props:', props);
+  
   // Use props.metrics if provided, otherwise fetch from API
   const [metrics, setMetrics] = useState(props.metrics || null);
   
   useEffect(() => {
     if (!props.metrics) {
+      console.log('[Dashboard] No metrics in props, fetching from API');
       const loadMetrics = async () => {
-        const data = await callTool({
-          integrationId: 'i:integration-management',
-          toolName: 'GET_METRICS',
-          input: {}
-        });
-        setMetrics(data);
+        try {
+          console.log('[Dashboard] Calling GET_METRICS tool');
+          const data = await callTool({
+            integrationId: 'i:integration-management',
+            toolName: 'GET_METRICS',
+            input: {}
+          });
+          console.log('[Dashboard] Metrics loaded:', data);
+          setMetrics(data);
+        } catch (error) {
+          console.error('[Dashboard] Failed to load metrics:', error);
+        }
       };
       loadMetrics();
+    } else {
+      console.log('[Dashboard] Using metrics from props:', props.metrics);
     }
   }, [props.metrics]);
   
@@ -474,18 +555,31 @@ export const App = (props) => {
 import { useState } from 'react';
 
 export const App = (props) => {
+  console.log('[InteractiveForm] Component mounted with props:', props);
+  
   // Pre-populate form with props.initialData if provided
-  const [formData, setFormData] = useState(props.initialData || { name: '', email: '' });
+  const initialData = props.initialData || { name: '', email: '' };
+  console.log('[InteractiveForm] Initial form data:', initialData);
+  
+  const [formData, setFormData] = useState(initialData);
   const [result, setResult] = useState(null);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await callTool({
-      integrationId: 'i:integration-management',
-      toolName: 'SUBMIT_FORM',
-      input: formData
-    });
-    setResult(res);
+    console.log('[InteractiveForm] Form submitted with data:', formData);
+    
+    try {
+      console.log('[InteractiveForm] Calling SUBMIT_FORM tool');
+      const res = await callTool({
+        integrationId: 'i:integration-management',
+        toolName: 'SUBMIT_FORM',
+        input: formData
+      });
+      console.log('[InteractiveForm] Form submission result:', res);
+      setResult(res);
+    } catch (error) {
+      console.error('[InteractiveForm] Form submission failed:', error);
+    }
   };
   
   return (
@@ -538,6 +632,7 @@ You can update any of the following:
 5. **Test changes** - Verify the component renders correctly after updates
 6. **Use Tailwind classes** - Leverage Tailwind CSS for styling
 7. **Manage tags thoughtfully** - Add relevant tags, remove outdated ones
+8. **Add/preserve console logs** - ALWAYS ensure console logs are present for debugging. If updating a view without logs, add them. If logs exist, preserve them. Log props, tool calls, state changes, and errors with \`[ViewName]\` prefix
 
 ## Common Update Patterns
 

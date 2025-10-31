@@ -6,6 +6,7 @@ import {
   useUpdateView,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import type { JSONSchema7 } from "json-schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -68,14 +69,16 @@ function ConsoleToggleButton({
         className={isOpen ? "text-foreground" : "text-muted-foreground"}
       />
       {errorCount > 0 && (
-        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-600 text-white rounded-full text-[8px] font-bold flex items-center justify-center">
-          {errorCount}
-        </span>
+        <Badge
+          variant="destructive"
+          className="absolute bottom-1 right-0.5 size-2 flex items-center justify-center p-0 text-[10px] rounded-full outline-2 outline-sidebar outline-solid"
+        ></Badge>
       )}
       {warningCount > 0 && errorCount === 0 && (
-        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-yellow-500 text-white rounded-full text-[8px] font-bold flex items-center justify-center">
-          {warningCount}
-        </span>
+        <Badge
+          variant="destructive"
+          className="absolute bottom-1 right-0.5 size-2 flex items-center justify-center p-0 text-[10px] rounded-full outline-2 outline-sidebar outline-solid bg-yellow-500"
+        ></Badge>
       )}
     </Button>
   );
@@ -201,15 +204,15 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   // Define trusted origins for secure postMessage handling
   const trustedOrigins = useMemo(() => {
     const origins = new Set<string>();
-    
+
     // Add the app's own origin
     if (typeof window !== "undefined") {
       origins.add(window.location.origin);
     }
-    
+
     // Allow null origin for sandboxed iframes with srcdoc
     origins.add("null");
-    
+
     return origins;
   }, []);
 
@@ -217,8 +220,10 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       // Validate origin before processing any message data
-      const isTrustedOrigin = trustedOrigins.has(event.origin) || 
-        (typeof window !== "undefined" && event.origin === window.location.origin);
+      const isTrustedOrigin =
+        trustedOrigins.has(event.origin) ||
+        (typeof window !== "undefined" &&
+          event.origin === window.location.origin);
 
       if (!isTrustedOrigin) {
         console.warn("Rejected message from untrusted origin:", event.origin);

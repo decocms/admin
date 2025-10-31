@@ -593,6 +593,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
                   srcDoc={htmlValue}
                   title="View Preview"
                   className="w-full h-full border-0"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full p-8">

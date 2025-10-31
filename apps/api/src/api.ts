@@ -1229,6 +1229,93 @@ app.get("/apps/oauth", (c) => {
   return c.redirect(target.href);
 });
 
+// Media proxy endpoint to handle CORS issues in iframes
+app.get("/proxy/media", async (c: Context) => {
+  const targetUrl = c.req.query("url");
+
+  if (!targetUrl) {
+    throw new HTTPException(400, { message: "Missing 'url' query parameter" });
+  }
+
+  // Validate URL
+  let url: URL;
+  try {
+    url = new URL(targetUrl);
+  } catch {
+    throw new HTTPException(400, { message: "Invalid URL" });
+  }
+
+  // Security: only allow http/https protocols
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw new HTTPException(400, {
+      message: "Invalid URL protocol. Only http and https are allowed.",
+    });
+  }
+
+  try {
+    const response = await fetch(url.toString(), {
+      headers: {
+        // Forward some headers but sanitize user agent
+        "User-Agent": "DecocmsMediaProxy/1.0",
+      },
+      // Set a reasonable timeout
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      throw new HTTPException(response.status as ContentfulStatusCode, {
+        message: `Failed to fetch media: ${response.statusText}`,
+      });
+    }
+
+    if (!response.body) {
+      throw new HTTPException(500, { message: "No response body" });
+    }
+
+    // Get content type
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+
+    // Only allow media types
+    const allowedTypes = [
+      "image/",
+      "video/",
+      "audio/",
+      "application/octet-stream",
+    ];
+
+    const isAllowedType = allowedTypes.some((type) =>
+      contentType.startsWith(type),
+    );
+
+    if (!isAllowedType) {
+      throw new HTTPException(400, {
+        message: `Content type not allowed: ${contentType}. Only media files are supported.`,
+      });
+    }
+
+    // Return the media with CORS headers
+    return c.body(response.body, 200, {
+      "Content-Type": contentType,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET",
+      "Cache-Control": "public, max-age=31536000", // Cache for 1 year
+      ...(response.headers.get("content-length") && {
+        "Content-Length": response.headers.get("content-length")!,
+      }),
+    });
+  } catch (error) {
+    if (error instanceof HTTPException) {
+      throw error;
+    }
+
+    throw new HTTPException(500, {
+      message: "Failed to proxy media",
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 

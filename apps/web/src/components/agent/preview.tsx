@@ -154,7 +154,7 @@ export const PreviewIframe = forwardRef<HTMLIFrameElement, Props>(
           id={id}
           allow={ALLOWANCES}
           allowFullScreen
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms allow-downloads allow-top-navigation-by-user-activation"
           className="w-full h-full"
           {...props}
         />

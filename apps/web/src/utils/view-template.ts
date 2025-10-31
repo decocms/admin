@@ -464,7 +464,124 @@ export function generateViewHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>DECO View  </title>
+
+  <!-- Media Proxy Interceptor -->
+  <script>
+    (function() {
+      const API_BASE = '${apiBase}';
+      
+      const proxyUrl = (url) => {
+        if (!url) {
+          return url;
+        }
+        
+        try {
+          // Only proxy external URLs
+          if (url.startsWith('data:')) {
+            return url;
+          }
+          
+          if (url.startsWith('blob:')) {
+            return url;
+          }
+          
+          if (url.startsWith('/')) {
+            return url;
+          }
+          
+          // Check if it's an absolute URL
+          new URL(url);
+          const proxiedUrl = API_BASE + '/proxy/media?url=' + encodeURIComponent(url);
+          return proxiedUrl;
+        } catch (error) {
+          console.error('[MEDIA PROXY] Invalid URL, skipping proxy:', url, error);
+          return url;
+        }
+      };
+      
+      // Intercept fetch
+      const originalFetch = window.fetch;
+      window.fetch = function(input, init) {
+        
+        if (typeof input === 'string') {
+          const proxiedInput = proxyUrl(input);
+          return originalFetch(proxiedInput, init);
+        } else if (input instanceof Request) {
+          const proxiedUrl = proxyUrl(input.url);
+          return originalFetch(new Request(proxiedUrl, input), init);
+        }
+        
+        return originalFetch(input, init);
+      };
+      
+      // Intercept Image constructor
+      const OriginalImage = window.Image;
+      window.Image = function() {
+        const img = new OriginalImage(...arguments);
+        const originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+        
+        Object.defineProperty(img, 'src', {
+          get() {
+            const value = originalSrcDescriptor.get.call(this);
+            return value;
+          },
+          set(value) {
+            const proxiedValue = proxyUrl(value);
+            originalSrcDescriptor.set.call(this, proxiedValue);
+          },
+          configurable: true,
+          enumerable: true
+        });
+        
+        return img;
+      };
+      window.Image.prototype = OriginalImage.prototype;
+      
+      // Intercept src and poster property setters on HTMLImageElement, HTMLVideoElement, etc.
+      const interceptSrcProperty = (elementPrototype, propertyName) => {
+        const originalDescriptor = Object.getOwnPropertyDescriptor(elementPrototype, propertyName);
+        if (!originalDescriptor) {
+          return;
+        }
+        
+        Object.defineProperty(elementPrototype, propertyName, {
+          get() {
+            return originalDescriptor.get ? originalDescriptor.get.call(this) : this.getAttribute(propertyName);
+          },
+          set(value) {
+            const proxiedValue = proxyUrl(value);
+            if (originalDescriptor.set) {
+              originalDescriptor.set.call(this, proxiedValue);
+            } else {
+              this.setAttribute(propertyName, proxiedValue);
+            }
+          },
+          configurable: true,
+          enumerable: true
+        });
+      };
+      
+      // Intercept src property on all media elements
+      interceptSrcProperty(HTMLImageElement.prototype, 'src');
+      interceptSrcProperty(HTMLVideoElement.prototype, 'src');
+      interceptSrcProperty(HTMLAudioElement.prototype, 'src');
+      interceptSrcProperty(HTMLSourceElement.prototype, 'src');
+      interceptSrcProperty(HTMLVideoElement.prototype, 'poster');
+      
+      // Also intercept setAttribute for img, video, audio elements (as backup)
+      const originalSetAttribute = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function(name, value) {
+        if ((name === 'src' || name === 'poster') && 
+            (this.tagName === 'IMG' || this.tagName === 'VIDEO' || this.tagName === 'AUDIO' || this.tagName === 'SOURCE')) {
+          const proxiedValue = proxyUrl(value);
+          return originalSetAttribute.call(this, name, proxiedValue);
+        }
+        return originalSetAttribute.call(this, name, value);
+      };
+    })();
+  </script>
 
   <!-- View SDK -->
   <script>

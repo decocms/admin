@@ -130,7 +130,21 @@ function createSDK(
       console.warn(
         'callTool Warning: "integrationId" is required and must be a string.',
       );
-      return undefined as unknown;
+      const response = await fetch(
+        apiBase + "/" + ws + "/" + proj + "/tools/call/" + toolName,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(input),
+        },
+      );
+      if (!response.ok) {
+        throw new Error("HTTP error! status: " + response.status);
+      }
+
+      const data = (await response.json()) as { data?: unknown } | unknown;
+      return (data as { data?: unknown })?.data || data;
     }
 
     if (!toolName || typeof toolName !== "string") {

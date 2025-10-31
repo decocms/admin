@@ -1,4 +1,4 @@
-<img src="https://assets.decocache.com/decocms/42ba3cd7-83b9-4cbf-88f2-0c0d4a361851/decologo.png" width="180" />
+<img alt="deco CMS" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
 
 <h1 align="center">DecoCMS Admin & MCP Mesh</h1>
 

@@ -1025,6 +1025,18 @@ export function AgenticChatProvider({
       }
     }
 
+    function handleSendMessage(event: Event) {
+      const customEvent = event as CustomEvent<{
+        message: UIMessage;
+      }>;
+
+      const { message } = customEvent.detail;
+
+      if (message && message.parts && message.parts.length > 0) {
+        wrappedSendMessage(message);
+      }
+    }
+
     function handleAppendError(event: Event) {
       const customEvent = event as CustomEvent<RuntimeErrorEntry>;
       appendError(customEvent.detail);
@@ -1068,6 +1080,7 @@ export function AgenticChatProvider({
     }
 
     window.addEventListener("decopilot:sendTextMessage", handleSendTextMessage);
+    window.addEventListener("decopilot:sendMessage", handleSendMessage);
     window.addEventListener("decopilot:appendError", handleAppendError);
     window.addEventListener("decopilot:clearError", handleClearError);
     window.addEventListener("decopilot:showError", handleShowError);
@@ -1081,6 +1094,7 @@ export function AgenticChatProvider({
         "decopilot:sendTextMessage",
         handleSendTextMessage,
       );
+      window.removeEventListener("decopilot:sendMessage", handleSendMessage);
       window.removeEventListener("decopilot:appendError", handleAppendError);
       window.removeEventListener("decopilot:clearError", handleClearError);
       window.removeEventListener("decopilot:showError", handleShowError);

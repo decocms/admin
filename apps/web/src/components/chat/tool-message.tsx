@@ -215,7 +215,7 @@ const ToolStatus = memo(function ToolStatus({
           tabIndex={0}
           onClick={onClick}
           className={cn(
-            "w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
+            "w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
             !isSingle && "hover:bg-accent rounded-lg p-2",
           )}
         >
@@ -230,11 +230,11 @@ const ToolStatus = memo(function ToolStatus({
             <div className="size-5 rounded-full bg-muted/30 shrink-0" />
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <div
                   className={cn(
-                    "font-medium truncate max-w-[60vw] md:max-w-full",
+                    "font-medium truncate",
                     isLoading &&
                       "bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent",
                   )}
@@ -242,7 +242,10 @@ const ToolStatus = memo(function ToolStatus({
                   {toolName}
                 </div>
                 <div
-                  className={cn("text-xs opacity-70", statusConfig.className)}
+                  className={cn(
+                    "text-xs opacity-70 shrink-0",
+                    statusConfig.className,
+                  )}
                 >
                   {statusText}
                 </div>

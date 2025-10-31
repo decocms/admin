@@ -140,17 +140,15 @@ export const App = (props) => {
 import { useState } from 'react';
 
 export const App = (props) => {
-  // ALWAYS log props on mount for debugging
+  // CRITICAL: Always log props on mount for debugging (views run in isolated iframes)
   console.log('[MyView] Component mounted with props:', props);
-  
-  // Access any input data passed to the view via props
-  // For example, from a workflow step: props.stepOutput, props.data, etc.
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   
   const fetchData = async () => {
     setLoading(true);
+    // Log before calling tools
     console.log('[MyView] Calling INTEGRATIONS_LIST tool');
     try {
       const result = await callTool({
@@ -158,9 +156,15 @@ export const App = (props) => {
         toolName: 'INTEGRATIONS_LIST',
         input: {}
       });
+      // Log results
       console.log('[MyView] Tool result:', result);
-      setData(result);
+      
+      // IMPORTANT: Access via result.structuredContent.items
+      const integrations = result.structuredContent?.items || [];
+      console.log('[MyView] Found integrations:', integrations.length);
+      setData(integrations);
     } catch (error) {
+      // Log errors with context
       console.error('[MyView] Tool call failed:', error);
     } finally {
       setLoading(false);
@@ -168,23 +172,51 @@ export const App = (props) => {
   };
   
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">My View</h1>
-      {/* Display input data if provided */}
-      {Object.keys(props).length > 0 && (
-        <div className="mb-4 p-4 bg-gray-50 rounded border">
-          <h2 className="font-semibold mb-2">Input Data:</h2>
-          <pre className="text-xs">{JSON.stringify(props, null, 2)}</pre>
-        </div>
-      )}
+    <div 
+      className="p-6 min-h-screen"
+      style={{ 
+        backgroundColor: 'var(--background)', 
+        color: 'var(--foreground)' 
+      }}
+    >
+      <div 
+        className="mb-6 p-6 rounded-[var(--radius)] border"
+        style={{
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        <h1 
+          className="text-2xl font-bold mb-2"
+          style={{ color: 'var(--card-foreground)' }}
+        >
+          My View
+        </h1>
+      </div>
+      
       <button 
         onClick={fetchData}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        className="px-4 py-2 rounded-[var(--radius)] font-medium"
+        style={{
+          backgroundColor: 'var(--primary)',
+          color: 'var(--primary-foreground)'
+        }}
       >
-        Load Data
+        {loading ? 'Loading...' : 'Load Data'}
       </button>
-      {loading && <p className="mt-4">Loading...</p>}
-      {data && <pre className="mt-4 p-4 bg-gray-100 rounded">{JSON.stringify(data, null, 2)}</pre>}
+      
+      {data && (
+        <pre 
+          className="mt-4 p-4 rounded-[var(--radius)] border overflow-auto"
+          style={{
+            backgroundColor: 'var(--muted)',
+            color: 'var(--muted-foreground)',
+            borderColor: 'var(--border)'
+          }}
+        >
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      )}
     </div>
   );
 };
@@ -236,6 +268,8 @@ export const App = () => {
 
 Use the global \`callTool()\` function to invoke any tool. This function is **always available** and doesn't need to be imported. It always calls INTEGRATIONS_CALL_TOOL internally.
 
+**CRITICAL: Always log tool calls for debugging** - Log before calling, after receiving results, and on errors with \`[ViewName]\` prefix.
+
 ### API Signature
 
 \`\`\`typescript
@@ -246,70 +280,116 @@ callTool(params: {
 }): Promise<any>
 \`\`\`
 
-### Getting Integration IDs
+### Common Integration IDs
 
-To call a tool, you need the integration ID. Common integration IDs include:
-- \`i:integration-management\` - For integration management tools (INTEGRATIONS_LIST, INTEGRATIONS_GET, etc.)
-- \`i:databases-management\` - For database management tools
-- \`i:agents-management\` - For agent management tools
-- \`i:workflows-management\` - For workflow management tools
-- Other integration IDs - Get them from INTEGRATIONS_LIST tool
+- \`i:integration-management\` - Integration management (INTEGRATIONS_LIST, INTEGRATIONS_GET, etc.)
+- \`i:databases-management\` - Database management
+- \`i:agents-management\` - Agent management
+- \`i:workflows-management\` - Workflow management
+- Get other IDs from INTEGRATIONS_LIST tool
 
-### Usage Examples
+### Tool Response Structures
 
-**Call a tool without parameters:**
-\`\`\`jsx
-// Call INTEGRATIONS_LIST to get all integrations
-const integrations = await callTool({
-  integrationId: 'i:integration-management',
-  toolName: 'INTEGRATIONS_LIST',
-  input: {}  // Empty object when tool requires no parameters
-});
+**CRITICAL: Understanding tool response formats is essential for writing correct code.**
+
+The \`callTool\` function returns a response wrapper:
+\`\`\`javascript
+{
+  content: [{ type: "text", text: "..." }],  // Human-readable text
+  structuredContent: { /* actual typed data */ },  // THE DATA YOU WANT
+  isError: boolean
+}
 \`\`\`
 
-**Call a tool with parameters:**
-\`\`\`jsx
-// Call INTEGRATIONS_GET with an integration ID
-const integration = await callTool({
-  integrationId: 'i:integration-management',
-  toolName: 'INTEGRATIONS_GET',
-  input: {
-    id: 'i:some-integration'
-  }
-});
+**ALWAYS access the actual data via \`result.structuredContent\`**, not the root level.
 
-// Call a tool from a specific integration
-const result = await callTool({
-  integrationId: 'i:some-integration-id',
-  toolName: 'TOOL_NAME',
-  input: {
-    userId: '123',
-    includeProfile: true
-  }
-});
+The \`structuredContent\` for Resources 2.0 tools follows these patterns:
+
+**SEARCH operations** (e.g., INTEGRATIONS_LIST, DECO_RESOURCE_VIEW_SEARCH):
+\`\`\`javascript
+const result = await callTool({ integrationId: '...', toolName: 'INTEGRATIONS_LIST', input: {} });
+// result.structuredContent contains:
+{
+  items: [{ uri, data: { name, description, ... }, created_at, updated_at }],
+  totalCount: number,
+  page: number,
+  pageSize: number,
+  totalPages: number,
+  hasNextPage: boolean,
+  hasPreviousPage: boolean
+}
+// Access: result.structuredContent.items (NOT result.items or result.results)
 \`\`\`
 
-**Use empty object when no parameters needed:**
-\`\`\`jsx
-// input is required - use {} when the tool needs no parameters
-const data = await callTool({
-  integrationId: 'i:integration-management',
-  toolName: 'INTEGRATIONS_LIST',
-  input: {}
-});
+**READ operations** (e.g., INTEGRATIONS_GET, DECO_RESOURCE_VIEW_READ):
+\`\`\`javascript
+const result = await callTool({ integrationId: '...', toolName: 'INTEGRATIONS_GET', input: { id } });
+// result.structuredContent contains:
+{
+  uri: string,
+  data: { name, description, ... }, // Full resource data
+  created_at: string,
+  updated_at: string
+}
+// Access: result.structuredContent.data
 \`\`\`
 
-**With error handling:**
+**CREATE/UPDATE operations**:
+\`\`\`javascript
+const result = await callTool({ integrationId: '...', toolName: '...CREATE', input: { data } });
+// result.structuredContent contains:
+{
+  uri: string,
+  data: { name, description, ... }, // Created/updated resource data
+  created_at: string,
+  updated_at: string
+}
+// Access: result.structuredContent.data
+\`\`\`
+
+### Usage Examples with Proper Logging
+
+**SEARCH operation example (LIST tool):**
 \`\`\`jsx
+console.log('[MyView] Calling INTEGRATIONS_LIST');
 try {
   const result = await callTool({
     integrationId: 'i:integration-management',
     toolName: 'INTEGRATIONS_LIST',
     input: {}
   });
-  console.log('Success:', result);
+  console.log('[MyView] Got result:', result);
+  
+  // IMPORTANT: Access via result.structuredContent.items
+  const integrations = result.structuredContent?.items || [];
+  console.log('[MyView] Found integrations:', integrations.length);
+  
+  integrations.forEach(item => {
+    // Each item has: { uri, data: { name, description, ... }, created_at, updated_at }
+    console.log('[MyView] Integration:', item.data.name);
+  });
 } catch (error) {
-  console.error('Tool call failed:', error.message);
+  console.error('[MyView] Failed to fetch integrations:', error);
+}
+\`\`\`
+
+**READ operation example (GET tool):**
+\`\`\`jsx
+console.log('[MyView] Fetching integration:', integrationId);
+try {
+  const result = await callTool({
+    integrationId: 'i:integration-management',
+    toolName: 'INTEGRATIONS_GET',
+    input: { id: integrationId }
+  });
+  console.log('[MyView] Got result:', result);
+  
+  // IMPORTANT: Access via result.structuredContent.data
+  const integration = result.structuredContent?.data;
+  console.log('[MyView] Integration name:', integration.name);
+  console.log('[MyView] Integration tools:', integration.tools);
+} catch (error) {
+  console.error('[MyView] Failed to load integration:', error);
 }
 \`\`\`
 
@@ -317,10 +397,10 @@ try {
 
 - \`integrationId\`, \`toolName\`, and \`input\` are **required** parameters
 - \`input\` must be an object (not an array) - use \`{}\` if the tool needs no parameters
-- The function always calls INTEGRATIONS_CALL_TOOL internally - you don't need to specify this
-- The function returns a Promise that resolves with the tool's result
-- Errors are thrown if parameters are invalid or if the API call fails
+- **ALWAYS access data via \`result.structuredContent\`** - the actual typed data is there, not at the root
+- Always log tool calls for debugging (before/after/errors)
 - Use INTEGRATIONS_LIST to discover available integrations and their IDs
+- Handle \`result.isError\` to detect tool errors
 
 ## Styling with Tailwind CSS v4
 
@@ -384,59 +464,17 @@ Views automatically inherit workspace theme variables. Use these tokens for cons
 
 ## Debugging & Console Logs
 
-**CRITICAL: Always include comprehensive console logs for debugging.** Views run in isolated iframes, making debugging difficult without proper logging. Add console.log statements for:
+**CRITICAL: Always include comprehensive console logs for debugging.** Views run in isolated iframes, making debugging difficult without proper logging.
 
-1. **Initial render & props** - Log all props received when component mounts:
-   \`\`\`jsx
-   export const App = (props) => {
-     console.log('[ViewName] Component mounted with props:', props);
-     // ... component code
-   };
-   \`\`\`
+**What to log with \`[ViewName]\` prefix:**
+1. **Props on mount** - \`console.log('[ViewName] Component mounted with props:', props);\`
+2. **Tool calls** - Before calling, after results, and on errors (see examples above)
+3. **State changes** - \`console.log('[ViewName] State updated:', newState);\`
+4. **Data transformations** - Log before/after processing
+5. **Error conditions** - \`console.error('[ViewName] Error:', error);\`
 
-2. **Tool calls** - Log before calling tools, after receiving results, and on errors:
-   \`\`\`jsx
-   const fetchData = async () => {
-     console.log('[ViewName] Calling tool:', { integrationId: 'i:...', toolName: 'TOOL_NAME' });
-     try {
-       const result = await callTool({ integrationId: 'i:...', toolName: 'TOOL_NAME', input: {} });
-       console.log('[ViewName] Tool result:', result);
-       setData(result);
-     } catch (error) {
-       console.error('[ViewName] Tool call failed:', error);
-     }
-   };
-   \`\`\`
+**Log naming convention:** Always prefix logs with \`[ViewName]\` for easy filtering in browser console.
 
-3. **State changes** - Log important state updates:
-   \`\`\`jsx
-   const handleSubmit = (data) => {
-     console.log('[ViewName] Form submitted with data:', data);
-     setFormData(data);
-   };
-   \`\`\`
-
-4. **Data transformations** - Log before/after processing data:
-   \`\`\`jsx
-   useEffect(() => {
-     if (rawData) {
-       console.log('[ViewName] Processing raw data:', rawData);
-       const processed = transformData(rawData);
-       console.log('[ViewName] Processed data:', processed);
-       setProcessedData(processed);
-     }
-   }, [rawData]);
-   \`\`\`
-
-5. **Error conditions** - Always log errors with context:
-   \`\`\`jsx
-   if (!requiredProp) {
-     console.error('[ViewName] Missing required prop:', 'requiredProp');
-     return <div>Error: Missing required data</div>;
-   }
-   \`\`\`
-
-**Log naming convention:** Prefix all logs with \`[ViewName]\` for easy filtering in browser console.
 ### Basecoat UI - HTML-only Components
 
 Since views run in the browser without a build step, you cannot use React-based shadcn/ui components. Instead, use **Basecoat UI** (https://basecoatui.com/), which provides HTML-only versions of shadcn components that work perfectly with theme tokens.
@@ -481,22 +519,27 @@ Since views run in the browser without a build step, you cannot use React-based 
 
 ## Best Practices
 
-1. **Import hooks** - Always import React hooks you need: \`import { useState, useEffect } from 'react'\`
-2. **Define App component** - Always define \`export const App = (props) => { ... }\`
-3. **Access props data** - Use props to access any input data passed to the view (e.g., from workflow steps)
-4. **Define inputSchema** - When your view expects specific props, define an inputSchema to document the data contract
-5. **Use Tailwind classes** - Leverage Tailwind CSS for styling instead of custom CSS
-6. **Handle loading states** - Show feedback when calling tools
-7. **Error handling** - Use try/catch when calling tools
-8. **Provide defaults** - Handle missing or undefined props gracefully with default values
-9. **Clear naming** - Make view titles descriptive and searchable
-10. **Add descriptions** - Help others understand the view's purpose
-11. **Tag appropriately** - Use tags for easier discovery and organization
-12. **Keep it simple** - Focus on the component logic, not boilerplate
-13. **Add console logs** - ALWAYS include comprehensive logging for debugging (see Debugging section above)
-14. **Use theme tokens** - ALWAYS use CSS custom properties (e.g., \`var(--primary)\`) instead of hardcoded colors for theme consistency
-15. **Semantic token usage** - Use \`--destructive\` for delete buttons, \`--success\` for confirmations, \`--warning\` for caution, \`--muted\` for disabled states
-16. **Leverage Basecoat UI** - Use Basecoat UI patterns (https://basecoatui.com/) for components since React shadcn/ui won't work in browser-only views
+**Critical (Always Required):**
+1. **Add console logs** - ALWAYS log props on mount, tool calls (before/after/errors), state changes, and errors with \`[ViewName]\` prefix
+2. **Use theme tokens** - ALWAYS use CSS custom properties (\`var(--primary)\`, \`var(--card)\`, etc.) instead of hardcoded colors
+3. **Define App component** - Always define \`export const App = (props) => { ... }\` and import needed React hooks
+4. **Error handling** - Use try/catch when calling tools and log errors
+
+**Component Structure:**
+5. **Access props data** - Use props to access input data passed to the view (e.g., from workflow steps)
+6. **Define inputSchema** - When your view expects specific props, define an inputSchema for validation and documentation
+7. **Provide defaults** - Handle missing or undefined props gracefully with default values
+8. **Handle loading states** - Show feedback when calling tools
+
+**Styling & Design:**
+9. **Semantic tokens** - Use \`--destructive\` for delete, \`--success\` for confirmations, \`--warning\` for caution, \`--muted\` for disabled
+10. **Leverage Basecoat UI** - Use Basecoat UI patterns (https://basecoatui.com/) for consistent components
+11. **Maintain accessibility** - Use \`--ring\` for focus states, ensure proper contrast
+
+**Organization:**
+12. **Clear naming** - Make view titles descriptive and searchable
+13. **Add descriptions** - Help others understand the view's purpose
+14. **Tag appropriately** - Use tags for easier discovery and organization
 
 ## Common Use Cases
 
@@ -608,13 +651,14 @@ export const App = (props) => {
       const loadMetrics = async () => {
         try {
           console.log('[Dashboard] Calling GET_METRICS tool');
-          const data = await callTool({
+          const result = await callTool({
             integrationId: 'i:integration-management',
             toolName: 'GET_METRICS',
             input: {}
           });
-          console.log('[Dashboard] Metrics loaded:', data);
-          setMetrics(data);
+          console.log('[Dashboard] Metrics loaded:', result);
+          // Access via result.structuredContent
+          setMetrics(result.structuredContent);
         } catch (error) {
           console.error('[Dashboard] Failed to load metrics:', error);
         }
@@ -661,13 +705,14 @@ export const App = (props) => {
     
     try {
       console.log('[InteractiveForm] Calling SUBMIT_FORM tool');
-      const res = await callTool({
+      const result = await callTool({
         integrationId: 'i:integration-management',
         toolName: 'SUBMIT_FORM',
         input: formData
       });
-      console.log('[InteractiveForm] Form submission result:', res);
-      setResult(res);
+      console.log('[InteractiveForm] Form submission result:', result);
+      // Access via result.structuredContent
+      setResult(result.structuredContent);
     } catch (error) {
       console.error('[InteractiveForm] Form submission failed:', error);
     }
@@ -716,14 +761,12 @@ You can update any of the following:
 
 ## Update Guidelines
 
-1. **Preserve imports** - Ensure necessary React hooks are imported from 'react'
-2. **Preserve App component** - Always keep the \`export const App = (props) => { ... }\` definition
-3. **Handle props** - Ensure the component properly receives and uses props if input data is needed
-4. **Update incrementally** - Make focused changes rather than rewriting everything
-5. **Test changes** - Verify the component renders correctly after updates
-6. **Use Tailwind classes** - Leverage Tailwind CSS for styling
-7. **Manage tags thoughtfully** - Add relevant tags, remove outdated ones
-8. **Add/preserve console logs** - ALWAYS ensure console logs are present for debugging. If updating a view without logs, add them. If logs exist, preserve them. Log props, tool calls, state changes, and errors with \`[ViewName]\` prefix
+1. **Preserve structure** - Keep \`export const App = (props) => { ... }\` definition and necessary React imports
+2. **Preserve/add console logs** - ALWAYS ensure comprehensive logging is present. Add logs for props (on mount), tool calls (before/after/errors), state changes, and error conditions with \`[ViewName]\` prefix
+3. **Use theme tokens** - ALWAYS use CSS custom properties (\`var(--primary)\`, \`var(--card)\`, etc.) instead of hardcoded colors for theme consistency
+4. **Handle props properly** - Ensure component receives and uses props correctly if input data is needed
+5. **Update incrementally** - Make focused changes rather than rewriting everything
+6. **Manage tags thoughtfully** - Add relevant tags, remove outdated ones
 
 ## Common Update Patterns
 
@@ -731,20 +774,19 @@ You can update any of the following:
 - Modify JSX structure and layout
 - Add new sections or UI elements
 - Update data visualizations
-- Fix styling with Tailwind classes
+- Style with Tailwind + theme tokens: \`className="bg-[var(--card)] text-[var(--card-foreground)] rounded-[var(--radius)]"\`
 
 **Adding functionality:**
-- Import new React hooks if needed: \`import { useState, useEffect, ... } from 'react'\`
-- Include new state and effects
-- Add event handlers and interactivity
-- Integrate tool calls with \`callTool({ integrationId: 'i:integration-id', toolName: 'TOOL_NAME', input: {} })\`
-- Enhance user interactions
+- Import React hooks: \`import { useState, useEffect } from 'react'\`
+- Add state, effects, and event handlers
+- Integrate tool calls: \`callTool({ integrationId: 'i:...', toolName: 'TOOL_NAME', input: {} })\`
+- Add logging for new tool calls and state changes
 
 **Improving design:**
-- Update Tailwind utility classes
-- Modernize component layout
+- Replace hardcoded colors with theme tokens (\`--primary\`, \`--destructive\`, \`--success\`, etc.)
+- Use Basecoat UI patterns (https://basecoatui.com/) for consistent components
 - Improve responsiveness with Tailwind breakpoints
-- Optimize rendering performance`;
+- Ensure proper semantic token usage (\`--destructive\` for delete, \`--success\` for confirmations)`;
 
 export const VIEW_DELETE_PROMPT = `Delete a view from the workspace.
 

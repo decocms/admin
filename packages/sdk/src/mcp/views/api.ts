@@ -259,17 +259,50 @@ Or use Tailwind utility classes:
 
 ## Best Practices
 
-1. **Always use theme tokens** - Never hardcode colors like #000 or rgb(255,0,0)
-2. **Use semantic tokens** - Use --destructive for delete buttons, --success for confirmations
-3. **Leverage Basecoat** - Don't reinvent components; use Basecoat's battle-tested HTML patterns
-4. **Maintain consistency** - Use --radius for all rounded corners, --spacing for padding
-5. **Accessibility** - Use --ring for focus states, ensure proper contrast with foreground tokens
-6. **Test responsiveness** - Views should work on mobile and desktop
+1. **Always log** - Include console logs for props (on mount), tool calls (before/after/errors), and state changes with \`[ViewName]\` prefix
+2. **Always use theme tokens** - Never hardcode colors; use CSS custom properties like \`var(--primary)\`, \`var(--destructive)\`, etc.
+3. **Semantic tokens** - Use \`--destructive\` for delete, \`--success\` for confirmations, \`--warning\` for caution
+4. **Leverage Basecoat** - Use Basecoat's HTML-only components; React shadcn won't work in browser-only views
+5. **Error handling** - Use try/catch when calling tools and log errors
+6. **Accessibility** - Use \`--ring\` for focus states, ensure proper contrast
+
+**CRITICAL: Understanding tool response formats is essential for writing correct code.**
+
+The \`callTool\` function returns a response wrapper:
+\`\`\`javascript
+{
+  content: [{ type: "text", text: "..." }],  // Human-readable text
+  structuredContent: { /* actual typed data */ },  // THE DATA YOU WANT
+  isError: boolean
+}
+\`\`\`
 
 ## Example: Complete Themed Component
 
 \`\`\`jsx
-export const App = () => {
+import { useState } from 'react';
+
+export const App = (props) => {
+  // Always log props on mount
+  console.log('[Dashboard] Component mounted with props:', props);
+  
+  const [data, setData] = useState(null);
+  
+  const handleAction = async () => {
+    console.log('[Dashboard] Calling tool');
+    try {
+      const result = await callTool({
+        integrationId: 'i:integration-management',
+        toolName: 'INTEGRATIONS_LIST',
+        input: {}
+      });
+      console.log('[Dashboard] Tool result:', result);
+      setData(result);
+    } catch (error) {
+      console.error('[Dashboard] Tool call failed:', error);
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -286,6 +319,7 @@ export const App = () => {
         {/* Actions */}
         <div className="flex gap-2">
           <button 
+            onClick={handleAction}
             className="px-4 py-2 rounded-[var(--radius)] font-medium"
             style={{
               backgroundColor: 'var(--primary)',
@@ -307,16 +341,18 @@ export const App = () => {
         </div>
 
         {/* Alert */}
-        <div 
-          className="p-4 rounded-[var(--radius)] border"
-          style={{
-            backgroundColor: 'var(--success)',
-            color: 'var(--success-foreground)',
-            borderColor: 'var(--border)'
-          }}
-        >
-          <strong>Success!</strong> Your changes have been saved.
-        </div>
+        {data && (
+          <div 
+            className="p-4 rounded-[var(--radius)] border"
+            style={{
+              backgroundColor: 'var(--success)',
+              color: 'var(--success-foreground)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <strong>Success!</strong> Data loaded.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -398,12 +434,12 @@ export const viewViews = impl(
               ],
               rules: [
                 "You are a specialized UI development assistant helping users create beautiful, theme-consistent views.",
-                "ALWAYS use theme tokens (CSS custom properties) instead of hardcoded colors: --background, --foreground, --card, --primary, --secondary, --muted, --accent, --destructive, --success, --warning, --border, --input, --ring, --radius, --spacing",
+                "ALWAYS log: props on mount, tool calls (before/after/errors), state changes with [ViewName] prefix",
+                "ALWAYS use theme tokens (CSS custom properties) instead of hardcoded colors: --background, --foreground, --card, --primary, --secondary, --muted, --accent, --destructive, --success, --warning, --border, --input, --ring, --radius",
                 'Use tokens in Tailwind: className="bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)]"',
                 "Views run in browser without build step - use Basecoat UI (https://basecoatui.com/) for HTML-only components instead of React shadcn",
-                "Semantic token usage: --destructive for delete buttons, --success for confirmations, --warning for caution, --muted for disabled states",
-                "Maintain accessibility: use --ring for focus states, ensure proper contrast with foreground tokens",
-                "Example: <button style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderRadius: 'var(--radius)' }}>Themed Button</button>",
+                "Semantic token usage: --destructive for delete, --success for confirmations, --warning for caution, --muted for disabled",
+                "Error handling: use try/catch when calling tools and log errors",
                 "Views automatically adapt when workspace theme changes - never hardcode colors",
               ],
             },

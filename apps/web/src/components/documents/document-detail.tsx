@@ -91,6 +91,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const hasTrackedRecentRef = useRef(false); // Track if we've already added to recents
+  const isProgrammaticUpdateRef = useRef(false); // Track programmatic updates to avoid marking as dirty
 
   // Watch form values
   const formValues = form.watch();
@@ -111,7 +112,9 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         { keepDefaultValues: false },
       );
 
-      // Sync contentEditable divs
+      // Sync contentEditable divs (without triggering dirty state)
+      // Keep the flag true for 500ms to account for DocumentEditor's 300ms debounce
+      isProgrammaticUpdateRef.current = true;
       if (titleRef.current) {
         titleRef.current.textContent = effectiveDocument.name;
       }
@@ -119,6 +122,9 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         descriptionRef.current.textContent =
           effectiveDocument.description || "";
       }
+      setTimeout(() => {
+        isProgrammaticUpdateRef.current = false;
+      }, 500);
 
       // Track as recently opened (only once)
       if (locator && projectKey && !hasTrackedRecentRef.current) {
@@ -166,15 +172,21 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   }, [resource?.uri, resourceUri, searchParams, setSearchParams]);
 
   const handleTitleChange = (newTitle: string) => {
-    form.setValue("name", newTitle, { shouldDirty: true });
+    form.setValue("name", newTitle, {
+      shouldDirty: !isProgrammaticUpdateRef.current,
+    });
   };
 
   const handleDescriptionChange = (newDescription: string) => {
-    form.setValue("description", newDescription, { shouldDirty: true });
+    form.setValue("description", newDescription, {
+      shouldDirty: !isProgrammaticUpdateRef.current,
+    });
   };
 
   const handleContentChange = (newContent: string) => {
-    form.setValue("content", newContent, { shouldDirty: true });
+    form.setValue("content", newContent, {
+      shouldDirty: !isProgrammaticUpdateRef.current,
+    });
   };
 
   const handleAddTag = () => {
@@ -243,7 +255,9 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         { keepDefaultValues: false },
       );
 
-      // Sync contentEditable divs
+      // Sync contentEditable divs (without triggering dirty state)
+      // Keep the flag true for 500ms to account for DocumentEditor's 300ms debounce
+      isProgrammaticUpdateRef.current = true;
       if (titleRef.current) {
         titleRef.current.textContent = effectiveDocument.name;
       }
@@ -251,6 +265,9 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         descriptionRef.current.textContent =
           effectiveDocument.description || "";
       }
+      setTimeout(() => {
+        isProgrammaticUpdateRef.current = false;
+      }, 500);
       toast.success("Changes discarded");
     }
   }, [effectiveDocument, form]);

@@ -9,6 +9,7 @@
  * Configuration is file-based (auth-config.json), not environment variables.
  */
 
+import { getToolsByCategory } from '@/tools/registry';
 import { betterAuth, BetterAuthOptions } from 'better-auth';
 import { admin, apiKey, mcp, openAPI } from 'better-auth/plugins';
 import { existsSync, readFileSync } from 'fs';
@@ -40,6 +41,7 @@ function getDatabaseUrl(): string {
   return process.env.DATABASE_URL || './data/mesh.db';
 }
 
+const scopes = Object.values(getToolsByCategory()).map(tool => tool.map(t => `self:${t.name}`)).flat();
 /**
  * Better Auth instance with MCP, API Key, and Admin plugins
  */
@@ -66,7 +68,7 @@ export const auth = betterAuth({
       loginPage: '/sign-in',
       // Note: Authorization page (/authorize) is served as static HTML
       // Better Auth will redirect there based on loginPage flow
-      oidcConfig: { scopes: ['self:*'], metadata: { scopes_supported: ["self:*"] }, loginPage: '/sign-in' }
+      oidcConfig: { scopes: scopes, metadata: { scopes_supported: scopes }, loginPage: '/sign-in' }
     }),
 
     // API Key plugin for direct tool access
@@ -74,7 +76,7 @@ export const auth = betterAuth({
     apiKey({
       permissions: {
         defaultPermissions: {
-          'mcp': ['PROJECT_LIST', 'PROJECT_GET'], // Default org-level tools
+          'self': ['PROJECT_LIST', 'PROJECT_GET'], // Default org-level tools
         },
       },
     }),

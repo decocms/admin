@@ -49,8 +49,8 @@ Click "Authorize" button
 **Browser Console Should Show:**
 ```javascript
 [Authorize] Original scopes: openid profile email offline_access
-[Authorize] Updated scopes: openid profile email offline_access mcp:*
-[Authorize] Full URL: /api/auth/authorize?...&scope=openid+profile+email+offline_access+mcp%3A*
+[Authorize] Updated scopes: openid profile email offline_access self:*
+[Authorize] Full URL: /api/auth/authorize?...&scope=openid+profile+email+offline_access+self%3A*
 ```
 
 **Step 6: Get Redirected to Client**
@@ -68,7 +68,7 @@ When your client makes a request to `/mcp`, check **server console**:
 ```
 [Auth] ✅ OAuth session authenticated:
   User ID: fhdnCtlMRtLQTyRjGe1ITi5katDFjqVr
-  Raw scopes: openid profile email offline_access mcp:*
+  Raw scopes: openid profile email offline_access self:*
   Parsed permissions: {
   "mcp": [
     "*"
@@ -76,7 +76,7 @@ When your client makes a request to `/mcp`, check **server console**:
 }
 ```
 
-**✅ Success!** The `mcp:*` scope grants access to all management tools.
+**✅ Success!** The `self:*` scope grants access to all management tools.
 
 ### Test 2: API Key Flow ✅
 
@@ -102,7 +102,7 @@ curl -X POST http://localhost:3000/mcp \
 
 **Server Console Should Show:**
 ```
-[Auth] API key authenticated: { keyName: 'Test Key', permissions: { mcp: ['*'] } }
+[Auth] API key authenticated: { keyName: 'Test Key', permissions: { self: ['*'] } }
 ```
 
 **✅ Success!** The API key grants access to all tools.
@@ -113,7 +113,7 @@ curl -X POST http://localhost:3000/mcp \
 
 **Input scopes:**
 ```
-openid profile email offline_access mcp:*
+openid profile email offline_access self:*
 ```
 
 **Parsed permissions:**
@@ -130,9 +130,9 @@ This grants access to ALL management tools:
 ### Wildcard Support
 
 The scope parser now supports any connection prefix:
-- `mcp:*` → `{ "mcp": ["*"] }`
+- `self:*` → `{ "self": ["*"] }`
 - `conn_123:*` → `{ "conn_123": ["*"] }`
-- `mcp:PROJECT_CREATE` → `{ "mcp": ["PROJECT_CREATE"] }`
+- `self:PROJECT_CREATE` → `{ "self": ["PROJECT_CREATE"] }`
 - `conn_123:SEND_MESSAGE` → `{ "conn_123": ["SEND_MESSAGE"] }`
 
 ## Troubleshooting
@@ -145,11 +145,11 @@ cd apps/mesh
 bun run scripts/migrate.ts up
 ```
 
-### Issue: Scopes Still Missing `mcp:*`
+### Issue: Scopes Still Missing `self:*`
 
 **Check:**
 1. Do you see the `/authorize` consent page?
-2. Does browser console show: `[Authorize] Updated scopes: ... mcp:*`?
+2. Does browser console show: `[Authorize] Updated scopes: ... self:*`?
 3. Is the server logging the scopes correctly?
 
 **Debug:**
@@ -198,8 +198,8 @@ bun run src/index.ts
 ### ✅ Scope-Based Permissions
 
 OAuth scopes are parsed into permissions:
-- `mcp:*` grants all management tools
-- `mcp:PROJECT_CREATE` grants specific tool
+- `self:*` grants all management tools
+- `self:PROJECT_CREATE` grants specific tool
 - `conn_123:SEND_MESSAGE` grants connection-specific tool
 
 ### ✅ Dynamic Consent UI
@@ -208,7 +208,7 @@ The `/authorize` page:
 - Fetches available tools from `/api/tools/management`
 - Shows checkboxes for each tool
 - Auto-selects all by default
-- Adds `mcp:*` scope on authorization
+- Adds `self:*` scope on authorization
 
 ### ✅ Database Migrations
 
@@ -222,7 +222,7 @@ Kysely migrations create all required tables:
 
 1. ✅ Restart server to run migrations
 2. ✅ Test OAuth flow with MCP client
-3. ✅ Verify scopes include `mcp:*`
+3. ✅ Verify scopes include `self:*`
 4. ✅ Test API key creation and usage
 5. ✅ Call management tools from MCP client
 

@@ -144,7 +144,7 @@ const createContext = createMeshContextFactory({
 // Skip auth routes, static files, and health check - they don't need MeshContext
 app.use('*', async (c, next) => {
   const path = c.req.path;
-  
+
   // Skip MeshContext for auth endpoints, static pages, and health check
   if (
     path.startsWith('/api/auth/') ||

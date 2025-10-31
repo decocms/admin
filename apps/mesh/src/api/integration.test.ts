@@ -28,7 +28,7 @@ describe('MCP Integration', () => {
           name: 'Test API Key',
           userId: 'test-user-id',
           permissions: {
-            mcp: ['PROJECT_CREATE', 'PROJECT_LIST', 'PROJECT_GET', 'PROJECT_UPDATE', 'PROJECT_DELETE',
+            self: ['PROJECT_CREATE', 'PROJECT_LIST', 'PROJECT_GET', 'PROJECT_UPDATE', 'PROJECT_DELETE',
               'CONNECTION_CREATE', 'CONNECTION_LIST', 'CONNECTION_GET', 'CONNECTION_DELETE', 'CONNECTION_TEST'],
           },
         },

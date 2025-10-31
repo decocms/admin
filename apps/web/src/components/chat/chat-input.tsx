@@ -19,6 +19,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
@@ -26,11 +27,13 @@ import { ContextResources } from "../chat/context-resources.tsx";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { AudioButton } from "./audio-button.tsx";
+import { ChatTemplates } from "./chat-templates.ts";
 import { ErrorBanner } from "./error-banner.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { useAgenticChat } from "./provider.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 import type { ToolsetContextItem } from "./types.ts";
+import { onLogsAdded, onScreenshotAdded } from "../../utils/custom-events.ts";
 
 export function ChatInput({
   disabled,
@@ -118,20 +121,11 @@ export function ChatInput({
 
   // Listen for screenshot events from view detail
   useEffect(() => {
-    async function handleAddScreenshot(event: Event) {
-      const customEvent = event as CustomEvent<{
-        file: { name: string; type: string; size: number };
-        url: string;
-      }>;
-
-      const { file: fileData, url } = customEvent.detail;
-
+    return onScreenshotAdded(({ blob, filename, url }) => {
       try {
-        // Fetch the uploaded image to create a proper File object
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const file = new File([blob], fileData.name, {
-          type: fileData.type,
+        // Create File object from the blob (no re-fetch needed!)
+        const file = new File([blob], filename, {
+          type: "image/png",
         });
 
         // Add to uploaded files
@@ -147,10 +141,9 @@ export function ChatInput({
         // Add default screenshot text to input
         setTimeout(() => {
           const currentInput = input || "";
-          const screenshotText = "Here's a screenshot of the current view:\n\n";
           const newText = currentInput
-            ? `${screenshotText}${currentInput}`
-            : screenshotText;
+            ? `${ChatTemplates.screenshot}${currentInput}`
+            : ChatTemplates.screenshot;
 
           setInput(newText);
 
@@ -160,32 +153,19 @@ export function ChatInput({
           }
         }, EDITOR_FOCUS_DELAY);
       } catch (error) {
-        console.error("Failed to load screenshot:", error);
+        console.error("Failed to add screenshot:", error);
+        toast.error("Failed to add screenshot to chat");
       }
-    }
-
-    window.addEventListener("decopilot:addScreenshot", handleAddScreenshot);
-    return () => {
-      window.removeEventListener(
-        "decopilot:addScreenshot",
-        handleAddScreenshot,
-      );
-    };
+    });
   }, [setUploadedFiles, input, setInput]);
 
   // Listen for logs events from view detail
   useEffect(() => {
-    function handleAddLogs(event: Event) {
-      const customEvent = event as CustomEvent<{
-        logs: string;
-      }>;
-
-      const { logs } = customEvent.detail;
-
+    return onLogsAdded(({ logs }) => {
       // Add logs to the input
       setTimeout(() => {
         const currentInput = input || "";
-        const logsText = `Here are the console logs:\n\n \n\`\`\`\n${logs}\n\`\`\`\n\n`;
+        const logsText = ChatTemplates.logs(logs);
         const newText = currentInput ? `${logsText}${currentInput}` : logsText;
 
         setInput(newText);
@@ -195,12 +175,7 @@ export function ChatInput({
           richTextRef.current.focus();
         }
       }, EDITOR_FOCUS_DELAY);
-    }
-
-    window.addEventListener("decopilot:addLogs", handleAddLogs);
-    return () => {
-      window.removeEventListener("decopilot:addLogs", handleAddLogs);
-    };
+    });
   }, [input, setInput]);
 
   const isMobile =

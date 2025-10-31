@@ -43,6 +43,7 @@ import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useTheme } from "../theme.tsx";
 import html2canvas from "html2canvas";
 import { formatLogEntry } from "../../utils/format-time.ts";
+import { CustomEvents } from "../../utils/custom-events.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -103,11 +104,7 @@ function SendLogsButton() {
     const logText = logs.map((log) => formatLogEntry(log)).join("\n\n");
 
     // Add logs to chat context
-    window.dispatchEvent(
-      new CustomEvent("decopilot:addLogs", {
-        detail: { logs: logText },
-      }),
-    );
+    CustomEvents.addLogs({ logs: logText });
     toast.success("Console logs added to chat");
   }, [logs]);
 
@@ -185,19 +182,12 @@ function SendScreenshotButton({
 
       const screenshotUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`;
 
-      // Add screenshot to chat context (without logs)
-      window.dispatchEvent(
-        new CustomEvent("decopilot:addScreenshot", {
-          detail: {
-            file: {
-              name: filename,
-              type: "image/png",
-              size: blob.size,
-            },
-            url: screenshotUrl,
-          },
-        }),
-      );
+      // Add screenshot to chat context (pass blob directly to avoid re-fetch)
+      CustomEvents.addScreenshot({
+        blob,
+        filename,
+        url: screenshotUrl,
+      });
       toast.success("Screenshot added to chat");
     } catch (error) {
       console.error("Failed to send screenshot:", error);

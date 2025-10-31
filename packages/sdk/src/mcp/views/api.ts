@@ -13,6 +13,7 @@ import { DetailViewRenderInputSchema } from "../views-v2/schemas.ts";
 import {
   VIEW_CREATE_PROMPT,
   VIEW_DELETE_PROMPT,
+  VIEW_PROMPT,
   VIEW_READ_PROMPT,
   VIEW_SEARCH_PROMPT,
   VIEW_UPDATE_PROMPT,
@@ -110,8 +111,7 @@ export function createViewViewsV2() {
       "DECO_RESOURCE_VIEW_UPDATE",
       "DECO_RESOURCE_VIEW_DELETE",
     ],
-    prompt:
-      "You are helping the user manage a view. You can read the view content, update its HTML and metadata, and delete it. Always confirm destructive actions before executing them. Help the user create valid HTML with proper structure.",
+    prompt: VIEW_PROMPT,
     handler: (input, _c) => {
       // Return a custom react:// URL that the frontend will handle
       // The frontend will render a custom React component for this view

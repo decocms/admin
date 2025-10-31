@@ -121,7 +121,6 @@ export function ThreadManagerProvider({
       const routeThreads = Array.from(threads.values())
         .filter((t) => t.route === route && t.agentId === agentId)
         .sort((a, b) => b.updatedAt - a.updatedAt);
-
       return routeThreads.length > 0 ? routeThreads[0] : null;
     },
     [threads, activeThreadId],
@@ -181,15 +180,41 @@ export function ThreadManagerProvider({
   // Delete a thread
   const deleteThread = useCallback(
     (threadId: string) => {
+      const threadToDelete = threads.get(threadId);
+      if (!threadToDelete) return;
+
       setThreads((prev) => {
         const updated = new Map(prev);
         updated.delete(threadId);
+
+        // If deleting the last thread for this route/agent, create a new one
+        const remainingForRoute = Array.from(updated.values()).filter(
+          (t) =>
+            t.route === threadToDelete.route &&
+            t.agentId === threadToDelete.agentId,
+        );
+
+        if (remainingForRoute.length === 0) {
+          const newId = crypto.randomUUID();
+          const now = Date.now();
+          const newThread: ThreadData = {
+            id: newId,
+            route: threadToDelete.route,
+            agentId: threadToDelete.agentId,
+            createdAt: now,
+            updatedAt: now,
+          };
+          updated.set(newId, newThread);
+          // Set as active thread in the same state update
+          setActiveThreadId(newId);
+        } else if (activeThreadId === threadId) {
+          // If we're deleting the active thread but others exist, clear active
+          setActiveThreadId(null);
+        }
+
         return updated;
       });
-      // If we're deleting the active thread, clear the active thread
-      if (activeThreadId === threadId) {
-        setActiveThreadId(null);
-      }
+
       // Also delete from IndexedDB
       deleteThreadMessages(threadId, locator).catch((error) => {
         console.error(
@@ -198,7 +223,7 @@ export function ThreadManagerProvider({
         );
       });
     },
-    [activeThreadId, locator],
+    [activeThreadId, locator, threads],
   );
 
   const value: ThreadManagerContextValue = {

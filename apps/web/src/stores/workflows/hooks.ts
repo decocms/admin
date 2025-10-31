@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { shallow } from "zustand/vanilla/shallow";
 import { useWorkflowStore } from "./provider";
 import { Store } from "./store";
 
@@ -22,10 +23,11 @@ export function useWorkflowStepCount() {
   return useWorkflowStore((state) => state.workflow.steps.length, Object.is);
 }
 
-// Array/Object selectors - use shallow comparison (default)
+// Selectors that create new references - use shallow comparison
 export function useWorkflowStepNames() {
-  return useWorkflowStore((state) =>
-    state.workflow.steps.map((step) => step.def.name),
+  return useWorkflowStore(
+    (state) => state.workflow.steps.map((step) => step.def.name),
+    shallow,
   );
 }
 
@@ -98,7 +100,7 @@ export function useStepTools(stepName: string) {
           integration: { name: dep.integrationId, icon: undefined },
         })) ?? [],
     );
-  });
+  }, shallow);
 }
 
 export function useWorkflowUri() {
@@ -111,10 +113,15 @@ export function useWorkflowStepExecution(stepName: string) {
 
 // Memoized complex selector
 export function useWorkflowStepData(stepName: string) {
+  const lastHyphenIndex = stepName.lastIndexOf("-");
+  const stepNameWithoutId =
+    lastHyphenIndex !== -1 ? stepName.substring(0, lastHyphenIndex) : stepName;
   const selector = useMemo(
     () => (state: Store) => ({
-      output: state.stepOutputs[stepName],
+      output:
+        state.stepOutputs[stepName] ?? state.stepOutputs[stepNameWithoutId],
       views:
+        (state.stepOutputs[stepNameWithoutId] as { views?: string[] })?.views ??
         state.workflow.steps.find((s) => s.def.name === stepName)?.views ??
         EMPTY_VIEWS,
       execution: state.stepExecutions[stepName],
@@ -126,7 +133,7 @@ export function useWorkflowStepData(stepName: string) {
     [stepName],
   );
 
-  return useWorkflowStore(selector);
+  return useWorkflowStore(selector, shallow);
 }
 
 // Helper functions and type guards
@@ -255,40 +262,43 @@ export function useHasExecuteDraft(stepName: string) {
 }
 
 export function useDirtySteps() {
-  return useWorkflowStore((state) => Object.keys(state.executeDrafts));
+  return useWorkflowStore((state) => Object.keys(state.executeDrafts), shallow);
 }
 
 // All actions grouped in one hook (actions are stable, but return object needs shallow)
 export function useWorkflowActions() {
-  return useWorkflowStore((state) => ({
-    // Sync actions
-    handleExternalUpdate: state.handleExternalUpdate,
-    acceptPendingUpdate: state.acceptPendingUpdate,
-    dismissPendingUpdate: state.dismissPendingUpdate,
-    resetAndResync: state.resetAndResync,
-    getWorkflowToSave: state.getWorkflowToSave,
-    handleSaveSuccess: state.handleSaveSuccess,
-    // Step management actions
-    addStep: state.addStep,
-    updateStep: state.updateStep,
-    removeStep: state.removeStep,
-    // Workflow actions
-    updateWorkflow: state.updateWorkflow,
-    // Step execution actions
-    setStepOutput: state.setStepOutput,
-    setStepInput: state.setStepInput,
-    setStepExecutionStart: state.setStepExecutionStart,
-    setStepExecutionEnd: state.setStepExecutionEnd,
-    runStep: state.runStep,
-    // Step editing actions
-    openExecuteEditor: state.openExecuteEditor,
-    closeExecuteEditor: state.closeExecuteEditor,
-    toggleExecuteEditor: state.toggleExecuteEditor,
-    setExecuteDraft: state.setExecuteDraft,
-    clearExecuteDraft: state.clearExecuteDraft,
-    hasExecuteDraft: state.hasExecuteDraft,
-    getDirtySteps: state.getDirtySteps,
-  }));
+  return useWorkflowStore(
+    (state) => ({
+      // Sync actions
+      handleExternalUpdate: state.handleExternalUpdate,
+      acceptPendingUpdate: state.acceptPendingUpdate,
+      dismissPendingUpdate: state.dismissPendingUpdate,
+      resetAndResync: state.resetAndResync,
+      getWorkflowToSave: state.getWorkflowToSave,
+      handleSaveSuccess: state.handleSaveSuccess,
+      // Step management actions
+      addStep: state.addStep,
+      updateStep: state.updateStep,
+      removeStep: state.removeStep,
+      // Workflow actions
+      updateWorkflow: state.updateWorkflow,
+      // Step execution actions
+      setStepOutput: state.setStepOutput,
+      setStepInput: state.setStepInput,
+      setStepExecutionStart: state.setStepExecutionStart,
+      setStepExecutionEnd: state.setStepExecutionEnd,
+      runStep: state.runStep,
+      // Step editing actions
+      openExecuteEditor: state.openExecuteEditor,
+      closeExecuteEditor: state.closeExecuteEditor,
+      toggleExecuteEditor: state.toggleExecuteEditor,
+      setExecuteDraft: state.setExecuteDraft,
+      clearExecuteDraft: state.clearExecuteDraft,
+      hasExecuteDraft: state.hasExecuteDraft,
+      getDirtySteps: state.getDirtySteps,
+    }),
+    shallow,
+  );
 }
 
 export function useGetWorkflowToSave() {

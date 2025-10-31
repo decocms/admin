@@ -19,6 +19,7 @@ import { getDb } from '../database';
 import { meter, tracer } from '../observability';
 import managementRoutes from './routes/management';
 import proxyRoutes from './routes/proxy';
+import customAuthRoutes from './routes/auth';
 // Define Hono variables type
 type Variables = {
   meshContext: MeshContext;
@@ -94,10 +95,10 @@ app.get('/api-keys', serveStatic({ path: './public/api-keys.html' }));
 // Better Auth Routes
 // ============================================================================
 
-// Mount Better Auth handler
-// This automatically handles:
-// - /.well-known/oauth-authorization-server
-// - /.well-known/oauth-protected-resource
+// Mount custom auth routes first (they take precedence over Better Auth catch-all)
+// These provide OAuth-friendly authentication endpoints that return callback URLs
+// in response body instead of using 302 redirects
+app.route('/api/auth/custom', customAuthRoutes);
 
 // Mount Better Auth handler for ALL /api/auth/* routes
 // This handles:
@@ -140,7 +141,23 @@ const createContext = createMeshContextFactory({
 });
 
 // Inject MeshContext into requests
+// Skip auth routes, static files, and health check - they don't need MeshContext
 app.use('*', async (c, next) => {
+  const path = c.req.path;
+  
+  // Skip MeshContext for auth endpoints, static pages, and health check
+  if (
+    path.startsWith('/api/auth/') ||
+    path === '/sign-in' ||
+    path === '/authorize' ||
+    path === '/api-keys' ||
+    path === '/oauth-test' ||
+    path === '/health' ||
+    path.startsWith('/.well-known/')
+  ) {
+    return await next();
+  }
+
   try {
     const ctx = await createContext(c);
     c.set('meshContext', ctx);

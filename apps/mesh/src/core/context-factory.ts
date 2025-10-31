@@ -138,7 +138,7 @@ async function authenticateRequest(
     if (session) {
       // Parse OAuth scopes into permissions
       const scopes = session.scopes || '';
-      const permissions = scopesToPermissions(`${scopes} mcp:*`);
+      const permissions = scopesToPermissions(scopes);
 
       // Load user from userId in session
       const userId = session.userId;

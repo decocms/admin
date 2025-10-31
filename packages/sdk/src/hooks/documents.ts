@@ -129,9 +129,24 @@ export function useDocumentByUriV2(uri: string) {
 
   // Listen for resource updates and auto-invalidate
   useEffect(() => {
+    try {
+      console.debug("documents:listener:attach", { uri });
+    } catch {}
     const cleanup = addResourceUpdateListener((message) => {
+      try {
+        console.debug("documents:listener:event", {
+          eventUri: message.resourceUri,
+          targetUri: uri,
+          matches: message.resourceUri === uri,
+        });
+      } catch {}
       if (message.type === "RESOURCE_UPDATED" && message.resourceUri === uri) {
         // Invalidate this specific document query
+        try {
+          console.debug("documents:invalidate:document", {
+            key: KEYS.DOCUMENT(locator, uri),
+          });
+        } catch {}
         queryClient.invalidateQueries({
           queryKey: KEYS.DOCUMENT(locator, uri),
           refetchType: "all",
@@ -139,6 +154,11 @@ export function useDocumentByUriV2(uri: string) {
 
         // Also invalidate the document list
         const integrationId = parseIntegrationId(uri);
+        try {
+          console.debug("documents:invalidate:list", {
+            key: KEYS.DOCUMENTS_LIST(locator, integrationId),
+          });
+        } catch {}
         queryClient.invalidateQueries({
           queryKey: KEYS.DOCUMENTS_LIST(locator, integrationId),
           refetchType: "all",
@@ -146,7 +166,12 @@ export function useDocumentByUriV2(uri: string) {
       }
     });
 
-    return cleanup;
+    return () => {
+      try {
+        console.debug("documents:listener:detach", { uri });
+      } catch {}
+      cleanup();
+    };
   }, [locator, uri, queryClient]);
 
   return query;

@@ -66,6 +66,12 @@ export function notifyResourceUpdate(resourceUri: string) {
 
   // Dispatch custom event
   const event = new CustomEvent("resource-update", { detail: message });
+  try {
+    console.debug("broadcast:resource-update:notify", {
+      resourceUri,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {}
   resourceEventTarget.dispatchEvent(event);
 }
 
@@ -74,13 +80,25 @@ export function addResourceUpdateListener(
 ) {
   const handleCustomEvent = (event: Event) => {
     const customEvent = event as CustomEvent<ResourceMessage>;
+    try {
+      console.debug("broadcast:resource-update:receive", {
+        resourceUri: customEvent.detail.resourceUri,
+        timestamp: new Date().toISOString(),
+      });
+    } catch {}
     callback(customEvent.detail);
   };
 
+  try {
+    console.debug("broadcast:resource-update:subscribe");
+  } catch {}
   resourceEventTarget.addEventListener("resource-update", handleCustomEvent);
 
   // Return cleanup function
   return () => {
+    try {
+      console.debug("broadcast:resource-update:unsubscribe");
+    } catch {}
     resourceEventTarget.removeEventListener(
       "resource-update",
       handleCustomEvent,

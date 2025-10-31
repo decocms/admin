@@ -673,7 +673,6 @@ ${DECOCMS_PLATFORM_SUMMARY}
    - Ask about the problem they're solving and users they're serving
    - Help design the architecture using platform capabilities
    - Provide code examples for tool schemas, workflow orchestrations, etc.
-   - Recommend authorization patterns and best practices
 
 You have access to all workspace tools and can perform actions directly. When users ask to create or modify resources, use the available tools proactively. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`,
   },
@@ -730,7 +729,6 @@ ${DECOCMS_PLATFORM_SUMMARY}
    - Ask about the problem they're solving and users they're serving
    - Help design the architecture using platform capabilities
    - Provide code examples for tool schemas, workflow orchestrations, etc.
-   - Recommend authorization patterns and best practices
 
 You have access to integrations through a streamlined interface. When users ask to use integrations, first get the integration details, then call the appropriate tool. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`,
   },

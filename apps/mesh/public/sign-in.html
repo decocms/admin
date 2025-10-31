@@ -326,7 +326,9 @@
     };
 
     // Check if this is an OAuth flow
-    const isOAuthFlow = !!(oauthParams.client_id && oauthParams.state);
+    // For OAuth 2.1 with PKCE, we check for client_id and code_challenge
+    // state is optional, so we don't require it
+    const isOAuthFlow = !!(oauthParams.client_id && oauthParams.code_challenge);
 
     if (isOAuthFlow) {
       document.getElementById('oauth-info').style.display = 'block';
@@ -402,59 +404,57 @@
       submitBtn.textContent = 'Signing in...';
       
       try {
-        // Important: We make a clean sign-in request WITHOUT OAuth context
-        // This prevents Better Auth from auto-completing the OAuth flow
-        // We'll handle the OAuth authorization separately via the consent page
-        const response = await fetch('/api/auth/sign-in/email', {
+        // For OAuth flows, send OAuth params to generate code
+        // For normal sign-in, don't send anything
+        const requestBody = {
+          email,
+          password,
+        };
+
+        if (isOAuthFlow) {
+          // Filter out null/undefined values from OAuth params
+          const validParams = {};
+          Object.entries(oauthParams).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+              validParams[key] = value;
+            }
+          });
+          requestBody.oauthParams = validParams;
+        }
+
+        console.log('[Sign-In] isOAuthFlow:', isOAuthFlow);
+        console.log('[Sign-In] Sending request with:', { email, oauthParams: requestBody.oauthParams });
+
+        // Use our custom sign-in endpoint that returns callback URL in response body
+        // For OAuth flows, it generates the code and returns cursor://...?code=...
+        // For normal flows, it returns '/'
+        const response = await fetch('/api/auth/custom/sign-in', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          redirect: 'manual', // Don't follow redirects automatically
-          body: JSON.stringify({
-            email,
-            password,
-          }),
+          body: JSON.stringify(requestBody),
         });
 
-        // Handle OAuth flow redirect (Better Auth returns 302 to client callback)
-        if (isOAuthFlow && (response.status === 302 || response.type === 'opaqueredirect')) {
-          // Better Auth is trying to redirect to client, but we want to show consent page first
-          // Redirect to our consent page instead
-          window.location.href = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
-          return;
+        // Parse JSON response
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Sign in failed');
         }
 
-        // Parse response (only if not a redirect)
-        let data = {};
-        try {
-          data = await response.json();
-        } catch (e) {
-          // Response might not be JSON if it's a redirect
-          if (!response.ok && response.status !== 302) {
-            throw new Error('Sign in failed');
-          }
-        }
-
-        if (!response.ok && response.status !== 302) {
-          throw new Error(data.message || 'Sign in failed');
-        }
-
-        // Success! Session cookie is set
-        // For OAuth flows, redirect to authorization page (consent UI)
-        // For normal sign-in, redirect to home
-        if (isOAuthFlow) {
-          const authorizeUrl = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
-          console.log('[Sign-In] OAuth flow detected, redirecting to consent page:', authorizeUrl);
-          // Redirect to authorization/consent page
-          window.location.href = authorizeUrl;
-        } else {
-          showSuccess('Signed in successfully!');
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        }
+        // Success! Session cookie is set by the server
+        // The response contains the callback URL - do a client-side redirect
+        console.log('[Sign-In] Success, redirecting to:', data.callbackURL);
+        
+        // Show success message for both OAuth and normal flows
+        showSuccess(isOAuthFlow ? 'Signed in! Redirecting to application...' : 'Signed in successfully!');
+        
+        // Short delay to show the success message, then redirect
+        setTimeout(() => {
+          window.location.href = data.callbackURL;
+        }, 800);
       } catch (error) {
         showError(error.message || 'Sign in failed. Please try again.');
       } finally {
@@ -482,57 +482,54 @@
       submitBtn.textContent = 'Creating account...';
       
       try {
-        const response = await fetch('/api/auth/sign-up/email', {
+        // For OAuth flows, send OAuth params to generate code
+        const requestBody = {
+          name,
+          email,
+          password,
+        };
+
+        if (isOAuthFlow) {
+          // Filter out null/undefined values from OAuth params
+          const validParams = {};
+          Object.entries(oauthParams).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+              validParams[key] = value;
+            }
+          });
+          requestBody.oauthParams = validParams;
+        }
+
+        console.log('[Sign-Up] isOAuthFlow:', isOAuthFlow);
+        console.log('[Sign-Up] Sending request with:', { name, email, oauthParams: requestBody.oauthParams });
+
+        // Use our custom sign-up endpoint that returns callback URL in response body
+        const response = await fetch('/api/auth/custom/sign-up', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          redirect: 'manual', // Don't follow redirects automatically
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-          }),
+          body: JSON.stringify(requestBody),
         });
 
-        // Handle OAuth flow redirect (Better Auth returns 302 to client callback)
-        if (isOAuthFlow && (response.status === 302 || response.type === 'opaqueredirect')) {
-          // Better Auth is trying to redirect to client, but we want to show consent page first
-          // Redirect to our consent page instead
-          window.location.href = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
-          return;
+        // Parse JSON response
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Sign up failed');
         }
 
-        // Parse response (only if not a redirect)
-        let data = {};
-        try {
-          data = await response.json();
-        } catch (e) {
-          // Response might not be JSON if it's a redirect
-          if (!response.ok && response.status !== 302) {
-            throw new Error('Sign up failed');
-          }
-        }
-
-        if (!response.ok && response.status !== 302) {
-          throw new Error(data.message || 'Sign up failed');
-        }
-
-        // Success! Session cookie is set
-        // For OAuth flows, redirect to authorization page (consent UI)
-        // For normal sign-up, redirect to home
-        if (isOAuthFlow) {
-          const authorizeUrl = `/authorize?${new URLSearchParams(oauthParams).toString()}`;
-          console.log('[Sign-Up] OAuth flow detected, redirecting to consent page:', authorizeUrl);
-          // Redirect to authorization/consent page
-          window.location.href = authorizeUrl;
-        } else {
-          showSuccess('Account created successfully!');
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        }
+        // Success! Session cookie is set by the server
+        console.log('[Sign-Up] Success, redirecting to:', data.callbackURL);
+        
+        // Show success message for both OAuth and normal flows
+        showSuccess(isOAuthFlow ? 'Account created! Redirecting to application...' : 'Account created successfully!');
+        
+        // Short delay to show the success message, then redirect
+        setTimeout(() => {
+          window.location.href = data.callbackURL;
+        }, 800);
       } catch (error) {
         showError(error.message || 'Sign up failed. Please try again.');
       } finally {

@@ -532,19 +532,23 @@ export function AgenticChatProvider({
       }
 
       // Save messages to IndexedDB when decopilot transport is active
-      if (useDecopilotAgent && result?.message) {
-        // Append the new assistant message to the thread
-        appendThreadMessage(
-          threadId,
-          result.messages,
-          { agentId, route: pathname },
-          locator,
-        ).catch((error) => {
-          console.error(
-            "[AgenticChatProvider] Failed to append message to IndexedDB:",
-            error,
-          );
-        });
+      if (useDecopilotAgent && result?.messages) {
+        const initialLength = initialMessages?.length ?? 0;
+        const newMessages = result.messages.slice(initialLength);
+
+        if (newMessages.length > 0) {
+          appendThreadMessage(
+            threadId,
+            newMessages,
+            { agentId, route: pathname },
+            locator,
+          ).catch((error) => {
+            console.error(
+              "[AgenticChatProvider] Failed to append messages to IndexedDB:",
+              error,
+            );
+          });
+        }
       }
 
       // Send notification if user is not viewing the app
@@ -1085,7 +1089,18 @@ export function AgenticChatProvider({
         handleCreateNewThreadWithMessage,
       );
     };
-  }, [pathname, agentId]); // Only pathname and agentId as dependencies
+  }, [
+    pathname,
+    agentId,
+    showError,
+    clearError,
+    appendError,
+    wrappedSendMessage,
+    setContextItems,
+    createNewThreadWithMessage,
+    createNewThread,
+    setThreadState,
+  ]);
 
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,

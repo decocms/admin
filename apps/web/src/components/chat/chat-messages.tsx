@@ -1,12 +1,6 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
@@ -14,7 +8,6 @@ import { ChatMessage } from "./chat-message.tsx";
 import { EmptyState } from "./empty-state.tsx";
 
 interface ChatMessagesProps {
-  initialScrollBehavior?: "top" | "bottom";
   className?: string;
 }
 
@@ -37,150 +30,35 @@ function Dots() {
   );
 }
 
-export function ChatMessages({
-  initialScrollBehavior = "bottom",
-  className,
-}: ChatMessagesProps = {}) {
-  const { scrollRef, chat } = useAgenticChat();
-
-  const hasInitializedScrollRef = useRef(false);
-  const isInitialRenderRef = useRef(true);
+export function ChatMessages({ className }: ChatMessagesProps = {}) {
+  const { chat } = useAgenticChat();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const scrollViewportRef = useRef<HTMLElement | null>(null);
+  // Single ref approach: sentinelRef is the only ref we keep
 
   const { messages, status } = chat;
   const isStreaming = status === "streaming" || status === "submitted";
 
-  // Check if user is at the bottom of the scroll container
-  const checkIfAtBottom = useCallback(() => {
-    const viewport = scrollViewportRef.current;
-    if (!viewport) return true;
+  // Single-ref setup: we no longer measure container scroll; the sentinel
+  // is used for scrollIntoView on send
 
-    const threshold = 100; // pixels from bottom to be considered "at bottom"
-    const isBottom =
-      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <
-      threshold;
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      const sentinel = sentinelRef.current;
+      if (!sentinel) return;
 
-    return isBottom;
-  }, []);
+      sentinel.scrollIntoView({ behavior, block: "end" });
+      setIsAtBottom(true);
+      setShowScrollButton(false);
+    },
+    [sentinelRef],
+  );
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const viewport = scrollViewportRef.current;
-    if (!viewport) return;
+  // No effect needed; sentinel ref handles scroll anchoring on mount
 
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
-      behavior,
-    });
-    setIsAtBottom(true);
-    setShowScrollButton(false);
-  }, []);
-
-  // Handle scroll events to detect position
-  useEffect(() => {
-    const viewport = scrollRef.current?.closest(
-      '[data-slot="scroll-area-viewport"]',
-    ) as HTMLElement | null;
-
-    scrollViewportRef.current = viewport;
-
-    if (!viewport) return;
-
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    const handleScroll = () => {
-      // Debounce scroll checks for better performance
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-
-      // Use longer delay during streaming to prevent flickering
-      const delay = isStreaming ? 300 : 20;
-
-      timeoutId = setTimeout(() => {
-        const atBottom = checkIfAtBottom();
-        setIsAtBottom(atBottom);
-        // Don't show button if we're streaming and at bottom
-        if (isStreaming && atBottom) {
-          setShowScrollButton(false);
-        } else {
-          setShowScrollButton(!atBottom);
-        }
-      }, delay);
-    };
-
-    viewport.addEventListener("scroll", handleScroll, { passive: true });
-
-    // Initial check - delayed to ensure layout is ready
-    const initialCheckTimeout = setTimeout(() => {
-      const atBottom = checkIfAtBottom();
-      setIsAtBottom(atBottom);
-      // Don't show button during streaming if at bottom
-      if (isStreaming && atBottom) {
-        setShowScrollButton(false);
-      } else {
-        setShowScrollButton(!atBottom);
-      }
-    }, 50);
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      clearTimeout(initialCheckTimeout);
-      viewport.removeEventListener("scroll", handleScroll);
-    };
-  }, [checkIfAtBottom, scrollRef, messages, isStreaming]);
-
-  // Initial scroll behavior
-  useLayoutEffect(() => {
-    if (hasInitializedScrollRef.current) {
-      return;
-    }
-
-    const viewport = scrollViewportRef.current;
-    if (!viewport) return;
-
-    if (initialScrollBehavior === "bottom") {
-      scrollToBottom("auto");
-    } else if (initialScrollBehavior === "top") {
-      viewport.scrollTo({ top: 0, behavior: "auto" });
-      setIsAtBottom(false);
-      setShowScrollButton(true);
-    }
-
-    hasInitializedScrollRef.current = true;
-  }, [initialScrollBehavior, scrollToBottom]);
-
-  // Auto-scroll on new messages if at bottom
-  useLayoutEffect(() => {
-    if (isInitialRenderRef.current) {
-      isInitialRenderRef.current = false;
-
-      if (initialScrollBehavior === "top") {
-        return;
-      }
-    }
-
-    if (initialScrollBehavior === "top") {
-      return;
-    }
-
-    if (isAtBottom) {
-      scrollToBottom("smooth");
-      // Keep button hidden during auto-scroll
-      if (isStreaming) {
-        setShowScrollButton(false);
-      }
-    }
-  }, [
-    initialScrollBehavior,
-    isAtBottom,
-    messages,
-    scrollToBottom,
-    isStreaming,
-  ]);
+  // Ref-based auto-scroll: remount sentinel on message count change
+  // so the callback runs without effects
 
   const isEmpty = messages.length === 0;
 
@@ -214,7 +92,7 @@ export function ChatMessages({
       {messages.length > 0 &&
         showScrollButton &&
         !(isStreaming && isAtBottom) && (
-          <div className="sticky bottom-0 left-0 right-0 flex justify-center pointer-events-none pb-4 z-[100]">
+          <div className="sticky bottom-0 left-0 right-0 flex justify-center pointer-events-none pb-4 z-100">
             <button
               type="button"
               className={cn(
@@ -238,7 +116,19 @@ export function ChatMessages({
           </div>
         )}
 
-      <div ref={scrollRef} />
+      <div
+        key={messages.length}
+        ref={(el) => {
+          // always update the shared ref
+          // and scroll the nearest scrollable ancestor into view
+          // when the sentinel mounts (on message count change)
+          // avoiding effects
+          sentinelRef.current = el;
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "end" });
+          }
+        }}
+      />
     </div>
   );
 }

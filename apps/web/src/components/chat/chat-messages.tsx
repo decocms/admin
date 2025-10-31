@@ -1,6 +1,6 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
@@ -37,6 +37,18 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
   const [showScrollButton, setShowScrollButton] = useState(false);
   // Single ref approach: sentinelRef is the only ref we keep
 
+  // Deduplicate messages by ID to prevent React key warnings
+  const uniqueMessages = useMemo(() => {
+    const seen = new Map();
+    return chat.messages.filter((message) => {
+      if (seen.has(message.id)) {
+        return false;
+      }
+      seen.set(message.id, true);
+      return true;
+    });
+  }, [chat.messages]);
+
   const { messages, status } = chat;
   const isStreaming = status === "streaming" || status === "submitted";
 
@@ -60,7 +72,7 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
   // Ref-based auto-scroll: remount sentinel on message count change
   // so the callback runs without effects
 
-  const isEmpty = messages.length === 0;
+  const isEmpty = uniqueMessages.length === 0;
 
   return (
     <div
@@ -73,11 +85,11 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
         <EmptyState />
       ) : (
         <div className="flex flex-col gap-6 min-w-0 max-w-full">
-          {messages.map((message, index) => (
+          {uniqueMessages.map((message, index) => (
             <ChatMessage
               key={message.id}
               message={message}
-              isLastMessage={messages.length === index + 1}
+              isLastMessage={uniqueMessages.length === index + 1}
             />
           ))}
           <ChatError />
@@ -89,7 +101,7 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
       )}
 
       {/* Scroll to bottom button - sticky at bottom of scroll area */}
-      {messages.length > 0 &&
+      {uniqueMessages.length > 0 &&
         showScrollButton &&
         !(isStreaming && isAtBottom) && (
           <div className="sticky bottom-0 left-0 right-0 flex justify-center pointer-events-none pb-4 z-100">

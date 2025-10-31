@@ -61,6 +61,7 @@ export function ChatInput({
 
   const {
     uploadedFiles,
+    setUploadedFiles,
     isDragging,
     fileInputRef,
     handleFileChange,
@@ -111,6 +112,93 @@ export function ChatInput({
       }
     }
   }, [isLoading]);
+
+  // Listen for screenshot events from view detail
+  useEffect(() => {
+    async function handleAddScreenshot(event: Event) {
+      const customEvent = event as CustomEvent<{
+        file: { name: string; type: string; size: number };
+        url: string;
+      }>;
+
+      const { file: fileData, url } = customEvent.detail;
+
+      try {
+        // Fetch the uploaded image to create a proper File object
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], fileData.name, {
+          type: fileData.type,
+        });
+
+        // Add to uploaded files
+        setUploadedFiles((prev) => [
+          ...prev,
+          {
+            file,
+            status: "done",
+            url,
+          },
+        ]);
+
+        // Add default screenshot text to input
+        setTimeout(() => {
+          const currentInput = input || "";
+          const screenshotText = "Here's a screenshot of the current view:\n\n";
+          const newText = currentInput
+            ? `${screenshotText}${currentInput}`
+            : screenshotText;
+
+          setInput(newText);
+
+          // Focus the editor
+          if (richTextRef.current) {
+            richTextRef.current.focus();
+          }
+        }, 100);
+      } catch (error) {
+        console.error("Failed to load screenshot:", error);
+      }
+    }
+
+    window.addEventListener("decopilot:addScreenshot", handleAddScreenshot);
+    return () => {
+      window.removeEventListener(
+        "decopilot:addScreenshot",
+        handleAddScreenshot,
+      );
+    };
+  }, [setUploadedFiles, input, setInput]);
+
+  // Listen for logs events from view detail
+  useEffect(() => {
+    function handleAddLogs(event: Event) {
+      const customEvent = event as CustomEvent<{
+        logs: string;
+      }>;
+
+      const { logs } = customEvent.detail;
+
+      // Add logs to the input
+      setTimeout(() => {
+        const currentInput = input || "";
+        const logsText = `Here are the console logs:\n\n \n\`\`\`\n${logs}\n\`\`\`\n\n`;
+        const newText = currentInput ? `${logsText}${currentInput}` : logsText;
+
+        setInput(newText);
+
+        // Focus the editor
+        if (richTextRef.current) {
+          richTextRef.current.focus();
+        }
+      }, 100);
+    }
+
+    window.addEventListener("decopilot:addLogs", handleAddLogs);
+    return () => {
+      window.removeEventListener("decopilot:addLogs", handleAddLogs);
+    };
+  }, [input, setInput]);
 
   const isMobile =
     typeof window !== "undefined" &&

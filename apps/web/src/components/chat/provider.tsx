@@ -46,6 +46,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
+import type { ContextItem } from "./types.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import {
@@ -57,6 +58,8 @@ import {
   deriveUpdateToolFromRead,
 } from "../../stores/resource-version-history/utils.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
+import { useThreadManager } from "../decopilot/thread-manager-context.tsx";
+import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 
 interface UiOptions {
   showModelSelector: boolean;
@@ -238,6 +241,17 @@ export function sendTextMessage(
   );
 }
 
+export function createNewThreadWithMessage(
+  message: string,
+  contextItems?: ContextItem[],
+) {
+  window.dispatchEvent(
+    new CustomEvent("decopilot:createNewThreadWithMessage", {
+      detail: { message, contextItems },
+    }),
+  );
+}
+
 export function appendRuntimeError(
   error: Error | unknown | RuntimeErrorEntry,
   resourceUri?: string,
@@ -298,10 +312,13 @@ export function AgenticChatProvider({
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
   const { pathname } = useLocation();
-  const { contextItems: threadContextItems } = useThreadContext();
+  const { contextItems: threadContextItems, setContextItems } =
+    useThreadContext();
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
+  const { createNewThread } = useThreadManager();
+  const { setThreadState } = useDecopilotThread();
 
   const [state, dispatch] = useReducer(chatStateReducer, {
     finishReason: null,
@@ -515,19 +532,23 @@ export function AgenticChatProvider({
       }
 
       // Save messages to IndexedDB when decopilot transport is active
-      if (useDecopilotAgent && result?.message) {
-        // Append the new assistant message to the thread
-        appendThreadMessage(
-          threadId,
-          result.messages,
-          { agentId, route: pathname },
-          locator,
-        ).catch((error) => {
-          console.error(
-            "[AgenticChatProvider] Failed to append message to IndexedDB:",
-            error,
-          );
-        });
+      if (useDecopilotAgent && result?.messages) {
+        const initialLength = initialMessages?.length ?? 0;
+        const newMessages = result.messages.slice(initialLength);
+
+        if (newMessages.length > 0) {
+          appendThreadMessage(
+            threadId,
+            newMessages,
+            { agentId, route: pathname },
+            locator,
+          ).catch((error) => {
+            console.error(
+              "[AgenticChatProvider] Failed to append messages to IndexedDB:",
+              error,
+            );
+          });
+        }
       }
 
       // Send notification if user is not viewing the app
@@ -1024,10 +1045,36 @@ export function AgenticChatProvider({
       }
     }
 
+    function handleCreateNewThreadWithMessage(event: Event) {
+      const customEvent = event as CustomEvent<{
+        message: string;
+        contextItems: ContextItem[];
+      }>;
+      const { message, contextItems } = customEvent.detail;
+
+      if (typeof message === "string" && message.trim()) {
+        if (contextItems && contextItems.length > 0) {
+          setContextItems(contextItems);
+        }
+        const threadId = crypto.randomUUID();
+
+        setThreadState({
+          initialMessage: message,
+          autoSend: false,
+          threadId,
+        });
+        createNewThread(pathname, agentId, threadId);
+      }
+    }
+
     window.addEventListener("decopilot:sendTextMessage", handleSendTextMessage);
     window.addEventListener("decopilot:appendError", handleAppendError);
     window.addEventListener("decopilot:clearError", handleClearError);
     window.addEventListener("decopilot:showError", handleShowError);
+    window.addEventListener(
+      "decopilot:createNewThreadWithMessage",
+      handleCreateNewThreadWithMessage,
+    );
 
     return () => {
       window.removeEventListener(
@@ -1037,8 +1084,23 @@ export function AgenticChatProvider({
       window.removeEventListener("decopilot:appendError", handleAppendError);
       window.removeEventListener("decopilot:clearError", handleClearError);
       window.removeEventListener("decopilot:showError", handleShowError);
+      window.removeEventListener(
+        "decopilot:createNewThreadWithMessage",
+        handleCreateNewThreadWithMessage,
+      );
     };
-  }, [showError, clearError, appendError, wrappedSendMessage]);
+  }, [
+    pathname,
+    agentId,
+    showError,
+    clearError,
+    appendError,
+    wrappedSendMessage,
+    setContextItems,
+    createNewThreadWithMessage,
+    createNewThread,
+    setThreadState,
+  ]);
 
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,

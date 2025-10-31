@@ -41,8 +41,6 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useTheme } from "../theme.tsx";
-import { useAgenticChat } from "../chat/provider.tsx";
-import { UIMessage } from "@ai-sdk/react";
 import html2canvas from "html2canvas";
 
 interface ViewDetailProps {

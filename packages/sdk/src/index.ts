@@ -44,6 +44,7 @@ export { useWorkflow as useWorkflowByUriV2 } from "./hooks/resources-workflow.ts
 export {
   useTool as useToolByUriV2,
   useToolCallV2,
+  useUpdateTool,
 } from "./hooks/resources-tools.ts";
 export {
   useDocumentByUriV2,

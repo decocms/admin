@@ -76,7 +76,7 @@ export interface ToolUpsertParamsV2 {
   execute: string;
   dependencies?: Array<{
     integrationId: string;
-    toolNames: string[];
+    toolNames?: string[];
   }>;
 }
 

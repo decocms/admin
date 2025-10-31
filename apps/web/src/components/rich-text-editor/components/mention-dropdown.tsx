@@ -23,7 +23,6 @@ export const MentionDropdown = forwardRef<
 >(function MentionDropdown(props, ref) {
   const { items: _items, command, editor, onClose } = props;
   const { data: integrations = [] } = useIntegrations();
-
   // Use the onClose callback passed from TipTap
   const handleClose = React.useCallback(() => {
     console.log("MentionDropdown: handleClose called");
@@ -83,10 +82,13 @@ export const MentionDropdown = forwardRef<
 
   // Handle single tool selection (for inline mentions)
   const handleSelectItem = React.useCallback(
-    (toolId: string, type: "tool" | "resource") => {
+    (id: string, type: "tool" | "resource") => {
+      console.log("handleSelectItem", id, type);
       if (type === "tool") {
-        const [integrationId, toolName] = toolId.split(":");
-        const integration = integrations.find((i) => i.id === integrationId);
+        const [prefix, integrationId, toolName] = id.split(":");
+        const integration = integrations.find(
+          (i) => i.id === `${prefix}:${integrationId}`,
+        );
         const toolDef = integration?.tools?.find((t) => t.name === toolName);
 
         if (toolDef && integration) {
@@ -111,8 +113,9 @@ export const MentionDropdown = forwardRef<
           };
           command(mentionItem);
         }
+      } else if (type === "resource") {
+        // TODO: Handle resource type for documents
       }
-      // TODO: Handle resource type for documents
     },
     [command, integrations],
   );

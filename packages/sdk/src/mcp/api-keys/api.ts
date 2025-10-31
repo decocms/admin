@@ -60,8 +60,9 @@ export function mapApiKey(
 }
 
 const createTool = createToolGroup("APIKeys", {
-  name: "API Key Management",
-  description: "Create and manage API keys securely.",
+  name: "API Key Vault",
+  description:
+    "Secure vault for storing and managing third-party service API keys (Stripe, OpenAI, etc.) with policy-based access control.",
   icon: "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
 });
 
@@ -92,35 +93,47 @@ const AppClaimsSchema = z.object({
 
 // Shared API key output schema
 export const ApiKeySchema = z.object({
-  id: z.string().describe("The unique identifier of the API key"),
-  name: z.string().describe("The name of the API key"),
-  workspace: z.string().nullable().describe("The workspace ID"),
-  enabled: z.boolean().describe("Whether the API key is enabled"),
+  id: z.string().describe("Unique identifier for the stored API key"),
+  name: z
+    .string()
+    .describe(
+      "Human-readable name describing which service this key is for (e.g., 'Stripe Production')",
+    ),
+  workspace: z
+    .string()
+    .nullable()
+    .describe("Workspace ID if key is workspace-scoped"),
+  enabled: z.boolean().describe("Whether this key can currently be used"),
   policies: z
     .array(StatementSchema)
-    .describe("Access policies for the API key"),
-  createdAt: z.string().describe("Creation timestamp"),
-  updatedAt: z.string().describe("Last update timestamp"),
+    .describe(
+      "Access control policies defining which users/roles can access this key",
+    ),
+  createdAt: z.string().describe("When the key was stored"),
+  updatedAt: z.string().describe("When the key was last modified"),
   deletedAt: z
     .string()
     .nullable()
-    .describe("Deletion timestamp (null if not deleted)"),
+    .describe("When the key was deleted (null if active)"),
 });
 
 const ApiKeyWithValueSchema = ApiKeySchema.extend({
   value: z
     .string()
     .describe(
-      "The actual API key value (JWT token) - only returned on creation/reissue",
+      "The encrypted API key value - only exposed once at creation/reissue for security",
     ),
 });
 
 export const listApiKeys = createTool({
   name: "API_KEYS_LIST",
-  description: "List all API keys",
+  description:
+    "List all stored API keys in the vault (does not expose actual key values)",
   inputSchema: z.object({}),
   outputSchema: z.object({
-    apiKeys: z.array(ApiKeySchema).describe("List of API keys"),
+    apiKeys: z
+      .array(ApiKeySchema)
+      .describe("All stored API keys with metadata"),
   }),
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -178,12 +191,17 @@ const ensureStateIsWellFormed = async (state: unknown) => {
 
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
-  description: "Create a new API key",
+  description:
+    "Store a new third-party service API key in the vault with access control policies",
   inputSchema: z.object({
-    name: z.string().describe("The name of the API key"),
+    name: z
+      .string()
+      .describe(
+        "Descriptive name for the key (e.g., 'Stripe Production', 'OpenAI GPT-4')",
+      ),
     policies: policiesSchema,
     claims: AppClaimsSchema.optional().describe(
-      "App Claims to be added to the API key",
+      "Optional app-specific metadata and configuration state",
     ),
   }),
   outputSchema: ApiKeyWithValueSchema,
@@ -258,14 +276,14 @@ export const createApiKey = createTool({
 
 export const reissueApiKey = createTool({
   name: "API_KEYS_REISSUE",
-  description: "Reissue an existing API key with new claims",
+  description:
+    "Generate a new encrypted token for an existing stored API key (e.g., after key rotation or policy updates)",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key to reissue"),
-    claims: z
-      .any()
+    id: z.string().describe("ID of the stored API key to reissue"),
+    claims: z.any().optional().describe("Updated app-specific metadata"),
+    policies: policiesSchema
       .optional()
-      .describe("New claims to be added to the API key"),
-    policies: policiesSchema.optional().describe("Policies of the API key"),
+      .describe("Updated access control policies"),
   }),
   outputSchema: ApiKeyWithValueSchema,
   handler: async ({ id, claims, policies }, c) => {
@@ -327,9 +345,10 @@ export const reissueApiKey = createTool({
 
 export const getApiKey = createTool({
   name: "API_KEYS_GET",
-  description: "Get an API key by ID",
+  description:
+    "Retrieve metadata for a stored API key (does not expose the actual key value)",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key"),
+    id: z.string().describe("ID of the stored API key"),
   }),
   outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
@@ -363,11 +382,12 @@ export const getApiKey = createTool({
 
 export const updateApiKey = createTool({
   name: "API_KEYS_UPDATE",
-  description: "Update an API key metadata",
+  description:
+    "Update the name, enabled status, or access policies for a stored API key",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key"),
-    name: z.string().optional().describe("New name for the API key"),
-    enabled: z.boolean().optional().describe("Whether the API key is enabled"),
+    id: z.string().describe("ID of the stored API key"),
+    name: z.string().optional().describe("New descriptive name"),
+    enabled: z.boolean().optional().describe("Whether the key can be used"),
     policies: policiesSchema,
   }),
   outputSchema: ApiKeySchema,
@@ -403,13 +423,14 @@ export const updateApiKey = createTool({
 
 export const deleteApiKey = createTool({
   name: "API_KEYS_DELETE",
-  description: "Delete an API key (soft delete)",
+  description:
+    "Remove a stored API key from the vault (soft delete - can be recovered)",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key to delete"),
+    id: z.string().describe("ID of the API key to delete"),
   }),
   outputSchema: z.object({
-    id: z.string().describe("The ID of the deleted API key"),
-    deleted: z.boolean().describe("Confirmation that the key was deleted"),
+    id: z.string().describe("ID of the deleted key"),
+    deleted: z.boolean().describe("True if deletion succeeded"),
   }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -440,9 +461,9 @@ export const deleteApiKey = createTool({
 
 export const enableApiKey = createTool({
   name: "API_KEYS_ENABLE",
-  description: "Enable an API key",
+  description: "Enable a stored API key to allow it to be used",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key to enable"),
+    id: z.string().describe("ID of the API key to enable"),
   }),
   outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
@@ -470,9 +491,9 @@ export const enableApiKey = createTool({
 
 export const disableApiKey = createTool({
   name: "API_KEYS_DISABLE",
-  description: "Disable an API key",
+  description: "Disable a stored API key to prevent it from being used",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key to disable"),
+    id: z.string().describe("ID of the API key to disable"),
   }),
   outputSchema: ApiKeySchema,
   handler: async ({ id }, c) => {
@@ -503,18 +524,23 @@ const CheckAccessInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The API key to check access for, if not provided, the current key from context will be used",
+      "Optional API key to check - uses current context key if not provided",
     ),
-  tools: z.array(z.string()).describe("All tools that wants to check access"),
+  tools: z
+    .array(z.string())
+    .describe("List of tool names to check access permissions for"),
 });
 
 const CheckAccessOutputSchema = z.object({
-  access: z.record(z.string(), z.boolean()),
+  access: z
+    .record(z.string(), z.boolean())
+    .describe("Map of tool names to boolean access status"),
 });
 
 export const checkAccess = createTool({
   name: "API_KEYS_CHECK_ACCESS",
-  description: "Check if an API key has access to a resource",
+  description:
+    "Check which tools an API key has permission to access based on its policies",
   inputSchema: CheckAccessInputSchema,
   outputSchema: CheckAccessOutputSchema,
   handler: async ({ key, tools }, c) => {
@@ -555,12 +581,14 @@ export const checkAccess = createTool({
 
 export const validateApiKey = createTool({
   name: "API_KEYS_VALIDATE",
-  description: "Validate an API key by ID",
+  description: "Check if a stored API key is valid and enabled",
   inputSchema: z.object({
-    id: z.string().describe("The ID of the API key to validate"),
+    id: z.string().describe("ID of the API key to validate"),
   }),
   outputSchema: ApiKeySchema.extend({
-    valid: z.boolean().describe("Whether the API key is valid"),
+    valid: z
+      .boolean()
+      .describe("True if the key exists, is enabled, and not deleted"),
   }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

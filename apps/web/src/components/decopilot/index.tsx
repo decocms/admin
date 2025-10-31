@@ -219,7 +219,7 @@ function DecopilotChatContent() {
     "decochat" | "decopilot"
   >({
     key: "decopilot:preferred-mode",
-    defaultValue: "decochat",
+    defaultValue: "decopilot",
   });
 
   function handleModeChange(nextMode: "decochat" | "decopilot") {

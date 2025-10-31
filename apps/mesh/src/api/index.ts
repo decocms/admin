@@ -9,17 +9,17 @@
  */
 
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { serveStatic } from 'hono/bun';
 import { auth } from '../auth';
 import { createMeshContextFactory } from '../core/context-factory';
 import type { MeshContext } from '../core/mesh-context';
 import { getDb } from '../database';
 import { meter, tracer } from '../observability';
+import customAuthRoutes from './routes/auth';
 import managementRoutes from './routes/management';
 import proxyRoutes from './routes/proxy';
-import customAuthRoutes from './routes/auth';
 // Define Hono variables type
 type Variables = {
   meshContext: MeshContext;
@@ -65,7 +65,7 @@ app.get('/health', (c) => {
 // Tool Metadata API
 // ============================================================================
 
-import { MANAGEMENT_TOOLS, getToolsByCategory } from '../tools/registry';
+import { getToolsByCategory, MANAGEMENT_TOOLS } from '../tools/registry';
 
 // Get all management tools (for OAuth consent UI)
 app.get('/api/tools/management', (c) => {
@@ -82,14 +82,6 @@ app.get('/api/tools/management', (c) => {
 // Serve sign-in page at /sign-in
 app.get('/sign-in', serveStatic({ path: './public/sign-in.html' }));
 
-// Serve authorization consent page at /authorize
-app.get('/authorize', serveStatic({ path: './public/authorize.html' }));
-
-// Serve OAuth test/debug page
-app.get('/oauth-test', serveStatic({ path: './public/oauth-test.html' }));
-
-// Serve API keys management page
-app.get('/api-keys', serveStatic({ path: './public/api-keys.html' }));
 
 // ============================================================================
 // Better Auth Routes
@@ -149,9 +141,6 @@ app.use('*', async (c, next) => {
   if (
     path.startsWith('/api/auth/') ||
     path === '/sign-in' ||
-    path === '/authorize' ||
-    path === '/api-keys' ||
-    path === '/oauth-test' ||
     path === '/health' ||
     path.startsWith('/.well-known/')
   ) {
@@ -180,6 +169,18 @@ app.use('*', async (c, next) => {
 // Routes
 // ============================================================================
 
+app.use('/mcp', async (c, next) => {
+  if (!c.var.meshContext.auth.user?.id) {
+    const origin = new URL(c.req.url).origin;
+    return c.res = new Response(null, {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/api/auth/.well-known/oauth-protected-resource"`
+      }
+    })
+  }
+  return await next();
+})
 // Mount management tools MCP server at /mcp (no connectionId)
 // This exposes PROJECT_*, CONNECTION_* tools via MCP protocol
 // Authentication is handled by context-factory middleware above

@@ -282,7 +282,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
         className="flex flex-col h-full gap-0"
       >
         <div className="relative">
-          <TabsList variant="underline" className="w-full">
+          <TabsList variant="underline" className="w-full h-10">
             <TabsTrigger value="console" variant="underline" className="gap-2">
               Console
               {errorCount > 0 && (

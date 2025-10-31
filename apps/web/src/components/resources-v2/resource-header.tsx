@@ -124,7 +124,7 @@ export function ResourceHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onRefresh}
-                className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
+                className="h-9 w-9 flex items-center text-muted-foreground justify-center"
               >
                 <Icon name="refresh" size={20} />
               </Button>
@@ -136,7 +136,7 @@ export function ResourceHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onSearchToggle}
-                className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
+                className="h-9 w-9 flex items-center text-muted-foreground justify-center"
               >
                 <Icon name="search" size={20} />
               </Button>
@@ -159,7 +159,7 @@ export function ResourceHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onFilterClick}
-                className="h-9 w-9 rounded-xl flex items-center justify-center"
+                className="h-9 w-9 flex items-center justify-center"
               >
                 <Icon
                   name="filter_list"
@@ -179,7 +179,7 @@ export function ResourceHeader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-xl flex items-center text-muted-foreground justify-center"
+                  className="h-9 w-9 flex items-center text-muted-foreground justify-center"
                 >
                   <Icon name="more_horiz" size={20} />
                 </Button>
@@ -192,7 +192,7 @@ export function ResourceHeader({
                       variant={viewMode === "cards" ? "secondary" : "ghost"}
                       size="sm"
                       onClick={() => onViewModeChange?.("cards")}
-                      className="flex-1 h-10 rounded-xl "
+                      className="flex-1 h-10 "
                     >
                       <Icon
                         name="grid_view"
@@ -204,7 +204,7 @@ export function ResourceHeader({
                       variant={viewMode === "table" ? "secondary" : "ghost"}
                       size="sm"
                       onClick={() => onViewModeChange?.("table")}
-                      className="flex-1 h-10 rounded-xl"
+                      className="flex-1 h-10"
                     >
                       <Icon
                         name="view_list"

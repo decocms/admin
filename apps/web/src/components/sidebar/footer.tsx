@@ -378,24 +378,20 @@ export function LoggedUser({
 
 const PlanColors = {
   [WELL_KNOWN_PLANS.FREE]: {
-    background:
-      "bg-chart-1/15 hover:bg-chart-1/25 text-chart-1",
-    sprite: "text-chart-1/25",
+    background: "bg-chart-1/15 hover:bg-chart-1/75 text-chart-1",
+    sprite: "text-chart-1/50",
   },
   [WELL_KNOWN_PLANS.STARTER]: {
-    background:
-      "bg-chart-1/15 hover:bg-chart-1/25 text-chart-1 mix-blend-multiply",
-    sprite: "text-chart-1/25",
+    background: "bg-chart-1/15 hover:bg-chart-1/75 text-chart-1",
+    sprite: "text-chart-1/50",
   },
   [WELL_KNOWN_PLANS.GROWTH]: {
-    background:
-      "bg-brand-yellow-light/30 hover:bg-brand-yellow-light/50 text-brand-yellow-dark",
-    sprite: "text-brand-yellow-light",
+    background: "bg-chart-2/15 hover:bg-chart-2/75 text-chart-2",
+    sprite: "text-chart-2/50",
   },
   [WELL_KNOWN_PLANS.SCALE]: {
-    background:
-      "bg-brand-purple-light/30 hover:bg-brand-purple-light/50 text-brand-purple-dark",
-    sprite: "text-brand-purple-light",
+    background: "bg-chart-3/15 hover:bg-chart-3/75 text-chart-3",
+    sprite: "text-chart-3/50",
   },
 };
 
@@ -416,7 +412,7 @@ function TeamPlanAndBalance() {
     <Link
       to={orgLink("/billing")}
       className={cn(
-        "relative flex flex-col gap-1 p-0.5 rounded-xl w-full transition-colors overflow-hidden",
+        "relative flex flex-col gap-1 p-0.5 rounded-lg w-full transition-colors overflow-hidden",
         planColor.background,
       )}
     >
@@ -424,15 +420,18 @@ function TeamPlanAndBalance() {
         width="192"
         height="64"
         viewBox="0 0 192 64"
-        className={cn("absolute top-0 left-0 z-10", planColor.sprite)}
+        className={cn(
+          "absolute top-0 left-0 z-10 brightness-90",
+          planColor.sprite,
+        )}
       >
         <use href="/img/galaxy-sprite.svg" />
       </svg>
-      <div className="z-20 text-xs flex items-center gap-1 uppercase px-2 py-1">
+      <div className="z-20 text-xs brightness-80 mix-blend-plus-darker hue-rotate-10 flex items-center gap-1 uppercase px-2 py-1">
         <PlanIcon />
         {plan.title} PLAN
       </div>
-      <div className="z-20 flex items-center justify-between px-2 h-9 rounded-xl w-full text-sm bg-sidebar">
+      <div className="z-20 flex items-center justify-between px-2 h-9 rounded-lg w-full text-sm bg-sidebar">
         <span className="text-sidebar-foreground">Team Balance</span>
         <span className="text-sidebar-foreground font-semibold">
           {account.balance}

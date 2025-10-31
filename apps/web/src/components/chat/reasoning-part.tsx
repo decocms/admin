@@ -36,7 +36,7 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
   };
 
   return (
-    <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
+    <div className="flex flex-col border border-border rounded-lg bg-muted/20 overflow-hidden">
       <button
         type="button"
         onClick={handleToggle}

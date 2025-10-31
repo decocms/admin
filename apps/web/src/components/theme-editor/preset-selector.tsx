@@ -173,8 +173,7 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
                       key={j}
                       className="h-1.5 w-[70px] rounded-sm opacity-15"
                       style={{
-                        backgroundColor:
-                          vars["--muted-foreground"],
+                        backgroundColor: vars["--muted-foreground"],
                       }}
                     />
                   ))}

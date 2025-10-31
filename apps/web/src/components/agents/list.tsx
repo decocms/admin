@@ -558,7 +558,7 @@ function AgentsList() {
               ctaButton={
                 <Button
                   variant="default"
-                  className="h-9 rounded-xl w-full md:w-auto"
+                  className="h-9 w-full md:w-auto"
                   onClick={handleCreate}
                 >
                   <Icon name="add" size={16} />

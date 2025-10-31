@@ -94,7 +94,7 @@ export const DEFAULT_THEME: Theme = {
     "--destructive": "oklch(0.5770 0.2450 27.3250)",
     "--destructive-foreground": "oklch(1 0 0)",
     "--success": "oklch(0.6540 0.1840 142)",
-    "--success-foreground": "oklch(0.9630 0.0250 137)",
+    "--success-foreground": "oklch(0.263 0.71 137)",
     "--warning": "oklch(0.8770 0.1840 99)",
     "--warning-foreground": "oklch(0.2930 0.0710 70)",
     "--border": "oklch(0.882 0 0)",

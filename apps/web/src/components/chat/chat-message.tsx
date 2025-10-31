@@ -234,7 +234,7 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
         href={attachment.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
+        className="relative group flex items-center gap-2 p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors"
       >
         <div className="relative">
           <img
@@ -253,7 +253,7 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
         href={attachment.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
+        className="relative group flex items-center gap-2 p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
@@ -283,7 +283,7 @@ function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
       href={attachment.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
+      className="relative group flex items-center gap-2 p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors"
     >
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
@@ -334,7 +334,7 @@ function TextPreviewCard({
   }, [attachment.url, expanded, text]);
 
   return (
-    <div className="relative group p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors w-full max-w-[480px]">
+    <div className="relative group p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors w-full max-w-[480px]">
       <div className="flex items-start gap-2">
         <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
           <Icon name="description" className="text-muted-foreground" />

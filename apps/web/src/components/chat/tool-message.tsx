@@ -555,11 +555,43 @@ function ExpandableToolCard({
   }, []);
 
   return (
+<<<<<<< HEAD
     <>
       <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
         <button
           type="button"
           onClick={handleToggleExpand}
+=======
+    <div className="flex flex-col border border-border rounded-lg bg-muted/20 overflow-hidden">
+      <button
+        type="button"
+        onClick={handleToggleExpand}
+        className={cn(
+          "flex items-center justify-between p-2 transition-colors cursor-pointer",
+          "hover:bg-muted",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          {integration ? (
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              size="sm"
+              className="size-5 shrink-0"
+            />
+          ) : (
+            <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+          )}
+          <span className="text-sm font-medium text-foreground">
+            {toolName || integration?.name || "Integration"}
+          </span>
+          <div className={cn("text-xs", statusConfig.className)}>
+            {statusText}
+          </div>
+        </div>
+        <Icon
+          name="expand_less"
+>>>>>>> 60378c5f (fixing tokens)
           className={cn(
             "flex items-center justify-between p-2 transition-colors cursor-pointer",
             "hover:bg-muted",

@@ -152,7 +152,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "!h-8 text-sm hover:bg-accent rounded-xl py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
+          "!h-8 text-sm hover:bg-accent rounded-lg py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
           variant === "borderless" && "md:border-none",
           className,
         )}

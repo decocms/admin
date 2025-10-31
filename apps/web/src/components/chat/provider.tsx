@@ -49,7 +49,7 @@ import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
 import {
-  deriveUpdateToolFromRead,
+  deriveReadToolFromUpdate,
   extractResourceUriFromInput,
   extractUpdateDataFromInput,
   isResourceReadTool,
@@ -211,7 +211,8 @@ function normalizeToolPart(part: unknown): NormalizedToolPart {
     const name = params?.name as string | undefined;
     const integrationId = (inputObj?.id as string | undefined) ?? undefined;
     toolName = integrationId && name ? `${integrationId}__${name}` : name;
-    args = (params?.arguments as Record<string, unknown> | undefined) ?? undefined;
+    args =
+      (params?.arguments as Record<string, unknown> | undefined) ?? undefined;
   } else {
     const afterPrefix = typeStr.slice("tool-".length);
     toolName = afterPrefix || undefined;
@@ -242,13 +243,12 @@ function handleReadCheckpointFromPart(
     const existing =
       createResourceVersionHistoryStore.getState().history[finalUri];
     if (!existing || existing.length === 0) {
-      const assumedUpdateTool = deriveUpdateToolFromRead(info.toolName);
       void deps.addVersion(
         finalUri,
         serialized,
         {
           toolCallId: info.toolCallId,
-          toolName: assumedUpdateTool ?? undefined,
+          toolName: info.toolName ?? undefined,
           input: { uri: finalUri, data: readData },
         },
         deps.threadId,
@@ -272,30 +272,34 @@ function handleUpdateOrCreateFromPart(
   try {
     if (isResourceUpdateTool(info.toolName)) {
       const checkpoint = deps.readCheckpointRef.current?.get(uri);
+
       if (checkpoint) {
-        const existing = createResourceVersionHistoryStore.getState().history[uri];
-        if (!existing || existing.length === 0) {
-          void deps.addVersion(
-            uri,
-            checkpoint,
-            {
-              toolCallId: info.toolCallId,
-              toolName: info.toolName ?? undefined,
-              input: {
-                ...info.args,
-                uri,
-                // oxlint-disable-next-line no-restricted-syntax
-                data: JSON.parse(checkpoint),
-              },
+        // Always save the checkpoint as a pre-update version (even if versions exist)
+        // This ensures we capture the "before" state for every update
+        const readToolName = deriveReadToolFromUpdate(info.toolName);
+
+        void deps.addVersion(
+          uri,
+          checkpoint,
+          {
+            toolCallId: info.toolCallId,
+            toolName: readToolName ?? undefined,
+            input: {
+              ...info.args,
+              uri,
+              // oxlint-disable-next-line no-restricted-syntax
+              data: JSON.parse(checkpoint),
             },
-            deps.threadId,
-          );
-        }
+          },
+          deps.threadId,
+        );
+
         deps.readCheckpointRef.current?.delete(uri);
       }
 
       const updateData = extractUpdateDataFromInput(info.args);
       const serialized = safeStringify(updateData);
+
       if (serialized) {
         void deps.addVersion(
           uri,
@@ -748,7 +752,8 @@ export function AgenticChatProvider({
       if (result?.message?.role === "assistant" && result.message.parts) {
         const toolDeps: HandleToolDeps = {
           readCheckpointRef,
-          addVersion: addVersion as unknown as VersionHistoryActions["addVersion"],
+          addVersion:
+            addVersion as unknown as VersionHistoryActions["addVersion"],
           threadId,
         };
         for (const part of result.message.parts) {

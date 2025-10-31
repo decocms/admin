@@ -43,14 +43,17 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
   // Single-ref setup: we no longer measure container scroll; the sentinel
   // is used for scrollIntoView on send
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      const sentinel = sentinelRef.current;
+      if (!sentinel) return;
 
-    sentinel.scrollIntoView({ behavior, block: "end" });
-    setIsAtBottom(true);
-    setShowScrollButton(false);
-  }, [sentinelRef]);
+      sentinel.scrollIntoView({ behavior, block: "end" });
+      setIsAtBottom(true);
+      setShowScrollButton(false);
+    },
+    [sentinelRef],
+  );
 
   // No effect needed; sentinel ref handles scroll anchoring on mount
 

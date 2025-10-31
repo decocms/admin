@@ -499,6 +499,9 @@ interface ExpandableToolCardProps {
   toolDescription?: string;
   statusText?: string;
   children: React.ReactNode;
+  canRevert?: boolean;
+  revertLabel?: string;
+  onConfirmRevert?: () => void;
 }
 
 function ExpandableToolCard({
@@ -508,9 +511,13 @@ function ExpandableToolCard({
   toolDescription: _toolDescription,
   statusText: customStatusText,
   children,
+  canRevert,
+  revertLabel,
+  onConfirmRevert,
 }: ExpandableToolCardProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const statusText = useMemo(() => {
     if (customStatusText) return customStatusText;
@@ -545,52 +552,107 @@ function ExpandableToolCard({
   }, []);
 
   return (
-    <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
-      <button
-        type="button"
-        onClick={handleToggleExpand}
-        className={cn(
-          "flex items-center justify-between p-2 transition-colors cursor-pointer",
-          "hover:bg-muted",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          {integration ? (
-            <IntegrationIcon
-              icon={integration.icon}
-              name={integration.name}
-              size="sm"
-              className="size-5 shrink-0"
-            />
-          ) : (
-            <div className="size-5 rounded-full bg-muted/30 shrink-0" />
-          )}
-          <span className="text-sm font-medium text-foreground">
-            {toolName || integration?.name || "Integration"}
-          </span>
-          <div className={cn("text-xs", statusConfig.className)}>
-            {statusText}
-          </div>
-        </div>
-        <Icon
-          name="expand_less"
+    <>
+      <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
+        <button
+          type="button"
+          onClick={handleToggleExpand}
           className={cn(
-            "transition-transform duration-200",
-            shouldExpand ? "rotate-180" : "rotate-90",
+            "flex items-center justify-between p-2 transition-colors cursor-pointer",
+            "hover:bg-muted",
           )}
-        />
-      </button>
-
-      {shouldExpand && (
-        <div
-          ref={contentRef}
-          className="text-left space-y-3 w-full min-w-0 px-2 py-2 border-t"
-          onClick={(e) => e.stopPropagation()}
         >
-          {children}
-        </div>
+          <div className="flex items-center gap-2">
+            {integration ? (
+              <IntegrationIcon
+                icon={integration.icon}
+                name={integration.name}
+                size="sm"
+                className="size-5 shrink-0"
+              />
+            ) : (
+              <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+            )}
+            <span className="text-sm font-medium text-foreground">
+              {toolName || integration?.name || "Integration"}
+            </span>
+            <div className={cn("text-xs", statusConfig.className)}>
+              {statusText}
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {canRevert && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmOpen(true);
+                      }}
+                    >
+                      <Icon name="undo" className="text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <span>Revert to {revertLabel}</span>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Icon
+              name="expand_less"
+              className={cn(
+                "transition-transform duration-200",
+                shouldExpand ? "rotate-180" : "rotate-90",
+              )}
+            />
+          </div>
+        </button>
+
+        {shouldExpand && (
+          <div
+            ref={contentRef}
+            className="text-left space-y-3 w-full min-w-0 px-2 py-2 border-t"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {children}
+          </div>
+        )}
+      </div>
+
+      {/* Confirmation dialog */}
+      {canRevert && (
+        <AlertDialog open={confirmOpen}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Revert Resource Version</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will restore the resource to version {revertLabel}.
+                Continue?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmOpen(false);
+                  onConfirmRevert?.();
+                }}
+              >
+                Revert
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
-    </div>
+    </>
   );
 }
 
@@ -693,6 +755,24 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     }
   }, [part.state]);
 
+  // Version history integration
+  const uri: string | null = useMemo(() => {
+    const args = input?.params?.arguments;
+    if (args && typeof args === "object") {
+      const maybeUri =
+        (args as { uri?: unknown; resource?: unknown }).uri ??
+        (args as { resource?: unknown }).resource;
+      return typeof maybeUri === "string" ? maybeUri : null;
+    }
+    return null;
+  }, [input?.params?.arguments]);
+
+  const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
+    toolName || "",
+    part,
+    uri,
+  );
+
   return (
     <ExpandableToolCard
       part={part}
@@ -700,6 +780,9 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
       toolName={toolName}
       toolDescription={toolDescription || undefined}
       statusText={statusText}
+      canRevert={canRevert}
+      revertLabel={revertLabel}
+      onConfirmRevert={onConfirmRevert}
     >
       {/* Input Section */}
       {part.input !== undefined && (

@@ -1186,6 +1186,7 @@ export function ResourcesV2List({
   tabs,
   activeTab,
   onTabChange,
+  resourceRules,
 }: {
   integrationId?: string;
   resourceName?: string;
@@ -1193,6 +1194,7 @@ export function ResourcesV2List({
   tabs?: TabItem[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
+  resourceRules?: string[];
 }) {
   const integration = useIntegration(integrationId ?? "").data;
 
@@ -1211,6 +1213,7 @@ export function ResourcesV2List({
     const rules: string[] = [
       `You are helping with ${resourceName || "resource"} management. Focus on operations related to listing, creating, and managing ${resourceName || "resources"}.`,
       `When working with ${resourceName || "resources"}, prioritize operations that help users understand, organize, and manage their ${resourceName || "resource"} data effectively.`,
+      ...(resourceRules ?? []),
     ];
 
     contextItems.push(

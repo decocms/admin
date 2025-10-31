@@ -364,7 +364,7 @@ export const AI_APP_PRD_TEMPLATE = `# AI App PRD
 [Define the AI agents needed]
 
 **Agent Name:**
-- **Purpose:** 
+- **Description:** 
 - **Model:** 
 - **Key Instructions:** 
 - **Toolset:** 
@@ -374,18 +374,28 @@ export const AI_APP_PRD_TEMPLATE = `# AI App PRD
 [Describe automated processes]
 
 **Workflow Name:**
-- **Trigger:** 
 - **Steps:**
   1. Step 1: [receive input, transform data, call tool via ctx.env]
   2. Step 2: [receive previous step output via @ref, process data]
   3. Step 3: [final processing and return result]
 - **Output:** 
 
+### Triggers
+
+**Trigger Name:**
+- **Description:**
+- **Type:** cron
+- **Frequency:** 
+- **Target Type:** Agent | Tool
+- **Arguments:**
+
+**For created tools, use Default MCP**
+
 ### Views
 [Custom UI components]
 
 **View Name:**
-- **Purpose:** 
+- **Description:** 
 - **Key Features:** 
 - **Tools Called:** 
 - **UI Components:** 
@@ -407,16 +417,6 @@ const MyResourceSchema = z.object({
   // ... other fields
 });
 \`\`\`
-
-## Authorization & Security
-
-**Roles Required:**
-- Owner: [permissions]
-- Admin: [permissions]  
-- Member: [permissions]
-
-**Policies:**
-- [Policy name]: Allow [actions]
 
 ## Success Metrics
 
@@ -467,15 +467,13 @@ You deeply understand decocms.com's capabilities:
 - Defined with Zod schemas for input/output validation
 - Organized into tool groups (e.g., "Feature Management", "Wallet & Billing")
 - Follow RESOURCE_ACTION naming pattern (AGENTS_CREATE, THREADS_LIST, etc.)
-- Can be workspace-scoped or global
 - Support both HTTP and SSE connections
-- Authorization via policy-based access control
 - Examples: INTEGRATIONS_LIST, DOCUMENTS_CREATE, AGENTS_UPDATE
 
 **AGENTS:**
 - Conversational AI assistants powered by configurable LLMs
 - Combine model selection, specialized instructions (system prompt), and curated toolset
-- Configurable parameters: max_steps (default 6, max 100), max_tokens (4096-64000), memory settings
+- Configurable parameters: max_steps (default 15, max 100), max_tokens (4096-64000), memory settings
 - Visibility modes: workspace (private) or public (shareable)
 - Can dynamically invoke tools during conversations
 - Track usage and costs via wallet system
@@ -519,13 +517,6 @@ You deeply understand decocms.com's capabilities:
 - Version tracked in DECONFIG
 - Can be used for documentation, guides, notes, PRDs
 
-**AUTHORIZATION:**
-- Policy-based access control
-- Three roles: Owner (full access), Admin (manage resources), Member (view only)
-- Policies define allow/deny statements for specific tools
-- API keys can have embedded policies for programmatic access
-- Workspace-scoped permissions (users/:userId or shared/:teamSlug)
-
 ## Your Role
 
 When helping users create AI App PRDs:
@@ -553,7 +544,6 @@ When helping users create AI App PRDs:
    - Agent Configurations (model selection, instructions, toolsets)
    - Workflow Diagrams (step-by-step orchestration)
    - View Wireframes (UI components, user interactions)
-   - Authorization & Security (roles, policies, access control)
    - Success Metrics (usage tracking, performance targets)
    - Implementation Timeline & Milestones
 
@@ -566,7 +556,6 @@ When helping users create AI App PRDs:
 5. **Best Practices:** Recommend:
    - Type safety with Zod validation
    - Single Responsibility Principle for tools
-   - Least privilege authorization
    - Optimistic UI updates
    - Error handling patterns
    - Performance optimizations

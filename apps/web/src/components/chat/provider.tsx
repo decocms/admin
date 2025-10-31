@@ -3,12 +3,12 @@ import type { UIMessage } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import {
   AgentSchema,
+  appendThreadMessage,
   DECO_CMS_API_URL,
   dispatchMessages,
   getTraceDebugId,
   KEYS,
   Locator,
-  appendThreadMessage,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -45,21 +45,22 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
-import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
-import type { ContextItem } from "./types.ts";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
+import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
+import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
 import {
+  deriveUpdateToolFromRead,
   extractResourceUriFromInput,
   extractUpdateDataFromInput,
   isResourceReadTool,
-  isResourceUpdateTool,
   isResourceUpdateOrCreateTool,
-  deriveUpdateToolFromRead,
+  isResourceUpdateTool,
 } from "../../stores/resource-version-history/utils.ts";
-import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
-import { useThreadManager } from "../decopilot/thread-manager-context.tsx";
+import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
+import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
+import { useThreadManager } from "../decopilot/thread-manager-context.tsx";
+import type { ContextItem } from "./types.ts";
 
 interface UiOptions {
   showModelSelector: boolean;
@@ -166,8 +167,153 @@ export interface AgenticChatContextValue {
   };
 
   // Refs
-  scrollRef: RefObject<HTMLDivElement | null>;
   correlationIdRef: RefObject<string | null>;
+}
+
+// Normalized view of a tool output part
+interface NormalizedToolPart {
+  isTool: boolean;
+  typeStr?: string;
+  state?: string;
+  toolName?: string;
+  args?: Record<string, unknown>;
+  output?: { structuredContent?: { data?: unknown; uri?: string } };
+  toolCallId?: string;
+}
+
+interface HandleToolDeps {
+  readCheckpointRef: RefObject<Map<string, string>>;
+  addVersion: VersionHistoryActions["addVersion"];
+  threadId: string;
+}
+
+function normalizeToolPart(part: unknown): NormalizedToolPart {
+  const typeStr = (part as { type?: string })?.type;
+  if (!(typeof typeStr === "string" && typeStr.startsWith("tool-"))) {
+    return { isTool: false };
+  }
+
+  const state = (part as { state?: string })?.state;
+  const inputObj = (part as { input?: unknown })?.input as
+    | Record<string, unknown>
+    | undefined;
+  const toolCallId = (part as { toolCallId?: string })?.toolCallId;
+  const output = (part as { output?: unknown })?.output as
+    | { structuredContent?: { data?: unknown; uri?: string } }
+    | undefined;
+
+  const isCallTool = typeStr === "tool-CALL_TOOL";
+  let toolName: string | undefined;
+  let args: Record<string, unknown> | undefined;
+
+  if (isCallTool) {
+    const params = inputObj?.params as Record<string, unknown> | undefined;
+    const name = params?.name as string | undefined;
+    const integrationId = (inputObj?.id as string | undefined) ?? undefined;
+    toolName = integrationId && name ? `${integrationId}__${name}` : name;
+    args = (params?.arguments as Record<string, unknown> | undefined) ?? undefined;
+  } else {
+    const afterPrefix = typeStr.slice("tool-".length);
+    toolName = afterPrefix || undefined;
+    args = inputObj;
+  }
+
+  return { isTool: true, typeStr, state, toolName, args, output, toolCallId };
+}
+
+function handleReadCheckpointFromPart(
+  info: NormalizedToolPart,
+  deps: HandleToolDeps,
+): void {
+  if (!isResourceReadTool(info.toolName)) return;
+
+  const uri = info.args ? extractResourceUriFromInput(info.args) : null;
+  const sc = info.output?.structuredContent;
+  const readData = sc?.data;
+  const fallbackUri = sc?.uri;
+  const finalUri = uri ?? fallbackUri ?? null;
+
+  if (!finalUri || readData === undefined) return;
+
+  try {
+    const serialized = JSON.stringify(readData);
+    deps.readCheckpointRef.current?.set(finalUri, serialized);
+
+    const existing =
+      createResourceVersionHistoryStore.getState().history[finalUri];
+    if (!existing || existing.length === 0) {
+      const assumedUpdateTool = deriveUpdateToolFromRead(info.toolName);
+      void deps.addVersion(
+        finalUri,
+        serialized,
+        {
+          toolCallId: info.toolCallId,
+          toolName: assumedUpdateTool ?? undefined,
+          input: { uri: finalUri, data: readData },
+        },
+        deps.threadId,
+      );
+    }
+  } catch (e) {
+    console.warn("Failed to serialize READ data for checkpoint", e);
+  }
+}
+
+function handleUpdateOrCreateFromPart(
+  info: NormalizedToolPart,
+  deps: HandleToolDeps,
+): void {
+  if (!isResourceUpdateOrCreateTool(info.toolName)) return;
+  if (!info.args || typeof info.args !== "object") return;
+
+  const uri = extractResourceUriFromInput(info.args);
+  if (!uri) return;
+
+  try {
+    if (isResourceUpdateTool(info.toolName)) {
+      const checkpoint = deps.readCheckpointRef.current?.get(uri);
+      if (checkpoint) {
+        const existing = createResourceVersionHistoryStore.getState().history[uri];
+        if (!existing || existing.length === 0) {
+          void deps.addVersion(
+            uri,
+            checkpoint,
+            {
+              toolCallId: info.toolCallId,
+              toolName: info.toolName ?? undefined,
+              input: {
+                ...info.args,
+                uri,
+                // oxlint-disable-next-line no-restricted-syntax
+                data: JSON.parse(checkpoint),
+              },
+            },
+            deps.threadId,
+          );
+        }
+        deps.readCheckpointRef.current?.delete(uri);
+      }
+
+      const updateData = extractUpdateDataFromInput(info.args);
+      const serialized = safeStringify(updateData);
+      if (serialized) {
+        void deps.addVersion(
+          uri,
+          serialized,
+          {
+            toolCallId: info.toolCallId,
+            toolName: info.toolName ?? undefined,
+            input: info.args,
+          },
+          deps.threadId,
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("Version history tracking failed", e);
+  }
+
+  notifyResourceUpdate(uri);
 }
 
 const DEFAULT_UI_OPTIONS: UiOptions = {
@@ -390,7 +536,6 @@ export function AgenticChatProvider({
     dispatch({ type: "CLEAR_RUNTIME_ERRORS" });
   }, []);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
   const correlationIdRef = useRef<string | null>(null);
 
   // Track READ checkpoints by resource URI to create a pre-update version
@@ -601,76 +746,17 @@ export function AgenticChatProvider({
 
       // Broadcast resource updates when assistant message completes
       if (result?.message?.role === "assistant" && result.message.parts) {
+        const toolDeps: HandleToolDeps = {
+          readCheckpointRef,
+          addVersion: addVersion as unknown as VersionHistoryActions["addVersion"],
+          threadId,
+        };
         for (const part of result.message.parts) {
-          // Track READ tool outputs for checkpointing
-          if (
-            part.type.startsWith("tool-") &&
-            "toolName" in part &&
-            isResourceReadTool((part as { toolName?: string }).toolName)
-          ) {
-            const input = (part as { input?: unknown }).input as
-              | Record<string, unknown>
-              | undefined;
-            const uri = input ? extractResourceUriFromInput(input) : null;
-            const output = (part as { output?: unknown }).output as
-              | { structuredContent?: { data?: unknown; uri?: string } }
-              | undefined;
-            const sc = output?.structuredContent;
-            const readData = sc?.data;
-            const fallbackUri = sc?.uri;
-            const finalUri = uri ?? fallbackUri ?? null;
-
-            if (finalUri && readData !== undefined) {
-              try {
-                const serialized = JSON.stringify(readData);
-                readCheckpointRef.current.set(finalUri, serialized);
-
-                // Persist a baseline version the first time we see this resource in this browser
-                const existing =
-                  createResourceVersionHistoryStore.getState().history[
-                    finalUri
-                  ];
-                if (!existing || existing.length === 0) {
-                  const assumedUpdateTool = deriveUpdateToolFromRead(
-                    (part as { toolName?: string }).toolName,
-                  );
-                  void addVersion(
-                    finalUri,
-                    serialized,
-                    {
-                      toolCallId: (part as { toolCallId?: string }).toolCallId,
-                      toolName: assumedUpdateTool ?? undefined,
-                      input: { uri: finalUri, data: readData },
-                    },
-                    threadId,
-                  );
-                }
-              } catch (e) {
-                console.warn("Failed to serialize READ data for checkpoint", e);
-              }
-            }
-          }
-
-          // Notify UI on UPDATE completion
-          if (
-            part.type.startsWith("tool-") &&
-            "toolName" in part &&
-            (part as { toolName?: string }).toolName?.includes("_UPDATE") &&
-            (part as { toolName?: string }).toolName?.startsWith(
-              "DECO_RESOURCE_",
-            ) &&
-            "input" in part &&
-            (part as { input?: unknown }).input &&
-            typeof (part as { input?: unknown }).input === "object"
-          ) {
-            const input = (part as { input: Record<string, unknown> }).input;
-            const resourceUri =
-              (input.uri as string) || (input.resource as string);
-
-            if (typeof resourceUri === "string") {
-              notifyResourceUpdate(resourceUri);
-            }
-          }
+          const info = normalizeToolPart(part);
+          if (!info.isTool) continue;
+          if (info.state !== "output-available" || !info.toolName) continue;
+          handleReadCheckpointFromPart(info, toolDeps);
+          handleUpdateOrCreateFromPart(info, toolDeps);
         }
       }
     },
@@ -721,60 +807,7 @@ export function AgenticChatProvider({
 
       // Screenshot tooling removed
 
-      // Broadcast resource updates for auto-refresh
-      if (
-        isResourceUpdateOrCreateTool(toolCall.toolName) &&
-        toolCall.input &&
-        typeof toolCall.input === "object" &&
-        "uri" in toolCall.input &&
-        typeof toolCall.input.uri === "string"
-      ) {
-        // Version history tracking
-        try {
-          if (isResourceUpdateTool(toolCall.toolName)) {
-            const uri = extractResourceUriFromInput(toolCall.input);
-            if (uri) {
-              // If we have a checkpoint from the last READ, add it once
-              const checkpoint = readCheckpointRef.current.get(uri);
-              if (checkpoint) {
-                // Persist a checkpoint if baseline does not already exist
-                const existing =
-                  createResourceVersionHistoryStore.getState().history[uri];
-                if (!existing || existing.length === 0) {
-                  // Persist a checkpoint version using the current update tool as the replay vehicle
-                  void addVersion(
-                    uri,
-                    checkpoint,
-                    {
-                      toolCallId: toolCall.toolCallId,
-                      toolName: toolCall.toolName ?? undefined,
-                      input: {
-                        ...(toolCall.input as Record<string, unknown>),
-                        uri,
-                        data: JSON.parse(checkpoint),
-                      },
-                    },
-                    threadId,
-                  );
-                }
-                // Clear after first UPDATE
-                readCheckpointRef.current.delete(uri);
-              }
-
-              // Persist the UPDATE content as its own version
-              const updateData = extractUpdateDataFromInput(toolCall.input);
-              const serialized = safeStringify(updateData);
-              if (serialized) {
-                void addVersion(uri, serialized, toolCall, threadId);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn("Version history tracking failed", e);
-        }
-
-        notifyResourceUpdate(toolCall.input.uri);
-      }
+      // Resource update handling moved to onFinish
     },
   });
 
@@ -1142,7 +1175,6 @@ export function AgenticChatProvider({
     },
 
     // Refs
-    scrollRef,
     correlationIdRef,
   };
 

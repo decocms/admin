@@ -295,6 +295,65 @@ function AgentConfigs() {
   );
 }
 
+// Decochat-specific component that fetches its own data
+function DecochatChat({
+  effectiveDecochatThreadId,
+  shouldUseInitialInput,
+  threadState,
+  clearThreadState,
+  preferences,
+}: {
+  effectiveDecochatThreadId: string;
+  shouldUseInitialInput: boolean;
+  threadState: { initialMessage?: string; autoSend?: boolean };
+  clearThreadState: () => void;
+  preferences: { defaultModel?: string; useOpenRouter?: boolean; sendReasoning?: boolean };
+}) {
+  const { data: decochatAgent } = useAgentData(
+    WELL_KNOWN_AGENTS.decochatAgent.id,
+  );
+  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
+  const { data: { messages: decochatThreadMessages } = { messages: [] } } =
+    useThreadMessages(
+      effectiveDecochatThreadId,
+      WELL_KNOWN_AGENTS.decochatAgent.id,
+      {
+        shouldFetch: true,
+      },
+    );
+
+  if (!decochatAgent) return null;
+
+  return (
+    <AgenticChatProvider
+      key={effectiveDecochatThreadId}
+      agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
+      threadId={effectiveDecochatThreadId}
+      agent={decochatAgent}
+      agentRoot={decochatRoot}
+      model={preferences.defaultModel}
+      useOpenRouter={preferences.useOpenRouter}
+      sendReasoning={preferences.sendReasoning}
+      initialMessages={decochatThreadMessages}
+      initialInput={
+        shouldUseInitialInput
+          ? (threadState.initialMessage ?? undefined)
+          : undefined
+      }
+      autoSend={shouldUseInitialInput ? threadState.autoSend : false}
+      onAutoSendComplete={clearThreadState}
+      uiOptions={{
+        showEditAgent: false,
+        showModelSelector: true,
+        showThreadMessages: false,
+        showAgentVisibility: false,
+      }}
+    >
+      <UnifiedChat />
+    </AgenticChatProvider>
+  );
+}
+
 // Wrapper component that provides the right agent based on chat mode
 function ChatWithProvider({
   agentId,
@@ -381,88 +440,29 @@ function ChatWithProvider({
 
   if (!chatAgentId) return null;
 
-  const { data: serverAgent } = useAgentData(agentId);
-  const { data: decochatAgent } = useAgentData(
-    WELL_KNOWN_AGENTS.decochatAgent.id,
-  );
-
-  // Fetch required data for providers
-  const agentRoot = useAgentRoot(agentId);
-  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
   const { preferences } = useUserPreferences();
-  const { data: { messages: agentThreadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, {
-      shouldFetch: chatMode === "agent",
-    });
-  const { data: { messages: decochatThreadMessages } = { messages: [] } } =
-    useThreadMessages(effectiveDecochatThreadId, {
-      shouldFetch: chatMode === "decochat",
-    });
-
   const handleSaveAgent = useSaveAgent();
 
-  // Render both providers but only show the active one
-  // This way both chats maintain their state
+  // For agent mode, use the outer provider context (no nested provider)
+  // For decochat mode, create a separate provider
   return (
     <div className="h-full w-full">
-      {/* Agent chat - hidden when in decochat mode */}
+      {/* Agent chat - uses outer provider context */}
       <div className={chatMode === "agent" ? "block h-full" : "hidden"}>
-        {serverAgent && (
-          <Suspense fallback={null}>
-            <AgenticChatProvider
-              key={`agent-${agentId}-${threadId}`}
-              agentId={agentId}
-              threadId={threadId}
-              agent={serverAgent}
-              agentRoot={agentRoot}
-              model={preferences.defaultModel}
-              useOpenRouter={preferences.useOpenRouter}
-              sendReasoning={preferences.sendReasoning}
-              initialMessages={agentThreadMessages}
-              onSave={handleSaveAgent}
-              uiOptions={{
-                showEditAgent: false,
-                showModelSelector: false,
-                showThreadMessages: true,
-                showAgentVisibility: false,
-              }}
-            >
-              <UnifiedChat />
-            </AgenticChatProvider>
-          </Suspense>
-        )}
+        <UnifiedChat />
       </div>
 
-      {/* Decochat - hidden when in agent mode */}
+      {/* Decochat - has its own provider */}
       <div className={chatMode === "decochat" ? "block h-full" : "hidden"}>
-        {decochatAgent && (
+        {chatMode === "decochat" && (
           <Suspense fallback={null}>
-            <AgenticChatProvider
-              key={effectiveDecochatThreadId}
-              agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
-              threadId={effectiveDecochatThreadId}
-              agent={decochatAgent}
-              agentRoot={decochatRoot}
-              model={preferences.defaultModel}
-              useOpenRouter={preferences.useOpenRouter}
-              sendReasoning={preferences.sendReasoning}
-              initialMessages={decochatThreadMessages}
-              initialInput={
-                shouldUseInitialInput
-                  ? (threadState.initialMessage ?? undefined)
-                  : undefined
-              }
-              autoSend={shouldUseInitialInput ? threadState.autoSend : false}
-              onAutoSendComplete={clearThreadState}
-              uiOptions={{
-                showEditAgent: false,
-                showModelSelector: true,
-                showThreadMessages: false,
-                showAgentVisibility: false,
-              }}
-            >
-              <UnifiedChat />
-            </AgenticChatProvider>
+            <DecochatChat
+              effectiveDecochatThreadId={effectiveDecochatThreadId}
+              shouldUseInitialInput={shouldUseInitialInput}
+              threadState={threadState}
+              clearThreadState={clearThreadState}
+              preferences={preferences}
+            />
           </Suspense>
         )}
       </div>
@@ -512,7 +512,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const agentRoot = useAgentRoot(agentId);
   const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
-    useThreadMessages(threadId, { shouldFetch: true });
+    useThreadMessages(threadId, agentId, { shouldFetch: true });
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );

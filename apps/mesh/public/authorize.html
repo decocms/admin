@@ -330,7 +330,8 @@
     let selectedTools = new Set();
 
     // Check if we have required OAuth parameters
-    if (!oauthParams.client_id || !oauthParams.redirect_uri || !oauthParams.state) {
+    // Note: state is optional in OAuth 2.1 with PKCE (though recommended)
+    if (!oauthParams.client_id || !oauthParams.redirect_uri) {
       showError('Invalid authorization request. Missing required parameters.');
       document.getElementById('btn-authorize').disabled = true;
     }
@@ -364,15 +365,21 @@
     // Load user session
     async function loadSession() {
       try {
+        console.log('[Authorize] Fetching session from /api/auth/session');
         const response = await fetch('/api/auth/session', {
           credentials: 'include',
         });
 
+        console.log('[Authorize] Session response:', response.status, response.statusText);
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[Authorize] Session error:', errorText);
           throw new Error('Not authenticated');
         }
 
         const session = await response.json();
+        console.log('[Authorize] Session data:', session);
         
         if (session?.user?.email) {
           document.getElementById('user-email').textContent = session.user.email;
@@ -380,8 +387,17 @@
           throw new Error('No session found');
         }
       } catch (error) {
+        console.error('[Authorize] Failed to load session:', error);
         // Redirect to sign-in with OAuth parameters
-        const params = new URLSearchParams(oauthParams);
+        // Filter out null values from OAuth params
+        const validParams = {};
+        Object.entries(oauthParams).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            validParams[key] = value;
+          }
+        });
+        const params = new URLSearchParams(validParams);
+        console.log('[Authorize] Redirecting to sign-in with params:', params.toString());
         window.location.href = `/sign-in?${params.toString()}`;
       }
     }
@@ -540,7 +556,9 @@
       const redirectUrl = new URL(oauthParams.redirect_uri);
       redirectUrl.searchParams.append('error', 'access_denied');
       redirectUrl.searchParams.append('error_description', 'User denied authorization');
-      redirectUrl.searchParams.append('state', oauthParams.state);
+      if (oauthParams.state) {
+        redirectUrl.searchParams.append('state', oauthParams.state);
+      }
       
       window.location.href = redirectUrl.toString();
     });

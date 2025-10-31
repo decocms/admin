@@ -44,6 +44,7 @@ import { useTheme } from "../theme.tsx";
 import html2canvas from "html2canvas";
 import { formatLogEntry } from "../../utils/format-time.ts";
 import { CustomEvents } from "../../utils/custom-events.ts";
+import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -149,6 +150,9 @@ function SendScreenshotButton({
         throw new Error("Unable to access iframe content");
       }
 
+      // Convert all oklch colors to hex for html2canvas compatibility
+      const cleanup = prepareIframeForScreenshot(iframeDocument);
+
       // Capture the iframe's body
       const canvas = await html2canvas(iframeDocument.body, {
         useCORS: true,
@@ -156,6 +160,9 @@ function SendScreenshotButton({
         logging: false,
         backgroundColor: "#ffffff",
       });
+
+      // Clean up temporary modifications
+      cleanup();
 
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve, reject) => {

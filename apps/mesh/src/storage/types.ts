@@ -37,7 +37,7 @@ export type JsonObject<T> = ColumnType<T, string, string>;
  * Format: { [resource]: [actions...] }
  * 
  * Examples:
- * - Organization-level: { "mcp": ["PROJECT_CREATE", "PROJECT_LIST"] }
+ * - Organization-level: { "self": ["PROJECT_CREATE", "PROJECT_LIST"] }
  * - Connection-specific: { "conn_<UUID>": ["SEND_MESSAGE", "LIST_THREADS"] }
  */
 export type Permission = Record<string, string[]>;

@@ -518,10 +518,10 @@
       btn.textContent = 'Authorizing...';
 
       try {
-        // Build scopes with mcp:* for all management tools
-        // Format: "openid profile email offline_access mcp:*"
+        // Build scopes with self:* for all management tools
+        // Format: "openid profile email offline_access self:*"
         const baseScopes = oauthParams.scope || 'openid profile email offline_access';
-        const mcpScope = 'mcp:*'; // Grant all management tools
+        const mcpScope = 'self:*'; // Grant all management tools
         const allScopes = `${baseScopes} ${mcpScope}`;
 
         // Build authorization URL with updated scopes

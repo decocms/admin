@@ -156,3 +156,5 @@ export const parseViewMetadata = (view: View): ViewMetadata | null => {
 
   return result.data;
 };
+
+export { NEW_VIEW_PROMPT } from "./mcp/views/prompts.ts";

@@ -42,6 +42,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useTheme } from "../theme.tsx";
 import html2canvas from "html2canvas";
+import { formatLogEntry } from "../../utils/format-time.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -92,14 +93,6 @@ function SendLogsButton() {
   const consoleState = useConsoleState();
   const { logs } = consoleState ?? { logs: [] };
 
-  const formatTime = useCallback((timestamp: string) => {
-    const date = new Date(timestamp);
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    const seconds = date.getSeconds().toString().padStart(2, "0");
-    return `${hours}:${minutes}:${seconds}`;
-  }, []);
-
   const handleSendLogs = useCallback(() => {
     if (logs.length === 0) {
       toast.info("No console logs to send");
@@ -107,16 +100,7 @@ function SendLogsButton() {
     }
 
     // Format logs as text
-    const logText = logs
-      .map((log) => {
-        const time = formatTime(log.timestamp);
-        const source = log.source
-          ? ` [${log.source}:${log.line}:${log.column}]`
-          : "";
-        const stack = log.stack ? `\n${log.stack}` : "";
-        return `[${time}] ${log.type.toUpperCase()}: ${log.message}${source}${stack}`;
-      })
-      .join("\n\n");
+    const logText = logs.map((log) => formatLogEntry(log)).join("\n\n");
 
     // Add logs to chat context
     window.dispatchEvent(
@@ -125,7 +109,7 @@ function SendLogsButton() {
       }),
     );
     toast.success("Console logs added to chat");
-  }, [logs, formatTime]);
+  }, [logs]);
 
   return (
     <Button

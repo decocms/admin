@@ -75,6 +75,9 @@ export function ChatInput({
   // Read from ThreadContextProvider
   const { contextItems, addContextItem } = useThreadContext();
 
+  // Delay for editor focus to ensure DOM is ready
+  const EDITOR_FOCUS_DELAY = 100;
+
   // Check if there are any context resources to display
   const hasContextResources = useMemo(() => {
     const hasFiles = uploadedFiles.length > 0;
@@ -155,7 +158,7 @@ export function ChatInput({
           if (richTextRef.current) {
             richTextRef.current.focus();
           }
-        }, 100);
+        }, EDITOR_FOCUS_DELAY);
       } catch (error) {
         console.error("Failed to load screenshot:", error);
       }
@@ -191,7 +194,7 @@ export function ChatInput({
         if (richTextRef.current) {
           richTextRef.current.focus();
         }
-      }, 100);
+      }, EDITOR_FOCUS_DELAY);
     }
 
     window.addEventListener("decopilot:addLogs", handleAddLogs);

@@ -406,6 +406,7 @@ function createSDK(
  * @param project - The project name (from route params)
  * @param trustedOrigin - The trusted origin for postMessage validation (typically the admin app's origin)
  * @param importmap - Optional custom import map (defaults to React 19.2.0 imports)
+ * @param themeVariables - Optional theme CSS custom properties to inject into the view
  * @returns Complete HTML document ready for iframe srcDoc
  */
 export function generateViewHTML(
@@ -415,6 +416,7 @@ export function generateViewHTML(
   project: string,
   trustedOrigin: string,
   importmap?: Record<string, string>,
+  themeVariables?: Record<string, string>,
 ): string {
   const ws = workspace;
   const proj = project;
@@ -450,6 +452,13 @@ export function generateViewHTML(
     ...(importmap || {}),
   };
 
+  // Generate CSS custom properties from theme variables
+  const themeVariablesCSS = themeVariables
+    ? Object.entries(themeVariables)
+        .map(([key, value]) => `    ${key}: ${value};`)
+        .join("\n")
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -474,10 +483,15 @@ ${JSON.stringify({ imports: finalImportMap }, null, 4)}
   <script src="https://unpkg.com/@babel/standalone@7.26.7/babel.min.js"></script>
   
   <style>
+    :root {${themeVariablesCSS ? `\n${themeVariablesCSS}` : ""}
+    }
+    
     body {
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--background, oklch(1 0 0));
+      color: var(--foreground, oklch(0.2050 0 0));
     }
     
     #root {

@@ -324,12 +324,59 @@ try {
 
 ## Styling with Tailwind CSS v4
 
-Use Tailwind utility classes directly in your JSX:
+Use Tailwind utility classes directly in your JSX. **Important: Always use theme tokens (CSS custom properties) for colors and design tokens** to ensure your view automatically adapts to workspace theme changes.
+
+### Theme Tokens (CSS Custom Properties)
+
+Views automatically inherit workspace theme variables. Use these tokens for consistent, theme-aware styling:
+
+**Color Tokens:**
+- \`--background\`, \`--foreground\` - Main page colors
+- \`--card\`, \`--card-foreground\` - Card/panel colors
+- \`--primary\`, \`--primary-foreground\` - Primary brand colors
+- \`--secondary\`, \`--secondary-foreground\` - Secondary UI colors
+- \`--muted\`, \`--muted-foreground\` - Subtle backgrounds and disabled states
+- \`--accent\`, \`--accent-foreground\` - Highlights and hover states
+- \`--destructive\`, \`--destructive-foreground\` - Error/delete states
+- \`--success\`, \`--success-foreground\` - Success/confirmation states
+- \`--warning\`, \`--warning-foreground\` - Warning/caution states
+- \`--border\`, \`--input\`, \`--ring\` - Borders, inputs, focus rings
+
+**Layout Tokens:**
+- \`--radius\` - Border radius for rounded corners
+- \`--spacing\` - Base spacing unit
+
+**Using Theme Tokens in Tailwind:**
 
 \`\`\`jsx
-<div className="flex items-center gap-4 p-6 bg-white rounded-lg shadow-md">
+// ✅ Good - Uses theme tokens
+<div className="bg-[var(--card)] text-[var(--card-foreground)] border border-[var(--border)] rounded-[var(--radius)] p-6">
+  <h2 className="text-xl font-semibold">Hello World</h2>
+  <button 
+    className="px-4 py-2 rounded-[var(--radius)]"
+    style={{
+      backgroundColor: 'var(--primary)',
+      color: 'var(--primary-foreground)'
+    }}
+  >
+    Primary Action
+  </button>
+  <button 
+    className="px-4 py-2 rounded-[var(--radius)] border"
+    style={{
+      backgroundColor: 'var(--destructive)',
+      color: 'var(--destructive-foreground)',
+      borderColor: 'var(--border)'
+    }}
+  >
+    Delete
+  </button>
+</div>
+
+// ❌ Bad - Hardcoded colors won't adapt to theme changes
+<div className="bg-white text-black border-gray-300 rounded-lg p-6">
   <h2 className="text-xl font-semibold text-gray-800">Hello World</h2>
-  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
     Click me
   </button>
 </div>
@@ -390,6 +437,47 @@ Use Tailwind utility classes directly in your JSX:
    \`\`\`
 
 **Log naming convention:** Prefix all logs with \`[ViewName]\` for easy filtering in browser console.
+### Basecoat UI - HTML-only Components
+
+Since views run in the browser without a build step, you cannot use React-based shadcn/ui components. Instead, use **Basecoat UI** (https://basecoatui.com/), which provides HTML-only versions of shadcn components that work perfectly with theme tokens.
+
+**Example with Basecoat patterns:**
+
+\`\`\`jsx
+<div className="space-y-4">
+  {/* Card using theme tokens */}
+  <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-6">
+    <h3 className="text-lg font-bold text-[var(--card-foreground)] mb-2">
+      Card Title
+    </h3>
+    <p className="text-[var(--muted-foreground)]">
+      Card description text
+    </p>
+  </div>
+
+  {/* Status badges using theme tokens */}
+  <div className="flex gap-2">
+    <span 
+      className="px-3 py-1 rounded-[var(--radius)] text-sm font-medium"
+      style={{
+        backgroundColor: 'var(--success)',
+        color: 'var(--success-foreground)'
+      }}
+    >
+      Active
+    </span>
+    <span 
+      className="px-3 py-1 rounded-[var(--radius)] text-sm font-medium"
+      style={{
+        backgroundColor: 'var(--warning)',
+        color: 'var(--warning-foreground)'
+      }}
+    >
+      Pending
+    </span>
+  </div>
+</div>
+\`\`\`
 
 ## Best Practices
 
@@ -406,6 +494,9 @@ Use Tailwind utility classes directly in your JSX:
 11. **Tag appropriately** - Use tags for easier discovery and organization
 12. **Keep it simple** - Focus on the component logic, not boilerplate
 13. **Add console logs** - ALWAYS include comprehensive logging for debugging (see Debugging section above)
+14. **Use theme tokens** - ALWAYS use CSS custom properties (e.g., \`var(--primary)\`) instead of hardcoded colors for theme consistency
+15. **Semantic token usage** - Use \`--destructive\` for delete buttons, \`--success\` for confirmations, \`--warning\` for caution, \`--muted\` for disabled states
+16. **Leverage Basecoat UI** - Use Basecoat UI patterns (https://basecoatui.com/) for components since React shadcn/ui won't work in browser-only views
 
 ## Common Use Cases
 

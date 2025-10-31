@@ -38,6 +38,7 @@ import {
 } from "./view-console.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
+import { useTheme } from "../theme.tsx";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -108,6 +109,8 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   });
 
   const updateViewMutation = useUpdateView();
+  const { data: theme } = useTheme();
+  const [themeUpdateTrigger, setThemeUpdateTrigger] = useState(0);
 
   // Current code value = draft OR saved value
   const currentCode = codeDraft ?? effectiveView?.code ?? "";
@@ -280,6 +283,18 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
     clearRuntimeError();
   }, [resourceUri]);
 
+  // Listen for theme updates and trigger view regeneration
+  useEffect(() => {
+    const handleThemeUpdate = () => {
+      setThemeUpdateTrigger((prev) => prev + 1);
+    };
+
+    window.addEventListener("theme-updated", handleThemeUpdate);
+    return () => {
+      window.removeEventListener("theme-updated", handleThemeUpdate);
+    };
+  }, []);
+
   // Generate HTML from React code on the client side
   // Use currentCode (which includes draft) for preview
   const htmlValue = useMemo(() => {
@@ -293,12 +308,20 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
         project,
         window.location.origin, // Pass current admin app origin as trusted origin
         effectiveView?.importmap,
+        theme?.variables as Record<string, string> | undefined,
       );
     } catch (error) {
       console.error("Failed to generate view HTML:", error);
       return null;
     }
-  }, [currentCode, effectiveView?.importmap, org, project]);
+  }, [
+    currentCode,
+    effectiveView?.importmap,
+    org,
+    project,
+    theme?.variables,
+    themeUpdateTrigger,
+  ]);
 
   // Reference to iframe element for postMessage
   const iframeRef = useRef<HTMLIFrameElement>(null);

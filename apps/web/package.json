@@ -50,6 +50,7 @@
     "cronstrue": "^2.59.0",
     "date-fns": "^4.1.0",
     "gsap": "^3.12.7",
+    "html2canvas": "^1.4.1",
     "json-schema": "^0.4.0",
     "lucide-react": "^0.545.0",
     "marked": "^15.0.7",

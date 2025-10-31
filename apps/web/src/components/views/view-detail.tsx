@@ -4,7 +4,9 @@ import {
   useSDK,
   useViewByUriV2,
   useUpdateView,
+  useWriteFile,
 } from "@deco/sdk";
+import { Hosts } from "@deco/sdk/hosts";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -39,6 +41,9 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useTheme } from "../theme.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
+import { UIMessage } from "@ai-sdk/react";
+import html2canvas from "html2canvas";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -80,6 +85,166 @@ function ConsoleToggleButton({
           variant="destructive"
           className="absolute bottom-1 right-0.5 size-2 flex items-center justify-center p-0 text-[10px] rounded-full outline-2 outline-sidebar outline-solid bg-yellow-500"
         ></Badge>
+      )}
+    </Button>
+  );
+}
+
+function SendLogsButton() {
+  const consoleState = useConsoleState();
+  const { logs } = consoleState ?? { logs: [] };
+
+  const formatTime = useCallback((timestamp: string) => {
+    const date = new Date(timestamp);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
+  }, []);
+
+  const handleSendLogs = useCallback(() => {
+    if (logs.length === 0) {
+      toast.info("No console logs to send");
+      return;
+    }
+
+    // Format logs as text
+    const logText = logs
+      .map((log) => {
+        const time = formatTime(log.timestamp);
+        const source = log.source
+          ? ` [${log.source}:${log.line}:${log.column}]`
+          : "";
+        const stack = log.stack ? `\n${log.stack}` : "";
+        return `[${time}] ${log.type.toUpperCase()}: ${log.message}${source}${stack}`;
+      })
+      .join("\n\n");
+
+    // Add logs to chat context
+    window.dispatchEvent(
+      new CustomEvent("decopilot:addLogs", {
+        detail: { logs: logText },
+      }),
+    );
+    toast.success("Console logs added to chat");
+  }, [logs, formatTime]);
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="xs"
+      onClick={handleSendLogs}
+      className="size-6 p-0"
+      title="Send Console Logs to Chat"
+    >
+      <Icon name="description" className="text-muted-foreground" />
+    </Button>
+  );
+}
+
+function SendScreenshotButton({
+  iframeRef,
+}: {
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+}) {
+  const [isSending, setIsSending] = useState(false);
+  const { locator } = useSDK();
+  const writeFileMutation = useWriteFile();
+
+  const handleSendScreenshot = useCallback(async () => {
+    if (!iframeRef.current) {
+      toast.error("Unable to capture screenshot.");
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      // Capture screenshot of the iframe's content
+      const iframe = iframeRef.current;
+      const iframeDocument =
+        iframe.contentDocument || iframe.contentWindow?.document;
+
+      if (!iframeDocument) {
+        throw new Error("Unable to access iframe content");
+      }
+
+      // Capture the iframe's body
+      const canvas = await html2canvas(iframeDocument.body, {
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to create screenshot blob"));
+          }
+        }, "image/png");
+      });
+
+      // Upload the screenshot
+      const timestamp = Date.now();
+      const filename = `view-screenshot-${timestamp}.png`;
+      const path = `uploads/${filename}`;
+      const buffer = await blob.arrayBuffer();
+
+      await writeFileMutation.mutateAsync({
+        path,
+        contentType: "image/png",
+        content: new Uint8Array(buffer),
+      });
+
+      const screenshotUrl = `https://${Hosts.API_LEGACY}/files/${locator}/${path}`;
+
+      // Add screenshot to chat context (without logs)
+      window.dispatchEvent(
+        new CustomEvent("decopilot:addScreenshot", {
+          detail: {
+            file: {
+              name: filename,
+              type: "image/png",
+              size: blob.size,
+            },
+            url: screenshotUrl,
+          },
+        }),
+      );
+      toast.success("Screenshot added to chat");
+    } catch (error) {
+      console.error("Failed to send screenshot:", error);
+      toast.error(
+        error instanceof Error
+          ? `Failed to send screenshot: ${error.message}`
+          : "Failed to send screenshot",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }, [iframeRef, writeFileMutation, locator]);
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="xs"
+      onClick={handleSendScreenshot}
+      disabled={isSending}
+      className="size-6 p-0"
+      title="Send Screenshot to Chat"
+    >
+      {isSending ? (
+        <div className="size-3">
+          <Spinner />
+        </div>
+      ) : (
+        <Icon name="photo_camera" className="text-muted-foreground" />
       )}
     </Button>
   );
@@ -391,6 +556,8 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
                   discardLabel="Reset"
                 />
               )}
+              <SendLogsButton />
+              <SendScreenshotButton iframeRef={iframeRef} />
               <ConsoleToggleButton
                 isOpen={isConsoleOpen}
                 onToggle={() => setIsConsoleOpen(!isConsoleOpen)}

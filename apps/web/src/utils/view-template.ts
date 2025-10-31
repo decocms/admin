@@ -178,6 +178,150 @@ function createSDK(
     }
   };
 
+  // Safe stringify helper that handles circular references
+  const safeStringify = (obj: unknown): string => {
+    try {
+      // Track seen objects to detect circular references
+      const seen = new WeakSet();
+      return JSON.stringify(
+        obj,
+        (key, value) => {
+          if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) {
+              return "[Circular]";
+            }
+            seen.add(value);
+          }
+          return value;
+        },
+        2,
+      );
+    } catch {
+      // Fallback for non-serializable objects
+      try {
+        return String(obj);
+      } catch {
+        return "[Unserializable]";
+      }
+    }
+  };
+
+  // Intercept console methods to send logs to parent window
+  const originalConsole = {
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  console.log = function (...args) {
+    // Always call original console first
+    originalConsole.log.apply(console, args);
+
+    // Safely serialize and send to parent
+    try {
+      window.top?.postMessage(
+        {
+          type: "CONSOLE_LOG",
+          payload: {
+            level: "log",
+            message: args
+              .map((arg) =>
+                typeof arg === "object" ? safeStringify(arg) : String(arg),
+              )
+              .join(" "),
+            timestamp: new Date().toISOString(),
+          },
+        },
+        trustedOrigin,
+      );
+    } catch (error) {
+      // Silently fail postMessage - original console call already happened
+      originalConsole.error("Failed to send console log to parent:", error);
+    }
+  };
+
+  console.info = function (...args) {
+    // Always call original console first
+    originalConsole.info.apply(console, args);
+
+    // Safely serialize and send to parent
+    try {
+      window.top?.postMessage(
+        {
+          type: "CONSOLE_LOG",
+          payload: {
+            level: "info",
+            message: args
+              .map((arg) =>
+                typeof arg === "object" ? safeStringify(arg) : String(arg),
+              )
+              .join(" "),
+            timestamp: new Date().toISOString(),
+          },
+        },
+        trustedOrigin,
+      );
+    } catch (error) {
+      // Silently fail postMessage - original console call already happened
+      originalConsole.error("Failed to send console info to parent:", error);
+    }
+  };
+
+  console.warn = function (...args) {
+    // Always call original console first
+    originalConsole.warn.apply(console, args);
+
+    // Safely serialize and send to parent
+    try {
+      window.top?.postMessage(
+        {
+          type: "CONSOLE_LOG",
+          payload: {
+            level: "warn",
+            message: args
+              .map((arg) =>
+                typeof arg === "object" ? safeStringify(arg) : String(arg),
+              )
+              .join(" "),
+            timestamp: new Date().toISOString(),
+          },
+        },
+        trustedOrigin,
+      );
+    } catch (error) {
+      // Silently fail postMessage - original console call already happened
+      originalConsole.error("Failed to send console warning to parent:", error);
+    }
+  };
+
+  console.error = function (...args) {
+    // Always call original console first
+    originalConsole.error.apply(console, args);
+
+    // Safely serialize and send to parent
+    try {
+      window.top?.postMessage(
+        {
+          type: "CONSOLE_LOG",
+          payload: {
+            level: "error",
+            message: args
+              .map((arg) =>
+                typeof arg === "object" ? safeStringify(arg) : String(arg),
+              )
+              .join(" "),
+            timestamp: new Date().toISOString(),
+          },
+        },
+        trustedOrigin,
+      );
+    } catch (error) {
+      // Silently fail postMessage - original console call already happened
+      originalConsole.error("Failed to send console error to parent:", error);
+    }
+  };
+
   // Catch runtime errors using window.onerror
   window.onerror = function (message, source, lineno, colno, error) {
     const errorData = {
@@ -196,7 +340,7 @@ function createSDK(
         type: "RUNTIME_ERROR",
         payload: errorData,
       },
-      "*",
+      trustedOrigin,
     );
 
     // Return false to allow default error handling
@@ -223,7 +367,7 @@ function createSDK(
         type: "RESOURCE_ERROR",
         payload: errorData,
       },
-      "*",
+      trustedOrigin,
     );
   });
 
@@ -244,7 +388,7 @@ function createSDK(
         type: "UNHANDLED_REJECTION",
         payload: errorData,
       },
-      "*",
+      trustedOrigin,
     );
 
     // Prevent default console error
@@ -262,6 +406,7 @@ function createSDK(
  * @param project - The project name (from route params)
  * @param trustedOrigin - The trusted origin for postMessage validation (typically the admin app's origin)
  * @param importmap - Optional custom import map (defaults to React 19.2.0 imports)
+ * @param themeVariables - Optional theme CSS custom properties to inject into the view
  * @returns Complete HTML document ready for iframe srcDoc
  */
 export function generateViewHTML(
@@ -271,6 +416,7 @@ export function generateViewHTML(
   project: string,
   trustedOrigin: string,
   importmap?: Record<string, string>,
+  themeVariables?: Record<string, string>,
 ): string {
   const ws = workspace;
   const proj = project;
@@ -306,6 +452,13 @@ export function generateViewHTML(
     ...(importmap || {}),
   };
 
+  // Generate CSS custom properties from theme variables
+  const themeVariablesCSS = themeVariables
+    ? Object.entries(themeVariables)
+        .map(([key, value]) => `    ${key}: ${value};`)
+        .join("\n")
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,10 +483,15 @@ ${JSON.stringify({ imports: finalImportMap }, null, 4)}
   <script src="https://unpkg.com/@babel/standalone@7.26.7/babel.min.js"></script>
   
   <style>
+    :root {${themeVariablesCSS ? `\n${themeVariablesCSS}` : ""}
+    }
+    
     body {
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--background, oklch(1 0 0));
+      color: var(--foreground, oklch(0.2050 0 0));
     }
     
     #root {

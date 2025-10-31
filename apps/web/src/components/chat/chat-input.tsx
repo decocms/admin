@@ -19,6 +19,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
@@ -26,11 +27,13 @@ import { ContextResources } from "../chat/context-resources.tsx";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { AudioButton } from "./audio-button.tsx";
+import { ChatTemplates } from "./chat-templates.ts";
 import { ErrorBanner } from "./error-banner.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { useAgenticChat } from "./provider.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 import type { ToolsetContextItem } from "./types.ts";
+import { onLogsAdded, onScreenshotAdded } from "../../utils/custom-events.ts";
 
 export function ChatInput({
   disabled,
@@ -61,6 +64,7 @@ export function ChatInput({
 
   const {
     uploadedFiles,
+    setUploadedFiles,
     isDragging,
     fileInputRef,
     handleFileChange,
@@ -73,6 +77,9 @@ export function ChatInput({
 
   // Read from ThreadContextProvider
   const { contextItems, addContextItem } = useThreadContext();
+
+  // Delay for editor focus to ensure DOM is ready
+  const EDITOR_FOCUS_DELAY = 100;
 
   // Check if there are any context resources to display
   const hasContextResources = useMemo(() => {
@@ -111,6 +118,65 @@ export function ChatInput({
       }
     }
   }, [isLoading]);
+
+  // Listen for screenshot events from view detail
+  useEffect(() => {
+    return onScreenshotAdded(({ blob, filename, url }) => {
+      try {
+        // Create File object from the blob (no re-fetch needed!)
+        const file = new File([blob], filename, {
+          type: "image/png",
+        });
+
+        // Add to uploaded files
+        setUploadedFiles((prev) => [
+          ...prev,
+          {
+            file,
+            status: "done",
+            url,
+          },
+        ]);
+
+        // Add default screenshot text to input
+        setTimeout(() => {
+          const currentInput = input || "";
+          const newText = currentInput
+            ? `${ChatTemplates.screenshot}${currentInput}`
+            : ChatTemplates.screenshot;
+
+          setInput(newText);
+
+          // Focus the editor
+          if (richTextRef.current) {
+            richTextRef.current.focus();
+          }
+        }, EDITOR_FOCUS_DELAY);
+      } catch (error) {
+        console.error("Failed to add screenshot:", error);
+        toast.error("Failed to add screenshot to chat");
+      }
+    });
+  }, [setUploadedFiles, input, setInput]);
+
+  // Listen for logs events from view detail
+  useEffect(() => {
+    return onLogsAdded(({ logs }) => {
+      // Add logs to the input
+      setTimeout(() => {
+        const currentInput = input || "";
+        const logsText = ChatTemplates.logs(logs);
+        const newText = currentInput ? `${logsText}${currentInput}` : logsText;
+
+        setInput(newText);
+
+        // Focus the editor
+        if (richTextRef.current) {
+          richTextRef.current.focus();
+        }
+      }, EDITOR_FOCUS_DELAY);
+    });
+  }, [input, setInput]);
 
   const isMobile =
     typeof window !== "undefined" &&

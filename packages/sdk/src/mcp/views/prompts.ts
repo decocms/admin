@@ -21,7 +21,7 @@ const result = await callTool({
 ** Use structuredContent if available, otherwise use the result as is **
 const data = result.structuredContent || result;
 
-`
+`;
 
 export const VIEW_SEARCH_PROMPT = `Search views in the workspace.
 

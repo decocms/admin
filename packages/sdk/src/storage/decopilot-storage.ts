@@ -29,7 +29,6 @@ export async function getDecopilotThreadMessages(
     const key = `${MESSAGES_PREFIX}${namespace ? `${namespace}:` : ""}${threadId}`;
     const messages = await get<UIMessage[]>(key);
 
-    console.log("[DecopilotStorage] Got messages:", key, messages);
     return messages || null;
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get messages:", error);

@@ -74,3 +74,18 @@ export function deriveUpdateToolFromRead(readToolName?: string | null) {
 
   return readToolName.replace(/_READ$/, "_UPDATE");
 }
+
+export function deriveReadToolFromUpdate(updateToolName?: string | null) {
+  if (!updateToolName) return null;
+  const actualToolName = extractActualToolName(updateToolName);
+  if (!/^DECO_RESOURCE_.*_UPDATE$/.test(actualToolName)) return null;
+
+  // If it was namespaced, preserve the namespace
+  const separatorIndex = updateToolName.lastIndexOf("__");
+  if (separatorIndex !== -1) {
+    const namespace = updateToolName.substring(0, separatorIndex);
+    return `${namespace}__${actualToolName.replace(/_UPDATE$/, "_READ")}`;
+  }
+
+  return updateToolName.replace(/_UPDATE$/, "_READ");
+}

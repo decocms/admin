@@ -8,7 +8,11 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { parseToolName } from "../../utils/tool-namespace.ts";
 import type { VersionEntry, VersionHistoryStore } from "./types.ts";
-import { hashContent } from "./utils.ts";
+import {
+  deriveUpdateToolFromRead,
+  hashContent,
+  isResourceReadTool,
+} from "./utils.ts";
 
 const MAX_VERSIONS_PER_RESOURCE = 30;
 const EMPTY_VERSIONS: VersionEntry[] = [];
@@ -77,15 +81,23 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
           }
 
           const { uri, version } = match;
+
           const parsed = safeParseJSON(version.content);
           if (parsed === undefined) {
             toast.error("Invalid version content");
             return;
           }
 
-          // Prefer the original toolName if present; fallback to generic UPDATE pattern
-          const toolName =
+          // Get the stored tool name, converting READ to UPDATE if needed
+          let toolName =
             version.toolCall?.toolName ?? inferUpdateToolNameFromUri(uri);
+
+          // If the stored tool is a READ tool, convert it to UPDATE for reverting
+          // (checkpoints are stored with READ tool names, but we need UPDATE to apply them)
+          if (toolName && isResourceReadTool(toolName)) {
+            const updateToolName = deriveUpdateToolFromRead(toolName);
+            toolName = updateToolName ?? toolName;
+          }
 
           if (!toolName) {
             toast.error("Unable to infer update tool");

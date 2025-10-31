@@ -503,10 +503,10 @@ function WorkspaceViews() {
   // Resource type order for main resources section
   const resourceTypeOrder = [
     "Documents",
+    "Views",
     "Agents",
     "Workflows",
     "Tools",
-    "Views",
     "Database",
     "Files",
     ...(project ? [] : ["Theme"]),

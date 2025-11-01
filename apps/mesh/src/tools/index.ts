@@ -4,19 +4,23 @@
  * Central export for all MCP Mesh management tools
  */
 
-import * as ProjectTools from './project';
+import * as OrganizationTools from './organization';
 import * as ConnectionTools from './connection';
 
 // Export all tools
-export { ProjectTools, ConnectionTools };
+export { OrganizationTools, ConnectionTools };
 
 // All available tools
 export const ALL_TOOLS = [
-  ProjectTools.PROJECT_CREATE,
-  ProjectTools.PROJECT_LIST,
-  ProjectTools.PROJECT_GET,
-  ProjectTools.PROJECT_UPDATE,
-  ProjectTools.PROJECT_DELETE,
+  OrganizationTools.ORGANIZATION_CREATE,
+  OrganizationTools.ORGANIZATION_LIST,
+  OrganizationTools.ORGANIZATION_GET,
+  OrganizationTools.ORGANIZATION_UPDATE,
+  OrganizationTools.ORGANIZATION_DELETE,
+  OrganizationTools.ORGANIZATION_MEMBER_ADD,
+  OrganizationTools.ORGANIZATION_MEMBER_REMOVE,
+  OrganizationTools.ORGANIZATION_MEMBER_LIST,
+  OrganizationTools.ORGANIZATION_MEMBER_UPDATE_ROLE,
 
   ConnectionTools.CONNECTION_CREATE,
   ConnectionTools.CONNECTION_LIST,
@@ -27,11 +31,15 @@ export const ALL_TOOLS = [
 
 // Tool lookup by name
 export const TOOL_MAP = {
-  PROJECT_CREATE: ProjectTools.PROJECT_CREATE,
-  PROJECT_LIST: ProjectTools.PROJECT_LIST,
-  PROJECT_GET: ProjectTools.PROJECT_GET,
-  PROJECT_UPDATE: ProjectTools.PROJECT_UPDATE,
-  PROJECT_DELETE: ProjectTools.PROJECT_DELETE,
+  ORGANIZATION_CREATE: OrganizationTools.ORGANIZATION_CREATE,
+  ORGANIZATION_LIST: OrganizationTools.ORGANIZATION_LIST,
+  ORGANIZATION_GET: OrganizationTools.ORGANIZATION_GET,
+  ORGANIZATION_UPDATE: OrganizationTools.ORGANIZATION_UPDATE,
+  ORGANIZATION_DELETE: OrganizationTools.ORGANIZATION_DELETE,
+  ORGANIZATION_MEMBER_ADD: OrganizationTools.ORGANIZATION_MEMBER_ADD,
+  ORGANIZATION_MEMBER_REMOVE: OrganizationTools.ORGANIZATION_MEMBER_REMOVE,
+  ORGANIZATION_MEMBER_LIST: OrganizationTools.ORGANIZATION_MEMBER_LIST,
+  ORGANIZATION_MEMBER_UPDATE_ROLE: OrganizationTools.ORGANIZATION_MEMBER_UPDATE_ROLE,
 
   CONNECTION_CREATE: ConnectionTools.CONNECTION_CREATE,
   CONNECTION_LIST: ConnectionTools.CONNECTION_LIST,

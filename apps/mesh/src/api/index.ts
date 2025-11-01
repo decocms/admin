@@ -101,10 +101,7 @@ app.route('/api/auth/custom', customAuthRoutes);
 // - /api/auth/register (Dynamic Client Registration)
 // - All other Better Auth endpoints
 app.all('/api/auth/*', async (c) => {
-  console.log('[Better Auth] Request:', c.req.method, c.req.path);
-  const response = await auth.handler(c.req.raw);
-  console.log('[Better Auth] Response:', response?.status);
-  return response;
+  return await auth.handler(c.req.raw);
 });
 
 // Mount OAuth discovery metadata endpoints
@@ -170,7 +167,9 @@ app.use('*', async (c, next) => {
 // ============================================================================
 
 app.use('/mcp', async (c, next) => {
-  if (!c.var.meshContext.auth.user?.id) {
+  const meshContext = c.var.meshContext;
+  // Require either user or API key authentication
+  if (!meshContext.auth.user?.id && !meshContext.auth.apiKey?.id) {
     const origin = new URL(c.req.url).origin;
     return c.res = new Response(null, {
       status: 401,
@@ -182,7 +181,8 @@ app.use('/mcp', async (c, next) => {
   return await next();
 })
 // Mount management tools MCP server at /mcp (no connectionId)
-// This exposes PROJECT_*, CONNECTION_* tools via MCP protocol
+// This exposes CONNECTION_* tools via MCP protocol
+// Organizations managed via Better Auth organization plugin
 // Authentication is handled by context-factory middleware above
 app.route('/mcp', managementRoutes);
 

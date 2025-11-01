@@ -1,19 +1,19 @@
 /**
  * CONNECTION_LIST Tool
  * 
- * List all connections available (org + project scoped)
+ * List all connections in the organization
  */
 
 import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
-import { getProjectId } from '../../core/mesh-context';
+import { requireOrganization } from '../../core/mesh-context';
 
 export const CONNECTION_LIST = defineTool({
   name: 'CONNECTION_LIST',
-  description: 'List all connections available in current scope',
+  description: 'List all connections in the organization',
   
   inputSchema: z.object({
-    scope: z.enum(['all', 'organization', 'project']).optional().default('all'),
+    // No scope parameter needed - all connections are org-scoped
   }),
   
   outputSchema: z.object({
@@ -21,25 +21,22 @@ export const CONNECTION_LIST = defineTool({
       id: z.string(),
       name: z.string(),
       description: z.string().nullable(),
-      scope: z.enum(['organization', 'project']),
+      organizationId: z.string(),
       status: z.enum(['active', 'inactive', 'error']),
       connectionType: z.enum(['HTTP', 'SSE', 'Websocket']),
       connectionUrl: z.string(),
     })),
   }),
   
-  handler: async (input, ctx) => {
+  handler: async (_input, ctx) => {
     // Check authorization
     await ctx.access.check();
     
-    // Get project ID from context
-    const projectId = getProjectId(ctx);
+    // Require organization context
+    const organization = requireOrganization(ctx);
     
-    // List connections
-    const connections = await ctx.storage.connections.list(
-      projectId,
-      input.scope
-    );
+    // List connections for this organization
+    const connections = await ctx.storage.connections.list(organization.id);
     
     // Map to output format
     return {
@@ -47,7 +44,7 @@ export const CONNECTION_LIST = defineTool({
         id: c.id,
         name: c.name,
         description: c.description,
-        scope: c.projectId ? 'project' as const : 'organization' as const,
+        organizationId: c.organizationId,
         status: c.status,
         connectionType: c.connectionType,
         connectionUrl: c.connectionUrl,

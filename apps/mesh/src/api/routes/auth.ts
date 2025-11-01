@@ -24,8 +24,6 @@ app.post('/sign-in', async (c) => {
     const body = await c.req.json();
     const { email, password, oauthParams } = body;
 
-    console.log('[Custom Sign-In] Request:', { email, oauthParams });
-
     // Validate inputs
     if (!email || !password) {
       return c.json({
@@ -76,8 +74,6 @@ app.post('/sign-in', async (c) => {
 
     // If OAuth flow, use Better Auth to generate authorization code
     if (oauthParams && oauthParams.client_id && oauthParams.redirect_uri) {
-      console.log('[Custom Sign-In] OAuth flow detected, generating authorization code via Better Auth');
-
       // Use Better Auth's internal MCP plugin to generate authorization code
       // Create a synthetic request to Better Auth's authorize endpoint
       const authorizeUrl = new URL('http://localhost/api/auth/mcp/authorize');
@@ -105,31 +101,19 @@ app.post('/sign-in', async (c) => {
       // Call Better Auth's authorization endpoint
       const authorizeResponse = await auth.handler(authorizeRequest);
 
-      console.log('[Custom Sign-In] Better Auth authorize response:', authorizeResponse.status);
-
       // Better Auth should return 302 redirect to callback with code
       if (authorizeResponse.status === 302) {
         const location = authorizeResponse.headers.get('location');
         if (location) {
           // Check if it's redirecting back to sign-in (auth failed) or to client callback (success)
           if (location.startsWith('/sign-in')) {
-            console.log('[Custom Sign-In] Better Auth redirected back to sign-in, auth might have failed');
             // Don't update callbackURL, let it stay as '/'
           } else {
             callbackURL = location;
-            // Safe logging - handle both absolute and relative URLs
-            try {
-              const url = new URL(location);
-              console.log('[Custom Sign-In] Got callback URL from Better Auth:', url.origin + '/...');
-            } catch {
-              console.log('[Custom Sign-In] Got callback URL from Better Auth:', location);
-            }
           }
         }
       }
     }
-
-    console.log('[Custom Sign-In] Success!');
 
     // Return success with callback URL in response body
     // Browser will navigate to this URL
@@ -141,8 +125,6 @@ app.post('/sign-in', async (c) => {
     });
 
   } catch (error) {
-    console.error('[Custom Sign-In] Error:', error);
-
     const errorMessage = error instanceof Error
       ? error.message
       : 'Sign in failed';
@@ -166,8 +148,6 @@ app.post('/sign-up', async (c) => {
   try {
     const body = await c.req.json();
     const { name, email, password, oauthParams } = body;
-
-    console.log('[Custom Sign-Up] Request:', { email, name, oauthParams });
 
     // Validate inputs
     if (!email || !password || !name) {
@@ -220,8 +200,6 @@ app.post('/sign-up', async (c) => {
 
     // If OAuth flow, use Better Auth to generate authorization code
     if (oauthParams && oauthParams.client_id && oauthParams.redirect_uri) {
-      console.log('[Custom Sign-Up] OAuth flow detected, generating authorization code via Better Auth');
-
       // Use Better Auth's internal MCP plugin to generate authorization code
       // Create a synthetic request to Better Auth's authorize endpoint
       const authorizeUrl = new URL('http://localhost/api/auth/mcp/authorize');
@@ -249,31 +227,19 @@ app.post('/sign-up', async (c) => {
       // Call Better Auth's authorization endpoint
       const authorizeResponse = await auth.handler(authorizeRequest);
 
-      console.log('[Custom Sign-Up] Better Auth authorize response:', authorizeResponse.status);
-
       // Better Auth should return 302 redirect to callback with code
       if (authorizeResponse.status === 302) {
         const location = authorizeResponse.headers.get('location');
         if (location) {
           // Check if it's redirecting back to sign-in (auth failed) or to client callback (success)
           if (location.startsWith('/sign-in')) {
-            console.log('[Custom Sign-Up] Better Auth redirected back to sign-in, auth might have failed');
             // Don't update callbackURL, let it stay as '/'
           } else {
             callbackURL = location;
-            // Safe logging - handle both absolute and relative URLs
-            try {
-              const url = new URL(location);
-              console.log('[Custom Sign-Up] Got callback URL from Better Auth:', url.origin + '/...');
-            } catch {
-              console.log('[Custom Sign-Up] Got callback URL from Better Auth:', location);
-            }
           }
         }
       }
     }
-
-    console.log('[Custom Sign-Up] Success!');
 
     // Return success with callback URL in response body
     return c.json({
@@ -284,8 +250,6 @@ app.post('/sign-up', async (c) => {
     });
 
   } catch (error) {
-    console.error('[Custom Sign-Up] Error:', error);
-
     const errorMessage = error instanceof Error
       ? error.message
       : 'Sign up failed';

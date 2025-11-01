@@ -1,0 +1,52 @@
+/**
+ * ORGANIZATION_MEMBER_REMOVE Tool
+ * 
+ * Remove a member from an organization
+ */
+
+import { z } from 'zod/v3';
+import { defineTool } from '../../core/define-tool';
+import { requireAuth } from '../../core/mesh-context';
+
+export const ORGANIZATION_MEMBER_REMOVE = defineTool({
+  name: 'ORGANIZATION_MEMBER_REMOVE',
+  description: 'Remove a member from an organization',
+
+  inputSchema: z.object({
+    organizationId: z.string().optional(), // Optional: defaults to active organization
+    memberIdOrEmail: z.string(), // Member ID or email
+  }),
+
+  outputSchema: z.object({
+    success: z.boolean(),
+    memberIdOrEmail: z.string(),
+  }),
+
+  handler: async (input, ctx) => {
+    // Require authentication
+    requireAuth(ctx);
+
+    // Check authorization
+    await ctx.access.check();
+
+    // Use active organization if not specified
+    const organizationId = input.organizationId || ctx.organization?.id;
+    if (!organizationId) {
+      throw new Error('Organization ID required (no active organization in context)');
+    }
+
+    // Remove member via Better Auth
+    await ctx.authInstance.api.removeMember({
+      body: {
+        organizationId,
+        memberIdOrEmail: input.memberIdOrEmail,
+      },
+    });
+
+    return {
+      success: true,
+      memberIdOrEmail: input.memberIdOrEmail,
+    };
+  },
+});
+

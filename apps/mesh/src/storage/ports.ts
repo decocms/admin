@@ -5,14 +5,14 @@
  * Following the Ports & Adapters (Hexagonal Architecture) pattern.
  */
 
-import type { MCPConnection, OAuthConfig, Project } from './types';
+import type { MCPConnection, OAuthConfig } from './types';
 
 // ============================================================================
 // Connection Storage Port
 // ============================================================================
 
 export interface CreateConnectionData {
-  projectId: string | null; // null = organization-scoped, string = project-scoped
+  organizationId: string; // All connections are organization-scoped
   createdById: string;
   name: string;
   description?: string;
@@ -43,29 +43,9 @@ export interface UpdateConnectionData {
 export interface ConnectionStoragePort {
   create(data: CreateConnectionData): Promise<MCPConnection>;
   findById(id: string): Promise<MCPConnection | null>;
-  list(projectId: string | null, scope?: 'all' | 'organization' | 'project'): Promise<MCPConnection[]>;
+  list(organizationId: string): Promise<MCPConnection[]>;
   update(id: string, data: UpdateConnectionData): Promise<MCPConnection>;
   delete(id: string): Promise<void>;
   testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }>;
-}
-
-// ============================================================================
-// Project Storage Port
-// ============================================================================
-
-export interface CreateProjectData {
-  slug: string; // URL-safe, unique within organization
-  name: string;
-  description?: string;
-  ownerId: string;
-}
-
-export interface ProjectStoragePort {
-  create(data: CreateProjectData): Promise<Project>;
-  findById(id: string): Promise<Project | null>;
-  findBySlug(slug: string): Promise<Project | null>;
-  list(userId?: string): Promise<Project[]>; // All projects or user's projects
-  update(id: string, data: Partial<Project>): Promise<Project>;
-  delete(id: string): Promise<void>;
 }
 

@@ -6,8 +6,9 @@
  * 
  * Key Principles:
  * - Database = Organization boundary (all users are org members)
- * - Projects = Namespaces (like Kubernetes, isolate resources not users)
- * - Access control via roles and permissions, not explicit membership
+ * - Organizations managed by Better Auth organization plugin
+ * - Connections are organization-scoped
+ * - Access control via Better Auth permissions and organization roles
  */
 
 import type { ColumnType } from 'kysely';
@@ -51,28 +52,14 @@ export type Permission = Record<string, string[]>;
 // ============================================================================
 
 /**
- * User table definition - Organization member
+ * User table definition - System users
  * Managed by Better Auth, but defined here for reference
  */
 export interface UserTable {
   id: string;
   email: string;
   name: string;
-  role: string; // 'admin' | 'user' | custom roles
-  createdAt: ColumnType<Date, Date | string, never>;
-  updatedAt: ColumnType<Date, Date | string, Date | string>;
-}
-
-/**
- * Project table definition - Namespace-scoped resources (like Kubernetes namespaces)
- * Projects isolate resources, not users
- */
-export interface ProjectTable {
-  id: string;
-  slug: string; // URL-safe, unique within organization
-  name: string;
-  description: string | null;
-  ownerId: string; // User who owns this project
+  role: string; // System role: 'admin' | 'user'
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
@@ -94,16 +81,16 @@ export interface User {
 }
 
 /**
- * Project entity - Runtime representation
+ * Organization entity - Runtime representation (from Better Auth)
+ * Better Auth organization plugin provides this data
  */
-export interface Project {
+export interface Organization {
   id: string;
   slug: string;
   name: string;
-  description: string | null;
-  ownerId: string;
+  logo: string | null;
+  metadata: Record<string, any> | null;
   createdAt: Date | string;
-  updatedAt: Date | string;
 }
 
 /**
@@ -111,7 +98,7 @@ export interface Project {
  */
 export interface MCPConnectionTable {
   id: string;
-  projectId: string | null; // null = organization-scoped, string = project-scoped
+  organizationId: string; // All connections are organization-scoped
   createdById: string; // User who created this connection
   name: string;
   description: string | null;
@@ -143,7 +130,7 @@ export interface MCPConnectionTable {
  */
 export interface MCPConnection {
   id: string;
-  projectId: string | null;
+  organizationId: string;
   createdById: string;
   name: string;
   description: string | null;
@@ -190,18 +177,6 @@ export interface ToolDefinition {
   outputSchema?: object;
 }
 
-/**
- * Role table definition
- */
-export interface RoleTable {
-  id: string;
-  projectId: string; // Roles can be project-specific
-  name: string;
-  description: string | null;
-  permissions: JsonObject<Permission>; // { [resource]: [actions...] }
-  createdAt: ColumnType<Date, Date | string, never>;
-  updatedAt: ColumnType<Date, Date | string, Date | string>;
-}
 
 /**
  * API Key table definition
@@ -224,7 +199,7 @@ export interface ApiKeyTable {
  */
 export interface AuditLogTable {
   id: string;
-  projectId: string | null; // null = organization-level action
+  organizationId: string | null; // null = system-level action
   userId: string | null;
   connectionId: string | null;
   toolName: string; // Tool that was called
@@ -232,19 +207,6 @@ export interface AuditLogTable {
   duration: number | null; // Execution time in ms
   timestamp: ColumnType<Date, Date | string, never>;
   requestMetadata: JsonObject<Record<string, any>> | null;
-}
-
-/**
- * Role entity - Runtime representation
- */
-export interface Role {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string | null;
-  permissions: Permission;
-  createdAt: Date | string;
-  updatedAt: Date | string;
 }
 
 /**
@@ -268,7 +230,7 @@ export interface ApiKey {
  */
 export interface AuditLog {
   id: string;
-  projectId: string | null;
+  organizationId: string | null;
   userId: string | null;
   connectionId: string | null;
   toolName: string;
@@ -411,13 +373,12 @@ export interface DownstreamToken {
  * All tables exist within the organization scope (database boundary)
  * 
  * NOTE: This uses *Table types with ColumnType for proper Kysely type mapping
+ * NOTE: Organizations, teams, members, and roles are managed by Better Auth organization plugin
  */
 export interface Database {
   // Core tables (all within organization scope)
-  users: UserTable; // Organization members
-  projects: ProjectTable; // Namespaces within organization
-  connections: MCPConnectionTable; // MCP connections (org or project scoped)
-  roles: RoleTable; // Roles with permissions
+  users: UserTable; // System users
+  connections: MCPConnectionTable; // MCP connections (organization-scoped)
   api_keys: ApiKeyTable; // Better Auth API keys
   audit_logs: AuditLogTable; // Audit trail
 

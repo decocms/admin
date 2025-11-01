@@ -11,7 +11,7 @@
 
 import { getToolsByCategory } from '@/tools/registry';
 import { betterAuth, BetterAuthOptions } from 'better-auth';
-import { admin, apiKey, mcp, openAPI } from 'better-auth/plugins';
+import { admin, apiKey, mcp, openAPI, organization } from 'better-auth/plugins';
 import { existsSync, readFileSync } from 'fs';
 import { BunWorkerDialect } from 'kysely-bun-worker';
 
@@ -26,7 +26,6 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
       const content = readFileSync(configPath, 'utf-8');
       return JSON.parse(content);
     } catch (error) {
-      console.error('Failed to load auth-config.json:', error);
       return {};
     }
   }
@@ -62,6 +61,12 @@ export const auth = betterAuth({
   ...loadAuthConfig(),
 
   plugins: [
+    // Organization plugin for multi-tenant organization management
+    // https://www.better-auth.com/docs/plugins/organization
+    organization({
+      allowUserToCreateOrganization: true, // Users can create organizations by default
+    }),
+
     // MCP plugin for OAuth 2.1 server
     // https://www.better-auth.com/docs/plugins/mcp
     mcp({
@@ -76,12 +81,16 @@ export const auth = betterAuth({
     apiKey({
       permissions: {
         defaultPermissions: {
-          'self': ['PROJECT_LIST', 'PROJECT_GET'], // Default org-level tools
+          'self': [
+            'ORGANIZATION_LIST', 'ORGANIZATION_GET', // Organization read access
+            'ORGANIZATION_MEMBER_LIST', // Member read access
+            'CONNECTION_LIST', 'CONNECTION_GET', // Connection read access
+          ],
         },
       },
     }),
 
-    // Admin plugin for role-based access
+    // Admin plugin for system-level super-admins
     // https://www.better-auth.com/docs/plugins/admin
     admin({
       defaultRole: 'user',

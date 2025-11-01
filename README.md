@@ -158,6 +158,18 @@ apps/mesh/
 
 ## 🧩 Comparison
 
+### vs Mastra
+
+|               | **Mastra**                                | **DecoCMS**                                                       |
+| ------------- | ----------------------------------------- | ----------------------------------------------------------------- |
+| Category      | TypeScript agent/workflow framework       | Full-stack MCP runtime + admin for AI apps                        |
+| Focus         | Build agent primitives, RAG, workflows    | Ship governed agents, workflows, and UIs with RBAC, audit, FinOps |
+| Protocol      | Model/provider-agnostic (LLMs, tools)     | MCP‑native runtime + proxy + policy                               |
+| UI            | Code-first (framework)                    | React/Tailwind admin shell, marketplace, settings                 |
+| Observability | Tracing/evals at framework level          | End‑to‑end traces UI → tools → models + spend analytics           |
+| Deployment    | Node.js / serverless                      | Edge‑native (Cloudflare) + self‑host (Bun/Deno/AWS/GCP)           |
+
+
 ### vs Metorial
 
 |               | **Metorial**       | **DecoCMS**                     |
@@ -201,6 +213,26 @@ apps/mesh/
 | Auth          | Better Auth (OAuth 2.1 + API keys)        |
 | Observability | OpenTelemetry + Datadog / Cloudflare Logs |
 | Protocol      | Model Context Protocol (MCP)              |
+
+---
+
+## 🪪 License & Partners
+
+DecoCMS ships with a Sustainable Use License (SUL). Read the full terms in [LICENSE.md](./LICENSE.md).
+
+### For Partners (Service Providers, Software Houses, SIs, Digital Agencies)
+
+- Free to self‑host and use to deliver client projects, as long as each deployment is for the client’s internal use (see SUL §3.3).
+- Build, implement, and charge for your services — go make money, no questions asked.
+- Keep your workspace private — bring your own models and data.
+
+### For Enterprises (Mission‑Critical or Revenue‑Generating)
+
+- These cases require a commercial self‑hosted Enterprise license per the SUL.
+- We help you deploy at scale in your cloud (AWS or GCP), with governance, observability, and performance tuned for large workloads.
+- Get production support and reliability.
+
+Questions? Contact us at [contact@decocms.com](mailto:contact@decocms.com) or visit [decocms.com](https://decocms.com).
 
 ---
 

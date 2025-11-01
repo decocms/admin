@@ -65,10 +65,10 @@ export const auth = betterAuth({
     // MCP plugin for OAuth 2.1 server
     // https://www.better-auth.com/docs/plugins/mcp
     mcp({
-      loginPage: '/sign-in',
+      loginPage: '/auth/sign-in',
       // Note: Authorization page (/authorize) is served as static HTML
       // Better Auth will redirect there based on loginPage flow
-      oidcConfig: { scopes: scopes, metadata: { scopes_supported: scopes }, loginPage: '/sign-in' }
+      oidcConfig: { scopes: scopes, metadata: { scopes_supported: scopes }, loginPage: '/auth/sign-in' }
     }),
 
     // API Key plugin for direct tool access

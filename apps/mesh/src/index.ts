@@ -7,6 +7,7 @@
 
 import app from './api';
 import { migrateToLatest } from './database/migrate';
+import indexHtml from '../public/index.html';
 
 const port = parseInt(process.env.PORT || '3000', 10);
 
@@ -25,9 +26,13 @@ console.log(`🎨 Sign in page:   http://localhost:${port}/sign-in`);
 console.log(`🔑 API keys page:  http://localhost:${port}/api-keys`);
 console.log('');
 
-// Export Hono app - Bun will serve it automatically
-export default {
+Bun.serve({
+  routes: {
+    "/": indexHtml,
+    "/auth/*": indexHtml,
+  },
   port,
   fetch: app.fetch,
-};
+  development: true,
+})
 

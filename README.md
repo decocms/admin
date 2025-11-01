@@ -30,12 +30,16 @@
 
 ## 🧭 Architecture at a Glance
 
-- MCP Mesh (kernel): Compose and secure MCPs across your org; declare dependencies; expose governed Virtual MCPs ("AI Apps") to any MCP client; enforce auth/RBAC/audit/FinOps; full observability.
-- AI App Framework (on the Mesh): Build AI‑native web software (admin, workflows, custom views) that calls Mesh tools; React 19 + Tailwind v4; optional if you only need the Mesh.
-
-Which one to start with?
-- If you need a secure, centralized place to manage tools and context for Claude/VS Code/any MCP client → start with the Mesh.
-- If you also want an opinionated admin/UI and workflow UX on top → use our AI App framework.
+- MCP Mesh (kernel): 
+  - Compose and secure MCPs across your org; 
+  - Connect and proxy external MCPs with secure tokens; 
+  - Expose governed Virtual MCPs ("AI Apps") to any MCP client;
+  - Enforce auth/RBAC/audit/FinOps; 
+  - Get full observability.
+- AI App Framework (Virtual MCPs in the Mesh): 
+  - Build AI‑native web software (admin, workflows, custom views) that calls Tools; 
+  - Fullstack, From database to UI with React 19 + Tailwind v4;
+  - Generative Admin interface: _decopilot_ helps you write the PRD and implement.
 
 ---
 
@@ -107,10 +111,10 @@ export const CONNECTION_CREATE = defineTool({
 });
 ````
 
-✅ **Type-safe**
-✅ **Audited**
-✅ **Observable**
-✅ **Callable via MCP**
+✅ **Type-safe**<br/>
+✅ **Audited**<br/>
+✅ **Observable**<br/>
+✅ **Callable via MCP**<br/>
 
 ---
 
@@ -180,8 +184,6 @@ Build AI‑native web software on top of the Mesh:
 - React 19 + Tailwind v4 + shadcn components; design‑system powered Views.
 - callTool() to invoke governed Mesh tools with types and policies applied.
 - Admin, dashboards, and workflow UIs that run anywhere (edge/self‑host).
-
-Layer 1 is optional — use it when you need opinionated UI/UX; otherwise consume the Mesh directly from any MCP client.
 
 ## 🧩 Comparison
 
@@ -253,6 +255,8 @@ DecoCMS ships with a Sustainable Use License (SUL). Read the full terms in [LICE
 - Build, implement, and charge for your services — go make money, no questions asked.
 - Keep your workspace private — bring your own models and data.
 
+**Do you implement Agentic Software?** We have customers for you. Send us an email at builders@decocms.com.
+
 ### For Enterprises (Mission‑Critical or Revenue‑Generating)
 
 - These cases require a commercial self‑hosted Enterprise license per the SUL.
@@ -278,6 +282,6 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup, coding standards, and road
 ---
 
 <div align="center">
-  <sub>Made with ❤️ by the <a href="https://decocms.com">Deco</a> community.<br/>
+  <sub>Made with ❤️ by the <a href="https://decocms.com">deco</a> community.<br/>
   Building the open-source operating system for AI-native apps — secure, scalable, and governed by context.</sub>
 </div>

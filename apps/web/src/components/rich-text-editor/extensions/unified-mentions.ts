@@ -301,10 +301,17 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             props.command({ item });
           };
 
+          // Create onClose callback that hides the popup
+          const handleClose = () => {
+            console.log("MentionDropdown onClose: hiding popup from TipTap");
+            popup?.[0]?.hide();
+          };
+
           component = new ReactRenderer(MentionDropdown, {
             props: {
               ...props,
               command: simpleCommand,
+              onClose: handleClose,
             },
             editor: props.editor,
           });
@@ -322,7 +329,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             interactive: true,
             trigger: "manual",
             placement: "top-start",
-            maxWidth: 400,
+            maxWidth: 750,
           });
 
           // Progressive update kick-off
@@ -356,6 +363,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
 
         onKeyDown(props) {
           if (props.event.key === "Escape") {
+            console.log("TipTap suggestion: Escape pressed, hiding popup");
             popup?.[0]?.hide();
             return true;
           }

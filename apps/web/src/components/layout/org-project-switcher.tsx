@@ -128,7 +128,7 @@ export function BreadcrumbOrgSwitcher() {
               placeholder="Search projects..."
               value={projectSearch}
               onChange={(e) => setProjectSearch(e.target.value)}
-              className="rounded-none border-x-0 border-t-0 focus-visible:border-border focus-visible:ring-0 border-t-0"
+              className="rounded-none border-x-0 border-t-0 focus-visible:border-border focus-visible:ring-0"
             />
             {hoveredOrg && (
               <Suspense fallback={<SwitcherProjects.Skeleton />}>

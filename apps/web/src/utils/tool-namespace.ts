@@ -75,8 +75,7 @@ export function getStatusStyles(state: string): { className: string } {
   switch (state) {
     case "input-streaming":
       return {
-        className:
-          "text-muted-foreground bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent",
+        className: "text-muted-foreground text-shimmer",
       };
     case "input-available":
       return {

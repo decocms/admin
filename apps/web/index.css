@@ -227,6 +227,67 @@
     }
   }
 
+  /* Markdown size variants - forces all children to inherit size and scaled spacing */
+  .markdown-xs {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .markdown-xs * {
+    font-size: inherit !important;
+  }
+  .markdown-xs ul,
+  .markdown-xs ol {
+    @apply my-2 space-y-0.5;
+  }
+  .markdown-xs p {
+    @apply my-1.5;
+  }
+
+  .markdown-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .markdown-sm * {
+    font-size: inherit !important;
+  }
+  .markdown-sm ul,
+  .markdown-sm ol {
+    @apply my-2 space-y-1;
+  }
+  .markdown-sm p {
+    @apply my-2;
+  }
+
+  .markdown-base {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .markdown-base * {
+    font-size: inherit !important;
+  }
+  .markdown-base ul,
+  .markdown-base ol {
+    @apply my-4 space-y-2;
+  }
+  .markdown-base p {
+    @apply my-4;
+  }
+
+  .markdown-lg {
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+  .markdown-lg * {
+    font-size: inherit !important;
+  }
+  .markdown-lg ul,
+  .markdown-lg ol {
+    @apply my-4 space-y-2;
+  }
+  .markdown-lg p {
+    @apply my-4;
+  }
+
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
@@ -238,5 +299,14 @@
 
   .animate-shimmer {
     animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .text-shimmer {
+    @apply bg-gradient-to-r from-foreground via-foreground/50 to-foreground;
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }

@@ -520,7 +520,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
   return (
     <ViewConsoleProvider>
-      <div className="h-full w-full flex flex-col bg-white relative">
+      <div className="h-full w-full flex flex-col bg-background relative">
         {/* Header with code viewer toggle */}
         <ResourceDetailHeader
           title={effectiveView.name}

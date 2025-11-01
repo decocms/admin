@@ -235,8 +235,7 @@ const ToolStatus = memo(function ToolStatus({
                 <div
                   className={cn(
                     "font-medium truncate",
-                    isLoading &&
-                      "bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent",
+                    isLoading && "text-shimmer",
                   )}
                 >
                   {toolName}
@@ -411,11 +410,7 @@ function ImagePrompt({
 }
 
 function GeneratingStatus() {
-  return (
-    <span className="font-medium bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent">
-      Generating image...
-    </span>
-  );
+  return <span className="font-medium text-shimmer">Generating image...</span>;
 }
 
 function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
@@ -556,13 +551,13 @@ function ExpandableToolCard({
 
   return (
     <>
-      <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
+      <div className="flex mb-5 flex-col border border-border rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={handleToggleExpand}
           className={cn(
-            "flex items-center justify-between p-2 transition-colors cursor-pointer",
-            "hover:bg-muted",
+            "flex items-center justify-between p-3 transition-colors cursor-pointer",
+            "hover:bg-accent/50",
           )}
         >
           <div className="flex items-center gap-2">
@@ -571,7 +566,7 @@ function ExpandableToolCard({
                 icon={integration.icon}
                 name={integration.name}
                 size="sm"
-                className="size-5 shrink-0"
+                className="size-5 rounded-lg shrink-0"
               />
             ) : (
               <div className="size-5 rounded-full bg-muted/30 shrink-0" />
@@ -620,7 +615,7 @@ function ExpandableToolCard({
         {shouldExpand && (
           <div
             ref={contentRef}
-            className="text-left space-y-3 w-full min-w-0 px-2 py-2 border-t"
+            className="text-left space-y-3 w-full min-w-0 p-3 border-t"
             onClick={(e) => e.stopPropagation()}
           >
             {children}

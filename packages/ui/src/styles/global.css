@@ -193,6 +193,18 @@
 
   --shadow: var(--shadow);
 
+  /* Box Shadow Scale */
+  --shadow-xs:
+    oklch(0 0 0 / 0.022) 0px 3px 6px -2px, oklch(0 0 0 / 0.044) 0px 1px 1px;
+  --shadow-sm:
+    oklch(0 0 0 / 0.04) 0px 1px 2px 0px, oklch(0 0 0 / 0.04) 0px 2px 4px 0px;
+  --shadow-md:
+    oklch(0 0 0 / 0.022) 0px 6px 18px, oklch(0 0 0 / 0.044) 0px 3px 9px,
+    oklch(0 0 0 / 0.044) 0px 1px 1px;
+  --shadow-lg:
+    oklch(0 0 0 / 0.088) 0px 9px 48px, oklch(0 0 0 / 0.11) 0px 6px 24px,
+    oklch(0 0 0 / 0.044) 0px 1px 1px;
+
   /* Border Radius - matches Tailwind's scale, proportional to --radius (md = base) */
   --radius-none: 0;
   --radius-xs: calc(

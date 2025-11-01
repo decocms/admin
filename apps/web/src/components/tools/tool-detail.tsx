@@ -266,7 +266,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-white">
+    <div className="h-full w-full flex flex-col bg-background">
       {/* Header with code viewer toggle */}
       <ResourceDetailHeader
         title={effectiveTool.name}

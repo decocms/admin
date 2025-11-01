@@ -50,7 +50,7 @@ export function BreadcrumbOrgSwitcher() {
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded-md">
+          <div className="flex items-center gap-2 cursor-pointer rounded-md hover:bg-accent p-0.5">
             <Avatar
               url={currentOrg?.avatar_url}
               fallback={currentOrg?.name ?? org}
@@ -63,14 +63,14 @@ export function BreadcrumbOrgSwitcher() {
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="rounded-xl p-0 flex items-start w-[480px]"
+          className="p-0 flex items-start w-[480px]"
         >
           <div className="flex flex-col w-[240px] border-r border-border">
             <Input
               placeholder="Search organizations..."
               value={orgSearch}
               onChange={(e) => setOrgSearch(e.target.value)}
-              className="rounded-b-none rounded-r-none border-t-0 border-x-0 focus-visible:border-border focus-visible:ring-0"
+              className="rounded-none border-t-0 border-x-0 focus-visible:border-border focus-visible:ring-0"
             />
             <div className="flex flex-col gap-0.5 p-1 max-h-44 overflow-y-auto">
               {filteredOrganizations.length === 0 && (
@@ -128,7 +128,7 @@ export function BreadcrumbOrgSwitcher() {
               placeholder="Search projects..."
               value={projectSearch}
               onChange={(e) => setProjectSearch(e.target.value)}
-              className="rounded-b-none rounded-l-none border-l-0 focus-visible:border-border focus-visible:ring-0 border-t-0"
+              className="rounded-none border-x-0 border-t-0 focus-visible:border-border focus-visible:ring-0 border-t-0"
             />
             {hoveredOrg && (
               <Suspense fallback={<SwitcherProjects.Skeleton />}>

@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard } from "@deco/ui/components/card.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -187,12 +187,12 @@ function Actions({ agent }: { agent: Agent }) {
   );
 }
 
-function Card({ agent }: { agent: Agent }) {
+function AgentCard({ agent }: { agent: Agent }) {
   const focusAgent = useFocusChat();
 
   return (
-    <UICard
-      className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
+    <Card
+      className="group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
       onClick={() => {
         focusAgent(agent.id, crypto.randomUUID(), {
           history: false,
@@ -221,7 +221,7 @@ function Card({ agent }: { agent: Agent }) {
           </div>
         </div>
       </div>
-    </UICard>
+    </Card>
   );
 }
 
@@ -359,7 +359,7 @@ function CardsView({ agents }: { agents: AgentWithActivity[] }) {
     >
       {agents.map((agent) => (
         <div key={agent.id} className="relative group">
-          <Card agent={agent} />
+          <AgentCard agent={agent} />
         </div>
       ))}
     </div>
@@ -526,10 +526,10 @@ function AgentsList() {
   }, [navigateWorkspace]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-auto">
         {/* Header Section - sticky horizontally */}
-        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
+        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10">
           <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
             <ResourceHeader
               title="Agents"

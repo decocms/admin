@@ -74,7 +74,7 @@ export function IntegrationWorkspaceIcon({
       </div>
 
       {/* Connection arrow */}
-      <div className="flex items-center justify-center absolute -translate-x-4 ml-17 w-8 h-8 bg-white border rounded-lg">
+      <div className="flex items-center justify-center absolute -translate-x-4 ml-17 w-8 h-8 bg-background border rounded-lg">
         <Icon name="sync_alt" size={24} className="text-muted-foreground" />
       </div>
     </div>

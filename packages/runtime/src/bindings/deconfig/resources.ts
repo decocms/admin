@@ -26,6 +26,7 @@ import {
   toAsyncIterator,
 } from "./helpers.ts";
 import type { DeconfigClient, DeconfigResourceOptions } from "./types.ts";
+import { WELL_KNOWN_ORIGINS } from "../../well-known.ts";
 
 export type {
   EnhancedResourcesTools,
@@ -637,7 +638,7 @@ export const DeconfigResource = {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": WELL_KNOWN_ORIGINS.join(","),
         "Access-Control-Allow-Headers": "Cache-Control",
       },
     });

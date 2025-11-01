@@ -5,6 +5,7 @@ import {
 import { AppContext } from "../context.ts";
 import { branchRpcFor, WELL_KNOWN_PUBLIC_PATHS } from "./api.ts";
 import { WatchOptions } from "./branch.ts";
+import { WELL_KNOWN_ORIGINS } from "../../hosts.ts";
 
 export interface WatchOpts extends WatchOptions {
   branchName?: string;
@@ -71,7 +72,7 @@ export const watchSSE = async (env: AppContext, options?: WatchOpts) => {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*", // Add CORS if needed
+      "Access-Control-Allow-Origin": WELL_KNOWN_ORIGINS.join(","),
       "Access-Control-Allow-Headers": "Cache-Control",
     },
   });

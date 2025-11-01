@@ -555,13 +555,6 @@ function ExpandableToolCard({
   }, []);
 
   return (
-<<<<<<< HEAD
-    <>
-      <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
-        <button
-          type="button"
-          onClick={handleToggleExpand}
-=======
     <div className="flex flex-col border border-border rounded-lg bg-muted/20 overflow-hidden">
       <button
         type="button"
@@ -591,7 +584,6 @@ function ExpandableToolCard({
         </div>
         <Icon
           name="expand_less"
->>>>>>> 60378c5f (fixing tokens)
           className={cn(
             "flex items-center justify-between p-2 transition-colors cursor-pointer",
             "hover:bg-muted",

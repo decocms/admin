@@ -4,8 +4,8 @@
 
 <p align="center">
 <b>The open-source framework for scalable AI apps.</b><br />
-Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />
-<code>MCP-native · Edge-deployed · Production-ready</code>
+Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />  
+<em>MCP-native · TypeScript-first · Deploy anywhere</em><br/>
 </p>
 
 <p align="center">
@@ -16,78 +16,49 @@ Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />
 
 ---
 
-## Overview
+## 🚀 What is DecoCMS?
 
-**DecoCMS** is an open-source foundation for building **AI-native software** — from agent logic to UI to governance.  
-It unifies **Model Context Protocol (MCP)**, workflows, and frontends into one **TypeScript runtime** that runs anywhere: Cloudflare, AWS, or self-hosted.
+**DecoCMS** is the open-source framework for building **scalable AI apps**.  
+It unifies **agents**, **workflows**, and **UIs** into a single **TypeScript codebase** that deploys anywhere — edge, cloud, or self-hosted.
 
-This repository contains **Deco Admin**, the core **MCP Mesh engine** and control plane.  
-It’s where developers, teams, and organizations **declare, compose, and govern context** across all AI agents, workflows, and tools.
+At its core is our **MCP Mesh** — a runtime and control plane that connects your AI models to tools, data, and context with full governance, observability, and cost control.
 
-> Think **Lovable + n8n + LangGraph**, but in one codebase.  
-> All in TypeScript. All deployable anywhere.
-
----
-
-## 🚀 Core Concepts
-
-| Concept | Description |
-|----------|--------------|
-| **MCP Mesh** | A unified admin and runtime for composing, securing, and observing MCP servers. |
-| **Context Management** | A control plane that governs all agent contexts — policies, cost limits, audit logs, and credentials. |
-| **Unified Stack** | Backend tools, workflows, and React/Tailwind UIs share one codebase with typed RPC. |
-| **Governance-by-Design** | Built-in RBAC, API-key permissions, rate limits, and audit logging using Better Auth. |
-| **Observability** | OpenTelemetry traces, metrics, and cost analytics for every workflow and UI interaction. |
-| **Deploy Anywhere** | Runs on Cloudflare Workers, AWS, or locally with Bun/Deno — no lock-in, one command deploy. |
+> Think **Lovable + n8n + LangGraph**, running on Cloudflare with a single deploy command.  
+> Full-stack AI, production-ready.
 
 ---
 
-## 🧩 Architecture
+## ✨ Why DecoCMS?
 
-```
+AI teams are stuck between low-code prototypes and enterprise production chaos.  
+Backends live in n8n or LangGraph. Frontends in Lovable or React.  
+Deployments are separate. Auth is inconsistent. Costs spiral. Debugging is guesswork.
 
-apps/mesh/
-├── api/               # Hono HTTP layer and MCP proxy endpoints
-│   ├── middlewares/   # Auth, context, project scope, observability
-│   └── routes/        # /mcp, /mcp/:connectionId
-├── core/              # MeshContext, access control, defineTool
-├── tools/             # MCP-native management tools (PROJECT_*, CONNECTION_*, etc.)
-├── storage/           # Kysely database adapters (SQLite/Postgres)
-├── auth/              # Better Auth (OAuth + API keys)
-├── observability/     # OpenTelemetry tracing + metrics
-└── encryption/        # Credential vault and secure token handling
+**DecoCMS fixes that:**
 
-````
-
-### Key Layers
-
-- **MeshContext** → The unified runtime interface passed to every tool.  
-  Gives access to auth, storage, vault, observability, and policy control.
-- **defineTool()** → Declarative, Zod-typed function for building MCP tools.  
-  Automatically validates, logs, traces, and audits each call.
-- **AccessControl** → Fine-grained authorization model (Better Auth + API keys).  
-  Supports `"mcp"` (management tools) and `"conn_<UUID>"` (connection-scoped tools).
-- **Proxy Layer** → Bridges local agents to remote MCP services with full OAuth 2.1 support.
-- **Observability** → Built-in OpenTelemetry integration for metrics, tracing, and cost analytics.
+- 🧠 **MCP-native** — Compose Model Context Protocol servers with built-in policy, auth, and observability.
+- ⚙️ **Full-stack in TypeScript** — Agents, workflows, and UIs share the same repo and types.
+- 🌍 **Deploy anywhere** — Cloudflare Workers, AWS, or local Bun/Deno runtimes.
+- 🔐 **Governance built-in** — RBAC, audit trails, and spend caps from day one.
+- 🔭 **Unified observability** — Trace UI clicks → agent calls → model responses.
+- 🧩 **Open & modular** — Install integrations, MCP tools, or full-stack modules from the Deco marketplace.
 
 ---
 
 ## 🕸️ The MCP Mesh
 
-The **MCP Mesh** is the secure hub for all your MCP connections.
+The **MCP Mesh** is the backbone of Deco — a distributed runtime that manages context, connections, and observability for every agent in your system.
 
-### Features
+**Core capabilities**
 
-- 🔐 **Centralized Connection Management** — connect all MCP servers with unified OAuth and API-key auth.
-- 👥 **Team & Role Permissions** — share connections safely with workspace or project scopes.
-- ⚙️ **Tool Composition** — orchestrate tools across services; reuse outputs as inputs.
-- 🧠 **MCP-native API** — every management operation is itself an MCP tool (`PROJECT_LIST`, `CONNECTION_CREATE`, etc.).
-- 📊 **Observability** — trace every run, view cost and error metrics per tool.
-- 💾 **Zero-config Local Deploy** — single `DATABASE_URL`, runs on Bun with embedded SQLite.
-
----
-
-## 🧠 Example: Define a Tool
+| Layer | Description |
+|-------|--------------|
+| 🧩 **MeshContext** | Unified runtime interface providing auth, storage, observability, and policy control. |
+| ⚙️ **defineTool()** | Declarative API for typed, auditable, observable MCP tools. |
+| 🧱 **AccessControl** | Fine-grained RBAC via Better Auth — OAuth 2.1 + API keys per workspace/project. |
+| 📊 **OpenTelemetry** | Full tracing and metrics for tools, workflows, and UI interactions. |
+| 💾 **Storage Adapters** | Kysely ORM → SQLite / Postgres, easily swapped. |
+| ☁️ **Proxy Layer** | Secure bridge to remote MCP servers with token vault + OAuth. |
 
 ```ts
 import { z } from "zod";
@@ -97,9 +68,9 @@ export const CONNECTION_CREATE = defineTool({
   name: "CONNECTION_CREATE",
   description: "Create a new MCP connection",
   inputSchema: z.object({
-    name: z.string().min(1),
+    name: z.string(),
     connection: z.object({
-      type: z.enum(["HTTP", "SSE", "Websocket"]),
+      type: z.enum(["HTTP", "SSE", "WebSocket"]),
       url: z.string().url(),
       token: z.string().optional(),
     }),
@@ -107,130 +78,147 @@ export const CONNECTION_CREATE = defineTool({
   outputSchema: z.object({
     id: z.string(),
     scope: z.enum(["workspace", "project"]),
-    status: z.enum(["active", "inactive"]),
   }),
   handler: async (input, ctx) => {
-    await ctx.access.check(); // Verify permission
+    await ctx.access.check();
     const conn = await ctx.storage.connections.create({
       projectId: ctx.project?.id ?? null,
       ...input,
       createdById: ctx.auth.user!.id,
     });
-    return { id: conn.id, scope: conn.projectId ? "project" : "workspace", status: conn.status };
+    return { id: conn.id, scope: conn.projectId ? "project" : "workspace" };
   },
 });
 ````
 
-✅ Type-safe
-✅ Audited and observable
-✅ Accessible via MCP at `/mcp` or `/mcp/:connectionId`
+✅ **Type-safe**
+✅ **Audited**
+✅ **Observable**
+✅ **Callable via MCP**
 
 ---
 
-## 🔑 Authentication & Permissions
+## 🧱 Core Architecture
 
-Built on **Better Auth**, integrating:
-
-* **OAuth 2.1 for MCP clients** (Claude Desktop, Cursor, etc.)
-* **API Keys** with rate limits, spend caps, and metadata
-* **Admin Plugin** for role-based access control (RBAC)
-* **Scoped Permissions** (`"mcp"` for management tools, `"conn_<UUID>"` for downstream connections)
-
-Example permission model:
-
-```json
-{
-  "mcp": ["PROJECT_CREATE", "PROJECT_LIST", "CONNECTION_CREATE"],
-  "conn_123e4567-e89b-12d3-a456-426614174000": ["SEND_MESSAGE", "LIST_THREADS"]
-}
+```
+apps/mesh/
+├── api/               # Hono HTTP + MCP proxy
+├── core/              # MeshContext, AccessControl, defineTool
+├── tools/             # Built-in MCP management tools
+├── storage/           # Kysely DB adapters
+├── auth/              # Better Auth (OAuth + API keys)
+├── observability/     # OpenTelemetry tracing & metrics
+└── encryption/        # Token vault & credential management
 ```
 
----
-
-## 📈 Observability
-
-Integrated **OpenTelemetry** instrumentation:
-
-* `tool.execution.duration` — histogram of execution time
-* `tool.execution.errors` — counter per tool
-* `connection.proxy.requests` — proxy request metrics
-* Distributed traces from UI → Agent → Downstream MCP
-
-Export to OTLP collectors, Datadog, or Cloudflare Logs.
+**Built for scale** — runs thousands of concurrent MCP connections with predictable cost and zero vendor lock-in.
 
 ---
 
-## 🧰 Development
+## ⚙️ Developer Workflow
 
-### Requirements
+1. **Create your project**
 
-* [Bun](https://bun.sh) (recommended) or Node/Deno
-* [Wrangler](https://developers.cloudflare.com/workers/wrangler/install/) (for deploys)
+   ```bash
+   npm create deco
+   cd my-app
+   npm run dev
+   ```
 
-### Create a new project
+   → runs locally at [http://localhost:8787](http://localhost:8787)
 
-```bash
-npm create deco
-cd my-app
-npm run dev
-```
+2. **Build your stack**
 
-Runs locally on [http://localhost:8787](http://localhost:8787)
-Deploy to Cloudflare with:
+   * Define tools and workflows in `/server`
+   * Add React + Tailwind UIs in `/view`
+   * Generate typed RPC bindings with `deco gen`
 
-```bash
-deco deploy
-```
+3. **Deploy anywhere**
 
----
+   ```bash
+   deco deploy
+   ```
 
-## 🏗️ Tech Stack
-
-| Layer               | Technology                                                |
-| ------------------- | --------------------------------------------------------- |
-| Runtime             | Cloudflare Workers / Bun                                  |
-| Language            | TypeScript                                                |
-| Auth                | [Better Auth](https://better-auth.com) (OAuth + API Key)  |
-| Database            | [Kysely](https://kysely.dev) (SQLite → Postgres)          |
-| Web Framework       | [Hono](https://hono.dev)                                  |
-| Observability       | [OpenTelemetry](https://opentelemetry.io)                 |
-| Frontend (optional) | React + Tailwind + TanStack Router                        |
-| Build               | Vite / Bun                                                |
-| Protocol            | [Model Context Protocol](https://modelcontextprotocol.io) |
+   → edge-deployed via Cloudflare Workers or self-host with Bun/Deno.
 
 ---
 
-## 🧩 Comparison: Metorial vs Deco
+## 🧩 Feature Highlights
 
-|               | **Metorial**                        | **DecoCMS**                                        |
-| ------------- | ----------------------------------- | -------------------------------------------------- |
-| Focus         | Integration platform for agentic AI | Full-stack AI framework (agents + UI + governance) |
-| Language      | Go + TS mix                         | 100 % TypeScript                                   |
-| Hosting       | Docker-based                        | Cloudflare / edge-first                            |
-| Protocol      | MCP client integration              | MCP-native runtime + admin                         |
-| Auth          | Basic API keys                      | Better Auth (OAuth 2.1 + RBAC + API keys)          |
-| Observability | Dashboard only                      | Full OpenTelemetry tracing                         |
-| UI            | Separate React dashboard            | Shared React/Tailwind workspace                    |
-| Goal          | Connect AI to APIs                  | Ship production AI apps with UI, workflow & policy |
+* 🧠 **Model Context Protocol (MCP)** — Connect AI models to data/tools through governed context.
+* 🪄 **Mastra Workflows** — Orchestrate tools with `.map`, `.branch`, `.parallel`, `.dountil`.
+* 🪶 **Unified TypeScript Stack** — One runtime for backend + frontend with typed RPC.
+* 🔒 **Governance & FinOps** — Auth, RBAC, audit, spend caps, and policy enforcement.
+* 🔭 **Observability by Design** — Logs, traces, and cost per step; debug entire flows visually.
+* ⚡ **Edge-native Deployments** — Ultra-low-latency global infra via Cloudflare.
+* 🧰 **Marketplace** — Reuse full-stack modules: agents + workflows + UIs.
+* 🧬 **Extensible Runtime** — Add your own adapters, schemas, and MCP connectors.
+
+---
+
+## 🧩 Comparison
+
+### vs Metorial
+
+|               | **Metorial**       | **DecoCMS**                     |
+| ------------- | ------------------ | ------------------------------- |
+| Focus         | Connect AI to APIs | Build full-stack AI apps        |
+| Language      | Go + TS            | 100 % TypeScript                |
+| Infra         | Docker             | Edge / Cloudflare / Self-host   |
+| Protocol      | MCP clients        | MCP-native runtime + admin      |
+| Auth          | API keys           | OAuth 2.1 + RBAC + spend caps   |
+| Observability | Dashboard          | Full OpenTelemetry              |
+| UI            | Separate           | Shared React/Tailwind workspace |
+| Goal          | Integrate          | Deploy governed AI apps fast    |
+
+### vs Refine
+
+|               | **Refine**                    | **DecoCMS**                               |
+| ------------- | ----------------------------- | ----------------------------------------- |
+| Category      | React meta-framework for CRUD | Full-stack framework for AI apps          |
+| Focus         | Admin panels & dashboards     | Agents + Workflows + UIs                  |
+| Architecture  | Headless UI                   | Unified backend + frontend runtime        |
+| Protocol      | HTTP / REST                   | Model Context Protocol (MCP)              |
+| Stack         | React + Data Providers        | TypeScript runtime + MCP Mesh             |
+| Auth          | Basic auth / ACL              | Better Auth (OAuth 2.1 + API keys + RBAC) |
+| Observability | Minimal                       | OpenTelemetry tracing + cost analytics    |
+| Deployment    | Any React env                 | Cloudflare edge + self-host               |
+| Use case      | CRUD apps / admin dashboards  | Agentic systems / governed AI apps        |
+
+> 🧭 If you’re building internal dashboards with CRUD, use Refine.
+> If you’re building production-scale AI apps with agents, workflows, custom UIs, and governance — use DecoCMS.
+
+---
+
+## 🧠 Tech Stack
+
+| Layer         | Tech                                      |
+| ------------- | ----------------------------------------- |
+| Runtime       | Cloudflare Workers / Bun / Node / Deno    |
+| Language      | TypeScript (React 19 + Tailwind v4 + Zod) |
+| Framework     | Hono + Mastra + Vite                      |
+| Database      | Kysely → SQLite / Postgres                |
+| Auth          | Better Auth (OAuth 2.1 + API keys)        |
+| Observability | OpenTelemetry + Datadog / Cloudflare Logs |
+| Protocol      | Model Context Protocol (MCP)              |
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions from the community.
-Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup and PR guidelines.
+We welcome contributions from vibecoders, agentic engineers, and builders of the next internet.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup, coding standards, and roadmap.
 
-> 🧭 Roadmap highlights
+> 🧭 Upcoming milestones
 >
 > * Multi-tenant admin dashboard
-> * Connection marketplace (installable MCP apps)
-> * Agent cost governance and spend caps
-> * Native view components callable as tools
-> * Edge live debugger (real-time traces)
+> * MCP store
+> * Edge debugger / live tracing
+> * Native view components as tools
 
 ---
 
 <div align="center">
-  <sub>Made with ❤️ by the <a href="https://decocms.com">Deco</a> community.<br/>Building the future of AI-native software — open, typed, and governed.</sub>
+  <sub>Made with ❤️ by the <a href="https://decocms.com">Deco</a> community.<br/>
+  Building the open-source operating system for AI-native apps — secure, scalable, and governed by context.</sub>
 </div>
-```

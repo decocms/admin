@@ -146,7 +146,7 @@ apps/mesh/
 ## 🧩 Feature Highlights
 
 * 🧠 **Model Context Protocol (MCP)** — Connect AI models to data/tools through governed context.
-* 🪄 **Mastra Workflows** — Orchestrate tools with `.map`, `.branch`, `.parallel`, `.dountil`.
+* 🪄 **Durable Workflows** — Orchestrate long-running tasks with access to any MCP.
 * 🪶 **Unified TypeScript Stack** — One runtime for backend + frontend with typed RPC.
 * 🔒 **Governance & FinOps** — Auth, RBAC, audit, spend caps, and policy enforcement.
 * 🔭 **Observability by Design** — Logs, traces, and cost per step; debug entire flows visually.

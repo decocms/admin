@@ -62,7 +62,7 @@ export function TabbedPageLayout({
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-auto">
         {/* Header Section - sticky horizontally */}
         <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">

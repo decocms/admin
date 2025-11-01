@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
@@ -97,7 +98,7 @@ function ProjectCard({
   };
 
   return (
-    <div className="group bg-card hover:bg-accent transition-colors flex flex-col rounded-lg relative">
+    <Card className="group transition-colors flex flex-col relative">
       <Link to={url} className="flex flex-col">
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -259,7 +260,7 @@ function ProjectCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Card>
   );
 }
 

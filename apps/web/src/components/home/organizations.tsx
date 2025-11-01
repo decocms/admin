@@ -1,5 +1,6 @@
 import { useOrganizations, useRecentProjects } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Suspense, useState, useDeferredValue } from "react";
@@ -27,36 +28,35 @@ function OrganizationCard({
   teamId: number;
 }) {
   return (
-    <Link
-      to={url}
-      className="group bg-card hover:bg-accent transition-colors flex flex-col rounded-lg"
-    >
-      <div className="p-4 flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <Avatar
-            url={avatarUrl}
-            fallback={slug}
-            size="lg"
-            objectFit="contain"
-          />
-          <Icon
-            name="chevron_right"
-            size={20}
-            className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+    <Card className="group transition-colors flex flex-col">
+      <Link to={url} className="flex flex-col">
+        <div className="p-4 flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <Avatar
+              url={avatarUrl}
+              fallback={slug}
+              size="lg"
+              objectFit="contain"
+            />
+            <Icon
+              name="chevron_right"
+              size={20}
+              className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+          </div>
+          <div className="flex flex-col gap-[2px]">
+            <h3 className="text-sm text-muted-foreground truncate">/{slug}</h3>
+            <p className="font-medium truncate">{name}</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-[2px]">
-          <h3 className="text-sm text-muted-foreground truncate">/{slug}</h3>
-          <p className="font-medium truncate">{name}</p>
+        <div className="p-4 border-t border-border flex justify-between items-center">
+          <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
+            <OrgAvatars teamId={teamId} />
+            <OrgMemberCount teamId={teamId} />
+          </ErrorBoundary>
         </div>
-      </div>
-      <div className="p-4 border-t border-border flex justify-between items-center">
-        <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
-          <OrgAvatars teamId={teamId} />
-          <OrgMemberCount teamId={teamId} />
-        </ErrorBoundary>
-      </div>
-    </Link>
+      </Link>
+    </Card>
   );
 }
 

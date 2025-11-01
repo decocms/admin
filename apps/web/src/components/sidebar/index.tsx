@@ -1552,7 +1552,7 @@ function WorkspaceViews() {
               size={14}
               className={
                 isDragMode
-                  ? "text-primary"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }
             />

@@ -88,16 +88,8 @@ function ConnectionInstanceActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem
-          onSelect={onEdit}
-          className="text-primary focus:bg-primary/10 focus:text-primary"
-        >
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={onDelete}
-          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-        >
+        <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDelete} variant="destructive">
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

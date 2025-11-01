@@ -90,7 +90,7 @@ export function BreadcrumbProjectSwitcher() {
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded-md">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-accent p-0.5 rounded-md">
             <Avatar
               url={resolvedAvatar ?? undefined}
               fallback={currentProject?.title ?? projectParam}

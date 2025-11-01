@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import type { Database, AuditLog } from './types';
 
 export interface LogAuditParams {
-  projectId?: string;
+  organizationId?: string;
   userId?: string;
   connectionId?: string;
   toolName: string;
@@ -29,7 +29,7 @@ export class AuditLogStorage {
       .insertInto('audit_logs')
       .values({
         id,
-        projectId: params.projectId ?? null,
+        organizationId: params.organizationId ?? null,
         userId: params.userId ?? null,
         connectionId: params.connectionId ?? null,
         toolName: params.toolName,
@@ -44,7 +44,7 @@ export class AuditLogStorage {
   }
 
   async query(filters: {
-    projectId?: string;
+    organizationId?: string;
     userId?: string;
     connectionId?: string;
     toolName?: string;
@@ -55,8 +55,8 @@ export class AuditLogStorage {
   }): Promise<AuditLog[]> {
     let query = this.db.selectFrom('audit_logs').selectAll();
 
-    if (filters.projectId) {
-      query = query.where('projectId', '=', filters.projectId);
+    if (filters.organizationId) {
+      query = query.where('organizationId', '=', filters.organizationId);
     }
     if (filters.userId) {
       query = query.where('userId', '=', filters.userId);

@@ -24,25 +24,12 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn('updatedAt', 'text', (col) => col.notNull())
     .execute();
 
-  // Projects table
-  await db.schema
-    .createTable('projects')
-    .ifNotExists()
-    .addColumn('id', 'text', (col) => col.primaryKey())
-    .addColumn('slug', 'text', (col) => col.notNull().unique())
-    .addColumn('name', 'text', (col) => col.notNull())
-    .addColumn('description', 'text')
-    .addColumn('ownerId', 'text', (col) => col.notNull())
-    .addColumn('createdAt', 'text', (col) => col.notNull())
-    .addColumn('updatedAt', 'text', (col) => col.notNull())
-    .execute();
-
-  // Connections table
+  // Connections table (organization-scoped)
   await db.schema
     .createTable('connections')
     .ifNotExists()
     .addColumn('id', 'text', (col) => col.primaryKey())
-    .addColumn('projectId', 'text')
+    .addColumn('organizationId', 'text', (col) => col.notNull())
     .addColumn('createdById', 'text', (col) => col.notNull())
     .addColumn('name', 'text', (col) => col.notNull())
     .addColumn('description', 'text')
@@ -58,19 +45,6 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn('tools', 'text')
     .addColumn('bindings', 'text')
     .addColumn('status', 'text', (col) => col.notNull().defaultTo('active'))
-    .addColumn('createdAt', 'text', (col) => col.notNull())
-    .addColumn('updatedAt', 'text', (col) => col.notNull())
-    .execute();
-
-  // Roles table
-  await db.schema
-    .createTable('roles')
-    .ifNotExists()
-    .addColumn('id', 'text', (col) => col.primaryKey())
-    .addColumn('projectId', 'text', (col) => col.notNull())
-    .addColumn('name', 'text', (col) => col.notNull())
-    .addColumn('description', 'text')
-    .addColumn('permissions', 'text', (col) => col.notNull())
     .addColumn('createdAt', 'text', (col) => col.notNull())
     .addColumn('updatedAt', 'text', (col) => col.notNull())
     .execute();
@@ -96,7 +70,7 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .createTable('audit_logs')
     .ifNotExists()
     .addColumn('id', 'text', (col) => col.primaryKey())
-    .addColumn('projectId', 'text')
+    .addColumn('organizationId', 'text')
     .addColumn('userId', 'text')
     .addColumn('connectionId', 'text')
     .addColumn('toolName', 'text', (col) => col.notNull())
@@ -111,11 +85,9 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
  * Drop all test tables
  */
 export async function dropTestSchema(db: Kysely<Database>): Promise<void> {
-  await db.schema.dropTable('connections').ifExists().execute();
-  await db.schema.dropTable('projects').ifExists().execute();
-  await db.schema.dropTable('users').ifExists().execute();
-  await db.schema.dropTable('roles').ifExists().execute();
-  await db.schema.dropTable('api_keys').ifExists().execute();
   await db.schema.dropTable('audit_logs').ifExists().execute();
+  await db.schema.dropTable('connections').ifExists().execute();
+  await db.schema.dropTable('api_keys').ifExists().execute();
+  await db.schema.dropTable('users').ifExists().execute();
 }
 

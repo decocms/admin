@@ -20,14 +20,19 @@ describe('createMeshContextFactory', () => {
 
   const createMockHonoContext = (overrides?: any) => ({
     req: {
-      url: 'https://mesh.example.com/my-project/mcp/tools',
-      path: '/my-project/mcp/tools',
+      url: 'https://mesh.example.com/mcp/tools',
+      path: '/mcp/tools',
       header: vi.fn((name: string) => {
         if (name === 'Authorization') return 'Bearer test_key';
         if (name === 'User-Agent') return 'Test/1.0';
         if (name === 'X-Forwarded-For') return '192.168.1.1';
         return undefined;
       }),
+      raw: {
+        headers: new Headers({
+          'Authorization': 'Bearer test_key',
+        }),
+      },
       ...overrides?.req,
     },
     ...overrides,
@@ -35,13 +40,21 @@ describe('createMeshContextFactory', () => {
 
   const createMockAuth = (): any => ({
     api: {
+      getMcpSession: vi.fn().mockResolvedValue(null),
       verifyApiKey: vi.fn().mockResolvedValue({
         valid: true,
         key: {
           id: 'key_1',
           name: 'Test Key',
           userId: 'user_1',
-          permissions: { 'mcp': ['PROJECT_LIST'] },
+          permissions: { 'self': ['CONNECTION_LIST'] },
+          metadata: {
+            organization: {
+              id: 'org_123',
+              slug: 'test-org',
+              name: 'Test Organization',
+            },
+          },
         },
       }),
     },
@@ -148,11 +161,11 @@ describe('createMeshContextFactory', () => {
     });
   });
 
-  describe('project scope extraction', () => {
-    it('should be organization-scoped when path starts with /mcp', async () => {
+  describe('organization scope', () => {
+    it('should extract organization from Better Auth', async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: createMockAuth(),
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -160,59 +173,34 @@ describe('createMeshContextFactory', () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: 'https://mesh.example.com/mcp/tools',
-          path: '/mcp/tools',
-          header: vi.fn(() => undefined),
-        },
-      });
-
-      const meshCtx = await factory(honoCtx);
-      expect(meshCtx.project).toBeUndefined();
-    });
-
-    it('should extract project slug from path', async () => {
-      const factory = createMeshContextFactory({
-        db,
-        auth: null as any,
-        encryption: { key: 'test_key' },
-        observability: {
-          tracer: {} as any,
-          meter: {} as any,
-        },
-      });
-
-      // Create a test project first
-      await db.insertInto('projects').values({
-        id: 'proj_test',
-        slug: 'test-project',
-        name: 'Test Project',
-        description: null,
-        ownerId: 'user_1',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }).execute();
-
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: 'https://mesh.example.com/test-project/mcp/tools',
-          path: '/test-project/mcp/tools',
-          header: vi.fn(() => undefined),
-        },
-      });
+      const honoCtx = createMockHonoContext();
 
       const meshCtx = await factory(honoCtx);
 
-      expect(meshCtx.project).toBeDefined();
-      expect(meshCtx.project?.slug).toBe('test-project');
-      expect(meshCtx.project?.id).toBe('proj_test');
+      expect(meshCtx.organization).toBeDefined();
+      expect(meshCtx.organization?.id).toBe('org_123');
+      expect(meshCtx.organization?.slug).toBe('test-org');
+      expect(meshCtx.organization?.name).toBe('Test Organization');
     });
 
-    it('should throw NotFoundError for non-existent project', async () => {
+    it('should work without organization (system-level)', async () => {
+      const authWithoutOrg = {
+        api: {
+          getMcpSession: vi.fn().mockResolvedValue(null),
+          verifyApiKey: vi.fn().mockResolvedValue({
+            valid: true,
+            key: {
+              id: 'key_1',
+              permissions: { 'self': ['CONNECTION_LIST'] },
+              metadata: {},
+            },
+          }),
+        },
+      };
+
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: authWithoutOrg as any,
         encryption: { key: 'test_key' },
         observability: {
           tracer: {} as any,
@@ -220,16 +208,10 @@ describe('createMeshContextFactory', () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: 'https://mesh.example.com/nonexistent/mcp/tools',
-          path: '/nonexistent/mcp/tools',
-          header: vi.fn(() => undefined),
-        },
-      });
+      const honoCtx = createMockHonoContext();
+      const meshCtx = await factory(honoCtx);
 
-      await expect(factory(honoCtx)).rejects.toThrow(NotFoundError);
-      await expect(factory(honoCtx)).rejects.toThrow('Project not found: nonexistent');
+      expect(meshCtx.organization).toBeUndefined();
     });
   });
 
@@ -250,13 +232,14 @@ describe('createMeshContextFactory', () => {
           url: 'https://mesh.example.com/mcp/tools',
           path: '/mcp/tools',
           header: vi.fn(() => undefined),
+          raw: { headers: new Headers() },
         },
       });
 
       const meshCtx = await factory(honoCtx);
 
-      expect(meshCtx.storage.projects).toBeDefined();
       expect(meshCtx.storage.connections).toBeDefined();
+      expect(meshCtx.storage.auditLogs).toBeDefined();
     });
   });
 

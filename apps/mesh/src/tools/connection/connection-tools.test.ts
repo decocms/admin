@@ -6,7 +6,6 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../../storage/types';
 import type { MeshContext } from '../../core/mesh-context';
 import { ConnectionStorage } from '../../storage/connection';
-import { ProjectStorage } from '../../storage/project';
 
 describe('Connection Tools', () => {
   let db: Kysely<Database>;
@@ -22,11 +21,14 @@ describe('Connection Tools', () => {
       auth: {
         user: { id: 'user_1', email: '[email protected]', name: 'Test', role: 'admin' },
       },
+      organization: {
+        id: 'org_123',
+        slug: 'test-org',
+        name: 'Test Organization',
+      },
       storage: {
-        projects: new ProjectStorage(db),
         connections: new ConnectionStorage(db),
         auditLogs: null as any,
-        roles: null as any,
       },
       vault: null as any,
       authInstance: null as any,
@@ -64,7 +66,6 @@ describe('Connection Tools', () => {
       const result = await CONNECTION_CREATE.execute({
         name: 'Company Slack',
         description: 'Organization-wide Slack',
-        projectId: null, // Organization-scoped
         connection: {
           type: 'HTTP',
           url: 'https://slack.com/mcp',
@@ -74,21 +75,8 @@ describe('Connection Tools', () => {
 
       expect(result.id).toMatch(/^conn_/);
       expect(result.name).toBe('Company Slack');
-      expect(result.scope).toBe('organization');
+      expect(result.organizationId).toBe('org_123');
       expect(result.status).toBe('active');
-    });
-
-    it('should create project-scoped connection', async () => {
-      const result = await CONNECTION_CREATE.execute({
-        name: 'Project DB',
-        projectId: 'proj_abc',
-        connection: {
-          type: 'HTTP',
-          url: 'https://db.com/mcp',
-        },
-      }, ctx);
-
-      expect(result.scope).toBe('project');
     });
 
     it('should support different connection types', async () => {
@@ -121,41 +109,29 @@ describe('Connection Tools', () => {
       // Create some test connections
       await CONNECTION_CREATE.execute({
         name: 'Org Connection 1',
-        projectId: null,
         connection: { type: 'HTTP', url: 'https://org1.com' },
       }, ctx);
 
       await CONNECTION_CREATE.execute({
-        name: 'Project Connection 1',
-        projectId: 'proj_test',
-        connection: { type: 'HTTP', url: 'https://proj1.com' },
+        name: 'Org Connection 2',
+        connection: { type: 'HTTP', url: 'https://org2.com' },
       }, ctx);
     });
 
-    it('should list all connections', async () => {
-      const result = await CONNECTION_LIST.execute({
-        scope: 'all',
-      }, ctx);
+    it('should list all connections in organization', async () => {
+      const result = await CONNECTION_LIST.execute({}, ctx);
 
       expect(result.connections.length).toBeGreaterThan(0);
-    });
-
-    it('should filter by scope', async () => {
-      const orgResult = await CONNECTION_LIST.execute({
-        scope: 'organization',
-      }, ctx);
-
-      expect(orgResult.connections.every(c => c.scope === 'organization')).toBe(true);
+      expect(result.connections.every(c => c.organizationId === 'org_123')).toBe(true);
     });
 
     it('should include connection details', async () => {
-      const result = await CONNECTION_LIST.execute({
-        scope: 'all',
-      }, ctx);
+      const result = await CONNECTION_LIST.execute({}, ctx);
 
       const conn = result.connections[0];
       expect(conn).toHaveProperty('id');
       expect(conn).toHaveProperty('name');
+      expect(conn).toHaveProperty('organizationId');
       expect(conn).toHaveProperty('connectionType');
       expect(conn).toHaveProperty('connectionUrl');
       expect(conn).toHaveProperty('status');

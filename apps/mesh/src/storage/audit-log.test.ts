@@ -23,7 +23,7 @@ describe('AuditLogStorage', () => {
   describe('log', () => {
     it('should create audit log entry', async () => {
       await storage.log({
-        projectId: 'proj_123',
+        organizationId: 'org_123',
         userId: 'user_123',
         connectionId: 'conn_123',
         toolName: 'TEST_TOOL',
@@ -69,7 +69,7 @@ describe('AuditLogStorage', () => {
     beforeAll(async () => {
       // Create some test logs
       await storage.log({
-        projectId: 'proj_a',
+        organizationId: 'org_a',
         userId: 'user_a',
         toolName: 'TOOL_A',
         allowed: true,
@@ -77,7 +77,7 @@ describe('AuditLogStorage', () => {
       });
 
       await storage.log({
-        projectId: 'proj_b',
+        organizationId: 'org_b',
         userId: 'user_b',
         toolName: 'TOOL_B',
         allowed: false,
@@ -90,9 +90,9 @@ describe('AuditLogStorage', () => {
       expect(logs.length).toBeGreaterThan(0);
     });
 
-    it('should filter by projectId', async () => {
-      const logs = await storage.query({ projectId: 'proj_a' });
-      expect(logs.every(l => l.projectId === 'proj_a')).toBe(true);
+    it('should filter by organizationId', async () => {
+      const logs = await storage.query({ organizationId: 'org_a' });
+      expect(logs.every(l => l.organizationId === 'org_a')).toBe(true);
     });
 
     it('should filter by userId', async () => {
@@ -128,13 +128,13 @@ describe('AuditLogStorage', () => {
 
     it('should combine multiple filters', async () => {
       const logs = await storage.query({
-        projectId: 'proj_a',
+        organizationId: 'org_a',
         userId: 'user_a',
         toolName: 'TOOL_A',
       });
 
       expect(logs.every(l => 
-        l.projectId === 'proj_a' &&
+        l.organizationId === 'org_a' &&
         l.userId === 'user_a' &&
         l.toolName === 'TOOL_A'
       )).toBe(true);

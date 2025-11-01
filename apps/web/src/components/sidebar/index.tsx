@@ -467,6 +467,7 @@ function WorkspaceViews() {
   }
 
   const wellKnownItems = [
+    "Home",
     "Tools",
     "Views",
     "Database",
@@ -502,6 +503,7 @@ function WorkspaceViews() {
 
   // Resource type order for main resources section
   const resourceTypeOrder = [
+    "Home",
     "Documents",
     "Views",
     "Agents",

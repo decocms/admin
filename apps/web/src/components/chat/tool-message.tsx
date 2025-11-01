@@ -1,4 +1,4 @@
-import { useIntegrations } from "@deco/sdk";
+import { useIntegrations, DECO_CMS_API_URL, useViewByUriV2 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Collapsible,
@@ -24,8 +24,10 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
-import { memo, useMemo, useRef, useState, useCallback } from "react";
+import { memo, useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { IntegrationIcon } from "../integrations/common.tsx";
+import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+import type { ToolsetContextItem } from "./types.ts";
 import {
   extractToolName,
   parseToolName,
@@ -42,6 +44,12 @@ import {
   useGetVersions,
   useRevertToVersion,
 } from "../../stores/resource-version-history/index.ts";
+import { generateViewHTML } from "../../utils/view-template.ts";
+import { useParams, useNavigate } from "react-router";
+import { useTheme } from "../theme.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import ViewDetail from "../views/view-detail.tsx";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -71,6 +79,8 @@ const CUSTOM_UI_TOOLS = new Set([
   "GENERATE_IMAGE",
   "READ_MCP",
   "CALL_TOOL",
+  "DECO_RESOURCE_VIEW_CREATE",
+  "DECO_RESOURCE_VIEW_UPDATE",
 ]);
 
 // Helper to extract toolName from ToolUIPart (handles both static and dynamic tools)
@@ -371,7 +381,7 @@ function ImagePrompt({
 
   if (!isCollapsible || prompt.length <= 60) {
     return (
-      <p className="text-sm text-muted-foreground/80 leading-relaxed break-words whitespace-pre-wrap">
+      <p className="text-sm text-muted-foreground/80 leading-relaxed wrap-break-word whitespace-pre-wrap">
         {prompt}
       </p>
     );
@@ -388,20 +398,20 @@ function ImagePrompt({
             size="sm"
             className="h-auto p-0 text-sm text-muted-foreground/80 hover:text-muted-foreground font-normal justify-start w-full text-left"
           >
-            <span className="leading-relaxed break-words flex-1 min-w-0">
+            <span className="leading-relaxed wrap-break-word flex-1 min-w-0">
               {truncatedPrompt}
             </span>
             <Icon
               name="chevron_right"
               className={cn(
-                "ml-2 h-3 w-3 flex-shrink-0 transition-transform",
+                "ml-2 h-3 w-3 shrink-0 transition-transform",
                 isOpen && "rotate-90",
               )}
             />
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted break-words whitespace-pre-wrap">
+          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted wrap-break-word whitespace-pre-wrap">
             {prompt}
           </div>
         </CollapsibleContent>
@@ -412,7 +422,7 @@ function ImagePrompt({
 
 function GeneratingStatus() {
   return (
-    <span className="font-medium bg-gradient-to-r from-foreground via-foreground/50 to-foreground bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent">
+    <span className="font-medium bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent">
       Generating image...
     </span>
   );
@@ -670,6 +680,32 @@ function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
     return integrations.find((i) => i.id === integrationId) ?? null;
   }, [integrationId, integrations]);
 
+  // Sync to context when tool executes
+  const { addContextItem, contextItems } = useThreadContext();
+  const hasAddedRef = useRef(false);
+  useEffect(() => {
+    if (
+      part.state === "output-available" &&
+      integrationId &&
+      integration &&
+      !hasAddedRef.current
+    ) {
+      // Check if this integration is already in context
+      const exists = contextItems.some(
+        (item) =>
+          item.type === "toolset" && item.integrationId === integrationId,
+      );
+      if (!exists) {
+        addContextItem({
+          type: "toolset",
+          integrationId,
+          enabledTools: integration.tools?.map((t) => t.name) || [],
+        } as Omit<ToolsetContextItem, "id">);
+        hasAddedRef.current = true;
+      }
+    }
+  }, [part.state, integrationId, integration, addContextItem, contextItems]);
+
   return (
     <ExpandableToolCard
       part={part}
@@ -732,6 +768,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   const integrationId = input?.id;
   const toolName = input?.params?.name;
 
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const integration = useMemo(() => {
     if (!integrationId) return null;
     return integrations.find((i) => i.id === integrationId) ?? null;
@@ -742,6 +779,52 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     const tool = integration.tools.find((t) => t.name === toolName);
     return tool?.description || null;
   }, [integration?.tools, toolName]);
+
+  // Sync to context when tool executes
+  const { addContextItem, updateContextItem, contextItems } =
+    useThreadContext();
+  const hasAddedRef = useRef(false);
+  useEffect(() => {
+    if (
+      part.state === "output-available" &&
+      integrationId &&
+      toolName &&
+      integration &&
+      !hasAddedRef.current
+    ) {
+      // Find existing toolset item for this integration
+      const existingItem = contextItems.find(
+        (item) =>
+          item.type === "toolset" && item.integrationId === integrationId,
+      );
+
+      if (existingItem && existingItem.type === "toolset") {
+        // Update existing item to include this tool if not already present
+        if (!existingItem.enabledTools.includes(toolName)) {
+          updateContextItem(existingItem.id, {
+            enabledTools: [...existingItem.enabledTools, toolName],
+          });
+          hasAddedRef.current = true;
+        }
+      } else {
+        // Create new toolset item
+        addContextItem({
+          type: "toolset",
+          integrationId,
+          enabledTools: [toolName],
+        } as Omit<ToolsetContextItem, "id">);
+        hasAddedRef.current = true;
+      }
+    }
+  }, [
+    part.state,
+    integrationId,
+    toolName,
+    integration,
+    addContextItem,
+    updateContextItem,
+    contextItems,
+  ]);
 
   const statusText = useMemo(() => {
     switch (part.state) {
@@ -775,6 +858,57 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     part,
     uri,
   );
+
+  // Check if this is a view tool being called via CALL_TOOL
+  // NOW we can do conditional returns after all hooks are called
+  const isViewTool =
+    toolName === "DECO_RESOURCE_VIEW_CREATE" ||
+    toolName === "DECO_RESOURCE_VIEW_UPDATE";
+
+  // If it's a view tool, render with ViewToolUI style
+  if (isViewTool) {
+    const isGenerating =
+      part.state === "input-streaming" || part.state === "input-available";
+    const hasError = part.state === "output-error";
+
+    if (hasError) {
+      return (
+        <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
+          <div className="flex items-center gap-2 text-destructive">
+            <Icon name="close" className="h-4 w-4" />
+            <span className="font-medium">
+              Failed to{" "}
+              {toolName === "DECO_RESOURCE_VIEW_CREATE" ? "create" : "update"}{" "}
+              view
+            </span>
+          </div>
+          {part.errorText && (
+            <p className="text-sm text-destructive/80">{part.errorText}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (isGenerating) {
+      return (
+        <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
+          <div className="flex items-center gap-2">
+            <Spinner />
+            <span className="font-medium bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent">
+              {toolName === "DECO_RESOURCE_VIEW_CREATE"
+                ? "Creating"
+                : "Updating"}{" "}
+              view...
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (part.state === "output-available") {
+      return <ViewToolUIFromCallTool part={part} toolName={toolName} />;
+    }
+  }
 
   return (
     <ExpandableToolCard
@@ -827,6 +961,366 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
+// Custom UI component for view tools called via CALL_TOOL
+function ViewToolUIFromCallTool({
+  part,
+  toolName,
+}: {
+  part: ToolUIPart;
+  toolName: string;
+}) {
+  const navigateWorkspace = useNavigateWorkspace();
+  const { org, project } = useParams<{ org: string; project: string }>();
+  const themeContext = useTheme();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Extract view URI from CALL_TOOL output
+  const viewUri = useMemo(() => {
+    if (part.state !== "output-available" || !part.output) return null;
+    const output = part.output as {
+      isError?: boolean;
+      structuredContent?:
+        | { uri?: string }
+        | Array<{ type?: string; text?: string }>;
+      content?: Array<{ type?: string; text?: string }>;
+    };
+
+    console.log("[ViewToolUI] Extracting URI from output:", part.output);
+
+    // Check if structuredContent has uri directly
+    if (
+      output.structuredContent &&
+      typeof output.structuredContent === "object" &&
+      !Array.isArray(output.structuredContent)
+    ) {
+      if ("uri" in output.structuredContent && output.structuredContent.uri) {
+        console.log(
+          "[ViewToolUI] Found URI in structuredContent:",
+          output.structuredContent.uri,
+        );
+        return output.structuredContent.uri;
+      }
+    }
+
+    // Fallback: Check content array (old format)
+    if (output.content && Array.isArray(output.content)) {
+      for (const item of output.content) {
+        if (item.type === "text" && item.text) {
+          try {
+            const parsed = JSON.parse(item.text);
+            console.log("[ViewToolUI] Parsed content:", parsed);
+            if (parsed.uri) {
+              console.log("[ViewToolUI] Found URI:", parsed.uri);
+              return parsed.uri;
+            }
+          } catch (e) {
+            console.log("[ViewToolUI] Not JSON:", item.text);
+            // Not JSON, continue
+          }
+        }
+      }
+    }
+
+    console.log("[ViewToolUI] No URI found in output");
+    return null;
+  }, [part.state, part.output]);
+
+  // Fetch view data
+  const { data: viewResponse, isLoading } = useViewByUriV2(viewUri || "");
+  const view = viewResponse?.data;
+
+  // Generate HTML for preview
+  const htmlValue = useMemo(() => {
+    if (!view?.code || !org || !project) return null;
+
+    try {
+      return generateViewHTML(
+        view.code,
+        DECO_CMS_API_URL,
+        org,
+        project,
+        window.location.origin,
+        view.importmap,
+        themeContext?.data?.variables as Record<string, string> | undefined,
+      );
+    } catch (error) {
+      console.error("Failed to generate view HTML:", error);
+      return null;
+    }
+  }, [
+    view?.code,
+    view?.importmap,
+    org,
+    project,
+    themeContext?.data?.variables,
+  ]);
+
+  const handleNavigateToView = useCallback(() => {
+    if (!viewUri) return;
+
+    // Extract integration ID and resource name from URI
+    // Format: rsc://integrationId/resourceName/resourceId
+    try {
+      const uriWithoutScheme = viewUri.replace(/^rsc:\/\//, "");
+      const [integrationId, resourceName] = uriWithoutScheme.split("/");
+
+      if (integrationId && resourceName) {
+        navigateWorkspace(
+          `rsc/${integrationId}/${resourceName}/${encodeURIComponent(viewUri)}`,
+        );
+      } else {
+        console.error("[ViewToolUI] Invalid URI format:", viewUri);
+      }
+    } catch (error) {
+      console.error("[ViewToolUI] Error parsing URI:", error);
+    }
+  }, [viewUri, navigateWorkspace]);
+
+  // Don't return null - always show something
+  if (!viewUri) {
+    return (
+      <div className="border border-border rounded-lg overflow-hidden bg-background">
+        <div className="p-4 bg-muted/10">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon name="visibility" className="h-4 w-4" />
+            <span className="text-sm">
+              View{" "}
+              {toolName === "DECO_RESOURCE_VIEW_CREATE" ? "created" : "updated"}{" "}
+              (check console for details)
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "border border-border rounded-lg overflow-hidden bg-background",
+        isFullscreen && "fixed inset-0 z-50 rounded-none",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b bg-muted/10">
+        <div className="flex items-center gap-2">
+          <Icon name="visibility" className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">
+            {view?.name || "View Preview"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isFullscreen ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsFullscreen(false)}
+              className="shrink-0"
+            >
+              <Icon name="fullscreen_exit" className="h-3.5 w-3.5 mr-1.5" />
+              Exit Fullscreen
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsFullscreen(true)}
+              className="shrink-0"
+            >
+              <Icon name="fullscreen" className="h-3.5 w-3.5 mr-1.5" />
+              Fullscreen
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleNavigateToView}
+            className="shrink-0"
+          >
+            <Icon name="open_in_new" className="h-3.5 w-3.5 mr-1.5" />
+            Open View
+          </Button>
+        </div>
+      </div>
+
+      {/* View iframe */}
+      {isLoading && (
+        <div className="flex items-center justify-center p-8">
+          <Spinner />
+        </div>
+      )}
+
+      {!isLoading && htmlValue && (
+        <iframe
+          srcDoc={htmlValue}
+          className={cn(
+            "w-full border-0",
+            isFullscreen ? "h-[calc(100vh-57px)]" : "h-[400px]",
+          )}
+          title="View Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      )}
+
+      {!isLoading && !htmlValue && (
+        <div className="flex items-center justify-center p-8 text-muted-foreground">
+          <span className="text-sm">Unable to render view preview</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom UI component for view creation/update tools
+function ViewToolUI({ part }: { part: ToolUIPart }) {
+  const navigateWorkspace = useNavigateWorkspace();
+  const themeContext = useTheme();
+  const toolName = useToolName(part);
+  const { org, project } = useParams<{ org: string; project: string }>();
+
+  // Extract view URI from output
+  const viewUri = useMemo(() => {
+    if (part.state !== "output-available" || !part.output) return null;
+    const output = part.output as { uri?: string };
+    return output.uri || null;
+  }, [part.state, part.output]);
+
+  // Fetch view data
+  const { data: viewResponse, isLoading } = useViewByUriV2(viewUri || "");
+
+  // Extract view from response
+  const view = viewResponse?.data;
+
+  // Generate HTML for preview
+  const htmlValue = useMemo(() => {
+    if (!view?.code || !org || !project) return null;
+
+    try {
+      return generateViewHTML(
+        view.code,
+        DECO_CMS_API_URL,
+        org,
+        project,
+        window.location.origin,
+        view.importmap,
+        themeContext?.data?.variables as Record<string, string> | undefined,
+      );
+    } catch (error) {
+      console.error("Failed to generate view HTML:", error);
+      return null;
+    }
+  }, [
+    view?.code,
+    view?.importmap,
+    org,
+    project,
+    themeContext?.data?.variables,
+  ]);
+
+  const handleNavigateToView = useCallback(() => {
+    if (!viewUri) return;
+
+    // Extract integration ID and resource name from URI
+    // Format: rsc://integrationId/resourceName/resourceId
+    try {
+      const uriWithoutScheme = viewUri.replace(/^rsc:\/\//, "");
+      const [integrationId, resourceName] = uriWithoutScheme.split("/");
+
+      if (integrationId && resourceName) {
+        navigateWorkspace(
+          `rsc/${integrationId}/${resourceName}/${encodeURIComponent(viewUri)}`,
+        );
+      } else {
+        console.error("[ViewToolUI] Invalid URI format:", viewUri);
+      }
+    } catch (error) {
+      console.error("[ViewToolUI] Error parsing URI:", error);
+    }
+  }, [viewUri, navigateWorkspace]);
+
+  const isGenerating =
+    part.state === "input-streaming" || part.state === "input-available";
+  const hasError = part.state === "output-error";
+
+  if (hasError) {
+    return (
+      <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2 text-destructive">
+          <Icon name="close" className="h-4 w-4" />
+          <span className="font-medium">
+            Failed to{" "}
+            {toolName === "DECO_RESOURCE_VIEW_CREATE" ? "create" : "update"}{" "}
+            view
+          </span>
+        </div>
+        {part.errorText && (
+          <p className="text-sm text-destructive/80">{part.errorText}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2">
+          <Spinner />
+          <span className="font-medium bg-linear-to-r from-foreground via-foreground/50 to-foreground bg-size-[200%_100%] animate-shimmer bg-clip-text text-transparent">
+            {toolName === "DECO_RESOURCE_VIEW_CREATE" ? "Creating" : "Updating"}{" "}
+            view...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!viewUri || !view) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3 w-full max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Icon name="visibility" className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">{view.name}</span>
+          {view.description && (
+            <span className="text-sm text-muted-foreground">
+              — {view.description}
+            </span>
+          )}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleNavigateToView}
+          className="shrink-0"
+        >
+          <Icon name="open_in_new" className="h-3.5 w-3.5 mr-1.5" />
+          Open View
+        </Button>
+      </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center p-8 border border-border rounded-lg bg-muted/10">
+          <Spinner />
+        </div>
+      )}
+
+      {htmlValue && (
+        <div className="rounded-lg overflow-hidden border border-border bg-background">
+          <iframe
+            srcDoc={htmlValue}
+            className="w-full h-[400px] border-0"
+            title="View Preview"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
@@ -852,6 +1346,13 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
 
   if (toolName === "CALL_TOOL") {
     return <CallToolUI part={part} />;
+  }
+
+  if (
+    toolName === "DECO_RESOURCE_VIEW_CREATE" ||
+    toolName === "DECO_RESOURCE_VIEW_UPDATE"
+  ) {
+    return <ViewToolUI part={part} />;
   }
 
   // For other tools, only show output when available

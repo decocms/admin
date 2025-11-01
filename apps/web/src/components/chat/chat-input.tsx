@@ -338,116 +338,121 @@ export function ChatInput({
       <form
         onSubmit={onSubmit}
         className={cn(
-          "relative",
+          "relative h-full shadow-lg rounded-xl",
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="w-full">
-          <div className="relative rounded-xl border border-border bg-background w-full mx-auto">
-            <div className="relative flex flex-col gap-2 p-2.5">
-              {/* Context Resources */}
-              {uiOptions.showContextResources && hasContextResources && (
-                <ContextResources
-                  uploadedFiles={uploadedFiles}
-                  removeFile={removeFile}
-                  enableFileUpload={enableFileUpload}
-                />
-              )}
+        <div className="w-full h-full">
+          <div className="relative rounded-xl border border-border bg-background w-full mx-auto h-full">
+            <div className="relative flex gap-2 p-2.5 min-h-0 h-full">
+              {/* Left: Input Area */}
+              <div className="flex-1 flex flex-col gap-2 min-w-0 min-h-0">
+                {/* Top Context Resources (only shown if context above input) */}
+                {!uiOptions.showContextResources && hasContextResources && (
+                  <ContextResources
+                    uploadedFiles={uploadedFiles}
+                    removeFile={removeFile}
+                    enableFileUpload={enableFileUpload}
+                  />
+                )}
 
-              {/* Input Area */}
-              <div
-                className="overflow-y-auto relative"
-                style={{ maxHeight: "164px" }}
-              >
-                <RichTextArea
-                  ref={richTextRef}
-                  value={input}
-                  onChange={handleRichTextChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask anything or @ for context"
-                  className="placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-0 px-2.5 py-2 text-sm min-h-[20px] rounded-none"
-                  disabled={isLoading || disabled}
-                  allowNewLine={isMobile}
-                  enableToolMentions
-                />
+                {/* Input Area - grows to fill space */}
+                <div className="overflow-y-auto relative flex-1 min-h-0">
+                  <RichTextArea
+                    ref={richTextRef}
+                    value={input}
+                    onChange={handleRichTextChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask anything or @ for context"
+                    className="placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-0 px-2.5 py-2 text-sm min-h-[20px] h-full rounded-none"
+                    disabled={isLoading || disabled}
+                    allowNewLine={isMobile}
+                    enableToolMentions
+                  />
+                </div>
+
+                {/* Bottom Actions Row - stays at bottom */}
+                <div className="flex items-center justify-between flex-none">
+                  <div className="flex items-center gap-1">
+                    {uiOptions.showModelSelector && (
+                      <ModelSelector
+                        model={model}
+                        onModelChange={handleModelChange}
+                        className="!p-0 hover:bg-transparent"
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {rightNode}
+                    <AudioButton
+                      onMessage={handleRichTextChange}
+                      className="hover:bg-transparent hover:text-foreground"
+                    />
+                    <Button
+                      type={isLoading ? "button" : "submit"}
+                      onClick={
+                        isLoading
+                          ? () => {
+                              stop();
+                            }
+                          : undefined
+                      }
+                      variant={canSubmit || isLoading ? "default" : "ghost"}
+                      size="icon"
+                      disabled={!canSubmit && !isLoading}
+                      className={cn(
+                        "size-8 rounded-full transition-all",
+                        !canSubmit &&
+                          !isLoading &&
+                          "bg-muted text-muted-foreground hover:bg-muted hover:text-muted-foreground cursor-not-allowed",
+                      )}
+                      title={
+                        isLoading ? "Stop generating" : "Send message (Enter)"
+                      }
+                    >
+                      <Icon
+                        name={isLoading ? "stop" : "arrow_upward"}
+                        size={20}
+                        filled={isLoading}
+                      />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
-              {/* Bottom Actions Row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <DropdownMenu
-                    modal={false}
-                    open={isDropdownOpen}
-                    onOpenChange={setIsDropdownOpen}
-                  >
-                    <DropdownMenuTrigger asChild>
+              {/* Right: Context Panel (shown when uiOptions.showContextResources is true) */}
+              {uiOptions.showContextResources && (
+                <div className="flex-none w-[450px] flex flex-col gap-2 max-h-[180px] overflow-hidden">
+                  <div className="border border-border rounded-lg bg-background p-3 flex flex-col gap-2 h-full">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs uppercase text-muted-foreground font-mono">
+                        Context
+                      </p>
                       <button
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+                        onClick={handleOpenSelectDialog}
+                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-muted transition-colors"
                         title="Add context"
                       >
                         <Icon
                           name="add"
                           size={20}
-                          className="text-muted-foreground group-hover:text-foreground transition-colors"
+                          className="text-foreground"
                         />
                       </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" side="top">
-                      <DropdownMenuItem onSelect={handleOpenFileDialog}>
-                        <Icon name="attach_file" className="size-4" />
-                        Add photos & files
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={handleOpenSelectDialog}>
-                        <Icon name="alternate_email" className="size-4" />
-                        Add context
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex items-center gap-1">
-                  {rightNode}
-                  {uiOptions.showModelSelector && (
-                    <ModelSelector
-                      model={model}
-                      onModelChange={handleModelChange}
-                      className="!p-0 hover:bg-transparent"
-                    />
-                  )}
-                  <AudioButton
-                    onMessage={handleRichTextChange}
-                    className="hover:bg-transparent hover:text-foreground"
-                  />
-                  <Button
-                    type={isLoading ? "button" : "submit"}
-                    onClick={
-                      isLoading
-                        ? () => {
-                            stop();
-                          }
-                        : undefined
-                    }
-                    variant={canSubmit || isLoading ? "default" : "ghost"}
-                    size="icon"
-                    disabled={!canSubmit && !isLoading}
-                    className={cn(
-                      "size-8 rounded-full transition-all",
-                      !canSubmit &&
-                        !isLoading &&
-                        "bg-muted text-muted-foreground hover:bg-muted hover:text-muted-foreground cursor-not-allowed",
+                    </div>
+                    {hasContextResources && (
+                      <div className="overflow-y-auto flex-1">
+                        <ContextResources
+                          uploadedFiles={uploadedFiles}
+                          removeFile={removeFile}
+                          enableFileUpload={enableFileUpload}
+                        />
+                      </div>
                     )}
-                    title={
-                      isLoading ? "Stop generating" : "Send message (Enter)"
-                    }
-                  >
-                    <Icon
-                      name={isLoading ? "stop" : "arrow_upward"}
-                      size={20}
-                      filled={isLoading}
-                    />
-                  </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

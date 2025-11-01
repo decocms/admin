@@ -2,6 +2,15 @@ import { z } from "zod";
 
 export const DEFAULT_VIEWS: View[] = [
   {
+    id: "home",
+    title: "Home",
+    icon: "home",
+    type: "default",
+    metadata: {
+      path: "/home",
+    },
+  },
+  {
     id: "apps",
     title: "Apps",
     icon: "linked_services",

@@ -485,6 +485,13 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome },
+          {
+            path: "home",
+            lazy: () =>
+              import("./components/home/home-chat.tsx").then((m) => ({
+                Component: m.HomeChatPage,
+              })),
+          },
           { path: "store", Component: Store },
           {
             path: "discover",

@@ -1,11 +1,11 @@
 <img alt="deco CMS" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
 
-<h1 align="center">DecoCMS Admin & MCP Mesh</h1>
+<h1 align="center">DecoCMS: The Context Management System</h1>
+
 
 <p align="center">
-<b>The open-source framework for scalable AI apps.</b><br />
-Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />  
-<em>MCP-native · TypeScript-first · Deploy anywhere</em><br/>
+<em>MCP-native · TypeScript-first · Deploy anywhere</em><br/><br/>
+<b>Declare and Compose MCPs for your AI Agents and Workflows.</b><br/>
 </p>
 
 <p align="center">
@@ -14,17 +14,28 @@ Build, deploy, and govern AI-native systems with full-stack TypeScript.<br />
 <a href="https://decocms.com">🌐 decocms.com</a>
 </p>
 
----
+> **TL;DR:**
+> - Centralize your company context in a private MCP mesh.<br />
+> - Generate full-stack TypeScript AI Apps and publish them as internal MCPs.<br />
+> - Have full control over usage, costs, monitoring and sharing. <br/>
 
-## 🚀 What is DecoCMS?
+## 🚀 What is a Context Management System?
 
-**DecoCMS** is the open-source framework for building **scalable AI apps**.  
-It unifies **agents**, **workflows**, and **UIs** into a single **TypeScript codebase** that deploys anywhere — edge, cloud, or self-hosted.
-
-At its core is our **MCP Mesh** — a runtime and control plane that connects your AI models to tools, data, and context with full governance, observability, and cost control.
+**DecoCMS** is an open‑source Context Management System — the **MCP Mesh** for AI. It centralizes MCP connections, tools, data access, and policies to aggregate organization‑wide context in one secure place. Compose and expose virtual MCPs ("AI Apps") for any client (Claude Desktop, VS Code, custom UIs) with governance, observability, and cost control.
 
 > Think **Lovable + n8n + LangGraph**, running on Cloudflare with a single deploy command.  
 > Full-stack AI, production-ready.
+
+---
+
+## 🧭 Architecture at a Glance
+
+- MCP Mesh (kernel): Compose and secure MCPs across your org; declare dependencies; expose governed Virtual MCPs ("AI Apps") to any MCP client; enforce auth/RBAC/audit/FinOps; full observability.
+- AI App Framework (on the Mesh): Build AI‑native web software (admin, workflows, custom views) that calls Mesh tools; React 19 + Tailwind v4; optional if you only need the Mesh.
+
+Which one to start with?
+- If you need a secure, centralized place to manage tools and context for Claude/VS Code/any MCP client → start with the Mesh.
+- If you also want an opinionated admin/UI and workflow UX on top → use our AI App framework.
 
 ---
 
@@ -49,6 +60,8 @@ Deployments are separate. Auth is inconsistent. Costs spiral. Debugging is guess
 
 The **MCP Mesh** is the backbone of Deco — a distributed runtime that manages context, connections, and observability for every agent in your system.
 
+> Declare and compose context — aggregate connections, authorize access, and compose tools into governed, reusable capabilities.
+
 **Core capabilities**
 
 | Layer | Description |
@@ -59,6 +72,9 @@ The **MCP Mesh** is the backbone of Deco — a distributed runtime that manages 
 | 📊 **OpenTelemetry** | Full tracing and metrics for tools, workflows, and UI interactions. |
 | 💾 **Storage Adapters** | Kysely ORM → SQLite / Postgres, easily swapped. |
 | ☁️ **Proxy Layer** | Secure bridge to remote MCP servers with token vault + OAuth. |
+| 🧰 **Virtual MCPs** | Compose and expose governed toolsets as new MCP servers ("AI Apps"). |
+
+_On the hosted platform, usage is metered by MCP calls._
 
 ```ts
 import { z } from "zod";
@@ -99,6 +115,7 @@ export const CONNECTION_CREATE = defineTool({
 ---
 
 ## 🧱 Core Architecture
+*(Mesh)*
 
 ```
 apps/mesh/
@@ -155,6 +172,16 @@ apps/mesh/
 * 🧬 **Extensible Runtime** — Add your own adapters, schemas, and MCP connectors.
 
 ---
+
+## 🧱 AI App Framework
+
+Build AI‑native web software on top of the Mesh:
+
+- React 19 + Tailwind v4 + shadcn components; design‑system powered Views.
+- callTool() to invoke governed Mesh tools with types and policies applied.
+- Admin, dashboards, and workflow UIs that run anywhere (edge/self‑host).
+
+Layer 1 is optional — use it when you need opinionated UI/UX; otherwise consume the Mesh directly from any MCP client.
 
 ## 🧩 Comparison
 

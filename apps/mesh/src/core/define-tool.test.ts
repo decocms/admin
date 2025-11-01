@@ -9,14 +9,17 @@ const createMockContext = (): MeshContext => ({
   auth: {
     user: { id: 'user_1', email: '[email protected]', name: 'Test', role: 'admin' },
   },
+  organization: {
+    id: 'org_123',
+    slug: 'test-org',
+    name: 'Test Organization',
+  },
   storage: {
-    projects: null as any,
     connections: null as any,
     auditLogs: {
       log: vi.fn().mockResolvedValue(undefined),
       query: vi.fn().mockResolvedValue([]),
     } as any,
-    roles: null as any,
   },
   vault: null as any,
   authInstance: null as any,

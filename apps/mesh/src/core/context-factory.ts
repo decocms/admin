@@ -4,7 +4,7 @@
  * Creates MeshContext instances from HTTP requests (via Hono Context).
  * Handles:
  * - API key verification
- * - Project scope extraction
+ * - Organization scope extraction (from Better Auth)
  * - Storage adapter initialization
  * - Base URL derivation
  */
@@ -13,9 +13,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Context } from 'hono';
 import type { Kysely } from 'kysely';
 import { ConnectionStorage } from '../storage/connection';
-import { ProjectStorage } from '../storage/project';
 import { AuditLogStorage } from '../storage/audit-log';
-import { RoleStorage } from '../storage/role';
 import type { Database } from '../storage/types';
 import { AccessControl } from './access-control';
 import type { MeshContext, BetterAuthInstance } from './mesh-context';
@@ -116,7 +114,7 @@ function scopesToPermissions(scopes: string): Record<string, string[]> {
 
 /**
  * Authenticate request using either OAuth session or API key
- * Returns unified authentication data
+ * Returns unified authentication data with organization context
  */
 async function authenticateRequest(
   c: Context,
@@ -126,6 +124,7 @@ async function authenticateRequest(
   permissions: Record<string, string[]>;
   role?: string;
   apiKeyId?: string;
+  organization?: { id: string; slug: string; name: string };
 }> {
   const authHeader = c.req.header('Authorization');
 
@@ -142,9 +141,21 @@ async function authenticateRequest(
 
       // Load user from userId in session
       const userId = session.userId;
+
+      // Get active organization from Better Auth organization plugin
+      // The session might include organization context
+      const orgData = await auth.api.getFullOrganization({
+        headers: c.req.raw.headers,
+      }).catch(() => null);
+
       return {
-        user: { id: userId }, // Minimal user object
+        user: { id: userId },
         permissions,
+        organization: orgData ? {
+          id: orgData.id,
+          slug: orgData.slug,
+          name: orgData.name,
+        } : undefined,
       };
     }
   } catch (error) {
@@ -166,9 +177,17 @@ async function authenticateRequest(
           permissions: result.key.permissions,
         });
 
+        // For API keys, organization might be embedded in metadata
+        const organization = result.key.metadata?.organization as any;
+
         return {
           permissions: result.key.permissions || {},
           apiKeyId: result.key.id,
+          organization: organization ? {
+            id: organization.id,
+            slug: organization.slug,
+            name: organization.name,
+          } : undefined,
         };
       }
     } catch (error: any) {
@@ -199,10 +218,9 @@ export function createMeshContextFactory(
 ): (c: Context) => Promise<MeshContext> {
   // Create storage adapters once (singleton pattern)
   const storage = {
-    projects: new ProjectStorage(config.db),
     connections: new ConnectionStorage(config.db),
     auditLogs: new AuditLogStorage(config.db),
-    roles: new RoleStorage(config.db),
+    // Note: Organizations, teams, members, roles managed by Better Auth organization plugin
     // Note: Policies handled by Better Auth permissions directly
     // Note: API keys (tokens) managed by Better Auth API Key plugin
     // Note: Token revocation handled by Better Auth (deleteApiKey)
@@ -230,24 +248,8 @@ export function createMeshContextFactory(
       };
     }
 
-    // Extract project from path (e.g., /:projectSlug/mcp/...)
-    const projectSlug = extractProjectSlug(c.req.path);
-    let project: MeshContext['project'] | undefined;
-
-    if (projectSlug) {
-      // Load project
-      const foundProject = await storage.projects.findBySlug(projectSlug);
-
-      if (!foundProject) {
-        throw new NotFoundError(`Project not found: ${projectSlug}`);
-      }
-
-      project = {
-        id: foundProject.id,
-        slug: foundProject.slug,
-        ownerId: foundProject.ownerId,
-      };
-    }
+    // Organization from Better Auth (OAuth session or API key metadata)
+    const organization = authResult.organization;
 
     // Derive base URL from request
     const url = new URL(c.req.url);
@@ -260,11 +262,12 @@ export function createMeshContextFactory(
       undefined, // toolName set later by defineTool
       authResult.permissions, // Unified permissions from OAuth or API key
       authResult.role, // Role from OAuth session or undefined for API keys
+      'self', // Default connectionId for management APIs
     );
 
     return {
       auth,
-      project,
+      organization,
       storage,
       vault,
       authInstance: config.auth,
@@ -283,24 +286,4 @@ export function createMeshContextFactory(
   };
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Extract project slug from request path
- * Returns undefined for organization-scoped paths
- * 
- * Pattern: /:projectSlug/mcp/...
- */
-function extractProjectSlug(path: string): string | undefined {
-  // Ignore if path starts with /mcp (organization-scoped)
-  if (path.startsWith('/mcp')) {
-    return undefined;
-  }
-
-  // Pattern: /:projectSlug/mcp/...
-  const match = path.match(/^\/([^\/]+)\/mcp/);
-  return match?.[1];
-}
 

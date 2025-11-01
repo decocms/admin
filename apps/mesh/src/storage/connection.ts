@@ -2,7 +2,7 @@
  * Connection Storage Implementation
  * 
  * Handles CRUD operations for MCP connections using Kysely (database-agnostic).
- * Supports both organization-scoped and project-scoped connections.
+ * All connections are organization-scoped.
  */
 
 import type { Kysely } from 'kysely';
@@ -21,7 +21,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .insertInto('connections')
       .values({
         id,
-        projectId: data.projectId,
+        organizationId: data.organizationId,
         createdById: data.createdById,
         name: data.name,
         description: data.description ?? null,
@@ -74,34 +74,13 @@ export class ConnectionStorage implements ConnectionStoragePort {
     return connection ? this.deserializeConnection(connection) : null;
   }
 
-  async list(
-    projectId: string | null,
-    scope: 'all' | 'organization' | 'project' = 'all'
-  ): Promise<MCPConnection[]> {
-    let query = this.db.selectFrom('connections').selectAll();
+  async list(organizationId: string): Promise<MCPConnection[]> {
+    const connections = await this.db
+      .selectFrom('connections')
+      .selectAll()
+      .where('organizationId', '=', organizationId)
+      .execute();
 
-    if (scope === 'organization') {
-      // Only organization-scoped connections
-      query = query.where('projectId', 'is', null);
-    } else if (scope === 'project') {
-      // Only project-scoped connections
-      query = query.where('projectId', '=', projectId!);
-    } else {
-      // All: both organization-scoped AND project-scoped
-      if (projectId) {
-        query = query.where((eb) =>
-          eb.or([
-            eb('projectId', 'is', null), // Organization-scoped
-            eb('projectId', '=', projectId), // Project-scoped
-          ])
-        );
-      } else {
-        // No project context - only show organization-scoped
-        query = query.where('projectId', 'is', null);
-      }
-    }
-
-    const connections = await query.execute();
     return connections.map((c) => this.deserializeConnection(c));
   }
 

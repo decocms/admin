@@ -87,7 +87,7 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
         {
           attributes: {
             'tool.name': definition.name,
-            'project.id': ctx.project?.id ?? 'organization',
+            'organization.id': ctx.organization?.id ?? 'system',
             'user.id': ctx.auth.user?.id ?? ctx.auth.apiKey?.userId ?? 'anonymous',
           }
         },
@@ -110,7 +110,7 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
             });
             histogram.record(duration, {
               'tool.name': definition.name,
-              'project.id': ctx.project?.id ?? 'organization',
+              'organization.id': ctx.organization?.id ?? 'system',
               'status': 'success',
             });
 
@@ -125,7 +125,7 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
             // Audit log (fire and forget - don't block on logging)
             if (ctx.storage.auditLogs?.log) {
               ctx.storage.auditLogs.log({
-                projectId: ctx.project?.id,
+                organizationId: ctx.organization?.id,
                 userId: ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
                 toolName: definition.name,
                 allowed: ctx.access?.granted ? ctx.access.granted() : true,

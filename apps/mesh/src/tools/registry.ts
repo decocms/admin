@@ -12,7 +12,7 @@ import { ALL_TOOLS } from './index';
 export interface ToolMetadata {
   name: string;
   description: string;
-  category: 'Projects' | 'Connections';
+  category: 'Organizations' | 'Connections';
   dangerous?: boolean; // Requires extra confirmation
 }
 
@@ -20,13 +20,17 @@ export interface ToolMetadata {
  * Additional metadata for tools (category and danger flags)
  * This complements the tool definitions with UI-specific metadata
  */
-const TOOL_CATEGORIES: Record<string, { category: 'Projects' | 'Connections'; dangerous?: boolean }> = {
-  // Project tools
-  PROJECT_CREATE: { category: 'Projects' },
-  PROJECT_LIST: { category: 'Projects' },
-  PROJECT_GET: { category: 'Projects' },
-  PROJECT_UPDATE: { category: 'Projects' },
-  PROJECT_DELETE: { category: 'Projects', dangerous: true },
+const TOOL_CATEGORIES: Record<string, { category: 'Organizations' | 'Connections'; dangerous?: boolean }> = {
+  // Organization tools
+  ORGANIZATION_CREATE: { category: 'Organizations' },
+  ORGANIZATION_LIST: { category: 'Organizations' },
+  ORGANIZATION_GET: { category: 'Organizations' },
+  ORGANIZATION_UPDATE: { category: 'Organizations' },
+  ORGANIZATION_DELETE: { category: 'Organizations', dangerous: true },
+  ORGANIZATION_MEMBER_ADD: { category: 'Organizations' },
+  ORGANIZATION_MEMBER_REMOVE: { category: 'Organizations', dangerous: true },
+  ORGANIZATION_MEMBER_LIST: { category: 'Organizations' },
+  ORGANIZATION_MEMBER_UPDATE_ROLE: { category: 'Organizations' },
 
   // Connection tools
   CONNECTION_CREATE: { category: 'Connections' },
@@ -41,7 +45,7 @@ const TOOL_CATEGORIES: Record<string, { category: 'Projects' | 'Connections'; da
  * Derived from actual tool definitions + additional UI metadata
  */
 export const MANAGEMENT_TOOLS: ToolMetadata[] = ALL_TOOLS.map(tool => {
-  const additionalMeta = TOOL_CATEGORIES[tool.name] || { category: 'Projects' as const };
+  const additionalMeta = TOOL_CATEGORIES[tool.name] || { category: 'Connections' as const };
   
   return {
     name: tool.name,
@@ -56,7 +60,7 @@ export const MANAGEMENT_TOOLS: ToolMetadata[] = ALL_TOOLS.map(tool => {
  */
 export function getToolsByCategory() {
   const grouped: Record<string, ToolMetadata[]> = {
-    Projects: [],
+    Organizations: [],
     Connections: [],
   };
 

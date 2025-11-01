@@ -47,17 +47,17 @@ export interface MeshAuth {
 }
 
 // ============================================================================
-// Project Scope
+// Organization Scope
 // ============================================================================
 
 /**
- * Project scope (namespace-level)
- * If undefined, context is organization-scoped (cluster-level)
+ * Organization scope
+ * Organization context from Better Auth organization plugin
  */
-export interface ProjectScope {
+export interface OrganizationScope {
   id: string;
   slug: string;
-  ownerId: string;
+  name: string;
 }
 
 // ============================================================================
@@ -82,8 +82,6 @@ export interface RequestMetadata {
 import { BetterAuthInstance } from '@/auth';
 import type { AuditLogStorage } from '../storage/audit-log';
 import type { ConnectionStorage } from '../storage/connection';
-import type { ProjectStorage } from '../storage/project';
-import type { RoleStorage } from '../storage/role';
 
 // Better Auth instance type - flexible for testing
 // In production, this is the actual Better Auth instance
@@ -93,15 +91,14 @@ import type { RoleStorage } from '../storage/role';
  * Storage interfaces aggregation
  * 
  * Note: 
+ * - Organizations, teams, members, and roles managed by Better Auth organization plugin
  * - Policies handled by Better Auth permissions directly
  * - API Keys (tokens) managed by Better Auth API Key plugin
  * - Token revocation handled by Better Auth (deleteApiKey)
  */
 export interface MeshStorage {
-  projects: ProjectStorage;
   connections: ConnectionStorage;
   auditLogs: AuditLogStorage;
-  roles: RoleStorage;
 }
 
 // ============================================================================
@@ -118,8 +115,8 @@ export interface MeshContext {
   // Authentication (via Better Auth)
   auth: MeshAuth;
 
-  // Project scope (undefined = organization-scoped, defined = project-scoped)
-  project?: ProjectScope;
+  // Organization scope (from Better Auth organization plugin)
+  organization?: OrganizationScope;
 
   // Storage interfaces (database-agnostic)
   storage: MeshStorage;
@@ -153,34 +150,27 @@ export interface MeshContext {
 // ============================================================================
 
 /**
- * Check if context is project-scoped
+ * Check if context has organization scope
  */
-export function isProjectScoped(ctx: MeshContext): boolean {
-  return ctx.project !== undefined;
+export function hasOrganization(ctx: MeshContext): boolean {
+  return ctx.organization !== undefined;
 }
 
 /**
- * Check if context is organization-scoped
+ * Get organization ID or null
  */
-export function isOrganizationScoped(ctx: MeshContext): boolean {
-  return ctx.project === undefined;
+export function getOrganizationId(ctx: MeshContext): string | null {
+  return ctx.organization?.id ?? null;
 }
 
 /**
- * Get project ID or null
+ * Require organization scope (throws if not organization-scoped)
  */
-export function getProjectId(ctx: MeshContext): string | null {
-  return ctx.project?.id ?? null;
-}
-
-/**
- * Require project scope (throws if not project-scoped)
- */
-export function requireProjectScope(ctx: MeshContext): ProjectScope {
-  if (!ctx.project) {
-    throw new Error('This operation requires project scope');
+export function requireOrganization(ctx: MeshContext): OrganizationScope {
+  if (!ctx.organization) {
+    throw new Error('This operation requires organization scope');
   }
-  return ctx.project;
+  return ctx.organization;
 }
 
 /**

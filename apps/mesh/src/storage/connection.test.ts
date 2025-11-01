@@ -24,10 +24,10 @@ describe('ConnectionStorage', () => {
   describe('create', () => {
     it('should create organization-scoped connection', async () => {
       const connection = await storage.create({
-        projectId: null, // Organization-scoped
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Company Slack',
-        description: 'Shared Slack for all projects',
+        description: 'Slack for the organization',
         connection: {
           type: 'HTTP',
           url: 'https://slack.com/mcp',
@@ -36,31 +36,16 @@ describe('ConnectionStorage', () => {
       });
 
       expect(connection.id).toMatch(/^conn_/);
-      expect(connection.projectId).toBeNull();
+      expect(connection.organizationId).toBe('org_123');
       expect(connection.name).toBe('Company Slack');
       expect(connection.status).toBe('active');
       expect(connection.connectionType).toBe('HTTP');
       expect(connection.connectionUrl).toBe('https://slack.com/mcp');
     });
 
-    it('should create project-scoped connection', async () => {
-      const connection = await storage.create({
-        projectId: 'proj_abc',
-        createdById: 'user_123',
-        name: 'Project Database',
-        connection: {
-          type: 'HTTP',
-          url: 'https://db.com/mcp',
-        },
-      });
-
-      expect(connection.projectId).toBe('proj_abc');
-      expect(connection.name).toBe('Project Database');
-    });
-
     it('should serialize connection headers as JSON', async () => {
       const connection = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'With Headers',
         connection: {
@@ -75,7 +60,7 @@ describe('ConnectionStorage', () => {
 
     it('should serialize OAuth config as JSON', async () => {
       const connection = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'OAuth Connection',
         connection: {
@@ -104,7 +89,7 @@ describe('ConnectionStorage', () => {
   describe('findById', () => {
     it('should find connection by ID', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Find Me',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -122,63 +107,44 @@ describe('ConnectionStorage', () => {
   });
 
   describe('list', () => {
-    it('should list organization-scoped connections only', async () => {
+    it('should list all connections for an organization', async () => {
       await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
-        name: 'Org Connection',
-        connection: { type: 'HTTP', url: 'https://org.com' },
+        name: 'Slack',
+        connection: { type: 'HTTP', url: 'https://slack.com' },
       });
 
-      const connections = await storage.list(null, 'organization');
-      expect(connections.length).toBeGreaterThan(0);
-      expect(connections.every(c => c.projectId === null)).toBe(true);
+      await storage.create({
+        organizationId: 'org_123',
+        createdById: 'user_123',
+        name: 'Gmail',
+        connection: { type: 'HTTP', url: 'https://gmail.com' },
+      });
+
+      const connections = await storage.list('org_123');
+      expect(connections.length).toBeGreaterThanOrEqual(2);
+      expect(connections.every(c => c.organizationId === 'org_123')).toBe(true);
     });
 
-    it('should list project-scoped connections only', async () => {
+    it('should not list connections from other organizations', async () => {
       await storage.create({
-        projectId: 'proj_xyz',
+        organizationId: 'org_456',
         createdById: 'user_123',
-        name: 'Project Connection',
-        connection: { type: 'HTTP', url: 'https://proj.com' },
+        name: 'Other Org',
+        connection: { type: 'HTTP', url: 'https://other.com' },
       });
 
-      const connections = await storage.list('proj_xyz', 'project');
-      expect(connections.every(c => c.projectId === 'proj_xyz')).toBe(true);
-    });
-
-    it('should list all connections for a project (org + project)', async () => {
-      await storage.create({
-        projectId: null,
-        createdById: 'user_123',
-        name: 'Shared',
-        connection: { type: 'HTTP', url: 'https://shared.com' },
-      });
-
-      await storage.create({
-        projectId: 'proj_test',
-        createdById: 'user_123',
-        name: 'Project Specific',
-        connection: { type: 'HTTP', url: 'https://specific.com' },
-      });
-
-      const connections = await storage.list('proj_test', 'all');
-      const hasOrg = connections.some(c => c.projectId === null);
-      const hasProject = connections.some(c => c.projectId === 'proj_test');
-
-      expect(hasOrg || hasProject).toBe(true);
-    });
-
-    it('should list only org connections when no project specified', async () => {
-      const connections = await storage.list(null, 'all');
-      expect(connections.every(c => c.projectId === null)).toBe(true);
+      const connections = await storage.list('org_123');
+      expect(connections.every(c => c.organizationId === 'org_123')).toBe(true);
+      expect(connections.some(c => c.organizationId === 'org_456')).toBe(false);
     });
   });
 
   describe('update', () => {
     it('should update connection name', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Original Name',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -193,7 +159,7 @@ describe('ConnectionStorage', () => {
 
     it('should update connection status', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Test',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -208,7 +174,7 @@ describe('ConnectionStorage', () => {
 
     it('should update metadata', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Test',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -223,7 +189,7 @@ describe('ConnectionStorage', () => {
 
     it('should update bindings', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Test',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -240,7 +206,7 @@ describe('ConnectionStorage', () => {
   describe('delete', () => {
     it('should delete connection', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'To Delete',
         connection: { type: 'HTTP', url: 'https://test.com' },
@@ -262,7 +228,7 @@ describe('ConnectionStorage', () => {
 
     it('should return unhealthy for unreachable connection', async () => {
       const created = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'Unreachable',
         connection: {
@@ -281,7 +247,7 @@ describe('ConnectionStorage', () => {
   describe('JSON deserialization', () => {
     it('should deserialize all JSON fields correctly', async () => {
       const connection = await storage.create({
-        projectId: null,
+        organizationId: 'org_123',
         createdById: 'user_123',
         name: 'JSON Test',
         connection: {

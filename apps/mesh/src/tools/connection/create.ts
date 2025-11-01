@@ -1,12 +1,12 @@
 /**
  * CONNECTION_CREATE Tool
  * 
- * Create a new MCP connection (organization or project scoped)
+ * Create a new MCP connection (organization-scoped)
  */
 
 import { z } from 'zod/v3';
 import { defineTool } from '../../core/define-tool';
-import { getUserId, requireAuth, getProjectId } from '../../core/mesh-context';
+import { getUserId, requireAuth, requireOrganization } from '../../core/mesh-context';
 
 const connectionSchema = z.discriminatedUnion('type', [
   z.object({
@@ -29,13 +29,12 @@ const connectionSchema = z.discriminatedUnion('type', [
 
 export const CONNECTION_CREATE = defineTool({
   name: 'CONNECTION_CREATE',
-  description: 'Create a new MCP connection (organization or project scoped)',
+  description: 'Create a new MCP connection in the organization',
   
   inputSchema: z.object({
     name: z.string().min(1).max(255),
     description: z.string().optional(),
     icon: z.string().url().optional(),
-    projectId: z.string().nullable().optional(), // null = org-scoped, undefined = use context
     connection: connectionSchema,
     metadata: z.record(z.string(), z.any()).optional(),
   }),
@@ -43,13 +42,16 @@ export const CONNECTION_CREATE = defineTool({
   outputSchema: z.object({
     id: z.string(),
     name: z.string(),
-    scope: z.enum(['organization', 'project']),
+    organizationId: z.string(),
     status: z.enum(['active', 'inactive', 'error']),
   }),
   
   handler: async (input, ctx) => {
     // Require authentication
     requireAuth(ctx);
+    
+    // Require organization context
+    const organization = requireOrganization(ctx);
     
     // Check authorization
     await ctx.access.check();
@@ -60,14 +62,9 @@ export const CONNECTION_CREATE = defineTool({
       throw new Error('User ID required to create connection');
     }
     
-    // Determine project scope
-    const projectId = input.projectId !== undefined 
-      ? input.projectId 
-      : getProjectId(ctx);
-    
     // Create connection
     const connection = await ctx.storage.connections.create({
-      projectId,
+      organizationId: organization.id,
       createdById: userId,
       name: input.name,
       description: input.description,
@@ -79,7 +76,7 @@ export const CONNECTION_CREATE = defineTool({
     return {
       id: connection.id,
       name: connection.name,
-      scope: (connection.projectId ? 'project' : 'organization') as 'organization' | 'project',
+      organizationId: connection.organizationId,
       status: connection.status,
     };
   },

@@ -1,23 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   type MeshContext,
-  getProjectId,
+  getOrganizationId,
   getUserId,
+  hasOrganization,
   isAuthenticated,
-  isOrganizationScoped,
-  isProjectScoped,
   requireAuth,
-  requireProjectScope,
+  requireOrganization,
 } from './mesh-context';
 
 // Helper to create mock context
 const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
   auth: {},
   storage: {
-    projects: null as any,
     connections: null as any,
     auditLogs: null as any,
-    roles: null as any,
   },
   vault: null as any,
   authInstance: null as any,
@@ -34,59 +31,45 @@ const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
 });
 
 describe('MeshContext Utilities', () => {
-  describe('isProjectScoped', () => {
-    it('should return true when project is defined', () => {
+  describe('hasOrganization', () => {
+    it('should return true when organization is defined', () => {
       const ctx = createMockContext({
-        project: { id: 'proj_1', slug: 'test', ownerId: 'user_1' },
+        organization: { id: 'org_1', slug: 'test-org', name: 'Test Org' },
       });
-      expect(isProjectScoped(ctx)).toBe(true);
+      expect(hasOrganization(ctx)).toBe(true);
     });
 
-    it('should return false when project is undefined', () => {
+    it('should return false when organization is undefined', () => {
       const ctx = createMockContext();
-      expect(isProjectScoped(ctx)).toBe(false);
+      expect(hasOrganization(ctx)).toBe(false);
     });
   });
 
-  describe('isOrganizationScoped', () => {
-    it('should return true when project is undefined', () => {
-      const ctx = createMockContext();
-      expect(isOrganizationScoped(ctx)).toBe(true);
+  describe('getOrganizationId', () => {
+    it('should return organization ID when defined', () => {
+      const ctx = createMockContext({
+        organization: { id: 'org_1', slug: 'test-org', name: 'Test Org' },
+      });
+      expect(getOrganizationId(ctx)).toBe('org_1');
     });
 
-    it('should return false when project is defined', () => {
-      const ctx = createMockContext({
-        project: { id: 'proj_1', slug: 'test', ownerId: 'user_1' },
-      });
-      expect(isOrganizationScoped(ctx)).toBe(false);
+    it('should return null when organization is undefined', () => {
+      const ctx = createMockContext();
+      expect(getOrganizationId(ctx)).toBeNull();
     });
   });
 
-  describe('getProjectId', () => {
-    it('should return project ID when project-scoped', () => {
-      const ctx = createMockContext({
-        project: { id: 'proj_1', slug: 'test', ownerId: 'user_1' },
-      });
-      expect(getProjectId(ctx)).toBe('proj_1');
+  describe('requireOrganization', () => {
+    it('should return organization when defined', () => {
+      const organization = { id: 'org_1', slug: 'test-org', name: 'Test Org' };
+      const ctx = createMockContext({ organization });
+      expect(requireOrganization(ctx)).toEqual(organization);
     });
 
-    it('should return null when organization-scoped', () => {
+    it('should throw when organization is undefined', () => {
       const ctx = createMockContext();
-      expect(getProjectId(ctx)).toBeNull();
-    });
-  });
-
-  describe('requireProjectScope', () => {
-    it('should return project when project-scoped', () => {
-      const project = { id: 'proj_1', slug: 'test', ownerId: 'user_1' };
-      const ctx = createMockContext({ project });
-      expect(requireProjectScope(ctx)).toEqual(project);
-    });
-
-    it('should throw when organization-scoped', () => {
-      const ctx = createMockContext();
-      expect(() => requireProjectScope(ctx)).toThrow(
-        'This operation requires project scope'
+      expect(() => requireOrganization(ctx)).toThrow(
+        'This operation requires organization scope'
       );
     });
   });

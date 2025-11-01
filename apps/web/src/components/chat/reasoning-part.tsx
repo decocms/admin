@@ -36,42 +36,52 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
   };
 
   return (
-    <div className="flex flex-col border border-border rounded-xl bg-muted/20 overflow-hidden">
+    <div className="flex flex-col">
       <button
         type="button"
         onClick={handleToggle}
-        className={cn(
-          "flex items-center justify-between p-2 transition-colors cursor-pointer",
-          isPartStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
-        )}
+        className="flex items-center gap-2 py-2 transition-colors cursor-pointer"
       >
-        <div className="flex items-center gap-2">
-          <Icon name="psychology" className="text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">
-            Agent thinking
-          </span>
-        </div>
         <Icon
-          name="expand_less"
+          name="psychology"
           className={cn(
-            "transition-transform duration-200",
-            isExpanded ? "rotate-180" : "rotate-90",
+            "text-muted-foreground transition-opacity",
+            isPartStreaming && "animate-pulse",
+          )}
+        />
+        <span
+          className={cn(
+            "text-sm font-medium text-muted-foreground",
+            isPartStreaming && "text-shimmer",
+          )}
+        >
+          Agent thinking
+        </span>
+        <Icon
+          name="expand_more"
+          className={cn(
+            "text-muted-foreground transition-transform duration-200",
+            isExpanded ? "rotate-180" : "",
           )}
         />
       </button>
       <div
         className={cn(
           "transition-all duration-200 ease-in-out",
-          isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",
+          isExpanded
+            ? isPartStreaming
+              ? "max-h-[400px] opacity-100"
+              : "max-h-[200px] opacity-80"
+            : "max-h-0 opacity-0 overflow-hidden",
         )}
       >
-        <div className={cn("p-4 border-t", isPartStreaming && "bg-muted")}>
-          <div
-            className={cn(
-              "prose prose-sm max-w-none text-sm",
-              isPartStreaming && "text-xs text-muted-foreground",
-            )}
-          >
+        <div
+          className={cn(
+            "border-l-2 pl-4 overflow-y-auto",
+            isPartStreaming ? "max-h-[400px]" : "max-h-[200px]",
+          )}
+        >
+          <div className={cn("text-muted-foreground markdown-sm pb-2")}>
             <MemoizedMarkdown
               key={index}
               messageId={`${messageId}-${index}-reasoning`}

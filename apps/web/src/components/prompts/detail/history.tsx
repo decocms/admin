@@ -242,7 +242,7 @@ export function HistoryCard({
               onChange={(e) => setVersionName(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e)}
               onBlur={handleSaveLabel}
-              className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-white"
+              className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-background"
               placeholder="Enter version label..."
             />
           ) : (

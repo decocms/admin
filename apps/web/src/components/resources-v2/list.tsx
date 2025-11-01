@@ -994,7 +994,7 @@ function ResourcesV2ListTab({
                 {sortedItems.map((it) => (
                   <Card
                     key={it.uri}
-                    className="group cursor-pointer hover:shadow-sm transition-shadow overflow-hidden bg-card border-0 min-h-48"
+                    className="group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
                     onClick={() =>
                       navigateWorkspace(
                         `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,

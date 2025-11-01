@@ -236,7 +236,7 @@ function JsonSchemaInput({
           </li>
         </ul>
         <div className="font-semibold mb-1">Example:</div>
-        <pre className="bg-white border rounded p-2 text-xs overflow-x-auto">
+        <pre className="bg-background border rounded p-2 text-xs overflow-x-auto">
           {`{
   "type": "object",
   "properties": {
@@ -377,7 +377,7 @@ function ArgumentsInput({
           </li>
         </ul>
         <div className="font-semibold mb-1">Example:</div>
-        <pre className="bg-white border rounded p-2 text-xs overflow-x-auto">
+        <pre className="bg-background border rounded p-2 text-xs overflow-x-auto">
           {`{
   "query": "search term",
   "limit": 10,

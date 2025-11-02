@@ -22,6 +22,8 @@ import { ChatMessages } from "../chat/chat-messages.tsx";
 import { AgenticChatProvider } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ChatHeader } from "./chat-header.tsx";
 
 const MainChat = () => {
@@ -92,9 +94,13 @@ function Page() {
         }
       >
         <SDKProvider locator={workspace}>
-          <ThreadContextProvider>
-            <ChatProviderWrapper agentId={agentId} threadId={threadId} />
-          </ThreadContextProvider>
+          <ThreadManagerProvider>
+            <DecopilotThreadProvider>
+              <ThreadContextProvider>
+                <ChatProviderWrapper agentId={agentId} threadId={threadId} />
+              </ThreadContextProvider>
+            </DecopilotThreadProvider>
+          </ThreadManagerProvider>
         </SDKProvider>
       </Suspense>
     </ErrorBoundary>

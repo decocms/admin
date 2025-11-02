@@ -1,4 +1,3 @@
-import { BreadcrumbSeparator } from "@deco/ui/components/breadcrumb.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -9,7 +8,6 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Suspense } from "react";
-import { Link } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
 import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
@@ -76,16 +74,6 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
         <ErrorBoundary fallback={null}>
           <SidebarToggle />
         </ErrorBoundary>
-        <Link to="/" className="ml-2">
-          <div className="size-8 flex items-center justify-center">
-            <img
-              src="/img/logo-tiny.svg"
-              className="size-4.5"
-              alt="Deco Logo"
-            />
-          </div>
-        </Link>
-        <BreadcrumbSeparator className="text-muted-foreground" />
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
       </div>
       <div className="flex items-center gap-2">

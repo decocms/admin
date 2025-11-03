@@ -87,13 +87,32 @@ function getModel(
   useOpenRouter: boolean,
   ctx: ReturnType<typeof honoCtxToAppCtx>,
 ): LanguageModel {
-  // Find model in WELL_KNOWN_MODELS or use default
-  const model =
-    WELL_KNOWN_MODELS.find((m) => m.id === modelId) || DEFAULT_MODEL;
+  console.log("[getModel] Input modelId:", modelId, "useOpenRouter:", useOpenRouter);
+  
+  // Check if this is an Ollama model (format: "ollama:model-name")
+  const isOllamaModel = modelId?.startsWith("ollama:");
+  
+  // Find model in WELL_KNOWN_MODELS, or if it's an Ollama model use it directly, otherwise use default
+  let model: { id: string; model: string };
+  if (isOllamaModel && modelId) {
+    // Use the Ollama model directly
+    model = { id: modelId, model: modelId };
+    console.log("[getModel] Using Ollama model directly:", modelId);
+  } else {
+    // Find in well-known models or use default
+    model = WELL_KNOWN_MODELS.find((m) => m.id === modelId) || DEFAULT_MODEL;
+    console.log("[getModel] Resolved model:", {
+      id: model.id,
+      model: model.model,
+      usedDefault: !WELL_KNOWN_MODELS.find((m) => m.id === modelId),
+    });
+  }
 
   // Parse provider and model name from "provider:model" format
   const [providerName, ...modelParts] = model.model.split(":");
   let modelName = modelParts.join(":");
+
+  console.log("[getModel] Parsed provider:", providerName, "modelName:", modelName);
 
   // Get provider config
   const provider = providers[providerName];
@@ -106,7 +125,14 @@ function getModel(
   const openRouterApiKey = envVars.OPENROUTER_API_KEY;
   const supportsOpenRouter = provider.supportsOpenRouter !== false;
 
+  console.log("[getModel] OpenRouter check:", {
+    useOpenRouter,
+    supportsOpenRouter,
+    hasApiKey: !!openRouterApiKey,
+  });
+
   if (useOpenRouter && supportsOpenRouter && openRouterApiKey) {
+    console.log("[getModel] Using OpenRouter with model:", `${providerName}/${modelName}`);
     // Create OpenRouter provider
     const openRouterProvider = createOpenRouter({
       apiKey: openRouterApiKey,
@@ -120,20 +146,33 @@ function getModel(
     return openRouterProvider(`${providerName}/${modelName}`);
   }
 
+  console.log("[getModel] Using direct provider API");
+  
   // Not using OpenRouter - use direct provider API
   // Map OpenRouter model names to native names if needed
   if (provider.mapOpenRouterModel?.[modelName]) {
+    console.log("[getModel] Mapping model name from", modelName, "to", provider.mapOpenRouterModel[modelName]);
     modelName = provider.mapOpenRouterModel[modelName];
   }
 
-  // Get API key from context env vars
+  console.log("[getModel] Final call - provider:", providerName, "model:", modelName);
+  
+  // Ollama uses baseURL instead of API key
+  if (providerName === "ollama") {
+    const baseURL = envVars[provider.envVarName] || "http://localhost:11434";
+    console.log("[getModel] Using Ollama with baseURL:", baseURL);
+    const providerFn = provider.creator({ baseURL });
+    return providerFn(modelName);
+  }
+
+  // Get API key from context env vars for other providers
   const apiKey = envVars[provider.envVarName];
   if (!apiKey) {
     throw new Error(
       `Missing API key for provider ${providerName}: ${provider.envVarName}`,
     );
   }
-
+  
   // Create provider instance and call with model name
   const providerFn = provider.creator({ apiKey });
   return providerFn(modelName);
@@ -391,17 +430,70 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     throw new PaymentRequiredError("Insufficient funds");
   }
 
+  // Check if model supports tool calling BEFORE building system prompt
+  // IMPORTANT: Only specific Ollama models support native tool calling
+  const modelName = model.id?.toLowerCase() || "";
+  const isOllamaModel = modelName.startsWith("ollama:");
+  
+  // Very conservative whitelist - only models VERIFIED to support tool calling in Ollama
+  const supportsToolCalling = 
+    !isOllamaModel || // All cloud models support tools
+    // Qwen2.5 variants (NOT Qwen3, NOT VL models - tested and don't work)
+    (modelName.includes("qwen2.5") && !modelName.includes("vl")) ||
+    (modelName.includes("qwen-2.5") && !modelName.includes("vl")) ||
+    // Llama 3.1+ with tool support
+    modelName.includes("llama3.1") || 
+    modelName.includes("llama3.2") ||
+    modelName.includes("llama3.3") ||
+    modelName.includes("llama-3.1") ||
+    modelName.includes("llama-3.2") ||
+    modelName.includes("llama-3.3") ||
+    // Mistral models
+    modelName.includes("mistral") ||
+    modelName.includes("mixtral") ||
+    // Other known tool-capable models
+    modelName.includes("command-r") ||
+    modelName.includes("firefunction");
+  
+  const supportsTools = supportsToolCalling;
+
+  // For Ollama models, add explicit tool schemas to system prompt
+  // because ollama-ai-provider-v2 might not format them correctly
+  const explicitToolDocs = isOllamaModel && supportsToolCalling ? `
+
+**AVAILABLE FUNCTIONS:**
+
+You have access to these function calling tools:
+
+1. READ_MCP
+   - Description: Read details about an available integration and its tools
+   - Parameters: { name: string } (integration name)
+   - Use this to discover what tools an integration provides
+
+2. CALL_TOOL  
+   - Description: Execute a specific tool from an integration
+   - Parameters: { integrationId: string, tool: string, arguments: object }
+   - Use this to call any tool like creating views, reading data, etc.
+
+To use a tool, format your response with proper function calling syntax.
+` : null;
+
   const systemPrompt = [
     system, // User-provided instructions (if any)
     SYSTEM_PROMPT,
-    `Available integrations:\n${formatAvailableIntegrations(integrations)}`,
-    `Available tools:\n${formatAvailableTools(integrations, tools)}`,
+    supportsTools ? `Available integrations:\n${formatAvailableIntegrations(integrations)}` : null,
+    supportsTools ? `Available tools:\n${formatAvailableTools(integrations, tools)}` : null,
+    explicitToolDocs,
+    !supportsTools ? "⚠️ Note: This model does not support tool calling. You can answer questions but cannot execute tools or access integrations." : null,
   ]
     .filter(Boolean)
     .join("\n\n");
 
-  // Create two tools (integrations_get and integrations_call_tool)
-  const decopilotTools = createDecopilotTools(ctx);
+  // Create two tools (integrations_get and integrations_call_tool) only if supported
+  const decopilotTools = supportsTools ? createDecopilotTools(ctx) : {};
+  
+  console.log("[decopilot-stream] Model supports tools:", supportsTools);
+  console.log("[decopilot-stream] Tools created:", Object.keys(decopilotTools));
 
   // Get model instance, handling OpenRouter if enabled
   const llm = getModel(model.id, model.useOpenRouter, ctx);
@@ -418,15 +510,28 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
 
   const messagesToSend = [...contextMessages, ...prunedMessages];
 
+  // Get abort signal from request to handle client disconnect
+  const abortController = new AbortController();
+  const requestSignal = c.req.raw.signal;
+  
+  // Listen for client disconnect and abort the stream
+  requestSignal.addEventListener("abort", () => {
+    console.log("[decopilot-stream] Client disconnected, aborting stream");
+    abortController.abort();
+    onFinish.resolve();
+  }, { once: true });
+
   // Call streamText with validated and transformed parameters from Zod schema
   const stream = streamText({
     model: llm,
     messages: messagesToSend,
-    tools: decopilotTools,
+    // Only pass tools if model supports them
+    ...(supportsTools && Object.keys(decopilotTools).length > 0 ? { tools: decopilotTools } : {}),
     system: systemPrompt,
     temperature,
     maxOutputTokens,
     stopWhen: [stepCountIs(maxStepCount)],
+    abortSignal: abortController.signal,
     providerOptions: getProviderOptions({
       // 20% of the max output tokens as budget for thinking
       budgetTokens: Math.floor(maxOutputTokens * 0.2),
@@ -448,11 +553,11 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
         .catch((error) => onFinish.reject(error));
     },
     onAbort: (args) => {
-      console.error("Abort on stream", args);
-      onFinish.reject();
+      console.log("[decopilot-stream] Stream aborted by model", args);
+      onFinish.resolve();
     },
     onError: (error) => {
-      console.error("Error on stream", error);
+      console.error("[decopilot-stream] Error on stream", error);
       onFinish.reject(error);
     },
     experimental_telemetry: {

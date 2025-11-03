@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import { memo, Suspense, useCallback, useDeferredValue, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -271,8 +271,18 @@ export const MemoizedMarkdown = ({
     state?: "streaming" | "done";
   };
 }) => {
-  const { text: content = "" } = part;
-  const blocks = useMemo(() => marked.lexer(content), [content]);
+  const { text: content = "", state } = part;
+  const isStreaming = state === "streaming";
+  
+  // Use useDeferredValue to debounce lexer parsing during streaming
+  // This prevents blocking the UI thread on every character
+  const deferredContent = useDeferredValue(content);
+  
+  // Only parse deferred content to avoid blocking
+  const blocks = useMemo(
+    () => marked.lexer(isStreaming ? deferredContent : content),
+    [isStreaming ? deferredContent : content, isStreaming]
+  );
 
   return blocks.map((block, index) => {
     if (block.type === "code") {

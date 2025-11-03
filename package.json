@@ -28,6 +28,9 @@
     "apps/*",
     "packages/*"
   ],
+  "dependencies": {
+    "ollama-ai-provider-v2": "^1.5.2"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.5",
     "@types/node": "^24.9.1",

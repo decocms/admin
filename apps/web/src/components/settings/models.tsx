@@ -50,6 +50,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/avatar/index.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
+import { useLocalModels } from "../../providers/local-models-provider.tsx";
+import { testOllamaConnection } from "../../lib/local-llm/ollama-discovery.ts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
 
 interface ModelLogoProps {
   logo: string;
@@ -126,6 +129,77 @@ function Models() {
   );
 }
 
+function LocalModelsPanel() {
+  const { host, models, setHost, refresh } = useLocalModels();
+  const [tempHost, setTempHost] = useState(host);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      const isConnected = await testOllamaConnection(tempHost);
+      if (isConnected) {
+        toast.success("Connected to Ollama successfully");
+        setHost(tempHost);
+        refresh();
+      } else {
+        toast.error("Failed to connect to Ollama at this URL");
+      }
+    } catch (error) {
+      toast.error("Failed to test connection");
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon name="computer" />
+          Local Models (Ollama)
+        </CardTitle>
+        <CardDescription>
+          Run models locally with Ollama. Make sure Ollama is running on your machine.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder="http://localhost:11434"
+            value={tempHost}
+            onChange={(e) => setTempHost(e.target.value)}
+          />
+          <Button
+            variant="outline"
+            onClick={handleTestConnection}
+            disabled={isTesting}
+          >
+            {isTesting ? "Testing..." : "Test Connection"}
+          </Button>
+        </div>
+        {models.length > 0 ? (
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Discovered Models ({models.length})</div>
+            <div className="space-y-1">
+              {models.map((model) => (
+                <div key={model.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Icon name="check_circle" className="text-green-600" size={16} />
+                  {model.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            No models found. Make sure Ollama is running and has models installed.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ModelsView() {
   const { data: models } = useModels({ excludeAuto: true });
   const { setIsOpen } = useModal();
@@ -144,6 +218,7 @@ function ModelsView() {
         </Button>
       </div>
       <div className="space-y-6">
+        <LocalModelsPanel />
         <TableView models={models} />
       </div>
     </div>

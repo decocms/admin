@@ -14,6 +14,7 @@ import { createOpenAI as openai, type OpenAIProvider } from "@ai-sdk/openai";
 import { createXai as xai, type XaiProvider } from "@ai-sdk/xai";
 import { createOpenRouter as openrouter } from "@openrouter/ai-sdk-provider";
 import type { LanguageModel } from "ai";
+import { ollama as createOllama } from "ollama-ai-provider-v2";
 
 interface AIGatewayOptions {
   accountId: string;
@@ -40,7 +41,7 @@ type ProviderFactory = (
 type NativeLLMCreator = <
   TOpts extends {
     baseURL?: string;
-    apiKey: string;
+    apiKey?: string;
     headers?: Record<string, string>;
   },
 >(
@@ -119,6 +120,22 @@ export const providers: Record<string, Provider> = {
       "grok-3-beta": 131_072,
     } satisfies Partial<Record<ModelsOf<XaiProvider> | "default", number>>,
   },
+  ollama: {
+    creator: ((config: { baseURL?: string }) => {
+      // ollama-ai-provider-v2 has different API: ollama(modelName, options)
+      // Enable tool calling for compatible models
+      return (modelName: string) => createOllama(modelName, { 
+        ...config,
+        // Ollama-specific options for tool calling
+        structuredOutputs: true,
+      });
+    }) as any,
+    envVarName: "OLLAMA_BASE_URL",
+    supportsOpenRouter: false,
+    tokenLimit: {
+      default: 8_192, // Conservative default for local models
+    },
+  },
 } as const;
 
 const OPENROUTER_HEADERS = {
@@ -143,15 +160,26 @@ export const createLLMProvider: ProviderFactory = (opts) => {
     opts.bypassOpenRouter ||
     opts.apiKey
   ) {
-    const creator = provider.creator({
-      apiKey: opts.apiKey ?? opts.envs[provider.envVarName],
-      baseURL: opts.bypassGateway ? undefined : aiGatewayForProvider(opts),
-      headers: opts.metadata
-        ? {
-            "cf-aig-metadata": JSON.stringify(opts.metadata),
-          }
-        : undefined,
-    });
+    // Ollama uses baseURL differently - pass the URL directly
+    let creator: (model: string) => LanguageModel;
+    
+    if (opts.provider === "ollama") {
+      // For Ollama, baseURL is the Ollama server URL (e.g., http://localhost:11434)
+      const baseURL = opts.apiKey ?? opts.envs[provider.envVarName] ?? "http://localhost:11434";
+      creator = provider.creator({ baseURL }) as any;
+    } else {
+      // For other providers, use standard API key and optional AI Gateway
+      const creatorConfig: any = {
+        apiKey: opts.apiKey ?? opts.envs[provider.envVarName],
+        baseURL: opts.bypassGateway ? undefined : aiGatewayForProvider(opts),
+      };
+      if (opts.metadata) {
+        creatorConfig.headers = {
+          "cf-aig-metadata": JSON.stringify(opts.metadata),
+        };
+      }
+      creator = provider.creator(creatorConfig);
+    }
     return (model: string) => {
       model =
         opts.bypassOpenRouter || provider.supportsOpenRouter === false

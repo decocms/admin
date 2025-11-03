@@ -86,6 +86,148 @@ function InvitesCount() {
   );
 }
 
+function RSASettingsSection() {
+  const { models: localModels } = useLocalModels();
+  const [rsaK, setRsaK] = useState(() => {
+    try {
+      const stored = localStorage.getItem("RSA_PREFERENCES");
+      if (stored) {
+        return JSON.parse(stored).k || 4;
+      }
+    } catch {}
+    return 4;
+  });
+  const [rsaN, setRsaN] = useState(() => {
+    try {
+      const stored = localStorage.getItem("RSA_PREFERENCES");
+      if (stored) {
+        return JSON.parse(stored).n || 16;
+      }
+    } catch {}
+    return 16;
+  });
+  const [rsaT, setRsaT] = useState(() => {
+    try {
+      const stored = localStorage.getItem("RSA_PREFERENCES");
+      if (stored) {
+        return JSON.parse(stored).t || 10;
+      }
+    } catch {}
+    return 10;
+  });
+  const [rsaTemperature, setRsaTemperature] = useState(() => {
+    try {
+      const stored = localStorage.getItem("RSA_PREFERENCES");
+      if (stored) {
+        return JSON.parse(stored).temperature || 1.0;
+      }
+    } catch {}
+    return 1.0;
+  });
+  const [rsaMaxTokens, setRsaMaxTokens] = useState(() => {
+    try {
+      const stored = localStorage.getItem("RSA_PREFERENCES");
+      if (stored) {
+        return JSON.parse(stored).maxTokens || 2048;
+      }
+    } catch {}
+    return 2048;
+  });
+
+  const saveRSASettings = () => {
+    const prefs = {
+      k: rsaK,
+      n: rsaN,
+      t: rsaT,
+      temperature: rsaTemperature,
+      maxTokens: rsaMaxTokens,
+    };
+    localStorage.setItem("RSA_PREFERENCES", JSON.stringify(prefs));
+    toast.success("RSA settings saved");
+  };
+
+  if (localModels.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Separator className="my-4" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Local RSA Settings</CardTitle>
+          <CardDescription>
+            Configure Recursive Self-Aggregation for local Ollama models
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium">K (Aggregation Size)</label>
+              <Input
+                type="number"
+                min={1}
+                max={16}
+                value={rsaK}
+                onChange={(e) => setRsaK(Number(e.target.value))}
+                onBlur={saveRSASettings}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">N (Population Size)</label>
+              <Input
+                type="number"
+                min={1}
+                max={32}
+                value={rsaN}
+                onChange={(e) => setRsaN(Number(e.target.value))}
+                onBlur={saveRSASettings}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium">T (Iterations)</label>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={rsaT}
+                onChange={(e) => setRsaT(Number(e.target.value))}
+                onBlur={saveRSASettings}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Temperature</label>
+              <Input
+                type="number"
+                step={0.1}
+                min={0}
+                max={2}
+                value={rsaTemperature}
+                onChange={(e) => setRsaTemperature(Number(e.target.value))}
+                onBlur={saveRSASettings}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Max Tokens</label>
+            <Input
+              type="number"
+              min={256}
+              max={8192}
+              step={256}
+              value={rsaMaxTokens}
+              onChange={(e) => setRsaMaxTokens(Number(e.target.value))}
+              onBlur={saveRSASettings}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
 function UserPreferencesModal({
   open,
   onOpenChange,
@@ -174,6 +316,8 @@ function UserPreferencesModal({
                 )}
               />
             ))}
+
+            <RSASettingsSection />
 
             <DialogFooter>
               <DialogClose asChild>

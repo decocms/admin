@@ -21,6 +21,7 @@ import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
 import { OrgsLayout } from "./components/layout/org.tsx";
 import { queryClient } from "@deco/sdk";
 import { createResourceWatchStore } from "./stores/resource-watch/store.ts";
+import { LocalModelsProvider } from "./providers/local-models-provider.tsx";
 
 const cache = queryClient.getQueryCache();
 const originalOnError = cache.config.onError;
@@ -552,6 +553,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <LocalModelsProvider>
+      <RouterProvider router={router} />
+    </LocalModelsProvider>
   </StrictMode>,
 );

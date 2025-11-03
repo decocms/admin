@@ -19,6 +19,8 @@ import {
   WELL_KNOWN_MODELS,
 } from "@deco/sdk";
 import { memo, useMemo, useState } from "react";
+import { useLocalModels } from "../../providers/local-models-provider.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 
 const mapLegacyModelId = (modelId: string): string => {
   const model = WELL_KNOWN_MODELS.find((m) => m.legacyId === modelId);
@@ -134,7 +136,13 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { data: models } = useModels({ excludeDisabled: true });
-  const selectedModel = models.find((m) => m.id === model) || DEFAULT_MODEL;
+  const { models: localModels } = useLocalModels();
+  
+  const allModels = useMemo(() => {
+    return [...localModels, ...models];
+  }, [localModels, models]);
+  
+  const selectedModel = allModels.find((m) => m.id === model) || DEFAULT_MODEL;
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {
@@ -162,6 +170,30 @@ export function ModelSelector({
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
       <ResponsiveSelectContent title="Select model">
+        {localModels.length > 0 && (
+          <>
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+              Local Models (Ollama)
+            </div>
+            {localModels.map((model) => (
+              <ResponsiveSelectItem
+                key={model.id}
+                value={model.id}
+                hideCheck
+                className={cn(
+                  "p-0 focus:bg-muted text-foreground focus:text-foreground cursor-pointer",
+                  model.id === selectedModel?.id && "bg-muted/50",
+                )}
+              >
+                <ModelItemContent model={model} />
+              </ResponsiveSelectItem>
+            ))}
+            <Separator className="my-2" />
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+              Cloud Models
+            </div>
+          </>
+        )}
         {models.map((model) => (
           <ResponsiveSelectItem
             key={model.id}

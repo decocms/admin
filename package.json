@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+    "dev-prod": "VITE_USE_LOCAL_BACKEND=false concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
     "fmt": "biome format --write",
     "lint": "oxlint",
     "check": "NODE_OPTIONS=--max-old-space-size=16384 tsc --noEmit",

@@ -1,39 +1,21 @@
 import { useMemo } from "react";
-import { useLocation, useParams } from "react-router";
+import { useMatches, useParams } from "react-router";
 import { useOrganizations } from "@deco/sdk";
 import { useDocumentMetadata } from "./use-document-metadata.ts";
 
-/**
- * Maps org-level route paths to human-readable page names
- */
-function getOrgPageName(pathname: string): string {
-  // Remove org from path
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length < 2) return "Projects";
-
-  const pagePath = parts.slice(1).join("/");
-
-  // Route mappings for org-level pages
-  const routeMap: Record<string, string> = {
-    "": "Projects",
-    members: "Members",
-    billing: "Billing",
-    models: "Models",
-    usage: "Usage",
-    settings: "Settings",
-    "theme-editor": "Theme Editor",
-  };
-
-  return routeMap[pagePath] || pagePath;
+interface RouteHandle {
+  title?: string;
 }
 
 /**
  * Hook that automatically sets the document title for org-level pages
  * Format: "Org Name › Page Name"
+ * 
+ * Uses React Router's handle property to get the page title from route metadata
  */
 export function useOrgDocumentTitle() {
   const { org: orgSlug } = useParams();
-  const location = useLocation();
+  const matches = useMatches();
   const { data: organizations } = useOrganizations();
 
   const currentOrg = useMemo(
@@ -41,10 +23,26 @@ export function useOrgDocumentTitle() {
     [organizations, orgSlug],
   );
 
-  const pageName = useMemo(
-    () => getOrgPageName(location.pathname),
-    [location.pathname],
-  );
+  // Get the title from the last matched route with a handle
+  const pageName = useMemo(() => {
+    // First, try to get title from route handle
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const handle = matches[i].handle as RouteHandle | undefined;
+      if (handle?.title) {
+        return handle.title;
+      }
+    }
+    
+    // Fallback: extract path from last match
+    const lastMatch = matches[matches.length - 1];
+    if (lastMatch?.pathname) {
+      const parts = lastMatch.pathname.split("/").filter(Boolean);
+      if (parts.length < 2) return "Projects";
+      return parts.slice(1).join("/");
+    }
+    
+    return "Projects";
+  }, [matches]);
 
   const title = useMemo(() => {
     const orgName = currentOrg?.name ?? orgSlug;

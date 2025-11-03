@@ -418,29 +418,36 @@ const router = createBrowserRouter([
           {
             index: true,
             Component: OrgProjectList,
+            handle: { title: "Projects" },
           },
           {
             path: "members",
             Component: Members,
+            handle: { title: "Members" },
           },
           {
             path: "billing",
             Component: Billing,
+            handle: { title: "Billing" },
           },
           {
             path: "models",
             Component: Models,
+            handle: { title: "Models" },
           },
           {
             path: "usage",
             Component: Usage,
+            handle: { title: "Usage" },
           },
           {
             path: "settings",
             Component: OrgSettings,
+            handle: { title: "Settings" },
           },
           {
             path: "theme-editor",
+            handle: { title: "Theme Editor" },
             lazy: () =>
               import(
                 "./components/theme-editor/theme-editor-resource-list.tsx"

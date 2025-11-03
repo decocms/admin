@@ -147,11 +147,12 @@ export const withOAuth = ({
   mcpEndpoint: mcpEndpointParam,
 }: WithOAuthOptions) => {
   const mcpEndpoint = `/${sanitize(mcpEndpointParam)}`;
+  const withoutMcpEnding = mcpEndpoint.replace("/mcp", "");
 
   // OAuth path templates (workspace will be in URL path)
-  const authorizationEndpoint = `${mcpEndpoint}/mcp/authorize`;
-  const registrationEndpoint = `${mcpEndpoint}/mcp/register`;
-  const consentEndpoint = `${mcpEndpoint}/mcp/authorize/consent`;
+  const authorizationEndpoint = `${withoutMcpEnding}/mcp/authorize`;
+  const registrationEndpoint = `${withoutMcpEnding}/mcp/register`;
+  const consentEndpoint = `${withoutMcpEnding}/mcp/authorize/consent`;
 
   // Ensure OAuth tables exist on first request
   const tablesEnsured = new WeakMap<object, boolean>();

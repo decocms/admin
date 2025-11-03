@@ -9,7 +9,7 @@ import { defineTool } from "../../core/define-tool";
 import { getUserId, requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_CREATE = defineTool({
-  name: "ORGANIZATION_CREATE",
+  name: "ORGANIZATION_CREATE" as const,
   description: "Create a new organization",
 
   inputSchema: z.object({

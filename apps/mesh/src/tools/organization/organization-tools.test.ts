@@ -106,20 +106,20 @@ const createMockContext = (
   access: {
     granted: () => true,
     check: vi.fn().mockResolvedValue(undefined),
-    grant: () => { },
+    grant: () => {},
   } as any,
   db: null as any,
   tracer: {
     startActiveSpan: (_name: string, _opts: any, fn: any) =>
       fn({
-        setStatus: () => { },
-        recordException: () => { },
-        end: () => { },
+        setStatus: () => {},
+        recordException: () => {},
+        end: () => {},
       }),
   } as any,
   meter: {
-    createHistogram: () => ({ record: () => { } }),
-    createCounter: () => ({ add: () => { } }),
+    createHistogram: () => ({ record: () => {} }),
+    createCounter: () => ({ add: () => {} }),
   } as any,
   baseUrl: "https://mesh.example.com",
   metadata: {

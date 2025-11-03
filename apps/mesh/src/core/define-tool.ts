@@ -18,17 +18,24 @@ import type { MeshContext } from "./mesh-context";
 // Tool Definition Types
 // ============================================================================
 
+export interface ToolBinder<
+  TInput extends z.ZodType,
+  TOutput extends z.ZodType,
+  TName extends string = string,
+> {
+  name: TName;
+  description: string;
+  inputSchema: TInput;
+  outputSchema?: TOutput;
+}
 /**
  * Tool definition structure
  */
 export interface ToolDefinition<
   TInput extends z.ZodType,
   TOutput extends z.ZodType,
-> {
-  name: string;
-  description: string;
-  inputSchema: TInput;
-  outputSchema?: TOutput;
+  TName extends string = string,
+> extends ToolBinder<TInput, TOutput, TName> {
   handler: (
     input: z.infer<TInput>,
     ctx: MeshContext,
@@ -39,8 +46,11 @@ export interface ToolDefinition<
  * Tool with execute wrapper
  * The execute method adds automatic validation, logging, and metrics
  */
-export interface Tool<TInput extends z.ZodType, TOutput extends z.ZodType>
-  extends ToolDefinition<TInput, TOutput> {
+export interface Tool<
+  TInput extends z.ZodType,
+  TOutput extends z.ZodType,
+  TName extends string = string,
+> extends ToolDefinition<TInput, TOutput, TName> {
   execute: (
     input: z.infer<TInput>,
     ctx: MeshContext,
@@ -72,9 +82,13 @@ export interface Tool<TInput extends z.ZodType, TOutput extends z.ZodType>
  * });
  * ```
  */
-export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
-  definition: ToolDefinition<TInput, TOutput>,
-): Tool<TInput, TOutput> {
+export function defineTool<
+  TInput extends z.ZodType,
+  TOutput extends z.ZodType,
+  TName extends string = string,
+>(
+  definition: ToolDefinition<TInput, TOutput, TName>,
+): Tool<TInput, TOutput, TName> {
   return {
     ...definition,
 

@@ -94,7 +94,7 @@ app.post("/sign-in", async (c) => {
       // Add the session cookies from Better Auth response
       setCookieHeaders.forEach((cookie) => {
         // Parse cookie to get the cookie name and value for the request
-        const cookieParts = cookie.split(";")[0]; // Get "name=value" part
+        const cookieParts = cookie.split(";")[0] ?? ""; // Get "name=value" part
         const existingCookies = authorizeHeaders.get("cookie") || "";
         authorizeHeaders.set(
           "cookie",
@@ -230,7 +230,7 @@ app.post("/sign-up", async (c) => {
       // Add the session cookies from Better Auth response
       setCookieHeaders.forEach((cookie) => {
         // Parse cookie to get the cookie name and value for the request
-        const cookieParts = cookie.split(";")[0]; // Get "name=value" part
+        const cookieParts = cookie.split(";")[0] ?? ""; // Get "name=value" part
         const existingCookies = authorizeHeaders.get("cookie") || "";
         authorizeHeaders.set(
           "cookie",

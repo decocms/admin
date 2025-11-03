@@ -1069,11 +1069,6 @@ withOAuth({
   mcpEndpoint: "/:org/:project/:integrationId/mcp",
 });
 
-app.post("/:org/:project/:integrationId/mcp", async (c) => {
-  const mcpServerProxy = await createMcpServerProxy(c);
-
-  return mcpServerProxy.fetch(c.req.raw);
-});
 app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 

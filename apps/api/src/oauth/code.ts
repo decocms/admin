@@ -11,7 +11,6 @@ const tryParseUser = (user: unknown) => {
   }
   return user;
 };
-// http://localhost:3001/candy-testing/default/i:5b83e510-1eb8-4364-84d8-0af7069f4e36/mcp
 export const handleCodeExchange = async (c: Context<AppEnv>) => {
   try {
     const appCtx = honoCtxToAppCtx(c);

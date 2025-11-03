@@ -1,3 +1,4 @@
+import { DECO_CMS_WEB_URL } from "@deco/sdk";
 import { workspaceDB } from "@deco/sdk/mcp";
 import type { Context, Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -57,6 +58,85 @@ const CODE_EXPIRY_SECONDS = 600; // 10 minutes
 async function getWorkspaceDB(c: Context<AppEnv>) {
   const ctx = honoCtxToAppCtx(c);
   return await workspaceDB(ctx);
+}
+
+/**
+ * Common metadata fields shared across all discovery endpoints
+ */
+const COMMON_METADATA = {
+  scopes_supported: ["*"],
+  response_types_supported: ["code"],
+  response_modes_supported: ["query"],
+  grant_types_supported: ["authorization_code"],
+  subject_types_supported: ["public"],
+  id_token_signing_alg_values_supported: ["RS256"],
+  token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
+  code_challenge_methods_supported: ["S256"],
+} as const;
+
+const OIDC_CLAIMS = [
+  "sub",
+  "iss",
+  "aud",
+  "exp",
+  "iat",
+  "email",
+  "email_verified",
+  "name",
+] as const;
+
+/**
+ * Build authorization server metadata for a workspace
+ */
+function buildAuthServerMetadata(
+  baseUrl: string,
+  org: string,
+  project: string,
+  integrationId: string,
+) {
+  return {
+    issuer: `${baseUrl}/${org}/${project}/${integrationId}`,
+    authorization_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/authorize`,
+    token_endpoint: `${baseUrl}/apps/code-exchange`,
+    jwks_uri: `${baseUrl}/.well-known/jwks.json`,
+    registration_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/register`,
+    ...COMMON_METADATA,
+  };
+}
+
+/**
+ * Build OIDC discovery metadata for a workspace
+ */
+function buildOIDCMetadata(
+  baseUrl: string,
+  org: string,
+  project: string,
+  integrationId: string,
+) {
+  return {
+    ...buildAuthServerMetadata(baseUrl, org, project, integrationId),
+    scopes_supported: ["openid", "profile", "email"],
+    claims_supported: OIDC_CLAIMS,
+  };
+}
+
+/**
+ * Build protected resource metadata for a workspace
+ */
+function buildProtectedResourceMetadata(
+  baseUrl: string,
+  org: string,
+  project: string,
+  integrationId: string,
+) {
+  return {
+    resource: `${baseUrl}/${org}/${project}/${integrationId}/mcp`,
+    authorization_servers: [`${baseUrl}/${org}/${project}/${integrationId}`],
+    jwks_uri: `${baseUrl}/.well-known/jwks.json`,
+    scopes_supported: ["*"],
+    bearer_methods_supported: ["header"],
+    resource_signing_alg_values_supported: ["RS256", "none"],
+  };
 }
 
 /**
@@ -131,7 +211,6 @@ export const withOAuth = ({
   });
 
   // Workspace-specific protected resource metadata (RFC9728)
-  // This endpoint includes org/project/integrationId in the path
   hono.get(
     `/:org/:project/:integrationId/mcp/.well-known/oauth-protected-resource`,
     async (c) => {
@@ -139,26 +218,13 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const mcpResourceUrl = `${baseUrl}/${org}/${project}/${integrationId}/mcp`;
-      // Include full path with integrationId for proper discovery
-      const authServerUrl = `${baseUrl}/${org}/${project}/${integrationId}`;
-
-      const authMetadata = {
-        resource: mcpResourceUrl,
-        authorization_servers: [authServerUrl],
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        scopes_supported: ["*"],
-        bearer_methods_supported: ["header"],
-        resource_signing_alg_values_supported: ["RS256", "none"],
-      };
-      return Response.json(authMetadata);
+      return Response.json(
+        buildProtectedResourceMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
   // Path-insertion pattern for protected resource metadata
-  // Pattern: /.well-known/oauth-protected-resource/:org/:project/:integrationId/mcp
   hono.get(
     `/.well-known/oauth-protected-resource/:org/:project/:integrationId/mcp`,
     async (c) => {
@@ -166,20 +232,9 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const mcpResourceUrl = `${baseUrl}/${org}/${project}/${integrationId}/mcp`;
-      const authServerUrl = `${baseUrl}/${org}/${project}/${integrationId}`;
-
-      const authMetadata = {
-        resource: mcpResourceUrl,
-        authorization_servers: [authServerUrl],
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        scopes_supported: ["*"],
-        bearer_methods_supported: ["header"],
-        resource_signing_alg_values_supported: ["RS256", "none"],
-      };
-      return Response.json(authMetadata);
+      return Response.json(
+        buildProtectedResourceMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
@@ -197,8 +252,7 @@ export const withOAuth = ({
     return Response.json(authMetadata);
   });
 
-  // Workspace-specific authorization server metadata (with integrationId in path)
-  // Pattern: /:org/:project/:integrationId/.well-known/oauth-authorization-server
+  // Workspace-specific authorization server metadata
   hono.get(
     `/:org/:project/:integrationId/.well-known/oauth-authorization-server`,
     async (c) => {
@@ -206,29 +260,13 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const metadata = {
-        issuer: `${baseUrl}/${org}/${project}/${integrationId}`,
-        authorization_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/authorize`,
-        token_endpoint: `${baseUrl}/apps/code-exchange`,
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        registration_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/register`,
-        scopes_supported: ["*"],
-        response_types_supported: ["code"],
-        response_modes_supported: ["query"],
-        grant_types_supported: ["authorization_code"],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-        token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-        code_challenge_methods_supported: ["S256"],
-      };
-      return Response.json(metadata);
+      return Response.json(
+        buildAuthServerMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
   // Path-insertion pattern for authorization server metadata
-  // Pattern: /.well-known/oauth-authorization-server/:org/:project/:integrationId
   hono.get(
     `/.well-known/oauth-authorization-server/:org/:project/:integrationId`,
     async (c) => {
@@ -236,52 +274,26 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const metadata = {
-        issuer: `${baseUrl}/${org}/${project}/${integrationId}`,
-        authorization_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/authorize`,
-        token_endpoint: `${baseUrl}/apps/code-exchange`,
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        registration_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/register`,
-        scopes_supported: ["*"],
-        response_types_supported: ["code"],
-        response_modes_supported: ["query"],
-        grant_types_supported: ["authorization_code"],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-        token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-        code_challenge_methods_supported: ["S256"],
-      };
-      return Response.json(metadata);
+      return Response.json(
+        buildAuthServerMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
   // Generic authorization server metadata (fallback)
   hono.get(`/.well-known/oauth-authorization-server`, async (c) => {
-    const url = new URL(c.req.url);
-    const baseUrl = url.origin;
-
-    const metadata = {
+    const baseUrl = new URL(c.req.url).origin;
+    return Response.json({
       issuer: baseUrl,
       authorization_endpoint: `${baseUrl}/mcp/authorize`,
       token_endpoint: `${baseUrl}/apps/code-exchange`,
       jwks_uri: `${baseUrl}/.well-known/jwks.json`,
       registration_endpoint: `${baseUrl}/mcp/register`,
-      scopes_supported: ["*"],
-      response_types_supported: ["code"],
-      response_modes_supported: ["query"],
-      grant_types_supported: ["authorization_code"],
-      subject_types_supported: ["public"],
-      id_token_signing_alg_values_supported: ["RS256"],
-      token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-      code_challenge_methods_supported: ["S256"],
-    };
-    return Response.json(metadata);
+      ...COMMON_METADATA,
+    });
   });
 
-  // Workspace-specific OIDC discovery (with integrationId in path)
-  // Pattern: /:org/:project/:integrationId/.well-known/openid-configuration
+  // Workspace-specific OIDC discovery
   hono.get(
     `/:org/:project/:integrationId/.well-known/openid-configuration`,
     async (c) => {
@@ -289,39 +301,13 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const metadata = {
-        issuer: `${baseUrl}/${org}/${project}/${integrationId}`,
-        authorization_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/authorize`,
-        token_endpoint: `${baseUrl}/apps/code-exchange`,
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        registration_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/register`,
-        scopes_supported: ["openid", "profile", "email"],
-        response_types_supported: ["code"],
-        response_modes_supported: ["query"],
-        grant_types_supported: ["authorization_code"],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-        token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-        code_challenge_methods_supported: ["S256"],
-        claims_supported: [
-          "sub",
-          "iss",
-          "aud",
-          "exp",
-          "iat",
-          "email",
-          "email_verified",
-          "name",
-        ],
-      };
-      return Response.json(metadata);
+      return Response.json(
+        buildOIDCMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
   // Path-insertion pattern for OIDC discovery
-  // Pattern: /.well-known/openid-configuration/:org/:project/:integrationId
   hono.get(
     `/.well-known/openid-configuration/:org/:project/:integrationId`,
     async (c) => {
@@ -329,68 +315,25 @@ export const withOAuth = ({
       const org = c.req.param("org");
       const project = c.req.param("project");
       const integrationId = c.req.param("integrationId");
-
-      const baseUrl = url.origin;
-      const metadata = {
-        issuer: `${baseUrl}/${org}/${project}/${integrationId}`,
-        authorization_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/authorize`,
-        token_endpoint: `${baseUrl}/apps/code-exchange`,
-        jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-        registration_endpoint: `${baseUrl}/${org}/${project}/${integrationId}/mcp/register`,
-        scopes_supported: ["openid", "profile", "email"],
-        response_types_supported: ["code"],
-        response_modes_supported: ["query"],
-        grant_types_supported: ["authorization_code"],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-        token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-        code_challenge_methods_supported: ["S256"],
-        claims_supported: [
-          "sub",
-          "iss",
-          "aud",
-          "exp",
-          "iat",
-          "email",
-          "email_verified",
-          "name",
-        ],
-      };
-      return Response.json(metadata);
+      return Response.json(
+        buildOIDCMetadata(url.origin, org, project, integrationId),
+      );
     },
   );
 
   // Generic OIDC discovery (fallback)
   hono.get(`/.well-known/openid-configuration`, async (c) => {
-    const url = new URL(c.req.url);
-    const baseUrl = url.origin;
-
-    const metadata = {
+    const baseUrl = new URL(c.req.url).origin;
+    return Response.json({
       issuer: baseUrl,
       authorization_endpoint: `${baseUrl}/mcp/authorize`,
       token_endpoint: `${baseUrl}/apps/code-exchange`,
       jwks_uri: `${baseUrl}/.well-known/jwks.json`,
       registration_endpoint: `${baseUrl}/mcp/register`,
+      ...COMMON_METADATA,
       scopes_supported: ["openid", "profile", "email"],
-      response_types_supported: ["code"],
-      response_modes_supported: ["query"],
-      grant_types_supported: ["authorization_code"],
-      subject_types_supported: ["public"],
-      id_token_signing_alg_values_supported: ["RS256"],
-      token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-      code_challenge_methods_supported: ["S256"],
-      claims_supported: [
-        "sub",
-        "iss",
-        "aud",
-        "exp",
-        "iat",
-        "email",
-        "email_verified",
-        "name",
-      ],
-    };
-    return Response.json(metadata);
+      claims_supported: OIDC_CLAIMS,
+    });
   });
 
   // Dynamic Client Registration (workspace-specific)
@@ -566,7 +509,7 @@ export const withOAuth = ({
     }
 
     // Redirect to apps-auth consent page (which will handle login if needed)
-    const consentUrl = new URL(`http://localhost:3000/apps-auth`);
+    const consentUrl = new URL(`${DECO_CMS_WEB_URL}/apps-auth`);
     consentUrl.searchParams.set("client_id", clientId);
     consentUrl.searchParams.set("redirect_uri", redirectUri);
     consentUrl.searchParams.set("scope", scope || "*");

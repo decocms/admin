@@ -42,6 +42,8 @@ import {
   useGetVersions,
   useRevertToVersion,
 } from "../../stores/resource-version-history/index.ts";
+import { WELL_KNOWN_VIEWS } from "../views/react-view-registry.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -500,6 +502,7 @@ interface ExpandableToolCardProps {
   canRevert?: boolean;
   revertLabel?: string;
   onConfirmRevert?: () => void;
+  headerActions?: React.ReactNode;
 }
 
 function ExpandableToolCard({
@@ -512,6 +515,7 @@ function ExpandableToolCard({
   canRevert,
   revertLabel,
   onConfirmRevert,
+  headerActions,
 }: ExpandableToolCardProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
@@ -579,6 +583,7 @@ function ExpandableToolCard({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {headerActions}
             {canRevert && (
               <TooltipProvider>
                 <Tooltip>
@@ -712,9 +717,49 @@ function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
-// Custom UI component for CALL_TOOL tool
-function CallToolUI({ part }: { part: ToolUIPart }) {
-  const { data: integrations = [] } = useIntegrations();
+// Helper function to parse resource URI and extract resource name
+// URI format: rsc://integration-id/resource-name/resource-id
+function extractResourceNameFromUri(uri: string): string | null {
+  try {
+    // Remove the rsc:// prefix
+    const withoutPrefix = uri.replace(/^rsc:\/\//, "");
+    const parts = withoutPrefix.split("/");
+    // Return the resource-name (second segment)
+    return parts.length >= 2 ? parts[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+// Map resource names to well-known view keys
+function getViewKeyFromResourceName(
+  resourceName: string,
+): keyof typeof WELL_KNOWN_VIEWS | null {
+  const mapping: Record<string, keyof typeof WELL_KNOWN_VIEWS> = {
+    document: "document_detail",
+    tool: "tool_detail",
+    workflow: "workflow_detail",
+    workflow_run: "workflow_run_detail",
+    view: "view_detail",
+  };
+  return mapping[resourceName] ?? null;
+}
+
+// Component to render the appropriate detail view based on view key and resource URI
+function ResourceDetailView({
+  viewKey,
+  resourceUri,
+}: {
+  viewKey: keyof typeof WELL_KNOWN_VIEWS;
+  resourceUri: string;
+}) {
+  const ViewComponent = WELL_KNOWN_VIEWS[viewKey];
+  if (!ViewComponent) return null;
+  return <ViewComponent resourceUri={resourceUri} />;
+}
+
+// Hook to extract tool name, URI, and integration ID from CALL_TOOL input
+function useCallToolInfo(part: ToolUIPart) {
   const input = part.input as
     | {
         id?: string;
@@ -724,8 +769,32 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
         };
       }
     | undefined;
-  const integrationId = input?.id;
-  const toolName = input?.params?.name;
+
+  const toolName = useMemo(
+    () => input?.params?.name ?? null,
+    [input?.params?.name],
+  );
+  const integrationId = useMemo(() => input?.id ?? null, [input?.id]);
+
+  const uri = useMemo(() => {
+    const args = input?.params?.arguments;
+    if (args && typeof args === "object") {
+      const maybeUri =
+        (args as { uri?: unknown; resource?: unknown }).uri ??
+        (args as { resource?: unknown }).resource;
+      return typeof maybeUri === "string" ? maybeUri : null;
+    }
+    return null;
+  }, [input?.params?.arguments]);
+
+  return { toolName, integrationId, uri };
+}
+
+// Custom UI component for CALL_TOOL tool
+function CallToolUI({ part }: { part: ToolUIPart }) {
+  const { data: integrations = [] } = useIntegrations();
+  const { toolName: rawToolName, integrationId, uri } = useCallToolInfo(part);
+  const toolName = rawToolName ?? undefined;
 
   const integration = useMemo(() => {
     if (!integrationId) return null;
@@ -753,17 +822,43 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     }
   }, [part.state]);
 
-  // Version history integration
-  const uri: string | null = useMemo(() => {
-    const args = input?.params?.arguments;
-    if (args && typeof args === "object") {
-      const maybeUri =
-        (args as { uri?: unknown; resource?: unknown }).uri ??
-        (args as { resource?: unknown }).resource;
-      return typeof maybeUri === "string" ? maybeUri : null;
+  // Detect if this is a resource READ/UPDATE/CREATE operation and determine if we should render a detail view
+  const detailViewInfo = useMemo(() => {
+    // Only check when output is available
+    if (part.state !== "output-available") return null;
+
+    // Check if this is a resource operation
+    if (!toolName) return null;
+    const isResourceOperation =
+      /^DECO_RESOURCE_.*_READ$/.test(toolName) ||
+      /^DECO_RESOURCE_.*_UPDATE$/.test(toolName) ||
+      /^DECO_RESOURCE_.*_CREATE$/.test(toolName);
+
+    if (!isResourceOperation) return null;
+
+    // For CREATE operations, extract URI from output structuredContent
+    // For READ/UPDATE operations, use URI from input
+    let resourceUri: string | null = uri;
+
+    if (/^DECO_RESOURCE_.*_CREATE$/.test(toolName) && part.output) {
+      const output = part.output as {
+        structuredContent?: { uri?: string };
+      };
+      resourceUri = output?.structuredContent?.uri ?? null;
     }
-    return null;
-  }, [input?.params?.arguments]);
+
+    if (!resourceUri) return null;
+
+    // Extract resource name from URI
+    const resourceName = extractResourceNameFromUri(resourceUri);
+    if (!resourceName) return null;
+
+    // Map to view key
+    const viewKey = getViewKeyFromResourceName(resourceName);
+    if (!viewKey) return null;
+
+    return { viewKey, resourceUri };
+  }, [toolName, uri, part.state, part.output]);
 
   const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
     toolName || "",
@@ -771,37 +866,78 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     uri,
   );
 
+  // Copy input to clipboard functionality
+  const { handleCopy, copied } = useCopy();
+  const inputJsonString = useMemo(() => {
+    if (!part.input) return "";
+    return JSON.stringify(part.input, null, 2);
+  }, [part.input]);
+
+  const copyButton = part.input ? (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy(inputJsonString);
+            }}
+          >
+            <Icon
+              name={copied ? "check" : "content_copy"}
+              className="text-muted-foreground"
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>{copied ? "Copied!" : "Copy input"}</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : null;
+
   return (
     <ExpandableToolCard
       part={part}
       integration={integration}
-      toolName={toolName}
+      toolName={toolName ?? undefined}
       toolDescription={toolDescription || undefined}
       statusText={statusText}
       canRevert={canRevert}
       revertLabel={revertLabel}
       onConfirmRevert={onConfirmRevert}
+      headerActions={copyButton}
     >
-      {/* Input Section */}
-      {part.input !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_downward" className="size-3" />
-            Input
-          </div>
-          <JsonViewer data={part.input} defaultView="tree" maxHeight="300px" />
+      {/* Render detail view directly when available, otherwise show output */}
+      {detailViewInfo ? (
+        // Render detail view component directly when expanded
+        <div className="flex flex-col" style={{ height: "400px" }}>
+          <ResourceDetailView
+            viewKey={detailViewInfo.viewKey}
+            resourceUri={detailViewInfo.resourceUri}
+          />
         </div>
-      )}
-
-      {/* Output Section */}
-      {part.state === "output-available" && part.output !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_upward" className="size-3" />
-            Output
-          </div>
-          <JsonViewer data={part.output} defaultView="tree" maxHeight="300px" />
-        </div>
+      ) : (
+        // Fall back to JSON viewer for output
+        <>
+          {part.state === "output-available" && part.output !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_upward" className="size-3" />
+                Output
+              </div>
+              <JsonViewer
+                data={part.output}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Error Section */}

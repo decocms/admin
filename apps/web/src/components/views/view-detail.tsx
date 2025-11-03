@@ -1,20 +1,30 @@
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
 import {
   DECO_CMS_API_URL,
   useRecentResources,
   useSDK,
-  useViewByUriV2,
   useUpdateView,
+  useViewByUriV2,
   useWriteFile,
 } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import CodeMirror from "@uiw/react-codemirror";
+import html2canvas from "html2canvas";
 import type { JSONSchema7 } from "json-schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { toast } from "sonner";
+import { useLocalStorage } from "../../hooks/use-local-storage.ts";
+import { CustomEvents } from "../../utils/custom-events.ts";
+import { formatLogEntry } from "../../utils/format-time.ts";
+import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
 import {
@@ -23,28 +33,19 @@ import {
   type RuntimeErrorEntry,
 } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-import { ajvResolver } from "../json-schema/index.tsx";
-import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
-import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
-import { oneDark } from "@codemirror/theme-one-dark";
 import {
-  ResourceDetailHeader,
   CodeAction,
+  ResourceDetailHeader,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
+import { ajvResolver } from "../json-schema/index.tsx";
+import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
+import { useTheme } from "../theme.tsx";
 import {
-  ViewConsole,
   useConsoleState,
+  ViewConsole,
   ViewConsoleProvider,
 } from "./view-console.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { useLocalStorage } from "../../hooks/use-local-storage.ts";
-import { useTheme } from "../theme.tsx";
-import html2canvas from "html2canvas";
-import { formatLogEntry } from "../../utils/format-time.ts";
-import { CustomEvents } from "../../utils/custom-events.ts";
-import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 
 interface ViewDetailProps {
   resourceUri: string;
@@ -520,7 +521,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
   return (
     <ViewConsoleProvider>
-      <div className="h-full w-full flex flex-col bg-background relative">
+      <div className="h-full w-full flex-1 flex flex-col bg-background relative">
         {/* Header with code viewer toggle */}
         <ResourceDetailHeader
           title={effectiveView.name}
@@ -588,18 +589,13 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
         ) : (
           /* Preview Section - Shows when code viewer is closed */
           <div className="flex-1 overflow-hidden relative flex flex-col">
-            <div
-              className={`flex-1 overflow-hidden ${isConsoleOpen ? "flex-none" : ""}`}
-              style={
-                isConsoleOpen ? { height: "calc(100% - 24rem)" } : undefined
-              }
-            >
+            <div className={cn("flex flex-col", "flex-1 overflow-hidden ")}>
               {htmlValue ? (
                 <PreviewIframe
                   ref={iframeRef}
                   srcDoc={htmlValue}
                   title="View Preview"
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 flex-1"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full p-8">

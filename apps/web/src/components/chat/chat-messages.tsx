@@ -1,6 +1,5 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useCallback, useRef, useState } from "react";
+import { useRef } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
@@ -31,45 +30,14 @@ function Dots() {
 }
 
 export function ChatMessages({ className }: ChatMessagesProps = {}) {
-  const { chat } = useAgenticChat();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  // Single ref approach: sentinelRef is the only ref we keep
-
-  const { messages, status } = chat;
-  const isStreaming = status === "streaming" || status === "submitted";
-
-  // Single-ref setup: we no longer measure container scroll; the sentinel
-  // is used for scrollIntoView on send
-
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = "smooth") => {
-      const sentinel = sentinelRef.current;
-      if (!sentinel) return;
-
-      sentinel.scrollIntoView({ behavior, block: "end" });
-      setIsAtBottom(true);
-      setShowScrollButton(false);
-    },
-    [sentinelRef],
-  );
-
-  // No effect needed; sentinel ref handles scroll anchoring on mount
-
-  // Ref-based auto-scroll: remount sentinel on message count change
-  // so the callback runs without effects
-
-  const isEmpty = messages.length === 0;
+  const {
+    chat: { messages, status },
+  } = useAgenticChat();
 
   return (
-    <div
-      className={cn(
-        "w-full min-w-0 max-w-full relative overflow-hidden",
-        className,
-      )}
-    >
-      {isEmpty ? (
+    <div className={cn("w-full min-w-0 max-w-full overflow-hidden", className)}>
+      {messages.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex flex-col gap-6 min-w-0 max-w-full">
@@ -88,45 +56,23 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
         </div>
       )}
 
-      {/* Scroll to bottom button - sticky at bottom of scroll area */}
-      {messages.length > 0 &&
-        showScrollButton &&
-        !(isStreaming && isAtBottom) && (
-          <div className="sticky bottom-0 left-0 right-0 flex justify-center pointer-events-none pb-4 z-100">
-            <button
-              type="button"
-              className={cn(
-                "w-10 h-10 rounded-full pointer-events-auto",
-                "bg-background dark:bg-accent shadow-xl",
-                "border border-border/50",
-                "flex items-center justify-center",
-                "cursor-pointer hover:scale-110 hover:shadow-2xl",
-                "transition-all duration-200 ease-out",
-                "animate-in fade-in slide-in-from-bottom-4 duration-150",
-                "group",
-              )}
-              onClick={() => scrollToBottom("smooth")}
-              aria-label="Scroll to bottom"
-            >
-              <Icon
-                name="arrow_downward"
-                className="text-foreground group-hover:text-primary transition-colors"
-              />
-            </button>
-          </div>
-        )}
-
       <div
         key={messages.length}
         ref={(el) => {
-          // always update the shared ref
-          // and scroll the nearest scrollable ancestor into view
-          // when the sentinel mounts (on message count change)
-          // avoiding effects
-          sentinelRef.current = el;
-          if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "end" });
+          const hasUserInteraction =
+            status === "streaming" || status === "submitted";
+          const isFirstMount = !sentinelRef.current;
+          const shouldScroll = hasUserInteraction || isFirstMount;
+
+          if (!shouldScroll) {
+            return;
           }
+
+          sentinelRef.current = el;
+          sentinelRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         }}
       />
     </div>

@@ -67,14 +67,16 @@ export const providers: Record<string, Provider> = {
     creator: anthropic,
     envVarName: "ANTHROPIC_API_KEY",
     mapOpenRouterModel: {
-      "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
-      "claude-sonnet-4": "claude-sonnet-4-20250514",
       "claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
       "claude-haiku-4.5": "claude-haiku-4-5-20251001",
+      "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
+      "claude-sonnet-4": "claude-sonnet-4-20250514",
     } satisfies Partial<Record<string, ModelsOf<AnthropicProvider>>>,
     tokenLimit: {
-      default: 200_000,
+      default: 1_000_000,
       "claude-3-5-sonnet-latest": 200_000,
+      "claude-sonnet-4": 200_000,
+      "claude-haiku-4": 200_000,
     } satisfies Partial<
       Record<ModelsOf<AnthropicProvider> | "default", number>
     >,

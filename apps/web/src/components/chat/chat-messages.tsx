@@ -64,14 +64,15 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
           const isFirstMount = !sentinelRef.current;
           const shouldScroll = hasUserInteraction || isFirstMount;
 
-          sentinelRef.current = el;
-
-          if (shouldScroll) {
-            sentinelRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-            });
+          if (!shouldScroll) {
+            return;
           }
+
+          sentinelRef.current = el;
+          sentinelRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         }}
       />
     </div>

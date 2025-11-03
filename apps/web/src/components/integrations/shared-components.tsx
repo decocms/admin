@@ -8,7 +8,10 @@ import { cn } from "@deco/ui/lib/utils.ts";
 // Grid components to match marketplace dialog layout
 export function GridRightColumn({ children }: { children: React.ReactNode }) {
   return (
-    <div data-right-column className="col-span-6 py-4">
+    <div
+      data-right-column
+      className="col-span-6 py-4 max-h-133 pl-2 overflow-y-scroll"
+    >
       {children}
     </div>
   );

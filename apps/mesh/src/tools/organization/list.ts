@@ -33,10 +33,10 @@ export const ORGANIZATION_LIST = defineTool({
     // Require authentication
     requireAuth(ctx);
 
-    // Check authorization
+    // // Check authorization
     await ctx.access.check();
 
-    // Get current user ID
+    // // Get current user ID
     const currentUserId = getUserId(ctx);
     const userId = input.userId || currentUserId;
 
@@ -44,13 +44,27 @@ export const ORGANIZATION_LIST = defineTool({
       throw new Error("User ID required to list organizations");
     }
 
-    // List organizations via Better Auth
-    const organizations = await ctx.authInstance.api.listOrganizations({
-      query: { userId },
-    });
+    // // List organizations via Better Auth
+    try {
+      const orgs = await ctx.authInstance.api.listOrganizations({
+      });
+
+      console.log({ orgs });
+    } catch (error) {
+      console.log("Error listing stuff", error);
+    }
+
+    const organizations = [
+      {
+        id: "1",
+        name: "Organization 1",
+        slug: "organization-1",
+        createdAt: new Date(),
+      },
+    ];
 
     return {
-      organizations: Array.isArray(organizations) ? organizations : [],
+      organizations,
     };
   },
 });

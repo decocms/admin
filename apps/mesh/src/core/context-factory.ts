@@ -201,6 +201,31 @@ async function authenticateRequest(
     }
   }
 
+  try {
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (session) {
+      // console.log("[Auth] Session authenticated:", session);
+      return {
+        user: { id: session.user.id },
+        permissions: {
+          self: ["*"],
+        },
+        // TODO: Use some better auth method to read the full org data
+        organization: session.session.activeOrganizationId ? {
+          id: session.session.activeOrganizationId,
+          slug: "",
+          name: "",
+        } : undefined,
+      };
+    }
+  } catch (error) {
+    const err = error as Error;
+    console.log("[Auth] Session check failed:", err.message);
+  }
+
   // No valid authentication found - return empty auth data
   // Access control will check this and throw UnauthorizedError if needed
   return {

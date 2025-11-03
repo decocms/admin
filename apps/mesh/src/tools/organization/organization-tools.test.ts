@@ -106,20 +106,20 @@ const createMockContext = (
   access: {
     granted: () => true,
     check: vi.fn().mockResolvedValue(undefined),
-    grant: () => {},
+    grant: () => { },
   } as any,
   db: null as any,
   tracer: {
     startActiveSpan: (_name: string, _opts: any, fn: any) =>
       fn({
-        setStatus: () => {},
-        recordException: () => {},
-        end: () => {},
+        setStatus: () => { },
+        recordException: () => { },
+        end: () => { },
       }),
   } as any,
   meter: {
-    createHistogram: () => ({ record: () => {} }),
-    createCounter: () => ({ add: () => {} }),
+    createHistogram: () => ({ record: () => { } }),
+    createCounter: () => ({ add: () => { } }),
   } as any,
   baseUrl: "https://mesh.example.com",
   metadata: {
@@ -188,7 +188,7 @@ describe("Organization Tools", () => {
       });
 
       expect(result.organizations).toHaveLength(1);
-      expect(result.organizations[0].slug).toBe("test-org");
+      expect(result.organizations?.[0]?.slug).toBe("test-org");
     });
 
     it("should list organizations for specific user", async () => {
@@ -386,8 +386,8 @@ describe("Organization Tools", () => {
       });
 
       expect(result.members).toHaveLength(1);
-      expect(result.members[0].userId).toBe("user_1");
-      expect(result.members[0].role).toEqual(["admin"]);
+      expect(result.members?.[0]?.userId).toBe("user_1");
+      expect(result.members?.[0]?.role).toEqual(["admin"]);
     });
 
     it("should support pagination", async () => {

@@ -825,7 +825,6 @@ export type Null_4 = null;
 export type String_90 =
   | "openai:gpt-4.1-mini"
   | "google:gemini-2.5-pro"
-  | "google:gemini-2.5-flash-lite-preview-06-17"
   | "anthropic:claude-sonnet-4"
   | "anthropic:claude-3.7-sonnet:thinking"
   | "openai:gpt-4.1"
@@ -1063,7 +1062,6 @@ export type Null_7 = null;
 export type String_107 =
   | "openai:gpt-4.1-mini"
   | "google:gemini-2.5-pro"
-  | "google:gemini-2.5-flash-lite-preview-06-17"
   | "anthropic:claude-sonnet-4"
   | "anthropic:claude-3.7-sonnet:thinking"
   | "openai:gpt-4.1"

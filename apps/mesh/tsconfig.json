@@ -34,7 +34,7 @@
 		"noPropertyAccessFromIndexSignature": false,
 
     // Bun-specific
-    "types": [],
+    "types": ["bun"],
     "allowJs": true,
 
     // Path Mapping

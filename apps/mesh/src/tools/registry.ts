@@ -70,7 +70,7 @@ export function getToolsByCategory() {
   };
 
   for (const tool of MANAGEMENT_TOOLS) {
-    grouped[tool.category].push(tool);
+    grouped[tool.category]?.push(tool);
   }
 
   return grouped;

@@ -82,7 +82,7 @@ describe("CredentialVault", () => {
 
       // Tamper with the ciphertext
       const buffer = Buffer.from(encrypted, "base64");
-      buffer[buffer.length - 1] = buffer[buffer.length - 1] ^ 0xff;
+      buffer[buffer.length - 1] = (buffer[buffer.length - 1] ?? 0) ^ 0xff;
       const tampered = buffer.toString("base64");
 
       await expect(vault.decrypt(tampered)).rejects.toThrow();

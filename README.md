@@ -1,219 +1,287 @@
-<img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
+<img alt="deco CMS" src="https://github.com/user-attachments/assets/d3e36c98-4609-46d3-b39f-7ee1c6d77432" />
 
-# decocms.com
+<h1 align="center">DecoCMS: The Context Management System</h1>
 
-**decocms** is an open-source foundation for building AI-native software.\
-We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
-prototype, develop, and deploy AI-powered applications.
 
-**Official docs:** https://docs.deco.page
+<p align="center">
+<em>MCP-native · TypeScript-first · Deploy anywhere</em><br/><br/>
+<b>Declare and Compose MCPs for your AI Agents and Workflows.</b><br/>
+</p>
 
-> [!TIP]
-> If you have questions or want to learn more, please join our discord
-> community: https://decocms.com/discord
+<p align="center">
+<a href="https://docs.deco.page">📘 Docs</a> ·
+<a href="https://decocms.com/discord">💬 Discord</a> ·
+<a href="https://decocms.com">🌐 decocms.com</a>
+</p>
 
-## Who is it for?
+> **TL;DR:**
+> - Centralize your company context in a private MCP mesh.<br />
+> - Generate full-stack TypeScript AI Apps and publish them as internal MCPs.<br />
+> - Have full control over usage, costs, monitoring and sharing. <br/>
 
-- **Vibecoders** prototyping ideas
-- **Agentic engineers** deploying scalable, secure, and sustainable production
-  systems
+## 🚀 What is a Context Management System?
 
-## Why deco CMS?
+**DecoCMS** is an open‑source Context Management System — the **MCP Mesh** for AI. It centralizes MCP connections, tools, data access, and policies to aggregate organization‑wide context in one secure place. Compose and expose virtual MCPs ("AI Apps") for any client (Claude Desktop, VS Code, custom UIs) with governance, observability, and cost control.
 
-Our goal is simple: empower teams with Generative AI by giving builders the
-tools to create AI applications that scale beyond the initial demo and into the
-thousands of users, securely and cost-effectively.
-
-<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/3c37a237-0c33-4db5-9cfd-a11ff084752a/decocx1.png" />
-
-## Core capabilities
-
-- **Open-source Runtime** – Easily compose tools, workflows, and views within a
-  single codebase
-- **MCP Mesh (Model Context Protocol)** – Securely integrate models, data
-  sources, and APIs, with observability and cost control
-- **Unified TypeScript Stack** – Combine backend logic and custom React/Tailwind
-  frontends seamlessly using typed RPC
-- **Global, Modular Infrastructure** – Built on Cloudflare for low-latency,
-  infinitely scalable deployments. Self-host with your Cloudflare API Key
-- **Visual Workspace** – Build agents, connect tools, manage permissions, and
-  orchestrate everything built in code
-
-<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/2e6980db-296b-4972-b2d4-9f5265b6e74a/Usage-by-agent.png" />
+> Think **Lovable + n8n + LangGraph**, running on Cloudflare with a single deploy command.  
+> Full-stack AI, production-ready.
 
 ---
 
-## Creating a new Deco project
+## ✨ Why DecoCMS?
 
-A Deco project extends a standard Cloudflare Worker with our building blocks and
-defaults for MCP servers.\
-It runs a type-safe API out of the box and can also serve views — front-end apps
-deployed alongside the server.
+AI teams are stuck between low-code prototypes and enterprise production chaos.  
+Backends live in n8n or LangGraph. Frontends in Lovable or React.  
+Deployments are separate. Auth is inconsistent. Costs spiral. Debugging is guesswork.
 
-Currently, views can be any Vite app that outputs a static build. Soon, they’ll
-support components declared as tools, callable by app logic or LLMs.\
-Views can call server-side tools via typed RPC.
+**DecoCMS fixes that:**
 
-### Requirements
+- 🧠 **MCP-native** — Compose Model Context Protocol servers with built-in policy, auth, and observability.
+- ⚙️ **Full-stack in TypeScript** — Agents, workflows, and UIs share the same repo and types.
+- 🌍 **Deploy anywhere** — Cloudflare Workers, AWS, or local Bun/Deno runtimes.
+- 🔐 **Governance built-in** — RBAC, audit trails, and spend caps from day one.
+- 🔭 **Unified observability** — Trace UI clicks → agent calls → model responses.
+- 🧩 **Open & modular** — Install integrations, MCP tools, or full-stack modules from the Deco marketplace.
 
-- Your preferred JavaScript runtime:
-  - Recommended: [Bun](https://bun.sh)
-  - Supported: [Node.js](https://nodejs.org), [Deno](https://deno.land)
+---
 
-### Quick Start
+## 🧭 Architecture at a Glance
 
-1. Create your project
+- MCP Mesh (kernel): 
+  - Compose and secure MCPs across your org; 
+  - Connect and proxy external MCPs with secure tokens; 
+  - Expose governed Virtual MCPs ("AI Apps") to any MCP client;
+  - Enforce auth/RBAC/audit/FinOps; 
+  - Get full observability.
+- AI App Framework (Virtual MCPs in the Mesh): 
+  - Build AI‑native web software (admin, workflows, custom views) that calls Tools; 
+  - Fullstack, From database to UI with React 19 + Tailwind v4;
+  - Generative Admin interface: _decopilot_ helps you write the PRD and implement.
 
-```
-npm create deco
-```
+---
 
-or
+## 🕸️ The MCP Mesh
 
-```
-bun create deco
-```
+The **MCP Mesh** is the backbone of Deco — a distributed runtime that manages context, connections, and observability for every agent in your system.
 
-> This will prompt you to log in or to create an account on
-> [decocms.com](https://decocms.com).
+> Declare and compose context — aggregate connections, authorize access, and compose tools into governed, reusable capabilities.
 
-2. Enter the project directory and start the dev server
+**Core capabilities**
 
-```
-cd <my-project-directory>
-npm install
-npm run dev               # → http://localhost:8787 (hot reload)
-```
+| Layer | Description |
+|-------|--------------|
+| 🧩 **MeshContext** | Unified runtime interface providing auth, storage, observability, and policy control. |
+| ⚙️ **defineTool()** | Declarative API for typed, auditable, observable MCP tools. |
+| 🧱 **AccessControl** | Fine-grained RBAC via Better Auth — OAuth 2.1 + API keys per workspace/project. |
+| 📊 **OpenTelemetry** | Full tracing and metrics for tools, workflows, and UI interactions. |
+| 💾 **Storage Adapters** | Kysely ORM → SQLite / Postgres, easily swapped. |
+| ☁️ **Proxy Layer** | Secure bridge to remote MCP servers with token vault + OAuth. |
+| 🧰 **Virtual MCPs** | Compose and expose governed toolsets as new MCP servers ("AI Apps"). |
 
-> Need pre‑built MCP integrations? Explore
-> [deco-cx/apps](https://github.com/deco-cx/apps).
-
-## Project Layout
-
-```
-my-project/
-├── server/         # MCP tools & workflows (Cloudflare Workers)
-│   ├── main.ts
-│   ├── deco.gen.ts  # Typed bindings (auto-generated)
-│   └── wrangler.toml
-├── view/           # React + Tailwind UI (optional)
-│   └── src/
-├── package.json    # Root workspace scripts
-└── README.md
-```
-
-> Skip `view/` if you don’t need a frontend.
-
-## CLI Essentials
-
-| Command         | Purpose                                  |
-| --------------- | ---------------------------------------- |
-| `deco dev`      | Run server & UI with hot reload          |
-| `deco deploy`   | Deploy to Cloudflare Workers             |
-| `deco gen`      | Generate types for external integrations |
-| `deco gen:self` | Generate types for your own tools        |
-
-> For full command list: `deco --help` or see the
-> [CLI README](packages/cli/README.md)
-
-## Building Blocks
-
-A Deco project is built using **tools** and **workflows** — the core primitives
-for connecting integrations, APIs, models, and business logic.
-
-### Tools
-
-Atomic functions that call external APIs, databases, or AI models. All templates
-include the necessary imports from the Deco Workers runtime.
+_On the hosted platform, usage is metered by MCP calls._
 
 ```ts
-import { createTool, Env, z } from "deco/mod.ts";
+import { z } from "zod";
+import { defineTool } from "~/core/define-tool";
 
-const createMyTool = (env: Env) =>
-  createTool({
-    id: "MY_TOOL",
-    description: "Describe what it does",
-    inputSchema: z.object({ query: z.string() }),
-    outputSchema: z.object({ answer: z.string() }),
-    execute: async ({ context }) => {
-      const res = await env.OPENAI.CHAT_COMPLETIONS({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: context.query }],
-      });
-      return { answer: res.choices[0].message.content };
-    },
-  });
+export const CONNECTION_CREATE = defineTool({
+  name: "CONNECTION_CREATE",
+  description: "Create a new MCP connection",
+  inputSchema: z.object({
+    name: z.string(),
+    connection: z.object({
+      type: z.enum(["HTTP", "SSE", "WebSocket"]),
+      url: z.string().url(),
+      token: z.string().optional(),
+    }),
+  }),
+  outputSchema: z.object({
+    id: z.string(),
+    scope: z.enum(["workspace", "project"]),
+  }),
+  handler: async (input, ctx) => {
+    await ctx.access.check();
+    const conn = await ctx.storage.connections.create({
+      projectId: ctx.project?.id ?? null,
+      ...input,
+      createdById: ctx.auth.user!.id,
+    });
+    return { id: conn.id, scope: conn.projectId ? "project" : "workspace" };
+  },
+});
+````
+
+✅ **Type-safe**<br/>
+✅ **Audited**<br/>
+✅ **Observable**<br/>
+✅ **Callable via MCP**<br/>
+
+---
+
+## 🧱 Core Architecture
+*(Mesh)*
+
+```
+apps/mesh/
+├── api/               # Hono HTTP + MCP proxy
+├── core/              # MeshContext, AccessControl, defineTool
+├── tools/             # Built-in MCP management tools
+├── storage/           # Kysely DB adapters
+├── auth/              # Better Auth (OAuth + API keys)
+├── observability/     # OpenTelemetry tracing & metrics
+└── encryption/        # Token vault & credential management
 ```
 
-> Tools can be used independently or within workflows. **Golden rule:** one tool
-> call per step — keep logic in the workflow.
+**Built for scale** — runs thousands of concurrent MCP connections with predictable cost and zero vendor lock-in.
 
 ---
 
-### Workflows
+## ⚙️ Developer Workflow
 
-Orchestrate tools using **Mastra** operators like `.then`, `.parallel`,
-`.branch`, and `.dountil`.
-
-> Tip: Add [Mastra docs](https://github.com/deco-cx/mastra) to your AI code
-> assistant for autocomplete and examples.
-
-```ts
-import { createStepFromTool, createWorkflow } from "deco/mod.ts";
-
-return createWorkflow({
-  id: "HELLO_WORLD",
-  inputSchema: z.object({ name: z.string() }),
-  outputSchema: z.object({ greeting: z.string() }),
-})
-  .then(createStepFromTool(createMyTool(env)))
-  .map(({ inputData }) => ({ greeting: `Hello, ${inputData.answer}!` }))
-  .commit();
-```
-
----
-
-### Views
-
-Build **React + Tailwind** frontends served by the same Cloudflare Worker.
-
-- Routing with [TanStack Router](https://tanstack.com/router)
-- Typed RPC via `@deco/workers-runtime/client`
-- Preconfigured with `shadcn/ui` and `lucide-react`
-
----
-
-## Development Flow
-
-1. Add an integration via the [decocms.com dashboard](https://decocms.com)
-   _(improved UX coming soon)_
-2. Run `npm run gen` → updates `deco.gen.ts` with typed clients
-3. Write tools in `server/main.ts`
-4. Compose workflows using `.map`, `.branch`, `.parallel`, etc.
-5. _(Optional)_ Run `npm run gen:self` → typed RPC clients for your tools
-6. Build views in `/view` and call workflows via the typed client
-7. Run locally
+1. **Create your project**
 
    ```bash
-   npm run dev   # → http://localhost:8787
+   npm create deco
+   cd my-app
+   npm run dev
    ```
 
-8. Deploy to Cloudflare
+   → runs locally at [http://localhost:8787](http://localhost:8787)
+
+2. **Build your stack**
+
+   * Define tools and workflows in `/server`
+   * Add React + Tailwind UIs in `/view`
+   * Generate typed RPC bindings with `deco gen`
+
+3. **Deploy anywhere**
 
    ```bash
-   npm run deploy
+   deco deploy
    ```
 
----
-
-## How to Contribute (WIP)
-
-We welcome contributions! Check out [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
-guidelines and tips.
+   → edge-deployed via Cloudflare Workers or self-host with Bun/Deno.
 
 ---
 
-Made with ❤️ by the Deco community — helping teams build AI-native systems that
-scale.
+## 🧩 Feature Highlights
+
+* 🧠 **Model Context Protocol (MCP)** — Connect AI models to data/tools through governed context.
+* 🪄 **Durable Workflows** — Orchestrate long-running tasks with access to any MCP.
+* 🪶 **Unified TypeScript Stack** — One runtime for backend + frontend with typed RPC.
+* 🔒 **Governance & FinOps** — Auth, RBAC, audit, spend caps, and policy enforcement.
+* 🔭 **Observability by Design** — Logs, traces, and cost per step; debug entire flows visually.
+* ⚡ **Edge-native Deployments** — Ultra-low-latency global infra via Cloudflare.
+* 🧰 **Deco MCP Store** — Reuse full-stack modules: agents + workflows + UIs.
+* 🧬 **Extensible Runtime** — Add your own adapters, schemas, and MCP connectors.
+
+---
+
+## 🧱 AI App Framework
+
+Build AI‑native web software on top of the Mesh:
+
+- React 19 + Tailwind v4 + shadcn components; design‑system powered Views.
+- callTool() to invoke governed Mesh tools with types and policies applied.
+- Admin, dashboards, and workflow UIs that run anywhere (edge/self‑host).
+
+## 🧩 Comparison
+
+### vs Mastra
+
+|               | **Mastra**                                | **DecoCMS**                                                       |
+| ------------- | ----------------------------------------- | ----------------------------------------------------------------- |
+| Category      | TypeScript agent/workflow framework       | Full-stack MCP runtime + admin for AI apps                        |
+| Focus         | Build agent primitives, RAG, workflows    | Ship governed agents, workflows, and UIs with RBAC, audit, FinOps |
+| Protocol      | Model/provider-agnostic (LLMs, tools)     | MCP‑native runtime + proxy + policy                               |
+| UI            | Code-first (framework)                    | React/Tailwind admin shell, marketplace, settings                 |
+| Observability | Tracing/evals at framework level          | End‑to‑end traces UI → tools → models + spend analytics           |
+| Deployment    | Node.js / serverless                      | Edge‑native (Cloudflare) + self‑host (Bun/Deno/AWS/GCP)           |
 
 
+### vs Metorial
+
+|               | **Metorial**       | **DecoCMS**                     |
+| ------------- | ------------------ | ------------------------------- |
+| Focus         | Connect AI to APIs | Build full-stack AI apps        |
+| Language      | Go + TS            | 100 % TypeScript                |
+| Infra         | Docker             | Edge / Cloudflare / Self-host   |
+| Protocol      | MCP clients        | MCP-native runtime + admin      |
+| Auth          | API keys           | OAuth 2.1 + RBAC + spend caps   |
+| Observability | Dashboard          | Full OpenTelemetry              |
+| UI            | Separate           | Shared React/Tailwind workspace |
+| Goal          | Integrate          | Deploy governed AI apps fast    |
+
+### vs Refine
+
+|               | **Refine**                    | **DecoCMS**                               |
+| ------------- | ----------------------------- | ----------------------------------------- |
+| Category      | React meta-framework for CRUD | Full-stack framework for AI apps          |
+| Focus         | Admin panels & dashboards     | Agents + Workflows + UIs                  |
+| Architecture  | Headless UI                   | Unified backend + frontend runtime        |
+| Protocol      | HTTP / REST                   | Model Context Protocol (MCP)              |
+| Stack         | React + Data Providers        | TypeScript runtime + MCP Mesh             |
+| Auth          | Basic auth / ACL              | Better Auth (OAuth 2.1 + API keys + RBAC) |
+| Observability | Minimal                       | OpenTelemetry tracing + cost analytics    |
+| Deployment    | Any React env                 | Cloudflare edge + self-host               |
+| Use case      | CRUD apps / admin dashboards  | Agentic systems / governed AI apps        |
+
+> 🧭 If you’re building internal dashboards with CRUD, use Refine.
+> If you’re building production-scale AI apps with agents, workflows, custom UIs, and governance — use DecoCMS.
+
+---
+
+## 🧠 Tech Stack
+
+| Layer         | Tech                                      |
+| ------------- | ----------------------------------------- |
+| Runtime       | Cloudflare Workers / Bun / Node / Deno    |
+| Language      | TypeScript (React 19 + Tailwind v4 + Zod) |
+| Framework     | Hono + Mastra + Vite                      |
+| Database      | Kysely → SQLite / Postgres                |
+| Auth          | Better Auth (OAuth 2.1 + API keys)        |
+| Observability | OpenTelemetry + Datadog / Cloudflare Logs |
+| Protocol      | Model Context Protocol (MCP)              |
+
+---
+
+## 🪪 License & Partners
+
+DecoCMS ships with a Sustainable Use License (SUL). Read the full terms in [LICENSE.md](./LICENSE.md).
+
+### For Partners (Service Providers, Software Houses, SIs, Digital Agencies)
+
+- Free to self‑host and use to deliver client projects, as long as each deployment is for the client’s internal use (see SUL §3.3).
+- Build, implement, and charge for your services — go make money, no questions asked.
+- Keep your workspace private — bring your own models and data.
+
+**Do you implement Agentic Software?** We have customers for you. [Email us](mailto:builders@decocms.com).
+
+### For Enterprises (Mission‑Critical or Revenue‑Generating)
+
+- These cases require a commercial self‑hosted Enterprise license per the SUL.
+- We help you deploy at scale in your cloud (AWS or GCP), with governance, observability, and performance tuned for large workloads.
+- Get production support and reliability.
+
+Questions? Contact us at [contact@decocms.com](mailto:contact@decocms.com) or visit [decocms.com](https://decocms.com).
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from vibecoders, agentic engineers, and builders of the next internet.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup, coding standards, and roadmap.
+
+> 🧭 Upcoming milestones
+>
+> * Multi-tenant admin dashboard
+> * MCP store
+> * Edge debugger / live tracing
+> * Native view components as tools
+
+---
+
+<div align="center">
+  <sub>Made with ❤️ by the <a href="https://decocms.com">deco</a> community.<br/>
+  Building the open-source operating system for AI-native apps — secure, scalable, and governed by context.</sub>
+</div>

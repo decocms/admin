@@ -68,7 +68,7 @@ describe("MCP Integration", () => {
 
           return response;
         },
-      ) as typeof global.fetch;
+      ) as unknown as typeof global.fetch;
     });
 
     afterEach(async () => {

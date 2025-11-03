@@ -74,9 +74,11 @@ export const providers: Record<string, Provider> = {
     } satisfies Partial<Record<string, ModelsOf<AnthropicProvider>>>,
     tokenLimit: {
       default: 1_000_000,
+      "claude-sonnet-4.5": 1_000_000,
       "claude-3-5-sonnet-latest": 200_000,
       "claude-sonnet-4": 200_000,
       "claude-haiku-4": 200_000,
+      "claude-3-7-sonnet-latest": 200_000,
     } satisfies Partial<
       Record<ModelsOf<AnthropicProvider> | "default", number>
     >,

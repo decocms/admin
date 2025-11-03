@@ -69,16 +69,16 @@ export const providers: Record<string, Provider> = {
     mapOpenRouterModel: {
       "claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
       "claude-haiku-4.5": "claude-haiku-4-5-20251001",
-      "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
       "claude-sonnet-4": "claude-sonnet-4-20250514",
+      "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
     } satisfies Partial<Record<string, ModelsOf<AnthropicProvider>>>,
     tokenLimit: {
       default: 1_000_000,
       "claude-sonnet-4.5": 1_000_000,
-      "claude-3-5-sonnet-latest": 200_000,
+      "claude-haiku-4.5": 200_000,
       "claude-sonnet-4": 200_000,
-      "claude-haiku-4": 200_000,
-      "claude-3-7-sonnet-latest": 200_000,
+      "claude-3.7-sonnet:thinking": 200_000,
+      "claude-3-5-sonnet-latest": 200_000,
     } satisfies Partial<
       Record<ModelsOf<AnthropicProvider> | "default", number>
     >,

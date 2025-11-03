@@ -26,7 +26,7 @@ export interface ToolBinder<
   name: TName;
   description: string;
   inputSchema: TInput;
-  outputSchema?: TOutput;
+  outputSchema: TOutput;
 }
 /**
  * Tool definition structure

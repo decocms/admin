@@ -603,7 +603,7 @@ export function DependencyStep({
   }
 
   return (
-    <GridContainer className="max-h-135 min-h-135">
+    <GridContainer className="lg:max-h-[60vh] max-h-135 min-h-135">
       {/* Left side: App icons and info */}
       <GridLeftColumn>{appInfoView}</GridLeftColumn>
 

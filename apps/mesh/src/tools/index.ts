@@ -1,11 +1,11 @@
 /**
  * Tool Registry
- * 
+ *
  * Central export for all MCP Mesh management tools
  */
 
-import * as OrganizationTools from './organization';
-import * as ConnectionTools from './connection';
+import * as OrganizationTools from "./organization";
+import * as ConnectionTools from "./connection";
 
 // Export all tools
 export { OrganizationTools, ConnectionTools };
@@ -39,7 +39,8 @@ export const TOOL_MAP = {
   ORGANIZATION_MEMBER_ADD: OrganizationTools.ORGANIZATION_MEMBER_ADD,
   ORGANIZATION_MEMBER_REMOVE: OrganizationTools.ORGANIZATION_MEMBER_REMOVE,
   ORGANIZATION_MEMBER_LIST: OrganizationTools.ORGANIZATION_MEMBER_LIST,
-  ORGANIZATION_MEMBER_UPDATE_ROLE: OrganizationTools.ORGANIZATION_MEMBER_UPDATE_ROLE,
+  ORGANIZATION_MEMBER_UPDATE_ROLE:
+    OrganizationTools.ORGANIZATION_MEMBER_UPDATE_ROLE,
 
   CONNECTION_CREATE: ConnectionTools.CONNECTION_CREATE,
   CONNECTION_LIST: ConnectionTools.CONNECTION_LIST,
@@ -52,4 +53,3 @@ export const TOOL_MAP = {
 export function getTool(name: string) {
   return TOOL_MAP[name as keyof typeof TOOL_MAP];
 }
-

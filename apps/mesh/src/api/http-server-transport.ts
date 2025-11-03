@@ -1,6 +1,6 @@
 /**
  * HTTP Server Transport for MCP
- * 
+ *
  * Wraps StreamableHTTPServerTransport to work with standard fetch Request/Response
  * Uses fetch-to-node to convert between fetch and Node.js formats
  */
@@ -13,11 +13,12 @@ import { toFetchResponse, toReqRes } from "fetch-to-node";
 
 export class HttpServerTransport extends StreamableHTTPServerTransport {
   constructor(
-    options?:
-      & Omit<StreamableHTTPServerTransportOptions, "sessionIdGenerator">
-      & {
-        sessionIdGenerator?: () => string;
-      },
+    options?: Omit<
+      StreamableHTTPServerTransportOptions,
+      "sessionIdGenerator"
+    > & {
+      sessionIdGenerator?: () => string;
+    },
   ) {
     super({
       ...options,
@@ -31,4 +32,3 @@ export class HttpServerTransport extends StreamableHTTPServerTransport {
     return toFetchResponse(res);
   }
 }
-

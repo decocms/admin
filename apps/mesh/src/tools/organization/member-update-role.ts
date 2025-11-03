@@ -1,15 +1,15 @@
 /**
  * ORGANIZATION_MEMBER_UPDATE_ROLE Tool
- * 
+ *
  * Update a member's role in an organization
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
-  name: 'ORGANIZATION_MEMBER_UPDATE_ROLE',
+  name: "ORGANIZATION_MEMBER_UPDATE_ROLE",
   description: "Update a member's role in an organization",
 
   inputSchema: z.object({
@@ -28,7 +28,9 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
     // Use active organization if not specified
     const organizationId = input.organizationId || ctx.organization?.id;
     if (!organizationId) {
-      throw new Error('Organization ID required (no active organization in context)');
+      throw new Error(
+        "Organization ID required (no active organization in context)",
+      );
     }
 
     // Update member role via Better Auth
@@ -41,10 +43,9 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
     });
 
     if (!result) {
-      throw new Error('Failed to update member role');
+      throw new Error("Failed to update member role");
     }
 
     return result;
   },
 });
-

@@ -1,9 +1,9 @@
 /**
  * Database Types for MCP Mesh
- * 
+ *
  * These TypeScript interfaces define the database schema using Kysely's type-only approach.
  * The dialect (SQLite, PostgreSQL, MySQL) is determined at runtime from DATABASE_URL.
- * 
+ *
  * Key Principles:
  * - Database = Organization boundary (all users are org members)
  * - Organizations managed by Better Auth organization plugin
@@ -11,7 +11,7 @@
  * - Access control via Better Auth permissions and organization roles
  */
 
-import type { ColumnType } from 'kysely';
+import type { ColumnType } from "kysely";
 
 // ============================================================================
 // Type Utilities
@@ -36,7 +36,7 @@ export type JsonObject<T> = ColumnType<T, string, string>;
 /**
  * Permission format used by Better Auth
  * Format: { [resource]: [actions...] }
- * 
+ *
  * Examples:
  * - Organization-level: { "self": ["PROJECT_CREATE", "PROJECT_LIST"] }
  * - Connection-specific: { "conn_<UUID>": ["SEND_MESSAGE", "LIST_THREADS"] }
@@ -107,7 +107,7 @@ export interface MCPConnectionTable {
   appId: string | null;
 
   // Connection details
-  connectionType: 'HTTP' | 'SSE' | 'Websocket';
+  connectionType: "HTTP" | "SSE" | "Websocket";
   connectionUrl: string;
   connectionToken: string | null; // Encrypted
   connectionHeaders: JsonObject<Record<string, string>> | null;
@@ -120,7 +120,7 @@ export interface MCPConnectionTable {
   tools: JsonArray<ToolDefinition[]> | null; // Discovered tools from MCP
   bindings: JsonArray<string[]> | null; // Detected bindings (CHAT, EMAIL, etc.)
 
-  status: 'active' | 'inactive' | 'error';
+  status: "active" | "inactive" | "error";
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
@@ -138,7 +138,7 @@ export interface MCPConnection {
   appName: string | null;
   appId: string | null;
 
-  connectionType: 'HTTP' | 'SSE' | 'Websocket';
+  connectionType: "HTTP" | "SSE" | "Websocket";
   connectionUrl: string;
   connectionToken: string | null;
   connectionHeaders: Record<string, string> | null;
@@ -149,7 +149,7 @@ export interface MCPConnection {
   tools: ToolDefinition[] | null;
   bindings: string[] | null;
 
-  status: 'active' | 'inactive' | 'error';
+  status: "active" | "inactive" | "error";
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -164,7 +164,7 @@ export interface OAuthConfig {
   clientId: string;
   clientSecret?: string; // Encrypted
   scopes: string[];
-  grantType: 'authorization_code' | 'client_credentials';
+  grantType: "authorization_code" | "client_credentials";
 }
 
 /**
@@ -176,7 +176,6 @@ export interface ToolDefinition {
   inputSchema: object;
   outputSchema?: object;
 }
-
 
 /**
  * API Key table definition
@@ -371,7 +370,7 @@ export interface DownstreamToken {
 /**
  * Complete database schema
  * All tables exist within the organization scope (database boundary)
- * 
+ *
  * NOTE: This uses *Table types with ColumnType for proper Kysely type mapping
  * NOTE: Organizations, teams, members, and roles are managed by Better Auth organization plugin
  */
@@ -388,4 +387,3 @@ export interface Database {
   oauth_refresh_tokens: OAuthRefreshTokenTable;
   downstream_tokens: DownstreamTokenTable;
 }
-

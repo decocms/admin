@@ -1,13 +1,13 @@
 /**
  * Management Tools MCP Server
- * 
+ *
  * Exposes MCP Mesh management tools via MCP protocol at /mcp endpoint
  * Tools: PROJECT_CREATE, PROJECT_LIST, CONNECTION_CREATE, etc.
  */
-import { Hono } from 'hono';
-import type { MeshContext } from '../../core/mesh-context';
-import { ALL_TOOLS } from '../../tools';
-import { mcpServer, type ToolDefinition } from '../utils/mcp';
+import { Hono } from "hono";
+import type { MeshContext } from "../../core/mesh-context";
+import { ALL_TOOLS } from "../../tools";
+import { mcpServer, type ToolDefinition } from "../utils/mcp";
 
 // Define Hono variables type
 type Variables = {
@@ -18,12 +18,12 @@ const app = new Hono<{ Variables: Variables }>();
 
 /**
  * MCP Server endpoint for management tools
- * 
+ *
  * Route: POST /mcp
  * Exposes all PROJECT_* and CONNECTION_* tools via MCP protocol
  */
-app.all('/', async (c) => {
-  const ctx = c.get('meshContext');
+app.all("/", async (c) => {
+  const ctx = c.get("meshContext");
 
   // Convert ALL_TOOLS to ToolDefinition format
   const tools: ToolDefinition[] = ALL_TOOLS.map((tool) => ({
@@ -40,8 +40,8 @@ app.all('/', async (c) => {
 
   // Create and use MCP server with builder pattern
   const server = mcpServer({
-    name: 'mcp-mesh-management',
-    version: '1.0.0',
+    name: "mcp-mesh-management",
+    version: "1.0.0",
   })
     .withTools(tools)
     .build();
@@ -51,4 +51,3 @@ app.all('/', async (c) => {
 });
 
 export default app;
-

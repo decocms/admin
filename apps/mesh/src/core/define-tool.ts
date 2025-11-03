@@ -1,6 +1,6 @@
 /**
  * Tool Definition Pattern
- * 
+ *
  * Provides declarative tool creation with automatic:
  * - Type safety via Zod schemas
  * - Input/output validation
@@ -10,9 +10,9 @@
  * - Distributed tracing
  */
 
-import { SpanStatusCode } from '@opentelemetry/api';
-import { z } from 'zod/v3';
-import type { MeshContext } from './mesh-context';
+import { SpanStatusCode } from "@opentelemetry/api";
+import { z } from "zod/v3";
+import type { MeshContext } from "./mesh-context";
 
 // ============================================================================
 // Tool Definition Types
@@ -21,12 +21,18 @@ import type { MeshContext } from './mesh-context';
 /**
  * Tool definition structure
  */
-export interface ToolDefinition<TInput extends z.ZodType, TOutput extends z.ZodType> {
+export interface ToolDefinition<
+  TInput extends z.ZodType,
+  TOutput extends z.ZodType,
+> {
   name: string;
   description: string;
   inputSchema: TInput;
   outputSchema?: TOutput;
-  handler: (input: z.infer<TInput>, ctx: MeshContext) => Promise<z.infer<TOutput>>;
+  handler: (
+    input: z.infer<TInput>,
+    ctx: MeshContext,
+  ) => Promise<z.infer<TOutput>>;
 }
 
 /**
@@ -35,7 +41,10 @@ export interface ToolDefinition<TInput extends z.ZodType, TOutput extends z.ZodT
  */
 export interface Tool<TInput extends z.ZodType, TOutput extends z.ZodType>
   extends ToolDefinition<TInput, TOutput> {
-  execute: (input: z.infer<TInput>, ctx: MeshContext) => Promise<z.infer<TOutput>>;
+  execute: (
+    input: z.infer<TInput>,
+    ctx: MeshContext,
+  ) => Promise<z.infer<TOutput>>;
 }
 
 // ============================================================================
@@ -44,7 +53,7 @@ export interface Tool<TInput extends z.ZodType, TOutput extends z.ZodType>
 
 /**
  * Define a tool with automatic validation, authorization, and logging
- * 
+ *
  * @example
  * ```typescript
  * export const MY_TOOL = defineTool({
@@ -64,7 +73,7 @@ export interface Tool<TInput extends z.ZodType, TOutput extends z.ZodType>
  * ```
  */
 export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
-  definition: ToolDefinition<TInput, TOutput>
+  definition: ToolDefinition<TInput, TOutput>,
 ): Tool<TInput, TOutput> {
   return {
     ...definition,
@@ -78,7 +87,10 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
      * - Audit logging
      * - Error handling
      */
-    execute: async (input: z.infer<TInput>, ctx: MeshContext): Promise<z.infer<TOutput>> => {
+    execute: async (
+      input: z.infer<TInput>,
+      ctx: MeshContext,
+    ): Promise<z.infer<TOutput>> => {
       const startTime = Date.now();
 
       // Start OpenTelemetry span
@@ -86,10 +98,11 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
         `tool.${definition.name}`,
         {
           attributes: {
-            'tool.name': definition.name,
-            'organization.id': ctx.organization?.id ?? 'system',
-            'user.id': ctx.auth.user?.id ?? ctx.auth.apiKey?.userId ?? 'anonymous',
-          }
+            "tool.name": definition.name,
+            "organization.id": ctx.organization?.id ?? "system",
+            "user.id":
+              ctx.auth.user?.id ?? ctx.auth.apiKey?.userId ?? "anonymous",
+          },
         },
         async (span) => {
           try {
@@ -104,37 +117,42 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
             const duration = Date.now() - startTime;
 
             // Record success metrics
-            const histogram = ctx.meter.createHistogram('tool.execution.duration', {
-              description: 'Duration of tool executions in milliseconds',
-              unit: 'ms',
-            });
+            const histogram = ctx.meter.createHistogram(
+              "tool.execution.duration",
+              {
+                description: "Duration of tool executions in milliseconds",
+                unit: "ms",
+              },
+            );
             histogram.record(duration, {
-              'tool.name': definition.name,
-              'organization.id': ctx.organization?.id ?? 'system',
-              'status': 'success',
+              "tool.name": definition.name,
+              "organization.id": ctx.organization?.id ?? "system",
+              status: "success",
             });
 
-            const counter = ctx.meter.createCounter('tool.execution.count', {
-              description: 'Number of tool executions',
+            const counter = ctx.meter.createCounter("tool.execution.count", {
+              description: "Number of tool executions",
             });
             counter.add(1, {
-              'tool.name': definition.name,
-              'status': 'success',
+              "tool.name": definition.name,
+              status: "success",
             });
 
             // Audit log (fire and forget - don't block on logging)
             if (ctx.storage.auditLogs?.log) {
-              ctx.storage.auditLogs.log({
-                organizationId: ctx.organization?.id,
-                userId: ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
-                toolName: definition.name,
-                allowed: ctx.access?.granted ? ctx.access.granted() : true,
-                duration,
-                timestamp: new Date(),
-                requestMetadata: { input },
-              }).catch((err: Error) => {
-                console.error('Audit log failed:', err);
-              });
+              ctx.storage.auditLogs
+                .log({
+                  organizationId: ctx.organization?.id,
+                  userId: ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
+                  toolName: definition.name,
+                  allowed: ctx.access?.granted ? ctx.access.granted() : true,
+                  duration,
+                  timestamp: new Date(),
+                  requestMetadata: { input },
+                })
+                .catch((err: Error) => {
+                  console.error("Audit log failed:", err);
+                });
             }
 
             // Mark span as successful
@@ -143,12 +161,15 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
             return output;
           } catch (error) {
             // Record error metrics
-            const errorCounter = ctx.meter.createCounter('tool.execution.errors', {
-              description: 'Number of tool execution errors',
-            });
+            const errorCounter = ctx.meter.createCounter(
+              "tool.execution.errors",
+              {
+                description: "Number of tool execution errors",
+              },
+            );
             errorCounter.add(1, {
-              'tool.name': definition.name,
-              'error.type': (error as Error).constructor.name,
+              "tool.name": definition.name,
+              "error.type": (error as Error).constructor.name,
             });
 
             // Mark span as error
@@ -162,9 +183,8 @@ export function defineTool<TInput extends z.ZodType, TOutput extends z.ZodType>(
           } finally {
             span.end();
           }
-        }
+        },
       );
     },
   };
 }
-

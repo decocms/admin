@@ -1,14 +1,14 @@
 /**
  * MCP Server Builder
- * 
+ *
  * A builder pattern wrapper for creating MCP servers with middleware support.
  * Inspired by the patterns in @deco/api
- * 
+ *
  * ## Architecture
- * 
+ *
  * Single server approach - middleware wraps tool handlers directly.
  * No two-server delegation needed (avoids transport layer issues).
- * 
+ *
  * ### How it works:
  * 1. Tools are registered with the MCP server
  * 2. Each tool handler is wrapped with the middleware pipeline
@@ -17,45 +17,45 @@
  *    - Tool handler executes via next()
  *    - Middleware continues (post-processing)
  * 4. list_tools is manually implemented with Zod -> JSON Schema conversion
- * 
+ *
  * ### Why single server?
- * 
+ *
  * Previous approach used two MCP servers:
  * - Server A: registered tools
  * - Server B: middleware that delegates to Server A via transport
- * 
+ *
  * This caused issues because:
  * - Transport layer isn't designed for server-to-server communication
  * - Extra overhead and complexity
  * - Harder to debug
- * 
+ *
  * New approach:
  * - Single MCP server
  * - Middleware wraps handlers directly (no transport needed)
  * - Cleaner, more efficient, easier to understand
- * 
+ *
  * ## Usage
- * 
+ *
  * ```ts
  * const server = mcpServer({ name: 'my-server', version: '1.0.0' })
  *   .withTool(myTool)
  *   .withTool(anotherTool)
  *   .callToolMiddleware(authMiddleware);
- * 
+ *
  * // Use in Hono routes
  * app.post('/mcp', async (c) => server.fetch(c.req.raw));
  * ```
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ServerCapabilities } from "@modelcontextprotocol/sdk/types.js";
 import {
   type CallToolRequest,
-  type CallToolResult
-} from '@modelcontextprotocol/sdk/types.js';
-import z from 'zod/v3';
-import { HttpServerTransport } from '../http-server-transport';
-import { compose } from './compose';
+  type CallToolResult,
+} from "@modelcontextprotocol/sdk/types.js";
+import z from "zod/v3";
+import { HttpServerTransport } from "../http-server-transport";
+import { compose } from "./compose";
 
 // ============================================================================
 // Types
@@ -78,12 +78,12 @@ export interface ToolDefinition {
 /**
  * Middleware for intercepting call tool requests
  * Wraps tool execution, allowing pre and post processing
- * 
+ *
  * The middleware can:
  * 1. Inspect/modify the request before calling next()
  * 2. Execute the tool by calling next()
  * 3. Inspect/modify the result after next() returns
- * 
+ *
  * @example
  * ```ts
  * const loggingMiddleware: CallToolMiddleware = async (request, next) => {
@@ -96,7 +96,7 @@ export interface ToolDefinition {
  */
 export type CallToolMiddleware = (
   request: CallToolRequest,
-  next: () => Promise<CallToolResult>
+  next: () => Promise<CallToolResult>,
 ) => Promise<CallToolResult>;
 
 /**
@@ -157,15 +157,16 @@ class McpServerBuilder {
    */
   build() {
     // Compose middlewares once
-    const callToolPipeline = this.callToolMiddlewares.length > 0
-      ? compose(...this.callToolMiddlewares)
-      : null;
+    const callToolPipeline =
+      this.callToolMiddlewares.length > 0
+        ? compose(...this.callToolMiddlewares)
+        : null;
 
     const createServer = () => {
       // Create single MCP server
       const server = new McpServer(
         { name: this.config.name, version: this.config.version },
-        { capabilities: this.config.capabilities }
+        { capabilities: this.config.capabilities },
       );
 
       // Register all tools with middleware-wrapped handlers
@@ -175,19 +176,23 @@ class McpServerBuilder {
           try {
             const result = await tool.handler(args);
             return {
-              content: [{
-                type: 'text' as const,
-                text: JSON.stringify(result),
-              }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: JSON.stringify(result),
+                },
+              ],
               structuredContent: result,
             };
           } catch (error) {
             const err = error as Error;
             return {
-              content: [{
-                type: 'text' as const,
-                text: `Error: ${err.message}`,
-              }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Error: ${err.message}`,
+                },
+              ],
               isError: true,
             };
           }
@@ -196,28 +201,28 @@ class McpServerBuilder {
         // Wrap handler with middleware if present
         const wrappedHandler = callToolPipeline
           ? async (args: any) => {
-            // Create a fake request for middleware
-            const request: CallToolRequest = {
-              method: 'tools/call',
-              params: {
-                name: tool.name,
-                arguments: args,
-              },
-            };
+              // Create a fake request for middleware
+              const request: CallToolRequest = {
+                method: "tools/call",
+                params: {
+                  name: tool.name,
+                  arguments: args,
+                },
+              };
 
-            // Run through middleware pipeline
-            return await callToolPipeline(request, () => baseHandler(args));
-          }
+              // Run through middleware pipeline
+              return await callToolPipeline(request, () => baseHandler(args));
+            }
           : baseHandler;
 
         // Extract the raw shape from the input schema
         const inputSchema =
-          'shape' in tool.inputSchema
+          "shape" in tool.inputSchema
             ? (tool.inputSchema.shape as z.ZodRawShape)
             : z.object({}).shape;
 
         const outputSchema =
-          tool.outputSchema && 'shape' in tool.outputSchema
+          tool.outputSchema && "shape" in tool.outputSchema
             ? (tool.outputSchema.shape as z.ZodRawShape)
             : z.object({}).shape;
 
@@ -226,7 +231,7 @@ class McpServerBuilder {
           tool.name,
           {
             annotations: tool.annotations,
-            description: tool.description ?? '',
+            description: tool.description ?? "",
             inputSchema,
             outputSchema,
           },
@@ -257,7 +262,7 @@ class McpServerBuilder {
 
 /**
  * Create a new MCP server builder
- * 
+ *
  * @example
  * ```ts
  * const server = mcpServer({ name: 'my-server', version: '1.0.0' })
@@ -272,7 +277,7 @@ class McpServerBuilder {
  *     console.log('Calling tool:', req.params.name);
  *     return next();
  *   });
- * 
+ *
  * // Use with fetch
  * const response = await server.build().fetch(request);
  * ```
@@ -283,4 +288,3 @@ export function mcpServer(config: McpServerConfig): McpServerBuilder {
 
 // Re-export types for convenience
 export type { McpServerBuilder };
-

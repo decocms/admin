@@ -1,20 +1,21 @@
 /**
  * ORGANIZATION_UPDATE Tool
- * 
+ *
  * Update an existing organization
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_UPDATE = defineTool({
-  name: 'ORGANIZATION_UPDATE',
-  description: 'Update an existing organization',
+  name: "ORGANIZATION_UPDATE",
+  description: "Update an existing organization",
 
   inputSchema: z.object({
     id: z.string(),
-    slug: z.string()
+    slug: z
+      .string()
       .min(1)
       .max(50)
       .regex(/^[a-z0-9-]+$/)
@@ -43,7 +44,8 @@ export const ORGANIZATION_UPDATE = defineTool({
     const updateData: Record<string, unknown> = {};
     if (input.name) updateData.name = input.name;
     if (input.slug) updateData.slug = input.slug;
-    if (input.description) updateData.metadata = { description: input.description };
+    if (input.description)
+      updateData.metadata = { description: input.description };
 
     // Update organization via Better Auth
     const result = await ctx.authInstance.api.updateOrganization({
@@ -55,10 +57,9 @@ export const ORGANIZATION_UPDATE = defineTool({
     });
 
     if (!result) {
-      throw new Error('Failed to update organization');
+      throw new Error("Failed to update organization");
     }
 
     return result;
   },
 });
-

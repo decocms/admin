@@ -144,11 +144,11 @@ const contextToPrincipalExecutionContext = (
 
   const ctxLocator = locator
     ? {
-      org,
-      project,
-      value: locator,
-      branch,
-    }
+        org,
+        project,
+        value: locator,
+        branch,
+      }
     : undefined;
   const tokenQs = c.req.query("auth-token");
   return {
@@ -306,9 +306,9 @@ const createToolCallHandlerFor = <
   ) => Promise<Map<string, ToolLike>> | Map<string, ToolLike> =
     typeof toolsOrToolsFn === "function"
       ? async (c: Context) => {
-        const tools = await toolsOrToolsFn(c);
-        return new Map(tools.map((t) => [t.name, t]));
-      }
+          const tools = await toolsOrToolsFn(c);
+          return new Map(tools.map((t) => [t.name, t]));
+        }
       : () => new Map(toolsOrToolsFn.map((t) => [t.name, t]));
 
   return async (c: Context) => {
@@ -535,7 +535,10 @@ const createMcpServerProxyForAppName = (c: Context) => {
 
   return createMcpServerProxyForIntegration(c, fetchIntegration);
 };
-export const createMcpServerProxy = (c: Context, maybeIntegrationId?: string) => {
+export const createMcpServerProxy = (
+  c: Context,
+  maybeIntegrationId?: string,
+) => {
   const ctx = honoCtxToAppCtx(c);
 
   const integrationId = maybeIntegrationId ?? c.req.param("integrationId");

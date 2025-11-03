@@ -125,22 +125,22 @@ interface AuthContext {
 
 export const withMCPAuthorization =
   (ctx: AppContext, { integrationId }: AuthContext): CallToolMiddleware =>
-    async (req, next) => {
-      try {
-        await assertWorkspaceResourceAccess(
-          ctx,
-          { integrationId, resource: req.params.name },
-          "INTEGRATIONS_GET", // fallback to INTEGRATIONS_GET to keep compatibility with old MCP Integrations
-        );
-      } catch (error) {
-        console.error(
-          `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.locator?.value}`,
-        );
-        return {
-          isError: true,
-          content: [{ type: "text", text: serializeError(error) }],
-        };
-      }
+  async (req, next) => {
+    try {
+      await assertWorkspaceResourceAccess(
+        ctx,
+        { integrationId, resource: req.params.name },
+        "INTEGRATIONS_GET", // fallback to INTEGRATIONS_GET to keep compatibility with old MCP Integrations
+      );
+    } catch (error) {
+      console.error(
+        `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.locator?.value}`,
+      );
+      return {
+        isError: true,
+        content: [{ type: "text", text: serializeError(error) }],
+      };
+    }
 
-      return await next!();
-    };
+    return await next!();
+  };

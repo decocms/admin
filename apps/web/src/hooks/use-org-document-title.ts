@@ -10,7 +10,7 @@ interface RouteHandle {
 /**
  * Hook that automatically sets the document title for org-level pages
  * Format: "Org Name › Page Name"
- * 
+ *
  * Uses React Router's handle property to get the page title from route metadata
  */
 export function useOrgDocumentTitle() {
@@ -32,7 +32,7 @@ export function useOrgDocumentTitle() {
         return handle.title;
       }
     }
-    
+
     // Fallback: extract path from last match
     const lastMatch = matches[matches.length - 1];
     if (lastMatch?.pathname) {
@@ -40,7 +40,7 @@ export function useOrgDocumentTitle() {
       if (parts.length < 2) return "Projects";
       return parts.slice(1).join("/");
     }
-    
+
     return "Projects";
   }, [matches]);
 

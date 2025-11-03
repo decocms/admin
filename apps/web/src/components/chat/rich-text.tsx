@@ -208,7 +208,19 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
 
     const extensions: Extensions = useMemo(() => {
       const extensions: Extensions = [
-        StarterKit,
+        StarterKit.configure({
+          orderedList: false,
+          bulletList: false,
+          listItem: false,
+          code: false,
+          codeBlock: false,
+          blockquote: false,
+          bold: false,
+          italic: false,
+          strike: false,
+          horizontalRule: false,
+          paragraph: false,
+        }),
         Markdown.configure({
           html: true,
         }),

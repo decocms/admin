@@ -5,9 +5,6 @@ name = "deco-chat-api"
 main = "main.ts"
 compatibility_date = "2024-11-27"
 routes = [
-  { pattern = "api.decocms.com", custom_domain = true },
-  { pattern = "api.deco.chat", custom_domain = true },
-  { pattern = "*/*", zone_name = "deco.page" },
 ]
 
 [vars]

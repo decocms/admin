@@ -11,12 +11,33 @@ const tryParseUser = (user: unknown) => {
   }
   return user;
 };
-
+// http://localhost:3001/candy-testing/default/i:5b83e510-1eb8-4364-84d8-0af7069f4e36/mcp
 export const handleCodeExchange = async (c: Context<AppEnv>) => {
   try {
     const appCtx = honoCtxToAppCtx(c);
 
-    const { code } = await c.req.json();
+    // Support both JSON and form-encoded requests
+    const contentType = c.req.header("content-type");
+    let requestData: {
+      code?: string;
+      client_id?: string;
+      code_verifier?: string;
+    };
+
+    if (contentType?.includes("application/x-www-form-urlencoded")) {
+      const formData = await c.req.formData();
+      requestData = {
+        code: formData.get("code")?.toString(),
+      };
+    } else {
+      requestData = await c.req.json();
+    }
+
+    const { code } = requestData;
+
+    if (!code) {
+      throw new HTTPException(400, { message: "code is required" });
+    }
 
     const { data, error } = await appCtx.db
       .from("deco_chat_oauth_codes")
@@ -38,7 +59,11 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
 
     await appCtx.db.from("deco_chat_oauth_codes").delete().eq("code", code);
 
-    return c.json({ access_token: token });
+    // Return OAuth 2.1 compliant token response
+    return c.json({
+      access_token: token,
+      token_type: "Bearer",
+    });
   } catch {
     throw new HTTPException(500, { message: "Failed to exchange code" });
   }

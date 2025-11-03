@@ -10,6 +10,7 @@ export const OAuthSearchParamsSchema = z.object({
   redirect_uri: z.string(),
   state: z.string().optional(),
   workspace_hint: z.string().optional(),
+  app_name: z.string().optional(),
 });
 
 export type OAuthSearchParams = z.infer<typeof OAuthSearchParamsSchema>;
@@ -58,6 +59,8 @@ export function AppsAuthLayout({ children }: AppsAuthLayoutProps) {
       </DecoQueryClientProvider>
     );
   }
+
+  result.data.client_id = result.data.app_name ?? result.data.client_id;
 
   return (
     <DecoQueryClientProvider>

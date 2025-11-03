@@ -11,9 +11,16 @@
 
 import { getToolsByCategory } from "@/tools/registry";
 import { betterAuth, BetterAuthOptions } from "better-auth";
-import { admin, apiKey, mcp, openAPI, organization } from "better-auth/plugins";
+import {
+  admin as adminPlugin,
+  apiKey,
+  mcp,
+  openAPI,
+  organization,
+} from "better-auth/plugins";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
+import { createAccessControl } from "better-auth/plugins/access";
 
 /**
  * Load optional auth configuration from file
@@ -39,6 +46,18 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
 function getDatabaseUrl(): string {
   return process.env.DATABASE_URL || "./data/mesh.db";
 }
+
+const statement = {} as const;
+
+const ac = createAccessControl(statement);
+
+const user = ac.newRole({
+  self: ["*"],
+});
+
+const admin = ac.newRole({
+  self: ["*"],
+});
 
 const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))
@@ -66,7 +85,16 @@ export const auth = betterAuth({
     // Organization plugin for multi-tenant organization management
     // https://www.better-auth.com/docs/plugins/organization
     organization({
+      ac,
       allowUserToCreateOrganization: true, // Users can create organizations by default
+      dynamicAccessControl: {
+        enabled: true,
+        maximumRolesPerOrganization: 500,
+      },
+      roles: {
+        user,
+        admin,
+      },
     }),
 
     // MCP plugin for OAuth 2.1 server
@@ -100,7 +128,7 @@ export const auth = betterAuth({
 
     // Admin plugin for system-level super-admins
     // https://www.better-auth.com/docs/plugins/admin
-    admin({
+    adminPlugin({
       defaultRole: "user",
       adminRoles: ["admin"],
     }),

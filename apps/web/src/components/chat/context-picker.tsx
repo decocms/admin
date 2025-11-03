@@ -51,6 +51,10 @@ interface ContextPickerProps {
   onAddTools?: (toolIds: string[]) => void;
   // Optional: callback when a single tool/resource is selected (for @ mentions)
   onSelectItem?: (itemId: string, type: "tool" | "resource") => void;
+  // Optional: whether to auto-focus the search input when opened (default: true)
+  autoFocus?: boolean;
+  // Optional: sync query from external source (e.g., TipTap editor)
+  syncQuery?: string;
 }
 
 export function ContextPicker({
@@ -60,6 +64,8 @@ export function ContextPicker({
   items: providedItems,
   onAddTools,
   onSelectItem,
+  autoFocus = true,
+  syncQuery,
 }: ContextPickerProps) {
   const { data: integrations = [] } = useIntegrations();
   const { data: documents = [] } = useDocuments();
@@ -76,8 +82,83 @@ export function ContextPicker({
   >(null);
   const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync searchQuery with syncQuery from external source (e.g., TipTap)
+  useEffect(() => {
+    if (syncQuery !== undefined) {
+      setSearchQuery(syncQuery);
+    }
+  }, [syncQuery]);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to update context items based on selected tools
+  const updateContextForIntegration = (
+    integrationId: string,
+    toolsToUpdate: Set<string>,
+  ) => {
+    requestAnimationFrame(() => {
+      const existingItem = contextItems?.find(
+        (item) =>
+          item.type === "toolset" && item.integrationId === integrationId,
+      ) as ToolsetContextItem | undefined;
+
+      const allToolsForIntegration = Array.from(toolsToUpdate || [])
+        .filter((id) => id.startsWith(`${integrationId}:`))
+        .map((id) => id.split(":").pop()!);
+
+      if (allToolsForIntegration.length === 0) {
+        // Remove the context item if no tools are selected
+        if (existingItem) {
+          removeContextItem(existingItem.id);
+        }
+      } else if (existingItem) {
+        // Update existing item
+        updateContextItem(existingItem.id, {
+          enabledTools: allToolsForIntegration,
+        });
+      } else {
+        // Create new item only if it doesn't exist
+        const stillDoesntExist = !contextItems?.some(
+          (item) =>
+            item.type === "toolset" && item.integrationId === integrationId,
+        );
+        if (stillDoesntExist) {
+          addContextItem({
+            type: "toolset",
+            integrationId,
+            enabledTools: allToolsForIntegration,
+          } as Omit<ToolsetContextItem, "id">);
+        }
+      }
+    });
+  };
+
+  // Helper function to toggle all tools for an integration
+  const toggleAllTools = (integrationId: string, toolNames: string[]) => {
+    const allToolIds = toolNames.map((name) => `${integrationId}:${name}`);
+    const allSelected = allToolIds.every((id) => selectedTools.has(id));
+
+    const getToolsToUpdate = () => {
+      const next = new Set(selectedTools);
+      if (allSelected) {
+        for (const id of allToolIds) {
+          next.delete(id);
+        }
+      } else {
+        for (const id of allToolIds) {
+          next.add(id);
+        }
+      }
+      return next;
+    };
+
+    const toolsToUpdate = getToolsToUpdate();
+
+    setSelectedTools(toolsToUpdate);
+
+    updateContextForIntegration(integrationId, toolsToUpdate);
+  };
 
   // Build all context items
   const allItems = useMemo(() => {
@@ -264,63 +345,30 @@ export function ContextPicker({
   }, [selectedIntegration?.tools, searchQuery]);
 
   // Handle tool toggle in right panel - update context immediately
-  const handleToolToggle = (toolName: string, integrationId: string) => {
-    const toolId = `${integrationId}:${toolName}`;
-    let updatedTools: Set<string>;
+  const handleToolToggle = useCallback(
+    (toolName: string, integrationId: string) => {
+      const toolId = `${integrationId}:${toolName}`;
+      let updatedTools: Set<string>;
 
-    setSelectedTools((prev) => {
-      const next = new Set(prev);
-      const isRemoving = next.has(toolId);
+      setSelectedTools((prev) => {
+        const next = new Set(prev);
+        const isRemoving = next.has(toolId);
 
-      if (isRemoving) {
-        next.delete(toolId);
-      } else {
-        next.add(toolId);
-      }
-
-      updatedTools = next;
-      return next;
-    });
-
-    // Update context items after state update
-    requestAnimationFrame(() => {
-      const existingItem = contextItems?.find(
-        (item) =>
-          item.type === "toolset" && item.integrationId === integrationId,
-      ) as ToolsetContextItem | undefined;
-
-      // Use the updated tools set directly
-      const allToolsForIntegration = Array.from(updatedTools!)
-        .filter((id) => id.startsWith(`${integrationId}:`))
-        .map((id) => id.split(":").pop()!);
-
-      if (allToolsForIntegration.length === 0) {
-        // Remove the context item if no tools are selected
-        if (existingItem) {
-          removeContextItem(existingItem.id);
+        if (isRemoving) {
+          next.delete(toolId);
+        } else {
+          next.add(toolId);
         }
-      } else if (existingItem) {
-        // Update existing item
-        updateContextItem(existingItem.id, {
-          enabledTools: allToolsForIntegration,
-        });
-      } else {
-        // Create new item only if it doesn't exist
-        const stillDoesntExist = !contextItems?.some(
-          (item) =>
-            item.type === "toolset" && item.integrationId === integrationId,
-        );
 
-        if (stillDoesntExist) {
-          addContextItem({
-            type: "toolset",
-            integrationId,
-            enabledTools: allToolsForIntegration,
-          } as Omit<ToolsetContextItem, "id">);
-        }
-      }
-    });
-  };
+        updatedTools = next;
+        return next;
+      });
+
+      // Update context items using helper
+      updateContextForIntegration(integrationId, updatedTools!);
+    },
+    [updateContextForIntegration],
+  );
 
   // Handle item selection from left panel
   const handleSelectItem = useCallback(
@@ -497,71 +545,26 @@ export function ContextPicker({
       // Enter
       if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
+        e.stopPropagation(); // Stop event from reaching chat input
+        e.stopImmediatePropagation(); // Stop other listeners on the same element
+
         if (selectedIntegrationId) {
           // In right panel - check if "Select all" button is selected (index -1)
           if (selectedIndex === -1 && selectedIntegration?.integration?.id) {
             // Toggle select all
             const integrationId = selectedIntegration.integration.id;
-            const allToolIds = filteredTools.map(
-              (tool) => `${integrationId}:${tool.name}`,
-            );
-            const allSelected = allToolIds.every((id) => selectedTools.has(id));
-
-            let updatedTools: Set<string>;
-            setSelectedTools((prev) => {
-              const next = new Set(prev);
-              if (allSelected) {
-                for (const id of allToolIds) {
-                  next.delete(id);
-                }
-              } else {
-                for (const id of allToolIds) {
-                  next.add(id);
-                }
-              }
-              updatedTools = next;
-              return next;
-            });
-
-            // Update context items after state update
-            requestAnimationFrame(() => {
-              const existingItem = contextItems?.find(
-                (item) =>
-                  item.type === "toolset" &&
-                  item.integrationId === integrationId,
-              ) as ToolsetContextItem | undefined;
-
-              const allToolsForIntegration = Array.from(updatedTools!)
-                .filter((id) => id.startsWith(`${integrationId}:`))
-                .map((id) => id.split(":").pop()!);
-
-              if (allToolsForIntegration.length === 0) {
-                // Remove the context item if no tools are selected
-                if (existingItem) {
-                  removeContextItem(existingItem.id);
-                }
-              } else if (existingItem) {
-                // Update existing item
-                updateContextItem(existingItem.id, {
-                  enabledTools: allToolsForIntegration,
-                });
-              } else {
-                // Create new item only if it doesn't exist
-                const stillDoesntExist = !contextItems?.some(
-                  (item) =>
-                    item.type === "toolset" &&
-                    item.integrationId === integrationId,
-                );
-                if (stillDoesntExist) {
-                  addContextItem({
-                    type: "toolset",
-                    integrationId,
-                    enabledTools: allToolsForIntegration,
-                  } as Omit<ToolsetContextItem, "id">);
-                }
-              }
-            });
+            const toolNames = filteredTools.map((tool) => tool.name);
+            toggleAllTools(integrationId, toolNames);
           } else {
+            if (onAddTools) {
+              const tool = filteredTools[selectedIndex];
+              if (tool && selectedIntegration?.integration?.id) {
+                onAddTools([
+                  `${selectedIntegration.integration!.id}:${tool.name}`,
+                ]);
+                return;
+              }
+            }
             // In right panel - always toggle checkbox
             const tool = filteredTools[selectedIndex];
             if (tool && selectedIntegration?.integration?.id) {
@@ -571,7 +574,9 @@ export function ContextPicker({
         } else {
           // Select item from left panel
           const item = filteredItems[selectedIndex];
-          if (item) handleSelectItem(item);
+          if (item) {
+            handleSelectItem(item);
+          }
         }
       }
 
@@ -604,12 +609,9 @@ export function ContextPicker({
     selectedIntegration,
     handleSelectItem,
     handleToolToggle,
+    toggleAllTools,
     onSelectItem,
     onClose,
-    contextItems,
-    updateContextItem,
-    removeContextItem,
-    addContextItem,
   ]);
 
   // Scroll selected item into view
@@ -638,17 +640,19 @@ export function ContextPicker({
     setSelectedTools(toolsInContext);
   }, [selectedIntegrationId, contextItems]);
 
-  // Focus search input when opened, reset state when closed
+  // Focus search input when opened (if autoFocus is enabled), reset state when closed
   useEffect(() => {
     if (open) {
-      setTimeout(() => searchInputRef.current?.focus(), 100);
+      if (autoFocus) {
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
     } else {
       setSearchQuery("");
       setSelectedIndex(0);
       setSelectedIntegrationId(null);
       setSelectedTools(new Set());
     }
-  }, [open]);
+  }, [open, autoFocus]);
 
   // Position above chat input
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -690,20 +694,22 @@ export function ContextPicker({
       onClick={(e) => e.stopPropagation()}
     >
       {/* Search Input */}
-      <div className="flex h-[54px] items-center gap-2 border-b border-border px-3">
-        <Icon name="search" className="size-5 text-foreground" size={20} />
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setSelectedIndex(0);
-          }}
-          placeholder="Search integrations, documents, workflows..."
-          className="flex h-[54px] w-full bg-transparent text-base outline-hidden placeholder:text-muted-foreground"
-        />
-      </div>
+      {!syncQuery && (
+        <div className="flex h-[54px] items-center gap-2 border-b border-border px-3">
+          <Icon name="search" className="size-5 text-foreground" size={20} />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
+            placeholder="Search integrations, documents, workflows..."
+            className="flex h-[54px] w-full bg-transparent text-base outline-hidden placeholder:text-muted-foreground"
+          />
+        </div>
+      )}
 
       {/* Main Content Area - Two Panel Layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
@@ -833,69 +839,8 @@ export function ContextPicker({
                     onClick={(e) => {
                       e.stopPropagation();
                       const integrationId = selectedIntegration.integration!.id;
-                      const allToolIds = filteredTools.map(
-                        (tool) => `${integrationId}:${tool.name}`,
-                      );
-                      const allSelected = allToolIds.every((id) =>
-                        selectedTools.has(id),
-                      );
-
-                      let updatedTools: Set<string>;
-                      setSelectedTools((prev) => {
-                        const next = new Set(prev);
-                        if (allSelected) {
-                          // Deselect all
-                          for (const id of allToolIds) {
-                            next.delete(id);
-                          }
-                        } else {
-                          // Select all
-                          for (const id of allToolIds) {
-                            next.add(id);
-                          }
-                        }
-                        updatedTools = next;
-                        return next;
-                      });
-
-                      // Update context items after state update
-                      requestAnimationFrame(() => {
-                        const existingItem = contextItems?.find(
-                          (item) =>
-                            item.type === "toolset" &&
-                            item.integrationId === integrationId,
-                        ) as ToolsetContextItem | undefined;
-
-                        const allToolsForIntegration = Array.from(updatedTools!)
-                          .filter((id) => id.startsWith(`${integrationId}:`))
-                          .map((id) => id.split(":").pop()!);
-
-                        if (allToolsForIntegration.length === 0) {
-                          // Remove the context item if no tools are selected
-                          if (existingItem) {
-                            removeContextItem(existingItem.id);
-                          }
-                        } else if (existingItem) {
-                          // Update existing item
-                          updateContextItem(existingItem.id, {
-                            enabledTools: allToolsForIntegration,
-                          });
-                        } else {
-                          // Create new item only if it doesn't exist
-                          const stillDoesntExist = !contextItems?.some(
-                            (item) =>
-                              item.type === "toolset" &&
-                              item.integrationId === integrationId,
-                          );
-                          if (stillDoesntExist) {
-                            addContextItem({
-                              type: "toolset",
-                              integrationId,
-                              enabledTools: allToolsForIntegration,
-                            } as Omit<ToolsetContextItem, "id">);
-                          }
-                        }
-                      });
+                      const toolNames = filteredTools.map((tool) => tool.name);
+                      toggleAllTools(integrationId, toolNames);
                     }}
                     className={cn(
                       "flex items-center gap-2 h-[38px] px-3 rounded-xl cursor-pointer w-full text-left transition-colors mb-2",
@@ -936,7 +881,13 @@ export function ContextPicker({
                           : null
                       }
                       onClick={() => {
-                        // In right panel, always toggle checkbox
+                        if (onAddTools) {
+                          onAddTools([
+                            `${selectedIntegration.integration!.id}:${tool.name}`,
+                          ]);
+                          return;
+                        }
+                        // The default is to toggle the checkbox
                         handleToolToggle(
                           tool.name,
                           selectedIntegration.integration!.id,
@@ -957,7 +908,7 @@ export function ContextPicker({
                         className="text-muted-foreground shrink-0"
                       />
                       <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <span className="font-normal text-sm text-foreground shrink-0">
+                        <span className="w-full font-normal text-sm text-foreground truncate shrink-0">
                           {tool.name}
                         </span>
                         {tool.description && (
@@ -966,10 +917,12 @@ export function ContextPicker({
                           </span>
                         )}
                       </div>
-                      <Checkbox
-                        checked={isToolSelected}
-                        onCheckedChange={() => {}}
-                      />
+                      {!onAddTools && (
+                        <Checkbox
+                          checked={isToolSelected}
+                          onCheckedChange={() => {}}
+                        />
+                      )}
                     </div>
                   );
                 })}

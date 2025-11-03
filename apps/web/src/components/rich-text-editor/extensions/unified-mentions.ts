@@ -328,7 +328,7 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             showOnCreate: true,
             interactive: true,
             trigger: "manual",
-            placement: "top-start",
+            placement: "top",
             maxWidth: 750,
           });
 
@@ -348,6 +348,13 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           popup?.[0]?.setProps({
             // @ts-expect-error - tippy is not well typed
             getReferenceClientRect: props.clientRect,
+            offset: [0, 8],
+          });
+
+          // Update component props to sync query
+          component?.updateProps({
+            ...props,
+            query: props.query,
           });
 
           const baseItems = computeBaseItems(props.query ?? "", tools);

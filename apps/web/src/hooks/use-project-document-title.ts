@@ -1,83 +1,21 @@
 import { useMemo } from "react";
-import { useLocation, useParams } from "react-router";
+import { useMatches, useParams } from "react-router";
 import { useProjects } from "@deco/sdk";
 import { useDocumentMetadata } from "./use-document-metadata.ts";
 
-/**
- * Maps route paths to human-readable page names
- */
-function getPageName(pathname: string): string {
-  // Remove org and project from path
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length < 3) return "Home";
-
-  const pagePath = parts.slice(2).join("/");
-
-  // Route mappings - keeping Linear's concise style
-  const routeMap: Record<string, string> = {
-    "": "Home",
-    store: "Store",
-    discover: "Store",
-    tools: "Tools",
-    agents: "Agents",
-    "agents/threads": "Threads",
-    apps: "Apps",
-    database: "Database",
-    views: "Views",
-    "views/legacy": "Views (Legacy)",
-    documents: "Documents",
-    "documents/prompts": "Prompts",
-    workflows: "Workflows",
-    "workflows/runs": "Workflow Runs",
-    "workflows/runs-legacy": "Workflow Runs (Legacy)",
-    "workflows/triggers": "Triggers",
-    activity: "Activity",
-  };
-
-  // Check for exact match first
-  if (routeMap[pagePath]) {
-    return routeMap[pagePath];
-  }
-
-  // Handle dynamic routes
-  if (pagePath.startsWith("agent/")) {
-    return "Agent";
-  }
-  if (pagePath.startsWith("apps/")) {
-    if (pagePath === "apps/success") return "App Installed";
-    return "App Details";
-  }
-  if (pagePath.startsWith("trigger/")) {
-    return "Trigger";
-  }
-  if (pagePath.startsWith("views/")) {
-    return "View";
-  }
-  if (pagePath.startsWith("documents/")) {
-    return "Document";
-  }
-  if (pagePath.startsWith("workflow-runs/")) {
-    return "Workflow Run";
-  }
-  if (pagePath.startsWith("audit/")) {
-    return "Audit";
-  }
-  if (pagePath.startsWith("rsc/")) {
-    return "Resource";
-  }
-
-  // Fallback: capitalize first part
-  const firstPart = pagePath.split("/")[0];
-  return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+interface RouteHandle {
+  title?: string;
 }
 
 /**
  * Hook that automatically sets the document title based on the current project and page
  * Format: "Project Name › Page Name"
+ * 
+ * Uses React Router's handle property to get the page title from route metadata
  */
 export function useProjectDocumentTitle() {
   const { org, project: projectParam } = useParams();
-  const location = useLocation();
+  const matches = useMatches();
   const projects = useProjects({ org: org ?? "" });
 
   const currentProject = useMemo(
@@ -85,10 +23,31 @@ export function useProjectDocumentTitle() {
     [projects, projectParam],
   );
 
-  const pageName = useMemo(
-    () => getPageName(location.pathname),
-    [location.pathname],
-  );
+  // Get the title from the last matched route with a handle
+  const pageName = useMemo(() => {
+    // First, try to get title from route handle
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const handle = matches[i].handle as RouteHandle | undefined;
+      if (handle?.title) {
+        return handle.title;
+      }
+    }
+
+    // Fallback: extract path from last match
+    const lastMatch = matches[matches.length - 1];
+    if (lastMatch?.pathname) {
+      const parts = lastMatch.pathname.split("/").filter(Boolean);
+      if (parts.length < 3) return "Home";
+      
+      const pagePath = parts.slice(2).join("/");
+      
+      // Fallback: capitalize first part of the path
+      const firstPart = pagePath.split("/")[0];
+      return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+    }
+
+    return "Home";
+  }, [matches]);
 
   const title = useMemo(() => {
     const projectName = currentProject?.title ?? projectParam;

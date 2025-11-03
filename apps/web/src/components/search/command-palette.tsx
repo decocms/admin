@@ -170,7 +170,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      className="sm:max-w-[750px]"
+      className="sm:max-w-[750px] top-[15vh]! translate-y-0!"
     >
       <CommandInput
         placeholder="Type a command or search"

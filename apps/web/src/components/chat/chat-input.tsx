@@ -64,6 +64,7 @@ export function ChatInput({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isContextPickerOpen, setIsContextPickerOpen] = useState(false);
   const selectDialogTriggerRef = useRef<HTMLButtonElement>(null);
+  const addContextButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     uploadedFiles,
@@ -383,6 +384,7 @@ export function ChatInput({
                   >
                     <DropdownMenuTrigger asChild>
                       <button
+                        ref={addContextButtonRef}
                         type="button"
                         className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-0"
                         title="Add context"
@@ -458,7 +460,7 @@ export function ChatInput({
       <ContextPicker
         open={isContextPickerOpen}
         onClose={() => setIsContextPickerOpen(false)}
-        anchorRef={formRef as React.RefObject<HTMLElement>}
+        anchorRef={addContextButtonRef as React.RefObject<HTMLElement>}
       />
 
       {/* Separate SelectConnectionDialog to avoid mounting/unmounting on dropdown open */}

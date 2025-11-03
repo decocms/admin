@@ -659,15 +659,15 @@ export function ContextPicker({
     if (!open || !anchorRef?.current) return;
 
     const updatePosition = () => {
-      const pickerWidth = 550;
+      const pickerWidth = 600;
       const pickerHeight = 450;
       const gap = 16;
       const rect = anchorRef.current!.getBoundingClientRect();
 
       let top = rect.top - pickerHeight - gap;
-      let left = rect.left + rect.width / 2 - pickerWidth / 2;
+      let left = rect.left;
 
-      // Keep within viewport
+      // Keep within viewport - won't go off screen on either side
       left = Math.max(16, Math.min(left, window.innerWidth - pickerWidth - 16));
 
       // If off top, position below
@@ -688,7 +688,7 @@ export function ContextPicker({
   const pickerContent = (
     <div
       ref={containerRef}
-      className="bg-background border border-border rounded-xl shadow-lg w-[550px] h-[450px] flex flex-col overflow-hidden"
+      className="bg-background border border-border rounded-xl shadow-lg w-[600px] h-[450px] flex flex-col overflow-hidden animate-in fade-in-0 ease-out-quad zoom-in-95 duration-200"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Search Input */}
@@ -802,7 +802,7 @@ export function ContextPicker({
         {/* Right Panel - Tools Selector */}
         {selectedIntegration && (
           <div className="border-l border-border flex-1 flex flex-col overflow-hidden">
-            <div className="p-3 border-b border-border shrink-0">
+            <div className="p-3 shrink-0">
               <div className="flex items-center gap-3">
                 {selectedIntegration.integration && (
                   <IntegrationAvatar
@@ -813,14 +813,9 @@ export function ContextPicker({
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-lg text-foreground">
+                  <div className="font-medium text-lg text-foreground line-clamp-2">
                     {selectedIntegration.title}
                   </div>
-                  {selectedIntegration.description && (
-                    <div className="text-xs text-muted-foreground truncate">
-                      {selectedIntegration.description}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -905,20 +900,14 @@ export function ContextPicker({
                         size={20}
                         className="text-muted-foreground shrink-0"
                       />
-                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <span className="w-full font-normal text-sm text-foreground truncate shrink-0">
-                          {tool.name}
-                        </span>
-                        {tool.description && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            {tool.description}
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-normal text-sm text-foreground truncate flex-1 min-w-0">
+                        {tool.name}
+                      </span>
                       {!onAddTools && (
                         <Checkbox
                           checked={isToolSelected}
                           onCheckedChange={() => {}}
+                          className="shrink-0"
                         />
                       )}
                     </div>

@@ -915,7 +915,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
       {/* Render detail view directly when available, otherwise show output */}
       {detailViewInfo ? (
         // Render detail view component directly when expanded
-        <div className="min-h-[400px] flex flex-col">
+        <div className="flex flex-col" style={{ height: "400px" }}>
           <ResourceDetailView
             viewKey={detailViewInfo.viewKey}
             resourceUri={detailViewInfo.resourceUri}

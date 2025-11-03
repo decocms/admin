@@ -1,5 +1,6 @@
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 
@@ -76,7 +77,9 @@ export const MainChat = ({
   contentClassName,
 }: MainChatProps = {}) => {
   return (
-    <div className={`w-full flex flex-col h-full min-w-0 ${className ?? ""}`}>
+    <div
+      className={cn("relative w-full flex flex-col h-full min-w-0", className)}
+    >
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <ChatMessages className={contentClassName} />
       </div>

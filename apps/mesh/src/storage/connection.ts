@@ -1,24 +1,28 @@
 /**
  * Connection Storage Implementation
- * 
+ *
  * Handles CRUD operations for MCP connections using Kysely (database-agnostic).
  * All connections are organization-scoped.
  */
 
-import type { Kysely } from 'kysely';
-import { nanoid } from 'nanoid';
-import type { ConnectionStoragePort, CreateConnectionData, UpdateConnectionData } from './ports';
-import type { Database, MCPConnection } from './types';
+import type { Kysely } from "kysely";
+import { nanoid } from "nanoid";
+import type {
+  ConnectionStoragePort,
+  CreateConnectionData,
+  UpdateConnectionData,
+} from "./ports";
+import type { Database, MCPConnection } from "./types";
 
 export class ConnectionStorage implements ConnectionStoragePort {
-  constructor(private db: Kysely<Database>) { }
+  constructor(private db: Kysely<Database>) {}
 
   async create(data: CreateConnectionData): Promise<MCPConnection> {
     const id = `conn_${nanoid()}`;
 
     // Insert the connection
     await this.db
-      .insertInto('connections')
+      .insertInto("connections")
       .values({
         id,
         organizationId: data.organizationId,
@@ -38,18 +42,14 @@ export class ConnectionStorage implements ConnectionStoragePort {
           : null,
 
         // OAuth config
-        oauthConfig: data.oauthConfig
-          ? JSON.stringify(data.oauthConfig)
-          : null,
+        oauthConfig: data.oauthConfig ? JSON.stringify(data.oauthConfig) : null,
 
-        metadata: data.metadata
-          ? JSON.stringify(data.metadata)
-          : null,
+        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
 
         tools: null, // Populated later via discovery
         bindings: null, // Populated later via binding detection
 
-        status: 'active',
+        status: "active",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
@@ -66,9 +66,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   async findById(id: string): Promise<MCPConnection | null> {
     const connection = await this.db
-      .selectFrom('connections')
+      .selectFrom("connections")
       .selectAll()
-      .where('id', '=', id)
+      .where("id", "=", id)
       .executeTakeFirst();
 
     return connection ? this.deserializeConnection(connection) : null;
@@ -76,9 +76,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   async list(organizationId: string): Promise<MCPConnection[]> {
     const connections = await this.db
-      .selectFrom('connections')
+      .selectFrom("connections")
       .selectAll()
-      .where('organizationId', '=', organizationId)
+      .where("organizationId", "=", organizationId)
       .execute();
 
     return connections.map((c) => this.deserializeConnection(c));
@@ -91,10 +91,12 @@ export class ConnectionStorage implements ConnectionStoragePort {
     };
 
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.description !== undefined)
+      updateData.description = data.description;
     if (data.icon !== undefined) updateData.icon = data.icon;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.connectionToken !== undefined) updateData.connectionToken = data.connectionToken;
+    if (data.connectionToken !== undefined)
+      updateData.connectionToken = data.connectionToken;
 
     // Serialize JSON fields
     if (data.metadata !== undefined) {
@@ -108,31 +110,30 @@ export class ConnectionStorage implements ConnectionStoragePort {
     }
 
     await this.db
-      .updateTable('connections')
+      .updateTable("connections")
       .set(updateData)
-      .where('id', '=', id)
+      .where("id", "=", id)
       .execute();
 
     // Fetch the updated connection
     const connection = await this.findById(id);
     if (!connection) {
-      throw new Error('Connection not found after update');
+      throw new Error("Connection not found after update");
     }
 
     return connection;
   }
 
   async delete(id: string): Promise<void> {
-    await this.db
-      .deleteFrom('connections')
-      .where('id', '=', id)
-      .execute();
+    await this.db.deleteFrom("connections").where("id", "=", id).execute();
   }
 
-  async testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }> {
+  async testConnection(
+    id: string,
+  ): Promise<{ healthy: boolean; latencyMs: number }> {
     const connection = await this.findById(id);
     if (!connection) {
-      throw new Error('Connection not found');
+      throw new Error("Connection not found");
     }
 
     const startTime = Date.now();
@@ -140,16 +141,16 @@ export class ConnectionStorage implements ConnectionStoragePort {
     try {
       // Simple health check - try to reach the URL
       const response = await fetch(connection.connectionUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(connection.connectionToken && {
             Authorization: `Bearer ${connection.connectionToken}`,
           }),
         },
         body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'ping',
+          jsonrpc: "2.0",
+          method: "ping",
           id: 1,
         }),
       });
@@ -177,19 +178,10 @@ export class ConnectionStorage implements ConnectionStoragePort {
       connectionHeaders: raw.connectionHeaders
         ? JSON.parse(raw.connectionHeaders)
         : null,
-      oauthConfig: raw.oauthConfig
-        ? JSON.parse(raw.oauthConfig)
-        : null,
-      metadata: raw.metadata
-        ? JSON.parse(raw.metadata)
-        : null,
-      tools: raw.tools
-        ? JSON.parse(raw.tools)
-        : null,
-      bindings: raw.bindings
-        ? JSON.parse(raw.bindings)
-        : null,
+      oauthConfig: raw.oauthConfig ? JSON.parse(raw.oauthConfig) : null,
+      metadata: raw.metadata ? JSON.parse(raw.metadata) : null,
+      tools: raw.tools ? JSON.parse(raw.tools) : null,
+      bindings: raw.bindings ? JSON.parse(raw.bindings) : null,
     };
   }
 }
-

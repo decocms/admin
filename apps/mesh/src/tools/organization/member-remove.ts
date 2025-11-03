@@ -1,16 +1,16 @@
 /**
  * ORGANIZATION_MEMBER_REMOVE Tool
- * 
+ *
  * Remove a member from an organization
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_MEMBER_REMOVE = defineTool({
-  name: 'ORGANIZATION_MEMBER_REMOVE',
-  description: 'Remove a member from an organization',
+  name: "ORGANIZATION_MEMBER_REMOVE",
+  description: "Remove a member from an organization",
 
   inputSchema: z.object({
     organizationId: z.string().optional(), // Optional: defaults to active organization
@@ -32,7 +32,9 @@ export const ORGANIZATION_MEMBER_REMOVE = defineTool({
     // Use active organization if not specified
     const organizationId = input.organizationId || ctx.organization?.id;
     if (!organizationId) {
-      throw new Error('Organization ID required (no active organization in context)');
+      throw new Error(
+        "Organization ID required (no active organization in context)",
+      );
     }
 
     // Remove member via Better Auth
@@ -49,4 +51,3 @@ export const ORGANIZATION_MEMBER_REMOVE = defineTool({
     };
   },
 });
-

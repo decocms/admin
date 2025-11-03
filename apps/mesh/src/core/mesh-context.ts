@@ -1,9 +1,9 @@
 /**
  * MeshContext - Core abstraction for all tools
- * 
+ *
  * Provides tools with access to all necessary services without coupling them
  * to HTTP frameworks or database drivers.
- * 
+ *
  * Key Principles:
  * - Tools NEVER access HTTP objects directly
  * - Tools NEVER access database drivers directly
@@ -11,12 +11,12 @@
  * - All dependencies injected through this interface
  */
 
-import type { Meter, Tracer } from '@opentelemetry/api';
-import type { Kysely } from 'kysely';
-import type { CredentialVault } from '../encryption/credential-vault';
-import type { Database, Permission } from '../storage/types';
-import type { AccessControl } from './access-control';
-export type { BetterAuthInstance } from '@/auth';
+import type { Meter, Tracer } from "@opentelemetry/api";
+import type { Kysely } from "kysely";
+import type { CredentialVault } from "../encryption/credential-vault";
+import type { Database, Permission } from "../storage/types";
+import type { AccessControl } from "./access-control";
+export type { BetterAuthInstance } from "@/auth";
 // Re-export for consumers
 export type { AccessControl, CredentialVault };
 
@@ -79,9 +79,9 @@ export interface RequestMetadata {
 // ============================================================================
 
 // Forward declare storage types
-import { BetterAuthInstance } from '@/auth';
-import type { AuditLogStorage } from '../storage/audit-log';
-import type { ConnectionStorage } from '../storage/connection';
+import { BetterAuthInstance } from "@/auth";
+import type { AuditLogStorage } from "../storage/audit-log";
+import type { ConnectionStorage } from "../storage/connection";
 
 // Better Auth instance type - flexible for testing
 // In production, this is the actual Better Auth instance
@@ -89,8 +89,8 @@ import type { ConnectionStorage } from '../storage/connection';
 
 /**
  * Storage interfaces aggregation
- * 
- * Note: 
+ *
+ * Note:
  * - Organizations, teams, members, and roles managed by Better Auth organization plugin
  * - Policies handled by Better Auth permissions directly
  * - API Keys (tokens) managed by Better Auth API Key plugin
@@ -107,7 +107,7 @@ export interface MeshStorage {
 
 /**
  * MeshContext - The core abstraction passed to every tool handler
- * 
+ *
  * This provides access to all necessary services without coupling
  * to implementation details.
  */
@@ -168,7 +168,7 @@ export function getOrganizationId(ctx: MeshContext): string | null {
  */
 export function requireOrganization(ctx: MeshContext): OrganizationScope {
   if (!ctx.organization) {
-    throw new Error('This operation requires organization scope');
+    throw new Error("This operation requires organization scope");
   }
   return ctx.organization;
 }
@@ -192,7 +192,6 @@ export function isAuthenticated(ctx: MeshContext): boolean {
  */
 export function requireAuth(ctx: MeshContext): void {
   if (!isAuthenticated(ctx)) {
-    throw new Error('Authentication required');
+    throw new Error("Authentication required");
   }
 }
-

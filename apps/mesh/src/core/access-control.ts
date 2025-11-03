@@ -1,6 +1,6 @@
 /**
  * Access Control for MCP Mesh
- * 
+ *
  * Uses Better Auth's permission system for authorization.
  * Follows a grant-based model:
  * 1. Tools call ctx.access.check() to verify permissions
@@ -9,8 +9,8 @@
  * 4. Tools can manually grant access for custom logic
  */
 
-import type { Permission } from '../storage/types';
-import { BetterAuthInstance } from './mesh-context';
+import type { Permission } from "../storage/types";
+import { BetterAuthInstance } from "./mesh-context";
 
 // Forward declaration (will be replaced with actual Better Auth type)
 
@@ -24,7 +24,7 @@ import { BetterAuthInstance } from './mesh-context';
 export class UnauthorizedError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'UnauthorizedError';
+    this.name = "UnauthorizedError";
   }
 }
 
@@ -34,7 +34,7 @@ export class UnauthorizedError extends Error {
 export class ForbiddenError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ForbiddenError';
+    this.name = "ForbiddenError";
   }
 }
 
@@ -44,7 +44,7 @@ export class ForbiddenError extends Error {
 
 /**
  * AccessControl using Better Auth's permission system
- * 
+ *
  * Works with both:
  * - Admin plugin (role-based permissions)
  * - API Key plugin (key-based permissions)
@@ -58,8 +58,8 @@ export class AccessControl implements Disposable {
     private toolName?: string,
     private permissions?: Permission, // From API key
     private role?: string, // From user session
-    private connectionId: string = "self" // For connection-specific checks
-  ) { }
+    private connectionId: string = "self", // For connection-specific checks
+  ) {}
 
   [Symbol.dispose](): void {
     this._granted = false;
@@ -84,13 +84,13 @@ export class AccessControl implements Disposable {
 
   /**
    * Check permissions and grant access if allowed
-   * 
+   *
    * @param resources - Resources to check (OR logic)
    * If omitted, checks the current tool name
-   * 
+   *
    * @throws UnauthorizedError if not authenticated (401)
    * @throws ForbiddenError if access is denied (403)
-   * 
+   *
    * @example
    * await ctx.access.check(); // Check current tool
    * await ctx.access.check('conn_<UUID>'); // Check connection access
@@ -103,17 +103,21 @@ export class AccessControl implements Disposable {
     }
 
     // Check if authenticated first (401)
-    if (!this.userId && (!this.permissions || Object.keys(this.permissions).length === 0)) {
-      throw new UnauthorizedError('Authentication required. Please provide a valid OAuth token or API key.');
+    if (
+      !this.userId &&
+      (!this.permissions || Object.keys(this.permissions).length === 0)
+    ) {
+      throw new UnauthorizedError(
+        "Authentication required. Please provide a valid OAuth token or API key.",
+      );
     }
 
     // Determine what to check
-    const resourcesToCheck = resources.length > 0
-      ? resources
-      : this.toolName ? [this.toolName] : [];
+    const resourcesToCheck =
+      resources.length > 0 ? resources : this.toolName ? [this.toolName] : [];
 
     if (resourcesToCheck.length === 0) {
-      throw new ForbiddenError('No resources specified for access check');
+      throw new ForbiddenError("No resources specified for access check");
     }
 
     // Try each resource - if ANY succeeds, grant access (OR logic)
@@ -127,7 +131,7 @@ export class AccessControl implements Disposable {
 
     // No permission found
     throw new ForbiddenError(
-      `Access denied to: ${resourcesToCheck.join(', ')}`
+      `Access denied to: ${resourcesToCheck.join(", ")}`,
     );
   }
 
@@ -141,13 +145,12 @@ export class AccessControl implements Disposable {
     }
 
     // Admin role bypasses all checks
-    if (this.role === 'admin') {
+    if (this.role === "admin") {
       return true;
     }
 
     // Build permission check
-    const permissionToCheck: Permission = {
-    };
+    const permissionToCheck: Permission = {};
 
     // If checking a specific connection, also check that
     if (this.connectionId) {
@@ -160,7 +163,7 @@ export class AccessControl implements Disposable {
         const result = await this.auth.api.userHasPermission({
           body: {
             userId: this.userId,
-            role: this.role as 'user' | 'admin' | undefined,
+            role: this.role as "user" | "admin" | undefined,
             permission: permissionToCheck,
           },
         });
@@ -168,13 +171,14 @@ export class AccessControl implements Disposable {
         // Better Auth can return { data: { has: boolean } } or just { success: boolean }
         // If it returns a valid result, use it; otherwise fall back to manual
         if (result) {
-          const hasPermission = (result as any).data?.has === true || (result as any).success === true;
+          const hasPermission =
+            (result as any).data?.has === true ||
+            (result as any).success === true;
           if (hasPermission) {
             return true;
           }
         }
       }
-
 
       // Fallback to manual check (when no Better Auth or permission denied)
       return this.manualPermissionCheck(resource);
@@ -206,7 +210,7 @@ export class AccessControl implements Disposable {
       }
 
       // Check if resource is in actions array or has wildcard
-      if (actions.includes(resource) || actions.includes('*')) {
+      if (actions.includes(resource) || actions.includes("*")) {
         return true;
       }
     }
@@ -221,4 +225,3 @@ export class AccessControl implements Disposable {
     return this._granted;
   }
 }
-

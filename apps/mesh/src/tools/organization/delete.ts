@@ -1,16 +1,16 @@
 /**
  * ORGANIZATION_DELETE Tool
- * 
+ *
  * Delete an organization
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_DELETE = defineTool({
-  name: 'ORGANIZATION_DELETE',
-  description: 'Delete an organization',
+  name: "ORGANIZATION_DELETE",
+  description: "Delete an organization",
 
   inputSchema: z.object({
     id: z.string(),
@@ -42,4 +42,3 @@ export const ORGANIZATION_DELETE = defineTool({
     };
   },
 });
-

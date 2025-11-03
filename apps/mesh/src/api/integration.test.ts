@@ -1,18 +1,18 @@
 /**
  * MCP Integration Tests
- * 
+ *
  * Tests the MCP protocol integration using the MCP Client SDK
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { RequestInfo } from '@modelcontextprotocol/sdk/types.js';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { auth } from '../auth';
-import app from './index';
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { RequestInfo } from "@modelcontextprotocol/sdk/types.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { auth } from "../auth";
+import app from "./index";
 
-describe('MCP Integration', () => {
-  describe('Management Tools MCP Server', () => {
+describe("MCP Integration", () => {
+  describe("Management Tools MCP Server", () => {
     let client: Client | null = null;
     let originalFetch: typeof global.fetch;
 
@@ -21,39 +21,54 @@ describe('MCP Integration', () => {
       originalFetch = global.fetch;
 
       // Mock auth.api.getMcpSession to return null (will fall back to API key)
-      vi.spyOn(auth.api, 'getMcpSession').mockResolvedValue(null);
+      vi.spyOn(auth.api, "getMcpSession").mockResolvedValue(null);
 
       // Mock auth.api.verifyApiKey to return valid result
-      vi.spyOn(auth.api, 'verifyApiKey').mockResolvedValue({
+      vi.spyOn(auth.api, "verifyApiKey").mockResolvedValue({
         valid: true,
         key: {
-          id: 'test-key-id',
-          name: 'Test API Key',
-          userId: 'test-user-id',
+          id: "test-key-id",
+          name: "Test API Key",
+          userId: "test-user-id",
           permissions: {
-            self: ['ORGANIZATION_CREATE', 'ORGANIZATION_LIST', 'ORGANIZATION_GET', 'ORGANIZATION_UPDATE', 'ORGANIZATION_DELETE',
-              'CONNECTION_CREATE', 'CONNECTION_LIST', 'CONNECTION_GET', 'CONNECTION_DELETE', 'CONNECTION_TEST'],
+            self: [
+              "ORGANIZATION_CREATE",
+              "ORGANIZATION_LIST",
+              "ORGANIZATION_GET",
+              "ORGANIZATION_UPDATE",
+              "ORGANIZATION_DELETE",
+              "CONNECTION_CREATE",
+              "CONNECTION_LIST",
+              "CONNECTION_GET",
+              "CONNECTION_DELETE",
+              "CONNECTION_TEST",
+            ],
           },
           metadata: {
             organization: {
-              id: 'org_123',
-              slug: 'test-org',
-              name: 'Test Organization',
+              id: "org_123",
+              slug: "test-org",
+              name: "Test Organization",
             },
           },
         },
       } as any);
 
       // Mock global fetch to route through Hono app
-      global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        // Create a proper Request object
-        const request = new Request(input as any, init);
+      global.fetch = vi.fn(
+        async (
+          input: RequestInfo | URL,
+          init?: RequestInit,
+        ): Promise<Response> => {
+          // Create a proper Request object
+          const request = new Request(input as any, init);
 
-        // Route request through Hono app using fetch (not request)
-        const response = await app.fetch(request);
+          // Route request through Hono app using fetch (not request)
+          const response = await app.fetch(request);
 
-        return response;
-      }) as typeof global.fetch;
+          return response;
+        },
+      ) as typeof global.fetch;
     });
 
     afterEach(async () => {
@@ -69,19 +84,18 @@ describe('MCP Integration', () => {
       }
     });
 
-    it.skip('should list all management tools via MCP protocol', async () => {
+    it.skip("should list all management tools via MCP protocol", async () => {
       // TODO: Fix integration test - requires complex Better Auth mocking
       // Create transport with Authorization header - will use mocked global fetch
       const transport = new StreamableHTTPClientTransport(
-        new URL('http://localhost:3000/mcp'),
+        new URL("http://localhost:3000/mcp"),
       );
 
       // Create MCP client
       client = new Client({
-        name: 'test-client',
-        version: '1.0.0',
+        name: "test-client",
+        version: "1.0.0",
       });
-
 
       // Connect client to transport
       await client.connect(transport);
@@ -96,16 +110,16 @@ describe('MCP Integration', () => {
 
       // Verify all 10 expected tools are present
       const expectedTools = [
-        'ORGANIZATION_CREATE',
-        'ORGANIZATION_LIST',
-        'ORGANIZATION_GET',
-        'ORGANIZATION_UPDATE',
-        'ORGANIZATION_DELETE',
-        'CONNECTION_CREATE',
-        'CONNECTION_LIST',
-        'CONNECTION_GET',
-        'CONNECTION_DELETE',
-        'CONNECTION_TEST',
+        "ORGANIZATION_CREATE",
+        "ORGANIZATION_LIST",
+        "ORGANIZATION_GET",
+        "ORGANIZATION_UPDATE",
+        "ORGANIZATION_DELETE",
+        "CONNECTION_CREATE",
+        "CONNECTION_LIST",
+        "CONNECTION_GET",
+        "CONNECTION_DELETE",
+        "CONNECTION_TEST",
       ];
 
       expect(result.tools.length).toBe(expectedTools.length);
@@ -118,36 +132,38 @@ describe('MCP Integration', () => {
       // Verify each tool has required properties
       for (const tool of result.tools) {
         expect(tool.name).toBeDefined();
-        expect(typeof tool.name).toBe('string');
+        expect(typeof tool.name).toBe("string");
         expect(tool.description).toBeDefined();
         expect(tool.inputSchema).toBeDefined();
       }
     });
 
-    it.skip('should call a management tool via MCP protocol', async () => {
+    it.skip("should call a management tool via MCP protocol", async () => {
       // TODO: Fix integration test - requires complex Better Auth mocking
       // Create transport with Authorization header
       const transport = new StreamableHTTPClientTransport(
-        new URL('http://localhost:3000/mcp'),
+        new URL("http://localhost:3000/mcp"),
       );
 
       // Create MCP client
       client = new Client({
-        name: 'test-client',
-        version: '1.0.0',
+        name: "test-client",
+        version: "1.0.0",
       });
 
       // Connect client to transport
       await client.connect(transport);
 
       // Call ORGANIZATION_LIST tool
-      const result = await client.callTool({
-        name: 'ORGANIZATION_LIST',
-        arguments: {},
-      }).catch(err => {
-        console.error('Error calling tool:', err);
-        throw err;
-      });
+      const result = await client
+        .callTool({
+          name: "ORGANIZATION_LIST",
+          arguments: {},
+        })
+        .catch((err) => {
+          console.error("Error calling tool:", err);
+          throw err;
+        });
 
       // Verify response structure
       expect(result).toBeDefined();
@@ -156,4 +172,3 @@ describe('MCP Integration', () => {
     });
   });
 });
-

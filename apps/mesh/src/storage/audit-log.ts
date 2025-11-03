@@ -1,12 +1,12 @@
 /**
  * Audit Log Storage Implementation
- * 
+ *
  * Tracks all tool executions for auditing and compliance
  */
 
-import type { Kysely } from 'kysely';
-import { nanoid } from 'nanoid';
-import type { Database, AuditLog } from './types';
+import type { Kysely } from "kysely";
+import { nanoid } from "nanoid";
+import type { Database, AuditLog } from "./types";
 
 export interface LogAuditParams {
   organizationId?: string;
@@ -24,9 +24,9 @@ export class AuditLogStorage {
 
   async log(params: LogAuditParams): Promise<void> {
     const id = `audit_${nanoid()}`;
-    
+
     await this.db
-      .insertInto('audit_logs')
+      .insertInto("audit_logs")
       .values({
         id,
         organizationId: params.organizationId ?? null,
@@ -36,7 +36,7 @@ export class AuditLogStorage {
         allowed: params.allowed ? 1 : 0, // SQLite boolean
         duration: params.duration ?? null,
         timestamp: params.timestamp.toISOString(),
-        requestMetadata: params.requestMetadata 
+        requestMetadata: params.requestMetadata
           ? JSON.stringify(params.requestMetadata)
           : null,
       })
@@ -53,25 +53,33 @@ export class AuditLogStorage {
     limit?: number;
     offset?: number;
   }): Promise<AuditLog[]> {
-    let query = this.db.selectFrom('audit_logs').selectAll();
+    let query = this.db.selectFrom("audit_logs").selectAll();
 
     if (filters.organizationId) {
-      query = query.where('organizationId', '=', filters.organizationId);
+      query = query.where("organizationId", "=", filters.organizationId);
     }
     if (filters.userId) {
-      query = query.where('userId', '=', filters.userId);
+      query = query.where("userId", "=", filters.userId);
     }
     if (filters.connectionId) {
-      query = query.where('connectionId', '=', filters.connectionId);
+      query = query.where("connectionId", "=", filters.connectionId);
     }
     if (filters.toolName) {
-      query = query.where('toolName', '=', filters.toolName);
+      query = query.where("toolName", "=", filters.toolName);
     }
     if (filters.startDate) {
-      query = query.where('timestamp', '>=', filters.startDate.toISOString() as any);
+      query = query.where(
+        "timestamp",
+        ">=",
+        filters.startDate.toISOString() as any,
+      );
     }
     if (filters.endDate) {
-      query = query.where('timestamp', '<=', filters.endDate.toISOString() as any);
+      query = query.where(
+        "timestamp",
+        "<=",
+        filters.endDate.toISOString() as any,
+      );
     }
 
     if (filters.limit) {
@@ -82,14 +90,13 @@ export class AuditLogStorage {
     }
 
     const logs = await query.execute();
-    
-    return logs.map(log => ({
+
+    return logs.map((log) => ({
       ...log,
       allowed: log.allowed === 1, // Convert SQLite boolean
-      requestMetadata: log.requestMetadata 
+      requestMetadata: log.requestMetadata
         ? JSON.parse(log.requestMetadata as any)
         : null,
     }));
   }
 }
-

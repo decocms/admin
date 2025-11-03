@@ -10,27 +10,52 @@ const fourMB = 4 * 1024 * 1024;
 function warnProductionAPI(mode: string): PluginOption {
   const env = loadEnv(mode, process.cwd(), "");
   const useLocalBackend = env.VITE_USE_LOCAL_BACKEND !== "false";
-  
+
   return {
     name: "warn-production-api",
     configResolved() {
-      
       if (!useLocalBackend) {
         function showWarningBanner() {
           console.log("\n");
-          console.log("\x1b[41m\x1b[1m\x1b[37m╔═══════════════════════════════════════════════════════════════════╗\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                      ⚠️  WARNING  ⚠️                              ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║   YOU ARE USING PRODUCTION API (VITE_USE_LOCAL_BACKEND=false)     ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║   • This impacts REAL data in production                          ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║   • API logs will NOT appear in your console                      ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║   • All changes affect the live environment                       ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║   Set VITE_USE_LOCAL_BACKEND=true or run 'bun dev' instead        ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m");
-          console.log("\x1b[41m\x1b[1m\x1b[37m╚═══════════════════════════════════════════════════════════════════╝\x1b[0m");
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m╔═══════════════════════════════════════════════════════════════════╗\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                      ⚠️  WARNING  ⚠️                              ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║   YOU ARE USING PRODUCTION API (VITE_USE_LOCAL_BACKEND=false)     ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║   • This impacts REAL data in production                          ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║   • API logs will NOT appear in your console                      ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║   • All changes affect the live environment                       ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║   Set VITE_USE_LOCAL_BACKEND=true or run 'bun dev' instead        ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m║                                                                   ║\x1b[0m",
+          );
+          console.log(
+            "\x1b[41m\x1b[1m\x1b[37m╚═══════════════════════════════════════════════════════════════════╝\x1b[0m",
+          );
           console.log("\n");
         }
 

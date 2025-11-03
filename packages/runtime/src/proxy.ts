@@ -72,12 +72,16 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           : undefined;
 
         // Create a connection with the tool name in the URL path for better logging
-        const toolConnection = {
-          ...connection,
-          url: connection.url.endsWith("/")
-            ? `${connection.url}tool/${String(name)}`
-            : `${connection.url}/tool/${String(name)}`,
-        };
+        // Only modify connections that have a URL property (HTTP, SSE, Websocket)
+        let toolConnection = connection;
+        if ("url" in connection && typeof connection.url === "string") {
+          toolConnection = {
+            ...connection,
+            url: connection.url.endsWith("/")
+              ? `${connection.url}tool/${String(name)}`
+              : `${connection.url}/tool/${String(name)}`,
+          };
+        }
 
         const client = await createServerClient(
           { connection: toolConnection },

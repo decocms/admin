@@ -372,7 +372,7 @@ export function DocumentEditor({
         
         /* Heading placeholders */
         .ProseMirror h1.is-empty::before {
-          content: 'Heading 1';
+          content: 'Type something...';
           color: var(--muted-foreground);
           opacity: 0.5;
           pointer-events: none;

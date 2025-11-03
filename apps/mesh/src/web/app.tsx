@@ -1,10 +1,8 @@
 import { useState } from "react";
-import {
-  UserButton,
-  OrganizationSwitcher,
-} from "@daveyplate/better-auth-ui";
+import { UserButton, OrganizationSwitcher } from "@daveyplate/better-auth-ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetcher } from "@/tools/client";
+import { authClient } from "./lib/auth-client";
 
 function TestFetchMcp() {
   const queryClient = useQueryClient();
@@ -57,7 +55,7 @@ function TestFetchMcp() {
   return (
     <div className="w-full max-w-4xl p-6">
       <h2 className="text-2xl font-bold mb-6">Connections Manager</h2>
-      
+
       {/* Create Connection Form */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="text-xl font-semibold mb-4">Create New Connection</h3>
@@ -76,7 +74,9 @@ function TestFetchMcp() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">
+              Description
+            </label>
             <textarea
               className="w-full px-3 py-2 border rounded-md"
               rows={3}
@@ -120,7 +120,9 @@ function TestFetchMcp() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Token (optional)</label>
+            <label className="block text-sm font-medium mb-1">
+              Token (optional)
+            </label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded-md"
@@ -142,7 +144,8 @@ function TestFetchMcp() {
 
           {createMutation.isError && (
             <div className="text-red-600 text-sm">
-              Error: {createMutation.error?.message || "Failed to create connection"}
+              Error:{" "}
+              {createMutation.error?.message || "Failed to create connection"}
             </div>
           )}
 
@@ -157,7 +160,7 @@ function TestFetchMcp() {
       {/* Connections List */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-xl font-semibold mb-4">Existing Connections</h3>
-        
+
         {query.isLoading && (
           <div className="text-gray-500">Loading connections...</div>
         )}
@@ -188,8 +191,8 @@ function TestFetchMcp() {
                       connection.status === "active"
                         ? "bg-green-100 text-green-800"
                         : connection.status === "inactive"
-                        ? "bg-gray-100 text-gray-800"
-                        : "bg-red-100 text-red-800"
+                          ? "bg-gray-100 text-gray-800"
+                          : "bg-red-100 text-red-800"
                     }`}
                   >
                     {connection.status}
@@ -201,7 +204,9 @@ function TestFetchMcp() {
                   </p>
                 )}
                 <div className="flex gap-4 text-sm text-gray-500">
-                  <span className="font-medium">{connection.connectionType}</span>
+                  <span className="font-medium">
+                    {connection.connectionType}
+                  </span>
                   <span className="truncate">{connection.connectionUrl}</span>
                 </div>
                 <div className="text-xs text-gray-400 mt-2">
@@ -212,6 +217,24 @@ function TestFetchMcp() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SignInWithSSO() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Sign In with SSO</h2>
+      <button
+        onClick={() => {
+          authClient.signIn.sso({
+            providerId: "microsoft",
+            callbackURL: `/`,
+          });
+        }}
+      >
+        Sign In with Microsoft
+      </button>
     </div>
   );
 }
@@ -228,10 +251,12 @@ export default function App() {
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-6xl mx-auto py-8">
         <TestFetchMcp />
       </div>
+
+      <SignInWithSSO />
     </div>
   );
 }

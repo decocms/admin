@@ -10,7 +10,7 @@ interface ReactViewProps {
   url: string;
 }
 
-const WELL_KNOWN_VIEWS = {
+export const WELL_KNOWN_VIEWS = {
   workflow_detail: WorkflowDisplay,
   workflow_run_detail: WorkflowRunDetail,
   tool_detail: ToolDetail,

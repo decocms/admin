@@ -1,13 +1,13 @@
 /**
  * Database Migration Runner
- * 
+ *
  * Runs Kysely migrations to create/update database schema
  */
 
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { Migrator, FileMigrationProvider } from 'kysely';
-import { getDb } from './index';
+import { promises as fs } from "fs";
+import * as path from "path";
+import { Migrator, FileMigrationProvider } from "kysely";
+import { getDb } from "./index";
 
 /**
  * Run all pending migrations
@@ -21,27 +21,27 @@ export async function migrateToLatest(): Promise<void> {
       fs,
       path,
       // Absolute path to migrations folder
-      migrationFolder: path.join(__dirname, '../../migrations'),
+      migrationFolder: path.join(__dirname, "../../migrations"),
     }),
   });
 
   const { error, results } = await migrator.migrateToLatest();
 
   results?.forEach((it) => {
-    if (it.status === 'Success') {
+    if (it.status === "Success") {
       console.log(`✅ Migration "${it.migrationName}" executed successfully`);
-    } else if (it.status === 'Error') {
+    } else if (it.status === "Error") {
       console.error(`❌ Failed to execute migration "${it.migrationName}"`);
     }
   });
 
   if (error) {
-    console.error('Failed to migrate');
+    console.error("Failed to migrate");
     console.error(error);
     throw error;
   }
 
-  console.log('🎉 All migrations completed successfully');
+  console.log("🎉 All migrations completed successfully");
 }
 
 /**
@@ -55,24 +55,25 @@ export async function migrateDown(): Promise<void> {
     provider: new FileMigrationProvider({
       fs,
       path,
-      migrationFolder: path.join(__dirname, '../../migrations'),
+      migrationFolder: path.join(__dirname, "../../migrations"),
     }),
   });
 
   const { error, results } = await migrator.migrateDown();
 
   results?.forEach((it) => {
-    if (it.status === 'Success') {
-      console.log(`✅ Migration "${it.migrationName}" rolled back successfully`);
-    } else if (it.status === 'Error') {
+    if (it.status === "Success") {
+      console.log(
+        `✅ Migration "${it.migrationName}" rolled back successfully`,
+      );
+    } else if (it.status === "Error") {
       console.error(`❌ Failed to rollback migration "${it.migrationName}"`);
     }
   });
 
   if (error) {
-    console.error('Failed to rollback migration');
+    console.error("Failed to rollback migration");
     console.error(error);
     throw error;
   }
 }
-

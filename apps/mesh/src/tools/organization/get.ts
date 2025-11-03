@@ -1,16 +1,16 @@
 /**
  * ORGANIZATION_GET Tool
- * 
+ *
  * Get organization details by slug or ID
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_GET = defineTool({
-  name: 'ORGANIZATION_GET',
-  description: 'Get organization details by slug or ID',
+  name: "ORGANIZATION_GET",
+  description: "Get organization details by slug or ID",
 
   inputSchema: z.object({
     // No input needed - uses active organization from context
@@ -41,10 +41,9 @@ export const ORGANIZATION_GET = defineTool({
     });
 
     if (!organization) {
-      throw new Error('No active organization found');
+      throw new Error("No active organization found");
     }
 
     return organization;
   },
 });
-

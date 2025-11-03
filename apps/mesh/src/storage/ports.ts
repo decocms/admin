@@ -1,11 +1,11 @@
 /**
  * Storage Port Interfaces
- * 
+ *
  * These interfaces define the contracts for storage adapters.
  * Following the Ports & Adapters (Hexagonal Architecture) pattern.
  */
 
-import type { MCPConnection, OAuthConfig } from './types';
+import type { MCPConnection, OAuthConfig } from "./types";
 
 // ============================================================================
 // Connection Storage Port
@@ -20,7 +20,7 @@ export interface CreateConnectionData {
   appName?: string;
   appId?: string;
   connection: {
-    type: 'HTTP' | 'SSE' | 'Websocket';
+    type: "HTTP" | "SSE" | "Websocket";
     url: string;
     token?: string;
     headers?: Record<string, string>;
@@ -33,10 +33,15 @@ export interface UpdateConnectionData {
   name?: string;
   description?: string;
   icon?: string;
-  status?: 'active' | 'inactive' | 'error';
+  status?: "active" | "inactive" | "error";
   connectionToken?: string;
   metadata?: Record<string, any>;
-  tools?: Array<{ name: string; description?: string; inputSchema: object; outputSchema?: object }>;
+  tools?: Array<{
+    name: string;
+    description?: string;
+    inputSchema: object;
+    outputSchema?: object;
+  }>;
   bindings?: string[];
 }
 
@@ -48,4 +53,3 @@ export interface ConnectionStoragePort {
   delete(id: string): Promise<void>;
   testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }>;
 }
-

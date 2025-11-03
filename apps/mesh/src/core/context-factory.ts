@@ -1,6 +1,6 @@
 /**
  * Context Factory
- * 
+ *
  * Creates MeshContext instances from HTTP requests (via Hono Context).
  * Handles:
  * - API key verification
@@ -9,15 +9,15 @@
  * - Base URL derivation
  */
 
-import type { Meter, Tracer } from '@opentelemetry/api';
-import type { Context } from 'hono';
-import type { Kysely } from 'kysely';
-import { ConnectionStorage } from '../storage/connection';
-import { AuditLogStorage } from '../storage/audit-log';
-import type { Database } from '../storage/types';
-import { AccessControl } from './access-control';
-import type { MeshContext, BetterAuthInstance } from './mesh-context';
-import { CredentialVault } from '../encryption/credential-vault';
+import type { Meter, Tracer } from "@opentelemetry/api";
+import type { Context } from "hono";
+import type { Kysely } from "kysely";
+import { ConnectionStorage } from "../storage/connection";
+import { AuditLogStorage } from "../storage/audit-log";
+import type { Database } from "../storage/types";
+import { AccessControl } from "./access-control";
+import type { MeshContext, BetterAuthInstance } from "./mesh-context";
+import { CredentialVault } from "../encryption/credential-vault";
 
 // ============================================================================
 // Configuration
@@ -45,7 +45,7 @@ export interface MeshContextConfig {
 export class UnauthorizedError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'UnauthorizedError';
+    this.name = "UnauthorizedError";
   }
 }
 
@@ -55,7 +55,7 @@ export class UnauthorizedError extends Error {
 export class NotFoundError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'NotFoundError';
+    this.name = "NotFoundError";
   }
 }
 
@@ -86,10 +86,10 @@ interface OAuthSession {
 
 /**
  * Parse OAuth scopes into Better Auth permission format
- * 
+ *
  * Input: "openid profile email self:*"
  * Output: { "self": ["*"] }
- * 
+ *
  * Input: "openid profile email self:PROJECT_CREATE self:CONNECTION_LIST"
  * Output: { "self": ["PROJECT_CREATE", "CONNECTION_LIST"] }
  */
@@ -97,10 +97,10 @@ function scopesToPermissions(scopes: string): Record<string, string[]> {
   const permissions: Record<string, string[]> = {};
 
   // Split scopes and filter for self: prefixed ones
-  const scopeList = scopes.split(' ').filter(s => s.trim());
+  const scopeList = scopes.split(" ").filter((s) => s.trim());
 
   for (const scope of scopeList) {
-    const [connection, tool] = scope.split(':');
+    const [connection, tool] = scope.split(":");
     if (connection && tool) {
       if (!permissions[connection]) {
         permissions[connection] = [];
@@ -118,7 +118,7 @@ function scopesToPermissions(scopes: string): Record<string, string[]> {
  */
 async function authenticateRequest(
   c: Context,
-  auth: BetterAuthInstance
+  auth: BetterAuthInstance,
 ): Promise<{
   user?: any;
   permissions: Record<string, string[]>;
@@ -126,17 +126,17 @@ async function authenticateRequest(
   apiKeyId?: string;
   organization?: { id: string; slug: string; name: string };
 }> {
-  const authHeader = c.req.header('Authorization');
+  const authHeader = c.req.header("Authorization");
 
   // Try OAuth session first (getMcpSession)
   try {
-    const session = await auth.api.getMcpSession({
+    const session = (await auth.api.getMcpSession({
       headers: c.req.raw.headers,
-    }) as OAuthSession | null;
+    })) as OAuthSession | null;
 
     if (session) {
       // Parse OAuth scopes into permissions
-      const scopes = session.scopes || '';
+      const scopes = session.scopes || "";
       const permissions = scopesToPermissions(scopes);
 
       // Load user from userId in session
@@ -144,35 +144,39 @@ async function authenticateRequest(
 
       // Get active organization from Better Auth organization plugin
       // The session might include organization context
-      const orgData = await auth.api.getFullOrganization({
-        headers: c.req.raw.headers,
-      }).catch(() => null);
+      const orgData = await auth.api
+        .getFullOrganization({
+          headers: c.req.raw.headers,
+        })
+        .catch(() => null);
 
       return {
         user: { id: userId },
         permissions,
-        organization: orgData ? {
-          id: orgData.id,
-          slug: orgData.slug,
-          name: orgData.name,
-        } : undefined,
+        organization: orgData
+          ? {
+              id: orgData.id,
+              slug: orgData.slug,
+              name: orgData.name,
+            }
+          : undefined,
       };
     }
   } catch (error) {
     const err = error as Error;
-    console.log('[Auth] OAuth session check failed:', err.message);
+    console.log("[Auth] OAuth session check failed:", err.message);
   }
 
   // Try API Key authentication
-  if (authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith("Bearer ")) {
     try {
-      const token = authHeader.replace('Bearer ', '').trim();
+      const token = authHeader.replace("Bearer ", "").trim();
       const result = await auth.api.verifyApiKey({
         body: { key: token },
       });
 
       if (result?.valid && result.key) {
-        console.log('[Auth] API key authenticated:', {
+        console.log("[Auth] API key authenticated:", {
           keyName: result.key.name,
           permissions: result.key.permissions,
         });
@@ -183,15 +187,17 @@ async function authenticateRequest(
         return {
           permissions: result.key.permissions || {},
           apiKeyId: result.key.id,
-          organization: organization ? {
-            id: organization.id,
-            slug: organization.slug,
-            name: organization.name,
-          } : undefined,
+          organization: organization
+            ? {
+                id: organization.id,
+                slug: organization.slug,
+                name: organization.name,
+              }
+            : undefined,
         };
       }
     } catch (error: any) {
-      console.log('[Auth] API key check failed:', error.message);
+      console.log("[Auth] API key check failed:", error.message);
     }
   }
 
@@ -209,12 +215,12 @@ async function authenticateRequest(
 
 /**
  * Create a context factory function
- * 
+ *
  * The factory creates storage adapters once (singleton pattern) and
  * returns a function that creates MeshContext from Hono Context
  */
 export function createMeshContextFactory(
-  config: MeshContextConfig
+  config: MeshContextConfig,
 ): (c: Context) => Promise<MeshContext> {
   // Create storage adapters once (singleton pattern)
   const storage = {
@@ -235,15 +241,15 @@ export function createMeshContextFactory(
     const authResult = await authenticateRequest(c, config.auth);
 
     // Build auth object for MeshContext
-    const auth: MeshContext['auth'] = {
+    const auth: MeshContext["auth"] = {
       user: authResult.user,
     };
 
     if (authResult.apiKeyId) {
       auth.apiKey = {
         id: authResult.apiKeyId,
-        name: '', // Not needed for access control
-        userId: '', // Not needed for access control
+        name: "", // Not needed for access control
+        userId: "", // Not needed for access control
         permissions: authResult.permissions,
       };
     }
@@ -262,7 +268,7 @@ export function createMeshContextFactory(
       undefined, // toolName set later by defineTool
       authResult.permissions, // Unified permissions from OAuth or API key
       authResult.role, // Role from OAuth session or undefined for API keys
-      'self', // Default connectionId for management APIs
+      "self", // Default connectionId for management APIs
     );
 
     return {
@@ -279,11 +285,10 @@ export function createMeshContextFactory(
       metadata: {
         requestId: crypto.randomUUID(),
         timestamp: new Date(),
-        userAgent: c.req.header('User-Agent'),
-        ipAddress: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For'),
+        userAgent: c.req.header("User-Agent"),
+        ipAddress:
+          c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For"),
       },
     };
   };
 }
-
-

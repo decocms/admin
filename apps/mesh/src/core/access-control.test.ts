@@ -1,5 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
-import { AccessControl, ForbiddenError, UnauthorizedError } from './access-control';
+import { describe, expect, it, vi } from "vitest";
+import {
+  AccessControl,
+  ForbiddenError,
+  UnauthorizedError,
+} from "./access-control";
 
 const createMockAuth = (): any => ({
   api: {
@@ -7,15 +11,15 @@ const createMockAuth = (): any => ({
   },
 });
 
-describe('AccessControl', () => {
-  describe('grant', () => {
-    it('should grant access unconditionally', () => {
+describe("AccessControl", () => {
+  describe("grant", () => {
+    it("should grant access unconditionally", () => {
       const ac = new AccessControl(createMockAuth());
       ac.grant();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should allow multiple grant calls', () => {
+    it("should allow multiple grant calls", () => {
       const ac = new AccessControl(createMockAuth());
       ac.grant();
       ac.grant();
@@ -23,184 +27,184 @@ describe('AccessControl', () => {
     });
   });
 
-  describe('check', () => {
-    it('should grant access when permission exists', async () => {
+  describe("check", () => {
+    it("should grant access when permission exists", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'TEST_TOOL',
-        { 'self': ['TEST_TOOL'] }, // Has permission on self connection
-        'user'
+        "user_1",
+        "TEST_TOOL",
+        { self: ["TEST_TOOL"] }, // Has permission on self connection
+        "user",
       );
 
       await ac.check();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should deny access when permission missing', async () => {
+    it("should deny access when permission missing", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'TEST_TOOL',
-        { 'self': ['OTHER_TOOL'] }, // Has OTHER_TOOL but not TEST_TOOL
-        'user'
+        "user_1",
+        "TEST_TOOL",
+        { self: ["OTHER_TOOL"] }, // Has OTHER_TOOL but not TEST_TOOL
+        "user",
       );
 
       await expect(ac.check()).rejects.toThrow(ForbiddenError);
       expect(ac.granted()).toBe(false);
     });
 
-    it('should check current tool name by default', async () => {
+    it("should check current tool name by default", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'MY_TOOL',
-        { 'self': ['MY_TOOL'] }, // Permission on self connection
-        'user'
+        "user_1",
+        "MY_TOOL",
+        { self: ["MY_TOOL"] }, // Permission on self connection
+        "user",
       );
 
       await ac.check();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should check specific resources when provided', async () => {
+    it("should check specific resources when provided", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
-        { 'conn_123': ['SEND_MESSAGE'] },
-        'user',
-        'conn_123' // Checking conn_123
+        { conn_123: ["SEND_MESSAGE"] },
+        "user",
+        "conn_123", // Checking conn_123
       );
 
-      await ac.check('SEND_MESSAGE');
+      await ac.check("SEND_MESSAGE");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should use OR logic for multiple resources', async () => {
+    it("should use OR logic for multiple resources", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
-        { 'self': ['TOOL2'] }, // Has TOOL2 on self connection
-        'user'
+        { self: ["TOOL2"] }, // Has TOOL2 on self connection
+        "user",
       );
 
       // Has TOOL2 but not TOOL1 - should succeed (OR logic)
-      await ac.check('TOOL1', 'TOOL2');
+      await ac.check("TOOL1", "TOOL2");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should skip check if already granted', async () => {
+    it("should skip check if already granted", async () => {
       const mockAuth = createMockAuth();
-      const ac = new AccessControl(mockAuth, 'user_1');
+      const ac = new AccessControl(mockAuth, "user_1");
 
       ac.grant(); // Grant first
 
-      await ac.check('ANYTHING'); // Should not check
+      await ac.check("ANYTHING"); // Should not check
       expect(mockAuth.api.userHasPermission).not.toHaveBeenCalled();
     });
 
-    it('should bypass checks for admin role', async () => {
+    it("should bypass checks for admin role", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'TEST_TOOL',
+        "user_1",
+        "TEST_TOOL",
         {}, // No permissions
-        'admin' // Admin role
+        "admin", // Admin role
       );
 
       await ac.check();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should check connection-specific permissions', async () => {
+    it("should check connection-specific permissions", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'SEND_MESSAGE',
-        { 'conn_123': ['SEND_MESSAGE'] },
-        'user',
-        'conn_123' // Connection ID
+        "user_1",
+        "SEND_MESSAGE",
+        { conn_123: ["SEND_MESSAGE"] },
+        "user",
+        "conn_123", // Connection ID
       );
 
-      await ac.check('SEND_MESSAGE');
+      await ac.check("SEND_MESSAGE");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should throw when no resources specified', async () => {
+    it("should throw when no resources specified", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined, // No tool name
         {},
-        'user'
+        "user",
       );
 
       await expect(ac.check()).rejects.toThrow(
-        'No resources specified for access check'
+        "No resources specified for access check",
       );
     });
 
-    it('should work with wildcard permissions', async () => {
+    it("should work with wildcard permissions", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
-        { 'conn_123': ['*'] }, // Wildcard
-        'user',
-        'conn_123' // Checking conn_123
+        { conn_123: ["*"] }, // Wildcard
+        "user",
+        "conn_123", // Checking conn_123
       );
 
-      await ac.check('SOME_TOOL');
+      await ac.check("SOME_TOOL");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should deny access when no userId or permissions', async () => {
+    it("should deny access when no userId or permissions", async () => {
       const ac = new AccessControl(
         createMockAuth(),
         undefined, // No user
-        'TEST_TOOL',
+        "TEST_TOOL",
         undefined, // No permissions
-        undefined
+        undefined,
       );
 
       await expect(ac.check()).rejects.toThrow(UnauthorizedError);
     });
   });
 
-  describe('granted', () => {
-    it('should return false initially', () => {
+  describe("granted", () => {
+    it("should return false initially", () => {
       const ac = new AccessControl(createMockAuth());
       expect(ac.granted()).toBe(false);
     });
 
-    it('should return true after grant', () => {
+    it("should return true after grant", () => {
       const ac = new AccessControl(createMockAuth());
       ac.grant();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should return true after successful check', async () => {
+    it("should return true after successful check", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'TEST_TOOL',
-        { 'self': ['TEST_TOOL'] }, // Permission on self connection
-        'user'
+        "user_1",
+        "TEST_TOOL",
+        { self: ["TEST_TOOL"] }, // Permission on self connection
+        "user",
       );
 
       await ac.check();
       expect(ac.granted()).toBe(true);
     });
 
-    it('should return false after failed check', async () => {
+    it("should return false after failed check", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
-        'TEST_TOOL',
+        "user_1",
+        "TEST_TOOL",
         {}, // No permissions
-        'user' // Not admin
+        "user", // Not admin
       );
 
       try {
@@ -213,122 +217,115 @@ describe('AccessControl', () => {
     });
   });
 
-  describe('manual permission check', () => {
-    it('should match exact resource name', async () => {
+  describe("manual permission check", () => {
+    it("should match exact resource name", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
-        { 'self': ['EXACT_MATCH'] }, // Permission on self connection
-        'user'
+        { self: ["EXACT_MATCH"] }, // Permission on self connection
+        "user",
       );
 
-      await ac.check('EXACT_MATCH');
+      await ac.check("EXACT_MATCH");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should match resource in actions array', async () => {
+    it("should match resource in actions array", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
-        { 'conn_123': ['SEND_MESSAGE', 'LIST_THREADS'] },
-        'user',
-        'conn_123' // Checking conn_123
+        { conn_123: ["SEND_MESSAGE", "LIST_THREADS"] },
+        "user",
+        "conn_123", // Checking conn_123
       );
 
-      await ac.check('SEND_MESSAGE');
+      await ac.check("SEND_MESSAGE");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should respect connection ID filter', async () => {
+    it("should respect connection ID filter", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
         {
-          'conn_123': ['SEND_MESSAGE'],
-          'conn_456': ['SEND_MESSAGE'],
+          conn_123: ["SEND_MESSAGE"],
+          conn_456: ["SEND_MESSAGE"],
         },
-        'user',
-        'conn_123' // Only check this connection
+        "user",
+        "conn_123", // Only check this connection
       );
 
-      await ac.check('SEND_MESSAGE');
+      await ac.check("SEND_MESSAGE");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should deny when connection ID does not match', async () => {
+    it("should deny when connection ID does not match", async () => {
       const ac = new AccessControl(
         createMockAuth(),
-        'user_1',
+        "user_1",
         undefined,
         {
-          'conn_456': ['SEND_MESSAGE'], // Different connection
+          conn_456: ["SEND_MESSAGE"], // Different connection
         },
-        'user',
-        'conn_123' // Checking this connection
+        "user",
+        "conn_123", // Checking this connection
       );
 
-      await expect(ac.check('SEND_MESSAGE')).rejects.toThrow(ForbiddenError);
+      await expect(ac.check("SEND_MESSAGE")).rejects.toThrow(ForbiddenError);
     });
   });
 
-  describe('Better Auth integration', () => {
-    it('should use Better Auth API when available', async () => {
+  describe("Better Auth integration", () => {
+    it("should use Better Auth API when available", async () => {
       const mockAuth = createMockAuth();
       mockAuth.api.userHasPermission.mockResolvedValue({
         data: { has: true },
       });
 
-      const ac = new AccessControl(
-        mockAuth,
-        'user_1',
-        'TEST_TOOL',
-        {},
-        'user'
-      );
+      const ac = new AccessControl(mockAuth, "user_1", "TEST_TOOL", {}, "user");
 
       await ac.check();
 
       expect(mockAuth.api.userHasPermission).toHaveBeenCalledWith({
         body: expect.objectContaining({
-          userId: 'user_1',
-          role: 'user',
+          userId: "user_1",
+          role: "user",
         }),
       });
       expect(ac.granted()).toBe(true);
     });
 
-    it('should fall back to manual check when Better Auth fails', async () => {
+    it("should fall back to manual check when Better Auth fails", async () => {
       const mockAuth = createMockAuth();
-      mockAuth.api.userHasPermission.mockRejectedValue(new Error('API error'));
+      mockAuth.api.userHasPermission.mockRejectedValue(new Error("API error"));
 
       const ac = new AccessControl(
         mockAuth,
-        'user_1',
+        "user_1",
         undefined,
-        { 'self': ['TEST_TOOL'] }, // Permission on self connection
-        'user'
+        { self: ["TEST_TOOL"] }, // Permission on self connection
+        "user",
       );
 
       // Should not throw - falls back to manual check
-      await ac.check('TEST_TOOL');
+      await ac.check("TEST_TOOL");
       expect(ac.granted()).toBe(true);
     });
 
-    it('should fall back to manual check when Better Auth not configured', async () => {
+    it("should fall back to manual check when Better Auth not configured", async () => {
       const ac = new AccessControl(
         null as any, // No auth instance
-        'user_1',
+        "user_1",
         undefined,
-        { 'self': ['TEST_TOOL'] }, // Permission on self connection
-        'user'
+        { self: ["TEST_TOOL"] }, // Permission on self connection
+        "user",
       );
 
-      await ac.check('TEST_TOOL');
+      await ac.check("TEST_TOOL");
       expect(ac.granted()).toBe(true);
     });
   });
 });
-

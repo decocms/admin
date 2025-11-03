@@ -1,6 +1,6 @@
 /**
  * Credential Vault
- * 
+ *
  * Encrypts and decrypts sensitive credentials using AES-256-GCM.
  * Used for:
  * - Connection tokens
@@ -8,9 +8,9 @@
  * - Downstream MCP tokens
  */
 
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16; // For AES, this is always 16
 const AUTH_TAG_LENGTH = 16;
 const KEY_LENGTH = 32; // 256 bits
@@ -24,15 +24,12 @@ export class CredentialVault {
 
   constructor(encryptionKey: string) {
     // Ensure key is exactly 32 bytes
-    if (Buffer.from(encryptionKey, 'base64').length === KEY_LENGTH) {
-      this.key = Buffer.from(encryptionKey, 'base64');
+    if (Buffer.from(encryptionKey, "base64").length === KEY_LENGTH) {
+      this.key = Buffer.from(encryptionKey, "base64");
     } else {
       // Hash the key to get 32 bytes
-      const crypto = require('crypto');
-      this.key = crypto
-        .createHash('sha256')
-        .update(encryptionKey)
-        .digest();
+      const crypto = require("crypto");
+      this.key = crypto.createHash("sha256").update(encryptionKey).digest();
     }
   }
 
@@ -44,7 +41,7 @@ export class CredentialVault {
     const iv = randomBytes(IV_LENGTH);
     const cipher = createCipheriv(ALGORITHM, this.key, iv);
 
-    let encrypted = cipher.update(plaintext, 'utf8');
+    let encrypted = cipher.update(plaintext, "utf8");
     encrypted = Buffer.concat([encrypted, cipher.final()]);
 
     const authTag = cipher.getAuthTag();
@@ -52,7 +49,7 @@ export class CredentialVault {
     // Combine: IV + authTag + encrypted data
     const combined = Buffer.concat([iv, authTag, encrypted]);
 
-    return combined.toString('base64');
+    return combined.toString("base64");
   }
 
   /**
@@ -60,7 +57,7 @@ export class CredentialVault {
    * Expects base64-encoded string containing IV + authTag + encrypted data
    */
   async decrypt(ciphertext: string): Promise<string> {
-    const combined = Buffer.from(ciphertext, 'base64');
+    const combined = Buffer.from(ciphertext, "base64");
 
     // Extract components
     const iv = combined.subarray(0, IV_LENGTH);
@@ -73,14 +70,14 @@ export class CredentialVault {
     let decrypted = decipher.update(encrypted);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-    return decrypted.toString('utf8');
+    return decrypted.toString("utf8");
   }
 
   /**
    * Generate a new random encryption key (base64-encoded 32 bytes)
    */
   static generateKey(): string {
-    return randomBytes(KEY_LENGTH).toString('base64');
+    return randomBytes(KEY_LENGTH).toString("base64");
   }
 }
 
@@ -92,12 +89,11 @@ export function createVault(): CredentialVault {
 
   if (!encryptionKey) {
     console.warn(
-      'ENCRYPTION_KEY not set! Generating random key. ' +
-      'This means encrypted data will be unrecoverable after restart.'
+      "ENCRYPTION_KEY not set! Generating random key. " +
+        "This means encrypted data will be unrecoverable after restart.",
     );
     encryptionKey = CredentialVault.generateKey();
   }
 
   return new CredentialVault(encryptionKey);
 }
-

@@ -1,45 +1,45 @@
 /**
  * Database Factory for MCP Mesh
- * 
+ *
  * Auto-detects database dialect from DATABASE_URL and returns configured Kysely instance.
  * Supports SQLite (default) and PostgreSQL.
- * 
+ *
  * The dialect is specified ONCE at initialization, not in schema files.
  */
 
-import { existsSync, mkdirSync } from 'fs';
-import { Kysely, PostgresDialect } from 'kysely';
-import { BunWorkerDialect } from 'kysely-bun-worker';
-import { Pool } from 'pg';
-import type { Database as DatabaseSchema } from '../storage/types';
+import { existsSync, mkdirSync } from "fs";
+import { Kysely, PostgresDialect } from "kysely";
+import { BunWorkerDialect } from "kysely-bun-worker";
+import { Pool } from "pg";
+import type { Database as DatabaseSchema } from "../storage/types";
 
 /**
  * Create Kysely database instance with auto-detected dialect
  */
 export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
-  const url = databaseUrl || 'file:./data/mesh.db';
+  const url = databaseUrl || "file:./data/mesh.db";
 
   // Handle special case: ":memory:" without protocol
-  if (url === ':memory:') {
-    return createSqliteDatabase(':memory:');
+  if (url === ":memory:") {
+    return createSqliteDatabase(":memory:");
   }
 
   const parsed = new URL(url);
-  const protocol = parsed.protocol.replace(':', '');
+  const protocol = parsed.protocol.replace(":", "");
 
   switch (protocol) {
-    case 'postgres':
-    case 'postgresql':
+    case "postgres":
+    case "postgresql":
       return createPostgresDatabase(url);
 
-    case 'sqlite':
-    case 'file':
+    case "sqlite":
+    case "file":
       return createSqliteDatabase(parsed.pathname);
 
     default:
       throw new Error(
         `Unsupported database protocol: ${protocol}. ` +
-        `Supported protocols: postgres://, postgresql://, sqlite://, file://`
+          `Supported protocols: postgres://, postgresql://, sqlite://, file://`,
       );
   }
 }
@@ -47,7 +47,9 @@ export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
 /**
  * Create PostgreSQL database connection
  */
-function createPostgresDatabase(connectionString: string): Kysely<DatabaseSchema> {
+function createPostgresDatabase(
+  connectionString: string,
+): Kysely<DatabaseSchema> {
   const dialect = new PostgresDialect({
     pool: new Pool({
       connectionString,
@@ -64,32 +66,35 @@ function createPostgresDatabase(connectionString: string): Kysely<DatabaseSchema
  */
 function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
   // Ensure directory exists for file-based databases
-  if (dbPath !== ':memory:' && dbPath !== '/' && dbPath) {
-    const dir = dbPath.substring(0, dbPath.lastIndexOf('/'));
-    if (dir && dir !== '/' && !existsSync(dir)) {
+  if (dbPath !== ":memory:" && dbPath !== "/" && dbPath) {
+    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
+    if (dir && dir !== "/" && !existsSync(dir)) {
       try {
         mkdirSync(dir, { recursive: true });
       } catch (error) {
         // If directory creation fails, use in-memory database
-        console.warn(`Failed to create directory ${dir}, using in-memory database`);
-        dbPath = ':memory:';
+        console.warn(
+          `Failed to create directory ${dir}, using in-memory database`,
+        );
+        dbPath = ":memory:";
       }
     }
   }
 
   const dialect = new BunWorkerDialect({
-    url: dbPath || ':memory:',
+    url: dbPath || ":memory:",
   });
 
   return new Kysely<DatabaseSchema>({ dialect });
 }
 
-
 /**
  * Close database connection
  * Useful for graceful shutdown
  */
-export async function closeDatabase(database: Kysely<DatabaseSchema>): Promise<void> {
+export async function closeDatabase(
+  database: Kysely<DatabaseSchema>,
+): Promise<void> {
   await database.destroy();
 }
 
@@ -98,7 +103,10 @@ export async function closeDatabase(database: Kysely<DatabaseSchema>): Promise<v
  */
 export function getDatabaseDialect(database: Kysely<DatabaseSchema>): string {
   // Access internal executor to get dialect
-  return (database as any).getExecutor?.()?.adapter?.connectionProvider?.constructor?.name || 'unknown';
+  return (
+    (database as any).getExecutor?.()?.adapter?.connectionProvider?.constructor
+      ?.name || "unknown"
+  );
 }
 
 /**
@@ -110,7 +118,7 @@ let dbInstance: Kysely<DatabaseSchema> | null = null;
 
 export function getDb(): Kysely<DatabaseSchema> {
   if (!dbInstance) {
-    dbInstance = createDatabase(process.env.DATABASE_URL || ':memory:');
+    dbInstance = createDatabase(process.env.DATABASE_URL || ":memory:");
   }
   return dbInstance;
 }
@@ -123,4 +131,3 @@ export const db = new Proxy({} as Kysely<DatabaseSchema>, {
     return getDb()[prop as keyof Kysely<DatabaseSchema>];
   },
 });
-

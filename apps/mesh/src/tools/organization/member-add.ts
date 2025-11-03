@@ -1,16 +1,16 @@
 /**
  * ORGANIZATION_MEMBER_ADD Tool
- * 
+ *
  * Add a member to an organization
  */
 
-import { z } from 'zod/v3';
-import { defineTool } from '../../core/define-tool';
-import { requireAuth } from '../../core/mesh-context';
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_MEMBER_ADD = defineTool({
-  name: 'ORGANIZATION_MEMBER_ADD',
-  description: 'Add a member to an organization',
+  name: "ORGANIZATION_MEMBER_ADD",
+  description: "Add a member to an organization",
 
   inputSchema: z.object({
     organizationId: z.string().optional(), // Optional: defaults to active organization
@@ -28,7 +28,9 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
     // Use active organization if not specified
     const organizationId = input.organizationId || ctx.organization?.id;
     if (!organizationId) {
-      throw new Error('Organization ID required (no active organization in context)');
+      throw new Error(
+        "Organization ID required (no active organization in context)",
+      );
     }
 
     // Add member via Better Auth
@@ -41,10 +43,9 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
     });
 
     if (!result) {
-      throw new Error('Failed to add member');
+      throw new Error("Failed to add member");
     }
 
     return result;
   },
 });
-

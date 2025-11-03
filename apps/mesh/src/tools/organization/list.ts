@@ -46,8 +46,7 @@ export const ORGANIZATION_LIST = defineTool({
 
     // // List organizations via Better Auth
     try {
-      const orgs = await ctx.authInstance.api.listOrganizations({
-      });
+      const orgs = await ctx.authInstance.api.listOrganizations({});
 
       console.log({ orgs });
     } catch (error) {

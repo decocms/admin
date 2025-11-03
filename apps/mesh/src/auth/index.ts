@@ -18,9 +18,12 @@ import {
   openAPI,
   organization,
 } from "better-auth/plugins";
+import type { BetterAuthPlugin } from "better-auth";
+import { sso } from "@better-auth/sso";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { createAccessControl } from "better-auth/plugins/access";
+import { createSSOConfig, SSOConfig } from "./sso";
 
 /**
  * Load optional auth configuration from file
@@ -62,6 +65,70 @@ const admin = ac.newRole({
 const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))
   .flat();
+
+const authConfig: Partial<BetterAuthOptions> & {
+  ssoConfig?: SSOConfig;
+} = loadAuthConfig();
+
+const plugins = [
+  // Organization plugin for multi-tenant organization management
+  // https://www.better-auth.com/docs/plugins/organization
+  organization({
+    ac,
+    allowUserToCreateOrganization: true, // Users can create organizations by default
+    dynamicAccessControl: {
+      enabled: true,
+      maximumRolesPerOrganization: 500,
+    },
+    roles: {
+      user,
+      admin,
+    },
+  }),
+
+  // MCP plugin for OAuth 2.1 server
+  // https://www.better-auth.com/docs/plugins/mcp
+  mcp({
+    loginPage: "/auth/sign-in",
+    // Note: Authorization page (/authorize) is served as static HTML
+    // Better Auth will redirect there based on loginPage flow
+    oidcConfig: {
+      scopes: scopes,
+      metadata: { scopes_supported: scopes },
+      loginPage: "/auth/sign-in",
+    },
+  }),
+
+  // API Key plugin for direct tool access
+  // https://www.better-auth.com/docs/plugins/api-key
+  apiKey({
+    permissions: {
+      defaultPermissions: {
+        self: [
+          "ORGANIZATION_LIST",
+          "ORGANIZATION_GET", // Organization read access
+          "ORGANIZATION_MEMBER_LIST", // Member read access
+          "CONNECTION_LIST",
+          "CONNECTION_GET", // Connection read access
+        ],
+      },
+    },
+  }),
+
+  // Admin plugin for system-level super-admins
+  // https://www.better-auth.com/docs/plugins/admin
+  adminPlugin({
+    defaultRole: "user",
+    adminRoles: ["admin"],
+  }),
+
+  // OpenAPI plugin for API documentation
+  // https://www.better-auth.com/docs/plugins/openAPI
+  openAPI(),
+
+  sso(authConfig.ssoConfig ? createSSOConfig(authConfig.ssoConfig) : undefined),
+];
+
 /**
  * Better Auth instance with MCP, API Key, and Admin plugins
  */
@@ -79,64 +146,9 @@ export const auth = betterAuth({
   },
 
   // Load optional configuration from file
-  ...loadAuthConfig(),
+  ...authConfig,
 
-  plugins: [
-    // Organization plugin for multi-tenant organization management
-    // https://www.better-auth.com/docs/plugins/organization
-    organization({
-      ac,
-      allowUserToCreateOrganization: true, // Users can create organizations by default
-      dynamicAccessControl: {
-        enabled: true,
-        maximumRolesPerOrganization: 500,
-      },
-      roles: {
-        user,
-        admin,
-      },
-    }),
-
-    // MCP plugin for OAuth 2.1 server
-    // https://www.better-auth.com/docs/plugins/mcp
-    mcp({
-      loginPage: "/auth/sign-in",
-      // Note: Authorization page (/authorize) is served as static HTML
-      // Better Auth will redirect there based on loginPage flow
-      oidcConfig: {
-        scopes: scopes,
-        metadata: { scopes_supported: scopes },
-        loginPage: "/auth/sign-in",
-      },
-    }),
-
-    // API Key plugin for direct tool access
-    // https://www.better-auth.com/docs/plugins/api-key
-    apiKey({
-      permissions: {
-        defaultPermissions: {
-          self: [
-            "ORGANIZATION_LIST",
-            "ORGANIZATION_GET", // Organization read access
-            "ORGANIZATION_MEMBER_LIST", // Member read access
-            "CONNECTION_LIST",
-            "CONNECTION_GET", // Connection read access
-          ],
-        },
-      },
-    }),
-
-    // Admin plugin for system-level super-admins
-    // https://www.better-auth.com/docs/plugins/admin
-    adminPlugin({
-      defaultRole: "user",
-      adminRoles: ["admin"],
-    }),
-
-    // OpenAPI plugin for API documentation
-    // https://www.better-auth.com/docs/plugins/openAPI
-    openAPI(),
-  ],
+  plugins,
 });
 
 export type BetterAuthInstance = typeof auth;

@@ -214,11 +214,13 @@ async function authenticateRequest(
           self: ["*"],
         },
         // TODO: Use some better auth method to read the full org data
-        organization: session.session.activeOrganizationId ? {
-          id: session.session.activeOrganizationId,
-          slug: "",
-          name: "",
-        } : undefined,
+        organization: session.session.activeOrganizationId
+          ? {
+              id: session.session.activeOrganizationId,
+              slug: "",
+              name: "",
+            }
+          : undefined,
       };
     }
   } catch (error) {

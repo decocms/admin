@@ -540,7 +540,7 @@ export function DependencyStep({
       {/* Dependency integration info */}
       <div className="flex-grow flex flex-col gap-5 py-2">
         {/* Configuration Form */}
-        <div className="max-h-[200px] overflow-y-auto">
+        <div>
           {schema && (
             <div className="flex justify-between items-center gap-2">
               {integrationData && (

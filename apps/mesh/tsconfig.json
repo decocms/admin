@@ -2,7 +2,7 @@
   "compilerOptions": {
     // Language and Environment
     "target": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "jsx": "react-jsx",
 
@@ -25,6 +25,13 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+
+		// Best practices
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+
+		// Some stricter flags (disabled by default)
+		"noPropertyAccessFromIndexSignature": false,
 
     // Bun-specific
     "types": [],

@@ -26,12 +26,12 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
 
-		// Best practices
-		"noUncheckedIndexedAccess": true,
-		"noImplicitOverride": true,
+    // Best practices
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
 
-		// Some stricter flags (disabled by default)
-		"noPropertyAccessFromIndexSignature": false,
+    // Some stricter flags (disabled by default)
+    "noPropertyAccessFromIndexSignature": false,
 
     // Bun-specific
     "types": ["bun"],

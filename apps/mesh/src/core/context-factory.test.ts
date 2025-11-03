@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { closeDatabase, createDatabase } from "../database";
 import { createTestSchema } from "../storage/__test-helpers";
 import type { Database } from "../storage/types";
-import { createMeshContextFactory, NotFoundError } from "./context-factory";
+import { createMeshContextFactory } from "./context-factory";
 
 describe("createMeshContextFactory", () => {
   let db: Kysely<Database>;

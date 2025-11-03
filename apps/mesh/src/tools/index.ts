@@ -4,11 +4,11 @@
  * Central export for all MCP Mesh management tools
  */
 
-import * as OrganizationTools from "./organization";
 import * as ConnectionTools from "./connection";
+import * as OrganizationTools from "./organization";
 
 // Export all tools
-export { OrganizationTools, ConnectionTools };
+export { ConnectionTools, OrganizationTools };
 
 // All available tools
 export const ALL_TOOLS = [
@@ -48,6 +48,8 @@ export const TOOL_MAP = {
   CONNECTION_DELETE: ConnectionTools.CONNECTION_DELETE,
   CONNECTION_TEST: ConnectionTools.CONNECTION_TEST,
 } as const;
+
+export type MCPMeshTools = typeof ALL_TOOLS;
 
 // Helper to get tool by name
 export function getTool(name: string) {

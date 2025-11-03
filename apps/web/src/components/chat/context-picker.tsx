@@ -348,24 +348,22 @@ export function ContextPicker({
   const handleToolToggle = useCallback(
     (toolName: string, integrationId: string) => {
       const toolId = `${integrationId}:${toolName}`;
-      let updatedTools: Set<string>;
-
-      setSelectedTools((prev) => {
-        const next = new Set(prev);
+      const getToolsToUpdate = () => {
+        const next = new Set(selectedTools);
         const isRemoving = next.has(toolId);
-
         if (isRemoving) {
           next.delete(toolId);
         } else {
           next.add(toolId);
         }
-
-        updatedTools = next;
         return next;
-      });
+      };
+      const toolsToUpdate = getToolsToUpdate();
+
+      setSelectedTools(toolsToUpdate);
 
       // Update context items using helper
-      updateContextForIntegration(integrationId, updatedTools!);
+      updateContextForIntegration(integrationId, toolsToUpdate);
     },
     [updateContextForIntegration],
   );

@@ -25,11 +25,10 @@ import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
 import { createSSOConfig, SSOConfig } from "./sso";
 
-
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
-    enabled: true
-  }
+    enabled: true,
+  },
 };
 /**
  * Load optional auth configuration from file

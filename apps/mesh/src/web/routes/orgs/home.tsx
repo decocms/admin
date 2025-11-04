@@ -11,12 +11,7 @@ import {
 } from "@/web/components/ui/card";
 import { Button } from "@/web/components/ui/button";
 import { Skeleton } from "@/web/components/ui/skeleton";
-import {
-  Users,
-  Cable,
-  ArrowRight,
-  Activity,
-} from "lucide-react";
+import { Users, Cable, ArrowRight, Activity } from "lucide-react";
 
 const useMembers = () => {
   return useQuery({
@@ -50,18 +45,14 @@ export default function OrgHome() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Overview of your organization
-          </p>
+          <p className="text-muted-foreground">Overview of your organization</p>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Members
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

@@ -30,9 +30,9 @@ export type { AccessControl, CredentialVault };
 export interface MeshAuth {
   user?: {
     id: string;
-    email: string;
-    name: string;
-    role: string; // From Better Auth Admin plugin
+    email?: string;
+    name?: string;
+    role?: string; // From Better Auth Admin plugin
   };
 
   apiKey?: {

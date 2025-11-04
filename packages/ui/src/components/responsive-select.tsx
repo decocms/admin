@@ -63,15 +63,26 @@ const ResponsiveSelect = ({
 const ResponsiveSelectContent = ({
   children,
   title,
+  headerActions,
   ...props
-}: React.ComponentProps<typeof select.SelectContent>) => {
+}: React.ComponentProps<typeof select.SelectContent> & {
+  title?: string;
+  headerActions?: React.ReactNode;
+}) => {
   const { isMobile } = useResponsiveSelectContext();
   const { className, ...restProps } = props;
 
   return isMobile ? (
     <drawer.DrawerContent {...restProps}>
-      <drawer.DrawerHeader className="hidden">
+      <drawer.DrawerHeader
+        className={cn(
+          headerActions
+            ? "flex flex-row items-center justify-between"
+            : "hidden",
+        )}
+      >
         <drawer.DrawerTitle>{title}</drawer.DrawerTitle>
+        {headerActions}
       </drawer.DrawerHeader>
       <div className={cn("flex flex-col gap-2 p-2 py-4", className)}>
         {children}

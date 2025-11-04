@@ -30,9 +30,9 @@ function WalletBalanceCard() {
   const { balance, refetch, isRefetching } = useWorkspaceWalletBalance();
 
   return (
-    <div className="rounded-xl bg-secondary border overflow-hidden h-full flex flex-col">
-      <Card className="p-6 border-none flex-1">
-        <CardContent className="p-0 h-full flex flex-col">
+    <div className="rounded-xl bg-secondary border overflow-hidden h-full flex flex-col min-w-0">
+      <Card className="p-6 border-none flex-1 min-w-0">
+        <CardContent className="p-0 h-full flex flex-col min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Icon
@@ -55,15 +55,15 @@ function WalletBalanceCard() {
             </Button>
           </div>
 
-          <div className="text-5xl font-semibold text-foreground mb-6">
+          <div className="text-4xl sm:text-5xl font-semibold text-foreground mb-6 break-words">
             {balance}
           </div>
 
-          <div className="flex gap-2 mt-auto">
-            <div className="w-fit">
+          <div className="flex flex-wrap gap-2 mt-auto">
+            <div className="flex-1 min-w-[120px]">
               <DepositDialog />
             </div>
-            <div className="w-fit">
+            <div className="flex-1 min-w-[120px]">
               <VoucherDialog />
             </div>
           </div>
@@ -80,9 +80,9 @@ function PlanInfoCard() {
   const seatLimit = plan.user_seats;
 
   return (
-    <Card className="p-6 rounded-xl border h-full">
-      <CardContent className="p-0 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-4">
+    <Card className="p-6 rounded-xl border h-full min-w-0">
+      <CardContent className="p-0 h-full flex flex-col min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <Icon
               name="workspace_premium"
@@ -99,7 +99,7 @@ function PlanInfoCard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="opacity-50 cursor-not-allowed"
+                  className="opacity-50 text-xs cursor-not-allowed w-fit"
                   onClick={(e) => e.preventDefault()}
                 >
                   See all plans
@@ -114,7 +114,9 @@ function PlanInfoCard() {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-3xl font-medium text-foreground">{plan.title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-medium text-foreground break-words">
+            {plan.title}
+          </h2>
         </div>
 
         <div className="space-y-4 text-sm flex-1">
@@ -163,9 +165,9 @@ function ContractProfitCard() {
   }, [history.items]);
 
   return (
-    <div className="rounded-xl bg-secondary border overflow-hidden h-full flex flex-col">
-      <Card className="p-6 border-none flex-1">
-        <CardContent className="p-0 h-full flex flex-col">
+    <div className="rounded-xl bg-secondary border overflow-hidden h-full flex flex-col min-w-0">
+      <Card className="p-6 border-none flex-1 min-w-0">
+        <CardContent className="p-0 h-full flex flex-col min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Icon
@@ -191,7 +193,7 @@ function ContractProfitCard() {
             </TooltipProvider>
           </div>
 
-          <div className="text-5xl font-semibold text-foreground mb-6">
+          <div className="text-4xl sm:text-5xl font-semibold text-foreground mb-6 break-words">
             ${totalContractProfit.toFixed(2)}
           </div>
 
@@ -411,20 +413,22 @@ function TransactionsTable() {
   }, [history.items, sortKey, sortDirection]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 min-w-0 w-full">
+      <div className="flex flex-col sm:flex-row sm:items- sm:justify-between gap-2">
         <h3 className="text-lg font-semibold">Billing history</h3>
         <p className="text-sm text-muted-foreground">
           Your subscription payments, wallet top-ups and contract revenue
         </p>
       </div>
-      <Table
-        columns={columns}
-        data={sortedTransactions}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-      />
+      <div className="overflow-x-auto -mx-6 px-6">
+        <Table
+          columns={columns}
+          data={sortedTransactions}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+      </div>
     </div>
   );
 }
@@ -443,22 +447,22 @@ function BillingErrorFallback() {
 
 export default function BillingSettings() {
   return (
-    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
+    <div className="h-full text-foreground px-6 py-6 w-full min-w-0">
       <ErrorBoundary fallback={<BillingErrorFallback />}>
-        <div className="flex flex-col gap-6 overflow-x-auto w-full">
+        <div className="flex flex-col gap-6 w-full max-w-full min-w-0">
           {/* Top Row - Wallet Balance, Plan Info, and Contract Profit */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch">
-            <div className="min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch min-w-0">
+            <div className="min-h-0 min-w-0">
               <Suspense fallback={<Skeleton className="h-[300px]" />}>
                 <WalletBalanceCard />
               </Suspense>
             </div>
-            <div className="min-h-0">
+            <div className="min-h-0 min-w-0">
               <Suspense fallback={<Skeleton className="h-[300px]" />}>
                 <PlanInfoCard />
               </Suspense>
             </div>
-            <div className="min-h-0 lg:col-span-2 xl:col-span-1">
+            <div className="min-h-0 min-w-0 lg:col-span-2 xl:col-span-1">
               <Suspense fallback={<Skeleton className="h-[300px]" />}>
                 <ContractProfitCard />
               </Suspense>
@@ -466,9 +470,11 @@ export default function BillingSettings() {
           </div>
 
           {/* Billing History */}
-          <Suspense fallback={<Skeleton className="h-[400px]" />}>
-            <TransactionsTable />
-          </Suspense>
+          <div className="min-w-0">
+            <Suspense fallback={<Skeleton className="h-[400px]" />}>
+              <TransactionsTable />
+            </Suspense>
+          </div>
         </div>
       </ErrorBoundary>
     </div>

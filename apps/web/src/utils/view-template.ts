@@ -478,7 +478,508 @@ export function generateViewHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DECO View  </title>
+  <title>DECO View </title>
+
+  <!-- Visual CMS for Text Editing -->
+  <script>
+    (function() {
+      'use strict';
+      
+      // CMS State
+      let cmsEnabled = false;
+      let cmsData = {};
+      let editingElement = null;
+      let editingOriginalText = '';
+      
+      // Expose editing flag globally so React can check it
+      window.isCMSEditing = false;
+      
+      // Initialize CMS from viewData if available
+      function initCMS() {
+        if (window.viewData && window.viewData._cms) {
+          cmsData = window.viewData._cms || {};
+          // Apply saved data immediately if available
+          if (Object.keys(cmsData).length > 0) {
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(applyCMSData, 200);
+              });
+            } else {
+              setTimeout(applyCMSData, 200);
+            }
+          }
+        }
+      }
+      
+      // Toggle CMS mode
+      function toggleCMS() {
+        cmsEnabled = !cmsEnabled;
+        updateCMSMode();
+        if (cmsEnabled) {
+          enableEditing();
+        } else {
+          disableEditing();
+        }
+      }
+      
+      // Set CMS enabled state
+      function setCMSEnabled(enabled) {
+        if (cmsEnabled === enabled) return;
+        cmsEnabled = enabled;
+        updateCMSMode();
+        if (cmsEnabled) {
+          enableEditing();
+        } else {
+          disableEditing();
+        }
+      }
+      
+      // Update UI based on CMS mode
+      function updateCMSMode() {
+        const root = document.documentElement;
+        if (cmsEnabled) {
+          root.classList.add('cms-mode');
+          root.setAttribute('data-cms-enabled', 'true');
+        } else {
+          root.classList.remove('cms-mode');
+          root.removeAttribute('data-cms-enabled');
+        }
+      }
+      
+      // Enable editing on text elements
+      function enableEditing() {
+        // Clean up existing observer if any
+        if (window.cmsObserver) {
+          window.cmsObserver.disconnect();
+        }
+        
+        // Use MutationObserver to handle React-rendered content
+        const observer = new MutationObserver(function(mutations) {
+          if (cmsEnabled) {
+            // Re-scan for new elements when DOM changes
+            const textElements = findTextElements();
+            textElements.forEach(setupElementForEditing);
+          }
+        });
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+        
+        // Store observer for cleanup
+        window.cmsObserver = observer;
+        
+        // Initial scan
+        const textElements = findTextElements();
+        textElements.forEach(setupElementForEditing);
+      }
+      
+      // Setup element for editing
+      function setupElementForEditing(element) {
+        if (!element.hasAttribute('data-cms-editable')) {
+          // Generate and store ID if not present
+          if (!element.id && !element.hasAttribute('data-cms-id')) {
+            const elementId = getElementId(element);
+            element.setAttribute('data-cms-id', elementId);
+          }
+          
+          element.setAttribute('data-cms-editable', 'true');
+          element.classList.add('cms-editable');
+          
+          // Add hover effect
+          element.addEventListener('mouseenter', handleMouseEnter);
+          element.addEventListener('mouseleave', handleMouseLeave);
+          element.addEventListener('click', handleClick);
+        }
+      }
+      
+      // Disable editing
+      function disableEditing() {
+        // Stop observer
+        if (window.cmsObserver) {
+          window.cmsObserver.disconnect();
+          window.cmsObserver = null;
+        }
+        
+        const editableElements = document.querySelectorAll('[data-cms-editable]');
+        editableElements.forEach(element => {
+          element.removeAttribute('data-cms-editable');
+          element.classList.remove('cms-editable', 'cms-hover');
+          element.removeEventListener('mouseenter', handleMouseEnter);
+          element.removeEventListener('mouseleave', handleMouseLeave);
+          element.removeEventListener('click', handleClick);
+        });
+        
+        if (editingElement) {
+          cancelEditing();
+        }
+      }
+      
+      // Find all elements that contain text
+      function findTextElements() {
+        const elements = [];
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: function(node) {
+              // Skip script, style, and other non-editable elements
+              if (node.tagName === 'SCRIPT' || 
+                  node.tagName === 'STYLE' || 
+                  node.tagName === 'NOSCRIPT' ||
+                  node.hasAttribute('data-cms-ignore')) {
+                return NodeFilter.FILTER_REJECT;
+              }
+              
+              // Only include elements with text content
+              const text = node.textContent?.trim();
+              if (text && text.length > 0) {
+                // Skip if parent is already editable
+                if (node.parentElement?.hasAttribute('data-cms-editable')) {
+                  return NodeFilter.FILTER_REJECT;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+              }
+              return NodeFilter.FILTER_SKIP;
+            }
+          }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          elements.push(node);
+        }
+        
+        return elements;
+      }
+      
+      // Generate unique ID for element
+      function getElementId(element) {
+        // Use existing ID or data-cms-id if available
+        if (element.id) {
+          return element.id;
+        }
+        if (element.hasAttribute('data-cms-id')) {
+          return element.getAttribute('data-cms-id');
+        }
+        
+        // Generate ID based on element position in DOM tree
+        const path = [];
+        let current = element;
+        while (current && current !== document.body) {
+          const parent = current.parentElement;
+          if (parent) {
+            const siblings = Array.from(parent.children).filter(
+              c => c.tagName === current.tagName
+            );
+            const index = siblings.indexOf(current);
+            path.unshift(current.tagName.toLowerCase() + ':' + index);
+          }
+          current = parent;
+        }
+        return path.join(' > ') || 'element-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11);
+      }
+      
+      // Handle mouse enter
+      function handleMouseEnter(e) {
+        if (!cmsEnabled) return;
+        e.stopPropagation();
+        e.currentTarget.classList.add('cms-hover');
+      }
+      
+      // Handle mouse leave
+      function handleMouseLeave(e) {
+        if (!cmsEnabled) return;
+        e.stopPropagation();
+        e.currentTarget.classList.remove('cms-hover');
+      }
+      
+      // Handle click to edit
+      function handleClick(e) {
+        if (!cmsEnabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const element = e.currentTarget;
+        startEditing(element);
+      }
+      
+      // Start editing an element
+      function startEditing(element) {
+        if (editingElement) {
+          cancelEditing();
+        }
+        
+        editingElement = element;
+        editingOriginalText = element.textContent || '';
+        window.isCMSEditing = true; // Set flag to prevent re-renders
+        
+        // Make element contentEditable
+        element.contentEditable = 'true';
+        element.classList.add('cms-editing');
+        element.setAttribute('data-cms-editing', 'true');
+        
+        // Focus and select all
+        element.focus();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Add save handlers
+        element.addEventListener('blur', handleBlur);
+        element.addEventListener('keydown', handleKeyDown);
+      }
+      
+      // Handle blur (save)
+      function handleBlur(e) {
+        const element = e.currentTarget;
+        const newText = element.textContent || '';
+        
+        if (newText !== editingOriginalText) {
+          // Use saveEditWithoutDOMUpdate to prevent React re-render
+          // The DOM is already updated by contentEditable, so we don't need to update it again
+          saveEditWithoutDOMUpdate(element, editingOriginalText, newText);
+        }
+        
+        finishEditing(element);
+      }
+      
+      // Handle keydown
+      function handleKeyDown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          e.currentTarget.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cancelEditing();
+        }
+      }
+      
+      // Cancel editing
+      function cancelEditing() {
+        if (editingElement) {
+          editingElement.textContent = editingOriginalText;
+          finishEditing(editingElement);
+          editingElement = null;
+          editingOriginalText = '';
+        }
+      }
+      
+      // Finish editing
+      function finishEditing(element) {
+        element.contentEditable = 'false';
+        element.classList.remove('cms-editing');
+        element.removeAttribute('data-cms-editing');
+        element.removeEventListener('blur', handleBlur);
+        element.removeEventListener('keydown', handleKeyDown);
+        
+        // Clear flag after a small delay to allow any pending operations to complete
+        setTimeout(function() {
+          window.isCMSEditing = false;
+        }, 100);
+      }
+      
+      // Save edit (original version - kept for compatibility)
+      function saveEdit(element, oldText, newText) {
+        saveEditWithoutDOMUpdate(element, oldText, newText);
+        // Apply saved text to element (but this is already done by contentEditable)
+        element.textContent = newText;
+      }
+      
+      // Save edit without updating DOM (prevents React re-render)
+      function saveEditWithoutDOMUpdate(element, oldText, newText) {
+        const elementId = getElementId(element);
+        cmsData[elementId] = {
+          text: newText,
+          originalText: oldText,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Don't update element.textContent here - it's already updated by contentEditable
+        // This prevents React from detecting the change and re-rendering
+        
+        // Send update to parent window
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage(
+            {
+              type: 'CMS_UPDATE',
+              payload: {
+                elementId: elementId,
+                text: newText,
+                originalText: oldText,
+                cmsData: cmsData
+              }
+            },
+            '*'
+          );
+        }
+      }
+      
+      // Apply saved CMS data to elements
+      function applyCMSData() {
+        if (Object.keys(cmsData).length === 0) {
+          console.log('applyCMSData: No CMS data to apply');
+          return;
+        }
+        
+        console.log('applyCMSData: Applying CMS data:', cmsData);
+        
+        // Use a small delay to ensure React has rendered
+        setTimeout(function() {
+          let appliedCount = 0;
+          Object.keys(cmsData).forEach(function(elementId) {
+            const element = document.querySelector('[data-cms-id="' + elementId + '"]');
+            if (!element) {
+              // Try to find by path
+              const parts = elementId.split(' > ');
+              let found = document.body;
+              for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const [tag, index] = part.split(':');
+                const children = Array.from(found.children).filter(function(c) {
+                  return c.tagName.toLowerCase() === tag;
+                });
+                if (children[parseInt(index, 10)]) {
+                  found = children[parseInt(index, 10)];
+                } else {
+                  found = null;
+                  break;
+                }
+              }
+              if (found) {
+                found.setAttribute('data-cms-id', elementId);
+                if (cmsData[elementId] && cmsData[elementId].text) {
+                  console.log('Applying CMS data to element by path:', elementId, cmsData[elementId].text);
+                  found.textContent = cmsData[elementId].text;
+                  appliedCount++;
+                }
+              }
+            } else {
+              if (cmsData[elementId] && cmsData[elementId].text) {
+                // Only update if different to avoid React re-render issues
+                if (element.textContent !== cmsData[elementId].text) {
+                  console.log('Applying CMS data to element by ID:', elementId, cmsData[elementId].text);
+                  element.textContent = cmsData[elementId].text;
+                  appliedCount++;
+                }
+              }
+            }
+          });
+          
+          console.log('applyCMSData: Applied', appliedCount, 'of', Object.keys(cmsData).length, 'elements');
+          
+          // If we couldn't apply data yet (React hasn't rendered), try again
+          if (appliedCount === 0 && Object.keys(cmsData).length > 0) {
+            console.log('applyCMSData: No elements found, retrying...');
+            setTimeout(applyCMSData, 500);
+          }
+        }, 100);
+      }
+      
+      // Listen for CMS messages from parent
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'CMS_TOGGLE') {
+          toggleCMS();
+        } else if (event.data && event.data.type === 'CMS_SET_ENABLED') {
+          setCMSEnabled(event.data.payload?.enabled === true);
+        } else if (event.data && event.data.type === 'CMS_DATA') {
+          console.log('CMS_DATA received in iframe:', event.data.payload);
+          cmsData = event.data.payload || {};
+          applyCMSData();
+        }
+      });
+      
+      // Listen for viewData updates
+      window.addEventListener('viewDataUpdated', function(event) {
+        console.log('viewDataUpdated event in iframe:', event.detail);
+        if (event.detail && event.detail._cms) {
+          console.log('CMS data found in viewDataUpdated:', event.detail._cms);
+          const newCmsData = event.detail._cms;
+          
+          // Check if CMS data actually changed (compare JSON strings)
+          const currentCmsDataStr = JSON.stringify(cmsData);
+          const newCmsDataStr = JSON.stringify(newCmsData);
+          
+          if (currentCmsDataStr === newCmsDataStr) {
+            console.log('CMS data unchanged, skipping re-render');
+            return; // Don't re-render if data is the same
+          }
+          
+          cmsData = newCmsData;
+          // Wait for React to finish rendering before applying CMS data
+          setTimeout(function() {
+            applyCMSData();
+            // Re-enable editing if it was enabled to catch new elements
+            if (cmsEnabled) {
+              enableEditing();
+            }
+          }, 300);
+        } else {
+          // Even if no CMS data, check if we should re-render
+          // Only re-render if viewData actually changed (not just timestamp)
+          const currentViewDataStr = JSON.stringify(window.viewData);
+          const newViewDataStr = JSON.stringify(event.detail);
+          
+          if (currentViewDataStr === newViewDataStr) {
+            console.log('ViewData unchanged, skipping re-render');
+            return;
+          }
+        }
+      });
+      
+      // Initialize CMS
+      initCMS();
+      
+      // Expose CMS API globally
+      window.viewCMS = {
+        toggle: toggleCMS,
+        enable: function() { if (!cmsEnabled) toggleCMS(); },
+        disable: function() { if (cmsEnabled) toggleCMS(); },
+        getData: function() { return cmsData; },
+        isEnabled: function() { return cmsEnabled; }
+      };
+    })();
+  </script>
+  
+  <style>
+    /* CMS Styles */
+    [data-cms-enabled="true"] [data-cms-editable] {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    [data-cms-enabled="true"] [data-cms-editable].cms-hover {
+      outline: 2px dashed #3b82f6;
+      outline-offset: 2px;
+      background-color: rgba(59, 130, 246, 0.05);
+      cursor: text;
+    }
+    
+    [data-cms-enabled="true"] [data-cms-editable].cms-editing {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    [data-cms-enabled="true"] [data-cms-editable]:hover::after {
+      content: '✏️ Edit';
+      position: absolute;
+      top: -24px;
+      left: 0;
+      background: #3b82f6;
+      color: white;
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 3px;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 10000;
+    }
+  </style>
 
   <!-- View SDK -->
   <script>
@@ -587,7 +1088,23 @@ ${escapedCode}
       renderApp(App);
       
       // Re-render when viewData updates
-      window.addEventListener('viewDataUpdated', () => {
+      // But skip if we're currently editing with CMS (prevents re-render during CMS edits)
+      // Also skip if viewData hasn't actually changed
+      let previousViewDataStr = JSON.stringify(window.viewData || {});
+      window.addEventListener('viewDataUpdated', (event) => {
+        // Check if CMS is currently editing - if so, don't re-render
+        if (window.isCMSEditing) {
+          return;
+        }
+        
+        // Check if viewData actually changed
+        const newViewDataStr = JSON.stringify(event.detail || {});
+        if (newViewDataStr === previousViewDataStr) {
+          console.log('viewDataUpdated: No actual changes, skipping re-render');
+          return;
+        }
+        
+        previousViewDataStr = newViewDataStr;
         renderApp(App);
       });
     } catch (error) {

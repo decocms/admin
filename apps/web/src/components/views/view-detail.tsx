@@ -246,6 +246,35 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
+  const [isCMSEnabled, setIsCMSEnabled] = useState(false);
+  const [cmsDataDraft, setCmsDataDraft] = useState<Record<string, unknown>>({});
+  const [savedCmsData, setSavedCmsData] = useState<Record<string, unknown>>({});
+
+  // Load saved CMS data from view on mount
+  useEffect(() => {
+    if (effectiveView) {
+      const viewWithCMS = effectiveView as unknown as {
+        cmsData?: Record<string, unknown>;
+      };
+      if (viewWithCMS.cmsData) {
+        console.log("Loading CMS data from view:", viewWithCMS.cmsData);
+        setSavedCmsData(viewWithCMS.cmsData);
+        setCmsDataDraft(viewWithCMS.cmsData);
+      } else {
+        // Reset if no CMS data in view
+        setSavedCmsData({});
+        setCmsDataDraft({});
+      }
+    }
+  }, [effectiveView]);
+
+  // Track if CMS data has unsaved changes
+  const isCMSDirty = useMemo(() => {
+    return (
+      Object.keys(cmsDataDraft).length > 0 &&
+      JSON.stringify(cmsDataDraft) !== JSON.stringify(savedCmsData)
+    );
+  }, [cmsDataDraft, savedCmsData]);
 
   // Persist console open state
   const { value: isConsoleOpen, update: setIsConsoleOpen } = useLocalStorage({
@@ -299,6 +328,78 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
     setCodeDraft(undefined);
   }, []);
 
+  // Handlers for CMS editing
+  const handleSaveCMS = useCallback(async () => {
+    if (!effectiveView) {
+      toast.error("View not found");
+      return;
+    }
+
+    console.log("Saving CMS data:", cmsDataDraft);
+    
+    try {
+      const result = await updateViewMutation.mutateAsync({
+        uri: resourceUri,
+        params: {
+          name: effectiveView.name,
+          description: effectiveView.description,
+          code: currentCode, // Use currentCode to preserve any code draft
+          inputSchema: effectiveView.inputSchema,
+          importmap: effectiveView.importmap,
+          icon: effectiveView.icon,
+          tags: effectiveView.tags,
+          // @ts-expect-error - cmsData is not in the type but schema uses passthrough
+          cmsData: cmsDataDraft,
+        },
+      });
+      
+      console.log("Save result:", result);
+      
+      // Check if cmsData was saved in the result
+      const savedView = result?.data as { cmsData?: Record<string, unknown> };
+      if (savedView?.cmsData) {
+        console.log("CMS data confirmed in saved view:", savedView.cmsData);
+        setSavedCmsData(savedView.cmsData);
+      } else {
+        // Fallback: use what we sent
+        setSavedCmsData(cmsDataDraft);
+      }
+      
+      // Update iframe with saved data
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          {
+            type: "CMS_DATA",
+            payload: savedView?.cmsData || cmsDataDraft,
+          },
+          "*",
+        );
+      }
+      
+      toast.success("CMS changes saved successfully");
+    } catch (error) {
+      console.error("Failed to save CMS data:", error);
+      toast.error("Failed to save CMS changes");
+    }
+  }, [effectiveView, resourceUri, cmsDataDraft, currentCode, updateViewMutation]);
+
+  const handleDiscardCMS = useCallback(() => {
+    setCmsDataDraft(savedCmsData);
+    
+    // Send updated CMS data to iframe to revert changes
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: "CMS_DATA",
+          payload: savedCmsData,
+        },
+        "*",
+      );
+    }
+    
+    toast.info("CMS changes discarded");
+  }, [savedCmsData]);
+
   // Initialize form if view has inputSchema
   const inputSchema = effectiveView?.inputSchema as JSONSchema7 | undefined;
   const defaultValues = useMemo(() => {
@@ -315,10 +416,45 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
   // Watch form values and pass to view
   const formValues = form.watch();
-  const viewData = useMemo(() => {
+  
+  // Separate viewData for iframe (only updates when props/form change, not CMS edits)
+  // CMS edits happen directly in DOM, so we don't need to re-render React
+  const viewDataForIframe = useMemo(() => {
     // If data prop is provided, use it; otherwise use form values
-    return data ?? (inputSchema ? formValues : undefined);
-  }, [data, formValues, inputSchema]);
+    const baseData = data ?? (inputSchema ? formValues : undefined);
+    // Only include saved CMS data (not draft) to avoid re-renders during editing
+    const effectiveCmsData = savedCmsData;
+    
+    if (baseData && Object.keys(effectiveCmsData).length > 0) {
+      return {
+        ...baseData,
+        _cms: effectiveCmsData,
+      };
+    }
+    if (Object.keys(effectiveCmsData).length > 0) {
+      return { _cms: effectiveCmsData };
+    }
+    return baseData;
+  }, [data, formValues, inputSchema, savedCmsData]);
+  
+  // viewData for internal use (includes draft for display purposes)
+  const viewData = useMemo(() => {
+    const baseData = data ?? (inputSchema ? formValues : undefined);
+    const effectiveCmsData = Object.keys(cmsDataDraft).length > 0 
+      ? cmsDataDraft 
+      : savedCmsData;
+    
+    if (baseData && Object.keys(effectiveCmsData).length > 0) {
+      return {
+        ...baseData,
+        _cms: effectiveCmsData,
+      };
+    }
+    if (Object.keys(effectiveCmsData).length > 0) {
+      return { _cms: effectiveCmsData };
+    }
+    return baseData;
+  }, [data, formValues, inputSchema, cmsDataDraft, savedCmsData]);
 
   // Track as recently opened when view is loaded (only once)
   useEffect(() => {
@@ -417,6 +553,74 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
           effectiveView?.name,
         );
       }
+
+      // Handle CMS Update messages
+      if (event.data.type === "CMS_UPDATE") {
+        const { cmsData: updatedCmsData, elementId, text, originalText } = event.data.payload as {
+          elementId: string;
+          text: string;
+          originalText: string;
+          cmsData: Record<string, unknown>;
+        };
+        console.log("CMS_UPDATE received:", updatedCmsData);
+        setCmsDataDraft(updatedCmsData);
+        
+        // Note: We don't update viewDataForIframe here because CMS edits happen
+        // directly in the DOM via contentEditable, so no React re-render is needed.
+        // The viewData will only update when we save (which updates savedCmsData).
+        
+        // Update code draft to reflect CMS changes
+        if (originalText && text && text !== originalText) {
+          setCodeDraft((prevDraft) => {
+            const codeToUpdate = prevDraft ?? effectiveView?.code ?? "";
+            
+            // Try multiple strategies to find and replace the text
+            let updatedCode = codeToUpdate;
+            
+            // Strategy 1: Direct text match (for JSX text content)
+            if (codeToUpdate.includes(originalText)) {
+              updatedCode = codeToUpdate.replace(new RegExp(
+                  originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                  'g'
+                ),
+                text.replace(/\$/g, '$$$$')
+              );
+            }
+            
+            // Strategy 2: Match within quotes (strings)
+            if (updatedCode === codeToUpdate) {
+              const escapedOriginal = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const escapedNew = text.replace(/\$/g, '$$$$');
+              updatedCode = codeToUpdate.replace(
+                new RegExp(`(["'\`])([^"'\`]*?)${escapedOriginal}([^"'\`]*?)\\1`, 'g'),
+                (match, quote, before, after) => {
+                  return `${quote}${before}${escapedNew}${after}${quote}`;
+                }
+              );
+            }
+            
+            // Strategy 3: Match in JSX text nodes (between tags)
+            if (updatedCode === codeToUpdate) {
+              const escapedOriginal = originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const escapedNew = text.replace(/\$/g, '$$$$');
+              // Match text between > and < (JSX content)
+              updatedCode = codeToUpdate.replace(
+                new RegExp(`(>)([^<]*?)${escapedOriginal}([^<]*?)(<)`, 'g'),
+                (match, before, prefix, suffix, after) => {
+                  return `${before}${prefix}${escapedNew}${suffix}${after}`;
+                }
+              );
+            }
+            
+            // Only update if the code actually changed
+            if (updatedCode !== codeToUpdate) {
+              console.log("Updating code draft with CMS change:", { originalText, text });
+              return updatedCode;
+            }
+            return prevDraft;
+          });
+        }
+      }
     }
 
     window.addEventListener("message", handleMessage);
@@ -441,13 +645,15 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   }, []);
 
   // Generate HTML from React code on the client side
-  // Use currentCode (which includes draft) for preview
+  // Use saved code (not draft) for iframe to avoid re-renders during CMS edits
+  // The code draft is only for the code editor view, not for preview
+  const codeForPreview = isCodeViewerOpen ? currentCode : (effectiveView?.code ?? "");
   const htmlValue = useMemo(() => {
-    if (!currentCode || !org || !project) return null;
+    if (!codeForPreview || !org || !project) return null;
 
     try {
       return generateViewHTML(
-        currentCode,
+        codeForPreview,
         DECO_CMS_API_URL,
         org,
         project,
@@ -460,29 +666,31 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
       return null;
     }
   }, [
-    currentCode,
+    codeForPreview,
     effectiveView?.importmap,
     org,
     project,
     theme?.variables,
     themeUpdateTrigger,
+    isCodeViewerOpen,
   ]);
 
   // Reference to iframe element for postMessage
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Send data to iframe when it loads or when data changes
+  // Send data to iframe when it loads or when data changes (but not on CMS edits)
   useEffect(() => {
-    if (!iframeRef.current || viewData === undefined) return;
+    if (!iframeRef.current || viewDataForIframe === undefined) return;
 
     const iframe = iframeRef.current;
 
     // Wait for iframe to load before sending data
     const sendData = () => {
+      console.log("Sending VIEW_DATA to iframe:", viewDataForIframe);
       iframe.contentWindow?.postMessage(
         {
           type: "VIEW_DATA",
-          payload: viewData,
+          payload: viewDataForIframe,
         },
         "*",
       );
@@ -499,7 +707,35 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
     return () => {
       iframe.removeEventListener("load", sendData);
     };
-  }, [viewData]);
+  }, [viewDataForIframe]);
+
+  // Send CMS state to iframe
+  useEffect(() => {
+    if (!iframeRef.current) return;
+
+    const iframe = iframeRef.current;
+    const sendCMSState = () => {
+      // Small delay to ensure iframe is ready
+      setTimeout(() => {
+        iframe.contentWindow?.postMessage(
+          {
+            type: "CMS_SET_ENABLED",
+            payload: { enabled: isCMSEnabled },
+          },
+          "*",
+        );
+      }, 100);
+    };
+
+    if (iframe.contentWindow) {
+      sendCMSState();
+    }
+
+    iframe.addEventListener("load", sendCMSState);
+    return () => {
+      iframe.removeEventListener("load", sendCMSState);
+    };
+  }, [isCMSEnabled]);
 
   if (isLoading) {
     return (
@@ -536,8 +772,34 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
                   discardLabel="Reset"
                 />
               )}
+              {isCMSEnabled && (
+                <SaveDiscardActions
+                  hasChanges={isCMSDirty}
+                  onSave={handleSaveCMS}
+                  onDiscard={handleDiscardCMS}
+                  isSaving={updateViewMutation.isPending}
+                  discardLabel="Discard"
+                  saveLabel="Save"
+                  savingLabel="Saving..."
+                />
+              )}
               <SendLogsButton />
               <SendScreenshotButton iframeRef={iframeRef} />
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={() => setIsCMSEnabled(!isCMSEnabled)}
+                className={`size-6 p-0 ${isCMSEnabled ? "bg-accent" : ""}`}
+                title={isCMSEnabled ? "Disable CMS Editing" : "Enable CMS Editing"}
+              >
+                <Icon
+                  name="edit"
+                  className={
+                    isCMSEnabled ? "text-foreground" : "text-muted-foreground"
+                  }
+                />
+              </Button>
               <ConsoleToggleButton
                 isOpen={isConsoleOpen}
                 onToggle={() => setIsConsoleOpen(!isConsoleOpen)}

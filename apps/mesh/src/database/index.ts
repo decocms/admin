@@ -40,7 +40,7 @@ export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
     default:
       throw new Error(
         `Unsupported database protocol: ${protocol}. ` +
-          `Supported protocols: postgres://, postgresql://, sqlite://, file://`,
+        `Supported protocols: postgres://, postgresql://, sqlite://, file://`,
       );
   }
 }

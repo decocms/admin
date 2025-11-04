@@ -2,6 +2,13 @@
 FROM oven/bun:1 AS base
 WORKDIR /app
 
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 FROM base AS deps
 COPY package.json bun.lockb* ./

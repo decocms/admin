@@ -10,6 +10,7 @@
  */
 
 import { getToolsByCategory } from "@/tools/registry";
+import { sso } from "@better-auth/sso";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import {
   admin as adminPlugin,
@@ -18,14 +19,18 @@ import {
   openAPI,
   organization,
 } from "better-auth/plugins";
-import type { BetterAuthPlugin } from "better-auth";
-import { sso } from "@better-auth/sso";
+import { createAccessControl } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
-import { createAccessControl } from "better-auth/plugins/access";
-import { createSSOConfig, SSOConfig } from "./sso";
 import path from "path";
+import { createSSOConfig, SSOConfig } from "./sso";
 
+
+const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
+  emailAndPassword: {
+    enabled: true
+  }
+};
 /**
  * Load optional auth configuration from file
  */
@@ -37,11 +42,11 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
       const content = readFileSync(configPath, "utf-8");
       return JSON.parse(content);
     } catch (error) {
-      return {};
+      return DEFAULT_AUTH_CONFIG;
     }
   }
 
-  return {};
+  return DEFAULT_AUTH_CONFIG;
 }
 
 /**

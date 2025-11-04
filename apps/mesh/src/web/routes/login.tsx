@@ -8,8 +8,8 @@ function RunSSO({
   callbackURL,
   providerId,
 }: {
-  providerId: string,
-  callbackURL: string,
+  providerId: string;
+  callbackURL: string;
 }) {
   useEffect(() => {
     (async () => {

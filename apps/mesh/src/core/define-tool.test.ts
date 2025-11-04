@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod/v3";
 import { defineTool } from "./define-tool";
 import type { MeshContext } from "./mesh-context";
+import type { MockAccessControl, MockTracer, MockMeter } from "../test-utils";
+import type { AuditLogStorage } from "../storage/audit-log";
 
 // Mock MeshContext
 const createMockContext = (): MeshContext => ({
@@ -20,31 +22,33 @@ const createMockContext = (): MeshContext => ({
     name: "Test Organization",
   },
   storage: {
-    connections: null as any,
+    connections: null as never,
     auditLogs: {
       log: vi.fn().mockResolvedValue(undefined),
       query: vi.fn().mockResolvedValue([]),
-    } as any,
+    } as Partial<AuditLogStorage> as AuditLogStorage,
   },
-  vault: null as any,
-  authInstance: null as any,
+  vault: null as never,
+  authInstance: null as never,
   access: {
     granted: vi.fn().mockReturnValue(true),
     check: vi.fn().mockResolvedValue(undefined),
     grant: vi.fn(),
-  } as any,
-  db: null as any,
+    setToolName: vi.fn(),
+  } as MockAccessControl,
+  db: null as never,
   tracer: {
-    startActiveSpan: vi.fn((_name: string, _opts: any, fn: any) =>
-      fn({
-        setStatus: vi.fn(),
-        recordException: vi.fn(),
-        end: vi.fn(),
-        spanContext: vi.fn().mockReturnValue({ traceId: "trace_123" }),
-        setAttribute: vi.fn(),
-      }),
+    startActiveSpan: vi.fn(
+      (_name: string, _opts: unknown, fn: (span: unknown) => unknown) =>
+        fn({
+          setStatus: vi.fn(),
+          recordException: vi.fn(),
+          end: vi.fn(),
+          spanContext: vi.fn().mockReturnValue({ traceId: "trace_123" }),
+          setAttribute: vi.fn(),
+        }),
     ),
-  } as any,
+  } as MockTracer,
   meter: {
     createHistogram: vi.fn().mockReturnValue({
       record: vi.fn(),
@@ -52,7 +56,7 @@ const createMockContext = (): MeshContext => ({
     createCounter: vi.fn().mockReturnValue({
       add: vi.fn(),
     }),
-  } as any,
+  } as MockMeter,
   baseUrl: "https://mesh.example.com",
   metadata: {
     requestId: "req_123",
@@ -269,7 +273,7 @@ describe("defineTool", () => {
       });
 
       const ctx = createMockContext();
-      ctx.storage.auditLogs = null as any;
+      ctx.storage.auditLogs = null as never;
 
       // Should not throw
       await expect(tool.execute({}, ctx)).resolves.toBeDefined();
@@ -311,9 +315,10 @@ describe("defineTool", () => {
         end: vi.fn(),
       };
 
-      ctx.tracer.startActiveSpan = vi.fn((_name: string, _opts: any, fn: any) =>
-        fn(mockSpan),
-      ) as any;
+      ctx.tracer.startActiveSpan = vi.fn(
+        (_name: string, _opts: unknown, fn: (span: unknown) => unknown) =>
+          fn(mockSpan),
+      ) as MockTracer["startActiveSpan"];
 
       await expect(tool.execute({}, ctx)).rejects.toThrow();
       expect(mockSpan.recordException).toHaveBeenCalled();

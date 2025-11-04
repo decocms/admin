@@ -40,7 +40,7 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
     try {
       const content = readFileSync(configPath, "utf-8");
       return JSON.parse(content);
-    } catch (error) {
+    } catch {
       return DEFAULT_AUTH_CONFIG;
     }
   }

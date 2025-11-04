@@ -40,7 +40,7 @@ export interface MeshAuth {
     name: string;
     userId: string;
     permissions: Permission; // Better Auth permission model
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     remaining?: number; // Remaining requests (rate limiting)
     expiresAt?: Date;
   };

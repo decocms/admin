@@ -39,7 +39,7 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
         organizationId,
         memberId: input.memberId,
         role: input.role,
-      } as any, // Better Auth has strict role types but we allow any string array
+      } as { organizationId: string; memberId: string; role: string[] },
     });
 
     if (!result) {

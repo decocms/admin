@@ -433,6 +433,7 @@ export const withOAuth = ({
   // Authorization Endpoint (workspace-specific URL path)
   hono.get(authorizationEndpoint, async (c) => {
     await ensureTables(c);
+    const ctx = honoCtxToAppCtx(c);
     const db = await getWorkspaceDB(c);
 
     const org = c.req.param("org");
@@ -511,6 +512,8 @@ export const withOAuth = ({
     consentUrl.searchParams.set("scope", scope || "*");
     consentUrl.searchParams.set("state", state); // Encoded workspace + client state
     consentUrl.searchParams.set("mode", "proxy");
+    ctx.workspace?.value &&
+      consentUrl.searchParams.set("workspace_hint", ctx.workspace.value);
     org && consentUrl.searchParams.set("org", org);
     project && consentUrl.searchParams.set("project", project);
     integrationId &&

@@ -82,7 +82,7 @@ const createMockAuth = () => ({
 });
 
 const createMockContext = (
-  authInstance: any = createMockAuth(),
+  authInstance: ReturnType<typeof createMockAuth> = createMockAuth(),
 ): MeshContext => ({
   auth: {
     user: {
@@ -98,29 +98,34 @@ const createMockContext = (
     name: "Test Organization",
   },
   storage: {
-    connections: null as any,
-    auditLogs: null as any,
+    connections: null as never,
+    auditLogs: null as never,
   },
-  vault: null as any,
+  vault: null as never,
   authInstance,
   access: {
     granted: () => true,
     check: vi.fn().mockResolvedValue(undefined),
     grant: () => {},
-  } as any,
-  db: null as any,
+    setToolName: () => {},
+  } as never,
+  db: null as never,
   tracer: {
-    startActiveSpan: (_name: string, _opts: any, fn: any) =>
+    startActiveSpan: (
+      _name: string,
+      _opts: unknown,
+      fn: (span: unknown) => unknown,
+    ) =>
       fn({
         setStatus: () => {},
         recordException: () => {},
         end: () => {},
       }),
-  } as any,
+  } as never,
   meter: {
     createHistogram: () => ({ record: () => {} }),
     createCounter: () => ({ add: () => {} }),
-  } as any,
+  } as never,
   baseUrl: "https://mesh.example.com",
   metadata: {
     requestId: "req_123",

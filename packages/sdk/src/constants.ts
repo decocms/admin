@@ -62,6 +62,10 @@ export interface Model {
   isEnabled: boolean;
   hasCustomKey: boolean;
   apiKeyEncrypted?: string;
+  contextWindow?: number;
+  inputCost?: number;
+  outputCost?: number;
+  outputLimit?: number;
 }
 
 const LOGOS = {
@@ -90,6 +94,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1000000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "anthropic:claude-haiku-4-5-20251001",
@@ -100,6 +108,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 1.0,
+    outputCost: 5.0,
+    outputLimit: 64000,
   },
   {
     id: "openai:gpt-4.1-mini",
@@ -110,6 +122,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 0.4,
+    outputCost: 1.6,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-oss-120b",
@@ -120,6 +136,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 131072,
+    inputCost: 0.05,
+    outputCost: 0.2,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-oss-20b",
@@ -130,6 +150,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 131072,
+    inputCost: 0.05,
+    outputCost: 0.2,
+    outputLimit: 32768,
   },
   {
     id: "google:gemini-2.5-pro",
@@ -141,6 +165,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1048576,
+    inputCost: 1.25,
+    outputCost: 10.0,
+    outputLimit: 65536,
   },
   {
     id: "anthropic:claude-sonnet-4",
@@ -152,6 +180,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
@@ -163,6 +195,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "openai:gpt-4.1",
@@ -173,6 +209,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 2.0,
+    outputCost: 8.0,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-4.1-nano",
@@ -183,6 +223,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 0.1,
+    outputCost: 0.4,
+    outputLimit: 32768,
   },
   {
     id: "openai:o3-mini-high",
@@ -193,6 +237,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 1.1,
+    outputCost: 4.4,
+    outputLimit: 100000,
   },
   {
     id: "x-ai:grok-4",
@@ -204,6 +252,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 256000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
 ];
 

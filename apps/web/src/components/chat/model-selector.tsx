@@ -7,7 +7,6 @@ import {
 import {
   ResponsiveSelect,
   ResponsiveSelectContent,
-  ResponsiveSelectItem,
   ResponsiveSelectTrigger,
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
@@ -84,22 +83,130 @@ const CapabilityBadge = memo(function CapabilityBadge({
   );
 });
 
-const ModelItemContent = memo(function ModelItemContent({
+const ModelDetailsPanel = memo(function ModelDetailsPanel({
   model,
 }: {
+  model: Model | null;
+}) {
+  if (!model) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+        Hover to preview
+      </div>
+    );
+  }
+
+  const hasDetails =
+    model.contextWindow || model.outputCost || model.outputLimit;
+
+  if (!hasDetails) {
+    return (
+      <div className="flex flex-col gap-3 py-1 px-1.5">
+        <div className="flex items-center gap-3 py-2 px-0">
+          <img src={model.logo} className="w-6 h-6" />
+          <p className="text-lg font-medium leading-7">{model.name}</p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          No additional details available
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 py-1 px-1.5">
+      <div className="flex flex-col gap-3 py-2 px-0">
+        <div className="flex items-center gap-3">
+          <img src={model.logo} className="w-6 h-6" />
+          <p className="text-lg font-medium leading-7">{model.name}</p>
+        </div>
+        {model.capabilities && model.capabilities.length > 0 && (
+          <div className="flex items-center gap-2">
+            {model.capabilities.map((capability) => (
+              <CapabilityBadge key={capability} capability={capability} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {model.contextWindow && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Icon
+                name="widgets"
+                className="w-3.5 h-3.5 text-muted-foreground"
+              />
+              <p className="text-sm text-foreground">Context window</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {model.contextWindow.toLocaleString()} tokens
+            </p>
+          </div>
+        )}
+
+        {(model.inputCost || model.outputCost) && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Icon
+                name="attach_money"
+                className="w-3.5 h-3.5 text-muted-foreground"
+              />
+              <p className="text-sm text-foreground">Costs</p>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {model.inputCost && (
+                <p className="text-sm text-muted-foreground">
+                  ${model.inputCost.toFixed(2)} / 1M tokens (input)
+                </p>
+              )}
+              {model.outputCost && (
+                <p className="text-sm text-muted-foreground">
+                  ${model.outputCost.toFixed(2)} / 1M tokens (output)
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {model.outputLimit && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Icon
+                name="output"
+                className="w-4.5 h-4.5 text-muted-foreground/70"
+              />
+              <p className="text-sm text-foreground">Output limit</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {model.outputLimit.toLocaleString()} token limit
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+const ModelItemContent = memo(function ModelItemContent({
+  model,
+  onHover,
+  isSelected,
+}: {
   model: Model;
+  onHover: (model: Model) => void;
+  isSelected?: boolean;
 }) {
   return (
-    <div className="p-2 md:w-[400px] flex items-center justify-between gap-4">
-      <div className="flex items-center gap-2">
-        <img src={model.logo} className="w-5 h-5" />
-        <span className="text-normal text-foreground">{model.name}</span>
-      </div>
-      <div className="flex items-center gap-2 ml-auto">
-        {model.capabilities.map((capability) => (
-          <CapabilityBadge key={capability} capability={capability} />
-        ))}
-      </div>
+    <div
+      className="flex items-center gap-2 h-10 py-4 px-3 hover:bg-accent cursor-pointer rounded-xl"
+      onMouseEnter={() => onHover(model)}
+    >
+      <img src={model.logo} className="w-5 h-5" />
+      <span className="text-sm text-foreground">{model.name}</span>
+      {isSelected && (
+        <Icon name="check" className="w-4 h-4 text-foreground ml-auto" />
+      )}
     </div>
   );
 });
@@ -133,13 +240,13 @@ export function ModelSelector({
   className,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [hoveredModel, setHoveredModel] = useState<Model | null>(null);
   const { data: models } = useModels({ excludeDisabled: true });
   const selectedModel = models.find((m) => m.id === model) || DEFAULT_MODEL;
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {
       onModelChange(model);
-      setOpen(false);
     }
   };
 
@@ -152,7 +259,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "!h-8 text-sm hover:bg-accent rounded-lg py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
+          "h-8! text-sm hover:bg-accent rounded-lg py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
           variant === "borderless" && "md:border-none",
           className,
         )}
@@ -161,20 +268,36 @@ export function ModelSelector({
           <SelectedModelDisplay model={selectedModel} />
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
-      <ResponsiveSelectContent title="Select model">
-        {models.map((model) => (
-          <ResponsiveSelectItem
-            key={model.id}
-            value={model.id}
-            hideCheck
-            className={cn(
-              "p-0 focus:bg-muted text-foreground focus:text-foreground cursor-pointer",
-              model.id === selectedModel?.id && "bg-muted/50",
-            )}
-          >
-            <ModelItemContent model={model} />
-          </ResponsiveSelectItem>
-        ))}
+      <ResponsiveSelectContent
+        title="Select model"
+        className="w-auto min-w-[600px] [&_button[aria-label='Scroll down']]:!hidden [&_button[aria-label='Scroll up']]:!hidden"
+      >
+        <div className="flex h-[400px]">
+          {/* Left column - model list */}
+          <div className="flex-1 overflow-y-auto px-0.5 border-r">
+            {models.map((m) => (
+              <div
+                key={m.id}
+                onClick={() => handleModelChange(m.id)}
+                className={cn(
+                  "rounded-xl",
+                  m.id === selectedModel?.id && "bg-accent",
+                )}
+              >
+                <ModelItemContent
+                  model={m}
+                  onHover={setHoveredModel}
+                  isSelected={m.id === selectedModel?.id}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Right column - details panel */}
+          <div className="w-[300px] p-3">
+            <ModelDetailsPanel model={hoveredModel || selectedModel} />
+          </div>
+        </div>
       </ResponsiveSelectContent>
     </ResponsiveSelect>
   );

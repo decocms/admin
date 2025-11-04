@@ -22,8 +22,9 @@ interface SearchResult {
   description?: string;
   icon?: string;
   avatar?: string;
-  type: "agent" | "app" | "document";
+  type: "action" | "agent" | "app" | "document";
   href: string;
+  shortcut?: string;
   integration?: {
     id: string;
     name: string;
@@ -92,7 +93,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         id: `document-${documentId}`,
         title: documentName,
         description: document.data?.description || undefined,
-        icon: "docs",
+        icon: "description",
         type: "document",
         href: `/rsc/i:documents-management/document/${encodeURIComponent(documentId)}`,
       });
@@ -117,13 +118,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   // Group results by type
   const groupedResults = useMemo(() => {
     const groups: Record<string, SearchResult[]> = {
+      action: [],
       agent: [],
       app: [],
       document: [],
     };
 
     for (const result of filteredResults) {
-      if (groups[result.type].length < 3) {
+      if (result.type === "action") {
+        groups.action.push(result);
+      } else if (groups[result.type].length < 3) {
         groups[result.type].push(result);
       }
     }
@@ -156,103 +160,148 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [open]);
 
   const typeLabels = {
+    action: "Actions",
     agent: "Agents",
     app: "Apps",
     document: "Documents",
   };
 
-  const typeIcons = {
-    agent: "robot_2",
-    app: "grid_view",
-    document: "docs",
-  };
-
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      className="sm:max-w-[750px] top-[15vh]! translate-y-0!"
+    >
       <CommandInput
-        placeholder="Search agents, apps, views, documents..."
+        placeholder="Type a command or search"
         value={search}
         onValueChange={setSearch}
-        className="h-12"
+        className="h-[54px] text-base px-3 py-2"
       />
 
-      <CommandList className="max-h-[400px]">
+      <CommandList className="max-h-[450px] pb-0">
         <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">
           No results found for "{deferredSearch}"
         </CommandEmpty>
 
-        {Object.entries(groupedResults).map(([type, results], index) => {
-          if (results.length === 0) return null;
+        <div className="pt-1 px-1.5 pb-0 flex flex-col gap-[2px]">
+          {Object.entries(groupedResults).map(([type, results]) => {
+            if (results.length === 0) return null;
 
-          return (
-            <CommandGroup
-              key={type + index}
-              heading={
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Icon
-                    name={typeIcons[type as keyof typeof typeIcons]}
-                    size={14}
-                  />
-                  {typeLabels[type as keyof typeof typeLabels]}
-                </div>
-              }
-            >
-              {results.map((result, index) => (
-                <CommandItem
-                  key={result.id + index}
-                  value={`${result.title} ${result.description} ${result.type} ${index}`}
-                  onSelect={() => handleSelect(result)}
-                  className="flex items-center gap-3 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {result.type === "agent" && (
-                      <AgentAvatar
-                        url={result.avatar}
-                        fallback={result.title}
-                        size="xs"
-                      />
-                    )}
-
-                    {result.integration && (
-                      <IntegrationAvatar
-                        size="xs"
-                        url={result.integration.icon}
-                        fallback={result.integration.name}
-                        className="!rounded-md flex-shrink-0"
-                      />
-                    )}
-
-                    {result.type === "document" && (
-                      <Icon
-                        name={result.icon || typeIcons[result.type]}
-                        size={20}
-                        className="text-muted-foreground flex-shrink-0"
-                      />
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {result.title}
-                      </div>
-                      {result.description && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {result.description}
-                        </div>
+            return (
+              <CommandGroup
+                key={type}
+                heading={
+                  <div className="flex items-center h-[30px] px-3 py-2 text-xs font-mono uppercase text-muted-foreground">
+                    {typeLabels[type as keyof typeof typeLabels]}
+                  </div>
+                }
+                className="p-0! **:[[cmdk-group-heading]]:px-0! **:[[cmdk-group-heading]]:py-0! **:[[cmdk-group-heading]]:m-0!"
+              >
+                {results.map((result, _idx) => (
+                  <CommandItem
+                    key={result.id}
+                    value={`${result.title} ${result.description} ${result.type}`}
+                    onSelect={() => handleSelect(result)}
+                    className="flex items-center gap-2 h-[46px] px-3 py-0 rounded-xl cursor-pointer data-[selected=true]:bg-accent group"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {result.type === "agent" && result.avatar && (
+                        <AgentAvatar
+                          url={result.avatar}
+                          fallback={result.title}
+                          size="xs"
+                        />
                       )}
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <kbd className="pointer-events-none inline-flex select-none items-center gap-1 rounded size-5 bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                      ↵
+                      {result.type === "action" && (
+                        <Icon
+                          name={result.icon || "bolt"}
+                          size={20}
+                          className="text-muted-foreground shrink-0"
+                        />
+                      )}
+
+                      {result.integration && (
+                        <IntegrationAvatar
+                          size="xs"
+                          url={result.integration.icon}
+                          fallback={result.integration.name}
+                          className="rounded-md! shrink-0"
+                        />
+                      )}
+
+                      {result.type === "document" && !result.integration && (
+                        <Icon
+                          name={result.icon || "description"}
+                          size={20}
+                          className="text-muted-foreground shrink-0"
+                        />
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="font-normal text-sm truncate text-foreground">
+                          {result.title}
+                        </div>
+                      </div>
+                    </div>
+
+                    <kbd className="pointer-events-none hidden group-data-[selected=true]:inline-flex select-none items-center justify-center rounded-md border border-border bg-transparent size-5 p-0.5">
+                      <Icon
+                        name="subdirectory_arrow_left"
+                        size={14}
+                        className="text-muted-foreground"
+                      />
                     </kbd>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          );
-        })}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            );
+          })}
+        </div>
       </CommandList>
+
+      <div className="border-t border-border h-10 flex items-center px-1">
+        <div className="flex items-center gap-4 px-2 text-xs text-muted-foreground flex-1">
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              <kbd className="inline-flex items-center justify-center border border-border rounded-md size-[18px] p-0.5">
+                <Icon
+                  name="arrow_upward"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+              </kbd>
+              <kbd className="inline-flex items-center justify-center border border-border rounded-md size-[18px] p-0.5">
+                <Icon
+                  name="arrow_downward"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+              </kbd>
+            </div>
+            <span>Navigate</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <kbd className="inline-flex items-center justify-center border border-border rounded-md size-[18px] p-0.5">
+              <Icon
+                name="subdirectory_arrow_left"
+                size={14}
+                className="text-muted-foreground"
+              />
+            </kbd>
+            <span>Select</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <kbd className="inline-flex items-center justify-center border border-border rounded-md h-[18px] px-1.5 font-normal text-[10px]">
+              esc
+            </kbd>
+            <span>Close</span>
+          </div>
+        </div>
+      </div>
     </CommandDialog>
   );
 }

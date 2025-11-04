@@ -26,6 +26,7 @@ import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { ContextResources } from "../chat/context-resources.tsx";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
+import { ContextPicker } from "../chat/context-picker.tsx";
 import { AudioButton } from "./audio-button.tsx";
 import { ChatTemplates } from "./chat-templates.ts";
 import { ErrorBanner } from "./error-banner.tsx";
@@ -59,8 +60,11 @@ export function ChatInput({
   const { enableAllTools } = useAgentSettingsToolsSet();
   const model = preferences.defaultModel;
   const richTextRef = useRef<RichTextAreaHandle>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isContextPickerOpen, setIsContextPickerOpen] = useState(false);
   const selectDialogTriggerRef = useRef<HTMLButtonElement>(null);
+  const addContextButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     uploadedFiles,
@@ -214,10 +218,7 @@ export function ChatInput({
 
   const handleOpenSelectDialog = useCallback(() => {
     setIsDropdownOpen(false);
-    // Use setTimeout to ensure dropdown closes before dialog opens
-    setTimeout(() => {
-      selectDialogTriggerRef.current?.click();
-    }, 0);
+    setIsContextPickerOpen(true);
   }, []);
 
   const handleOpenFileDialog = useCallback(() => {
@@ -336,6 +337,7 @@ export function ChatInput({
       )}
 
       <form
+        ref={formRef}
         onSubmit={onSubmit}
         className={cn(
           "relative",
@@ -382,8 +384,9 @@ export function ChatInput({
                   >
                     <DropdownMenuTrigger asChild>
                       <button
+                        ref={addContextButtonRef}
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-0"
                         title="Add context"
                       >
                         <Icon
@@ -452,6 +455,13 @@ export function ChatInput({
           </div>
         </div>
       </form>
+
+      {/* Context Picker */}
+      <ContextPicker
+        open={isContextPickerOpen}
+        onClose={() => setIsContextPickerOpen(false)}
+        anchorRef={addContextButtonRef as React.RefObject<HTMLElement>}
+      />
 
       {/* Separate SelectConnectionDialog to avoid mounting/unmounting on dropdown open */}
       {uiOptions.showAddIntegration && (

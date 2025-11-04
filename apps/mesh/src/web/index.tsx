@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { StrictMode, Suspense } from "react";
-import { Providers } from "./providers.tsx";
+import { Providers } from "@/web/providers/providers";
 import {
   createRootRoute,
   createRoute,
@@ -10,7 +10,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { SplashScreen } from "./components/splash-screen.tsx";
+import { SplashScreen } from "@/web/components/splash-screen";
 import * as z from "zod";
 
 const rootRoute = createRootRoute({
@@ -53,7 +53,7 @@ const requiredAuthLayout = createRoute({
 const homeRoute = createRoute({
   getParentRoute: () => requiredAuthLayout,
   path: "/",
-  component: lazyRouteComponent(() => import("./routes/app.tsx")),
+  component: lazyRouteComponent(() => import("./routes/home.tsx")),
 });
 
 const requiredAuthRouteTree = requiredAuthLayout.addChildren([homeRoute]);

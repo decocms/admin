@@ -572,9 +572,11 @@ const SelectProjectAppInstance = ({
   redirectUri,
   state,
   autoConfirmIntegrationId,
+  mode = "direct",
 }: {
   app: RegistryApp;
   org: Team;
+  mode?: "proxy" | "direct";
   project: string;
   selectAnotherProject: () => void;
   clientId: string;
@@ -610,6 +612,7 @@ const SelectProjectAppInstance = ({
   }) => {
     const { redirectTo } = await createOAuthCode.mutateAsync({
       integrationId,
+      mode,
       workspace: Locator.from({ org: org.slug, project }),
       redirectUri,
       state,
@@ -825,6 +828,7 @@ function AppsOAuth({
   redirect_uri,
   state,
   workspace_hint,
+  mode = "direct",
 }: OAuthSearchParams) {
   const { data: registryApp } = useRegistryApp({ app: client_id });
   const { data: orgs } = useOrganizations();
@@ -954,6 +958,7 @@ function AppsOAuth({
         redirectUri={redirect_uri}
         state={state}
         autoConfirmIntegrationId={autoConfirmIntegrationId}
+        mode={mode}
       />
     </SDKProvider>
   );

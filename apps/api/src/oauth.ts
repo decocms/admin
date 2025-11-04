@@ -5,7 +5,6 @@ import { HTTPException } from "hono/http-exception";
 import { createMcpServerProxy, honoCtxToAppCtx } from "./api.ts";
 import { ensureOAuthTables } from "./oauth/schema.ts";
 import {
-  decodeOAuthState,
   encodeOAuthState,
   generateRandomToken,
   getCurrentTimestamp,
@@ -48,9 +47,6 @@ interface OAuthClient {
   created_at: number;
   updated_at: number;
 }
-
-// OAuth configuration constants
-const CODE_EXPIRY_SECONDS = 600; // 10 minutes
 
 /**
  * Helper to get workspace database with proper exec function
@@ -152,7 +148,6 @@ export const withOAuth = ({
   // OAuth path templates (workspace will be in URL path)
   const authorizationEndpoint = `${withoutMcpEnding}/mcp/authorize`;
   const registrationEndpoint = `${withoutMcpEnding}/mcp/register`;
-  const consentEndpoint = `${withoutMcpEnding}/mcp/authorize/consent`;
 
   // Ensure OAuth tables exist on first request
   const tablesEnsured = new WeakMap<object, boolean>();
@@ -515,6 +510,7 @@ export const withOAuth = ({
     consentUrl.searchParams.set("redirect_uri", redirectUri);
     consentUrl.searchParams.set("scope", scope || "*");
     consentUrl.searchParams.set("state", state); // Encoded workspace + client state
+    consentUrl.searchParams.set("mode", "proxy");
     org && consentUrl.searchParams.set("org", org);
     project && consentUrl.searchParams.set("project", project);
     integrationId &&
@@ -530,93 +526,6 @@ export const withOAuth = ({
     }
 
     return c.redirect(consentUrl.toString());
-  });
-
-  // Authorization Consent Handler (workspace-specific URL path)
-  hono.post(consentEndpoint, async (c) => {
-    const body = await c.req.json();
-    const {
-      client_id,
-      redirect_uri,
-      scope,
-      state,
-      code_challenge,
-      code_challenge_method,
-      approved,
-    } = body;
-
-    // Decode workspace context from state parameter
-    const stateData = decodeOAuthState(state);
-    if (!stateData) {
-      throw new HTTPException(400, { message: "Invalid state parameter" });
-    }
-
-    const { org, project, integrationId, clientState } = stateData;
-
-    // Create context with workspace params
-    const paramsContext = {
-      ...c,
-      req: {
-        ...c.req,
-        param: (key: string) => {
-          if (key === "org") return org;
-          if (key === "project") return project;
-          if (key === "integrationId") return integrationId;
-          return c.req.param(key);
-        },
-      },
-    } as Context<AppEnv>;
-
-    await ensureTables(paramsContext);
-
-    if (!approved) {
-      // User denied access
-      const errorUrl = new URL(redirect_uri);
-      errorUrl.searchParams.set("error", "access_denied");
-      if (state) errorUrl.searchParams.set("state", state);
-      return c.json({ redirect_uri: errorUrl.toString() });
-    }
-
-    const ctx = honoCtxToAppCtx(paramsContext);
-    const user = ctx.user;
-
-    if (!user || !user.id) {
-      throw new HTTPException(401, { message: "Unauthorized" });
-    }
-
-    // Generate authorization code and store in deco_chat_oauth_codes (reusing existing table)
-    const code = generateRandomToken(32);
-
-    // Create JWT claims that will be issued when code is exchanged
-    const claims = {
-      sub: user.id,
-      aud: ctx.locator?.value,
-      user: user,
-      client_id: client_id,
-      scope: scope || "*",
-      // Store PKCE challenge for verification during token exchange
-      code_challenge: code_challenge || null,
-      code_challenge_method: code_challenge_method || null,
-    };
-
-    // Store in existing deco_chat_oauth_codes table
-    await ctx.db.from("deco_chat_oauth_codes").insert({
-      code,
-      claims: JSON.stringify(claims),
-      expires_at: new Date(
-        Date.now() + CODE_EXPIRY_SECONDS * 1000,
-      ).toISOString(),
-    });
-
-    // Redirect back to client with authorization code
-    // Return client's original state (not our encoded state)
-    const redirectUrl = new URL(redirect_uri);
-    redirectUrl.searchParams.set("code", code);
-    if (clientState) {
-      redirectUrl.searchParams.set("state", clientState);
-    }
-
-    return c.json({ redirect_uri: redirectUrl.toString() });
   });
 
   // Note: Token exchange is handled by existing /apps/code-exchange endpoint

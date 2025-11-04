@@ -1,12 +1,14 @@
+import { decodeJwt, JWTPayload } from "jose";
 import { z } from "zod";
 import {
+  assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
-import { decodeJwt } from "jose";
 import { getProjectIdFromContext } from "../projects/util.ts";
+
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
   description: "Create and manage OAuth codes securely.",
@@ -18,6 +20,10 @@ export const oauthCodeCreate = createTool({
   description: "Create an OAuth code for a given API key",
   inputSchema: z.lazy(() =>
     z.object({
+      mode: z
+        .enum(["proxy", "direct"])
+        .optional()
+        .describe("The mode of the OAuth code"),
       integrationId: z
         .string()
         .describe("The ID of the integration to create an OAuth code for"),
@@ -28,7 +34,7 @@ export const oauthCodeCreate = createTool({
       code: z.string().describe("The OAuth code"),
     }),
   ),
-  handler: async ({ integrationId }, c) => {
+  handler: async ({ integrationId, mode = "direct" }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     const mcpClient = MCPClient.forContext(c);
@@ -41,12 +47,40 @@ export const oauthCodeCreate = createTool({
         "Only authorized HTTP connections are supported for OAuth codes",
       );
     }
-    const currentClaims = decodeJwt(connection.token);
+    const code = crypto.randomUUID();
+    let currentClaims: JWTPayload;
+
+    if (mode === "proxy") {
+      // authorized through proxy
+      assertHasLocator(c);
+      currentClaims = {
+        sub: `proxy:${integrationId}`,
+        aud: c.locator.value,
+        iat: new Date().getTime(),
+        exp: undefined, // no expiration for now
+        policies: [
+          {
+            statements: [
+              {
+                effect: "allow",
+                resource: "*",
+                matchCondition: {
+                  resource: "is_integration" as const,
+                  integrationId,
+                },
+              },
+            ],
+          },
+        ],
+      };
+    } else {
+      currentClaims = decodeJwt(connection.token);
+    }
+
     const claims = {
       ...currentClaims,
       user: JSON.stringify(c.user),
     };
-    const code = crypto.randomUUID();
 
     const { error } = await c.db.from("deco_chat_oauth_codes").insert({
       code,

@@ -11,6 +11,7 @@ export const OAuthSearchParamsSchema = z.object({
   state: z.string().optional(),
   workspace_hint: z.string().optional(),
   app_name: z.string().optional(),
+  mode: z.enum(["proxy", "direct"]).optional(),
 });
 
 export type OAuthSearchParams = z.infer<typeof OAuthSearchParamsSchema>;

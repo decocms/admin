@@ -331,12 +331,20 @@ export const useCreateOAuthCodeForIntegration = () => {
       integrationId: string;
       workspace: ProjectLocator;
       redirectUri: string;
+      mode?: "proxy" | "direct";
       state?: string;
     }) => {
-      const { integrationId, workspace, redirectUri, state } = params;
+      const {
+        integrationId,
+        workspace,
+        redirectUri,
+        state,
+        mode = "direct",
+      } = params;
 
       const { code } = await MCPClient.forLocator(workspace).OAUTH_CODE_CREATE({
         integrationId,
+        mode,
       });
 
       const url = new URL(redirectUri);

@@ -77,3 +77,8 @@ export async function migrateDown(): Promise<void> {
     throw error;
   }
 }
+
+if (import.meta.main) {
+  await migrateToLatest();
+  process.exit(0);
+}

@@ -16,70 +16,6 @@
 import { Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<any>): Promise<void> {
-  // Users table (Better Auth managed)
-  await db.schema
-    .createTable("user")
-    .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("email", "text", (col) => col.notNull().unique())
-    .addColumn("name", "text", (col) => col.notNull())
-    .addColumn("emailVerified", "integer", (col) => col.notNull().defaultTo(0))
-    .addColumn("image", "text")
-    .addColumn("createdAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .addColumn("updatedAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .execute();
-
-  // Sessions table (Better Auth managed)
-  await db.schema
-    .createTable("session")
-    .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
-    .addColumn("expiresAt", "text", (col) => col.notNull())
-    .addColumn("ipAddress", "text")
-    .addColumn("userAgent", "text")
-    .addColumn("createdAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .execute();
-
-  // Account table (Better Auth for OAuth providers)
-  await db.schema
-    .createTable("account")
-    .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
-    .addColumn("accountId", "text", (col) => col.notNull())
-    .addColumn("providerId", "text", (col) => col.notNull())
-    .addColumn("accessToken", "text")
-    .addColumn("refreshToken", "text")
-    .addColumn("expiresAt", "text")
-    .addColumn("password", "text")
-    .addColumn("createdAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .addColumn("updatedAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .execute();
-
-  // Verification table (Better Auth for email verification)
-  await db.schema
-    .createTable("verification")
-    .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("identifier", "text", (col) => col.notNull())
-    .addColumn("value", "text", (col) => col.notNull())
-    .addColumn("expiresAt", "text", (col) => col.notNull())
-    .addColumn("createdAt", "text", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .execute();
-
   // MCP Connections table (organization-scoped)
   await db.schema
     .createTable("connections")
@@ -262,8 +198,4 @@ export async function down(db: Kysely<any>): Promise<void> {
   await db.schema.dropTable("audit_logs").execute();
   await db.schema.dropTable("api_keys").execute();
   await db.schema.dropTable("connections").execute();
-  await db.schema.dropTable("verification").execute();
-  await db.schema.dropTable("account").execute();
-  await db.schema.dropTable("session").execute();
-  await db.schema.dropTable("user").execute();
 }

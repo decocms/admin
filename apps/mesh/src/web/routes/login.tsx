@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAuthConfig } from "../auth-config-provider";
+import { useAuthConfig } from "../providers/auth-config-provider";
 import { SplashScreen } from "../components/splash-screen";
 import { authClient } from "../lib/auth-client";
 import { Navigate, useSearch } from "@tanstack/react-router";

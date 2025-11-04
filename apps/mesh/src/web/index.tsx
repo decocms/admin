@@ -28,9 +28,11 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: lazyRouteComponent(() => import("./routes/login.tsx")),
-  validateSearch: z.lazy(() => z.object({
-    next: z.string().optional(),
-  })),
+  validateSearch: z.lazy(() =>
+    z.object({
+      next: z.string().optional(),
+    }),
+  ),
 });
 
 /**

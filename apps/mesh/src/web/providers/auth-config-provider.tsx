@@ -2,9 +2,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { AuthConfig } from "@/api/routes/auth";
 
-const AuthConfigContext = createContext<AuthConfig | undefined>(
-  undefined,
-);
+const AuthConfigContext = createContext<AuthConfig | undefined>(undefined);
 
 async function fetchAuthConfig(): Promise<AuthConfig> {
   const response = await fetch("/api/auth/custom/config");

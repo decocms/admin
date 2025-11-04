@@ -34,7 +34,7 @@ const parseSSEResponseAsJson = async (response: Response) => {
 
 export const fetcher = new Proxy({} as MeshClient, {
   get(target, prop) {
-    return async (params: any, init?: RequestInit) => {
+    return async (params: Record<string, unknown>, init?: RequestInit) => {
       const tool = prop;
 
       if (typeof tool !== "string") {

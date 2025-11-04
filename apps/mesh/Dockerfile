@@ -52,5 +52,5 @@ ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
 
 # Run database migrations on startup and start the application
-CMD ["sh", "-c", "bun run src/database/migrate.ts && bun run start"]
+CMD ["sh", "-c", "bun run src/database/migrate.ts && bun run better-auth:migrate && bun run start"]
 

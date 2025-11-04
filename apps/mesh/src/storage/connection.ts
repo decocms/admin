@@ -98,7 +98,17 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   async update(id: string, data: UpdateConnectionData): Promise<MCPConnection> {
     // Prepare update data with proper JSON serialization
-    const updateData: any = {
+    const updateData: Partial<{
+      name: string;
+      description: string;
+      icon: string;
+      status: string;
+      connectionToken: string;
+      metadata: string;
+      tools: string;
+      bindings: string;
+      updatedAt: string;
+    }> = {
       updatedAt: new Date().toISOString(),
     };
 
@@ -177,7 +187,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
         healthy: response.ok || response.status === 404, // 404 is ok (service exists)
         latencyMs,
       };
-    } catch (error) {
+    } catch {
       return {
         healthy: false,
         latencyMs: Date.now() - startTime,
@@ -188,7 +198,27 @@ export class ConnectionStorage implements ConnectionStoragePort {
   /**
    * Deserialize JSON fields from database and decrypt token
    */
-  private async deserializeConnection(raw: any): Promise<MCPConnection> {
+  private async deserializeConnection(raw: {
+    id: string;
+    organizationId: string;
+    createdById: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    appName: string | null;
+    appId: string | null;
+    connectionType: string;
+    connectionUrl: string;
+    connectionToken: string | null;
+    connectionHeaders: string | null;
+    oauthConfig: string | null;
+    metadata: string | null;
+    tools: string | null;
+    bindings: string | null;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  }): Promise<MCPConnection> {
     // Decrypt token if present
     let decryptedToken: string | null = null;
     if (raw.connectionToken) {

@@ -15,7 +15,8 @@
 
 import { Kysely, sql } from "kysely";
 
-export async function up(db: Kysely<any>): Promise<void> {
+// Using unknown for database parameter as schema is being created
+export async function up(db: Kysely<unknown>): Promise<void> {
   // MCP Connections table (organization-scoped)
   await db.schema
     .createTable("connections")
@@ -189,7 +190,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+// Using unknown for database parameter as schema is being dropped
+export async function down(db: Kysely<unknown>): Promise<void> {
   // Drop tables in reverse order (respecting foreign keys)
   await db.schema.dropTable("downstream_tokens").execute();
   await db.schema.dropTable("oauth_refresh_tokens").execute();

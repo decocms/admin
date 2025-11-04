@@ -112,6 +112,19 @@ function scopesToPermissions(scopes: string): Record<string, string[]> {
   return permissions;
 }
 
+interface OrganizationContext {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface AuthenticatedUser {
+  id: string;
+  email?: string;
+  name?: string;
+  role?: string;
+}
+
 /**
  * Authenticate request using either OAuth session or API key
  * Returns unified authentication data with organization context
@@ -120,11 +133,11 @@ async function authenticateRequest(
   c: Context,
   auth: BetterAuthInstance,
 ): Promise<{
-  user?: any;
+  user?: AuthenticatedUser;
   permissions: Record<string, string[]>;
   role?: string;
   apiKeyId?: string;
-  organization?: { id: string; slug: string; name: string };
+  organization?: OrganizationContext;
 }> {
   const authHeader = c.req.header("Authorization");
 
@@ -182,22 +195,25 @@ async function authenticateRequest(
         });
 
         // For API keys, organization might be embedded in metadata
-        const organization = result.key.metadata?.organization as any;
+        const orgMetadata = result.key.metadata?.organization as
+          | OrganizationContext
+          | undefined;
 
         return {
           permissions: result.key.permissions || {},
           apiKeyId: result.key.id,
-          organization: organization
+          organization: orgMetadata
             ? {
-                id: organization.id,
-                slug: organization.slug,
-                name: organization.name,
+                id: orgMetadata.id,
+                slug: orgMetadata.slug,
+                name: orgMetadata.name,
               }
             : undefined,
         };
       }
-    } catch (error: any) {
-      console.log("[Auth] API key check failed:", error.message);
+    } catch (error) {
+      const err = error as Error;
+      console.log("[Auth] API key check failed:", err.message);
     }
   }
 

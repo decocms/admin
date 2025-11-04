@@ -4,12 +4,14 @@ import {
   ForbiddenError,
   UnauthorizedError,
 } from "./access-control";
+import type { BetterAuthInstance } from "./mesh-context";
 
-const createMockAuth = (): any => ({
-  api: {
-    userHasPermission: vi.fn(),
-  },
-});
+const createMockAuth = (): Partial<BetterAuthInstance> =>
+  ({
+    api: {
+      userHasPermission: vi.fn(),
+    } as Partial<BetterAuthInstance["api"]>,
+  }) as Partial<BetterAuthInstance>;
 
 describe("AccessControl", () => {
   describe("grant", () => {
@@ -317,7 +319,7 @@ describe("AccessControl", () => {
 
     it("should fall back to manual check when Better Auth not configured", async () => {
       const ac = new AccessControl(
-        null as any, // No auth instance
+        null, // No auth instance
         "user_1",
         undefined,
         { self: ["TEST_TOOL"] }, // Permission on self connection

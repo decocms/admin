@@ -1,9 +1,10 @@
 import type { Kysely } from "kysely";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { closeDatabase, createDatabase } from "../database";
-import { createTestSchema } from "../storage/__test-helpers";
+import { createTestSchema } from "../storage/test-helpers";
 import type { Database } from "../storage/types";
 import { createMeshContextFactory } from "./context-factory";
+import type { MockAuth, MockTracer, MockMeter } from "../test-utils";
 
 describe("createMeshContextFactory", () => {
   let db: Kysely<Database>;
@@ -18,7 +19,9 @@ describe("createMeshContextFactory", () => {
     await closeDatabase(db);
   });
 
-  const createMockHonoContext = (overrides?: any) => ({
+  const createMockHonoContext = (
+    overrides?: Partial<ReturnType<typeof createMockHonoContext>>,
+  ) => ({
     req: {
       url: "https://mesh.example.com/mcp/tools",
       path: "/mcp/tools",
@@ -38,7 +41,7 @@ describe("createMeshContextFactory", () => {
     ...overrides,
   });
 
-  const createMockAuth = (): any => ({
+  const createMockAuth = (): MockAuth => ({
     api: {
       getMcpSession: vi.fn().mockResolvedValue(null),
       verifyApiKey: vi.fn().mockResolvedValue({
@@ -67,8 +70,8 @@ describe("createMeshContextFactory", () => {
         auth: createMockAuth(),
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -80,11 +83,11 @@ describe("createMeshContextFactory", () => {
     it("should create MeshContext from Hono context", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any, // No auth for this test
+        auth: null, // No auth for this test
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -109,11 +112,11 @@ describe("createMeshContextFactory", () => {
     it("should derive base URL from request", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: null,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -133,11 +136,11 @@ describe("createMeshContextFactory", () => {
     it("should populate request metadata", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: null,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -168,8 +171,8 @@ describe("createMeshContextFactory", () => {
         auth: createMockAuth(),
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -200,11 +203,11 @@ describe("createMeshContextFactory", () => {
 
       const factory = createMeshContextFactory({
         db,
-        auth: authWithoutOrg as any,
+        auth: authWithoutOrg,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -219,11 +222,11 @@ describe("createMeshContextFactory", () => {
     it("should create storage adapters", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: null,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 
@@ -247,11 +250,11 @@ describe("createMeshContextFactory", () => {
     it("should create AccessControl instance", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as any,
+        auth: null,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as any,
-          meter: {} as any,
+          tracer: {} as MockTracer,
+          meter: {} as MockMeter,
         },
       });
 

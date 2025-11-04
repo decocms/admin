@@ -7,7 +7,11 @@ describe("Hono App", () => {
       const res = await app.request("/health");
       expect(res.status).toBe(200);
 
-      const json = (await res.json()) as any;
+      const json = (await res.json()) as {
+        status: string;
+        timestamp: string;
+        version: string;
+      };
       expect(json.status).toBe("ok");
       expect(json.timestamp).toBeDefined();
       expect(json.version).toBe("1.0.0");
@@ -19,7 +23,7 @@ describe("Hono App", () => {
       const res = await app.request("/unknown");
       expect(res.status).toBe(404);
 
-      const json = (await res.json()) as any;
+      const json = (await res.json()) as { error: string; path: string };
       expect(json.error).toBe("Not Found");
       expect(json.path).toBe("/unknown");
     });

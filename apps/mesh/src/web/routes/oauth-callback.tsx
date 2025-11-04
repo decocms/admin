@@ -84,7 +84,7 @@ export default function OAuthCallback() {
               // Update state for the authorization call
               state = stateObj.clientState;
             }
-          } catch (e) {
+          } catch {
             // If decoding/parsing fails, use the state as-is
             console.log("[OAuth Callback] Using state as-is (not wrapped)");
           }

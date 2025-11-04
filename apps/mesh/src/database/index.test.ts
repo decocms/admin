@@ -25,7 +25,7 @@ describe("Database Factory", () => {
       // Test that database is functional (will fail without migrations, but db exists)
       try {
         await db
-          .selectFrom("projects" as any)
+          .selectFrom("projects" as never)
           .selectAll()
           .execute();
       } catch (error) {

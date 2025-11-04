@@ -41,10 +41,11 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/web/components/ui/alert";
 import type { MCPConnection } from "@/storage/types";
+import { KEYS } from "@/web/lib/query-keys";
 
 const useConnection = (connectionId: string) => {
   return useQuery({
-    queryKey: ["connection", connectionId],
+    queryKey: KEYS.connection(connectionId),
     queryFn: () => fetcher.CONNECTION_GET({ id: connectionId }),
   });
 };
@@ -96,7 +97,7 @@ export default function McpInspector() {
   // Tool invocation state
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [toolArgs, setToolArgs] = useState<string>("{}");
-  const [toolResult, setToolResult] = useState<any>(null);
+  const [toolResult, setToolResult] = useState<unknown>(null);
   const [isInvokingTool, setIsInvokingTool] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
 
@@ -104,14 +105,14 @@ export default function McpInspector() {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(
     null,
   );
-  const [resourceContent, setResourceContent] = useState<any>(null);
+  const [resourceContent, setResourceContent] = useState<unknown>(null);
   const [isLoadingResource, setIsLoadingResource] = useState(false);
   const [resourceError, setResourceError] = useState<string | null>(null);
 
   // Prompt state
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [promptArgs, setPromptArgs] = useState<string>("{}");
-  const [promptResult, setPromptResult] = useState<any>(null);
+  const [promptResult, setPromptResult] = useState<unknown>(null);
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [promptError, setPromptError] = useState<string | null>(null);
 
@@ -425,11 +426,15 @@ export default function McpInspector() {
                                     setToolResult(null);
                                     // Pre-populate with default values if available
                                     if (tool.inputSchema?.properties) {
-                                      const defaults: any = {};
+                                      const defaults: Record<string, unknown> =
+                                        {};
                                       Object.entries(
                                         tool.inputSchema.properties,
                                       ).forEach(
-                                        ([key, schema]: [string, any]) => {
+                                        ([key, schema]: [
+                                          string,
+                                          { default?: unknown },
+                                        ]) => {
                                           if (schema.default !== undefined) {
                                             defaults[key] = schema.default;
                                           }

@@ -30,10 +30,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/web/components/ui/dropdown-menu";
+import { KEYS } from "@/web/lib/query-keys";
+
+interface Member {
+  id: string;
+  name?: string;
+  email?: string;
+  role: string;
+  createdAt?: string;
+}
 
 const useMembers = () => {
   return useQuery({
-    queryKey: ["members"],
+    queryKey: KEYS.members(),
     queryFn: () => authClient.organization.listMembers(),
   });
 };
@@ -110,7 +119,7 @@ export default function OrgMembers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.map((member: any) => (
+                {members.map((member: Member) => (
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">

@@ -72,7 +72,7 @@ function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
     if (dir && dir !== "/" && !existsSync(dir)) {
       try {
         mkdirSync(dir, { recursive: true });
-      } catch (error) {
+      } catch {
         // If directory creation fails, use in-memory database
         console.warn(
           `Failed to create directory ${dir}, using in-memory database`,
@@ -103,10 +103,21 @@ export async function closeDatabase(
  * Get database dialect name
  */
 export function getDatabaseDialect(database: Kysely<DatabaseSchema>): string {
-  // Access internal executor to get dialect
+  // Access internal executor to get dialect (using unknown for type safety)
+  const db = database as unknown as {
+    getExecutor?: () => {
+      adapter?: {
+        connectionProvider?: {
+          constructor?: {
+            name?: string;
+          };
+        };
+      };
+    };
+  };
   return (
-    (database as any).getExecutor?.()?.adapter?.connectionProvider?.constructor
-      ?.name || "unknown"
+    db.getExecutor?.()?.adapter?.connectionProvider?.constructor?.name ||
+    "unknown"
   );
 }
 

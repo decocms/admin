@@ -1,4 +1,3 @@
-import { authClient } from "../lib/auth-client";
 import { OrganizationsHome } from "../components/organizations-home";
 
 export default function App() {

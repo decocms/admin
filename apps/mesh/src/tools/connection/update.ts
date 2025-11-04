@@ -58,7 +58,16 @@ export const CONNECTION_UPDATE = defineTool({
     await ctx.access.check();
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Partial<{
+      name: string;
+      description: string;
+      icon: string;
+      metadata: Record<string, unknown>;
+      connectionType: string;
+      connectionUrl: string;
+      connectionToken: string;
+      connectionHeaders: Record<string, string>;
+    }> = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined)
       updateData.description = input.description;

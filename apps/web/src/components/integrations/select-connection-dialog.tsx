@@ -137,8 +137,9 @@ export const useIntegrationInstallStep = ({
       const dependencyName = maybeAppDependencyList?.[stepIndex] ?? "";
       const dependencySchema =
         integrationState.schema?.properties?.[dependencyName] ?? {};
-      const isRequired = integrationState.schema?.required?.includes(dependencyName);
-      
+      const isRequired =
+        integrationState.schema?.required?.includes(dependencyName);
+
       return {
         type: "object",
         properties: {
@@ -158,14 +159,17 @@ export const useIntegrationInstallStep = ({
           {} as Record<string, JSONSchema7Definition>,
         ) ?? {};
 
-      const requiredFields = maybeAppList?.filter(
-        (app) => integrationState.schema?.required?.includes(app)
+      const requiredFields = maybeAppList?.filter((app) =>
+        integrationState.schema?.required?.includes(app),
       );
 
       return {
         type: "object",
         properties,
-        required: requiredFields && requiredFields.length > 0 ? requiredFields : undefined,
+        required:
+          requiredFields && requiredFields.length > 0
+            ? requiredFields
+            : undefined,
       } satisfies JSONSchema7;
     }
   }, [totalSteps, stepIndex, integrationState.schema]);

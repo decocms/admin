@@ -97,7 +97,10 @@ const ModelDetailsPanel = memo(function ModelDetailsPanel({
   }
 
   const hasDetails =
-    model.contextWindow || model.outputCost || model.outputLimit;
+    model.contextWindow ||
+    model.inputCost ||
+    model.outputCost ||
+    model.outputLimit;
 
   if (!hasDetails) {
     return (
@@ -247,6 +250,7 @@ export function ModelSelector({
   const handleModelChange = (model: string) => {
     if (onModelChange) {
       onModelChange(model);
+      setOpen(false);
     }
   };
 
@@ -259,7 +263,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "h-8! text-sm hover:bg-accent rounded-lg py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group",
+          "h-8! text-sm hover:bg-accent rounded-lg py-1 px-2 gap-1 shadow-none cursor-pointer border-0 group focus-visible:ring-0 focus-visible:ring-offset-0",
           variant === "borderless" && "md:border-none",
           className,
         )}
@@ -272,7 +276,7 @@ export function ModelSelector({
         title="Select model"
         className="w-auto min-w-[600px] [&_button[aria-label='Scroll down']]:!hidden [&_button[aria-label='Scroll up']]:!hidden"
       >
-        <div className="flex h-[400px]">
+        <div className="flex h-[350px]">
           {/* Left column - model list */}
           <div className="flex-1 overflow-y-auto px-0.5 border-r">
             {models.map((m) => (

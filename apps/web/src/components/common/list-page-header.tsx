@@ -78,12 +78,15 @@ export function ListPageHeader<TChiplet extends Chiplet>({
       : "justify-self-end md:justify-self-end";
 
   return (
-    <div
-      className={cn(
-        "w-full grid grid-cols-1 gap-2",
-        hasLeftContent ? "md:grid-cols-[minmax(0,1fr)_auto]" : "md:grid-cols-1",
+    <div className={cn("w-full flex justify-between gap-2")}>
+      {input && (
+        <div className="flex items-center gap-2">
+          <Input
+            className="w-full sm:w-56 md:w-72 lg:w-80 text-sm min-w-0 shrink"
+            {...input}
+          />
+        </div>
       )}
-    >
       {hasLeftContent && (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
           {filter &&
@@ -104,12 +107,6 @@ export function ListPageHeader<TChiplet extends Chiplet>({
         )}
       >
         {view && <ViewModeSwitcher {...view} />}
-        {input && (
-          <Input
-            className="w-full sm:w-56 md:w-72 lg:w-80 text-sm min-w-0 shrink"
-            {...input}
-          />
-        )}
         {actionsRight}
       </div>
     </div>

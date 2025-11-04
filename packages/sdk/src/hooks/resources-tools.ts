@@ -302,28 +302,33 @@ export async function callToolV2(
       const toolName = decodeURIComponent(parts[parts.length - 1]);
 
       // Call INTEGRATIONS_CALL_TOOL with the integration ID
-      const result = await client.INTEGRATIONS_CALL_TOOL({
-        id: integrationId,
-        params: {
-          name: toolName,
-          arguments: params.input,
+      const result = await client.INTEGRATIONS_CALL_TOOL(
+        {
+          id: integrationId,
+          params: {
+            name: toolName,
+            arguments: params.input,
+          },
         },
-      }, { signal });
+        { signal },
+      );
 
       // Transform the MCP result to match ToolCallResultV2 format
       if (result.isError) {
         let errorMessage = "Tool execution failed";
         let errorStack = undefined;
-        
+
         if (result.structuredContent) {
           errorMessage = result.structuredContent.message || errorMessage;
           errorStack = result.structuredContent.stack;
         } else if (result.content && result.content[0]?.text) {
           errorMessage = result.content[0].text;
         }
-        
+
         return {
-          error: errorStack ? `${errorMessage}\n\nStack trace:\n${errorStack}` : errorMessage,
+          error: errorStack
+            ? `${errorMessage}\n\nStack trace:\n${errorStack}`
+            : errorMessage,
           logs: [],
         };
       }
@@ -334,7 +339,10 @@ export async function callToolV2(
       };
     } catch (error) {
       return {
-        error: error instanceof Error ? `${error.message}\n\n${error.stack}` : String(error),
+        error:
+          error instanceof Error
+            ? `${error.message}\n\n${error.stack}`
+            : String(error),
         logs: [],
       };
     }

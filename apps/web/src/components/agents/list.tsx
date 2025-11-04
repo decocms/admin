@@ -529,8 +529,8 @@ function AgentsList() {
     <div className="h-full flex flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-auto">
         {/* Header Section - sticky horizontally */}
-        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10">
-          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+        <div className="sticky pb-4 z-10">
+          <div className="max-w-[1600px] mx-auto w-full">
             <ResourceHeader
               title="Agents"
               tabs={mainTabs}
@@ -568,7 +568,7 @@ function AgentsList() {
             />
 
             {/* Filter buttons */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 px-4">
               {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
                 <Button
                   key={id}
@@ -599,8 +599,8 @@ function AgentsList() {
         </div>
 
         {/* Content Section */}
-        <div className="px-4 lg:px-6 xl:px-10">
-          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
+        <div className="px-4">
+          <div className="max-w-[1600px] mx-auto w-full pb-8">
             {filteredAgents.length > 0 ? (
               <>
                 {viewMode === "cards" && <CardsView agents={filteredAgents} />}

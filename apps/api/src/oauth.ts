@@ -175,9 +175,9 @@ export const withOAuth = ({
     const project = c.req.param("project");
     const integrationId = c.req.param("integrationId");
 
-    const authHeader = c.req.raw.headers.get("Authorization");
+    const ctx = honoCtxToAppCtx(c);
 
-    if (!authHeader) {
+    if (!ctx.user) {
       // Return 401 with resource_metadata pointing to workspace-specific endpoint
       const resourceMetadataUrl = `${url.origin}/${org}/${project}/${integrationId}/mcp/.well-known/oauth-protected-resource`;
       const wwwAuthenticateValue = `Bearer resource_metadata="${resourceMetadataUrl}", scope="*"`;

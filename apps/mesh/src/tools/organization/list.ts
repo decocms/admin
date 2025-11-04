@@ -44,23 +44,11 @@ export const ORGANIZATION_LIST = defineTool({
       throw new Error("User ID required to list organizations");
     }
 
-    // // List organizations via Better Auth
-    try {
-      const orgs = await ctx.authInstance.api.listOrganizations({});
-
-      console.log({ orgs });
-    } catch (error) {
-      console.log("Error listing stuff", error);
-    }
-
-    const organizations = [
-      {
-        id: "1",
-        name: "Organization 1",
-        slug: "organization-1",
-        createdAt: new Date(),
+    const organizations = await ctx.authInstance.api.listOrganizations({
+      query: {
+        userId,
       },
-    ];
+    });
 
     return {
       organizations,

@@ -7,6 +7,7 @@
 
 import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
+import type { CredentialVault } from "../encryption/credential-vault";
 import type {
   ConnectionStoragePort,
   CreateConnectionData,
@@ -15,10 +16,19 @@ import type {
 import type { Database, MCPConnection } from "./types";
 
 export class ConnectionStorage implements ConnectionStoragePort {
-  constructor(private db: Kysely<Database>) {}
+  constructor(
+    private db: Kysely<Database>,
+    private vault: CredentialVault,
+  ) {}
 
   async create(data: CreateConnectionData): Promise<MCPConnection> {
     const id = `conn_${nanoid()}`;
+
+    // Encrypt token if provided
+    let encryptedToken: string | null = null;
+    if (data.connection.token) {
+      encryptedToken = await this.vault.encrypt(data.connection.token);
+    }
 
     // Insert the connection
     await this.db
@@ -36,7 +46,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
         // Connection details
         connectionType: data.connection.type,
         connectionUrl: data.connection.url,
-        connectionToken: data.connection.token ?? null,
+        connectionToken: encryptedToken,
         connectionHeaders: data.connection.headers
           ? JSON.stringify(data.connection.headers)
           : null,
@@ -71,7 +81,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .where("id", "=", id)
       .executeTakeFirst();
 
-    return connection ? this.deserializeConnection(connection) : null;
+    return connection ? await this.deserializeConnection(connection) : null;
   }
 
   async list(organizationId: string): Promise<MCPConnection[]> {
@@ -81,7 +91,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .where("organizationId", "=", organizationId)
       .execute();
 
-    return connections.map((c) => this.deserializeConnection(c));
+    return await Promise.all(connections.map((c) => this.deserializeConnection(c)));
   }
 
   async update(id: string, data: UpdateConnectionData): Promise<MCPConnection> {
@@ -95,8 +105,10 @@ export class ConnectionStorage implements ConnectionStoragePort {
       updateData.description = data.description;
     if (data.icon !== undefined) updateData.icon = data.icon;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.connectionToken !== undefined)
-      updateData.connectionToken = data.connectionToken;
+    if (data.connectionToken !== undefined) {
+      // Encrypt token before storing
+      updateData.connectionToken = await this.vault.encrypt(data.connectionToken);
+    }
 
     // Serialize JSON fields
     if (data.metadata !== undefined) {
@@ -170,11 +182,24 @@ export class ConnectionStorage implements ConnectionStoragePort {
   }
 
   /**
-   * Deserialize JSON fields from database
+   * Deserialize JSON fields from database and decrypt token
    */
-  private deserializeConnection(raw: any): MCPConnection {
+  private async deserializeConnection(raw: any): Promise<MCPConnection> {
+    // Decrypt token if present
+    let decryptedToken: string | null = null;
+    if (raw.connectionToken) {
+      try {
+        decryptedToken = await this.vault.decrypt(raw.connectionToken);
+      } catch (error) {
+        console.error("Failed to decrypt connection token:", error);
+        // Keep token encrypted if decryption fails (should not happen in production)
+        decryptedToken = null;
+      }
+    }
+
     return {
       ...raw,
+      connectionToken: decryptedToken,
       connectionHeaders: raw.connectionHeaders
         ? JSON.parse(raw.connectionHeaders)
         : null,

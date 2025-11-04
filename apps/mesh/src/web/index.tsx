@@ -44,24 +44,28 @@ const betterAuthRoutes = createRoute({
   component: lazyRouteComponent(() => import("./routes/auth-catchall.tsx")),
 });
 
-const requiredAuthLayout = createRoute({
+const shellLayout = createRoute({
   getParentRoute: () => rootRoute,
-  id: "required-auth-layout",
-  component: lazyRouteComponent(
-    () => import("./layouts/required-auth-layout.tsx"),
-  ),
+  id: "shell",
+  component: lazyRouteComponent(() => import("./layouts/shell-layout.tsx")),
 });
 
 const homeRoute = createRoute({
-  getParentRoute: () => requiredAuthLayout,
+  getParentRoute: () => shellLayout,
   path: "/",
   component: lazyRouteComponent(() => import("./routes/home.tsx")),
 });
 
-const requiredAuthRouteTree = requiredAuthLayout.addChildren([homeRoute]);
+const orgHomeRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org",
+  component: lazyRouteComponent(() => import("./routes/org-home.tsx")),
+});
+
+const shellRouteTree = shellLayout.addChildren([homeRoute, orgHomeRoute]);
 
 const routeTree = rootRoute.addChildren([
-  requiredAuthRouteTree,
+  shellRouteTree,
   loginRoute,
   betterAuthRoutes,
 ]);

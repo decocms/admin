@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDatabase, closeDatabase } from "../../database";
 import { createTestSchema } from "../../storage/__test-helpers";
+import { CredentialVault } from "../../encryption/credential-vault";
 import {
   CONNECTION_CREATE,
   CONNECTION_LIST,
@@ -22,6 +23,8 @@ describe("Connection Tools", () => {
     db = createDatabase(`file:${tempDbPath}`);
     await createTestSchema(db);
 
+    const vault = new CredentialVault(CredentialVault.generateKey());
+
     // Create mock context
     ctx = {
       auth: {
@@ -38,7 +41,7 @@ describe("Connection Tools", () => {
         name: "Test Organization",
       },
       storage: {
-        connections: new ConnectionStorage(db),
+        connections: new ConnectionStorage(db, vault),
         auditLogs: null as any,
       },
       vault: null as any,

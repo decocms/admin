@@ -249,18 +249,18 @@ async function authenticateRequest(
 export function createMeshContextFactory(
   config: MeshContextConfig,
 ): (c: Context) => Promise<MeshContext> {
+  // Create vault instance for credential encryption
+  const vault = new CredentialVault(config.encryption.key);
+
   // Create storage adapters once (singleton pattern)
   const storage = {
-    connections: new ConnectionStorage(config.db),
+    connections: new ConnectionStorage(config.db, vault),
     auditLogs: new AuditLogStorage(config.db),
     // Note: Organizations, teams, members, roles managed by Better Auth organization plugin
     // Note: Policies handled by Better Auth permissions directly
     // Note: API keys (tokens) managed by Better Auth API Key plugin
     // Note: Token revocation handled by Better Auth (deleteApiKey)
   };
-
-  // Create vault instance for credential encryption
-  const vault = new CredentialVault(config.encryption.key);
 
   // Return factory function
   return async (c: Context): Promise<MeshContext> => {

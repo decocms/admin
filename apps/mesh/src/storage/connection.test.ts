@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDatabase, closeDatabase } from "../database";
 import { ConnectionStorage } from "./connection";
+import { CredentialVault } from "../encryption/credential-vault";
 import { createTestSchema } from "./__test-helpers";
 import type { Kysely } from "kysely";
 import type { Database } from "./types";
@@ -8,12 +9,14 @@ import type { Database } from "./types";
 describe("ConnectionStorage", () => {
   let db: Kysely<Database>;
   let storage: ConnectionStorage;
+  let vault: CredentialVault;
 
   beforeAll(async () => {
     // Use a temporary file-based database instead of in-memory
     const tempDbPath = `/tmp/test-connection-${Date.now()}.db`;
     db = createDatabase(`file:${tempDbPath}`);
-    storage = new ConnectionStorage(db);
+    vault = new CredentialVault(CredentialVault.generateKey());
+    storage = new ConnectionStorage(db, vault);
     await createTestSchema(db);
   });
 

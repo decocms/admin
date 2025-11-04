@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development bun --hot run src/index.ts",
+    "dev": "bun --hot run src/index.ts",
     "start": "bun run src/index.ts",
     "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",

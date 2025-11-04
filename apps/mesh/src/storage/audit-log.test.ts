@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDatabase, closeDatabase } from "../database";
-import { createTestSchema } from "./__test-helpers";
+import { createTestSchema } from "./test-helpers";
 import { AuditLogStorage } from "./audit-log";
 import type { Kysely } from "kysely";
 import type { Database } from "./types";

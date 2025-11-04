@@ -2,6 +2,8 @@ import { Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/web/lib/auth-client";
 import { fetcher } from "@/tools/client";
+import { KEYS } from "@/web/lib/query-keys";
+import type { MCPConnection } from "@/storage/types";
 import {
   Card,
   CardContent,
@@ -15,14 +17,14 @@ import { Users, Cable, ArrowRight, Activity } from "lucide-react";
 
 const useMembers = () => {
   return useQuery({
-    queryKey: ["members"],
+    queryKey: KEYS.members(),
     queryFn: () => authClient.organization.listMembers(),
   });
 };
 
 const useConnections = () => {
   return useQuery({
-    queryKey: ["connections"],
+    queryKey: KEYS.connections(),
     queryFn: () => fetcher.CONNECTION_LIST({}),
   });
 };
@@ -37,7 +39,7 @@ export default function OrgHome() {
   const connections = connectionsData?.connections ?? [];
 
   const activeConnections = connections.filter(
-    (c: any) => c.status === "active",
+    (c: MCPConnection) => c.status === "active",
   ).length;
 
   return (

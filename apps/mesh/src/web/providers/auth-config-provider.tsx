@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { AuthConfig } from "@/api/routes/auth";
+import { KEYS } from "@/web/lib/query-keys";
 
 const AuthConfigContext = createContext<AuthConfig | undefined>(undefined);
 
@@ -18,7 +19,7 @@ async function fetchAuthConfig(): Promise<AuthConfig> {
 
 export function AuthConfigProvider({ children }: { children: ReactNode }) {
   const { data: authConfig } = useSuspenseQuery({
-    queryKey: ["authConfig"],
+    queryKey: KEYS.authConfig(),
     queryFn: fetchAuthConfig,
     staleTime: Infinity,
   });

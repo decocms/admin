@@ -26,7 +26,7 @@ export interface CreateConnectionData {
     headers?: Record<string, string>;
   };
   oauthConfig?: OAuthConfig; // OAuth config for downstream MCP
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UpdateConnectionData {
@@ -35,7 +35,7 @@ export interface UpdateConnectionData {
   icon?: string;
   status?: "active" | "inactive" | "error";
   connectionToken?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   tools?: Array<{
     name: string;
     description?: string;

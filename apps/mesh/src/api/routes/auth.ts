@@ -10,6 +10,21 @@ import { auth, authConfig } from "../../auth";
 
 const app = new Hono();
 
+// Type definitions for Better Auth responses
+interface BetterAuthResponse {
+  user: {
+    id: string;
+    email?: string;
+    name?: string;
+    [key: string]: unknown;
+  };
+  session: {
+    id: string;
+    userId: string;
+    [key: string]: unknown;
+  };
+}
+
 /**
  * Custom Sign-In Endpoint
  *
@@ -53,7 +68,7 @@ app.post("/sign-in", async (c) => {
           success: false,
           error: errorData.message || "Invalid credentials",
         },
-        response.status as any,
+        response.status as 400 | 401 | 403 | 500,
       );
     }
 
@@ -74,7 +89,7 @@ app.post("/sign-in", async (c) => {
     });
 
     // Parse Better Auth response data
-    const data = (await response.json()) as { user: any; session: any };
+    const data = (await response.json()) as BetterAuthResponse;
 
     let callbackURL = "/";
 
@@ -189,7 +204,7 @@ app.post("/sign-up", async (c) => {
           success: false,
           error: errorData.message || "Sign up failed",
         },
-        response.status as any,
+        response.status as 400 | 401 | 403 | 500,
       );
     }
 
@@ -210,7 +225,7 @@ app.post("/sign-up", async (c) => {
     });
 
     // Parse Better Auth response data
-    const data = (await response.json()) as { user: any; session: any };
+    const data = (await response.json()) as BetterAuthResponse;
 
     let callbackURL = "/";
 

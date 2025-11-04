@@ -69,7 +69,7 @@ export interface ToolDefinition {
   description?: string;
   inputSchema: z.ZodTypeAny;
   outputSchema?: z.ZodTypeAny;
-  handler: (args: any) => Promise<any>;
+  handler: (args: Record<string, unknown>) => Promise<unknown>;
   annotations?: {
     [key: string]: unknown;
   };
@@ -172,7 +172,9 @@ class McpServerBuilder {
       // Register all tools with middleware-wrapped handlers
       for (const tool of this.tools) {
         // Base handler that executes the tool
-        const baseHandler = async (args: any): Promise<CallToolResult> => {
+        const baseHandler = async (
+          args: Record<string, unknown>,
+        ): Promise<CallToolResult> => {
           try {
             const result = await tool.handler(args);
             return {
@@ -200,7 +202,7 @@ class McpServerBuilder {
 
         // Wrap handler with middleware if present
         const wrappedHandler = callToolPipeline
-          ? async (args: any) => {
+          ? async (args: Record<string, unknown>) => {
               // Create a fake request for middleware
               const request: CallToolRequest = {
                 method: "tools/call",

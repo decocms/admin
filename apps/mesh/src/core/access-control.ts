@@ -171,9 +171,13 @@ export class AccessControl implements Disposable {
         // Better Auth can return { data: { has: boolean } } or just { success: boolean }
         // If it returns a valid result, use it; otherwise fall back to manual
         if (result) {
+          // Type guard for Better Auth permission check result
+          const resultObj = result as {
+            data?: { has?: boolean };
+            success?: boolean;
+          };
           const hasPermission =
-            (result as any).data?.has === true ||
-            (result as any).success === true;
+            resultObj.data?.has === true || resultObj.success === true;
           if (hasPermission) {
             return true;
           }
@@ -182,7 +186,7 @@ export class AccessControl implements Disposable {
 
       // Fallback to manual check (when no Better Auth or permission denied)
       return this.manualPermissionCheck(resource);
-    } catch (error) {
+    } catch {
       // Fallback to manual check on error
       return this.manualPermissionCheck(resource);
     }

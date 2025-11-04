@@ -45,10 +45,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/web/components/ui/select";
+import { KEYS } from "@/web/lib/query-keys";
+import type { MCPConnection } from "@/storage/types";
 
 const useConnections = () => {
   return useQuery({
-    queryKey: ["connections"],
+    queryKey: KEYS.connections(),
     queryFn: () => fetcher.CONNECTION_LIST({}),
   });
 };
@@ -72,7 +74,8 @@ export default function OrgConnections() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<any>(null);
+  const [editingConnection, setEditingConnection] =
+    useState<MCPConnection | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -107,7 +110,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -127,7 +130,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -138,11 +141,11 @@ export default function OrgConnections() {
       return fetcher.CONNECTION_DELETE({ id });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connections"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
     },
   });
 
-  const handleEdit = (connection: any) => {
+  const handleEdit = (connection: MCPConnection) => {
     setEditingConnection(connection);
     setFormData({
       name: connection.name,
@@ -346,7 +349,7 @@ export default function OrgConnections() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {connections.map((connection: any) => (
+                {connections.map((connection: MCPConnection) => (
                   <TableRow key={connection.id}>
                     <TableCell>
                       <div>

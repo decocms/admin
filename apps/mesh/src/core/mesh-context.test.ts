@@ -13,15 +13,15 @@ import {
 const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
   auth: {},
   storage: {
-    connections: null as any,
-    auditLogs: null as any,
+    connections: null as never,
+    auditLogs: null as never,
   },
-  vault: null as any,
-  authInstance: null as any,
-  access: null as any,
-  db: null as any,
-  tracer: null as any,
-  meter: null as any,
+  vault: null as never,
+  authInstance: null as never,
+  access: null as never,
+  db: null as never,
+  tracer: null as never,
+  meter: null as never,
   baseUrl: "https://mesh.example.com",
   metadata: {
     requestId: "req_123",

@@ -89,7 +89,7 @@ export interface Organization {
   slug: string;
   name: string;
   logo: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date | string;
 }
 
@@ -116,7 +116,7 @@ export interface MCPConnectionTable {
   oauthConfig: JsonObject<OAuthConfig> | null;
 
   // Metadata and discovery
-  metadata: JsonObject<Record<string, any>> | null;
+  metadata: JsonObject<Record<string, unknown>> | null;
   tools: JsonArray<ToolDefinition[]> | null; // Discovered tools from MCP
   bindings: JsonArray<string[]> | null; // Detected bindings (CHAT, EMAIL, etc.)
 
@@ -145,7 +145,7 @@ export interface MCPConnection {
 
   oauthConfig: OAuthConfig | null;
 
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   tools: ToolDefinition[] | null;
   bindings: string[] | null;
 
@@ -188,7 +188,7 @@ export interface ApiKeyTable {
   permissions: JsonObject<Permission>; // { [resource]: [actions...] }
   expiresAt: ColumnType<Date, Date | string, never> | null;
   remaining: number | null; // Request quota
-  metadata: JsonObject<Record<string, any>> | null;
+  metadata: JsonObject<Record<string, unknown>> | null;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
@@ -205,7 +205,7 @@ export interface AuditLogTable {
   allowed: number; // SQLite boolean (0 or 1)
   duration: number | null; // Execution time in ms
   timestamp: ColumnType<Date, Date | string, never>;
-  requestMetadata: JsonObject<Record<string, any>> | null;
+  requestMetadata: JsonObject<Record<string, unknown>> | null;
 }
 
 /**
@@ -219,7 +219,7 @@ export interface ApiKey {
   permissions: Permission;
   expiresAt: Date | string | null;
   remaining: number | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -236,7 +236,7 @@ export interface AuditLog {
   allowed: boolean;
   duration: number | null;
   timestamp: Date | string;
-  requestMetadata: Record<string, any> | null;
+  requestMetadata: Record<string, unknown> | null;
 }
 
 // ============================================================================

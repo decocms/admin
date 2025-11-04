@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDatabase, closeDatabase } from "../../database";
-import { createTestSchema } from "../../storage/__test-helpers";
+import { createTestSchema } from "../../storage/test-helpers";
 import { CredentialVault } from "../../encryption/credential-vault";
 import {
   CONNECTION_CREATE,
@@ -42,28 +42,33 @@ describe("Connection Tools", () => {
       },
       storage: {
         connections: new ConnectionStorage(db, vault),
-        auditLogs: null as any,
+        auditLogs: null as never,
       },
-      vault: null as any,
-      authInstance: null as any,
+      vault: null as never,
+      authInstance: null as never,
       access: {
         granted: () => true,
         check: async () => {},
         grant: () => {},
-      } as any,
+        setToolName: () => {},
+      } as never,
       db,
       tracer: {
-        startActiveSpan: (_name: string, _opts: any, fn: any) =>
+        startActiveSpan: (
+          _name: string,
+          _opts: unknown,
+          fn: (span: unknown) => unknown,
+        ) =>
           fn({
             setStatus: () => {},
             recordException: () => {},
             end: () => {},
           }),
-      } as any,
+      } as never,
       meter: {
         createHistogram: () => ({ record: () => {} }),
         createCounter: () => ({ add: () => {} }),
-      } as any,
+      } as never,
       baseUrl: "https://mesh.example.com",
       metadata: {
         requestId: "req_123",

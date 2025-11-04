@@ -52,7 +52,17 @@ describe("MCP Integration", () => {
             },
           },
         },
-      } as any);
+      } as {
+        valid: boolean;
+        key: {
+          id: string;
+          name: string;
+          permissions: Record<string, string[]>;
+          metadata?: {
+            organization?: { id: string; slug: string; name: string };
+          };
+        };
+      });
 
       // Mock global fetch to route through Hono app
       global.fetch = vi.fn(
@@ -61,7 +71,7 @@ describe("MCP Integration", () => {
           init?: RequestInit,
         ): Promise<Response> => {
           // Create a proper Request object
-          const request = new Request(input as any, init);
+          const request = new Request(input as RequestInfo | URL, init);
 
           // Route request through Hono app using fetch (not request)
           const response = await app.fetch(request);

@@ -16,7 +16,7 @@ export interface LogAuditParams {
   allowed: boolean;
   duration?: number;
   timestamp: Date;
-  requestMetadata?: Record<string, any>;
+  requestMetadata?: Record<string, unknown>;
 }
 
 export class AuditLogStorage {
@@ -68,18 +68,10 @@ export class AuditLogStorage {
       query = query.where("toolName", "=", filters.toolName);
     }
     if (filters.startDate) {
-      query = query.where(
-        "timestamp",
-        ">=",
-        filters.startDate.toISOString() as any,
-      );
+      query = query.where("timestamp", ">=", filters.startDate.toISOString());
     }
     if (filters.endDate) {
-      query = query.where(
-        "timestamp",
-        "<=",
-        filters.endDate.toISOString() as any,
-      );
+      query = query.where("timestamp", "<=", filters.endDate.toISOString());
     }
 
     if (filters.limit) {
@@ -95,7 +87,7 @@ export class AuditLogStorage {
       ...log,
       allowed: log.allowed === 1, // Convert SQLite boolean
       requestMetadata: log.requestMetadata
-        ? JSON.parse(log.requestMetadata as any)
+        ? (JSON.parse(log.requestMetadata as string) as Record<string, unknown>)
         : null,
     }));
   }

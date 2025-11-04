@@ -31,7 +31,7 @@ app.all("/", async (c) => {
     description: tool.description,
     inputSchema: tool.inputSchema,
     outputSchema: tool.outputSchema,
-    handler: async (args: any) => {
+    handler: async (args: Record<string, unknown>) => {
       ctx.access.setToolName(tool.name);
       // Execute the tool with the mesh context
       return await tool.execute(args, ctx);

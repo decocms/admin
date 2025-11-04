@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDatabase, closeDatabase } from "../database";
 import { ConnectionStorage } from "./connection";
 import { CredentialVault } from "../encryption/credential-vault";
-import { createTestSchema } from "./__test-helpers";
+import { createTestSchema } from "./test-helpers";
 import type { Kysely } from "kysely";
 import type { Database } from "./types";
 

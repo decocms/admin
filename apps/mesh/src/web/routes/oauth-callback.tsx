@@ -19,7 +19,9 @@ function findTokenInStorage(storageKeyPrefix: string): string | null {
     if (
       key &&
       key.startsWith(storageKeyPrefix) &&
-      (key.endsWith("_tokens") || key.endsWith(":token") || key.endsWith(":tokens"))
+      (key.endsWith("_tokens") ||
+        key.endsWith(":token") ||
+        key.endsWith(":tokens"))
     ) {
       const tokenData = localStorage.getItem(key);
       if (tokenData) {
@@ -94,11 +96,8 @@ export default function OAuthCallback() {
           const pendingAuth = localStorage.getItem("mcp_oauth_pending");
           if (pendingAuth) {
             try {
-              const {
-                connectionId,
-                connectionType,
-                connectionUrl,
-              } = JSON.parse(pendingAuth);
+              const { connectionId, connectionType, connectionUrl } =
+                JSON.parse(pendingAuth);
 
               // Find the token in localStorage (use-mcp stores it with key pattern: "mcp:auth:*:token")
               const token = findTokenInStorage("mcp:auth");
@@ -118,7 +117,9 @@ export default function OAuthCallback() {
                   },
                 });
 
-                console.log("[OAuth Callback] Token saved to connection successfully");
+                console.log(
+                  "[OAuth Callback] Token saved to connection successfully",
+                );
               } else {
                 console.warn(
                   "[OAuth Callback] Token or connectionId not found",
@@ -129,10 +130,7 @@ export default function OAuthCallback() {
               // Clear pending auth from storage
               localStorage.removeItem("mcp_oauth_pending");
             } catch (saveErr) {
-              console.error(
-                "[OAuth Callback] Failed to save token:",
-                saveErr,
-              );
+              console.error("[OAuth Callback] Failed to save token:", saveErr);
               // Don't set error state - token is saved in localStorage, user can retry
             }
           } else {

@@ -162,7 +162,9 @@ export default function McpInspector() {
             timestamp: Date.now(),
           }),
         );
-        console.log("[MCP Inspector] Stored connection context for OAuth callback");
+        console.log(
+          "[MCP Inspector] Stored connection context for OAuth callback",
+        );
       }
 
       // Listen for message to close the popup

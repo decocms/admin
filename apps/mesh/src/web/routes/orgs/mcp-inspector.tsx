@@ -151,6 +151,32 @@ export default function McpInspector() {
     onPopupWindow: (_url, _features, popupWindow) => {
       console.log("[MCP Inspector] OAuth popup opened");
 
+      // Capture snapshot of localStorage tokens BEFORE OAuth flow
+      const captureTokenSnapshot = (prefix: string): Map<string, string> => {
+        const snapshot = new Map<string, string>();
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (
+            key &&
+            key.startsWith(prefix) &&
+            (key.endsWith("_tokens") ||
+              key.endsWith(":token") ||
+              key.endsWith(":tokens"))
+          ) {
+            const value = localStorage.getItem(key);
+            if (value) {
+              snapshot.set(key, value);
+            }
+          }
+        }
+        return snapshot;
+      };
+
+      const tokenSnapshotBefore = captureTokenSnapshot("mcp:auth");
+      console.log(
+        `[MCP Inspector] Captured ${tokenSnapshotBefore.size} token(s) before OAuth`,
+      );
+
       // Store connection context for OAuth callback to use
       if (connection && connectionId) {
         localStorage.setItem(
@@ -168,17 +194,113 @@ export default function McpInspector() {
         );
       }
 
-      // Listen for message to close the popup
-      const messageHandler = (event: MessageEvent) => {
+      // Listen for messages from the OAuth popup
+      const messageHandler = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
 
-        if (event.data.type === "mcp:oauth:close") {
-          console.log("[MCP Inspector] Received request to close OAuth popup");
-          if (popupWindow && !popupWindow.closed) {
-            popupWindow.close();
-            console.log("[MCP Inspector] OAuth popup closed");
+        // Handle OAuth completion message
+        if (event.data.type === "mcp:oauth:complete") {
+          console.log(
+            "[MCP Inspector] Received OAuth completion message",
+            event.data,
+          );
+
+          if (event.data.success && connection && connectionId) {
+            console.log(
+              "[MCP Inspector] OAuth completed successfully, saving token to database",
+            );
+
+            try {
+              // Capture snapshot AFTER OAuth and find the diff
+              const tokenSnapshotAfter = captureTokenSnapshot("mcp:auth");
+              console.log(
+                `[MCP Inspector] Captured ${tokenSnapshotAfter.size} token(s) after OAuth`,
+              );
+
+              // Find new or changed tokens
+              let newOrChangedToken: string | null = null;
+              let newOrChangedKey: string | null = null;
+
+              for (const [key, value] of tokenSnapshotAfter) {
+                const beforeValue = tokenSnapshotBefore.get(key);
+                if (!beforeValue || beforeValue !== value) {
+                  // This is a new or changed token
+                  console.log(
+                    `[MCP Inspector] Found ${!beforeValue ? "new" : "changed"} token key: ${key}`,
+                  );
+                  newOrChangedKey = key;
+
+                  // Extract the actual token from the stored value
+                  try {
+                    const parsed = JSON.parse(value);
+                    newOrChangedToken =
+                      parsed.access_token || parsed.accessToken || value;
+                  } catch {
+                    newOrChangedToken = value;
+                  }
+                  break; // Use the first new/changed token found
+                }
+              }
+
+              if (newOrChangedToken) {
+                console.log(
+                  `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
+                );
+                console.log("[MCP Inspector] Calling CONNECTION_UPDATE...");
+
+                // Call CONNECTION_UPDATE to save the token
+                await fetcher.CONNECTION_UPDATE({
+                  id: connectionId as string,
+                  connection: {
+                    type: connection.connectionType,
+                    url: connection.connectionUrl,
+                    token: newOrChangedToken,
+                  },
+                });
+
+                console.log(
+                  "[MCP Inspector] Token saved to database successfully",
+                );
+              } else {
+                console.warn(
+                  "[MCP Inspector] No new or changed token found in localStorage",
+                );
+                console.log(
+                  "[MCP Inspector] Before keys:",
+                  Array.from(tokenSnapshotBefore.keys()),
+                );
+                console.log(
+                  "[MCP Inspector] After keys:",
+                  Array.from(tokenSnapshotAfter.keys()),
+                );
+              }
+
+              // Clear pending auth from storage
+              localStorage.removeItem("mcp_oauth_pending");
+            } catch (saveErr) {
+              console.error(
+                "[MCP Inspector] Failed to save token to database:",
+                saveErr,
+              );
+            }
+
+            // Close the popup after saving
+            if (popupWindow && !popupWindow.closed) {
+              popupWindow.close();
+              console.log("[MCP Inspector] OAuth popup closed");
+            }
+            window.removeEventListener("message", messageHandler);
+          } else if (!event.data.success) {
+            console.error(
+              "[MCP Inspector] OAuth completion failed:",
+              event.data.error,
+            );
+            // Close popup on error
+            if (popupWindow && !popupWindow.closed) {
+              popupWindow.close();
+            }
+            window.removeEventListener("message", messageHandler);
           }
-          window.removeEventListener("message", messageHandler);
         }
       };
 
@@ -363,15 +485,15 @@ export default function McpInspector() {
         mcp.state === "loading" ||
         mcp.state === "discovering" ||
         mcp.state === "pending_auth") && (
-        <Alert>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <AlertDescription>
-            {mcp.state === "pending_auth"
-              ? "Authentication required..."
-              : "Connecting to MCP server..."}
-          </AlertDescription>
-        </Alert>
-      )}
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              {mcp.state === "pending_auth"
+                ? "Authentication required..."
+                : "Connecting to MCP server..."}
+            </AlertDescription>
+          </Alert>
+        )}
 
       {/* Main Content - Only show when ready */}
       {mcp.state === "ready" && (
@@ -590,7 +712,7 @@ export default function McpInspector() {
                 </CardHeader>
                 <CardContent>
                   {mcp.resources.length === 0 &&
-                  mcp.resourceTemplates.length === 0 ? (
+                    mcp.resourceTemplates.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No resources available
                     </div>
@@ -936,13 +1058,12 @@ export default function McpInspector() {
                 {mcp.log.map((l, i) => (
                   <div
                     key={i}
-                    className={`py-1 ${
-                      l.level === "error"
+                    className={`py-1 ${l.level === "error"
                         ? "text-destructive"
                         : l.level === "warn"
                           ? "text-yellow-600"
                           : "text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     [{l.level}] {new Date(l.timestamp).toLocaleTimeString()}:{" "}
                     {l.message}

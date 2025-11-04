@@ -8,6 +8,7 @@ import {
   buildAddViewPayload,
   listAvailableViewsForConnection,
 } from "@deco/sdk";
+import { DECO_CMS_API_URL } from "@deco/sdk/constants";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   Form,
   FormControl,
@@ -74,12 +76,32 @@ import {
 import { ConnectionTabs } from "./tabs/connection-tabs.tsx";
 
 function ConnectionInstanceActions({
+  instance,
   onDelete,
   onEdit,
 }: {
+  instance?: Integration;
   onDelete: () => void;
   onEdit: () => void;
 }) {
+  const { org, project = "default" } = useParams();
+
+  const handleCopyMeshUrl = async () => {
+    if (!instance?.id) {
+      toast.error("No instance selected");
+      return;
+    }
+
+    const meshUrl = `${DECO_CMS_API_URL}/${org}/${project}/${instance.id.replace("i:", "")}/mcp`;
+
+    try {
+      await navigator.clipboard.writeText(meshUrl);
+      toast.success("Mesh URL copied to clipboard");
+    } catch {
+      toast.error("Failed to copy URL to clipboard");
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -89,6 +111,9 @@ function ConnectionInstanceActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleCopyMeshUrl}>
+          Copy Mesh URL
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onDelete} variant="destructive">
           Delete
         </DropdownMenuItem>
@@ -617,6 +642,7 @@ function ConfigureConnectionInstanceForm({
                 )}
                 <div className="ml-auto">
                   <ConnectionInstanceActions
+                    instance={instance}
                     onDelete={() => {
                       setDeletingId(instance?.id ?? null);
                     }}

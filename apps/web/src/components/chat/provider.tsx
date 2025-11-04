@@ -843,7 +843,7 @@ export function AgenticChatProvider({
       }
 
       // Handle programmatic message send with metadata
-      // Extract rules and tools from context items
+      // Extract rules, resources, and tools from context items
       const contextItems = threadContextItems;
 
       // Extract rules from context items and convert to UIMessages for context (not persisted to thread)
@@ -851,15 +851,45 @@ export function AgenticChatProvider({
         .filter((item) => item.type === "rule")
         .map((item) => (item as { text: string }).text);
 
+      // Extract resources from context items and convert to UIMessages for context
+      const resourcesFromContextItems = contextItems
+        .filter(
+          (item) =>
+            item.type === "resource" && item.resourceType === "DOCUMENT",
+        )
+        .map((item) => {
+          const resource = item as {
+            uri: string;
+            name?: string;
+            resourceType?: string;
+          };
+          // Format resource information as a system message
+          const resourceInfo = [
+            `Resource URI: ${resource.uri}`,
+            ...(resource.name ? [`Resource Name: ${resource.name}`] : []),
+            ...(resource.resourceType
+              ? [`Resource Type: ${resource.resourceType}`]
+              : []),
+            `You can use resource tools to read, update, and work with this resource. The resource URI is: ${resource.uri}`,
+          ].join("\n");
+          return resourceInfo;
+        });
+
+      // Combine rules and resources into context messages
+      const allContextTexts = [
+        ...rulesFromContextItems,
+        ...resourcesFromContextItems,
+      ];
+
       const context: UIMessage[] | undefined =
-        rulesFromContextItems && rulesFromContextItems.length > 0
-          ? rulesFromContextItems.map((rule) => ({
+        allContextTexts && allContextTexts.length > 0
+          ? allContextTexts.map((text) => ({
               id: crypto.randomUUID(),
               role: "system" as const,
               parts: [
                 {
                   type: "text" as const,
-                  text: rule,
+                  text,
                 },
               ],
             }))
@@ -879,6 +909,27 @@ export function AgenticChatProvider({
           },
           {} as Agent["tools_set"],
         );
+
+      // If there are documents in context, add document reading tools
+      const hasDocuments = resourcesFromContextItems.length > 0;
+      if (hasDocuments) {
+        const DOCUMENTS_INTEGRATION_ID = "i:documents-management";
+        const documentTools = [
+          "DECO_RESOURCE_DOCUMENT_READ",
+          "DECO_RESOURCE_DOCUMENT_UPDATE",
+        ];
+
+        // Merge with existing tools if any, otherwise create new array
+        if (toolsFromContextItems[DOCUMENTS_INTEGRATION_ID]) {
+          // Merge tools, avoiding duplicates
+          const existingTools = toolsFromContextItems[DOCUMENTS_INTEGRATION_ID];
+          toolsFromContextItems[DOCUMENTS_INTEGRATION_ID] = [
+            ...new Set([...existingTools, ...documentTools]),
+          ];
+        } else {
+          toolsFromContextItems[DOCUMENTS_INTEGRATION_ID] = documentTools;
+        }
+      }
 
       const metadata: MessageMetadata = {
         // Agent configuration

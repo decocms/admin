@@ -1494,7 +1494,7 @@ function WorkspaceViews() {
             />
             <span className="truncate">Search</span>
           </div>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-transparent px-1.5 text-[10px] font-normal text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
         </SidebarMenuButton>

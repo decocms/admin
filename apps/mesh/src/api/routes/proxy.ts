@@ -107,7 +107,6 @@ function withConnectionAuthorization(
 async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Get connection details
   const connection = await ctx.storage.connections.findById(connectionId);
-
   if (!connection) {
     throw new Error("Connection not found");
   }

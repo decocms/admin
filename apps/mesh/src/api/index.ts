@@ -176,7 +176,7 @@ app.use("*", async (c, next) => {
 // Routes
 // ============================================================================
 
-app.use("/mcp", async (c, next) => {
+app.use("/mcp/*", async (c, next) => {
   const meshContext = c.var.meshContext;
   // Require either user or API key authentication
   if (!meshContext.auth.user?.id && !meshContext.auth.apiKey?.id) {

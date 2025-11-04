@@ -24,6 +24,7 @@ import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { createAccessControl } from "better-auth/plugins/access";
 import { createSSOConfig, SSOConfig } from "./sso";
+import path from "path";
 
 /**
  * Load optional auth configuration from file
@@ -46,8 +47,8 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
 /**
  * Get database URL from environment or default
  */
-function getDatabaseUrl(): string {
-  return process.env.DATABASE_URL || "./data/mesh.db";
+export function getDatabaseUrl(): string {
+  return process.env.DATABASE_URL || `file://${path.join(process.cwd(), "data/mesh.db")}`;
 }
 
 const statement = {} as const;

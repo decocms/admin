@@ -25,6 +25,7 @@ export const ALL_TOOLS = [
   ConnectionTools.CONNECTION_CREATE,
   ConnectionTools.CONNECTION_LIST,
   ConnectionTools.CONNECTION_GET,
+  ConnectionTools.CONNECTION_UPDATE,
   ConnectionTools.CONNECTION_DELETE,
   ConnectionTools.CONNECTION_TEST,
 ] as const;
@@ -45,6 +46,7 @@ export const TOOL_MAP = {
   CONNECTION_CREATE: ConnectionTools.CONNECTION_CREATE,
   CONNECTION_LIST: ConnectionTools.CONNECTION_LIST,
   CONNECTION_GET: ConnectionTools.CONNECTION_GET,
+  CONNECTION_UPDATE: ConnectionTools.CONNECTION_UPDATE,
   CONNECTION_DELETE: ConnectionTools.CONNECTION_DELETE,
   CONNECTION_TEST: ConnectionTools.CONNECTION_TEST,
 } as const;

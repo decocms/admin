@@ -12,6 +12,7 @@ import { Kysely, PostgresDialect } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { Pool } from "pg";
 import type { Database as DatabaseSchema } from "../storage/types";
+import { getDatabaseUrl } from "@/auth";
 
 /**
  * Create Kysely database instance with auto-detected dialect
@@ -118,7 +119,7 @@ let dbInstance: Kysely<DatabaseSchema> | null = null;
 
 export function getDb(): Kysely<DatabaseSchema> {
   if (!dbInstance) {
-    dbInstance = createDatabase(process.env.DATABASE_URL || ":memory:");
+    dbInstance = createDatabase(getDatabaseUrl());
   }
   return dbInstance;
 }

@@ -59,10 +59,27 @@ const homeRoute = createRoute({
 const orgHomeRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org",
-  component: lazyRouteComponent(() => import("./routes/org-home.tsx")),
+  component: lazyRouteComponent(() => import("./routes/orgs/home.tsx")),
 });
 
-const shellRouteTree = shellLayout.addChildren([homeRoute, orgHomeRoute]);
+const orgMembersRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/members",
+  component: lazyRouteComponent(() => import("./routes/orgs/members.tsx")),
+});
+
+const orgConnectionsRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/connections",
+  component: lazyRouteComponent(() => import("./routes/orgs/connections.tsx")),
+});
+
+const shellRouteTree = shellLayout.addChildren([
+  homeRoute,
+  orgHomeRoute,
+  orgMembersRoute,
+  orgConnectionsRoute,
+]);
 
 const routeTree = rootRoute.addChildren([
   shellRouteTree,

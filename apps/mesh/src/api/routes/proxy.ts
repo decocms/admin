@@ -121,12 +121,9 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     // Prepare headers
     const headers: Record<string, string> = {};
 
-    // Add connection token (decrypt first)
+    // Add connection token (already decrypted by storage layer)
     if (connection.connectionToken) {
-      const decryptedToken = await ctx.vault.decrypt(
-        connection.connectionToken,
-      );
-      headers["Authorization"] = `Bearer ${decryptedToken}`;
+      headers["Authorization"] = `Bearer ${connection.connectionToken}`;
     }
 
     // Add custom headers

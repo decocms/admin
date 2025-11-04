@@ -1,17 +1,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import type { AuthConfig } from "@/api/routes/auth";
 
-interface AuthConfig {
-  emailPassword: boolean;
-  sso: boolean;
-}
-
-interface AuthConfigContextValue {
-  ssoEnabled: boolean;
-  emailPasswordEnabled: boolean;
-}
-
-const AuthConfigContext = createContext<AuthConfigContextValue | undefined>(
+const AuthConfigContext = createContext<AuthConfig | undefined>(
   undefined,
 );
 
@@ -34,16 +25,8 @@ export function AuthConfigProvider({ children }: { children: ReactNode }) {
     staleTime: Infinity,
   });
 
-  const ssoEnabled = authConfig.sso;
-  const emailPasswordEnabled = authConfig.emailPassword;
-
   return (
-    <AuthConfigContext.Provider
-      value={{
-        ssoEnabled,
-        emailPasswordEnabled,
-      }}
-    >
+    <AuthConfigContext.Provider value={authConfig}>
       {children}
     </AuthConfigContext.Provider>
   );

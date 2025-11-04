@@ -6,8 +6,9 @@
  */
 
 import { Hono } from "hono";
-import { auth } from "../../auth";
+import { auth, authConfig } from "../../auth";
 import { existsSync, readFileSync } from "fs";
+import { SSOConfig } from "@/auth/sso";
 
 const app = new Hono();
 
@@ -283,6 +284,18 @@ app.post("/sign-up", async (c) => {
 });
 
 /**
+ * TODO: return dynamically things like otp, email+password, oauth providers, etc.
+ */
+export type AuthConfig = {
+  sso: {
+    enabled: true;
+    providerId: string;
+  } | {
+    enabled: false;
+  };
+};
+
+/**
  * Auth Configuration Endpoint
  *
  * Returns information about available authentication methods
@@ -291,28 +304,16 @@ app.post("/sign-up", async (c) => {
  */
 app.get("/config", async (c) => {
   try {
-    const configPath = "./auth-config.json";
-    let ssoEnabled = false;
-
-    // Check if SSO is configured
-    if (existsSync(configPath)) {
-      try {
-        const content = readFileSync(configPath, "utf-8");
-        const config = JSON.parse(content);
-        ssoEnabled = !!config.ssoConfig;
-      } catch (error) {
-        // If config is invalid, SSO is not enabled
-        ssoEnabled = false;
-      }
-    }
-
-    return c.json({
-      success: true,
-      config: {
-        emailPassword: true, // Always enabled
-        sso: ssoEnabled,
+    const config: AuthConfig = {
+      sso: authConfig.ssoConfig ? {
+        enabled: true,
+        providerId: authConfig.ssoConfig.providerId,
+      } : {
+        enabled: false,
       },
-    });
+    };
+
+    return c.json({ success: true, config });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Failed to load auth config";

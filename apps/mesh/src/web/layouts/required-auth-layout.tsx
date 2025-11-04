@@ -8,17 +8,14 @@ export default function RequiredAuthLayout() {
       <AuthLoading>
         <SplashScreen />
       </AuthLoading>
-    
+
       <SignedIn>
         <Outlet />
       </SignedIn>
 
       <SignedOut>
         <Navigate
-          to="/auth/$pathname"
-          params={{
-            pathname: "/sign-in",
-          }}
+          to="/login"
           replace
         />
       </SignedOut>

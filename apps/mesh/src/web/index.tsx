@@ -1,16 +1,66 @@
 import { createRoot } from "react-dom/client";
-import App from "./app.tsx";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AuthPage from "./auth/auth-pages.tsx";
+import { StrictMode, Suspense } from "react";
 import { Providers } from "./providers.tsx";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  Outlet,
+  RouterProvider,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { SplashScreen } from "./components/splash-screen.tsx";
 
-createRoot(document.getElementById("root")!).render(
-  <BrowserRouter>
+const rootRoute = createRootRoute({
+  component: () => (
     <Providers>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/auth/:pathname" element={<AuthPage />} />
-      </Routes>
+      <Suspense
+        fallback={<SplashScreen />}
+      >
+        <Outlet />
+      </Suspense>
+      <TanStackRouterDevtools />
     </Providers>
-  </BrowserRouter>,
+  ),
+});
+
+const betterAuthRoutes = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/$pathname",
+  component: lazyRouteComponent(() => import("./auth/auth-pages.tsx")),
+});
+
+const requiredAuthLayout = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "required-auth-layout",
+  component: lazyRouteComponent(
+    () => import("./layouts/required-auth-layout.tsx"),
+  ),
+});
+
+const homeRoute = createRoute({
+  getParentRoute: () => requiredAuthLayout,
+  path: "/",
+  component: lazyRouteComponent(() => import("./app.tsx")),
+});
+
+const routeTree = rootRoute.addChildren([homeRoute, betterAuthRoutes]);
+
+const router = createRouter({
+  routeTree,
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+const rootElement = document.getElementById("root")!;
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <RouterProvider router={router} />
+  </StrictMode>,
 );

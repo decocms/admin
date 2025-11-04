@@ -1,15 +1,7 @@
+import { useUnpinnedNativeViews, View } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
   DialogContent,
@@ -17,29 +9,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useState } from "react";
+import { Link, useParams } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 import {
   type GroupedApp,
-  useGroupedApps,
   NATIVE_APP_NAME_MAP,
+  useGroupedApps,
 } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { Link, useParams } from "react-router";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
-import { useUnpinnedNativeViews, View } from "@deco/sdk";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 
 function AppCard({
   app,
@@ -108,7 +108,7 @@ function AppCard({
       onClick={handleCardClick}
     >
       <CardContent className="p-0">
-        <div className="relative grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
+        <div className="relative grid grid-cols-[min-content_1fr_min-content] items-center gap-4 p-4">
           <IntegrationAvatar
             url={app.icon}
             fallback={app.name}
@@ -142,13 +142,17 @@ function AppCard({
                 <TooltipTrigger asChild>
                   <button
                     onClick={handlePinClick}
-                    className="p-2 rounded-md hover:bg-accent/80 transition-all border border-border hover:border-primary/30 cursor-pointer"
+                    className={cn(
+                      "flex items-center justify-center h-8 w-8 rounded-md transition-all border border-border cursor-pointer",
+                    )}
                   >
                     <Icon
-                      name={isNativePinned ? "check" : "push_pin"}
-                      size={18}
+                      name={isNativePinned ? "unpin" : "push_pin"}
+                      size={14}
                       className={
-                        isNativePinned ? "text-primary" : "text-foreground/70"
+                        isNativePinned
+                          ? "text-foreground/70"
+                          : "text-foreground/70"
                       }
                     />
                   </button>
@@ -162,17 +166,6 @@ function AppCard({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
-        </div>
-
-        {/* Footer section - instances badge for non-native, empty space for native to maintain consistent height */}
-        <div className="px-4 py-3 border-t border-border min-h-[52px] flex items-center">
-          {!app.isNative ? (
-            <Badge variant="secondary" className="text-xs">
-              {app.instances} Instance{app.instances > 1 ? "s" : ""}
-            </Badge>
-          ) : (
-            <div className="h-5" />
           )}
         </div>
       </CardContent>
@@ -243,22 +236,6 @@ function TableView({
         <Badge variant="secondary" className="text-xs">
           {app.instances} Instance{app.instances > 1 ? "s" : ""}
         </Badge>
-      ),
-    },
-    {
-      id: "used-by",
-      header: "Agents",
-      render: (app) => (
-        <div className="flex items-center gap-2">
-          {app.usedBy.map((agent) => (
-            <AgentAvatar
-              key={agent.avatarUrl}
-              url={agent.avatarUrl}
-              fallback={agent.avatarUrl}
-              size="sm"
-            />
-          ))}
-        </div>
       ),
     },
     {

@@ -66,7 +66,7 @@ const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))
   .flat();
 
-const authConfig: Partial<BetterAuthOptions> & {
+export const authConfig: Partial<BetterAuthOptions> & {
   ssoConfig?: SSOConfig;
 } = loadAuthConfig();
 

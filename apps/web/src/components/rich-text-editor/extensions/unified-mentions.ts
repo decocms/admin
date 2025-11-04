@@ -303,7 +303,6 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
 
           // Create onClose callback that hides the popup
           const handleClose = () => {
-            console.log("MentionDropdown onClose: hiding popup from TipTap");
             popup?.[0]?.hide();
           };
 
@@ -370,7 +369,6 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
 
         onKeyDown(props) {
           if (props.event.key === "Escape") {
-            console.log("TipTap suggestion: Escape pressed, hiding popup");
             popup?.[0]?.hide();
             return true;
           }

@@ -851,8 +851,6 @@ export function AgenticChatProvider({
         .filter((item) => item.type === "rule")
         .map((item) => (item as { text: string }).text);
 
-      console.log("rulesFromContextItems", contextItems);
-
       // Extract resources from context items and convert to UIMessages for context
       const resourcesFromContextItems = contextItems
         .filter(

@@ -9,7 +9,6 @@
  */
 
 import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { auth } from "../auth";
@@ -77,13 +76,6 @@ app.get("/api/tools/management", (c) => {
     grouped: getToolsByCategory(),
   });
 });
-
-// ============================================================================
-// Static Files - Authentication Pages
-// ============================================================================
-
-// Serve sign-in page at /sign-in
-app.get("/sign-in", serveStatic({ path: "./public/sign-in.html" }));
 
 // ============================================================================
 // Better Auth Routes

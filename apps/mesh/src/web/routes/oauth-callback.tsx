@@ -7,36 +7,6 @@ import {
   CardTitle,
 } from "@/web/components/ui/card";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { fetcher } from "@/tools/client";
-
-/**
- * Helper function to find the OAuth token in localStorage
- * use-mcp stores tokens with keys like "mcp:auth_*_tokens" or "mcp:auth:*:token"
- */
-function findTokenInStorage(storageKeyPrefix: string): string | null {
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (
-      key &&
-      key.startsWith(storageKeyPrefix) &&
-      (key.endsWith("_tokens") ||
-        key.endsWith(":token") ||
-        key.endsWith(":tokens"))
-    ) {
-      const tokenData = localStorage.getItem(key);
-      if (tokenData) {
-        try {
-          const parsed = JSON.parse(tokenData);
-          return parsed.access_token || parsed.accessToken || tokenData;
-        } catch {
-          // If not JSON, return as-is
-          return tokenData;
-        }
-      }
-    }
-  }
-  return null;
-}
 
 export default function OAuthCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -70,9 +40,6 @@ export default function OAuthCallback() {
 
             // If the state contains a nested clientState, extract it
             if (stateObj.clientState) {
-              console.log("[OAuth Callback] Unwrapping deco.cx state wrapper");
-              console.log("  Original state:", state);
-              console.log("  Extracted clientState:", stateObj.clientState);
 
               // Replace the state parameter with the actual client state
               const url = new URL(window.location.href);
@@ -89,61 +56,30 @@ export default function OAuthCallback() {
             console.log("[OAuth Callback] Using state as-is (not wrapped)");
           }
 
+
           // Let use-mcp handle the authorization with the unwrapped state
           await onMcpAuthorization();
 
-          // Extract connection context from localStorage and save the token
-          const pendingAuth = localStorage.getItem("mcp_oauth_pending");
-          if (pendingAuth) {
-            try {
-              const { connectionId, connectionType, connectionUrl } =
-                JSON.parse(pendingAuth);
+          console.log("[OAuth Callback] onMcpAuthorization completed");
 
-              // Find the token in localStorage (use-mcp stores it with key pattern: "mcp:auth:*:token")
-              const token = findTokenInStorage("mcp:auth");
-
-              if (token && connectionId) {
-                console.log(
-                  "[OAuth Callback] Found token, saving to connection...",
-                );
-
-                // Call CONNECTION_UPDATE to save the token
-                await fetcher.CONNECTION_UPDATE({
-                  id: connectionId,
-                  connection: {
-                    type: connectionType,
-                    url: connectionUrl,
-                    token: token,
-                  },
-                });
-
-                console.log(
-                  "[OAuth Callback] Token saved to connection successfully",
-                );
-              } else {
-                console.warn(
-                  "[OAuth Callback] Token or connectionId not found",
-                  { token: !!token, connectionId },
-                );
-              }
-
-              // Clear pending auth from storage
-              localStorage.removeItem("mcp_oauth_pending");
-            } catch (saveErr) {
-              console.error("[OAuth Callback] Failed to save token:", saveErr);
-              // Don't set error state - token is saved in localStorage, user can retry
-            }
+          // Notify parent window that OAuth is complete
+          // The parent window will handle saving the token to the database
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              {
+                type: "mcp:oauth:complete",
+                success: true,
+              },
+              window.location.origin,
+            );
+            console.log("[OAuth Callback] Sent completion message to parent window");
           } else {
-            console.log("[OAuth Callback] No pending auth context found");
+            console.warn("[OAuth Callback] Parent window not available");
           }
 
-          // Close the window after a short delay
-          setTimeout(() => {
-            window.close();
-          }, 2000);
+          console.log("[OAuth Callback] OAuth flow completed successfully");
         }
       } catch (err) {
-        console.error("[OAuth Callback] Error:", err);
         setError(err instanceof Error ? err.message : String(err));
         setTimeout(() => {
           window.close();

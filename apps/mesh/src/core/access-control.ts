@@ -59,7 +59,7 @@ export class AccessControl implements Disposable {
     private permissions?: Permission, // From API key
     private role?: string, // From user session
     private connectionId: string = "self", // For connection-specific checks
-  ) {}
+  ) { }
 
   [Symbol.dispose](): void {
     this._granted = false;
@@ -101,6 +101,7 @@ export class AccessControl implements Disposable {
     if (this._granted) {
       return;
     }
+
 
     // Check if authenticated first (401)
     if (

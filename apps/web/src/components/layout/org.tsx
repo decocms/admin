@@ -16,6 +16,7 @@ import { type ReactNode, Suspense, useState } from "react";
 import { Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useUser } from "../../hooks/use-user.ts";
+import { useOrgDocumentTitle } from "../../hooks/use-org-document-title.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
@@ -39,6 +40,7 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
 
   return (
     <SDKProvider locator={Locator.from({ org, project: "default" })}>
+      <OrgDocumentTitleUpdater />
       {children}
       <Toaster
         position="bottom-right"
@@ -51,6 +53,11 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
       />
     </SDKProvider>
   );
+}
+
+function OrgDocumentTitleUpdater() {
+  useOrgDocumentTitle();
+  return null;
 }
 
 // TODO: Register activity for org so we can order them by latest accessed later

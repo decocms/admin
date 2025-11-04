@@ -418,29 +418,36 @@ const router = createBrowserRouter([
           {
             index: true,
             Component: OrgProjectList,
+            handle: { title: "Projects" },
           },
           {
             path: "members",
             Component: Members,
+            handle: { title: "Members" },
           },
           {
             path: "billing",
             Component: Billing,
+            handle: { title: "Billing" },
           },
           {
             path: "models",
             Component: Models,
+            handle: { title: "Models" },
           },
           {
             path: "usage",
             Component: Usage,
+            handle: { title: "Usage" },
           },
           {
             path: "settings",
             Component: OrgSettings,
+            handle: { title: "Settings" },
           },
           {
             path: "theme-editor",
+            handle: { title: "Theme Editor" },
             lazy: () =>
               import(
                 "./components/theme-editor/theme-editor-resource-list.tsx"
@@ -484,35 +491,97 @@ const router = createBrowserRouter([
         path: "/:org/:project",
         Component: ProjectLayout,
         children: [
-          { index: true, Component: ProjectHome },
-          { path: "store", Component: Store },
+          { index: true, Component: ProjectHome, handle: { title: "Home" } },
+          { path: "store", Component: Store, handle: { title: "Store" } },
           {
             path: "discover",
             Component: () => <Navigate to="../store" replace />,
+            handle: { title: "Store" },
           },
-          { path: "tools", Component: ToolsResourceList },
-          { path: "agents", Component: AgentsListPage },
-          { path: "agents/threads", Component: AgentsThreadsPage },
-          { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "apps", Component: InstalledAppsList },
-          { path: "apps/:appKey", Component: AppDetail },
-          { path: "apps/success", Component: AppInstallSuccess },
+          {
+            path: "tools",
+            Component: ToolsResourceList,
+            handle: { title: "Tools" },
+          },
+          {
+            path: "agents",
+            Component: AgentsListPage,
+            handle: { title: "Agents" },
+          },
+          {
+            path: "agents/threads",
+            Component: AgentsThreadsPage,
+            handle: { title: "Threads" },
+          },
+          {
+            path: "agent/:id/:threadId",
+            Component: AgentDetail,
+            handle: { title: "Agent" },
+          },
+          {
+            path: "apps",
+            Component: InstalledAppsList,
+            handle: { title: "Apps" },
+          },
+          {
+            path: "apps/:appKey",
+            Component: AppDetail,
+            handle: { title: "App Details" },
+          },
+          {
+            path: "apps/success",
+            Component: AppInstallSuccess,
+            handle: { title: "App Installed" },
+          },
           {
             path: "triggers",
             Component: () => <Navigate to="../workflows/triggers" replace />,
           },
-          { path: "trigger/:id", Component: TriggerDetails },
+          {
+            path: "trigger/:id",
+            Component: TriggerDetails,
+            handle: { title: "Trigger" },
+          },
           {
             path: "database",
             Component: lazy(() => import("./components/database/studio.tsx")),
+            handle: { title: "Database" },
           },
-          { path: "views", Component: ViewsListPage },
-          { path: "views/legacy", Component: ViewsLegacyPage },
-          { path: "views/:integrationId/:viewName", Component: ViewDetail },
-          { path: "views/:id", Component: LegacyViewRedirect },
-          { path: "documents", Component: DocumentsListPage },
-          { path: "documents/prompts", Component: PromptsLegacyPage },
-          { path: "documents/:id", Component: DocumentEdit },
+          {
+            path: "views",
+            Component: ViewsListPage,
+            handle: { title: "Views" },
+          },
+          {
+            path: "views/legacy",
+            Component: ViewsLegacyPage,
+            handle: { title: "Views (Legacy)" },
+          },
+          {
+            path: "views/:integrationId/:viewName",
+            Component: ViewDetail,
+            handle: { title: "View" },
+          },
+          {
+            path: "views/:id",
+            Component: LegacyViewRedirect,
+            handle: { title: "View" },
+          },
+          {
+            path: "documents",
+            Component: DocumentsListPage,
+            handle: { title: "Documents" },
+          },
+          {
+            path: "documents/prompts",
+            Component: PromptsLegacyPage,
+            handle: { title: "Prompts" },
+          },
+          {
+            path: "documents/:id",
+            Component: DocumentEdit,
+            handle: { title: "Document" },
+          },
           {
             path: "workflow-runs",
             Component: () => <Navigate to="../workflows/runs-legacy" replace />,
@@ -520,28 +589,53 @@ const router = createBrowserRouter([
           {
             path: "workflow-runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,
+            handle: { title: "Workflow Run" },
           },
-          { path: "workflows", Component: WorkflowsListPage },
-          { path: "workflows/runs", Component: WorkflowsRunsPage },
-          { path: "workflows/runs-legacy", Component: WorkflowsRunsLegacyPage },
+          {
+            path: "workflows",
+            Component: WorkflowsListPage,
+            handle: { title: "Workflows" },
+          },
+          {
+            path: "workflows/runs",
+            Component: WorkflowsRunsPage,
+            handle: { title: "Workflow Runs" },
+          },
+          {
+            path: "workflows/runs-legacy",
+            Component: WorkflowsRunsLegacyPage,
+            handle: { title: "Workflow Runs (Legacy)" },
+          },
           {
             path: "workflows/runs/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,
+            handle: { title: "Workflow Run" },
           },
-          { path: "workflows/triggers", Component: WorkflowsTriggersPage },
+          {
+            path: "workflows/triggers",
+            Component: WorkflowsTriggersPage,
+            handle: { title: "Triggers" },
+          },
           {
             path: "activity",
             Component: () => <Navigate to="../agents/threads" replace />,
+            handle: { title: "Activity" },
           },
-          { path: "audit/:id", Component: AuditDetail },
+          {
+            path: "audit/:id",
+            Component: AuditDetail,
+            handle: { title: "Audit" },
+          },
           // Resources v2 list/detail routes
           {
             path: "rsc/:integrationId/:resourceName",
             Component: ResourcesV2List,
+            handle: { title: "Resource" },
           },
           {
             path: "rsc/:integrationId/:resourceName/:resourceUri",
             Component: ResourcesV2Detail,
+            handle: { title: "Resource" },
           },
         ],
       },

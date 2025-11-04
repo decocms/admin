@@ -38,6 +38,7 @@ import {
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useUser } from "../../hooks/use-user.ts";
+import { useProjectDocumentTitle } from "../../hooks/use-project-document-title.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
@@ -64,6 +65,7 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
 
   return (
     <SDKProvider locator={Locator.from({ org, project })}>
+      <ProjectDocumentTitleUpdater />
       {children}
       <Toaster
         position="bottom-right"
@@ -76,6 +78,11 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
       />
     </SDKProvider>
   );
+}
+
+function ProjectDocumentTitleUpdater() {
+  useProjectDocumentTitle();
+  return null;
 }
 
 export function ProjectLayout() {

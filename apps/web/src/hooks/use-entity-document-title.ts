@@ -68,4 +68,3 @@ export function useEntityDocumentTitle<T>({
 
   useDocumentMetadata({ title });
 }
-

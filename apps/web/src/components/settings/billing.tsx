@@ -93,24 +93,6 @@ function PlanInfoCard() {
               Current Plan
             </span>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="opacity-50 text-xs cursor-not-allowed w-fit"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  See all plans
-                  <Icon name="open_in_new" size={16} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Coming Soon</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
 
         <div className="mb-6">

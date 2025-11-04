@@ -7,6 +7,34 @@ import {
   CardTitle,
 } from "@/web/components/ui/card";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { fetcher } from "@/tools/client";
+
+/**
+ * Helper function to find the OAuth token in localStorage
+ * use-mcp stores tokens with keys like "mcp:auth_*_tokens" or "mcp:auth:*:token"
+ */
+function findTokenInStorage(storageKeyPrefix: string): string | null {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (
+      key &&
+      key.startsWith(storageKeyPrefix) &&
+      (key.endsWith("_tokens") || key.endsWith(":token") || key.endsWith(":tokens"))
+    ) {
+      const tokenData = localStorage.getItem(key);
+      if (tokenData) {
+        try {
+          const parsed = JSON.parse(tokenData);
+          return parsed.access_token || parsed.accessToken || tokenData;
+        } catch {
+          // If not JSON, return as-is
+          return tokenData;
+        }
+      }
+    }
+  }
+  return null;
+}
 
 export default function OAuthCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +90,55 @@ export default function OAuthCallback() {
           // Let use-mcp handle the authorization with the unwrapped state
           await onMcpAuthorization();
 
+          // Extract connection context from localStorage and save the token
+          const pendingAuth = localStorage.getItem("mcp_oauth_pending");
+          if (pendingAuth) {
+            try {
+              const {
+                connectionId,
+                connectionType,
+                connectionUrl,
+              } = JSON.parse(pendingAuth);
+
+              // Find the token in localStorage (use-mcp stores it with key pattern: "mcp:auth:*:token")
+              const token = findTokenInStorage("mcp:auth");
+
+              if (token && connectionId) {
+                console.log(
+                  "[OAuth Callback] Found token, saving to connection...",
+                );
+
+                // Call CONNECTION_UPDATE to save the token
+                await fetcher.CONNECTION_UPDATE({
+                  id: connectionId,
+                  connection: {
+                    type: connectionType,
+                    url: connectionUrl,
+                    token: token,
+                  },
+                });
+
+                console.log("[OAuth Callback] Token saved to connection successfully");
+              } else {
+                console.warn(
+                  "[OAuth Callback] Token or connectionId not found",
+                  { token: !!token, connectionId },
+                );
+              }
+
+              // Clear pending auth from storage
+              localStorage.removeItem("mcp_oauth_pending");
+            } catch (saveErr) {
+              console.error(
+                "[OAuth Callback] Failed to save token:",
+                saveErr,
+              );
+              // Don't set error state - token is saved in localStorage, user can retry
+            }
+          } else {
+            console.log("[OAuth Callback] No pending auth context found");
+          }
+
           // Close the window after a short delay
           setTimeout(() => {
             window.close();
@@ -101,9 +178,7 @@ export default function OAuthCallback() {
           {error ? (
             <div className="text-sm text-muted-foreground">
               <p className="mb-2">An error occurred during authentication:</p>
-              <p className="text-destructive">
-                {params.get("error_description") || error}
-              </p>
+              <p className="text-destructive">{error}</p>
               <p className="mt-4">This window will close automatically.</p>
             </div>
           ) : (

@@ -150,6 +150,21 @@ export default function McpInspector() {
     onPopupWindow: (_url, _features, popupWindow) => {
       console.log("[MCP Inspector] OAuth popup opened");
 
+      // Store connection context for OAuth callback to use
+      if (connection && connectionId) {
+        localStorage.setItem(
+          "mcp_oauth_pending",
+          JSON.stringify({
+            connectionId: connectionId as string,
+            orgId: connection.organizationId,
+            connectionType: connection.connectionType,
+            connectionUrl: connection.connectionUrl,
+            timestamp: Date.now(),
+          }),
+        );
+        console.log("[MCP Inspector] Stored connection context for OAuth callback");
+      }
+
       // Listen for message to close the popup
       const messageHandler = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;

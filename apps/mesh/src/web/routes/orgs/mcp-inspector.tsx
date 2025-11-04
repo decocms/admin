@@ -485,15 +485,15 @@ export default function McpInspector() {
         mcp.state === "loading" ||
         mcp.state === "discovering" ||
         mcp.state === "pending_auth") && (
-          <Alert>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <AlertDescription>
-              {mcp.state === "pending_auth"
-                ? "Authentication required..."
-                : "Connecting to MCP server..."}
-            </AlertDescription>
-          </Alert>
-        )}
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription>
+            {mcp.state === "pending_auth"
+              ? "Authentication required..."
+              : "Connecting to MCP server..."}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Content - Only show when ready */}
       {mcp.state === "ready" && (
@@ -712,7 +712,7 @@ export default function McpInspector() {
                 </CardHeader>
                 <CardContent>
                   {mcp.resources.length === 0 &&
-                    mcp.resourceTemplates.length === 0 ? (
+                  mcp.resourceTemplates.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No resources available
                     </div>
@@ -1058,12 +1058,13 @@ export default function McpInspector() {
                 {mcp.log.map((l, i) => (
                   <div
                     key={i}
-                    className={`py-1 ${l.level === "error"
+                    className={`py-1 ${
+                      l.level === "error"
                         ? "text-destructive"
                         : l.level === "warn"
                           ? "text-yellow-600"
                           : "text-muted-foreground"
-                      }`}
+                    }`}
                   >
                     [{l.level}] {new Date(l.timestamp).toLocaleTimeString()}:{" "}
                     {l.message}

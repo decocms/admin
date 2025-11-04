@@ -40,7 +40,6 @@ export default function OAuthCallback() {
 
             // If the state contains a nested clientState, extract it
             if (stateObj.clientState) {
-
               // Replace the state parameter with the actual client state
               const url = new URL(window.location.href);
               url.searchParams.set("state", stateObj.clientState);
@@ -55,7 +54,6 @@ export default function OAuthCallback() {
             // If decoding/parsing fails, use the state as-is
             console.log("[OAuth Callback] Using state as-is (not wrapped)");
           }
-
 
           // Let use-mcp handle the authorization with the unwrapped state
           await onMcpAuthorization();
@@ -72,7 +70,9 @@ export default function OAuthCallback() {
               },
               window.location.origin,
             );
-            console.log("[OAuth Callback] Sent completion message to parent window");
+            console.log(
+              "[OAuth Callback] Sent completion message to parent window",
+            );
           } else {
             console.warn("[OAuth Callback] Parent window not available");
           }

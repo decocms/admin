@@ -300,6 +300,9 @@ app.post("/sign-up", async (c) => {
  * TODO: return dynamically things like otp, email+password, oauth providers, etc.
  */
 export type AuthConfig = {
+  emailAndPassword: {
+    enabled: boolean;
+  };
   sso:
     | {
         enabled: true;
@@ -320,6 +323,9 @@ export type AuthConfig = {
 app.get("/config", async (c) => {
   try {
     const config: AuthConfig = {
+      emailAndPassword: {
+        enabled: authConfig.emailAndPassword?.enabled ?? false,
+      },
       sso: authConfig.ssoConfig
         ? {
             enabled: true,

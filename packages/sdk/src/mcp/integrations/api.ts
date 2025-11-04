@@ -643,6 +643,48 @@ export const getIntegration = createIntegrationManagementTool({
       return { ...baseIntegration, tools: null }; // Innate integrations don't have tools for now
     }
 
+    // Check virtual integrations BEFORE querying database
+    // Virtual integrations use string IDs (not UUIDs) and will fail UUID validation
+    const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
+    
+    // Common name aliases for virtual integrations (handle singular vs plural)
+    const nameAliases: Record<string, string> = {
+      "i:view-management": "i:views-management",
+      "i:tool-management": "i:tools-management",
+      "i:workflow-management": "i:workflows-management",
+      "i:database-management": "i:databases-management",
+    };
+    
+    // Normalize the ID using aliases
+    const normalizedId = nameAliases[id] || id;
+    
+    // Handle self integration - don't return tools
+    if (normalizedId === formatId("i", WellKnownMcpGroups.Self)) {
+      const selfIntegration = virtualIntegrations.find(
+        (i) => i.id === formatId("i", WellKnownMcpGroups.Self),
+      );
+      if (selfIntegration) {
+        return {
+          ...IntegrationSchema.parse(selfIntegration),
+          tools: null, // Don't return tools for self integration
+        };
+      }
+    }
+
+    if (virtualIntegrations.some((i) => i.id === normalizedId)) {
+      const baseIntegration = IntegrationSchema.parse({
+        ...virtualIntegrations.find((i) => i.id === normalizedId),
+        id: formatId(type, uuid),
+      });
+      return {
+        ...baseIntegration,
+        tools: await listToolsAndSortByName(
+          { connection: baseIntegration.connection, ignoreCache: false },
+          c,
+        ).then((r) => r?.tools as z.infer<typeof IntegrationSchema>["tools"]),
+      };
+    }
+
     const selectPromise =
       type === "i"
         ? c.drizzle
@@ -735,35 +777,6 @@ export const getIntegration = createIntegrationManagementTool({
             )
             .limit(1)
             .then((r) => r[0]);
-
-    const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
-
-    // Handle self integration - don't return tools
-    if (id === formatId("i", WellKnownMcpGroups.Self)) {
-      const selfIntegration = virtualIntegrations.find(
-        (i) => i.id === formatId("i", WellKnownMcpGroups.Self),
-      );
-      if (selfIntegration) {
-        return {
-          ...IntegrationSchema.parse(selfIntegration),
-          tools: null, // Don't return tools for self integration
-        };
-      }
-    }
-
-    if (virtualIntegrations.some((i) => i.id === id)) {
-      const baseIntegration = IntegrationSchema.parse({
-        ...virtualIntegrations.find((i) => i.id === id),
-        id: formatId(type, id),
-      });
-      return {
-        ...baseIntegration,
-        tools: await listToolsAndSortByName(
-          { connection: baseIntegration.connection, ignoreCache: false },
-          c,
-        ).then((r) => r?.tools as z.infer<typeof IntegrationSchema>["tools"]),
-      };
-    }
 
     const data = await selectPromise;
 

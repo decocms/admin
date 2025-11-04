@@ -199,15 +199,19 @@ const createDecopilotTools = (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
     READ_MCP: tool({
       ...integrationsGetTool,
       name: "READ_MCP",
+      description: "Get details about an integration and list its available tools. Use this first to discover what tools are available in an integration. Input: { id: string } where id is the full integration ID with 'i:' prefix (e.g., 'i:views-management').",
+      // @ts-expect-error - Type override for custom return
       execute: (input) =>
         State.run(ctx, async () => {
-          const { id, name, tools } = await integrationsGetTool.handler(input);
-          return { id, name, tools };
+          const result = await integrationsGetTool.handler(input);
+          // Return full tool information including schemas
+          return result;
         }),
     }),
     CALL_TOOL: tool({
       ...integrationsCallToolTool,
       name: "CALL_TOOL",
+      description: "Execute a tool from an integration. IMPORTANT: You must provide both the integration ID and params.name (the tool name). Example: { id: 'i:view-management', params: { name: 'VIEWS_CREATE', arguments: { name: 'My View', code: '...' } } }",
       // @ts-expect-error - Tool type compatibility issue with AI SDK
       execute: (input) =>
         State.run(ctx, async () => {
@@ -400,7 +404,7 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     );
   }
 
-  const {
+  let {
     model,
     messages,
     temperature,
@@ -435,12 +439,12 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   const modelName = model.id?.toLowerCase() || "";
   const isOllamaModel = modelName.startsWith("ollama:");
   
-  // Very conservative whitelist - only models VERIFIED to support tool calling in Ollama
+  // Whitelist of Ollama models that support tool calling
+  // NOTE: VL (vision-language) models don't support tools even if base model does
   const supportsToolCalling = 
     !isOllamaModel || // All cloud models support tools
-    // Qwen2.5 variants (NOT Qwen3, NOT VL models - tested and don't work)
-    (modelName.includes("qwen2.5") && !modelName.includes("vl")) ||
-    (modelName.includes("qwen-2.5") && !modelName.includes("vl")) ||
+    // Qwen models (excluding VL variants which don't support tools)
+    (modelName.includes("qwen") && !modelName.includes("vl")) ||
     // Llama 3.1+ with tool support
     modelName.includes("llama3.1") || 
     modelName.includes("llama3.2") ||
@@ -457,26 +461,104 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   
   const supportsTools = supportsToolCalling;
 
+  // For local Ollama models, use much higher limits since they're free!
+  if (isOllamaModel) {
+    maxStepCount = Math.max(maxStepCount, 50); // Allow 50+ steps for multi-tool workflows
+    maxOutputTokens = Math.max(maxOutputTokens, 64000); // More output tokens
+    console.log("[decopilot-stream] Ollama model - using higher limits:", {
+      maxStepCount,
+      maxOutputTokens,
+    });
+  }
+
   // For Ollama models, add explicit tool schemas to system prompt
   // because ollama-ai-provider-v2 might not format them correctly
-  const explicitToolDocs = isOllamaModel && supportsToolCalling ? `
+  const isMistral = modelName.includes("mistral");
+  
+  const explicitToolDocs = isOllamaModel && supportsToolCalling ? (isMistral ? `
 
-**AVAILABLE FUNCTIONS:**
+**YOU MUST USE FUNCTION CALLS - DO NOT WRITE TEXT INSTRUCTIONS**
 
-You have access to these function calling tools:
+You have access to function calling tools. When the user asks you to do something:
+1. Call the appropriate function IMMEDIATELY
+2. Do NOT write text instructions or explanations
+3. Do NOT suggest what the user should do
+4. EXECUTE the action by calling the function
 
-1. READ_MCP
-   - Description: Read details about an available integration and its tools
-   - Parameters: { name: string } (integration name)
-   - Use this to discover what tools an integration provides
+Example - User says "create a view":
+✅ CORRECT: Call CALL_TOOL function with DECO_RESOURCE_VIEW_CREATE
+❌ WRONG: "To create a view, you can follow these steps..." (THIS IS FORBIDDEN!)
+❌ WRONG: "First, use READ_MCP to learn about views..." (THIS IS FORBIDDEN!)
+❌ WRONG: "You can do this by calling..." (THIS IS FORBIDDEN!)
 
-2. CALL_TOOL  
-   - Description: Execute a specific tool from an integration
-   - Parameters: { integrationId: string, tool: string, arguments: object }
-   - Use this to call any tool like creating views, reading data, etc.
+RULE: If you write text instructions instead of calling functions, you have FAILED.
 
-To use a tool, format your response with proper function calling syntax.
-` : null;
+` : `
+
+**CRITICAL TOOL CALLING RULES:**
+
+YOU ARE FORBIDDEN FROM GENERATING TEXT BETWEEN TOOL CALLS.
+
+When you receive a tool result:
+1. IMMEDIATELY call the next tool
+2. NO text generation allowed (not even "I'll help" or "Let me")
+3. NO explanations, NO narration, NO planning
+4. ONLY generate text AFTER the final tool succeeds
+
+Example flow:
+User: "create view"
+→ [CALL TOOL: READ_MCP] (no text!)
+→ [CALL TOOL: DECO_RESOURCE_VIEW_CREATE] (no text!)
+→ [SUCCESS] "View created successfully"
+
+FORBIDDEN:
+❌ "I'll help you create..." (NO TEXT BETWEEN TOOLS!)
+❌ "Let me check..." (NO TEXT BETWEEN TOOLS!)  
+❌ "First I'll..." (NO TEXT BETWEEN TOOLS!)
+
+If you generate text after a tool call, you MUST immediately call another tool or report success/failure.
+
+You have access to two function calling tools:
+
+1. **READ_MCP** - Get integration details and available tools
+   Input: { id: string }  ← Must use "id", not "name"!
+   Example: { id: "i:views-management" }  ← MUST include "i:" prefix!
+   Result: Returns list of available tools - use this to find the right tool name
+
+2. **CALL_TOOL** - Execute a tool from an integration
+   Input format (CRITICAL - follow exactly):
+   {
+     "id": "integration-id-with-i-prefix",
+     "params": {
+       "name": "TOOL_NAME",
+       "arguments": { ...tool-specific args... }
+     }
+   }
+   
+   Example to create a view (note the "data" wrapper in arguments!):
+   {
+     "id": "i:views-management",
+     "params": {
+       "name": "DECO_RESOURCE_VIEW_CREATE",
+       "arguments": {
+         "data": {
+           "name": "Hello World",
+           "description": "A hello world view",
+           "code": "export const App = () => <div>Hello World!</div>;"
+         }
+       }
+     }
+   }
+
+**CRITICAL REQUIREMENTS**:
+- Integration ID MUST start with "i:" prefix
+- CORRECT names: "i:views-management" (PLURAL!), "i:tools-management", "i:workflows-management"
+- WRONG names: "i:view-management" (missing S), "view-management" (missing i: prefix)
+- TO CREATE A VIEW: Use "i:views-management" as the integration ID (views is PLURAL!)
+- Always include "params.name" field with the exact tool name
+- Put tool-specific arguments inside "params.arguments"
+- Check available integrations list below for correct IDs
+`) : null;
 
   const systemPrompt = [
     system, // User-provided instructions (if any)
@@ -494,6 +576,9 @@ To use a tool, format your response with proper function calling syntax.
   
   console.log("[decopilot-stream] Model supports tools:", supportsTools);
   console.log("[decopilot-stream] Tools created:", Object.keys(decopilotTools));
+  console.log("[decopilot-stream] Model name:", modelName);
+  console.log("[decopilot-stream] Is Ollama model:", isOllamaModel);
+  console.log("[decopilot-stream] System prompt length:", systemPrompt.length);
 
   // Get model instance, handling OpenRouter if enabled
   const llm = getModel(model.id, model.useOpenRouter, ctx);
@@ -501,11 +586,12 @@ To use a tool, format your response with proper function calling syntax.
   const onFinish = Promise.withResolvers<void>();
 
   // Prune messages to reduce context size
+  // Keep tool calls from recent messages so model sees tool results
   const prunedMessages = pruneMessages({
     messages: modelMessages,
     reasoning: "before-last-message",
     emptyMessages: "remove",
-    toolCalls: "none",
+    toolCalls: "before-last-message", // Keep recent tool calls for context
   }).slice(-maxWindowSize);
 
   const messagesToSend = [...contextMessages, ...prunedMessages];
@@ -521,12 +607,22 @@ To use a tool, format your response with proper function calling syntax.
     onFinish.resolve();
   }, { once: true });
 
+  // Log what we're passing to the model for debugging
+  if (supportsTools && Object.keys(decopilotTools).length > 0) {
+    console.log("[decopilot-stream] Passing tools to model:", Object.keys(decopilotTools));
+    console.log("[decopilot-stream] Tool choice: auto (prefer tools)");
+  }
+
   // Call streamText with validated and transformed parameters from Zod schema
   const stream = streamText({
     model: llm,
     messages: messagesToSend,
     // Only pass tools if model supports them
-    ...(supportsTools && Object.keys(decopilotTools).length > 0 ? { tools: decopilotTools } : {}),
+    ...(supportsTools && Object.keys(decopilotTools).length > 0 ? { 
+      tools: decopilotTools,
+      // For Mistral and other Ollama models, prefer tool use over text
+      toolChoice: isMistral ? "auto" : "auto",
+    } : {}),
     system: systemPrompt,
     temperature,
     maxOutputTokens,

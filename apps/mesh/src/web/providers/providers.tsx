@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           authClient={authClient}
           organization={{
             basePath: "/",
-            pathMode: "slug",
+            pathMode: "default",
           }}
           navigate={(href) => navigate({ to: href })}
           Link={({ href, className, children, ...props }) => (

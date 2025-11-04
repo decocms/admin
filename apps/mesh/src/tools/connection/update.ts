@@ -6,10 +6,7 @@
 
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
-import {
-  requireAuth,
-  requireOrganization,
-} from "../../core/mesh-context";
+import { requireAuth, requireOrganization } from "../../core/mesh-context";
 
 const connectionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -63,10 +60,11 @@ export const CONNECTION_UPDATE = defineTool({
     // Prepare update data
     const updateData: any = {};
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (input.description !== undefined)
+      updateData.description = input.description;
     if (input.icon !== undefined) updateData.icon = input.icon;
     if (input.metadata !== undefined) updateData.metadata = input.metadata;
-    
+
     if (input.connection) {
       updateData.connectionType = input.connection.type;
       updateData.connectionUrl = input.connection.url;
@@ -81,7 +79,7 @@ export const CONNECTION_UPDATE = defineTool({
     // Update connection
     const connection = await ctx.storage.connections.update(
       input.id,
-      updateData
+      updateData,
     );
 
     // Verify it belongs to the current organization
@@ -97,4 +95,3 @@ export const CONNECTION_UPDATE = defineTool({
     };
   },
 });
-

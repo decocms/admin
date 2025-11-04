@@ -48,7 +48,10 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
  * Get database URL from environment or default
  */
 export function getDatabaseUrl(): string {
-  return process.env.DATABASE_URL || `file://${path.join(process.cwd(), "data/mesh.db")}`;
+  return (
+    process.env.DATABASE_URL ||
+    `file://${path.join(process.cwd(), "data/mesh.db")}`
+  );
 }
 
 const statement = {} as const;

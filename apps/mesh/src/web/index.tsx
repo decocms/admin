@@ -74,17 +74,33 @@ const orgConnectionsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/connections.tsx")),
 });
 
+const mcpInspectorRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/connections/$connectionId/inspector",
+  component: lazyRouteComponent(
+    () => import("./routes/orgs/mcp-inspector.tsx"),
+  ),
+});
+
+const oauthCallbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/oauth/callback",
+  component: lazyRouteComponent(() => import("./routes/oauth-callback.tsx")),
+});
+
 const shellRouteTree = shellLayout.addChildren([
   homeRoute,
   orgHomeRoute,
   orgMembersRoute,
   orgConnectionsRoute,
+  mcpInspectorRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([
   shellRouteTree,
   loginRoute,
   betterAuthRoutes,
+  oauthCallbackRoute,
 ]);
 
 const router = createRouter({

@@ -91,7 +91,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .where("organizationId", "=", organizationId)
       .execute();
 
-    return await Promise.all(connections.map((c) => this.deserializeConnection(c)));
+    return await Promise.all(
+      connections.map((c) => this.deserializeConnection(c)),
+    );
   }
 
   async update(id: string, data: UpdateConnectionData): Promise<MCPConnection> {
@@ -107,7 +109,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
     if (data.status !== undefined) updateData.status = data.status;
     if (data.connectionToken !== undefined) {
       // Encrypt token before storing
-      updateData.connectionToken = await this.vault.encrypt(data.connectionToken);
+      updateData.connectionToken = await this.vault.encrypt(
+        data.connectionToken,
+      );
     }
 
     // Serialize JSON fields

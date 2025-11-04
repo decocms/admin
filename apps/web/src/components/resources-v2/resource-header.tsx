@@ -78,7 +78,7 @@ export function ResourceHeader({
   }, [searchOpen]);
 
   return (
-    <div className="flex flex-col gap-3 w-full p-4">
+    <div className="flex flex-col gap-3 w-full p-8">
       {/* Title */}
       <div className="flex items-center">
         <h1 className="text-xl md:text-2xl font-medium text-foreground">

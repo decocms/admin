@@ -568,7 +568,7 @@ function AgentsList() {
             />
 
             {/* Filter buttons */}
-            <div className="flex items-center gap-1 px-4">
+            <div className="flex items-center gap-1 px-8">
               {(["active", ...VISIBILITIES] as TabId[]).map((id) => (
                 <Button
                   key={id}
@@ -599,7 +599,7 @@ function AgentsList() {
         </div>
 
         {/* Content Section */}
-        <div className="px-4">
+        <div className="px-8">
           <div className="max-w-[1600px] mx-auto w-full pb-8">
             {filteredAgents.length > 0 ? (
               <>

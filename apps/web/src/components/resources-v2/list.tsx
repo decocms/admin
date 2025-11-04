@@ -964,7 +964,7 @@ function ResourcesV2ListTab({
         </div>
 
         {/* Content Section - can scroll horizontally */}
-        <div className="px-4">
+        <div className="px-8">
           <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
             {error && (
               <Card>

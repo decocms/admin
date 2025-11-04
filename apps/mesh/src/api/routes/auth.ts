@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { auth } from "../../auth";
+import { existsSync, readFileSync } from "fs";
 
 const app = new Hono();
 
@@ -277,6 +278,51 @@ app.post("/sign-up", async (c) => {
         error: errorMessage,
       },
       400,
+    );
+  }
+});
+
+/**
+ * Auth Configuration Endpoint
+ *
+ * Returns information about available authentication methods
+ *
+ * Route: GET /api/auth/custom/config
+ */
+app.get("/config", async (c) => {
+  try {
+    const configPath = "./auth-config.json";
+    let ssoEnabled = false;
+
+    // Check if SSO is configured
+    if (existsSync(configPath)) {
+      try {
+        const content = readFileSync(configPath, "utf-8");
+        const config = JSON.parse(content);
+        ssoEnabled = !!config.ssoConfig;
+      } catch (error) {
+        // If config is invalid, SSO is not enabled
+        ssoEnabled = false;
+      }
+    }
+
+    return c.json({
+      success: true,
+      config: {
+        emailPassword: true, // Always enabled
+        sso: ssoEnabled,
+      },
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to load auth config";
+
+    return c.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      500,
     );
   }
 });

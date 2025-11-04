@@ -168,10 +168,10 @@ async function authenticateRequest(
         permissions,
         organization: orgData
           ? {
-            id: orgData.id,
-            slug: orgData.slug,
-            name: orgData.name,
-          }
+              id: orgData.id,
+              slug: orgData.slug,
+              name: orgData.name,
+            }
           : undefined,
       };
     }
@@ -204,10 +204,10 @@ async function authenticateRequest(
           apiKeyId: result.key.id,
           organization: orgMetadata
             ? {
-              id: orgMetadata.id,
-              slug: orgMetadata.slug,
-              name: orgMetadata.name,
-            }
+                id: orgMetadata.id,
+                slug: orgMetadata.slug,
+                name: orgMetadata.name,
+              }
             : undefined,
         };
       }
@@ -232,10 +232,10 @@ async function authenticateRequest(
         // TODO: Use some better auth method to read the full org data
         organization: session.session.activeOrganizationId
           ? {
-            id: session.session.activeOrganizationId,
-            slug: "",
-            name: "",
-          }
+              id: session.session.activeOrganizationId,
+              slug: "",
+              name: "",
+            }
           : undefined,
       };
     }

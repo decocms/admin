@@ -26,7 +26,7 @@ function RunSSO({
 export default function LoginRoute() {
   const session = authClient.useSession();
   const { next = "/" } = useSearch({ from: "/login" });
-  const { sso } = useAuthConfig();
+  const { sso, emailAndPassword } = useAuthConfig();
 
   if (session.data) {
     return <Navigate to={next} />;
@@ -34,6 +34,10 @@ export default function LoginRoute() {
 
   if (sso.enabled) {
     return <RunSSO callbackURL={next} providerId={sso.providerId} />;
+  }
+
+  if (emailAndPassword.enabled) {
+    return <Navigate to="/auth/$pathname" params={{ pathname: "/sign-in" }} />;
   }
 
   return <div>No login options available</div>;

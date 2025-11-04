@@ -144,7 +144,6 @@ export default function McpInspector() {
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,
-    storageKeyPrefix: "mcp_mesh",
     debug: true,
     autoReconnect: true,
     autoRetry: 5000,

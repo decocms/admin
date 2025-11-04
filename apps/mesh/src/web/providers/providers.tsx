@@ -1,5 +1,5 @@
 import { AuthUIProvider } from "@daveyplate/better-auth-ui";
-import { authClient } from "./lib/auth-client.ts";
+import { authClient } from "@/web/lib/auth-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthConfigProvider } from "./auth-config-provider";
 import { Link, useNavigate } from "@tanstack/react-router";

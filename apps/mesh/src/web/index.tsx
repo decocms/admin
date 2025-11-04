@@ -11,13 +11,12 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { SplashScreen } from "./components/splash-screen.tsx";
+import * as z from "zod";
 
 const rootRoute = createRootRoute({
   component: () => (
     <Providers>
-      <Suspense
-        fallback={<SplashScreen />}
-      >
+      <Suspense fallback={<SplashScreen />}>
         <Outlet />
       </Suspense>
       <TanStackRouterDevtools />
@@ -25,10 +24,22 @@ const rootRoute = createRootRoute({
   ),
 });
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: lazyRouteComponent(() => import("./routes/login.tsx")),
+  validateSearch: z.lazy(() => z.object({
+    next: z.string().optional(),
+  })),
+});
+
+/**
+ * Better auth catchall
+ */
 const betterAuthRoutes = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/$pathname",
-  component: lazyRouteComponent(() => import("./auth/auth-pages.tsx")),
+  component: lazyRouteComponent(() => import("./routes/auth-catchall.tsx")),
 });
 
 const requiredAuthLayout = createRoute({
@@ -42,10 +53,16 @@ const requiredAuthLayout = createRoute({
 const homeRoute = createRoute({
   getParentRoute: () => requiredAuthLayout,
   path: "/",
-  component: lazyRouteComponent(() => import("./app.tsx")),
+  component: lazyRouteComponent(() => import("./routes/app.tsx")),
 });
 
-const routeTree = rootRoute.addChildren([homeRoute, betterAuthRoutes]);
+const requiredAuthRouteTree = requiredAuthLayout.addChildren([homeRoute]);
+
+const routeTree = rootRoute.addChildren([
+  requiredAuthRouteTree,
+  loginRoute,
+  betterAuthRoutes,
+]);
 
 const router = createRouter({
   routeTree,

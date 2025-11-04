@@ -554,7 +554,7 @@ export const withOAuth = ({
     const { org, project, integrationId, clientState } = stateData;
 
     // Create context with workspace params
-    const fakeContext = {
+    const paramsContext = {
       ...c,
       req: {
         ...c.req,
@@ -567,7 +567,7 @@ export const withOAuth = ({
       },
     } as Context<AppEnv>;
 
-    await ensureTables(fakeContext);
+    await ensureTables(paramsContext);
 
     if (!approved) {
       // User denied access
@@ -577,7 +577,7 @@ export const withOAuth = ({
       return c.json({ redirect_uri: errorUrl.toString() });
     }
 
-    const ctx = honoCtxToAppCtx(fakeContext);
+    const ctx = honoCtxToAppCtx(paramsContext);
     const user = ctx.user;
 
     if (!user || !user.id) {

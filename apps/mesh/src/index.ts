@@ -26,7 +26,7 @@ console.log(`🎨 Sign in page:   http://localhost:${port}/sign-in`);
 console.log(`🔑 API keys page:  http://localhost:${port}/api-keys`);
 console.log("");
 
-const FRONTEND_ROUTES = ["/", "/auth/*", "/login"];
+const FRONTEND_ROUTES = ["/", "/auth/*", "/login", "/oauth/callback"];
 
 Bun.serve({
   routes: FRONTEND_ROUTES.reduce(

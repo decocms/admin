@@ -15,7 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/web/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/web/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/web/components/ui/avatar";
 import { Badge } from "@/web/components/ui/badge";
 import { Button } from "@/web/components/ui/button";
 import { Skeleton } from "@/web/components/ui/skeleton";
@@ -57,7 +61,7 @@ function getRoleBadgeVariant(role: string) {
 
 export default function OrgMembers() {
   const { data, isLoading } = useMembers();
-  
+
   const members = data?.data?.members ?? [];
 
   return (
@@ -117,7 +121,9 @@ export default function OrgMembers() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">{member.user?.name || "Unknown"}</div>
+                          <div className="font-medium">
+                            {member.user?.name || "Unknown"}
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             {member.user?.email}
                           </div>
@@ -153,7 +159,10 @@ export default function OrgMembers() {
                 ))}
                 {members.length === 0 && !isLoading && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No members found
                     </TableCell>
                   </TableRow>

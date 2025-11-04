@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { fetcher } from "@/tools/client";
 import {
   Card,
@@ -19,7 +20,7 @@ import {
 import { Badge } from "@/web/components/ui/badge";
 import { Button } from "@/web/components/ui/button";
 import { Skeleton } from "@/web/components/ui/skeleton";
-import { Plus, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +67,8 @@ function getStatusBadgeVariant(status: string) {
 }
 
 export default function OrgConnections() {
+  const { org } = useParams({ strict: false });
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -111,13 +114,7 @@ export default function OrgConnections() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: typeof formData;
-    }) => {
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       return fetcher.CONNECTION_UPDATE({
         id,
         name: data.name,
@@ -384,7 +381,19 @@ export default function OrgConnections() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(connection)}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate({
+                                to: `/${org}/connections/${connection.id}/inspector`,
+                              })
+                            }
+                          >
+                            <Search className="mr-2 h-4 w-4" />
+                            Inspect
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(connection)}
+                          >
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem>Test Connection</DropdownMenuItem>
@@ -417,4 +426,3 @@ export default function OrgConnections() {
     </div>
   );
 }
-

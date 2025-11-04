@@ -26,17 +26,16 @@ console.log(`🎨 Sign in page:   http://localhost:${port}/sign-in`);
 console.log(`🔑 API keys page:  http://localhost:${port}/api-keys`);
 console.log("");
 
-const FRONTEND_ROUTES = [
-  "/",
-  "/auth/*",
-  "/login",
-];
+const FRONTEND_ROUTES = ["/", "/auth/*", "/login"];
 
 Bun.serve({
-  routes: FRONTEND_ROUTES.reduce((acc, route) => {
-    acc[route] = indexHtml;
-    return acc;
-  }, {} as Record<string, Bun.HTMLBundle>),
+  routes: FRONTEND_ROUTES.reduce(
+    (acc, route) => {
+      acc[route] = indexHtml;
+      return acc;
+    },
+    {} as Record<string, Bun.HTMLBundle>,
+  ),
   port,
   fetch: app.fetch,
   development: true,

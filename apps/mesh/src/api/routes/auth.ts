@@ -7,8 +7,6 @@
 
 import { Hono } from "hono";
 import { auth, authConfig } from "../../auth";
-import { existsSync, readFileSync } from "fs";
-import { SSOConfig } from "@/auth/sso";
 
 const app = new Hono();
 
@@ -287,12 +285,14 @@ app.post("/sign-up", async (c) => {
  * TODO: return dynamically things like otp, email+password, oauth providers, etc.
  */
 export type AuthConfig = {
-  sso: {
-    enabled: true;
-    providerId: string;
-  } | {
-    enabled: false;
-  };
+  sso:
+    | {
+        enabled: true;
+        providerId: string;
+      }
+    | {
+        enabled: false;
+      };
 };
 
 /**
@@ -305,12 +305,14 @@ export type AuthConfig = {
 app.get("/config", async (c) => {
   try {
     const config: AuthConfig = {
-      sso: authConfig.ssoConfig ? {
-        enabled: true,
-        providerId: authConfig.ssoConfig.providerId,
-      } : {
-        enabled: false,
-      },
+      sso: authConfig.ssoConfig
+        ? {
+            enabled: true,
+            providerId: authConfig.ssoConfig.providerId,
+          }
+        : {
+            enabled: false,
+          },
     };
 
     return c.json({ success: true, config });

@@ -14,10 +14,7 @@ export default function RequiredAuthLayout() {
       </SignedIn>
 
       <SignedOut>
-        <Navigate
-          to="/login"
-          replace
-        />
+        <Navigate to="/login" replace />
       </SignedOut>
     </>
   );

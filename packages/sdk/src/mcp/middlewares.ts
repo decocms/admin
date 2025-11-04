@@ -7,10 +7,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import * as api from "@opentelemetry/api";
 import z from "zod";
+import { ProjectLocator } from "../locator.ts";
 import { SpanStatusCode, trace } from "../observability/index.ts";
 import { assertWorkspaceResourceAccess } from "./assertions.ts";
 import { type AppContext, serializeError, State } from "./context.ts";
-import { ProjectLocator } from "../locator.ts";
 
 export interface RequestMiddlewareContext<T = any> {
   next?(): Promise<T>;

@@ -77,16 +77,17 @@ import { studio } from "outerbase-browsable-do-enforced";
 import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
+import { handleDecopilotStream } from "./decopilot-stream.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { loggerMiddleware } from "./middlewares/logger.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
+import { withOAuth } from "./oauth.ts";
 import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import { handleDecopilotStream } from "./decopilot-stream.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -459,7 +460,7 @@ const WELL_KNOWN_DECONFIG_TOOLS = [
 const createMcpServerProxyForIntegration = async (
   c: Context,
   fetchIntegration: () => Promise<
-    Pick<IntegrationWithTools, "connection" | "tools" | "id">
+    Pick<IntegrationWithTools, "connection" | "tools" | "id" | "appName">
   >,
 ) => {
   const ctx = honoCtxToAppCtx(c);
@@ -514,7 +515,10 @@ const createMcpServerProxyForIntegration = async (
     },
   });
 
-  return mcpServerProxy;
+  return {
+    ...mcpServerProxy,
+    fetchIntegration,
+  };
 };
 
 const createMcpServerProxyForAppName = (c: Context) => {
@@ -535,10 +539,13 @@ const createMcpServerProxyForAppName = (c: Context) => {
 
   return createMcpServerProxyForIntegration(c, fetchIntegration);
 };
-const createMcpServerProxy = (c: Context) => {
+export const createMcpServerProxy = (
+  c: Context,
+  maybeIntegrationId?: string,
+) => {
   const ctx = honoCtxToAppCtx(c);
 
-  const integrationId = c.req.param("integrationId");
+  const integrationId = maybeIntegrationId ?? c.req.param("integrationId");
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
     return await State.run(ctx, () =>
@@ -1057,11 +1064,11 @@ app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
 
-app.post("/:org/:project/:integrationId/mcp", async (c) => {
-  const mcpServerProxy = await createMcpServerProxy(c);
-
-  return mcpServerProxy.fetch(c.req.raw);
+withOAuth({
+  hono: app,
+  mcpEndpoint: "/:org/:project/:integrationId/mcp",
 });
+
 app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 

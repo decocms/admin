@@ -137,8 +137,8 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     isEnabled: true,
     hasCustomKey: false,
     contextWindow: 131072,
-    inputCost: 0.05,
-    outputCost: 0.2,
+    inputCost: 0.15,
+    outputCost: 0.75,
     outputLimit: 32768,
   },
   {
@@ -151,8 +151,8 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     isEnabled: true,
     hasCustomKey: false,
     contextWindow: 131072,
-    inputCost: 0.05,
-    outputCost: 0.2,
+    inputCost: 0.1,
+    outputCost: 0.5,
     outputLimit: 32768,
   },
   {

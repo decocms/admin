@@ -278,13 +278,69 @@ export interface ToolCallResultV2 {
   }>;
 }
 
-export function callToolV2(
+export async function callToolV2(
   locator: ProjectLocator,
   params: ToolCallParamsV2,
   signal?: AbortSignal,
 ): Promise<ToolCallResultV2> {
   // oxlint-disable-next-line no-explicit-any
   const client = workspaceResourceClient(locator) as any;
+
+  // Check if this is an integration tool or a custom tool
+  // Integration tools have URIs like: rsc://i:integration-id/tool/tool-name
+  // Custom tools have URIs like: rsc://i:tools-management/tool/tool-name
+  const isCustomTool = params.uri.includes("i:tools-management");
+
+  if (!isCustomTool) {
+    // This is an integration tool - route to INTEGRATIONS_CALL_TOOL
+    try {
+      // Parse the URI to extract integration ID and tool name
+      // Format: rsc://i:integration-id/tool/tool-name
+      const uriWithoutPrefix = params.uri.replace("rsc://", "");
+      const parts = uriWithoutPrefix.split("/");
+      const integrationId = parts[0];
+      const toolName = decodeURIComponent(parts[parts.length - 1]);
+
+      // Call INTEGRATIONS_CALL_TOOL with the integration ID
+      const result = await client.INTEGRATIONS_CALL_TOOL({
+        id: integrationId,
+        params: {
+          name: toolName,
+          arguments: params.input,
+        },
+      }, { signal });
+
+      // Transform the MCP result to match ToolCallResultV2 format
+      if (result.isError) {
+        let errorMessage = "Tool execution failed";
+        let errorStack = undefined;
+        
+        if (result.structuredContent) {
+          errorMessage = result.structuredContent.message || errorMessage;
+          errorStack = result.structuredContent.stack;
+        } else if (result.content && result.content[0]?.text) {
+          errorMessage = result.content[0].text;
+        }
+        
+        return {
+          error: errorStack ? `${errorMessage}\n\nStack trace:\n${errorStack}` : errorMessage,
+          logs: [],
+        };
+      }
+
+      return {
+        result: result.structuredContent || result.content,
+        logs: [],
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? `${error.message}\n\n${error.stack}` : String(error),
+        logs: [],
+      };
+    }
+  }
+
+  // This is a custom tool - use the normal flow
   return client[TOOL_TOOLS.CALL](params, {
     signal,
   }) as Promise<ToolCallResultV2>;

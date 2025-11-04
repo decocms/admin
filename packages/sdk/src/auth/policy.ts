@@ -675,7 +675,9 @@ export class AuthorizationClient {
         ctx,
       ) ?? true;
 
-    return matched && statement.resource === resource;
+    return (
+      (matched && statement.resource === resource) || statement.resource === "*"
+    );
   }
 }
 

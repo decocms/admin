@@ -22,7 +22,6 @@ import {
   createDocumentViewsV2,
   createItemSchema,
   createMCPToolsStub,
-  createToolBindingImpl,
   createToolResourceV2Implementation,
   createToolViewsV2,
   createViewResourceV2Implementation,
@@ -50,7 +49,6 @@ import {
   SearchOutput,
   toBindingsContext,
   Tool,
-  ToolBindingImplOptions,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
@@ -683,15 +681,6 @@ const createContextBasedTools = (ctx: Context) => {
     context: appCtx,
   });
 
-  const resourceToolRead: ToolBindingImplOptions["resourceToolRead"] = ((uri) =>
-    State.run(
-      appCtx,
-      async () => await resourcesClient.DECO_RESOURCE_TOOL_READ({ uri }),
-    )) as ToolBindingImplOptions["resourceToolRead"];
-
-  // Create tool execution functionality using createToolBindingImpl
-  const callTool = createToolBindingImpl({ resourceToolRead });
-
   // Create Views 2.0 implementation for tool views
   const toolViewsV2 = createToolViewsV2();
 
@@ -737,7 +726,6 @@ const createContextBasedTools = (ctx: Context) => {
 
   const toolsManagementTools = [
     ...toolResourceV2, // Add new Resources 2.0 implementation
-    ...callTool, // Add tool execution functionality
     runTool,
     ...toolViewsV2, // Add Views 2.0 implementation
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Tools }));
@@ -879,8 +867,6 @@ const createSelfTools = async (ctx: Context) => {
         inputSchema,
         outputSchema,
         handler: async (input) => {
-          await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
-
           // Execute the tool without JSON schema validation (already validated by MCP layer via Zod schema)
           return await State.run(appCtx, async () => {
             const contextWithTool = {
@@ -989,8 +975,6 @@ const createSelfTools = async (ctx: Context) => {
           uri: z.string(),
         }),
         handler: async (input: unknown) => {
-          await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
-
           // Use DECO_WORKFLOW_START to start the workflow
           return await State.run(appCtx, async () => {
             const workflowBinding = createWorkflowBindingImpl({
@@ -1059,7 +1043,9 @@ app.post(
 
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
 app.post("/:org/:project/self/mcp", selfMcpHandler);
-app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
+app.post("/:org/:project/i:self/mcp", selfMcpHandler);
+app.post("/:org/:project:/self/mcp/tool/:toolName", selfMcpHandler);
+app.post("/:org/:project:/i:self/mcp/tool/:toolName", selfMcpHandler);
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);

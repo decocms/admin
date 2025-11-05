@@ -40,8 +40,12 @@ import {
   memberRoles as memberRolesTable,
   organizations,
   projects,
+  agents as agentsTable,
 } from "../schema.ts";
 import { enhancedThemeSchema } from "../theme/api.ts";
+import { createDeconfigClientForContext, withProject } from "../index.ts";
+import { NEW_AGENT_TEMPLATE } from "../../index.ts";
+import JSZip from "jszip";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1322,6 +1326,293 @@ export const listRecentProjects = createTool({
     ).filter(Boolean);
 
     return { items };
+  },
+});
+
+export const importProjectFromGithub = createTool({
+  name: "PROJECTS_IMPORT_FROM_GITHUB",
+  description:
+    "Import a project from a GitHub repository URL. The repository must contain a deco.mcp.json manifest file.",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug to import into"),
+      githubUrl: z
+        .string()
+        .describe(
+          "The GitHub repository URL (e.g., https://github.com/owner/repo)",
+        ),
+      slug: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project slug from manifest"),
+      title: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project title from manifest"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean(),
+      projectId: z.string(),
+      projectSlug: z.string(),
+      filesUploaded: z.number(),
+      agentsImported: z.number(),
+      message: z.string(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, githubUrl, slug: overrideSlug, title: overrideTitle } = props;
+
+    // Parse GitHub URL
+    const urlMatch = githubUrl.match(
+      /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?$/,
+    );
+    if (!urlMatch) {
+      throw new UserInputError(
+        "Invalid GitHub URL. Expected format: https://github.com/owner/repo",
+      );
+    }
+    const [, owner, repo, ref] = urlMatch;
+
+    // Download from GitHub API
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${ref || "main"}`;
+    const response = await fetch(apiUrl, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "deco-cms",
+      },
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new UserInputError(
+          `Repository not found or branch "${ref || "main"}" does not exist. Make sure the repository is public.`,
+        );
+      }
+      throw new Error(
+        `Failed to download from GitHub: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    // Extract zip using JSZip (proper npm package)
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract all files into memory
+    const files = new Map<string, string>();
+    let rootDir = "";
+
+    // Find root directory (GitHub zips have a root folder like "owner-repo-sha/")
+    const zipFiles = Object.keys(zip.files);
+    if (zipFiles.length === 0) {
+      throw new Error("Failed to extract repository: zip file is empty");
+    }
+
+    const firstFile = zipFiles[0];
+    const match = firstFile.match(/^([^/]+)\//);
+    if (match) {
+      rootDir = match[1];
+    }
+
+    // Extract all files
+    console.log(
+      `[Import] Extracting files from zip. Root directory: ${rootDir}`,
+    );
+    for (const [path, zipFile] of Object.entries(zip.files)) {
+      // Check if it's a directory
+      if ("dir" in zipFile && zipFile.dir) continue;
+
+      // Get file content as string
+      const content = await zipFile.async("string");
+      // Remove root directory prefix
+      const relativePath = path.startsWith(rootDir + "/")
+        ? path.substring(rootDir.length + 1)
+        : path;
+
+      if (relativePath) {
+        files.set(relativePath, content);
+      }
+    }
+
+    console.log(`[Import] Extracted ${files.size} files from zip`);
+    console.log(`[Import] File paths:`, Array.from(files.keys()).slice(0, 20));
+
+    // Read manifest
+    const manifestContent = files.get("deco.mcp.json");
+    if (!manifestContent) {
+      throw new UserInputError(
+        "Manifest file 'deco.mcp.json' not found. This does not appear to be a valid deco project.",
+      );
+    }
+
+    const manifest = JSON.parse(manifestContent);
+    const projectSlug = overrideSlug || manifest.project?.slug;
+    const projectTitle = overrideTitle || manifest.project?.title;
+
+    if (!projectSlug || !projectTitle) {
+      throw new UserInputError(
+        "Invalid manifest: missing project slug or title",
+      );
+    }
+
+    // Create project using internal logic (same as PROJECTS_CREATE)
+    const user = c.user;
+
+    // First, verify the user has access to this organization
+    const { data: orgData, error: orgError } = await c.db
+      .from("teams")
+      .select("id, slug, theme, members!inner(user_id, deleted_at)")
+      .eq("slug", org)
+      .eq("members.user_id", user.id)
+      .is("members.deleted_at", null)
+      .single();
+
+    if (orgError || !orgData) {
+      throw new Error("Organization not found or access denied");
+    }
+
+    const { data: newProject, error: createError } = await c.db
+      .from("deco_chat_projects")
+      .insert({
+        org_id: orgData.id,
+        slug: projectSlug,
+        title: projectTitle,
+        description: manifest.project?.description || null,
+      })
+      .select("id")
+      .single();
+
+    if (createError) {
+      if (createError.code === "23505") {
+        throw new UserInputError(
+          `Project with slug "${projectSlug}" already exists in this organization`,
+        );
+      }
+      throw new Error("Failed to create project");
+    }
+
+    const projectId = newProject.id;
+
+    // Get deconfig client for this project workspace using withProject helper
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+
+    // Upload files
+    const ALLOWED_ROOTS = [
+      "src/tools/",
+      "src/views/",
+      "src/workflows/",
+      "src/documents/",
+      "tools/",
+      "views/",
+      "workflows/",
+      "documents/",
+    ];
+    let uploadedCount = 0;
+
+    console.log(`[Import] Starting file upload for project ${projectSlug}`);
+
+    for (const [path, content] of files.entries()) {
+      const shouldUpload = ALLOWED_ROOTS.some((root) => path.startsWith(root));
+
+      if (!shouldUpload) {
+        console.log(`[Import] Skipping file (not in allowed roots): ${path}`);
+        continue;
+      }
+
+      console.log(`[Import] Processing file: ${path}`);
+
+      if (path.endsWith(".json")) {
+        try {
+          JSON.parse(content);
+        } catch {
+          console.warn(`[Import] Skipping malformed JSON: ${path}`);
+          continue;
+        }
+      }
+
+      // Determine the remote path - if it already starts with /src/, use as-is, otherwise add /src/ prefix
+      const remotePath = path.startsWith("src/") ? `/${path}` : `/src/${path}`;
+
+      console.log(`[Import] Uploading ${path} to ${remotePath}`);
+
+      // Convert string to base64
+      const encoder = new TextEncoder();
+      const data = encoder.encode(content);
+      const base64Content = btoa(String.fromCharCode(...data));
+
+      try {
+        await deconfigClient.PUT_FILE({
+          path: remotePath,
+          content: { base64: base64Content },
+          branch: "main",
+        });
+        uploadedCount++;
+        console.log(`[Import] Successfully uploaded: ${remotePath}`);
+      } catch (error) {
+        console.error(`[Import] Failed to upload ${path}:`, error);
+      }
+    }
+
+    console.log(`[Import] Finished uploading ${uploadedCount} files`);
+
+    // Import agents using drizzle
+    let agentCount = 0;
+    console.log(`[Import] Starting agent import`);
+
+    for (const [path, content] of files.entries()) {
+      if (
+        (path.startsWith("agents/") || path.startsWith("src/agents/")) &&
+        path.endsWith(".json")
+      ) {
+        console.log(`[Import] Importing agent from: ${path}`);
+        try {
+          const agentData = JSON.parse(content);
+
+          // Explicitly map agent fields to match the schema
+          await c.drizzle.insert(agentsTable).values({
+            name: agentData.name || NEW_AGENT_TEMPLATE.name,
+            avatar: agentData.avatar || NEW_AGENT_TEMPLATE.avatar,
+            instructions:
+              agentData.instructions || NEW_AGENT_TEMPLATE.instructions,
+            description: agentData.description,
+            tools_set: agentData.tools_set || NEW_AGENT_TEMPLATE.tools_set,
+            max_steps: agentData.max_steps,
+            max_tokens: agentData.max_tokens,
+            model: agentData.model || NEW_AGENT_TEMPLATE.model,
+            memory: agentData.memory,
+            views: agentData.views,
+            visibility: agentData.visibility || NEW_AGENT_TEMPLATE.visibility,
+            temperature: agentData.temperature,
+            workspace: null, // Legacy field, set to null for project-based agents
+            project_id: projectId,
+          });
+
+          agentCount++;
+          console.log(
+            `[Import] Successfully imported agent: ${agentData.name}`,
+          );
+        } catch (error) {
+          console.error(`[Import] Failed to import agent from ${path}:`, error);
+        }
+      }
+    }
+
+    console.log(`[Import] Finished importing ${agentCount} agents`);
+
+    return {
+      success: true,
+      projectId,
+      projectSlug,
+      filesUploaded: uploadedCount,
+      agentsImported: agentCount,
+      message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files and ${agentCount} agents`,
+    };
   },
 });
 

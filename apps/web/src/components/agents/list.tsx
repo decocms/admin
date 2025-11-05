@@ -29,7 +29,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import type { KeyboardEvent } from "react";
-import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
@@ -462,6 +462,17 @@ function AgentsList() {
       return !Number.isNaN(when.getTime()) && when >= sevenDaysAgo;
     });
   }, [agentsByVisibility, sevenDaysAgo]);
+
+  // Auto-switch to "all" tab if there are no active agents
+  useEffect(() => {
+    if (
+      selectedTab === "active" &&
+      activeAgents.length === 0 &&
+      agentsByVisibility["all"].length > 0
+    ) {
+      setSelectedTab("all");
+    }
+  }, [selectedTab, activeAgents.length, agentsByVisibility, setSelectedTab]);
 
   const listForTab = useMemo(() => {
     if (selectedTab === "active") return activeAgents;

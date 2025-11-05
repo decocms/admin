@@ -39,6 +39,7 @@ import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { OrgAvatars, OrgMemberCount } from "./members";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { toast } from "sonner";
+import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
 
 const AVATAR_UPLOAD_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
 const PROJECT_AVATAR_PATH = "project-avatars";
@@ -734,6 +735,7 @@ function OrgProjectListContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <ImportProjectFromGithub org={org ?? ""} />
             <CreateProject org={org ?? ""} />
           </div>
         </div>

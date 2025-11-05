@@ -52,6 +52,7 @@
     "gsap": "^3.12.7",
     "html2canvas": "^1.4.1",
     "json-schema": "^0.4.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.545.0",
     "marked": "^15.0.7",
     "posthog-js": "^1.259.0",

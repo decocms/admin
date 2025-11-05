@@ -21,6 +21,7 @@
     "ai": "^5.0.61",
     "cloudflare": "^4.5.0",
     "hono": "^4.7.7",
+    "jszip": "^3.10.1",
     "mimetext": "^3.0.27",
     "outerbase-browsable-do-enforced": "0.2.0",
     "postal-mime": "^2.4.3",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250620.0",
+    "@types/jszip": "^3.4.1",
     "supabase": "^2.22.12"
   },
   "engines": {

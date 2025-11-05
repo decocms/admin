@@ -82,6 +82,7 @@ import {
   putCommand,
   watchCommand,
 } from "./commands/deconfig/index.js";
+import { exportCommand, importCommand } from "./commands/projects/index.js";
 import { detectRuntime } from "./lib/runtime.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1006,6 +1007,70 @@ export const deconfig = new Command("deconfig")
   .addCommand(deconfigList)
   .addCommand(deconfigDelete);
 
+// Project export command
+const projectExport = new Command("export")
+  .description("Export a project to a local directory.")
+  .option("--org <slug>", "Organization slug")
+  .option("--project <slug>", "Project slug")
+  .option("--out <dir>", "Output directory")
+  .option("--local", "Use local API server (http://localhost:8787)")
+  .action(async (options) => {
+    try {
+      const config = await getConfig();
+      await exportCommand({
+        org: options.org,
+        project: options.project,
+        out: options.out,
+        local: options.local || config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Export failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Project import command
+const projectImport = new Command("import")
+  .description("Import a project from a local directory.")
+  .argument(
+    "[directory]",
+    "Source directory (default: current directory)",
+    "./",
+  )
+  .option("--from <dir>", "Source directory (alternative to positional arg)")
+  .option("--org <slug>", "Destination organization slug")
+  .option("--slug <slug>", "Project slug override")
+  .option("--title <title>", "Project title override")
+  .action(async (directory, options) => {
+    try {
+      const config = await getConfig();
+      // Prefer --from flag, fallback to positional argument
+      const fromDir = options.from || directory;
+      await importCommand({
+        from: fromDir,
+        org: options.org,
+        slug: options.slug,
+        title: options.title,
+        local: config.local,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Import failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Project parent command
+export const project = new Command("project")
+  .description("Manage MCP project import/export.")
+  .addCommand(projectExport)
+  .addCommand(projectImport);
+
 // Main CLI program
 export const program = new Command()
   .name(packageJson.name)
@@ -1060,5 +1125,6 @@ export const program = new Command()
   .addCommand(gen)
   .addCommand(create)
   .addCommand(deconfig)
+  .addCommand(project)
   .addCommand(completion)
   .addCommand(installCompletion);

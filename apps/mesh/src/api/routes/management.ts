@@ -31,7 +31,8 @@ app.all("/", async (c) => {
     description: tool.description,
     inputSchema: tool.inputSchema,
     outputSchema: tool.outputSchema,
-    handler: async (args: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler: async (args: any) => {
       ctx.access.setToolName(tool.name);
       // Execute the tool with the mesh context
       return await tool.execute(args, ctx);

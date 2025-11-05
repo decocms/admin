@@ -1,7 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Link, useSearchParams } from "react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   QueryClient,
@@ -10,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "@deco/sdk";
 import type { FormEventHandler } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
 
 const useSendMagicLink = () => {
@@ -29,91 +28,52 @@ const useSendMagicLink = () => {
 
 function MagicLink() {
   const fetcher = useSendMagicLink();
-  const [email, setEmail] = useState("");
   const [searchParams] = useSearchParams();
+  const emailFromUrl = searchParams.get("email") || "";
+  const [email] = useState(emailFromUrl);
   const next = searchParams.get("next");
-  const setOnce = useRef(false);
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     fetcher.mutate({ email, cli: searchParams.get("cli") === "true" });
   };
 
-  useEffect(
-    function submitedOnce() {
-      if (fetcher.data === undefined) return;
-      setOnce.current = true;
-    },
-    [fetcher.data],
-  );
-
   return (
     <SplitScreenLayout>
-      <div className="flex flex-col items-center justify-center p-6 h-full">
+      <div className="flex flex-col h-full px-6 py-8 sm:px-10 sm:py-12 md:px-14 md:py-16 overflow-y-auto">
+        {/* Back button at top */}
         <Button
           variant="ghost"
           asChild
-          className="text-muted-foreground mb-16"
+          className="text-muted-foreground self-start mb-8"
           size="sm"
         >
-          <Link to={`/login?next=${next}`}>
+          <Link to={`/login${next ? `?next=${next}` : ""}`}>
             <Icon name="arrow_back" size={16} />
             Back to login options
           </Link>
         </Button>
-        {fetcher.data === undefined && !setOnce.current ? (
+
+        {/* Centered content */}
+        <div className="flex flex-col gap-12 flex-1 justify-center">
           <form method="post" onSubmit={handleSubmit}>
-            {next ? <input type="hidden" name="next" value={next} /> : null}
-            <div className="flex flex-col gap-8">
-              <div className="text-lg font-semibold leading-none tracking-tight">
-                <div className="flex flex-col items-center gap-5">
-                  <div className="flex flex-col text-center">
-                    <h2 className="text-xl font-bold">Login with email</h2>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-xl sm:text-2xl font-medium">Check your email</h2>
+                <p className="text-sm sm:text-base text-muted-foreground font-medium break-all">{email}</p>
               </div>
-              <div>
-                <Input
-                  name="email"
-                  type="email"
-                  required
-                  placeholder="Your email address"
-                  className="min-w-80"
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col items-center gap-2.5">
-                <Button
-                  type="submit"
-                  className="w-full gap-2"
-                  disabled={fetcher.isPending}
-                >
-                  {fetcher.isPending ? <Spinner size="xs" /> : null}
-                  Send magic link
-                </Button>
-              </div>
-            </div>
-          </form>
-        ) : (
-          <form method="post" onSubmit={handleSubmit}>
-            <div className="flex flex-col items-center gap-2">
-              <h2 className="text-xl font-bold pt-4">Check your email</h2>
-              <p className="text-muted-foreground font-medium">{email}</p>
-              <p className="text-sm text-muted-foreground text-center pt-2">
+              <p className="text-sm text-muted-foreground">
                 Click on the link sent to your email to complete your signup.
                 <br />
                 If you don't see it, you may need to
-                <span className="text-sm text-muted-foreground font-bold px-1">
+                <span className="font-semibold px-1">
                   check your spam
                 </span>
                 folder.
               </p>
-              <p className="text-sm text-muted-foreground pt-4 pb-4">
-                Still can't find the email? No problem.
-              </p>
               <Button
                 type="submit"
-                className="w-full gap-2"
+                className="h-12 bg-primary text-primary-foreground rounded-xl gap-2 mt-2"
                 disabled={fetcher.isPending}
               >
                 {fetcher.isPending ? <Spinner size="xs" /> : null}
@@ -121,7 +81,7 @@ function MagicLink() {
               </Button>
             </div>
           </form>
-        )}
+        </div>
       </div>
     </SplitScreenLayout>
   );

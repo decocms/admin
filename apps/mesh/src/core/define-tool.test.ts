@@ -45,7 +45,7 @@ const createMockContext = (): MeshContext => ({
   db: null as never,
   tracer: {
     startActiveSpan: vi.fn(
-      <T,>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
+      <T>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
         fn({
           setStatus: vi.fn(),
           recordException: vi.fn(),
@@ -322,7 +322,7 @@ describe("defineTool", () => {
       } as Partial<Span> as Span;
 
       ctx.tracer.startActiveSpan = vi.fn(
-        <T,>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
+        <T>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
           fn(mockSpan),
       ) as unknown as Tracer["startActiveSpan"];
 

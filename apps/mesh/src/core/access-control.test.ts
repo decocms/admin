@@ -306,7 +306,9 @@ describe("AccessControl", () => {
 
     it("should fall back to manual check when Better Auth fails", async () => {
       const mockAuth = createMockAuth();
-      vi.mocked(mockAuth.api.userHasPermission).mockRejectedValue(new Error("API error"));
+      vi.mocked(mockAuth.api.userHasPermission).mockRejectedValue(
+        new Error("API error"),
+      );
 
       const ac = new AccessControl(
         mockAuth,

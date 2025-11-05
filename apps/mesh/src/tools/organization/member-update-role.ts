@@ -22,7 +22,11 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
     id: z.string(),
     organizationId: z.string(),
     userId: z.string(),
-    role: z.union([z.literal("admin"), z.literal("member"), z.literal("owner")]),
+    role: z.union([
+      z.literal("admin"),
+      z.literal("member"),
+      z.literal("owner"),
+    ]),
     createdAt: z.union([z.date(), z.string()]),
     user: z.object({
       email: z.string(),

@@ -1044,8 +1044,8 @@ app.post(
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
 app.post("/:org/:project/self/mcp", selfMcpHandler);
 app.post("/:org/:project/i:self/mcp", selfMcpHandler);
-app.post("/:org/:project:/self/mcp/tool/:toolName", selfMcpHandler);
-app.post("/:org/:project:/i:self/mcp/tool/:toolName", selfMcpHandler);
+app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
+app.post("/:org/:project/i:self/mcp/tool/:toolName", selfMcpHandler);
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);

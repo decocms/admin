@@ -18,6 +18,7 @@ import { getDb } from "../database";
 import { meter, tracer } from "../observability";
 import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
+import authRoutes from "./routes/auth";
 // Define Hono variables type
 type Variables = {
   meshContext: MeshContext;
@@ -75,6 +76,9 @@ app.get("/api/tools/management", (c) => {
     grouped: getToolsByCategory(),
   });
 });
+
+// Mount custom auth routes at /api/auth
+app.route("/api/auth/custom", authRoutes);
 
 // Mount Better Auth handler for ALL /api/auth/* routes
 // This handles:

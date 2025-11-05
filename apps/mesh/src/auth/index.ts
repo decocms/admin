@@ -18,18 +18,21 @@ import {
   mcp,
   openAPI,
   organization,
+  magicLink,
 } from "better-auth/plugins";
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
 import { createSSOConfig, SSOConfig } from "./sso";
+import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
     enabled: true,
   },
 };
+
 /**
  * Load optional auth configuration from file
  */
@@ -52,7 +55,8 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
  * Get database URL from environment or default
  */
 export function getDatabaseUrl(): string {
-  const databaseUrl = process.env.DATABASE_URL ||
+  const databaseUrl =
+    process.env.DATABASE_URL ||
     `file:${path.join(process.cwd(), "data/mesh.db")}`;
   console.log(
     `[Auth] Initializing Better Auth with database: ${databaseUrl} at ${process.cwd()}`,
@@ -78,7 +82,10 @@ const scopes = Object.values(getToolsByCategory())
 
 export const authConfig: Partial<BetterAuthOptions> & {
   ssoConfig?: SSOConfig;
+  magicLinkConfig?: MagicLinkConfig;
 } = loadAuthConfig();
+
+console.log("authConfig", authConfig);
 
 const plugins = [
   // Organization plugin for multi-tenant organization management
@@ -137,6 +144,10 @@ const plugins = [
   openAPI(),
 
   sso(authConfig.ssoConfig ? createSSOConfig(authConfig.ssoConfig) : undefined),
+
+  ...(authConfig.magicLinkConfig
+    ? [magicLink(createMagicLinkConfig(authConfig.magicLinkConfig))]
+    : []),
 ];
 
 /**

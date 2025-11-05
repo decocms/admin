@@ -56,10 +56,14 @@ function ConnectionInstallSuccess() {
       return;
     }
 
+    // Construct name: use provided name, or combine app name with account if available
     const newName =
       name ||
-      `${existingIntegration.name} | ${account}` ||
-      existingIntegration.name;
+      (account
+        ? `${existingIntegration.name} | ${account}`
+        : existingIntegration.name);
+
+    // Use account as description if provided, otherwise keep existing
     const newDescription = account || existingIntegration.description;
     if (existingIntegration.connection.type === "HTTP") {
       existingIntegration.connection.token = installId;

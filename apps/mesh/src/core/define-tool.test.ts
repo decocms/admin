@@ -1,9 +1,15 @@
-import { SpanStatusCode } from "@opentelemetry/api";
+import {
+  SpanStatusCode,
+  type Span,
+  type SpanOptions,
+  type Tracer,
+  type Meter,
+} from "@opentelemetry/api";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod/v3";
+import { AccessControl } from "./access-control";
 import { defineTool } from "./define-tool";
 import type { MeshContext } from "./mesh-context";
-import type { MockAccessControl, MockTracer, MockMeter } from "../test-utils";
 import type { AuditLogStorage } from "../storage/audit-log";
 
 // Mock MeshContext
@@ -35,20 +41,20 @@ const createMockContext = (): MeshContext => ({
     check: vi.fn().mockResolvedValue(undefined),
     grant: vi.fn(),
     setToolName: vi.fn(),
-  } as MockAccessControl,
+  } as Partial<AccessControl> as AccessControl,
   db: null as never,
   tracer: {
     startActiveSpan: vi.fn(
-      (_name: string, _opts: unknown, fn: (span: unknown) => unknown) =>
+      <T,>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
         fn({
           setStatus: vi.fn(),
           recordException: vi.fn(),
           end: vi.fn(),
           spanContext: vi.fn().mockReturnValue({ traceId: "trace_123" }),
           setAttribute: vi.fn(),
-        }),
+        } as Partial<Span> as Span),
     ),
-  } as MockTracer,
+  } as unknown as Tracer,
   meter: {
     createHistogram: vi.fn().mockReturnValue({
       record: vi.fn(),
@@ -56,7 +62,7 @@ const createMockContext = (): MeshContext => ({
     createCounter: vi.fn().mockReturnValue({
       add: vi.fn(),
     }),
-  } as MockMeter,
+  } as Partial<Meter> as Meter,
   baseUrl: "https://mesh.example.com",
   metadata: {
     requestId: "req_123",
@@ -313,12 +319,12 @@ describe("defineTool", () => {
         setStatus: vi.fn(),
         recordException: vi.fn(),
         end: vi.fn(),
-      };
+      } as Partial<Span> as Span;
 
       ctx.tracer.startActiveSpan = vi.fn(
-        (_name: string, _opts: unknown, fn: (span: unknown) => unknown) =>
+        <T,>(_name: string, _opts: SpanOptions, fn: (span: Span) => T): T =>
           fn(mockSpan),
-      ) as MockTracer["startActiveSpan"];
+      ) as unknown as Tracer["startActiveSpan"];
 
       await expect(tool.execute({}, ctx)).rejects.toThrow();
       expect(mockSpan.recordException).toHaveBeenCalled();

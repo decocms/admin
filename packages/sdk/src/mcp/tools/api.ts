@@ -11,7 +11,7 @@ import {
   DeconfigClient,
   MCPClient,
   PROJECT_TOOLS,
-  WithTool
+  WithTool,
 } from "../index.ts";
 import {
   createDetailViewUrl,

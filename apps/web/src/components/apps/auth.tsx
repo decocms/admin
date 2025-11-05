@@ -434,98 +434,6 @@ const SelectableInstallList = ({
   );
 };
 
-const _InlineInstallation = ({
-  integration,
-  onConfirm,
-}: {
-  integration: MarketplaceIntegration;
-  onConfirm: (data: {
-    authorizeOauthUrl: string | null;
-    connection: Integration;
-  }) => void;
-}) => {
-  const integrationState = useIntegrationInstallState(integration?.name);
-  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
-  const { install, isLoading } = useUIInstallIntegration({
-    onConfirm,
-    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
-  });
-  const {
-    stepIndex,
-    currentSchema,
-    totalSteps,
-    dependencyName,
-    handleNextDependency,
-    handleBack,
-  } = useIntegrationInstallStep({
-    integrationState,
-    install: () =>
-      install({ integration, mainFormData: formRef.current?.getValues() }),
-  });
-
-  return (
-    <>
-      <DependencyStep
-        integration={integration}
-        dependencyName={dependencyName}
-        dependencySchema={currentSchema}
-        currentStep={stepIndex + 1}
-        totalSteps={totalSteps}
-        formRef={formRef}
-        integrationState={integrationState}
-        mode="column"
-      />
-      <div className="flex justify-end px-4 py-2 gap-2">
-        <InstallStepsButtons
-          stepIndex={stepIndex}
-          isLoading={isLoading}
-          hasNextStep={stepIndex < totalSteps - 1}
-          integrationState={integrationState}
-          handleNextDependency={handleNextDependency}
-          handleBack={handleBack}
-        />
-      </div>
-    </>
-  );
-};
-
-const InlineInstallation = ({
-  integrationName,
-  onConfirm,
-}: {
-  integrationName: string;
-  onConfirm: (data: {
-    authorizeOauthUrl: string | null;
-    connection: Integration;
-  }) => void;
-}) => {
-  const { data: marketplace } = useMarketplaceIntegrations();
-  const integration = useMemo(() => {
-    return marketplace?.integrations.find(
-      (integration) => integration.name === integrationName,
-    );
-  }, [marketplace, integrationName]);
-
-  if (!integration) {
-    return (
-      <div className="flex flex-col items-center justify-center my-auto h-full py-8">
-        <Icon name="error" size={48} className="text-destructive" />
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">Integration not found</h3>
-          <p className="text-sm text-muted-foreground max-w-md">
-            The app <span className="font-semibold">{integrationName}</span>{" "}
-            could not be found in the marketplace. Please make sure it has been
-            published and is available.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <_InlineInstallation integration={integration} onConfirm={onConfirm} />
-  );
-};
 
 const FooterButtons = ({
   backLabel,
@@ -593,7 +501,7 @@ const SelectProjectAppInstance = ({
   const [selectedIntegration, setSelectedIntegration] =
     useState<Integration | null>(() => installedIntegrations[0] ?? null);
   const [inlineCreatingIntegration, setInlineCreatingIntegration] =
-    useState<boolean>(() => installedIntegrations.length === 0);
+    useState<boolean>(false);
   const [oauthCompletionDialog, setOauthCompletionDialog] =
     useState<OauthModalState>({
       open: false,
@@ -602,10 +510,19 @@ const SelectProjectAppInstance = ({
       connection: null,
       openIntegrationOnFinish: true,
     });
-
+  
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const integrationFromMarketplace = useMemo(() => {
+    return marketplace?.integrations.find(
+      (integration) => integration.name === clientId,
+    );
+  }, [marketplace, clientId]);
+  
+  const integrationState = useIntegrationInstallState(integrationFromMarketplace?.name || "");
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const autoConfirmRef = useRef(false);
 
-  const createOAuthCodeAndRedirectBackToApp = async ({
+  const createOAuthCodeAndRedirectBackToApp = useCallback(async ({
     integrationId,
   }: {
     integrationId: string;
@@ -618,8 +535,49 @@ const SelectProjectAppInstance = ({
       state,
     });
     globalThis.location.href = redirectTo;
-  };
-
+  }, [createOAuthCode, mode, org.slug, project, redirectUri, state]);
+  
+  const { install, isLoading } = useUIInstallIntegration({
+    onConfirm: ({ connection, authorizeOauthUrl }) => {
+      if (authorizeOauthUrl) {
+        const popup = globalThis.open(authorizeOauthUrl, "_blank");
+        if (
+          !popup ||
+          popup.closed ||
+          typeof popup.closed === "undefined"
+        ) {
+          setOauthCompletionDialog({
+            openIntegrationOnFinish: true,
+            open: true,
+            url: authorizeOauthUrl,
+            integrationName: connection?.name || "the service",
+            connection: connection,
+          });
+        }
+      }
+      // Always proceed to redirect after creating the connection
+      createOAuthCodeAndRedirectBackToApp({
+        integrationId: connection.id,
+      });
+    },
+    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
+  });
+  
+  const {
+    stepIndex,
+    currentSchema,
+    totalSteps,
+    dependencyName,
+    handleNextDependency,
+    handleBack,
+  } = useIntegrationInstallStep({
+    integrationState,
+    install: () => {
+      if (!integrationFromMarketplace) return Promise.reject(new Error("Integration not found"));
+      return install({ integration: integrationFromMarketplace, mainFormData: formRef.current?.getValues() });
+    },
+  });
+  
   // Auto-confirm if integrationId is provided and there's only 1 integration
   useEffect(() => {
     if (
@@ -640,141 +598,148 @@ const SelectProjectAppInstance = ({
   }, [autoConfirmIntegrationId, installedIntegrations]);
 
   return (
-    <div className="flex flex-col items-center justify-start h-full w-full py-6 overflow-y-auto">
-      <div className="text-center space-y-6 max-w-md w-full m-auto">
-        {inlineCreatingIntegration ? null : (
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center justify-center gap-2">
-              <div className="relative">
-                <Avatar
-                  shape="square"
-                  url={org.avatar_url}
-                  fallback={org.name}
-                  objectFit="contain"
-                  size="xl"
+    <OauthModalContextProvider.Provider
+      value={{ onOpenOauthModal: setOauthCompletionDialog }}
+    >
+      <div className="flex flex-col h-full w-full overflow-y-auto">
+        {inlineCreatingIntegration && integrationFromMarketplace ? (
+          <div className="flex flex-col h-full">
+            {/* Installation form - grid on desktop, column on mobile */}
+            <div className="flex-1 min-h-0 p-4 md:p-0 overflow-y-auto md:overflow-y-visible">
+              {/* Desktop: grid layout, Mobile: column layout */}
+              <div className="md:hidden h-full">
+                <DependencyStep
+                  integration={integrationFromMarketplace}
+                  dependencyName={dependencyName}
+                  dependencySchema={currentSchema}
+                  currentStep={stepIndex + 1}
+                  totalSteps={totalSteps}
+                  formRef={formRef}
+                  integrationState={integrationState}
+                  mode="column"
                 />
               </div>
-
-              <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
-                <Icon
-                  name="sync_alt"
-                  size={24}
-                  className="text-muted-foreground"
-                />
-              </div>
-
-              <div className="relative">
-                <IntegrationAvatar
-                  url={app.icon}
-                  fallback={app.friendlyName ?? app.name}
-                  size="xl"
+              <div className="hidden md:flex h-full [&>div]:max-h-full! [&>div]:min-h-full! [&>div]:h-full!">
+                <DependencyStep
+                  integration={integrationFromMarketplace}
+                  dependencyName={dependencyName}
+                  dependencySchema={currentSchema}
+                  currentStep={stepIndex + 1}
+                  totalSteps={totalSteps}
+                  formRef={formRef}
+                  integrationState={integrationState}
+                  mode="grid"
                 />
               </div>
             </div>
-            <h1 className="text-xl font-semibold flex items-start gap-2">
-              <span>Authorize {app.friendlyName ?? app.name}</span>
-              <div className="mt-2">{app.verified && <VerifiedBadge />}</div>
-            </h1>
-          </div>
-        )}
-
-        {inlineCreatingIntegration ? (
-          <Suspense
-            fallback={
-              <div className="flex flex-col items-center space-y-4 w-full">
-                <Spinner size="sm" />
-                <p className="text-sm text-muted-foreground">
-                  Loading app settings...
-                </p>
-              </div>
-            }
-          >
-            <OauthModalContextProvider.Provider
-              value={{ onOpenOauthModal: setOauthCompletionDialog }}
-            >
-              <div className="h-[80vh]">
-                <InlineInstallation
-                  integrationName={clientId}
-                  // create callback
-                  onConfirm={({ connection, authorizeOauthUrl }) => {
-                    if (authorizeOauthUrl) {
-                      const popup = globalThis.open(
-                        authorizeOauthUrl,
-                        "_blank",
-                      );
-                      if (
-                        !popup ||
-                        popup.closed ||
-                        typeof popup.closed === "undefined"
-                      ) {
-                        setOauthCompletionDialog({
-                          openIntegrationOnFinish: true,
-                          open: true,
-                          url: authorizeOauthUrl,
-                          integrationName: connection?.name || "the service",
-                          connection: connection,
-                        });
-                      }
+            <div className="flex flex-col md:flex-row justify-end gap-2 p-4 border-t border-border">
+              <div className="w-full md:w-auto flex gap-2">
+                <InstallStepsButtons
+                  stepIndex={stepIndex}
+                  isLoading={isLoading}
+                  hasNextStep={stepIndex < totalSteps - 1}
+                  integrationState={integrationState}
+                  handleNextDependency={handleNextDependency}
+                  handleBack={() => {
+                    if (stepIndex === 0) {
+                      setInlineCreatingIntegration(false);
+                    } else {
+                      handleBack();
                     }
-                    createOAuthCodeAndRedirectBackToApp({
-                      integrationId: connection.id,
-                    });
                   }}
                 />
               </div>
-            </OauthModalContextProvider.Provider>
-            <OAuthCompletionDialog
-              open={oauthCompletionDialog.open}
-              onOpenChange={(open) => {
-                setOauthCompletionDialog((prev) => ({ ...prev, open }));
-                // if (
-                //   oauthCompletionDialog.connection &&
-                //   oauthCompletionDialog.openIntegrationOnFinish
-                // ) {
-                //   onSelect?.(oauthCompletionDialog.connection);
-                // }
-              }}
-              authorizeOauthUrl={oauthCompletionDialog.url}
-              integrationName={oauthCompletionDialog.integrationName}
-            />
-          </Suspense>
+            </div>
+          </div>
         ) : (
-          <SelectableInstallList
-            installedIntegrations={installedIntegrations}
-            setSelectedIntegration={setSelectedIntegration}
-            selectCreateNew={() => {
-              setInlineCreatingIntegration(true);
-              setSelectedIntegration(null);
-            }}
-            selectedIntegration={selectedIntegration}
-          />
-        )}
+          <div className="flex flex-col items-center justify-start h-full w-full py-6 px-4 md:px-0">
+            <div className="text-center space-y-6 max-w-md w-full m-auto">
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="relative">
+                    <Avatar
+                      shape="square"
+                      url={org.avatar_url}
+                      fallback={org.name}
+                      objectFit="contain"
+                      size="xl"
+                    />
+                  </div>
 
-        {inlineCreatingIntegration ? null : (
-          <FooterButtons
-            backLabel="Change project"
-            onClickBack={selectAnotherProject}
-            onClickContinue={() => {
-              if (!selectedIntegration) {
-                throw new Error("No integration selected");
-              }
-              createOAuthCodeAndRedirectBackToApp({
-                integrationId: selectedIntegration.id,
-              });
-            }}
-            continueDisabled={
-              !selectedIntegration ||
-              createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending
-            }
-            continueLoading={
-              createOAuthCode.isPending ||
-              installCreatingApiKeyAndIntegration.isPending
-            }
-          />
+                  <div className="relative -mx-4 z-50 bg-background border border-border rounded-lg w-8 h-8 flex items-center justify-center">
+                    <Icon
+                      name="sync_alt"
+                      size={24}
+                      className="text-muted-foreground"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <IntegrationAvatar
+                      url={app.icon}
+                      fallback={app.friendlyName ?? app.name}
+                      size="xl"
+                    />
+                  </div>
+                </div>
+                <h1 className="text-xl font-semibold flex items-start gap-2">
+                  <span>Authorize {app.friendlyName ?? app.name}</span>
+                  <div className="mt-2">{app.verified && <VerifiedBadge />}</div>
+                </h1>
+              </div>
+
+              <SelectableInstallList
+                installedIntegrations={installedIntegrations}
+                setSelectedIntegration={setSelectedIntegration}
+                selectCreateNew={() => {
+                  // Check if integration has any requirements
+                  if (integrationFromMarketplace && totalSteps === 0) {
+                    // No requirements, install directly
+                    install({ integration: integrationFromMarketplace, mainFormData: {} });
+                  } else {
+                    // Has requirements, show the form
+                    setInlineCreatingIntegration(true);
+                    setSelectedIntegration(null);
+                  }
+                }}
+                selectedIntegration={selectedIntegration}
+              />
+
+              <FooterButtons
+                backLabel="Change project"
+                onClickBack={selectAnotherProject}
+                onClickContinue={() => {
+                  if (!selectedIntegration) {
+                    throw new Error("No integration selected");
+                  }
+                  createOAuthCodeAndRedirectBackToApp({
+                    integrationId: selectedIntegration.id,
+                  });
+                }}
+                continueDisabled={
+                  !selectedIntegration ||
+                  createOAuthCode.isPending ||
+                  installCreatingApiKeyAndIntegration.isPending
+                }
+                continueLoading={
+                  createOAuthCode.isPending ||
+                  installCreatingApiKeyAndIntegration.isPending
+                }
+              />
+            </div>
+          </div>
         )}
       </div>
-    </div>
+
+      <OAuthCompletionDialog
+        open={oauthCompletionDialog.open}
+        onOpenChange={(open) => {
+          setOauthCompletionDialog((prev) => ({ ...prev, open }));
+        }}
+        authorizeOauthUrl={oauthCompletionDialog.url}
+        integrationName={oauthCompletionDialog.integrationName}
+      />
+    </OauthModalContextProvider.Provider>
   );
 };
 

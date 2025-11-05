@@ -20,7 +20,7 @@ export function WalletBalanceAlertLayout({
 
   return (
     <Alert // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-      className="bg-chart-1/20 border-chart-1/25 rounded-2xl p-1"
+      className="relative bg-chart-1/15 border-chart-1/25 rounded-2xl p-1 overflow-hidden"
     >
       <div className="flex flex-col h-full w-full">
         <div className="flex items-center gap-2 p-2.5">
@@ -28,10 +28,10 @@ export function WalletBalanceAlertLayout({
             name="info"
             size={20}
             // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-            className="text-chart-1"
+            className="text-chart-1 brightness-80 mix-blend-plus-darker"
           />
           <AlertDescription // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-            className="text-chart-1 font-mono text-sm uppercase tracking-wide"
+            className="text-chart-1 brightness-80 mix-blend-plus-darker font-mono text-sm uppercase tracking-wide"
           >
             {title}
           </AlertDescription>

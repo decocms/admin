@@ -387,7 +387,7 @@ export function InstallStepsButtons({
   return (
     <>
       {stepIndex > 0 && (
-        <Button variant="outline" disabled={isLoading} onClick={handleBack}>
+        <Button variant="outline" disabled={isLoading} onClick={handleBack} className="flex-1 md:flex-initial">
           Back
         </Button>
       )}
@@ -399,6 +399,7 @@ export function InstallStepsButtons({
             : handleNextDependency
         }
         disabled={isLoading || integrationState.isLoading}
+        className="flex-1 md:flex-initial"
       >
         {isLoading || integrationState.isLoading
           ? "Connecting..."

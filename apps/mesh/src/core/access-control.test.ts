@@ -6,12 +6,15 @@ import {
 } from "./access-control";
 import type { BetterAuthInstance } from "./mesh-context";
 
-const createMockAuth = (): Partial<BetterAuthInstance> =>
-  ({
+const createMockAuth = (): BetterAuthInstance => {
+  const mockUserHasPermission = vi.fn();
+  return {
     api: {
-      userHasPermission: vi.fn(),
-    } as Partial<BetterAuthInstance["api"]>,
-  }) as Partial<BetterAuthInstance>;
+      userHasPermission: mockUserHasPermission,
+    },
+    handler: vi.fn().mockResolvedValue(new Response()),
+  } as unknown as BetterAuthInstance;
+};
 
 describe("AccessControl", () => {
   describe("grant", () => {
@@ -283,8 +286,9 @@ describe("AccessControl", () => {
   describe("Better Auth integration", () => {
     it("should use Better Auth API when available", async () => {
       const mockAuth = createMockAuth();
-      mockAuth.api.userHasPermission.mockResolvedValue({
-        data: { has: true },
+      vi.mocked(mockAuth.api.userHasPermission).mockResolvedValue({
+        error: null,
+        success: true,
       });
 
       const ac = new AccessControl(mockAuth, "user_1", "TEST_TOOL", {}, "user");
@@ -302,7 +306,7 @@ describe("AccessControl", () => {
 
     it("should fall back to manual check when Better Auth fails", async () => {
       const mockAuth = createMockAuth();
-      mockAuth.api.userHasPermission.mockRejectedValue(new Error("API error"));
+      vi.mocked(mockAuth.api.userHasPermission).mockRejectedValue(new Error("API error"));
 
       const ac = new AccessControl(
         mockAuth,
@@ -318,8 +322,14 @@ describe("AccessControl", () => {
     });
 
     it("should fall back to manual check when Better Auth not configured", async () => {
+      // Create a mock without the userHasPermission API
+      const mockAuthWithoutApi = {
+        api: {},
+        handler: vi.fn().mockResolvedValue(new Response()),
+      } as unknown as BetterAuthInstance;
+
       const ac = new AccessControl(
-        null, // No auth instance
+        mockAuthWithoutApi,
         "user_1",
         undefined,
         { self: ["TEST_TOOL"] }, // Permission on self connection

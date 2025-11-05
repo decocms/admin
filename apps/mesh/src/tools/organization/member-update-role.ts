@@ -18,6 +18,19 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
     role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["member"])
   }),
 
+  outputSchema: z.object({
+    id: z.string(),
+    organizationId: z.string(),
+    userId: z.string(),
+    role: z.union([z.literal("admin"), z.literal("member"), z.literal("owner")]),
+    createdAt: z.union([z.date(), z.string()]),
+    user: z.object({
+      email: z.string(),
+      name: z.string(),
+      image: z.string().optional(),
+    }),
+  }),
+
   handler: async (input, ctx) => {
     // Require authentication
     requireAuth(ctx);

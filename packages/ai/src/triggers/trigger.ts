@@ -92,16 +92,21 @@ export interface InvokePayload {
   args: unknown[];
   metadata?: Record<string, unknown>;
 }
-const buildInvokeUrl = (
-  triggerId: string,
-  method: keyof Trigger,
-  passphrase?: string | null,
-  payload?: InvokePayload,
-): URL => {
+const buildInvokeUrl = ({
+  durableObjectId,
+  method,
+  passphrase,
+  payload,
+}: {
+  durableObjectId: string;
+  method: keyof Trigger;
+  passphrase?: string | null;
+  payload?: InvokePayload;
+}): URL => {
   const invoke = new URL(
     `https://${Hosts.API}/actors/${Trigger.name}/invoke/${method}`,
   );
-  invoke.searchParams.set("deno_isolate_instance_id", triggerId);
+  invoke.searchParams.set("deno_isolate_instance_id", durableObjectId);
 
   if (passphrase) {
     invoke.searchParams.set("passphrase", passphrase);
@@ -258,12 +263,12 @@ export class Trigger {
 
   public _callbacks(payload?: InvokePayload): Callbacks {
     const urlFor = (method: keyof Trigger) =>
-      buildInvokeUrl(
-        this.state.id,
+      buildInvokeUrl({
+        durableObjectId: this.state.id,
         method,
-        this.metadata?.params?.passphrase,
+        passphrase: this.metadata?.params?.passphrase,
         payload,
-      ).href;
+      }).href;
 
     return {
       stream: urlFor("stream"),

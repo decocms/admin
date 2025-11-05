@@ -22,8 +22,6 @@ console.log("");
 console.log(`📋 Health check:  http://localhost:${port}/health`);
 console.log(`🔐 Auth endpoints: http://localhost:${port}/api/auth/*`);
 console.log(`🔧 MCP endpoint:   http://localhost:${port}/mcp`);
-console.log(`🎨 Sign in page:   http://localhost:${port}/sign-in`);
-console.log(`🔑 API keys page:  http://localhost:${port}/api-keys`);
 console.log("");
 
 const FRONTEND_ROUTES = ["/", "/auth/*", "/login", "/oauth/callback"];

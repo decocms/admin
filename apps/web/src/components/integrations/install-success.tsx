@@ -57,10 +57,12 @@ function ConnectionInstallSuccess() {
     }
 
     // Construct name: use provided name, or combine app name with account if available
-    const newName = name || (account 
-      ? `${existingIntegration.name} | ${account}` 
-      : existingIntegration.name);
-    
+    const newName =
+      name ||
+      (account
+        ? `${existingIntegration.name} | ${account}`
+        : existingIntegration.name);
+
     // Use account as description if provided, otherwise keep existing
     const newDescription = account || existingIntegration.description;
     if (existingIntegration.connection.type === "HTTP") {

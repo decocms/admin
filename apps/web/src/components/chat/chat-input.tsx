@@ -423,13 +423,14 @@ export function ChatInput({
                   />
                   <Button
                     type={isLoading ? "button" : "submit"}
-                    onClick={
-                      isLoading
-                        ? () => {
-                            stop();
-                          }
-                        : undefined
-                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      if (isLoading) {
+                        stop();
+                      }
+                    }}
                     variant={canSubmit || isLoading ? "default" : "ghost"}
                     size="icon"
                     disabled={!canSubmit && !isLoading}

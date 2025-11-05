@@ -32,10 +32,7 @@ import { runTool } from "./tools/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as utilsAPI from "./utils/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-export {
-  createToolBindingImpl as createToolTools,
-  createToolViewsV2,
-} from "./tools/api.ts";
+export { createToolViewsV2 } from "./tools/api.ts";
 
 export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 export * from "../errors.ts";
@@ -380,11 +377,9 @@ export {
 } from "./workflows/api.ts";
 
 export {
-  createToolBindingImpl,
   createToolResourceV2Implementation,
   runTool,
   ToolResourceV2,
-  type ToolBindingImplOptions,
   type ToolDataV2,
 } from "./tools/api.ts";
 

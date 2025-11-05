@@ -118,9 +118,5 @@ export const DEFAULT_THEME: Theme = {
     "--shadow-spread": "0px",
     "--shadow-opacity": "0.1",
   },
-
-  font: {
-    type: "Google Fonts",
-    name: "Inter",
-  },
+  // No custom font - uses default system font stack from global.css
 };

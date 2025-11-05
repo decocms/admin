@@ -28,6 +28,10 @@ export const THEME_PRESETS = [
     id: "modern-minimal",
     name: "Modern Minimal",
     theme: {
+      font: {
+        type: "Google Fonts",
+        name: "Inter",
+      },
       variables: {
         "--background": "#ffffff",
         "--foreground": "#333333",
@@ -124,6 +128,10 @@ export const THEME_PRESETS = [
     id: "amethyst-haze",
     name: "Amethyst Haze",
     theme: {
+      font: {
+        type: "Google Fonts",
+        name: "Poppins",
+      },
       variables: {
         "--background": "#f8f7fa",
         "--foreground": "#3d3c4f",
@@ -316,6 +324,10 @@ export const THEME_PRESETS = [
     id: "elegant-luxury",
     name: "Elegant Luxury",
     theme: {
+      font: {
+        type: "Google Fonts",
+        name: "Playfair Display",
+      },
       variables: {
         "--background": "#1c1917",
         "--foreground": "#f5f5f4",
@@ -412,6 +424,10 @@ export const THEME_PRESETS = [
     id: "notebook",
     name: "Notebook",
     theme: {
+      font: {
+        type: "Google Fonts",
+        name: "Merriweather",
+      },
       variables: {
         "--background": "#f9f9f9",
         "--foreground": "#3a3a3a",

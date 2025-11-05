@@ -21,9 +21,20 @@ import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
 import { DetailSection } from "../common/detail-section.tsx";
 import { ColorPicker } from "./color-picker.tsx";
+import {
+  GoogleFontsSelector,
+  POPULAR_GOOGLE_FONTS,
+} from "./google-fonts-selector.tsx";
+import {
+  DEFAULT_FONT_STACK,
+  formatFontFamily,
+  getGoogleFontUrl,
+  applyFontToDocument,
+} from "./font-helpers.ts";
 
 interface ThemeEditorFormValues {
   themeVariables?: Partial<Record<ThemeVariable, string>>;
+  fontName?: string;
 }
 
 // Create enum for strict validation
@@ -34,6 +45,7 @@ const ThemeVariableEnum = z.enum([...THEME_VARIABLES] as [
 
 const themeEditorSchema = z.object({
   themeVariables: z.record(ThemeVariableEnum, z.string()).optional(),
+  fontName: z.string().optional(),
 });
 
 // AI context rules for theme editing
@@ -47,11 +59,13 @@ const THEME_EDITOR_AI_RULES = [
 - Feedback Colors: Destructive/error (--destructive), success (--success), warning (--warning) states with their text colors
 - Sidebar: All sidebar-related colors including background, text, accent, borders, and focus rings
 - Layout: Border radius (--radius) and spacing (--spacing) for consistent UI dimensions
-- Advanced: Popovers and muted text colors`,
+- Advanced: Popovers and muted text colors
+- Typography: Font selection from Google Fonts library`,
   'Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.',
   "Use UPDATE_ORG_THEME to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
-  'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)", "--radius": "0.5rem" } } }',
-  "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
+  'To update a theme, pass the "theme" parameter with the variables and/or font you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)" }, "font": { "type": "Google Fonts", "name": "Roboto" } } }',
+  `Available Google Fonts include: ${POPULAR_GOOGLE_FONTS.slice(0, 10).join(", ")}, and many more. When suggesting fonts, consider readability and brand personality.`,
+  "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, the relationship between background/foreground pairs, and font legibility.",
 ];
 
 interface ColorCardProps {
@@ -240,6 +254,10 @@ export function ThemeEditorView() {
     resolver: zodResolver(themeEditorSchema),
     defaultValues: {
       themeVariables: currentTheme?.variables ?? {},
+      fontName:
+        currentTheme?.font?.type === "Google Fonts"
+          ? currentTheme.font.name
+          : "Default",
     },
   });
 
@@ -250,6 +268,10 @@ export function ThemeEditorView() {
   useEffect(() => {
     form.reset({
       themeVariables: currentTheme?.variables ?? {},
+      fontName:
+        currentTheme?.font?.type === "Google Fonts"
+          ? currentTheme.font.name
+          : "Default",
     });
     // IMPORTANT: Only reset undo history when theme changes from external source (save/refetch)
     // NOT when user is actively editing
@@ -271,6 +293,43 @@ export function ThemeEditorView() {
     control: form.control,
     name: "themeVariables",
   });
+
+  const fontName = useWatch({
+    control: form.control,
+    name: "fontName",
+  });
+
+  // Apply font dynamically when it changes
+  useEffect(() => {
+    if (!fontName) return;
+
+    const linkElement = document.querySelector(
+      'link[data-theme-editor-font="true"]',
+    ) as HTMLLinkElement;
+
+    if (fontName === "Default") {
+      // Remove custom font link and use default
+      if (linkElement) {
+        linkElement.remove();
+      }
+      applyFontToDocument(DEFAULT_FONT_STACK);
+    } else {
+      // Load and apply Google Font
+      const fontUrl = getGoogleFontUrl(fontName);
+
+      if (!linkElement) {
+        const newLink = document.createElement("link");
+        newLink.rel = "stylesheet";
+        newLink.href = fontUrl;
+        newLink.setAttribute("data-theme-editor-font", "true");
+        document.head.appendChild(newLink);
+      } else if (linkElement.href !== fontUrl) {
+        linkElement.href = fontUrl;
+      }
+
+      applyFontToDocument(formatFontFamily(fontName));
+    }
+  }, [fontName]);
 
   // Helper to get variable value with fallback
   const getVariableValue = useCallback(
@@ -332,8 +391,15 @@ export function ThemeEditorView() {
 
   const hasChanges = useMemo(() => {
     const currentValues = currentTheme?.variables || {};
-    return JSON.stringify(themeVariables) !== JSON.stringify(currentValues);
-  }, [themeVariables, currentTheme]);
+    const currentFontName =
+      currentTheme?.font?.type === "Google Fonts"
+        ? currentTheme.font.name
+        : "Default";
+    return (
+      JSON.stringify(themeVariables) !== JSON.stringify(currentValues) ||
+      fontName !== currentFontName
+    );
+  }, [themeVariables, fontName, currentTheme]);
 
   const handleVariableChange = useCallback(
     (key: ThemeVariable, newValue: string) => {
@@ -396,6 +462,13 @@ export function ThemeEditorView() {
         variables: Object.fromEntries(entries) as Partial<
           Record<ThemeVariable, string>
         >,
+        font:
+          data.fontName && data.fontName !== "Default"
+            ? {
+                type: "Google Fonts",
+                name: data.fontName,
+              }
+            : undefined,
       };
 
       await updateOrgThemeMutation.mutateAsync(theme);
@@ -414,8 +487,13 @@ export function ThemeEditorView() {
 
     // Apply preset to form
     const presetVariables = preset.theme.variables || {};
+    const presetFont =
+      preset.theme.font?.type === "Google Fonts"
+        ? preset.theme.font.name
+        : "Default";
 
     form.setValue("themeVariables", presetVariables, { shouldDirty: true });
+    form.setValue("fontName", presetFont, { shouldDirty: true });
 
     // Apply optimistic updates to CSS variables
     Object.entries(presetVariables).forEach(([key, value]) => {
@@ -533,6 +611,21 @@ export function ThemeEditorView() {
                 <div>
                   <ThemePreview />
                 </div>
+              </div>
+            </DetailSection>
+
+            {/* Font Selection Section */}
+            <DetailSection title="Typography" titleSize="h2">
+              <div className="space-y-4">
+                <p className="text-base text-muted-foreground">
+                  Choose a font for your workspace
+                </p>
+                <GoogleFontsSelector
+                  value={fontName || "Default"}
+                  onChange={(font) => {
+                    form.setValue("fontName", font, { shouldDirty: true });
+                  }}
+                />
               </div>
             </DetailSection>
 

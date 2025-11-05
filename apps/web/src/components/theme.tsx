@@ -5,6 +5,12 @@
 import { type ThemeVariable, useSDK, useOrgTheme } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
+import {
+  DEFAULT_FONT_STACK,
+  formatFontFamily,
+  getGoogleFontUrl,
+  applyFontToDocument,
+} from "./theme-editor/font-helpers.ts";
 
 /**
  * Kind of a stale cache for the theme so we don't show the splash screen
@@ -243,6 +249,43 @@ export function WithOrgTheme({ children }: { children: React.ReactNode }) {
       appliedKeysRef.current.clear();
     };
   }, [variablesSnapshot]); // Only re-run when the stringified version changes
+
+  // Apply font from theme
+  useEffect(() => {
+    const linkElement = document.querySelector(
+      'link[data-theme-font="true"]',
+    ) as HTMLLinkElement;
+
+    if (theme?.font?.type === "Google Fonts" && theme.font.name) {
+      const fontName = theme.font.name;
+      const fontUrl = getGoogleFontUrl(fontName);
+
+      if (!linkElement) {
+        const newLink = document.createElement("link");
+        newLink.rel = "stylesheet";
+        newLink.href = fontUrl;
+        newLink.setAttribute("data-theme-font", "true");
+        document.head.appendChild(newLink);
+      } else if (linkElement.href !== fontUrl) {
+        linkElement.href = fontUrl;
+      }
+
+      applyFontToDocument(formatFontFamily(fontName));
+
+      return () => {
+        const oldLinks = document.querySelectorAll(
+          'link[data-theme-font="true"]',
+        );
+        oldLinks.forEach((link) => link.remove());
+      };
+    } else {
+      // No custom font, use default system font stack
+      if (linkElement) {
+        linkElement.remove();
+      }
+      applyFontToDocument(DEFAULT_FONT_STACK);
+    }
+  }, [theme?.font]);
 
   return (
     <>

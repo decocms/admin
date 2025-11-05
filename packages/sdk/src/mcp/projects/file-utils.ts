@@ -1,8 +1,17 @@
-const CONTROL_CHARS_REGEX = /[\u0000-\u001F\u007F]/;
-
 export const IMPORT_ARCHIVE_SIZE_LIMIT_BYTES = 25 * 1024 * 1024; // 25MB
 export const IMPORT_FILE_SIZE_LIMIT_BYTES = 5 * 1024 * 1024; // 5MB per file
 export const IMPORT_MAX_FILE_COUNT = 2000;
+
+// Check for disallowed ASCII control characters
+function containsControlCharacters(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if ((code >= 0 && code <= 0x1f) || code === 0x7f) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Normalize a project file path extracted from an archive.
@@ -32,7 +41,7 @@ export function sanitizeProjectPath(rawPath: string): string | null {
     return null;
   }
 
-  if (CONTROL_CHARS_REGEX.test(normalized)) {
+  if (containsControlCharacters(normalized)) {
     return null;
   }
 

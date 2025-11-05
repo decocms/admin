@@ -18,12 +18,14 @@ import { getDatabaseUrl } from "@/auth";
  * Create Kysely database instance with auto-detected dialect
  */
 export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
-  const url = databaseUrl || "file:./data/mesh.db";
+  let url = databaseUrl || "file:./data/mesh.db";
 
   // Handle special case: ":memory:" without protocol
   if (url === ":memory:") {
     return createSqliteDatabase(":memory:");
   }
+
+  url = url.startsWith("/") ? `file://${url}` : url;
 
   const parsed = new URL(url);
   const protocol = parsed.protocol.replace(":", "");
@@ -40,7 +42,7 @@ export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
     default:
       throw new Error(
         `Unsupported database protocol: ${protocol}. ` +
-          `Supported protocols: postgres://, postgresql://, sqlite://, file://`,
+        `Supported protocols: postgres://, postgresql://, sqlite://, file://`,
       );
   }
 }

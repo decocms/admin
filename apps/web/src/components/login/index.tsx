@@ -7,7 +7,11 @@ import { providers } from "./providers.tsx";
 import { Link, useSearchParams, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useState, type FormEventHandler } from "react";
-import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+} from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "@deco/sdk";
 
 const useSendMagicLink = () => {
@@ -27,22 +31,29 @@ function Login() {
   const navigate = useNavigate();
   const next = searchParams.get("next");
   const cli = searchParams.has("cli");
-  
+
   const [email, setEmail] = useState("");
   const sendMagicLink = useSendMagicLink();
 
   // Get only OAuth providers (exclude Email)
-  const oauthProviders = providers.filter((provider) => provider.name !== "Email");
-  
-  const handleMagicLinkSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+  const oauthProviders = providers.filter(
+    (provider) => provider.name !== "Email",
+  );
+
+  const handleMagicLinkSubmit: FormEventHandler<HTMLFormElement> = async (
+    e,
+  ) => {
     e.preventDefault();
-    
+
     trackEvent("deco_chat_login_provider_click", {
       provider: "Email",
     });
-    
-    const result = await sendMagicLink.mutateAsync({ email, cli: searchParams.get("cli") === "true" });
-    
+
+    const result = await sendMagicLink.mutateAsync({
+      email,
+      cli: searchParams.get("cli") === "true",
+    });
+
     if (result) {
       // Navigate to confirmation page with email
       const params = new URLSearchParams();
@@ -59,9 +70,9 @@ function Login() {
         <div className="flex flex-col gap-12 min-h-full justify-center">
           {/* Logo */}
           <div className="h-[26px] w-[62px]">
-            <img 
-              src="/img/deco-logo.svg" 
-              alt="deco" 
+            <img
+              src="/img/deco-logo.svg"
+              alt="deco"
               className="w-full h-full object-contain"
             />
           </div>
@@ -71,7 +82,9 @@ function Login() {
             {/* Header */}
             <div className="flex flex-col gap-2">
               <h1 className="text-2xl font-medium">Welcome to deco</h1>
-              <p className="text-base text-muted-foreground">Sign in or create a new account</p>
+              <p className="text-base text-muted-foreground">
+                Sign in or create a new account
+              </p>
             </div>
 
             {/* Auth options */}
@@ -121,7 +134,10 @@ function Login() {
 
               {/* Email form */}
               {!cli && (
-                <form onSubmit={handleMagicLinkSubmit} className="flex flex-col gap-2">
+                <form
+                  onSubmit={handleMagicLinkSubmit}
+                  className="flex flex-col gap-2"
+                >
                   <Input
                     type="email"
                     placeholder="Email address"
@@ -147,18 +163,18 @@ function Login() {
           <div className="flex justify-center">
             <p className="text-xs max-w-sm text-muted-foreground text-center leading-4">
               By continuing, you agree to deco's{" "}
-              <a 
-                href="https://www.decocms.com/terms-of-use" 
-                target="_blank" 
+              <a
+                href="https://www.decocms.com/terms-of-use"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-foreground"
               >
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a 
-                href="https://www.decocms.com/privacy-policy" 
-                target="_blank" 
+              <a
+                href="https://www.decocms.com/privacy-policy"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-foreground"
               >

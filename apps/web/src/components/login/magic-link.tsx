@@ -59,16 +59,18 @@ function MagicLink() {
           <form method="post" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <h2 className="text-xl sm:text-2xl font-medium">Check your email</h2>
-                <p className="text-sm sm:text-base text-muted-foreground font-medium break-all">{email}</p>
+                <h2 className="text-xl sm:text-2xl font-medium">
+                  Check your email
+                </h2>
+                <p className="text-sm sm:text-base text-muted-foreground font-medium break-all">
+                  {email}
+                </p>
               </div>
               <p className="text-sm text-muted-foreground">
                 Click on the link sent to your email to complete your signup.
                 <br />
                 If you don't see it, you may need to
-                <span className="font-semibold px-1">
-                  check your spam
-                </span>
+                <span className="font-semibold px-1">check your spam</span>
                 folder.
               </p>
               <Button

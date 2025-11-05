@@ -46,6 +46,14 @@ import { enhancedThemeSchema } from "../theme/api.ts";
 import { createDeconfigClientForContext, withProject } from "../index.ts";
 import { NEW_AGENT_TEMPLATE } from "../../index.ts";
 import JSZip from "jszip";
+import {
+  encodeBytesToBase64,
+  IMPORT_ARCHIVE_SIZE_LIMIT_BYTES,
+  IMPORT_FILE_SIZE_LIMIT_BYTES,
+  IMPORT_MAX_FILE_COUNT,
+  sanitizeProjectPath,
+} from "../projects/file-utils.ts";
+import { parseManifest, type Manifest } from "../projects/manifest.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1399,13 +1407,35 @@ export const importProjectFromGithub = createTool({
       );
     }
 
+    const contentLengthHeader = response.headers.get("content-length");
+    const declaredArchiveSize = contentLengthHeader
+      ? Number.parseInt(contentLengthHeader, 10)
+      : undefined;
+    if (
+      typeof declaredArchiveSize === "number" &&
+      Number.isFinite(declaredArchiveSize) &&
+      declaredArchiveSize > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES
+    ) {
+      throw new UserInputError(
+        `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
+      );
+    }
+
     // Extract zip using JSZip (proper npm package)
     const arrayBuffer = await response.arrayBuffer();
+
+    if (arrayBuffer.byteLength > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES) {
+      throw new UserInputError(
+        `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
+      );
+    }
+
     const zip = await JSZip.loadAsync(arrayBuffer);
 
-    // Extract all files into memory
-    const files = new Map<string, string>();
+    const files = new Map<string, Uint8Array>();
+    const textDecoder = new TextDecoder();
     let rootDir = "";
+    let totalBytes = 0;
 
     // Find root directory (GitHub zips have a root folder like "owner-repo-sha/")
     const zipFiles = Object.keys(zip.files);
@@ -1419,40 +1449,95 @@ export const importProjectFromGithub = createTool({
       rootDir = match[1];
     }
 
-    // Extract all files
     console.log(
       `[Import] Extracting files from zip. Root directory: ${rootDir}`,
     );
+
     for (const [path, zipFile] of Object.entries(zip.files)) {
-      // Check if it's a directory
       if ("dir" in zipFile && zipFile.dir) continue;
 
-      // Get file content as string
-      const content = await zipFile.async("string");
-      // Remove root directory prefix
       const relativePath = path.startsWith(rootDir + "/")
         ? path.substring(rootDir.length + 1)
         : path;
 
-      if (relativePath) {
-        files.set(relativePath, content);
+      if (!relativePath) {
+        continue;
+      }
+
+      const sanitizedPath = sanitizeProjectPath(relativePath);
+      if (!sanitizedPath) {
+        throw new UserInputError(
+          `Repository contains an unsupported path: "${relativePath}"`,
+        );
+      }
+
+      const shouldProcess =
+        sanitizedPath === "deco.mcp.json" ||
+        sanitizedPath.startsWith("src/") ||
+        sanitizedPath.startsWith("tools/") ||
+        sanitizedPath.startsWith("views/") ||
+        sanitizedPath.startsWith("workflows/") ||
+        sanitizedPath.startsWith("documents/") ||
+        sanitizedPath.startsWith("agents/");
+
+      if (!shouldProcess) {
+        continue;
+      }
+
+      const contentBytes = await zipFile.async("uint8array");
+
+      if (contentBytes.byteLength > IMPORT_FILE_SIZE_LIMIT_BYTES) {
+        throw new UserInputError(
+          `File "${sanitizedPath}" exceeds the ${Math.round(IMPORT_FILE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB per-file limit. Trim the repository before importing.`,
+        );
+      }
+
+      totalBytes += contentBytes.byteLength;
+      if (totalBytes > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES) {
+        throw new UserInputError(
+          `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
+        );
+      }
+
+      files.set(sanitizedPath, contentBytes);
+
+      if (files.size > IMPORT_MAX_FILE_COUNT) {
+        throw new UserInputError(
+          `Repository contains more than ${IMPORT_MAX_FILE_COUNT} supported files. Trim the repository before importing.`,
+        );
       }
     }
 
-    console.log(`[Import] Extracted ${files.size} files from zip`);
+    console.log(`[Import] Retained ${files.size} files for import`);
     console.log(`[Import] File paths:`, Array.from(files.keys()).slice(0, 20));
 
     // Read manifest
-    const manifestContent = files.get("deco.mcp.json");
-    if (!manifestContent) {
+    const manifestBytes = files.get("deco.mcp.json");
+    if (!manifestBytes) {
       throw new UserInputError(
         "Manifest file 'deco.mcp.json' not found. This does not appear to be a valid deco project.",
       );
     }
 
-    const manifest = JSON.parse(manifestContent);
-    const projectSlug = overrideSlug || manifest.project?.slug;
-    const projectTitle = overrideTitle || manifest.project?.title;
+    let manifest: Manifest;
+    try {
+      const manifestJson = JSON.parse(textDecoder.decode(manifestBytes));
+      manifest = parseManifest(manifestJson);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new UserInputError(
+          "Manifest file 'deco.mcp.json' is not valid JSON",
+        );
+      }
+      if (error instanceof z.ZodError) {
+        throw new UserInputError(
+          `Manifest validation failed: ${error.issues.map((issue) => issue.message).join(", ")}`,
+        );
+      }
+      throw error;
+    }
+    const projectSlug = overrideSlug || manifest.project.slug;
+    const projectTitle = overrideTitle || manifest.project.title;
 
     if (!projectSlug || !projectTitle) {
       throw new UserInputError(
@@ -1517,7 +1602,7 @@ export const importProjectFromGithub = createTool({
 
     console.log(`[Import] Starting file upload for project ${projectSlug}`);
 
-    for (const [path, content] of files.entries()) {
+    for (const [path, contentBytes] of files.entries()) {
       const shouldUpload = ALLOWED_ROOTS.some((root) => path.startsWith(root));
 
       if (!shouldUpload) {
@@ -1529,7 +1614,7 @@ export const importProjectFromGithub = createTool({
 
       if (path.endsWith(".json")) {
         try {
-          JSON.parse(content);
+          JSON.parse(textDecoder.decode(contentBytes));
         } catch {
           console.warn(`[Import] Skipping malformed JSON: ${path}`);
           continue;
@@ -1540,11 +1625,7 @@ export const importProjectFromGithub = createTool({
       const remotePath = path.startsWith("src/") ? `/${path}` : `/src/${path}`;
 
       console.log(`[Import] Uploading ${path} to ${remotePath}`);
-
-      // Convert string to base64
-      const encoder = new TextEncoder();
-      const data = encoder.encode(content);
-      const base64Content = btoa(String.fromCharCode(...data));
+      const base64Content = encodeBytesToBase64(contentBytes);
 
       try {
         await deconfigClient.PUT_FILE({
@@ -1565,14 +1646,14 @@ export const importProjectFromGithub = createTool({
     let agentCount = 0;
     console.log(`[Import] Starting agent import`);
 
-    for (const [path, content] of files.entries()) {
+    for (const [path, contentBytes] of files.entries()) {
       if (
         (path.startsWith("agents/") || path.startsWith("src/agents/")) &&
         path.endsWith(".json")
       ) {
         console.log(`[Import] Importing agent from: ${path}`);
         try {
-          const agentData = JSON.parse(content);
+          const agentData = JSON.parse(textDecoder.decode(contentBytes));
 
           // Explicitly map agent fields to match the schema
           await c.drizzle.insert(agentsTable).values({

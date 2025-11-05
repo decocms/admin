@@ -13,6 +13,7 @@ import {
   writeManifestFile,
   extractDependenciesFromTools,
 } from "../../lib/mcp-manifest.js";
+import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
 
 interface ExportOptions {
   org?: string;
@@ -28,6 +29,33 @@ const ALLOWED_ROOTS = [
   "/src/documents",
 ];
 const AGENTS_DIR = "agents";
+
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>,
+): Promise<void> {
+  if (items.length === 0 || limit <= 0) {
+    return;
+  }
+
+  let nextIndex = 0;
+  const size = Math.min(limit, items.length);
+
+  const runners = Array.from({ length: size }, async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= items.length) {
+        break;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await worker(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(runners);
+}
 
 export async function exportCommand(options: ExportOptions): Promise<void> {
   const { local } = options;
@@ -105,6 +133,8 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
     console.log(`📁 Created output directory: ${outDir}\n`);
   }
 
+  const resolvedOutDir = path.resolve(outDir);
+
   // Step 3: Connect to project workspace
   const workspace = `/${orgSlug}/${projectData.slug}`;
   const client = await createWorkspaceClient({ workspace, local });
@@ -154,43 +184,66 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
 
       console.log(`   ${root}: ${result.count} files`);
 
-      // Fetch content for each file
-      for (const [filePath] of Object.entries(result.files)) {
-        const content = await fetchFileContent(
-          filePath,
-          "main",
-          workspace,
-          local,
-        );
-        const contentStr = content.toString("utf-8");
-        allFiles.push({ path: filePath, content: contentStr });
+      const filePaths = Object.keys(result.files);
 
-        // Categorize by resource type
-        if (filePath.startsWith("/src/tools/")) {
-          resourcesByType.tools.push(filePath);
-        } else if (filePath.startsWith("/src/views/")) {
-          resourcesByType.views.push(filePath);
-        } else if (filePath.startsWith("/src/workflows/")) {
-          resourcesByType.workflows.push(filePath);
-        } else if (filePath.startsWith("/src/documents/")) {
-          resourcesByType.documents.push(filePath);
-        }
+      await runWithConcurrency(filePaths, 5, async (filePath) => {
+        try {
+          const content = await fetchFileContent(
+            filePath,
+            "main",
+            workspace,
+            local,
+          );
+          const contentStr = content.toString("utf-8");
+          allFiles.push({ path: filePath, content: contentStr });
 
-        // Write file to disk, removing /src/ prefix
-        let relativePath = filePath.startsWith("/")
-          ? filePath.slice(1)
-          : filePath;
-        // Remove "src/" prefix if present
-        if (relativePath.startsWith("src/")) {
-          relativePath = relativePath.slice(4);
+          if (filePath.startsWith("/src/tools/")) {
+            resourcesByType.tools.push(filePath);
+          } else if (filePath.startsWith("/src/views/")) {
+            resourcesByType.views.push(filePath);
+          } else if (filePath.startsWith("/src/workflows/")) {
+            resourcesByType.workflows.push(filePath);
+          } else if (filePath.startsWith("/src/documents/")) {
+            resourcesByType.documents.push(filePath);
+          }
+
+          let relativePath = filePath.startsWith("/")
+            ? filePath.slice(1)
+            : filePath;
+          if (relativePath.startsWith("src/")) {
+            relativePath = relativePath.slice(4);
+          }
+
+          const sanitizedRelativePath = sanitizeProjectPath(relativePath);
+          if (!sanitizedRelativePath) {
+            console.warn(`   ⚠️  Skipping unsafe path: ${filePath}`);
+            return;
+          }
+
+          const localPath = path.join(outDir, sanitizedRelativePath);
+          const resolvedLocalPath = path.resolve(localPath);
+          const relativeToOut = path.relative(
+            resolvedOutDir,
+            resolvedLocalPath,
+          );
+          if (
+            relativeToOut.startsWith("..") ||
+            path.isAbsolute(relativeToOut)
+          ) {
+            console.warn(
+              `   ⚠️  Skipping path outside output directory: ${sanitizedRelativePath}`,
+            );
+            return;
+          }
+
+          await fs.mkdir(path.dirname(resolvedLocalPath), { recursive: true });
+          await fs.writeFile(resolvedLocalPath, contentStr, "utf-8");
+        } catch (error) {
+          console.warn(
+            `   ⚠️  Failed to download ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
-        const localPath = path.join(outDir, relativePath);
-        const dir = path.dirname(localPath);
-        if (!existsSync(dir)) {
-          mkdirSync(dir, { recursive: true });
-        }
-        await fs.writeFile(localPath, contentStr, "utf-8");
-      }
+      });
     }
 
     console.log(`✅ Downloaded ${allFiles.length} files\n`);
@@ -219,79 +272,82 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
 
         console.log(`   Found ${agentsListData.items.length} agents`);
 
-        // Fetch full details for each agent using AGENTS_GET
-        for (const agentSummary of agentsListData.items) {
-          try {
-            const agentResponse = await client.callTool({
-              name: "AGENTS_GET",
-              arguments: { id: agentSummary.id },
-            });
+        await runWithConcurrency(
+          agentsListData.items,
+          5,
+          async (agentSummary) => {
+            try {
+              const agentResponse = await client.callTool({
+                name: "AGENTS_GET",
+                arguments: { id: agentSummary.id },
+              });
 
-            if (agentResponse.isError) {
+              if (agentResponse.isError) {
+                console.warn(
+                  `   ⚠️  Failed to fetch agent ${agentSummary.name}: ${agentResponse.content}`,
+                );
+                return;
+              }
+
+              const agent = agentResponse.structuredContent as {
+                id: string;
+                name: string;
+                avatar: string;
+                instructions: string;
+                description?: string;
+                tools_set: Record<string, string[]>;
+                max_steps?: number;
+                max_tokens?: number;
+                model: string;
+                memory?: unknown;
+                views: unknown;
+                visibility: string;
+                temperature?: number;
+              };
+
+              const exportAgent = {
+                name: agent.name,
+                avatar: agent.avatar,
+                instructions: agent.instructions,
+                description: agent.description,
+                tools_set: agent.tools_set,
+                max_steps: agent.max_steps,
+                max_tokens: agent.max_tokens,
+                model: agent.model,
+                memory: agent.memory,
+                views: agent.views,
+                visibility: agent.visibility,
+                temperature: agent.temperature,
+              };
+
+              const safeFilename = agent.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+              const agentFile = path.join(agentsDir, `${safeFilename}.json`);
+
+              await fs.writeFile(
+                agentFile,
+                JSON.stringify(exportAgent, null, 2) + "\n",
+                "utf-8",
+              );
+
+              const current = ++agentCount;
+              if (
+                current % 5 === 0 ||
+                current === agentsListData.items.length
+              ) {
+                console.log(
+                  `   Exported ${current}/${agentsListData.items.length} agents...`,
+                );
+              }
+            } catch (error) {
               console.warn(
-                `   ⚠️  Failed to fetch agent ${agentSummary.name}: ${agentResponse.content}`,
-              );
-              continue;
-            }
-
-            const agent = agentResponse.structuredContent as {
-              id: string;
-              name: string;
-              avatar: string;
-              instructions: string;
-              description?: string;
-              tools_set: Record<string, string[]>;
-              max_steps?: number;
-              max_tokens?: number;
-              model: string;
-              memory?: unknown;
-              views: unknown;
-              visibility: string;
-              temperature?: number;
-            };
-
-            // Strip environment-specific fields
-            const exportAgent = {
-              name: agent.name,
-              avatar: agent.avatar,
-              instructions: agent.instructions,
-              description: agent.description,
-              tools_set: agent.tools_set,
-              max_steps: agent.max_steps,
-              max_tokens: agent.max_tokens,
-              model: agent.model,
-              memory: agent.memory,
-              views: agent.views,
-              visibility: agent.visibility,
-              temperature: agent.temperature,
-            };
-
-            // Create a safe filename from agent name
-            const safeFilename = agent.name
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-+|-+$/g, "");
-            const agentFile = path.join(agentsDir, `${safeFilename}.json`);
-
-            await fs.writeFile(
-              agentFile,
-              JSON.stringify(exportAgent, null, 2) + "\n",
-              "utf-8",
-            );
-            agentCount++;
-
-            // Progress indicator for many agents
-            if (agentCount % 5 === 0) {
-              console.log(
-                `   Exported ${agentCount}/${agentsListData.items.length} agents...`,
+                `   ⚠️  Failed to export agent ${agentSummary.name}: ${error instanceof Error ? error.message : String(error)}`,
               );
             }
-          } catch (error) {
-            console.warn(
-              `   ⚠️  Failed to export agent ${agentSummary.name}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          }
-        }
+          },
+        );
 
         console.log(`   ✅ Exported ${agentCount} agents\n`);
       }

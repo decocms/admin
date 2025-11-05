@@ -9,6 +9,8 @@ import { promptWorkspace } from "../../lib/prompt-workspace.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { putFileContent } from "../deconfig/base.js";
 import { readManifestFile, manifestExists } from "../../lib/mcp-manifest.js";
+import { createIgnoreChecker } from "../../lib/ignore.js";
+import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
 
 interface ImportOptions {
   from?: string;
@@ -21,6 +23,33 @@ interface ImportOptions {
 // Local directory structure (no src/ prefix)
 const ALLOWED_ROOTS = ["/tools", "/views", "/workflows", "/documents"];
 const AGENTS_DIR = "agents";
+
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>,
+): Promise<void> {
+  if (items.length === 0 || limit <= 0) {
+    return;
+  }
+
+  let nextIndex = 0;
+  const size = Math.min(limit, items.length);
+
+  const runners = Array.from({ length: size }, async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= items.length) {
+        break;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await worker(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(runners);
+}
 
 // Map local paths to remote Deconfig paths (add /src/ prefix)
 const mapToRemotePath = (localPath: string): string => {
@@ -40,6 +69,7 @@ export async function importCommand(options: ImportOptions): Promise<void> {
 
   // Step 1: Determine source directory
   let fromDir = options.from || "./";
+  fromDir = path.resolve(fromDir);
   if (!existsSync(fromDir)) {
     throw new Error(`Source directory '${fromDir}' does not exist`);
   }
@@ -161,27 +191,48 @@ export async function importCommand(options: ImportOptions): Promise<void> {
   // Step 6: Push files to the new project
   console.log("📤 Pushing files to project...");
   const projectWorkspace = `/${orgSlug}/${projectSlug}`;
+  const ignoreChecker = createIgnoreChecker(fromDir);
 
-  // Collect all files to upload
   const filesToUpload: Array<{ remotePath: string; localPath: string }> = [];
 
   for (const root of ALLOWED_ROOTS) {
-    const localRoot = path.join(fromDir, root.slice(1)); // Remove leading /
+    const localRoot = path.join(fromDir, root.slice(1));
     if (!existsSync(localRoot)) {
       continue;
     }
 
-    // Recursively find all files
     async function walkDir(dir: string, baseRemotePath: string) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
+      const basePrefix = baseRemotePath.replace(/^\/+/, "");
+
       for (const entry of entries) {
         const localPath = path.join(dir, entry.name);
-        const remotePath = `${baseRemotePath}/${entry.name}`;
+
+        if (ignoreChecker.isIgnored(localPath)) {
+          continue;
+        }
+
+        const joinedRemote = `${baseRemotePath}/${entry.name}`.replace(
+          /\\/g,
+          "/",
+        );
+        const sanitizedRelativePath = sanitizeProjectPath(joinedRemote);
+
+        if (!sanitizedRelativePath) {
+          console.warn(`   ⚠️  Skipping unsafe path: ${joinedRemote}`);
+          continue;
+        }
+
+        if (!sanitizedRelativePath.startsWith(basePrefix)) {
+          continue;
+        }
+
+        const nextRemotePath = `/${sanitizedRelativePath}`;
 
         if (entry.isDirectory()) {
-          await walkDir(localPath, remotePath);
+          await walkDir(localPath, nextRemotePath);
         } else if (entry.isFile()) {
-          filesToUpload.push({ remotePath, localPath });
+          filesToUpload.push({ remotePath: nextRemotePath, localPath });
         }
       }
     }
@@ -192,52 +243,53 @@ export async function importCommand(options: ImportOptions): Promise<void> {
   console.log(`   Found ${filesToUpload.length} files to upload`);
 
   let uploadedCount = 0;
-  for (const { remotePath, localPath } of filesToUpload) {
-    try {
-      const content = await fs.readFile(localPath, "utf-8");
 
-      // Validate JSON files
-      if (remotePath.endsWith(".json")) {
-        try {
-          JSON.parse(content);
-        } catch {
-          console.warn(`   ⚠️  Skipping malformed JSON file: ${remotePath}`);
-          continue;
+  await runWithConcurrency(
+    filesToUpload,
+    5,
+    async ({ remotePath, localPath }) => {
+      try {
+        const content = await fs.readFile(localPath, "utf-8");
+
+        if (remotePath.endsWith(".json")) {
+          try {
+            JSON.parse(content);
+          } catch {
+            console.warn(`   ⚠️  Skipping malformed JSON file: ${remotePath}`);
+            return;
+          }
         }
-      }
 
-      // Check for non-text content (simple heuristic)
-      // eslint-disable-next-line no-control-regex
-      if (/[\x00-\x08\x0E-\x1F]/.test(content)) {
-        console.warn(`   ⚠️  Skipping binary file: ${remotePath}`);
-        continue;
-      }
+        if (/[^\x20-\x7E\r\n\t]/.test(content)) {
+          console.warn(`   ⚠️  Skipping binary file: ${remotePath}`);
+          return;
+        }
 
-      // Map local path to remote Deconfig path (adds /src/ prefix)
-      const deconfigPath = mapToRemotePath(remotePath);
+        const deconfigPath = mapToRemotePath(remotePath);
 
-      await putFileContent(
-        deconfigPath,
-        content,
-        "main",
-        undefined,
-        projectWorkspace,
-        local,
-      );
-      uploadedCount++;
-      if (uploadedCount % 10 === 0) {
-        console.log(
-          `   Uploaded ${uploadedCount}/${filesToUpload.length} files...`,
+        await putFileContent(
+          deconfigPath,
+          content,
+          "main",
+          undefined,
+          projectWorkspace,
+          local,
+        );
+
+        const current = ++uploadedCount;
+        if (current % 10 === 0 || current === filesToUpload.length) {
+          console.log(
+            `   Uploaded ${current}/${filesToUpload.length} files...`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `   ❌ Failed to upload ${remotePath}:`,
+          error instanceof Error ? error.message : String(error),
         );
       }
-    } catch (error) {
-      console.error(
-        `   ❌ Failed to upload ${remotePath}:`,
-        error instanceof Error ? error.message : String(error),
-      );
-      // Continue with other files
-    }
-  }
+    },
+  );
 
   console.log(`   ✅ Uploaded ${uploadedCount} files\n`);
 
@@ -260,13 +312,12 @@ export async function importCommand(options: ImportOptions): Promise<void> {
 
       console.log(`   Found ${jsonFiles.length} agent files`);
 
-      for (const agentFile of jsonFiles) {
+      await runWithConcurrency(jsonFiles, 5, async (agentFile) => {
         try {
           const agentPath = path.join(agentsDir, agentFile);
           const agentContent = await fs.readFile(agentPath, "utf-8");
           const agentData = JSON.parse(agentContent);
 
-          // Call AGENTS_CREATE with the agent data in project context
           const createAgentResponse = await projectClient.callTool({
             name: "AGENTS_CREATE",
             arguments: agentData,
@@ -277,13 +328,12 @@ export async function importCommand(options: ImportOptions): Promise<void> {
               `   ❌ Failed to create agent from ${agentFile}:`,
               createAgentResponse.content,
             );
-          } else {
-            agentCount++;
-            if (agentCount % 5 === 0) {
-              console.log(
-                `   Created ${agentCount}/${jsonFiles.length} agents...`,
-              );
-            }
+            return;
+          }
+
+          const current = ++agentCount;
+          if (current % 5 === 0 || current === jsonFiles.length) {
+            console.log(`   Created ${current}/${jsonFiles.length} agents...`);
           }
         } catch (error) {
           console.error(
@@ -291,7 +341,7 @@ export async function importCommand(options: ImportOptions): Promise<void> {
             error instanceof Error ? error.message : String(error),
           );
         }
-      }
+      });
 
       console.log(`   ✅ Imported ${agentCount} agents\n`);
     } finally {

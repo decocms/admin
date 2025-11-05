@@ -47,10 +47,21 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD bun run -e 'fetch("http://localhost:3000/health").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'
 
-# Set environment to production
-ENV NODE_ENV=production
+# Set environment to development for debugging
+ENV NODE_ENV=development
 ENV DATABASE_URL=file:/app/data/mesh.db
 
 # Run database migrations on startup and start the application
-CMD ["sh", "-c", "bun run src/database/migrate.ts && bun run better-auth:migrate && bun run start"]
-
+# Added debug logging to check directory structure and permissions
+CMD ["sh", "-c", "\
+  echo '=== Debug Info ===' && \
+  echo 'Current user:' && id && \
+  echo 'Current directory:' && pwd && \
+  echo 'DATABASE_URL:' $DATABASE_URL && \
+  echo 'Checking /app directory:' && ls -la /app && \
+  echo 'Checking /app/data directory:' && ls -la /app/data && \
+  echo 'Testing write permissions:' && touch /app/data/test.txt && echo 'Write test successful' && rm /app/data/test.txt && \
+  echo '=== Starting migrations ===' && \
+  bun run src/database/migrate.ts && \
+  bun run better-auth:migrate && \
+  bun run start"]

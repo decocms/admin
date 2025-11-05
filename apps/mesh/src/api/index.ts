@@ -16,7 +16,6 @@ import { createMeshContextFactory } from "../core/context-factory";
 import type { MeshContext } from "../core/mesh-context";
 import { getDb } from "../database";
 import { meter, tracer } from "../observability";
-import customAuthRoutes from "./routes/auth";
 import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 // Define Hono variables type
@@ -77,15 +76,6 @@ app.get("/api/tools/management", (c) => {
   });
 });
 
-// ============================================================================
-// Better Auth Routes
-// ============================================================================
-
-// Mount custom auth routes first (they take precedence over Better Auth catch-all)
-// These provide OAuth-friendly authentication endpoints that return callback URLs
-// in response body instead of using 302 redirects
-app.route("/api/auth/custom", customAuthRoutes);
-
 // Mount Better Auth handler for ALL /api/auth/* routes
 // This handles:
 // - /api/auth/sign-in/email, /api/auth/sign-up/email
@@ -107,11 +97,42 @@ const handleOAuthProtectedResourceMetadata =
   oAuthProtectedResourceMetadata(auth);
 const handleOAuthDiscoveryMetadata = oAuthDiscoveryMetadata(auth);
 
-app.get("/.well-known/oauth-protected-resource/*", (c) =>
-  handleOAuthProtectedResourceMetadata(c.req.raw),
+interface ResourceServerMetadata {
+  resource: string;
+  authorization_servers: string[];
+  jwks_uri: string;
+  scopes_supported: string[];
+  bearer_methods_supported: string[];
+  resource_signing_alg_values_supported: string[];
+}
+app.get(
+  "/mcp/:connectionId/.well-known/oauth-protected-resource/*",
+  async (c) => {
+    const res = await handleOAuthProtectedResourceMetadata(c.req.raw);
+    const data = (await res.json()) as ResourceServerMetadata;
+    return Response.json(
+      {
+        ...data,
+        scopes_supported: [
+          ...data.scopes_supported,
+          `${c.req.param("connectionId")}:*`,
+        ],
+      },
+      res,
+    );
+  },
 );
-app.get("/.well-known/oauth-authorization-server/*", (c) =>
-  handleOAuthDiscoveryMetadata(c.req.raw),
+app.get(
+  "/.well-known/oauth-authorization-server/*/:connectionId?",
+  async (c) => {
+    const connectionId = c.req.param("connectionId") ?? "self";
+    const res = await handleOAuthDiscoveryMetadata(c.req.raw);
+    const data = await res.json();
+    return Response.json(
+      { ...data, scopes_supported: [`${connectionId}:*`] },
+      res,
+    );
+  },
 );
 
 // ============================================================================
@@ -139,7 +160,6 @@ app.use("*", async (c, next) => {
   // Skip MeshContext for auth endpoints, static pages, and health check
   if (
     path.startsWith("/api/auth/") ||
-    path === "/sign-in" ||
     path === "/health" ||
     path.startsWith("/.well-known/")
   ) {
@@ -168,15 +188,16 @@ app.use("*", async (c, next) => {
 // Routes
 // ============================================================================
 
-app.use("/mcp/*", async (c, next) => {
+app.use("/mcp/:connectionId?", async (c, next) => {
   const meshContext = c.var.meshContext;
+  const connectionId = c.req.param("connectionId") ?? "self";
   // Require either user or API key authentication
   if (!meshContext.auth.user?.id && !meshContext.auth.apiKey?.id) {
     const origin = new URL(c.req.url).origin;
     return (c.res = new Response(null, {
       status: 401,
       headers: {
-        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/api/auth/.well-known/oauth-protected-resource"`,
+        "WWW-Authenticate": `Bearer realm="mcp",resource_metadata="${origin}/mcp/${connectionId}/.well-known/oauth-protected-resource"`,
       },
     }));
   }

@@ -19,7 +19,7 @@ import {
   openAPI,
   organization,
 } from "better-auth/plugins";
-import { createAccessControl } from "better-auth/plugins/access";
+import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
@@ -52,10 +52,12 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
  * Get database URL from environment or default
  */
 export function getDatabaseUrl(): string {
-  return (
-    process.env.DATABASE_URL ||
-    `file://${path.join(process.cwd(), "data/mesh.db")}`
+  const databaseUrl = process.env.DATABASE_URL ||
+    `file:${path.join(process.cwd(), "data/mesh.db")}`;
+  console.log(
+    `[Auth] Initializing Better Auth with database: ${databaseUrl} at ${process.cwd()}`,
   );
+  return databaseUrl;
 }
 
 const statement = {} as const;
@@ -64,11 +66,11 @@ const ac = createAccessControl(statement);
 
 const user = ac.newRole({
   self: ["*"],
-});
+}) as Role;
 
 const admin = ac.newRole({
   self: ["*"],
-});
+}) as Role;
 
 const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))

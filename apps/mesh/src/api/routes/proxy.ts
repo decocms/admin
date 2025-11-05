@@ -133,7 +133,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     // Create transport to downstream MCP using StreamableHTTP
     const transport = new StreamableHTTPClientTransport(
       new URL(connection.connectionUrl),
-      headers,
+      { requestInit: { headers } },
     );
 
     // Create MCP client

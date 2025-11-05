@@ -408,13 +408,11 @@ export const activateTrigger = createTool({
   description: "Activate a trigger",
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
   handler: async ({ id }, c) => {
-    assertHasWorkspace(c);
     assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
-    const workspace = c.workspace.value;
     const locator = c.locator.value;
     const stub = c.stub;
     const user = c.user;

@@ -427,6 +427,104 @@ const registryToolToMcpTool = (tool: {
   outputSchema: (tool.output_schema as Record<string, unknown>) || undefined,
 });
 
+/**
+ * Syncs tools from an MCP connection to the registry.
+ * Returns true if sync succeeded, false if it should be skipped (due to fetch failure).
+ * Throws on database errors.
+ */
+async function syncToolsToRegistry({
+  appId,
+  connection,
+  context,
+  operationLabel,
+}: {
+  appId: string;
+  connection: MCPConnection;
+  context: AppContext;
+  operationLabel: string;
+}) {
+  let toolsResult;
+  try {
+    toolsResult = await listToolsByConnectionType(connection, context, true);
+  } catch (error) {
+    console.error(
+      `[${operationLabel}] Failed to fetch tools, skipping sync to preserve existing tools:`,
+      error,
+    );
+    // Bail out of sync - don't delete existing tools on fetch failure
+    return false;
+  }
+
+  const { tools } = toolsResult;
+
+  // Validate we got a proper array - bail out if not
+  if (!Array.isArray(tools)) {
+    console.error(
+      `[${operationLabel}] Tools result is not an array, skipping sync:`,
+      tools,
+    );
+    return false;
+  }
+
+  // Get current tools for this app to calculate diff
+  const currentTools = await context.drizzle
+    .select({ name: registryTools.name })
+    .from(registryTools)
+    .where(eq(registryTools.app_id, appId));
+
+  const currentToolNames = new Set(currentTools.map((t) => t.name));
+  const newToolNames = new Set(tools.map((t) => t.name));
+
+  // Find tools to delete (exist in DB but not in new tools)
+  const toolsToDelete = Array.from(currentToolNames).filter(
+    (name) => !newToolNames.has(name),
+  );
+
+  // Delete old tools that are no longer present
+  if (toolsToDelete.length > 0) {
+    await context.drizzle
+      .delete(registryTools)
+      .where(
+        and(
+          eq(registryTools.app_id, appId),
+          or(...toolsToDelete.map((name) => eq(registryTools.name, name))),
+        ),
+      );
+  }
+
+  // Upsert new/updated tools
+  await Promise.all(
+    tools.map(async (tool) => {
+      const toolData = {
+        app_id: appId,
+        name: tool.name,
+        description: tool.description || null,
+        input_schema: (tool.inputSchema as Record<string, unknown>) || null,
+        output_schema: (tool.outputSchema as Record<string, unknown>) || null,
+        metadata: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      return context.drizzle
+        .insert(registryTools)
+        .values(toolData)
+        .onConflictDoUpdate({
+          target: [registryTools.app_id, registryTools.name],
+          set: {
+            description: tool.description || null,
+            input_schema: (tool.inputSchema as Record<string, unknown>) || null,
+            output_schema:
+              (tool.outputSchema as Record<string, unknown>) || null,
+            updated_at: new Date().toISOString(),
+          },
+        })
+        .returning({ id: registryTools.id, name: registryTools.name });
+    }),
+  );
+
+  return true;
+}
+
 // Helper function to extract tools from registry data - shared between list and get
 const extractToolsFromRegistry = (
   integration: QueryResult<
@@ -975,72 +1073,17 @@ export const createIntegration = createIntegrationManagementTool({
 
     // Sync tools to registry if app_id exists
     if (payload.app_id && baseIntegration.connection) {
-      const { tools = [] } = await listToolsByConnectionType(
-        baseIntegration.connection,
-        c,
-        true,
-      ).catch((e) => {
-        console.error("Error listing tools for integration:", e);
-        return { tools: [] };
+      const syncSucceeded = await syncToolsToRegistry({
+        appId: payload.app_id,
+        connection: baseIntegration.connection,
+        context: c,
+        operationLabel: "INTEGRATIONS_CREATE",
       });
 
-      // Get current tools for this app to calculate diff
-      const currentTools = await c.drizzle
-        .select({ name: registryTools.name })
-        .from(registryTools)
-        .where(eq(registryTools.app_id, payload.app_id));
-
-      const currentToolNames = new Set(currentTools.map((t) => t.name));
-      const newToolNames = new Set(tools.map((t) => t.name));
-
-      // Find tools to delete (exist in DB but not in new tools)
-      const toolsToDelete = Array.from(currentToolNames).filter(
-        (name) => !newToolNames.has(name),
-      );
-
-      // Delete old tools that are no longer present
-      if (toolsToDelete.length > 0) {
-        await c.drizzle
-          .delete(registryTools)
-          .where(
-            and(
-              eq(registryTools.app_id, payload.app_id),
-              or(...toolsToDelete.map((name) => eq(registryTools.name, name))),
-            ),
-          );
+      // Return early if sync failed (tools preserved)
+      if (!syncSucceeded) {
+        return createdIntegration;
       }
-
-      // Upsert new/updated tools
-      await Promise.all(
-        tools.map(async (tool) => {
-          const toolData = {
-            app_id: payload.app_id!,
-            name: tool.name,
-            description: tool.description || null,
-            input_schema: (tool.inputSchema as Record<string, unknown>) || null,
-            output_schema:
-              (tool.outputSchema as Record<string, unknown>) || null,
-            metadata: null,
-            updated_at: new Date().toISOString(),
-          };
-
-          return c.drizzle
-            .insert(registryTools)
-            .values(toolData)
-            .onConflictDoUpdate({
-              target: [registryTools.app_id, registryTools.name],
-              set: {
-                description: tool.description || null,
-                input_schema:
-                  (tool.inputSchema as Record<string, unknown>) || null,
-                output_schema:
-                  (tool.outputSchema as Record<string, unknown>) || null,
-                updated_at: new Date().toISOString(),
-              },
-            })
-            .returning({ id: registryTools.id, name: registryTools.name });
-        }),
-      );
     }
 
     return createdIntegration;
@@ -1106,72 +1149,17 @@ export const updateIntegration = createIntegrationManagementTool({
 
     // Sync tools to registry if app_id exists
     if (appId && connection) {
-      const { tools = [] } = await listToolsByConnectionType(
+      const syncSucceeded = await syncToolsToRegistry({
+        appId,
         connection,
-        c,
-        true,
-      ).catch((e) => {
-        console.error("Error listing tools for integration:", e);
-        return { tools: [] };
+        context: c,
+        operationLabel: "INTEGRATIONS_UPDATE",
       });
 
-      // Get current tools for this app to calculate diff
-      const currentTools = await c.drizzle
-        .select({ name: registryTools.name })
-        .from(registryTools)
-        .where(eq(registryTools.app_id, appId));
-
-      const currentToolNames = new Set(currentTools.map((t) => t.name));
-      const newToolNames = new Set(tools.map((t) => t.name));
-
-      // Find tools to delete (exist in DB but not in new tools)
-      const toolsToDelete = Array.from(currentToolNames).filter(
-        (name) => !newToolNames.has(name),
-      );
-
-      // Delete old tools that are no longer present
-      if (toolsToDelete.length > 0) {
-        await c.drizzle
-          .delete(registryTools)
-          .where(
-            and(
-              eq(registryTools.app_id, appId),
-              or(...toolsToDelete.map((name) => eq(registryTools.name, name))),
-            ),
-          );
+      // Return early if sync failed (tools preserved)
+      if (!syncSucceeded) {
+        return updatedIntegration;
       }
-
-      // Upsert new/updated tools
-      await Promise.all(
-        tools.map(async (tool) => {
-          const toolData = {
-            app_id: appId,
-            name: tool.name,
-            description: tool.description || null,
-            input_schema: (tool.inputSchema as Record<string, unknown>) || null,
-            output_schema:
-              (tool.outputSchema as Record<string, unknown>) || null,
-            metadata: null,
-            updated_at: new Date().toISOString(),
-          };
-
-          return c.drizzle
-            .insert(registryTools)
-            .values(toolData)
-            .onConflictDoUpdate({
-              target: [registryTools.app_id, registryTools.name],
-              set: {
-                description: tool.description || null,
-                input_schema:
-                  (tool.inputSchema as Record<string, unknown>) || null,
-                output_schema:
-                  (tool.outputSchema as Record<string, unknown>) || null,
-                updated_at: new Date().toISOString(),
-              },
-            })
-            .returning({ id: registryTools.id, name: registryTools.name });
-        }),
-      );
     }
 
     return updatedIntegration;

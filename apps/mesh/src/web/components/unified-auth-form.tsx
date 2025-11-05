@@ -21,7 +21,10 @@ export function UnifiedAuthForm() {
     mutationFn: async ({
       email,
       password,
-    }: { email: string; password: string }) => {
+    }: {
+      email: string;
+      password: string;
+    }) => {
       await authClient.signIn.email({ email, password });
     },
   });

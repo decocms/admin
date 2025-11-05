@@ -3,10 +3,9 @@ import {
   useRecentResources,
   useSDK,
   useToolByUriV2,
-  useToolCallV2,
   useUpdateTool,
 } from "@deco/sdk";
-import { ToolCallResultV2 } from "@deco/sdk/hooks";
+import { useToolCall, type MCPToolCallResult } from "@deco/sdk/hooks";
 import {
   Alert,
   AlertDescription,
@@ -150,7 +149,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
   // Tool execution state
   const [executionResult, setExecutionResult] =
-    useState<ToolCallResultV2 | null>(null);
+    useState<MCPToolCallResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStats, setExecutionStats] = useState<{
     latency?: number;
@@ -161,8 +160,8 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   // Form data state to prevent clearing after submission
   const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-  // Tool call hook
-  const toolCallMutation = useToolCallV2();
+  // Tool call hook - extract tool name from URI and use i:self integration
+  const toolCallMutation = useToolCall({ id: "i:self" }, locator);
 
   // Token estimation function
   const estimateTokens = useCallback((text: string): number => {
@@ -198,11 +197,15 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         const inputText = JSON.stringify(formData);
         const inputTokens = estimateTokens(inputText);
 
+        // Extract tool name from URI (format: rsc://i:self/tool/<name>)
+        const toolName = resourceUri.split("/").pop();
+        if (!toolName) {
+          throw new Error(`Invalid tool URI: ${resourceUri}`);
+        }
+
         const result = await toolCallMutation.mutateAsync({
-          params: {
-            uri: resourceUri,
-            input: formData,
-          },
+          name: toolName,
+          arguments: formData,
         });
 
         const endTime = performance.now();
@@ -211,12 +214,9 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         const resultText = JSON.stringify(result);
         const resultTokens = estimateTokens(resultText);
 
-        if (result.error) {
-          throw new Error(
-            typeof result.error === "string"
-              ? result.error
-              : JSON.stringify(result.error),
-          );
+        if (result.isError) {
+          const errorMessage = result.content.map((c) => c.text).join("\n");
+          throw new Error(errorMessage || "Tool execution failed");
         }
 
         setExecutionResult(result);
@@ -235,7 +235,8 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
           error instanceof Error ? error.message : "Unknown error occurred";
 
         setExecutionResult({
-          error: errorMessage,
+          content: [{ type: "text", text: errorMessage }],
+          isError: true,
         });
 
         // Send error to chat provider for AI assistance
@@ -382,14 +383,12 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
                 ) : null}
 
                 {/* Error Alert */}
-                {executionResult?.error ? (
+                {executionResult?.isError ? (
                   <Alert className="bg-destructive/5 border-none">
                     <Icon name="error" className="h-4 w-4 text-destructive" />
                     <AlertTitle className="text-destructive">Error</AlertTitle>
                     <AlertDescription className="text-destructive">
-                      {typeof executionResult.error === "string"
-                        ? executionResult.error
-                        : JSON.stringify(executionResult.error)}
+                      {executionResult.content.map((c) => c.text).join("\n")}
                     </AlertDescription>
                   </Alert>
                 ) : null}
@@ -466,35 +465,13 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
             {/* Result Section - only show if we have a result */}
             {executionResult && (
               <DetailSection title="Result">
-                {/* Logs Section */}
-                {executionResult.logs && executionResult.logs.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="font-mono text-sm text-muted-foreground uppercase">
-                      Console Logs
-                    </p>
-                    <div className="bg-muted rounded-xl p-3 max-h-[200px] overflow-auto">
-                      {executionResult.logs.map((log, index) => (
-                        <div
-                          key={index}
-                          className={`text-xs font-mono ${
-                            log.type === "error"
-                              ? "text-destructive"
-                              : log.type === "warn"
-                                ? "text-yellow-600"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          [{log.type.toUpperCase()}] {log.content}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Output */}
-                {!executionResult.error && (
+                {!executionResult.isError && (
                   <JsonViewer
-                    data={executionResult.result || executionResult}
+                    data={
+                      executionResult.structuredContent ||
+                      executionResult.content
+                    }
                   />
                 )}
               </DetailSection>

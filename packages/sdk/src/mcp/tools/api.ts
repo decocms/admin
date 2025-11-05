@@ -7,7 +7,6 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
   createMCPToolsStub,
-  createTool,
   createToolGroup,
   DeconfigClient,
   MCPClient,
@@ -29,12 +28,6 @@ import {
 } from "./prompts.ts";
 import { ToolDefinitionSchema } from "./schemas.ts";
 import { asEnv, evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
-
-export interface ToolBindingImplOptions {
-  resourceToolRead: (
-    uri: string,
-  ) => Promise<{ data: z.infer<typeof ToolDefinitionSchema> }>;
-}
 
 /**
  * Execute tool code without validation
@@ -116,55 +109,6 @@ export async function executeToolWithValidation(
   }
 
   return result;
-}
-
-/**
- * Creates tool binding implementation that accepts a resource reader
- * Returns only the core tool execution functionality
- */
-export function createToolBindingImpl({
-  resourceToolRead,
-}: ToolBindingImplOptions) {
-  const runTool = createTool({
-    name: "DECO_TOOL_CALL_TOOL",
-    description: "Invoke a tool created with DECO_RESOURCE_TOOL_CREATE",
-    inputSchema: z.object({
-      uri: z.string().describe("The URI of the tool to run"),
-      input: z.object({}).passthrough().describe("The input of the code"),
-      authorization: z
-        .string()
-        .optional()
-        .describe("The token to use for the tool execution"),
-    }),
-    outputSchema: z.object({
-      result: z.any().optional().describe("The result of the tool execution"),
-      error: z.any().optional().describe("Error if any"),
-      logs: z
-        .array(
-          z.object({
-            type: z.enum(["log", "warn", "error"]),
-            content: z.string(),
-          }),
-        )
-        .optional()
-        .describe("Console logs from the execution"),
-    }),
-    handler: async ({ uri, input, authorization }, c) => {
-      try {
-        const { data: tool } = await resourceToolRead(uri);
-
-        if (!tool) {
-          return { error: "Tool not found" };
-        }
-
-        return await executeToolWithValidation(tool, input, c, authorization);
-      } catch (error) {
-        return { error: inspect(error) };
-      }
-    },
-  });
-
-  return [runTool];
 }
 
 const createToolManagementTool = createToolGroup("Tools", {
@@ -365,10 +309,21 @@ export function createToolViewsV2() {
       "DECO_RESOURCE_TOOL_READ",
       "DECO_RESOURCE_TOOL_UPDATE",
       "DECO_RESOURCE_TOOL_DELETE",
-      "DECO_TOOL_CALL_TOOL",
     ],
-    prompt:
-      "You are a tool management specialist helping the user manage a tool. You can read the tool definition, update its properties, test its execution, and view its usage. Always confirm actions before executing them. Use the tool operations to read, update, test, and manage tools. Help the user understand tool definitions and test tool execution.",
+    prompt: `You are a tool management specialist. You have access to these operations:
+
+- **DECO_RESOURCE_TOOL_SEARCH** - Find tools by name or description
+- **DECO_RESOURCE_TOOL_READ** - Read tool definition (metadata, schemas, execute code)
+- **DECO_RESOURCE_TOOL_UPDATE** - Modify tool properties, schemas, or code
+- **DECO_RESOURCE_TOOL_DELETE** - Remove a tool
+
+**CRITICAL - How to Execute Tools:**
+To execute tools, ALWAYS use the **i:self** integration:
+\`await ctx.env['i:self'].TOOL_NAME({ params })\`
+
+Do NOT use DECO_TOOL_RUN_TOOL. The i:self integration is the preferred and correct way to call tools.
+
+Always confirm before making destructive changes (update/delete).`,
     handler: (input, _c) => {
       const url = createDetailViewUrl("tool", integrationId, input.resource);
       return Promise.resolve({ url });

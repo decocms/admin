@@ -1,22 +1,60 @@
-import { cn } from "@deco/ui/lib/utils.ts";
+export function SplitScreenLayout({
+  children,
+  hideBackgroundPanel = false,
+}: {
+  children: React.ReactNode;
+  hideBackgroundPanel?: boolean;
+}) {
+  const bgImage =
+    "url('https://assets.decocache.com/decocms/cbef38cc-a1fe-4616-bbb6-e928bfe334ef/capybara.png')";
 
-export const ContextIsEverythingPanel = () => {
   return (
-    <img
-      src="/img/context-is-everything-panel.jpg"
-      alt="Context is everything"
-      className="w-full h-full object-cover rounded-lg"
-    />
-  );
-};
+    <div className="relative w-screen h-screen flex items-center justify-center p-4 sm:p-6 md:p-12 lg:p-18 overflow-hidden">
+      {/* Background image - covers entire viewport */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: bgImage,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      />
 
-export function SplitScreenLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="w-screen h-screen flex items-center gap-4 p-4">
-      <div className={cn("hidden lg:block lg:w-1/3 lg:min-w-[475px] h-full")}>
-        <ContextIsEverythingPanel />
+      {/* Blur and darken overlay - covers everything */}
+      <div className="absolute inset-0 bg-brand-green-dark/50 backdrop-blur-[2px] pointer-events-none" />
+
+      {/* Modal container */}
+      <div
+        className={`relative w-full h-full border border-white/25 rounded-2xl overflow-hidden shadow-lg z-10 ${hideBackgroundPanel ? "max-w-full md:max-w-[900px]" : "max-w-[1280px]"}`}
+      >
+        <div className="flex flex-col md:flex-row h-full">
+          {/* Left panel - window to background (same image, fixed attachment) - Hidden on mobile or when hideBackgroundPanel is true */}
+          {!hideBackgroundPanel && (
+            <div
+              className="hidden md:block relative md:w-1/2"
+              style={{
+                backgroundImage: bgImage,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundAttachment: "fixed",
+              }}
+            >
+              {/* Semi-transparent overlay */}
+              <div className="absolute inset-0 bg-white/5" />
+              {/* Inset shadow effect */}
+              <div className="absolute inset-0 shadow-[0px_0px_75px_-15px_inset_rgba(255,255,255,0.25)]" />
+            </div>
+          )}
+
+          {/* Right panel - form content */}
+          <div
+            className={`w-full h-full bg-background overflow-y-auto ${!hideBackgroundPanel ? "md:w-1/2" : ""}`}
+          >
+            {children}
+          </div>
+        </div>
       </div>
-      <div className="w-full lg:w-2/3 h-full">{children}</div>
     </div>
   );
 }

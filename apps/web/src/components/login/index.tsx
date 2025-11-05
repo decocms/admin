@@ -1,76 +1,195 @@
 import { SplitScreenLayout } from "./layout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { providers } from "./providers.tsx";
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useState, type FormEventHandler } from "react";
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
+import { DECO_CMS_API_URL } from "@deco/sdk";
+import { queryClient } from "@deco/sdk/hooks";
+
+const useSendMagicLink = () => {
+  return useMutation({
+    mutationFn: (prop: { email: string; cli: boolean }) =>
+      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
+        method: "POST",
+        body: JSON.stringify(prop),
+      })
+        .then((res) => res.ok)
+        .catch(() => false),
+  });
+};
 
 function Login() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const next = searchParams.get("next");
   const cli = searchParams.has("cli");
 
-  const filteredProviders = providers.filter((provider) => {
-    // Disable email provider when &cli=true is present
-    // Note: CLI login with email redirects incorrectly to admin.deco.cx instead of the decocms.com
-    // TODO: A better solution
-    if (cli && provider.name === "Email") {
-      return false;
+  const [email, setEmail] = useState("");
+  const sendMagicLink = useSendMagicLink();
+
+  // Get only OAuth providers (exclude Email)
+  const oauthProviders = providers.filter(
+    (provider) => provider.name !== "Email",
+  );
+
+  const handleMagicLinkSubmit: FormEventHandler<HTMLFormElement> = async (
+    e,
+  ) => {
+    e.preventDefault();
+
+    trackEvent("deco_chat_login_provider_click", {
+      provider: "Email",
+    });
+
+    const result = await sendMagicLink.mutateAsync({
+      email,
+      cli: searchParams.get("cli") === "true",
+    });
+
+    if (result) {
+      // Navigate to confirmation page with email
+      const params = new URLSearchParams();
+      params.set("email", email);
+      if (next) params.set("next", next);
+      if (cli) params.set("cli", "true");
+      navigate(`/login/magiclink?${params.toString()}`);
     }
-    return true;
-  });
+  };
 
   return (
     <SplitScreenLayout>
-      <div className="flex flex-col justify-center gap-7 p-6 h-full">
-        <div className="text-lg font-semibold leading-none tracking-tight">
-          <div className="flex flex-col items-center gap-5">
-            <div className="flex flex-col text-center items-center">
-              <h2 className="text-xl font-bold max-w-64">Welcome to Deco</h2>
+      <div className="h-full px-6 py-8 sm:px-10 sm:py-12 md:px-14 md:py-16 overflow-y-auto">
+        <div className="flex flex-col gap-12 min-h-full justify-center">
+          {/* Logo */}
+          <div className="h-[26px] w-[62px]">
+            <img
+              src="/img/deco-logo.svg"
+              alt="deco"
+              className="w-full h-full object-contain"
+            />
+          </div>
+
+          {/* Main content */}
+          <div className="flex flex-col gap-10">
+            {/* Header */}
+            <div className="flex flex-col gap-2">
+              <h1 className="text-2xl font-medium">Welcome to deco</h1>
+              <p className="text-base text-muted-foreground">
+                Sign in or create a new account
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground font-normal">
-              Choose an option to get started
+
+            {/* Auth options */}
+            <div className="flex flex-col gap-5">
+              {/* OAuth buttons */}
+              <div className="flex flex-col gap-2">
+                {oauthProviders.map((provider) => (
+                  <Button
+                    key={provider.name}
+                    variant="outline"
+                    className="h-12 justify-center gap-3 rounded-xl"
+                    asChild
+                  >
+                    <Link
+                      to={provider.authURL({
+                        next: next || globalThis.location.origin,
+                        cli,
+                      })}
+                      onClick={() => {
+                        trackEvent("deco_chat_login_provider_click", {
+                          provider: provider.name,
+                        });
+                      }}
+                    >
+                      <img
+                        className={provider.iconClassName}
+                        loading="lazy"
+                        src={provider.iconURL}
+                        alt={provider.name}
+                        width={20}
+                        height={20}
+                      />
+                      <span className="text-sm font-medium">
+                        Continue with {provider.name}
+                      </span>
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+
+              {/* Divider with "or" */}
+              <div className="flex items-center gap-2.5">
+                <Separator className="flex-1" />
+                <span className="text-base text-muted-foreground">or</span>
+                <Separator className="flex-1" />
+              </div>
+
+              {/* Email form */}
+              {!cli && (
+                <form
+                  onSubmit={handleMagicLinkSubmit}
+                  className="flex flex-col gap-2"
+                >
+                  <Input
+                    type="email"
+                    placeholder="Email address"
+                    className="h-12 rounded-xl"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    className="h-12 bg-primary text-primary-foreground rounded-xl gap-2"
+                    disabled={sendMagicLink.isPending}
+                  >
+                    {sendMagicLink.isPending && <Spinner size="xs" />}
+                    Send magic link
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          {/* Terms text */}
+          <div className="flex justify-center">
+            <p className="text-xs max-w-sm text-muted-foreground text-center leading-4">
+              By continuing, you agree to deco's{" "}
+              <a
+                href="https://www.decocms.com/terms-of-use"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://www.decocms.com/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                Privacy Policy
+              </a>
+              , and to receive periodic emails with updates.
             </p>
           </div>
-        </div>
-        <div className="flex flex-col items-center gap-2.5">
-          {filteredProviders.map((provider) => (
-            <div key={provider.name} className="w-full min-w-80 max-w-96">
-              <Button
-                variant="outline"
-                className="p-5 min-w-80 hover:text-foreground w-full"
-                asChild
-              >
-                <Link
-                  to={provider.authURL({
-                    next: next || globalThis.location.origin,
-                    cli,
-                  })}
-                  className="flex items-center gap-2.5 h-6"
-                  onClick={() => {
-                    trackEvent("deco_chat_login_provider_click", {
-                      provider: provider.name,
-                    });
-                  }}
-                >
-                  <img
-                    className={provider.iconClassName}
-                    loading="lazy"
-                    src={provider.iconURL}
-                    alt={provider.name}
-                    width={20}
-                    height={20}
-                  />
-                  <span className="text-sm font-semibold">
-                    Continue with {provider.name}
-                  </span>
-                </Link>
-              </Button>
-            </div>
-          ))}
         </div>
       </div>
     </SplitScreenLayout>
   );
 }
 
-export default Login;
+export default function LoginWrapper() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Login />
+    </QueryClientProvider>
+  );
+}

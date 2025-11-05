@@ -1,20 +1,12 @@
 import {
-  useProjects,
-  useUpdateProject,
   useCreateProject,
   useDeleteProject,
+  useFile,
+  useProjects,
+  useUpdateProject,
   useWriteFile,
   type Project,
-  useFile,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@deco/ui/components/dialog.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,21 +17,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useState, useDeferredValue, useRef, useEffect } from "react";
-import { Link, useParams } from "react-router";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { Suspense, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import { ErrorBoundary } from "../../error-boundary";
+import { normalizeGithubImportValue } from "../../utils/github-import.ts";
 import { Avatar } from "../common/avatar";
 import { CommunityCallBanner } from "../common/event/community-call-banner";
-import { OrgAvatars, OrgMemberCount } from "./members";
-import { Separator } from "@deco/ui/components/separator.tsx";
-import { toast } from "sonner";
 import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
+import { OrgAvatars, OrgMemberCount } from "./members";
 
 const AVATAR_UPLOAD_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
 const PROJECT_AVATAR_PATH = "project-avatars";
@@ -721,6 +722,20 @@ function OrgProjectListContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const deferredQuery = useDeferredValue(searchQuery);
   const { org } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const importGithubParam = searchParams.get("importGithub") ?? undefined;
+  const { slug: importGithubSlug, url: normalizedGithubUrl } =
+    normalizeGithubImportValue(importGithubParam);
+  const importGithubUrl = normalizedGithubUrl ?? undefined;
+
+  const handleImportDialogClose = useCallback(() => {
+    if (!importGithubParam) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("importGithub");
+    setSearchParams(next, { replace: true });
+  }, [importGithubParam, searchParams, setSearchParams]);
 
   return (
     <div className="min-h-full w-full bg-background">
@@ -735,7 +750,12 @@ function OrgProjectListContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <ImportProjectFromGithub org={org ?? ""} />
+            <ImportProjectFromGithub
+              org={org ?? ""}
+              defaultOpen={Boolean(importGithubSlug)}
+              defaultGithubUrl={importGithubUrl}
+              onClose={handleImportDialogClose}
+            />
             <CreateProject org={org ?? ""} />
           </div>
         </div>

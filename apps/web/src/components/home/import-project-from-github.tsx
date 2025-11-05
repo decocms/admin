@@ -17,14 +17,20 @@ import { useProjects, type Project } from "@deco/sdk";
 interface ImportProjectFromGithubProps {
   org: string;
   disabled?: boolean;
+  defaultOpen?: boolean;
+  defaultGithubUrl?: string;
+  onClose?: () => void;
 }
 
 export function ImportProjectFromGithub({
   org,
   disabled,
+  defaultOpen,
+  defaultGithubUrl,
+  onClose,
 }: ImportProjectFromGithubProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [githubUrl, setGithubUrl] = useState("");
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
+  const [githubUrl, setGithubUrl] = useState(defaultGithubUrl ?? "");
   const [projectSlug, setProjectSlug] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
   const importMutation = useImportProjectFromGithub();
@@ -39,14 +45,28 @@ export function ImportProjectFromGithub({
     return projects.some((p: Project) => p.slug === deferredSlug.trim());
   }, [projects, deferredSlug]);
 
+  useEffect(() => {
+    if (defaultOpen) {
+      setIsOpen(true);
+    }
+  }, [defaultOpen]);
+
+  useEffect(() => {
+    if (!defaultGithubUrl) {
+      return;
+    }
+    setGithubUrl(defaultGithubUrl);
+    parseGithubUrl(defaultGithubUrl, { force: true });
+  }, [defaultGithubUrl]);
+
   // Reset form when dialog closes
   useEffect(() => {
     if (!isOpen) {
-      setGithubUrl("");
+      setGithubUrl(defaultGithubUrl ?? "");
       setProjectSlug("");
       setProjectTitle("");
     }
-  }, [isOpen]);
+  }, [isOpen, defaultGithubUrl]);
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +84,7 @@ export function ImportProjectFromGithub({
       });
 
       // Reset form and close dialog on success
-      setGithubUrl("");
+      setGithubUrl(defaultGithubUrl ?? "");
       setProjectSlug("");
       setProjectTitle("");
       setIsOpen(false);
@@ -80,16 +100,24 @@ export function ImportProjectFromGithub({
     setProjectSlug(cleaned);
   };
 
-  const parseGithubUrl = (url: string) => {
+  function parseGithubUrl(
+    url: string,
+    options: { force?: boolean } = {},
+  ) {
+    const { force = false } = options;
     // Try to extract repo info from GitHub URL
     // Supports: https://github.com/owner/repo or https://github.com/owner/repo.git
     const match = url.match(/github\.com[/:]([\w-]+)\/([\w-]+?)(\.git)?$/);
     if (match) {
       const [, , repo] = match;
-      if (!projectSlug) {
+      if (force) {
+        setProjectSlug("");
+        setProjectTitle("");
+      }
+      if (force || !projectSlug) {
         handleSlugChange(repo);
       }
-      if (!projectTitle) {
+      if (force || !projectTitle) {
         // Convert kebab-case to Title Case
         const title = repo
           .split("-")
@@ -98,10 +126,18 @@ export function ImportProjectFromGithub({
         setProjectTitle(title);
       }
     }
-  };
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(value) => {
+        setIsOpen(value);
+        if (!value) {
+          onClose?.();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" disabled={disabled}>
           <Icon name="download" size={16} />
@@ -192,7 +228,9 @@ export function ImportProjectFromGithub({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+              }}
               disabled={importMutation.isPending}
             >
               Cancel

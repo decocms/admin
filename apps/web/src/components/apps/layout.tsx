@@ -65,7 +65,9 @@ export function AppsAuthLayout({ children }: AppsAuthLayoutProps) {
 
   return (
     <DecoQueryClientProvider>
-      <SplitScreenLayout hideBackgroundPanel>{children(result.data)}</SplitScreenLayout>
+      <SplitScreenLayout hideBackgroundPanel>
+        {children(result.data)}
+      </SplitScreenLayout>
     </DecoQueryClientProvider>
   );
 }

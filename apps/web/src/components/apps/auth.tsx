@@ -38,10 +38,7 @@ import {
 import { useUser } from "../../hooks/use-user.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import {
-  MarketplaceIntegration,
-  VerifiedBadge,
-} from "../integrations/marketplace.tsx";
+import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { OAuthCompletionDialog } from "../integrations/oauth-completion-dialog.tsx";
 import {
   DependencyStep,
@@ -434,7 +431,6 @@ const SelectableInstallList = ({
   );
 };
 
-
 const FooterButtons = ({
   backLabel,
   onClickBack,
@@ -510,42 +506,39 @@ const SelectProjectAppInstance = ({
       connection: null,
       openIntegrationOnFinish: true,
     });
-  
+
   const { data: marketplace } = useMarketplaceIntegrations();
   const integrationFromMarketplace = useMemo(() => {
     return marketplace?.integrations.find(
       (integration) => integration.name === clientId,
     );
   }, [marketplace, clientId]);
-  
-  const integrationState = useIntegrationInstallState(integrationFromMarketplace?.name || "");
+
+  const integrationState = useIntegrationInstallState(
+    integrationFromMarketplace?.name || "",
+  );
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const autoConfirmRef = useRef(false);
 
-  const createOAuthCodeAndRedirectBackToApp = useCallback(async ({
-    integrationId,
-  }: {
-    integrationId: string;
-  }) => {
-    const { redirectTo } = await createOAuthCode.mutateAsync({
-      integrationId,
-      mode,
-      workspace: Locator.from({ org: org.slug, project }),
-      redirectUri,
-      state,
-    });
-    globalThis.location.href = redirectTo;
-  }, [createOAuthCode, mode, org.slug, project, redirectUri, state]);
-  
+  const createOAuthCodeAndRedirectBackToApp = useCallback(
+    async ({ integrationId }: { integrationId: string }) => {
+      const { redirectTo } = await createOAuthCode.mutateAsync({
+        integrationId,
+        mode,
+        workspace: Locator.from({ org: org.slug, project }),
+        redirectUri,
+        state,
+      });
+      globalThis.location.href = redirectTo;
+    },
+    [createOAuthCode, mode, org.slug, project, redirectUri, state],
+  );
+
   const { install, isLoading } = useUIInstallIntegration({
     onConfirm: ({ connection, authorizeOauthUrl }) => {
       if (authorizeOauthUrl) {
         const popup = globalThis.open(authorizeOauthUrl, "_blank");
-        if (
-          !popup ||
-          popup.closed ||
-          typeof popup.closed === "undefined"
-        ) {
+        if (!popup || popup.closed || typeof popup.closed === "undefined") {
           setOauthCompletionDialog({
             openIntegrationOnFinish: true,
             open: true,
@@ -562,7 +555,7 @@ const SelectProjectAppInstance = ({
     },
     validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
   });
-  
+
   const {
     stepIndex,
     currentSchema,
@@ -573,11 +566,15 @@ const SelectProjectAppInstance = ({
   } = useIntegrationInstallStep({
     integrationState,
     install: () => {
-      if (!integrationFromMarketplace) return Promise.reject(new Error("Integration not found"));
-      return install({ integration: integrationFromMarketplace, mainFormData: formRef.current?.getValues() });
+      if (!integrationFromMarketplace)
+        return Promise.reject(new Error("Integration not found"));
+      return install({
+        integration: integrationFromMarketplace,
+        mainFormData: formRef.current?.getValues(),
+      });
     },
   });
-  
+
   // Auto-confirm if integrationId is provided and there's only 1 integration
   useEffect(() => {
     if (
@@ -684,7 +681,9 @@ const SelectProjectAppInstance = ({
                 </div>
                 <h1 className="text-xl font-semibold flex items-start gap-2">
                   <span>Authorize {app.friendlyName ?? app.name}</span>
-                  <div className="mt-2">{app.verified && <VerifiedBadge />}</div>
+                  <div className="mt-2">
+                    {app.verified && <VerifiedBadge />}
+                  </div>
                 </h1>
               </div>
 
@@ -695,7 +694,10 @@ const SelectProjectAppInstance = ({
                   // Check if integration has any requirements
                   if (integrationFromMarketplace && totalSteps === 0) {
                     // No requirements, install directly
-                    install({ integration: integrationFromMarketplace, mainFormData: {} });
+                    install({
+                      integration: integrationFromMarketplace,
+                      mainFormData: {},
+                    });
                   } else {
                     // Has requirements, show the form
                     setInlineCreatingIntegration(true);

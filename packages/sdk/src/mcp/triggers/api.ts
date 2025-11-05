@@ -26,6 +26,7 @@ import {
 
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
+  assertHasLocator,
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
   type WithTool,
@@ -37,6 +38,7 @@ import {
   getProjectIdFromContext,
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
+import { ProjectLocator } from "../../locator.ts";
 
 const SELECT_TRIGGER_QUERY = `
   *,
@@ -83,15 +85,12 @@ function mapTrigger(
 
 interface WebhookOptions {
   id: string;
-  workspace: string;
+  locator: ProjectLocator;
   passphrase?: string;
 }
 
-const webhookURLFrom = ({ id, workspace, passphrase }: WebhookOptions) => {
-  const url = new URL(
-    `${workspace}/triggers/${id}`,
-    `https://${Hosts.API_LEGACY}`,
-  );
+const webhookURLFrom = ({ id, locator, passphrase }: WebhookOptions) => {
+  const url = new URL(`/${locator}/triggers/${id}`, `https://${Hosts.API}`);
 
   if (passphrase) {
     url.searchParams.set("passphrase", passphrase);
@@ -101,6 +100,16 @@ const webhookURLFrom = ({ id, workspace, passphrase }: WebhookOptions) => {
 };
 
 const createTriggerStub = ({
+  id,
+  locator,
+  stub,
+}: {
+  id: string;
+  locator: ProjectLocator;
+  stub: WithTool<AppContext>["stub"];
+}) => stub(Trigger).new(`/${locator}/triggers/${id}`);
+
+const createLegacyTriggerStub = ({
   id,
   workspace,
   stub,
@@ -160,10 +169,12 @@ export const upsertTrigger = createTool({
   ),
   handler: async ({ id, data }, c) => {
     assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
+    const locator = c.locator.value;
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
@@ -172,7 +183,7 @@ export const upsertTrigger = createTool({
     if (data.type === "webhook") {
       data.url = webhookURLFrom({
         id: triggerId,
-        workspace,
+        locator,
         passphrase: data.passphrase,
       });
     }
@@ -183,11 +194,18 @@ export const upsertTrigger = createTool({
       throw new UserInputError(parse.error.message);
     }
 
-    const triggerStub = createTriggerStub({ id: triggerId, workspace, stub });
+    const triggerStub = createTriggerStub({ id: triggerId, locator, stub });
+    const legacyTriggerStub = createLegacyTriggerStub({
+      id: triggerId,
+      workspace,
+      stub,
+    });
 
     // Delete existing trigger if updating
     if (id) {
-      await triggerStub.delete();
+      try {
+        await Promise.all([triggerStub.delete(), legacyTriggerStub.delete()]);
+      } catch {}
     }
 
     const userId = typeof user?.id === "string" ? user.id : undefined;
@@ -293,16 +311,22 @@ export const deleteTrigger = createTool({
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
   outputSchema: z.lazy(() => DeleteTriggerOutputSchema),
   handler: async ({ id }, c): Promise<DeleteTriggerOutput> => {
+    assertHasLocator(c);
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
+    const locator = c.locator.value;
     const workspace = c.workspace.value;
     const stub = c.stub;
 
-    const triggerStub = createTriggerStub({ id, workspace, stub });
-    await triggerStub.delete();
+    const triggerStub = createTriggerStub({ id, locator, stub });
+    const legacyTriggerStub = createLegacyTriggerStub({ id, workspace, stub });
+
+    try {
+      await Promise.all([triggerStub.delete(), legacyTriggerStub.delete()]);
+    } catch {}
 
     const { error } = await db
       .from("deco_chat_triggers")
@@ -384,12 +408,12 @@ export const activateTrigger = createTool({
   description: "Activate a trigger",
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
   handler: async ({ id }, c) => {
-    assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
-    const workspace = c.workspace.value;
+    const locator = c.locator.value;
     const stub = c.stub;
     const user = c.user;
 
@@ -417,7 +441,7 @@ export const activateTrigger = createTool({
         };
       }
 
-      const triggerStub = createTriggerStub({ id, workspace, stub });
+      const triggerStub = createTriggerStub({ id, locator, stub });
 
       await triggerStub.create({
         ...(data.metadata as TriggerType),
@@ -457,11 +481,13 @@ export const deactivateTrigger = createTool({
   inputSchema: z.lazy(() => z.object({ id: z.string() })),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
+    assertHasLocator(c);
 
     await assertWorkspaceResourceAccess(c);
 
     const db = c.db;
     const workspace = c.workspace.value;
+    const locator = c.locator.value;
     const stub = c.stub;
     const orConditions = await workspaceOrProjectIdConditions(c);
 
@@ -487,8 +513,16 @@ export const deactivateTrigger = createTool({
         };
       }
 
-      const triggerStub = createTriggerStub({ id, workspace, stub });
-      await triggerStub.delete();
+      const triggerStub = createTriggerStub({ id, locator, stub });
+      const legacyTriggerStub = createLegacyTriggerStub({
+        id,
+        workspace,
+        stub,
+      });
+
+      try {
+        await Promise.all([triggerStub.delete(), legacyTriggerStub.delete()]);
+      } catch {}
 
       const { error } = await db
         .from("deco_chat_triggers")

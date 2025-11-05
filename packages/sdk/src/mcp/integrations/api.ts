@@ -115,10 +115,9 @@ export const parseId = (id: string) => {
   };
 };
 
-const formatId = (type: "i" | "a", uuid: string) => {
-  // Account for already formatted ids
-  return uuid.startsWith(`${type}:`) ? uuid : `${type}:${uuid}`;
-};
+// Stable formatting of integration IDs.
+const formatId = (type: "i" | "a", uuid: string) =>
+  uuid.charAt(1) === ":" ? uuid : `${type}:${uuid}`;
 
 const agentAsIntegrationFor =
   (c: AppContext, token?: string) =>
@@ -429,6 +428,104 @@ const registryToolToMcpTool = (tool: {
   outputSchema: (tool.output_schema as Record<string, unknown>) || undefined,
 });
 
+/**
+ * Syncs tools from an MCP connection to the registry.
+ * Returns true if sync succeeded, false if it should be skipped (due to fetch failure).
+ * Throws on database errors.
+ */
+async function syncToolsToRegistry({
+  appId,
+  connection,
+  context,
+  operationLabel,
+}: {
+  appId: string;
+  connection: MCPConnection;
+  context: AppContext;
+  operationLabel: string;
+}) {
+  let toolsResult;
+  try {
+    toolsResult = await listToolsByConnectionType(connection, context, true);
+  } catch (error) {
+    console.error(
+      `[${operationLabel}] Failed to fetch tools, skipping sync to preserve existing tools:`,
+      error,
+    );
+    // Bail out of sync - don't delete existing tools on fetch failure
+    return false;
+  }
+
+  const { tools } = toolsResult;
+
+  // Validate we got a proper array - bail out if not
+  if (!Array.isArray(tools)) {
+    console.error(
+      `[${operationLabel}] Tools result is not an array, skipping sync:`,
+      tools,
+    );
+    return false;
+  }
+
+  // Get current tools for this app to calculate diff
+  const currentTools = await context.drizzle
+    .select({ name: registryTools.name })
+    .from(registryTools)
+    .where(eq(registryTools.app_id, appId));
+
+  const currentToolNames = new Set(currentTools.map((t) => t.name));
+  const newToolNames = new Set(tools.map((t) => t.name));
+
+  // Find tools to delete (exist in DB but not in new tools)
+  const toolsToDelete = Array.from(currentToolNames).filter(
+    (name) => !newToolNames.has(name),
+  );
+
+  // Delete old tools that are no longer present
+  if (toolsToDelete.length > 0) {
+    await context.drizzle
+      .delete(registryTools)
+      .where(
+        and(
+          eq(registryTools.app_id, appId),
+          or(...toolsToDelete.map((name) => eq(registryTools.name, name))),
+        ),
+      );
+  }
+
+  // Upsert new/updated tools
+  await Promise.all(
+    tools.map(async (tool) => {
+      const toolData = {
+        app_id: appId,
+        name: tool.name,
+        description: tool.description || null,
+        input_schema: (tool.inputSchema as Record<string, unknown>) || null,
+        output_schema: (tool.outputSchema as Record<string, unknown>) || null,
+        metadata: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      return context.drizzle
+        .insert(registryTools)
+        .values(toolData)
+        .onConflictDoUpdate({
+          target: [registryTools.app_id, registryTools.name],
+          set: {
+            description: tool.description || null,
+            input_schema: (tool.inputSchema as Record<string, unknown>) || null,
+            output_schema:
+              (tool.outputSchema as Record<string, unknown>) || null,
+            updated_at: new Date().toISOString(),
+          },
+        })
+        .returning({ id: registryTools.id, name: registryTools.name });
+    }),
+  );
+
+  return true;
+}
+
 // Helper function to extract tools from registry data - shared between list and get
 const extractToolsFromRegistry = (
   integration: QueryResult<
@@ -688,7 +785,9 @@ export const getIntegration = createIntegrationManagementTool({
               ),
             )
             .then((rows) => {
-              if (!rows.length) return null;
+              if (!rows.length) {
+                return null;
+              }
 
               // Group tools by integration
               const baseRow = rows[0];
@@ -834,10 +933,92 @@ export const createIntegration = createIntegrationManagementTool({
       ? await getRegistryApp.handler({ name: clientIdFromApp })
       : undefined;
 
-    const payload = {
+    let payload = {
       ...baseIntegration,
       app_id: appId ?? fetchedApp?.id,
     };
+
+    // If no app_id but has connection, create a custom registry app for tool syncing
+    if (!payload.app_id && payload.connection) {
+      try {
+        // Use integration ID as the app name to ensure uniqueness
+        // Generate one if it doesn't exist yet
+        const integrationUuid = payload.id || crypto.randomUUID();
+        if (!payload.id) {
+          payload.id = integrationUuid;
+        }
+
+        // Format as integration ID (with i: prefix)
+        const integrationId = formatId("i", integrationUuid);
+        const customAppName = integrationId;
+        const customScopeName = "custom";
+
+        // Ensure custom scope exists
+        let scopeId: string;
+        const existingScope = await c.drizzle
+          .select({ id: registryScopes.id })
+          .from(registryScopes)
+          .where(eq(registryScopes.scope_name, customScopeName))
+          .limit(1)
+          .then((r) => r[0]);
+
+        if (existingScope) {
+          scopeId = existingScope.id;
+        } else {
+          const [newScope] = await c.drizzle
+            .insert(registryScopes)
+            .values({
+              scope_name: customScopeName,
+              workspace: c.workspace.value,
+              project_id: projectId,
+              updated_at: new Date().toISOString(),
+            })
+            .returning({ id: registryScopes.id });
+
+          scopeId = newScope.id;
+        }
+
+        // Create or update the custom app
+        const [customApp] = await c.drizzle
+          .insert(registryApps)
+          .values({
+            workspace: c.workspace.value,
+            project_id: projectId,
+            scope_id: scopeId,
+            name: customAppName,
+            friendly_name: payload.name,
+            description:
+              payload.description || `Custom integration: ${payload.name}`,
+            icon: payload.icon,
+            connection: payload.connection,
+            unlisted: true,
+            updated_at: new Date().toISOString(),
+          })
+          .onConflictDoUpdate({
+            target: [registryApps.scope_id, registryApps.name],
+            set: {
+              connection: payload.connection,
+              friendly_name: payload.name,
+              description:
+                payload.description || `Custom integration: ${payload.name}`,
+              icon: payload.icon,
+              updated_at: new Date().toISOString(),
+            },
+          })
+          .returning({ id: registryApps.id });
+
+        payload = {
+          ...payload,
+          app_id: customApp.id,
+        };
+      } catch (error) {
+        console.error(
+          `[INTEGRATIONS_CREATE] Failed to create custom registry app:`,
+          error,
+        );
+        // Continue without app_id - tools won't sync but integration will be created
+      }
+    }
 
     const existingIntegration = payload.id
       ? await c.drizzle
@@ -886,10 +1067,27 @@ export const createIntegration = createIntegrationManagementTool({
       .values(payload)
       .returning();
 
-    return IntegrationSchema.parse({
+    const createdIntegration = IntegrationSchema.parse({
       ...data,
       id: formatId("i", data.id),
     });
+
+    // Sync tools to registry if app_id exists
+    if (payload.app_id && baseIntegration.connection) {
+      const syncSucceeded = await syncToolsToRegistry({
+        appId: payload.app_id,
+        connection: baseIntegration.connection,
+        context: c,
+        operationLabel: "INTEGRATIONS_CREATE",
+      });
+
+      // Return early if sync failed (tools preserved)
+      if (!syncSucceeded) {
+        return createdIntegration;
+      }
+    }
+
+    return createdIntegration;
   },
 });
 
@@ -943,12 +1141,29 @@ export const updateIntegration = createIntegrationManagementTool({
       throw new NotFoundError("Integration not found");
     }
 
-    return IntegrationSchema.parse({
+    const updatedIntegration = IntegrationSchema.parse({
       ...data,
       appName: integration.appName,
       tools: integration.tools,
       id: formatId(type, data.id),
     });
+
+    // Sync tools to registry if app_id exists
+    if (appId && connection) {
+      const syncSucceeded = await syncToolsToRegistry({
+        appId,
+        connection,
+        context: c,
+        operationLabel: "INTEGRATIONS_UPDATE",
+      });
+
+      // Return early if sync failed (tools preserved)
+      if (!syncSucceeded) {
+        return updatedIntegration;
+      }
+    }
+
+    return updatedIntegration;
   },
 });
 

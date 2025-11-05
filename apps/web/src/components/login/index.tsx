@@ -7,12 +7,9 @@ import { providers } from "./providers.tsx";
 import { Link, useSearchParams, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useState, type FormEventHandler } from "react";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
-} from "@tanstack/react-query";
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "@deco/sdk";
+import { queryClient } from "@deco/sdk/hooks";
 
 const useSendMagicLink = () => {
   return useMutation({
@@ -188,8 +185,6 @@ function Login() {
     </SplitScreenLayout>
   );
 }
-
-const queryClient = new QueryClient({});
 
 export default function LoginWrapper() {
   return (

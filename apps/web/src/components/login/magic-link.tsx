@@ -1,5 +1,5 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
@@ -9,8 +9,10 @@ import {
 } from "@tanstack/react-query";
 import { DECO_CMS_API_URL } from "@deco/sdk";
 import type { FormEventHandler } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const useSendMagicLink = () => {
   const create = useMutation({
@@ -29,14 +31,36 @@ const useSendMagicLink = () => {
 function MagicLink() {
   const fetcher = useSendMagicLink();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const emailFromUrl = searchParams.get("email") || "";
   const [email] = useState(emailFromUrl);
   const next = searchParams.get("next");
 
+  // Validate email is present and matches a simple email pattern
+  const isValidEmail = email && EMAIL_REGEX.test(email);
+
+  // Redirect to /login if email is missing or invalid
+  useEffect(() => {
+    if (!isValidEmail) {
+      navigate(`/login${next ? `?next=${next}` : ""}`, { replace: true });
+    }
+  }, [isValidEmail, navigate, next]);
+
   const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
+
+    // Guard: never submit with empty or invalid email
+    if (!isValidEmail) {
+      return;
+    }
+
     fetcher.mutate({ email, cli: searchParams.get("cli") === "true" });
   };
+
+  // Don't render the form if email is invalid (will redirect anyway)
+  if (!isValidEmail) {
+    return null;
+  }
 
   return (
     <SplitScreenLayout>

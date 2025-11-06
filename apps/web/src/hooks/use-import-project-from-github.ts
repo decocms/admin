@@ -38,7 +38,7 @@ export function useImportProjectFromGithub() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to import project from GitHub. Try using the CLI: npx @deco/cli projects:import",
+          : "Failed to import project from GitHub. Try using the CLI: npx deco-cli@latest project import",
       );
     },
   });

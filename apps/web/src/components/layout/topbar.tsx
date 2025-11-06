@@ -111,7 +111,7 @@ function ExportButton() {
   }
 
   const cliCommand = `deco project export --org ${org} --project ${project} --out ${project}/`;
-  const installCommand = `${packageManager} install -g @deco/cli`;
+  const installCommand = `${packageManager} install -g deco-cli@latest`;
 
   return (
     <>

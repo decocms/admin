@@ -315,18 +315,7 @@ export function getMCPConfig(workspace: string, app: string): MCPConfig {
 
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
-export const getRulesConfig = async () => {
-  const rulesPath = join(__dirname, "../rules/deco-chat.mdc");
-
-  try {
-    const content = await fs.readFile(rulesPath, "utf-8");
-    return {
-      "deco-chat.mdc": content,
-    };
-  } catch (error) {
-    console.warn("Could not read rules file:", error);
-    return {
-      "deco-chat.mdc": "",
-    };
-  }
+export const getRulesConfig = async (): Promise<Record<string, string>> => {
+  // TODO: Implement nice rules
+  return {};
 };

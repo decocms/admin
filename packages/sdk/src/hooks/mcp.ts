@@ -179,7 +179,7 @@ interface IntegrationsResult {
     Integration & {
       provider: string;
       friendlyName?: string;
-      verified?: boolean;
+      verified?: boolean | null;
     }
   >;
 }
@@ -189,12 +189,17 @@ export const useMarketplaceIntegrations = () => {
 
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: KEYS.INTEGRATIONS_MARKETPLACE(),
-    queryFn: () =>
-      MCPClient.forLocator(locator)
-        .DECO_INTEGRATIONS_SEARCH({ query: "" })
-        .then((r: IntegrationsResult | string) =>
-          typeof r === "string" ? { integrations: [] } : r,
-        ),
+    queryFn: async () => {
+      const result = await MCPClient.forLocator(
+        locator,
+      ).DECO_INTEGRATIONS_SEARCH({ query: "" });
+
+      if (typeof result === "string") {
+        return { integrations: [] };
+      }
+
+      return result as IntegrationsResult;
+    },
   });
 };
 

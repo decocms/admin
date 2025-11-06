@@ -58,6 +58,8 @@ export const IntegrationSchema = z.object({
   appName: z.string().optional().nullable(),
   /** App ID */
   appId: z.string().optional().nullable(),
+  /** Verified */
+  verified: z.boolean().optional().nullable(),
   /** Connection configuration */
   connection: z.discriminatedUnion("type", [
     HTTPConnectionSchema,

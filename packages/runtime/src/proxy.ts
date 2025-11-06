@@ -33,6 +33,28 @@ const toolsMap = new Map<
 >();
 
 /**
+ * Determines if a given URL supports tool names in the path.
+ * Our APIs (api.decocms.com, api.deco.chat, localhost) support /tool/${toolName} routing.
+ * Third-party APIs typically don't support this pattern.
+ */
+function supportsToolNameInPath(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // Our main APIs that support /tool/${toolName} routing
+    return (
+      hostname === "api.decocms.com" ||
+      hostname === "api.deco.chat" ||
+      hostname === "localhost" ||
+      hostname.startsWith("localhost") // covers localhost:3001, etc.
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The base fetcher used to fetch the MCP from API.
  */
 export function createMCPClientProxy<T extends Record<string, unknown>>(
@@ -73,13 +95,15 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
 
         // Create a connection with the tool name in the URL path for better logging
         // Only modify connections that have a URL property (HTTP, SSE, Websocket)
-        // and only when supportsToolName is explicitly enabled
+        // Use automatic detection based on URL, with optional override
         let toolConnection = connection;
-        if (
-          options?.supportsToolName &&
-          "url" in connection &&
-          typeof connection.url === "string"
-        ) {
+        const shouldAddToolName = options?.supportsToolName ?? (
+          "url" in connection && 
+          typeof connection.url === "string" && 
+          supportsToolNameInPath(connection.url)
+        );
+        
+        if (shouldAddToolName && "url" in connection && typeof connection.url === "string") {
           toolConnection = {
             ...connection,
             url: connection.url.endsWith("/")

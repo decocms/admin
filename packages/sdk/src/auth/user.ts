@@ -40,13 +40,10 @@ export async function getUserBySupabaseCookie(
   const accessToken = parseAuthorizationToken(request);
   const sessionToken = getSessionToken(request);
 
-  if (!sessionToken && !accessToken) {
-    return undefined;
-  }
-
   // Use sessionToken as primary key, fallback to accessToken
   // We know at least one exists because of the check above
   const cacheKey = sessionToken || accessToken;
+
   if (!cacheKey) {
     return undefined;
   }

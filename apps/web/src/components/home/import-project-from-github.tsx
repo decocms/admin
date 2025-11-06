@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useDeferredValue } from "react";
+import { useState, useMemo, useEffect, useDeferredValue, Suspense } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -22,14 +22,13 @@ interface ImportProjectFromGithubProps {
   onClose?: () => void;
 }
 
-export function ImportProjectFromGithub({
-  org,
-  disabled,
-  defaultOpen,
-  defaultGithubUrl,
-  onClose,
-}: ImportProjectFromGithubProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
+interface ImportProjectFormProps {
+  org: string;
+  defaultGithubUrl?: string;
+  onClose: () => void;
+}
+
+function ImportProjectForm({ org, defaultGithubUrl, onClose }: ImportProjectFormProps) {
   const [githubUrl, setGithubUrl] = useState(defaultGithubUrl ?? "");
   const [projectSlug, setProjectSlug] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
@@ -46,27 +45,11 @@ export function ImportProjectFromGithub({
   }, [projects, deferredSlug]);
 
   useEffect(() => {
-    if (defaultOpen) {
-      setIsOpen(true);
+    if (defaultGithubUrl) {
+      setGithubUrl(defaultGithubUrl);
+      parseGithubUrl(defaultGithubUrl, { force: true });
     }
-  }, [defaultOpen]);
-
-  useEffect(() => {
-    if (!defaultGithubUrl) {
-      return;
-    }
-    setGithubUrl(defaultGithubUrl);
-    parseGithubUrl(defaultGithubUrl, { force: true });
   }, [defaultGithubUrl]);
-
-  // Reset form when dialog closes
-  useEffect(() => {
-    if (!isOpen) {
-      setGithubUrl(defaultGithubUrl ?? "");
-      setProjectSlug("");
-      setProjectTitle("");
-    }
-  }, [isOpen, defaultGithubUrl]);
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +66,8 @@ export function ImportProjectFromGithub({
         title: projectTitle.trim() || undefined,
       });
 
-      // Reset form and close dialog on success
-      setGithubUrl(defaultGithubUrl ?? "");
-      setProjectSlug("");
-      setProjectTitle("");
-      setIsOpen(false);
+      // Close dialog on success
+      onClose();
     } catch (error) {
       console.error("Failed to import project from GitHub:", error);
       // Error state is handled by the mutation hook
@@ -126,33 +106,18 @@ export function ImportProjectFromGithub({
   }
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(value) => {
-        setIsOpen(value);
-        if (!value) {
-          onClose?.();
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button variant="outline" disabled={disabled}>
-          <Icon name="download" size={16} />
-          <span>Import from GitHub</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <img
-              src="/img/github.svg"
-              alt="GitHub"
-              className="size-6 brightness-50"
-            />
-            Import Project from GitHub
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleImport} className="space-y-4">
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <img
+            src="/img/github.svg"
+            alt="GitHub"
+            className="size-6 brightness-50"
+          />
+          Import Project from GitHub
+        </DialogTitle>
+      </DialogHeader>
+      <form onSubmit={handleImport} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="github-url">
               GitHub Repository URL <span className="text-destructive">*</span>
@@ -218,27 +183,71 @@ export function ImportProjectFromGithub({
             </p>
           )}
 
-          <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsOpen(false);
-              }}
-              disabled={importMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                importMutation.isPending || !githubUrl.trim() || slugExists
-              }
-            >
-              {importMutation.isPending ? "Importing..." : "Import"}
-            </Button>
-          </div>
-        </form>
+        <div className="flex justify-end space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={importMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={
+              importMutation.isPending || !githubUrl.trim() || slugExists
+            }
+          >
+            {importMutation.isPending ? "Importing..." : "Import"}
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+}
+
+export function ImportProjectFromGithub({
+  org,
+  disabled,
+  defaultOpen,
+  defaultGithubUrl,
+  onClose,
+}: ImportProjectFromGithubProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      setIsOpen(true);
+    }
+  }, [defaultOpen]);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    onClose?.();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" disabled={disabled}>
+          <Icon name="download" size={16} />
+          <span>Import from GitHub</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8">
+              <Spinner />
+            </div>
+          }
+        >
+          <ImportProjectForm
+            org={org}
+            defaultGithubUrl={defaultGithubUrl}
+            onClose={handleClose}
+          />
+        </Suspense>
       </DialogContent>
     </Dialog>
   );

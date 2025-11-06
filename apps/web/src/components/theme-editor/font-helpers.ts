@@ -26,6 +26,6 @@ export function getGoogleFontUrl(fontName: string): string {
  * Applies a font to the document
  */
 export function applyFontToDocument(fontFamily: string): void {
-  document.documentElement.style.setProperty("font-family", fontFamily);
   document.body.style.fontFamily = fontFamily;
+  document.documentElement.style.fontFamily = fontFamily;
 }

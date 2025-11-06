@@ -472,7 +472,7 @@ export function ThemeEditorView() {
                 type: "Google Fonts",
                 name: data.fontName,
               }
-            : undefined,
+            : null,
       };
 
       await updateOrgThemeMutation.mutateAsync(theme);
@@ -511,6 +511,10 @@ export function ThemeEditorView() {
 
   function handleReset() {
     const baseline = currentTheme?.variables ?? {};
+    const baselineFont =
+      currentTheme?.font?.type === "Google Fonts"
+        ? currentTheme.font.name
+        : "Default";
 
     // Re-apply CSS variables to match reset state immediately
     THEME_VARIABLES.forEach((key) => {
@@ -526,6 +530,7 @@ export function ThemeEditorView() {
 
     form.reset({
       themeVariables: baseline,
+      fontName: baselineFont,
     });
 
     // Clear undo history on explicit reset

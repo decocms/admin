@@ -72,7 +72,7 @@ export interface CustomUploadedThemeFont {
 export interface Theme {
   variables?: Partial<Record<ThemeVariable, string>>;
   picture?: string;
-  font?: GoogleFontsThemeFont | CustomUploadedThemeFont;
+  font?: GoogleFontsThemeFont | CustomUploadedThemeFont | null;
 }
 
 export const DEFAULT_THEME: Theme = {

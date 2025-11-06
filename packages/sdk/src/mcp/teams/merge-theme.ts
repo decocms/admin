@@ -63,8 +63,13 @@ export function mergeThemes(
       ...newTheme.variables,
     };
   }
-  if (newTheme.font) {
-    merged.font = newTheme.font;
+  // Handle font: undefined means keep current, null means remove, value means replace
+  if ("font" in newTheme) {
+    if (newTheme.font === null) {
+      delete merged.font;
+    } else if (newTheme.font) {
+      merged.font = newTheme.font;
+    }
   }
 
   return merged;

@@ -85,7 +85,7 @@ export function GoogleFontsSelector({
   return (
     <div className="space-y-4">
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full h-auto py-3">
+        <SelectTrigger className="w-full h-auto py-3 cursor-pointer">
           <SelectValue>
             <span
               className="text-lg font-medium"

@@ -160,3 +160,35 @@ test("mergeThemes - invalid current theme", () => {
     },
   });
 });
+
+test("mergeThemes - remove font with null", () => {
+  const currentTheme = {
+    picture: "https://example.com/picture.png",
+    variables: {
+      "--background": "#000000",
+    },
+    font: {
+      type: "Google Fonts",
+      name: "Inter",
+    } as const,
+  };
+
+  const newTheme = {
+    variables: {
+      "--foreground": "#ffffff",
+    },
+    font: null, // Explicitly remove font
+  };
+
+  const mergedTheme = mergeThemes(currentTheme, newTheme);
+
+  expect(mergedTheme).toEqual({
+    picture: "https://example.com/picture.png",
+    variables: {
+      "--background": "#000000",
+      "--foreground": "#ffffff",
+    },
+    // font should be removed
+  });
+  expect(mergedTheme).not.toHaveProperty("font");
+});

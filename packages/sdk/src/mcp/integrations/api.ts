@@ -967,17 +967,17 @@ export const createIntegration = createIntegrationManagementTool({
             .limit(1)
             .then((r) => r[0]);
 
-          if (
-            existingScope &&
-            existingScope.project_id !== projectId &&
-            existingScope.workspace !== c.workspace.value
-          ) {
-            throw new UnauthorizedError(
-              `Custom scope "${customScopeName}" is owned by another project`,
-            );
-          }
-
           if (existingScope) {
+            const ownsCustomScope =
+              (projectId !== null && existingScope.project_id === projectId) ||
+              existingScope.workspace === c.workspace.value;
+
+            if (!ownsCustomScope) {
+              throw new UnauthorizedError(
+                `Custom scope "${customScopeName}" is owned by another project`,
+              );
+            }
+
             scopeId = existingScope.id;
           } else {
             const [newScope] = await tx

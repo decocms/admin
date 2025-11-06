@@ -17,7 +17,7 @@ export const Header = ({
   return (
     <ListPageHeader
       input={{
-        placeholder: "Search apps",
+        placeholder: "Search context",
         value: query,
         onChange: (e) => setQuery(e.target.value),
       }}

@@ -521,7 +521,7 @@ const router = createBrowserRouter([
           {
             path: "apps",
             Component: InstalledAppsList,
-            handle: { title: "Apps" },
+            handle: { title: "Context" },
           },
           {
             path: "apps/:appKey",

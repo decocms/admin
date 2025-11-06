@@ -1518,7 +1518,7 @@ function WorkspaceViews() {
           onClick={() => {
             navigateWorkspace("/apps");
             trackEvent("sidebar_navigation_click", {
-              item: "Apps",
+              item: "Context",
             });
             isMobile && toggleSidebar();
           }}
@@ -1528,7 +1528,7 @@ function WorkspaceViews() {
             size={20}
             className="text-muted-foreground/75"
           />
-          <span className="truncate">Apps</span>
+          <span className="truncate">Context</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 

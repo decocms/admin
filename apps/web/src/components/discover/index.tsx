@@ -61,9 +61,9 @@ const getRecentApps = (
     (integration) => integration.createdAt,
   );
 
-  return appsWithCreatedAt
-    .slice(0, limit)
-    .map((integration) => integration.name);
+  return appsWithCreatedAt.length === 0
+    ? FEATURED
+    : appsWithCreatedAt.slice(0, limit).map((integration) => integration.name);
 };
 
 type FeaturedIntegration = Integration & {

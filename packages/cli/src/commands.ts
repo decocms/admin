@@ -1013,6 +1013,7 @@ const projectExport = new Command("export")
   .option("--org <slug>", "Organization slug")
   .option("--project <slug>", "Project slug")
   .option("--out <dir>", "Output directory")
+  .option("--force", "Overwrite existing files in output directory")
   .option("--local", "Use local API server (http://localhost:8787)")
   .action(async (options) => {
     try {
@@ -1021,6 +1022,7 @@ const projectExport = new Command("export")
         org: options.org,
         project: options.project,
         out: options.out,
+        force: options.force,
         local: options.local || config.local,
       });
     } catch (error) {

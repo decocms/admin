@@ -14,12 +14,21 @@ import {
   extractDependenciesFromTools,
 } from "../../lib/mcp-manifest.js";
 import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
+import {
+  viewJsonToCode,
+  toolJsonToCode,
+  workflowJsonToCode,
+  type ViewResource,
+  type ToolResource,
+  type WorkflowResource,
+} from "@deco/sdk/mcp/projects/code-conversion";
 
 interface ExportOptions {
   org?: string;
   project?: string;
   out?: string;
   local?: boolean;
+  force?: boolean;
 }
 
 const ALLOWED_ROOTS = [
@@ -68,7 +77,7 @@ async function runWithConcurrency<T>(
 }
 
 export async function exportCommand(options: ExportOptions): Promise<void> {
-  const { local } = options;
+  const { local, force } = options;
 
   console.log("📦 Starting project export...\n");
 
@@ -134,9 +143,12 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
   if (existsSync(outDir)) {
     const files = await fs.readdir(outDir);
     if (files.length > 0) {
-      throw new Error(
-        `Output directory '${outDir}' is not empty. Please specify an empty directory or use --force (not yet implemented).`,
-      );
+      if (!force) {
+        throw new Error(
+          `Output directory '${outDir}' is not empty. Use --force to overwrite existing files.`,
+        );
+      }
+      console.log(`⚠️  Output directory is not empty. Using --force to overwrite.\n`);
     }
   } else {
     mkdirSync(outDir, { recursive: true });
@@ -248,7 +260,37 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
           }
 
           await fs.mkdir(path.dirname(resolvedLocalPath), { recursive: true });
-          await fs.writeFile(resolvedLocalPath, contentStr, "utf-8");
+
+          // Convert JSON resources to code files
+          let finalContent = contentStr;
+          let finalPath = resolvedLocalPath;
+
+          if (filePath.endsWith(".json")) {
+            try {
+              const parsed = JSON.parse(contentStr);
+
+              if (filePath.startsWith("/src/views/")) {
+                const viewResource = parsed as ViewResource;
+                finalContent = viewJsonToCode(viewResource);
+                finalPath = resolvedLocalPath.replace(/\.json$/, ".tsx");
+              } else if (filePath.startsWith("/src/tools/")) {
+                const toolResource = parsed as ToolResource;
+                finalContent = toolJsonToCode(toolResource);
+                finalPath = resolvedLocalPath.replace(/\.json$/, ".ts");
+              } else if (filePath.startsWith("/src/workflows/")) {
+                const workflowResource = parsed as WorkflowResource;
+                finalContent = workflowJsonToCode(workflowResource);
+                finalPath = resolvedLocalPath.replace(/\.json$/, ".ts");
+              }
+            } catch (conversionError) {
+              console.warn(
+                `   ⚠️  Failed to convert ${filePath} to code file: ${conversionError instanceof Error ? conversionError.message : String(conversionError)}`,
+              );
+              // Fall back to writing the original JSON
+            }
+          }
+
+          await fs.writeFile(finalPath, finalContent, "utf-8");
         } catch (error) {
           console.warn(
             `   ⚠️  Failed to download ${filePath}: ${error instanceof Error ? error.message : String(error)}`,

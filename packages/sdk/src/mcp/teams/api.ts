@@ -58,6 +58,12 @@ import {
   sanitizeProjectPath,
 } from "../projects/file-utils.ts";
 import { parseManifest, type Manifest } from "../projects/manifest.ts";
+import {
+  viewCodeToJson,
+  toolCodeToJson,
+  workflowCodeToJson,
+  detectResourceType,
+} from "../projects/code-conversion.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1614,7 +1620,47 @@ export const importProjectFromGithub = createTool({
 
       console.log(`[Import] Processing file: ${path}`);
 
-      if (path.endsWith(".json")) {
+      // Convert code files to JSON before uploading
+      let finalContentBytes = contentBytes;
+      let finalPath = path;
+
+      const resourceType = detectResourceType(path);
+      console.log(`[Import] Resource type for ${path}: ${resourceType}`);
+      
+      if (resourceType) {
+        try {
+          const codeContent = textDecoder.decode(contentBytes);
+          console.log(`[Import] Code content length: ${codeContent.length}`);
+          let jsonResource;
+
+          if (resourceType === "view") {
+            jsonResource = viewCodeToJson(codeContent);
+            finalPath = path.replace(/\.tsx$/, ".json");
+          } else if (resourceType === "tool") {
+            console.log(`[Import] Converting tool to JSON...`);
+            jsonResource = toolCodeToJson(codeContent);
+            finalPath = path.replace(/\.ts$/, ".json");
+            console.log(`[Import] Tool JSON name: ${jsonResource.name}, has execute: ${!!jsonResource.execute}`);
+          } else if (resourceType === "workflow") {
+            jsonResource = workflowCodeToJson(codeContent);
+            finalPath = path.replace(/\.ts$/, ".json");
+          }
+
+          if (jsonResource) {
+            const jsonString = JSON.stringify(jsonResource, null, 2);
+            finalContentBytes = new TextEncoder().encode(jsonString);
+            console.log(`[Import] Converted ${path} to JSON (${jsonString.length} bytes)`);
+          }
+        } catch (conversionError) {
+          console.error(
+            `[Import] Failed to convert ${path} to JSON:`,
+            conversionError instanceof Error ? conversionError.message : String(conversionError),
+          );
+          console.error(`[Import] Error stack:`, conversionError instanceof Error ? conversionError.stack : "");
+          continue;
+        }
+      } else if (path.endsWith(".json")) {
+        // Validate JSON files
         try {
           JSON.parse(textDecoder.decode(contentBytes));
         } catch {
@@ -1623,10 +1669,10 @@ export const importProjectFromGithub = createTool({
         }
       }
 
-      const remotePath = `/src/${path}`;
+      const remotePath = `/src/${finalPath}`;
 
-      console.log(`[Import] Uploading ${path} to ${remotePath}`);
-      const base64Content = encodeBytesToBase64(contentBytes);
+      console.log(`[Import] Uploading ${finalPath} to ${remotePath}`);
+      const base64Content = encodeBytesToBase64(finalContentBytes);
 
       try {
         await deconfigClient.PUT_FILE({
@@ -1637,7 +1683,7 @@ export const importProjectFromGithub = createTool({
         uploadedCount++;
         console.log(`[Import] Successfully uploaded: ${remotePath}`);
       } catch (error) {
-        console.error(`[Import] Failed to upload ${path}:`, error);
+        console.error(`[Import] Failed to upload ${finalPath}:`, error);
       }
     }
 

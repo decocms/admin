@@ -89,6 +89,7 @@
     "./deconfig": "./src/mcp/deconfig/index.ts",
     "./mcp/projects/manifest": "./src/mcp/projects/manifest.ts",
     "./mcp/projects/file-utils": "./src/mcp/projects/file-utils.ts",
-    "./mcp/projects/db-schemas": "./src/mcp/projects/db-schemas.ts"
+    "./mcp/projects/db-schemas": "./src/mcp/projects/db-schemas.ts",
+    "./mcp/projects/code-conversion": "./src/mcp/projects/code-conversion.ts"
   }
 }

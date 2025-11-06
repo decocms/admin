@@ -11,6 +11,12 @@ import { putFileContent } from "../deconfig/base.js";
 import { readManifestFile, manifestExists } from "../../lib/mcp-manifest.js";
 import { createIgnoreChecker } from "../../lib/ignore.js";
 import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
+import {
+  viewCodeToJson,
+  toolCodeToJson,
+  workflowCodeToJson,
+  detectResourceType,
+} from "@deco/sdk/mcp/projects/code-conversion";
 
 interface ImportOptions {
   from?: string;
@@ -254,7 +260,36 @@ export async function importCommand(options: ImportOptions): Promise<void> {
       try {
         const content = await fs.readFile(localPath, "utf-8");
 
-        if (remotePath.endsWith(".json")) {
+        // Convert code files back to JSON before uploading
+        let finalContent = content;
+        let finalRemotePath = remotePath;
+
+        const resourceType = detectResourceType(localPath);
+        if (resourceType) {
+          try {
+            let jsonResource;
+            if (resourceType === "view") {
+              jsonResource = viewCodeToJson(content);
+              finalRemotePath = remotePath.replace(/\.tsx$/, ".json");
+            } else if (resourceType === "tool") {
+              jsonResource = toolCodeToJson(content);
+              finalRemotePath = remotePath.replace(/\.ts$/, ".json");
+            } else if (resourceType === "workflow") {
+              jsonResource = workflowCodeToJson(content);
+              finalRemotePath = remotePath.replace(/\.ts$/, ".json");
+            }
+
+            if (jsonResource) {
+              finalContent = JSON.stringify(jsonResource, null, 2);
+            }
+          } catch (conversionError) {
+            console.warn(
+              `   ⚠️  Failed to convert ${localPath} to JSON: ${conversionError instanceof Error ? conversionError.message : String(conversionError)}`,
+            );
+            return;
+          }
+        } else if (remotePath.endsWith(".json")) {
+          // Validate JSON files
           try {
             JSON.parse(content);
           } catch {
@@ -263,16 +298,16 @@ export async function importCommand(options: ImportOptions): Promise<void> {
           }
         }
 
-        if (/[^\x20-\x7E\r\n\t]/.test(content)) {
+        if (/[^\x20-\x7E\r\n\t]/.test(finalContent)) {
           console.warn(`   ⚠️  Skipping binary file: ${remotePath}`);
           return;
         }
 
-        const deconfigPath = mapToRemotePath(remotePath);
+        const deconfigPath = mapToRemotePath(finalRemotePath);
 
         await putFileContent(
           deconfigPath,
-          content,
+          finalContent,
           "main",
           undefined,
           projectWorkspace,

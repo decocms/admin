@@ -1027,6 +1027,9 @@ export const createIntegration = createIntegrationManagementTool({
             app_id: customApp.id,
           };
         } catch (error) {
+          if (error instanceof UnauthorizedError) {
+            throw error;
+          }
           console.error(
             `[INTEGRATIONS_CREATE] Failed to create custom registry app:`,
             error,

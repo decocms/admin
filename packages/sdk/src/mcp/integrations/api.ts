@@ -49,6 +49,7 @@ import {
   DECO_CMS_API,
   MCPClient,
   NotFoundError,
+  UnauthorizedError,
   WellKnownBindings,
 } from "../index.ts";
 import { filterByWorkspaceOrLocator } from "../ownership.ts";
@@ -937,138 +938,154 @@ export const createIntegration = createIntegrationManagementTool({
       app_id: appId ?? fetchedApp?.id,
     };
 
-    // If no app_id but has connection, create a custom registry app for tool syncing
-    if (!payload.app_id && payload.connection) {
-      try {
-        // Use integration ID as the app name to ensure uniqueness
-        // Generate one if it doesn't exist yet
-        const integrationUuid = payload.id || crypto.randomUUID();
-        if (!payload.id) {
-          payload.id = integrationUuid;
-        }
+    const createdIntegration = await c.drizzle.transaction(async (tx) => {
+      // If no app_id but has connection, create a custom registry app for tool syncing
+      if (!payload.app_id && payload.connection) {
+        try {
+          // Use integration ID as the app name to ensure uniqueness
+          // Generate one if it doesn't exist yet
+          const integrationUuid = payload.id || crypto.randomUUID();
+          if (!payload.id) {
+            payload.id = integrationUuid;
+          }
 
-        // Format as integration ID (with i: prefix)
-        const integrationId = formatId("i", integrationUuid);
-        const customAppName = integrationId;
-        const customScopeName = "custom";
+          // Format as integration ID (with i: prefix)
+          const integrationId = formatId("i", integrationUuid);
+          const customAppName = integrationId;
+          const customScopeName = "custom";
 
-        // Ensure custom scope exists
-        let scopeId: string;
-        const existingScope = await c.drizzle
-          .select({ id: registryScopes.id })
-          .from(registryScopes)
-          .where(eq(registryScopes.scope_name, customScopeName))
-          .limit(1)
-          .then((r) => r[0]);
+          // Ensure custom scope exists
+          let scopeId: string;
+          const existingScope = await tx
+            .select({
+              id: registryScopes.id,
+              project_id: registryScopes.project_id,
+              workspace: registryScopes.workspace,
+            })
+            .from(registryScopes)
+            .where(eq(registryScopes.scope_name, customScopeName))
+            .limit(1)
+            .then((r) => r[0]);
 
-        if (existingScope) {
-          scopeId = existingScope.id;
-        } else {
-          const [newScope] = await c.drizzle
-            .insert(registryScopes)
+          if (existingScope) {
+            const ownsCustomScope =
+              (projectId !== null && existingScope.project_id === projectId) ||
+              existingScope.workspace === c.workspace.value;
+
+            if (!ownsCustomScope) {
+              throw new UnauthorizedError(
+                `Custom scope "${customScopeName}" is owned by another project`,
+              );
+            }
+
+            scopeId = existingScope.id;
+          } else {
+            const [newScope] = await tx
+              .insert(registryScopes)
+              .values({
+                scope_name: customScopeName,
+                workspace: c.workspace.value,
+                project_id: projectId,
+                updated_at: new Date().toISOString(),
+              })
+              .returning({ id: registryScopes.id });
+
+            scopeId = newScope.id;
+          }
+
+          // Create or update the custom app
+          const [customApp] = await tx
+            .insert(registryApps)
             .values({
-              scope_name: customScopeName,
               workspace: c.workspace.value,
               project_id: projectId,
-              updated_at: new Date().toISOString(),
-            })
-            .returning({ id: registryScopes.id });
-
-          scopeId = newScope.id;
-        }
-
-        // Create or update the custom app
-        const [customApp] = await c.drizzle
-          .insert(registryApps)
-          .values({
-            workspace: c.workspace.value,
-            project_id: projectId,
-            scope_id: scopeId,
-            name: customAppName,
-            friendly_name: payload.name,
-            description:
-              payload.description || `Custom integration: ${payload.name}`,
-            icon: payload.icon,
-            connection: payload.connection,
-            unlisted: true,
-            updated_at: new Date().toISOString(),
-          })
-          .onConflictDoUpdate({
-            target: [registryApps.scope_id, registryApps.name],
-            set: {
-              connection: payload.connection,
+              scope_id: scopeId,
+              name: customAppName,
               friendly_name: payload.name,
               description:
                 payload.description || `Custom integration: ${payload.name}`,
               icon: payload.icon,
+              connection: payload.connection,
+              unlisted: true,
               updated_at: new Date().toISOString(),
-            },
-          })
-          .returning({ id: registryApps.id });
+            })
+            .onConflictDoUpdate({
+              target: [registryApps.scope_id, registryApps.name],
+              set: {
+                connection: payload.connection,
+                friendly_name: payload.name,
+                description:
+                  payload.description || `Custom integration: ${payload.name}`,
+                icon: payload.icon,
+                updated_at: new Date().toISOString(),
+              },
+            })
+            .returning({ id: registryApps.id });
 
-        payload = {
-          ...payload,
-          app_id: customApp.id,
-        };
-      } catch (error) {
-        console.error(
-          `[INTEGRATIONS_CREATE] Failed to create custom registry app:`,
-          error,
-        );
-        // Continue without app_id - tools won't sync but integration will be created
+          payload = {
+            ...payload,
+            app_id: customApp.id,
+          };
+        } catch (error) {
+          if (error instanceof UnauthorizedError) {
+            throw error;
+          }
+          console.error(
+            `[INTEGRATIONS_CREATE] Failed to create custom registry app:`,
+            error,
+          );
+          // Continue without app_id - tools won't sync but integration will be created
+        }
       }
-    }
 
-    const existingIntegration = payload.id
-      ? await c.drizzle
-          .select({
-            id: integrations.id,
-          })
-          .from(integrations)
-          .leftJoin(projects, eq(integrations.project_id, projects.id))
-          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+      const existingIntegration = payload.id
+        ? await tx
+            .select({
+              id: integrations.id,
+            })
+            .from(integrations)
+            .leftJoin(projects, eq(integrations.project_id, projects.id))
+            .leftJoin(organizations, eq(projects.org_id, organizations.id))
+            .where(
+              and(
+                filterByWorkspaceOrLocator({
+                  table: integrations,
+                  ctx: c,
+                }),
+                eq(integrations.id, payload.id),
+              ),
+            )
+            .limit(1)
+            .then((r) => r[0])
+        : null;
+
+      if (existingIntegration) {
+        const [data] = await tx
+          .update(integrations)
+          .set(payload)
           .where(
             and(
-              filterByWorkspaceOrLocator({
-                table: integrations,
-                ctx: c,
-              }),
-              eq(integrations.id, payload.id),
+              eq(integrations.id, existingIntegration.id),
+              or(
+                eq(integrations.workspace, c.workspace.value),
+                projectId ? eq(integrations.project_id, projectId) : undefined,
+              ),
             ),
           )
-          .limit(1)
-          .then((r) => r[0])
-      : null;
+          .returning();
 
-    if (existingIntegration) {
-      const [data] = await c.drizzle
-        .update(integrations)
-        .set(payload)
-        .where(
-          and(
-            eq(integrations.id, existingIntegration.id),
-            or(
-              eq(integrations.workspace, c.workspace.value),
-              projectId ? eq(integrations.project_id, projectId) : undefined,
-            ),
-          ),
-        )
-        .returning();
+        return IntegrationSchema.parse({
+          ...data,
+          id: formatId("i", data.id),
+        });
+      }
+
+      const [data] = await tx.insert(integrations).values(payload).returning();
 
       return IntegrationSchema.parse({
         ...data,
         id: formatId("i", data.id),
       });
-    }
-
-    const [data] = await c.drizzle
-      .insert(integrations)
-      .values(payload)
-      .returning();
-
-    const createdIntegration = IntegrationSchema.parse({
-      ...data,
-      id: formatId("i", data.id),
     });
 
     // Sync tools to registry if app_id exists

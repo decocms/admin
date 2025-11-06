@@ -1,10 +1,10 @@
 import { useLocalStorage } from "../../hooks/use-local-storage";
 
 export function useDecopilotOpen() {
-  const { value: open, update: setOpen } = useLocalStorage({
-    key: "deco-cms-decopilot",
-    defaultValue: true,
-  });
+  const [open, setOpen] = useLocalStorage(
+    "deco-cms-decopilot",
+    (existing) => existing ?? true,
+  );
 
   const toggle = () => {
     setOpen(!open);

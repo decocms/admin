@@ -1,12 +1,13 @@
 /* oxlint-disable no-explicit-any */
-import { useWorkflowStatus, useSDK, useRecentResources } from "@deco/sdk";
+import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router";
+import { useRouteParams } from "../canvas/route-params-provider.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
@@ -167,13 +168,13 @@ function processStepGraph(graph: any): any[] {
 }
 
 function WorkflowDetailContent() {
-  const { workflowName = "", instanceId = "" } = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const workflowName = routeParams.workflowName || urlParams.workflowName || "";
+  const instanceId = routeParams.instanceId || urlParams.instanceId || "";
   const { data } = useWorkflowStatus(workflowName, instanceId);
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const params = useParams<{ org: string; project: string }>();
-  const hasTrackedRecentRef = useRef(false);
 
   // Initialize resource watch for this instance
   // Workflows are stored in deconfig at /src/workflows/{name}.json
@@ -185,39 +186,6 @@ function WorkflowDetailContent() {
     pathFilter: watchEnabled ? `/src/workflows/${workflowName}.json` : "",
     enabled: watchEnabled,
   });
-
-  // Track as recently opened when workflow is loaded (only once)
-  useEffect(() => {
-    if (
-      data &&
-      workflowName &&
-      instanceId &&
-      projectKey &&
-      params.org &&
-      params.project &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Use setTimeout to ensure this runs after render
-      setTimeout(() => {
-        addRecent({
-          id: `${workflowName}-${instanceId}`,
-          name: workflowName,
-          type: "workflow",
-          icon: "account_tree",
-          path: `/${projectKey}/workflows/runs/${workflowName}/instances/${instanceId}`,
-        });
-      }, 0);
-    }
-  }, [
-    data,
-    workflowName,
-    instanceId,
-    projectKey,
-    params.org,
-    params.project,
-    addRecent,
-  ]);
 
   // Prepare thread context for workflow detail
   const threadContextItems = useMemo(() => {

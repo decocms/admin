@@ -9,6 +9,7 @@ import {
   getTraceDebugId,
   KEYS,
   Locator,
+  useIntegrations,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -29,6 +30,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -47,6 +49,7 @@ import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
+import { useThreadManagerOptional } from "../decopilot/thread-context-manager.tsx";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
 import {
   deriveReadToolFromUpdate,
@@ -59,7 +62,7 @@ import {
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
-import { useThreadManager } from "../decopilot/thread-manager-context.tsx";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 import type { ContextItem } from "./types.ts";
 
 interface UiOptions {
@@ -467,8 +470,12 @@ export function AgenticChatProvider({
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
-  const { createNewThread } = useThreadManager();
+  const { createThread } = useThreadManager();
   const { setThreadState } = useDecopilotThread();
+  const { data: integrations = [] } = useIntegrations();
+  const threadManager = useThreadManagerOptional();
+  const addTab = threadManager?.addTab;
+  const tabs = threadManager?.tabs ?? [];
 
   const [state, dispatch] = useReducer(chatStateReducer, {
     finishReason: null,
@@ -544,6 +551,7 @@ export function AgenticChatProvider({
 
   // Track READ checkpoints by resource URI to create a pre-update version
   const readCheckpointRef = useRef<Map<string, string>>(new Map());
+  const autoSendCompletedRef = useRef(false);
   const addVersion = useAddVersion();
 
   const mergedUiOptions = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
@@ -756,12 +764,79 @@ export function AgenticChatProvider({
             addVersion as unknown as VersionHistoryActions["addVersion"],
           threadId,
         };
+
+        // Track unique resource URIs to open in tabs
+        const resourcesToOpen = new Set<string>();
+
         for (const part of result.message.parts) {
           const info = normalizeToolPart(part);
           if (!info.isTool) continue;
           if (info.state !== "output-available" || !info.toolName) continue;
           handleReadCheckpointFromPart(info, toolDeps);
           handleUpdateOrCreateFromPart(info, toolDeps);
+
+          // Extract resource URI from CALL_TOOL parts
+          if (info.toolName === "CALL_TOOL" && info.args) {
+            // The args from CALL_TOOL are the input to the called tool
+            const callToolArgs = info.args as
+              | {
+                  id?: string;
+                  params?: {
+                    name?: string;
+                    arguments?: Record<string, unknown>;
+                  };
+                }
+              | undefined;
+
+            // Try to get URI from the nested tool arguments
+            const nestedArgs = callToolArgs?.params?.arguments;
+            let resourceUri: string | null = null;
+
+            if (nestedArgs && typeof nestedArgs === "object") {
+              const maybeUri =
+                (nestedArgs as { uri?: unknown; resource?: unknown }).uri ??
+                (nestedArgs as { resource?: unknown }).resource;
+              resourceUri = typeof maybeUri === "string" ? maybeUri : null;
+            }
+
+            // For CREATE operations, check output
+            if (!resourceUri && info.output?.structuredContent?.uri) {
+              resourceUri = info.output.structuredContent.uri;
+            }
+
+            // Add to set if found
+            if (resourceUri) {
+              resourcesToOpen.add(resourceUri);
+            }
+          }
+        }
+
+        // Open tabs for all unique resource URIs found
+        if (addTab) {
+          for (const resourceUri of resourcesToOpen) {
+            // Check if tab already exists
+            const existingTab = tabs.find(
+              (tab) => tab.type === "detail" && tab.resourceUri === resourceUri,
+            );
+
+            if (!existingTab) {
+              // Extract integration ID from resource URI (format: rsc://integration-id/resource-name/resource-id)
+              const integrationId = resourceUri
+                .replace(/^rsc:\/\//, "")
+                .split("/")[0];
+              const integration = integrations.find(
+                (i) => i.id === integrationId,
+              );
+
+              // Create new tab
+              addTab({
+                type: "detail",
+                resourceUri: resourceUri,
+                title: resourceUri.split("/").pop() || "Resource",
+                icon: integration?.icon,
+              });
+            }
+          }
         }
       }
     },
@@ -1035,15 +1110,34 @@ export function AgenticChatProvider({
     }
   }, [initialAgent, form]);
 
+  // Reset auto-send completed flag when autoSend becomes false or thread changes
+  useEffect(() => {
+    if (!autoSend || chat.messages.length > 0) {
+      autoSendCompletedRef.current = false;
+    }
+  }, [autoSend, chat.messages.length]);
+
   // Auto-send initialInput when autoSend is true
   useEffect(() => {
-    if (autoSend && input && chat.messages.length === 0) {
+    if (
+      autoSend &&
+      input &&
+      chat.messages.length === 0 &&
+      !autoSendCompletedRef.current
+    ) {
+      autoSendCompletedRef.current = true;
       wrappedSendMessage({
         role: "user",
         id: crypto.randomUUID(),
         parts: [{ type: "text", text: input }],
       });
-      onAutoSendComplete?.();
+      // Defer the callback to avoid updating state during render
+      // Use startTransition to mark this as a non-urgent update
+      if (onAutoSendComplete) {
+        startTransition(() => {
+          onAutoSendComplete();
+        });
+      }
     }
   }, [
     autoSend,
@@ -1152,7 +1246,7 @@ export function AgenticChatProvider({
           autoSend: false,
           threadId,
         });
-        createNewThread(pathname, agentId, threadId);
+        createThread(threadId);
       }
     }
 
@@ -1187,7 +1281,7 @@ export function AgenticChatProvider({
     wrappedSendMessage,
     setContextItems,
     createNewThreadWithMessage,
-    createNewThread,
+    createThread,
     setThreadState,
   ]);
 

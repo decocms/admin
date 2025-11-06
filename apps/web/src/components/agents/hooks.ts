@@ -1,5 +1,9 @@
 import { useUpdateThreadMessages } from "@deco/sdk";
 import { useCallback } from "react";
+import {
+  useThreadManagerOptional,
+  buildAgentUri,
+} from "../decopilot/thread-context-manager.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 interface AgentNavigationOptions {
@@ -8,12 +12,11 @@ interface AgentNavigationOptions {
   replace?: boolean;
 }
 
-const getChatPath = (agentId: string, threadId: string): string =>
-  `/agent/${agentId}/${threadId}`;
-
 export const useFocusChat = () => {
-  const navigateWorkspace = useNavigateWorkspace();
+  const threadManager = useThreadManagerOptional();
+  const addTab = threadManager?.addTab;
   const updateMessages = useUpdateThreadMessages();
+  const navigateWorkspace = useNavigateWorkspace();
 
   const navigateToAgent = useCallback(
     (agentId: string, threadId: string, options?: AgentNavigationOptions) => {
@@ -22,24 +25,20 @@ export const useFocusChat = () => {
         updateMessages(threadId);
       }
 
-      const pathname = getChatPath(agentId, threadId);
-      // Add query parameters if options are provided
-      let url = pathname;
-      const searchParams = new URLSearchParams();
-
-      if (options?.message) {
-        searchParams.append("message", options.message);
+      // Open agent in a canvas tab if available, otherwise navigate
+      if (addTab) {
+        addTab({
+          type: "detail",
+          resourceUri: buildAgentUri(agentId, threadId),
+          title: "Loading...", // Will be updated when agent loads
+          icon: "robot_2",
+        });
+      } else {
+        // Fallback to navigation if tabs aren't available
+        navigateWorkspace(`/agent/${agentId}/${threadId}`);
       }
-
-      // Only append search params if we have any
-      if (searchParams.toString()) {
-        url = `${pathname}?${searchParams.toString()}`;
-      }
-
-      // Navigate to the agent page
-      navigateWorkspace(url, options?.replace ? { replace: true } : undefined);
     },
-    [navigateWorkspace, updateMessages],
+    [addTab, updateMessages, navigateWorkspace],
   );
 
   return navigateToAgent;

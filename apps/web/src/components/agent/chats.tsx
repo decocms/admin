@@ -23,7 +23,7 @@ import { AgenticChatProvider } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
 import { ChatHeader } from "./chat-header.tsx";
 
 const MainChat = () => {
@@ -32,7 +32,7 @@ const MainChat = () => {
       <ScrollArea className="flex-1 min-h-0">
         <ChatMessages />
       </ScrollArea>
-      <div className="flex-none p-2">
+      <div className="flex-none pb-4 px-4">
         <ChatInput />
       </div>
     </div>

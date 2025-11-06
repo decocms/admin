@@ -18,6 +18,7 @@ import {
   useAgentKnowledgeIntegration,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { useAgenticChat } from "../chat/provider.tsx";
 import {
   AddFileToKnowledgeButton,
@@ -260,13 +261,13 @@ function _Knowledge() {
 }
 
 function useConfigureAgentConnection() {
-  const navigateWorkspace = useNavigateWorkspace();
+  const focusChat = useFocusChat();
   return useCallback(
     (connection: Integration) => {
       const agentId = connection.id.split("a:")[1];
-      navigateWorkspace(`/agent/${agentId}/${crypto.randomUUID()}`);
+      focusChat(agentId, crypto.randomUUID(), { history: false });
     },
-    [navigateWorkspace],
+    [focusChat],
   );
 }
 

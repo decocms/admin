@@ -25,7 +25,6 @@ import { useResourceRoute } from "../resources-v2/route-context.tsx";
 import { WorkflowRunStepCard } from "../workflow-builder/steps/card.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { ResourceDetailHeader } from "../common/resource-detail-header.tsx";
 
 function JsonViewerWithTitle({
   data,
@@ -126,12 +125,6 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
   const isLoading = runQuery.isLoading || (workflowUri && isLoadingWorkflow);
   const run = runQuery.data;
 
-  // All hooks must be called unconditionally at the top
-  const headerTitle = useMemo(
-    () => run?.data?.name || "Workflow Run",
-    [run?.data?.name],
-  );
-
   const status = run?.data?.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
 
@@ -191,9 +184,6 @@ export function WorkflowRunDetail(_: { resourceUri?: string } = {}) {
     >
       <ScrollArea className="h-full w-full">
         <div className="flex flex-col">
-          {/* Header */}
-          <ResourceDetailHeader title={headerTitle} />
-
           {/* Status and metadata */}
           <DetailSection>
             {/* Status Badge and Workflow Name */}

@@ -1,6 +1,5 @@
 import {
   ToolDefinitionSchema,
-  useRecentResources,
   useSDK,
   useToolByUriV2,
   useUpdateTool,
@@ -17,8 +16,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
@@ -29,10 +27,10 @@ import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import {
-  ResourceDetailHeader,
   CodeAction,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
 
 // Tool type inferred from the Zod schema
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -55,11 +53,6 @@ interface ToolDisplayCanvasProps {
 export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   const { data: resource, isLoading } = useToolByUriV2(resourceUri);
   const effectiveTool = resource?.data;
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const params = useParams<{ org: string; project: string }>();
-  const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
   const updateToolMutation = useUpdateTool();
@@ -107,40 +100,6 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   }, []);
 
   // Track as recently opened when tool is loaded (only once)
-  useEffect(() => {
-    if (
-      effectiveTool &&
-      resourceUri &&
-      projectKey &&
-      params.org &&
-      params.project &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Parse the resource URI to extract integration and resource name
-      // Format: rsc://integration-id/resource-name/resource-id
-      const uriWithoutPrefix = resourceUri.replace("rsc://", "");
-      const [integrationId, resourceName] = uriWithoutPrefix.split("/");
-
-      // Use setTimeout to ensure this runs after render
-      setTimeout(() => {
-        addRecent({
-          id: resourceUri,
-          name: effectiveTool.name,
-          type: "tool",
-          icon: "build",
-          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
-        });
-      }, 0);
-    }
-  }, [
-    effectiveTool,
-    resourceUri,
-    projectKey,
-    params.org,
-    params.project,
-    addRecent,
-  ]);
 
   // Clear errors when tool changes
   useEffect(() => {
@@ -159,6 +118,9 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
   // Form data state to prevent clearing after submission
   const [formData, setFormData] = useState<Record<string, unknown>>({});
+
+  // Get locator from SDK context
+  const { locator } = useSDK();
 
   // Tool call hook - extract tool name from URI and use i:self integration
   const toolCallMutation = useToolCall({ id: "i:self" }, locator);
@@ -268,28 +230,23 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      {/* Header with code viewer toggle */}
-      <ResourceDetailHeader
-        title={effectiveTool.name}
-        actions={
-          <>
-            {isCodeViewerOpen && (
-              <SaveDiscardActions
-                hasChanges={isDirty}
-                onSave={handleSaveCode}
-                onDiscard={handleResetCode}
-                isSaving={updateToolMutation.isPending}
-                discardLabel="Reset"
-              />
-            )}
-            <CodeAction
-              isOpen={isCodeViewerOpen}
-              onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-              hasCode={!!effectiveTool.execute}
-            />
-          </>
-        }
-      />
+      {/* Action buttons rendered in canvas header via portal */}
+      <TabActionButton>
+        {isCodeViewerOpen && (
+          <SaveDiscardActions
+            hasChanges={isDirty}
+            onSave={handleSaveCode}
+            onDiscard={handleResetCode}
+            isSaving={updateToolMutation.isPending}
+            discardLabel="Reset"
+          />
+        )}
+        <CodeAction
+          isOpen={isCodeViewerOpen}
+          onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+          hasCode={!!effectiveTool.execute}
+        />
+      </TabActionButton>
 
       {/* Code Viewer Section - Shows when code button is clicked */}
       {isCodeViewerOpen && effectiveTool.execute ? (

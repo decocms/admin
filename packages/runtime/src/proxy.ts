@@ -41,7 +41,7 @@ function supportsToolNameInPath(url: string): boolean {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
-    
+
     // Our main APIs that support /tool/${toolName} routing
     return (
       hostname === "api.decocms.com" ||
@@ -97,13 +97,17 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         // Only modify connections that have a URL property (HTTP, SSE, Websocket)
         // Use automatic detection based on URL, with optional override
         let toolConnection = connection;
-        const shouldAddToolName = options?.supportsToolName ?? (
-          "url" in connection && 
-          typeof connection.url === "string" && 
-          supportsToolNameInPath(connection.url)
-        );
-        
-        if (shouldAddToolName && "url" in connection && typeof connection.url === "string") {
+        const shouldAddToolName =
+          options?.supportsToolName ??
+          ("url" in connection &&
+            typeof connection.url === "string" &&
+            supportsToolNameInPath(connection.url));
+
+        if (
+          shouldAddToolName &&
+          "url" in connection &&
+          typeof connection.url === "string"
+        ) {
           toolConnection = {
             ...connection,
             url: connection.url.endsWith("/")

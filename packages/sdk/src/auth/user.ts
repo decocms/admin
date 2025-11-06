@@ -83,7 +83,9 @@ export async function getUserBySupabaseCookie(
 
     const user = data?.user;
     if (!user) {
-      return [jwt ?? undefined, ONE_MINUTE_MS];
+      const shouldCache = jwt && key;
+
+      return [jwt ?? undefined, shouldCache ? ONE_MINUTE_MS : 0];
     }
 
     // Get the cache TTL
@@ -110,7 +112,12 @@ export async function getUserBySupabaseCookie(
   const promise = fetchUserFromSession();
   const userPromise = promise.then(([user, ttl]) => {
     // Sets the ttl to the right value
-    promiseCache.set(cacheKey, userPromise, { ttl });
+    if (ttl > 0) {
+      promiseCache.set(cacheKey, userPromise, { ttl });
+    } else {
+      promiseCache.delete(cacheKey);
+    }
+
     return user ?? undefined;
   });
 

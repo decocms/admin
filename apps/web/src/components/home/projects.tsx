@@ -32,7 +32,14 @@ import { Label } from "@deco/ui/components/label.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Suspense, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ErrorBoundary } from "../../error-boundary";

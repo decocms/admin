@@ -6,7 +6,6 @@ import { type ThemeVariable, useSDK, useOrgTheme } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import {
-  DEFAULT_FONT_STACK,
   formatFontFamily,
   getGoogleFontUrl,
   applyFontToDocument,
@@ -283,7 +282,6 @@ export function WithOrgTheme({ children }: { children: React.ReactNode }) {
       if (linkElement) {
         linkElement.remove();
       }
-      applyFontToDocument(DEFAULT_FONT_STACK);
     }
   }, [theme?.font]);
 

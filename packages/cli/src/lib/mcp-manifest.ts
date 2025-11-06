@@ -88,6 +88,22 @@ export async function extractDependenciesFromTools(
         integrationIds.add(tool.integrationId);
       }
 
+      // Look for dependencies array (e.g., TODO_CREATE.json pattern)
+      if (Array.isArray(tool.dependencies)) {
+        for (const dependency of tool.dependencies) {
+          if (dependency && typeof dependency === "object") {
+            // Check for integrationId field
+            if (dependency.integrationId && typeof dependency.integrationId === "string") {
+              integrationIds.add(dependency.integrationId);
+            }
+            // Check for integration_id field
+            if (dependency.integration_id && typeof dependency.integration_id === "string") {
+              integrationIds.add(dependency.integration_id);
+            }
+          }
+        }
+      }
+
       // Look for tools_set references (object keys)
       if (tool.tools_set && typeof tool.tools_set === "object") {
         for (const key of Object.keys(tool.tools_set)) {

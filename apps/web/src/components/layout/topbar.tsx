@@ -25,10 +25,10 @@ import { LoggedUser, LoggedUserAvatarTrigger } from "../sidebar/footer";
 import { DefaultBreadcrumb, TopbarControls } from "./project";
 import { InboxPopover } from "./inbox-popover.tsx";
 import { useParams } from "react-router";
-import { MCPClient } from "@deco/sdk";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useCopy } from "../../hooks/use-copy.ts";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useExportProjectToZip } from "../../hooks/use-export-project.ts";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -60,10 +60,10 @@ function SidebarToggle() {
 function ExportButton() {
   const { org, project } = useParams();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [packageManager, setPackageManager] = useState<"bun" | "npm">("bun");
   const { handleCopy: handleCopyCommand, copied: copiedCommand } = useCopy();
   const { handleCopy: handleCopyInstall, copied: copiedInstall } = useCopy();
+  const exportMutation = useExportProjectToZip();
 
   async function handleExport() {
     if (!org || !project) {
@@ -71,38 +71,8 @@ function ExportButton() {
       return;
     }
 
-    setIsExporting(true);
-    try {
-      toast.info("Exporting project...");
-
-      const result = await MCPClient.PROJECTS_EXPORT_ZIP({ org, project });
-
-      // Convert base64 to blob and download
-      const binaryString = atob(result.base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: "application/zip" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success("Project exported successfully!");
-      setIsExportModalOpen(false);
-    } catch (error) {
-      console.error("Export failed:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to export project",
-      );
-    } finally {
-      setIsExporting(false);
-    }
+    await exportMutation.mutateAsync({ org, project });
+    setIsExportModalOpen(false);
   }
 
   // Only show in project context
@@ -156,8 +126,12 @@ function ExportButton() {
                   Export your project as a zip file containing all resources
                 </p>
               </div>
-              <Button onClick={handleExport} disabled={isExporting} size="sm">
-                {isExporting ? (
+              <Button
+                onClick={handleExport}
+                disabled={exportMutation.isPending}
+                size="sm"
+              >
+                {exportMutation.isPending ? (
                   <div className="flex items-center gap-2">
                     <Spinner />
                     Exporting...

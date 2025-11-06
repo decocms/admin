@@ -10,9 +10,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/web/components/ui/card";
-import { Button } from "@/web/components/ui/button";
-import { Skeleton } from "@/web/components/ui/skeleton";
+} from "@deco/ui/components/card.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Users, Cable, ArrowRight, Activity } from "lucide-react";
 
 const useMembers = () => {

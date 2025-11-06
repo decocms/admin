@@ -1,6 +1,6 @@
 import { OrganizationSwitcher, UserButton } from "@daveyplate/better-auth-ui";
 import { Outlet, useParams } from "@tanstack/react-router";
-import RequiredAuthLayout from "./required-auth-layout";
+import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 
 function Topbar() {
   const { org: orgSlug } = useParams({ strict: false });

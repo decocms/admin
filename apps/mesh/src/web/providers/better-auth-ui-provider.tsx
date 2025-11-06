@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 
-import { authClient } from "../lib/auth-client";
+import { authClient } from "@/web/lib/auth-client";
 import { AuthUIProvider } from "@daveyplate/better-auth-ui";
 
 export function BetterAuthUIProvider({

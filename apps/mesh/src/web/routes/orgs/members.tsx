@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/web/components/ui/card";
+} from "@deco/ui/components/card.tsx";
 import {
   Table,
   TableBody,
@@ -14,22 +14,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/web/components/ui/table";
+} from "@deco/ui/components/table.tsx";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@/web/components/ui/avatar";
-import { Badge } from "@/web/components/ui/badge";
-import { Button } from "@/web/components/ui/button";
-import { Skeleton } from "@/web/components/ui/skeleton";
+} from "@deco/ui/components/avatar.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { UserPlus, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/web/components/ui/dropdown-menu";
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { KEYS } from "@/web/lib/query-keys";
 
 interface Member {

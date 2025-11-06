@@ -9,25 +9,25 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/web/components/ui/card";
-import { Button } from "@/web/components/ui/button";
-import { Badge } from "@/web/components/ui/badge";
+} from "@deco/ui/components/card.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/web/components/ui/tabs";
-import { Textarea } from "@/web/components/ui/textarea";
+} from "@deco/ui/components/tabs.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/web/components/ui/accordion";
-import { ScrollArea } from "@/web/components/ui/scroll-area";
-import { Separator } from "@/web/components/ui/separator";
-import { Label } from "@/web/components/ui/label";
+} from "@deco/ui/components/accordion.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
 import {
   AlertCircle,
   CheckCircle2,
@@ -39,7 +39,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/web/components/ui/alert";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import type { MCPConnection } from "@/storage/types";
 import { KEYS } from "@/web/lib/query-keys";
 

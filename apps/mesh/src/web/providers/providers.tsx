@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { AuthConfigProvider } from "./auth-config-provider";
-import { BetterAuthUIProvider } from "./better-auth-ui-provider";
+import { AuthConfigProvider } from "@/web/providers/auth-config-provider";
+import { BetterAuthUIProvider } from "@/web/providers/better-auth-ui-provider";
 
 const queryClient = new QueryClient();
 

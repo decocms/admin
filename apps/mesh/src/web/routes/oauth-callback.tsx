@@ -5,7 +5,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/web/components/ui/card";
+} from "@deco/ui/components/card.tsx";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function OAuthCallback() {

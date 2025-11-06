@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { useAuthConfig } from "../providers/auth-config-provider";
-import { SplashScreen } from "../components/splash-screen";
-import { authClient } from "../lib/auth-client";
+import { useAuthConfig } from "@/web/providers/auth-config-provider";
+import { SplashScreen } from "@/web/components/splash-screen";
+import { authClient } from "@/web/lib/auth-client";
 import { Navigate, useSearch } from "@tanstack/react-router";
-import { UnifiedAuthForm } from "../components/unified-auth-form";
+import { UnifiedAuthForm } from "@/web/components/unified-auth-form";
 
 function RunSSO({
   callbackURL,

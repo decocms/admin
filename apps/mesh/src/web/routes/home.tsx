@@ -1,4 +1,4 @@
-import { OrganizationsHome } from "../components/organizations-home";
+import { OrganizationsHome } from "@/web/components/organizations-home";
 
 export default function App() {
   return (

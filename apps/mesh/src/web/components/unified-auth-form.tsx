@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useAuthConfig } from "../providers/auth-config-provider";
-import { authClient } from "../lib/auth-client";
+import { useAuthConfig } from "@/web/providers/auth-config-provider";
+import { authClient } from "@/web/lib/auth-client";
 
 export function UnifiedAuthForm() {
   const { emailAndPassword, magicLink, socialProviders } = useAuthConfig();

@@ -36,6 +36,7 @@ export interface CreateStubAPIOptions {
   workspace?: string;
   connection?: MCPConnection;
   mcpPath?: string;
+  supportsToolName?: boolean;
 }
 
 export type CreateStubOptions<TDefinition extends ToolBinder[]> =
@@ -56,5 +57,6 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
     decoCmsApiUrl: DECO_CMS_API_URL,
     debugId: getTraceDebugId,
     getErrorByStatusCode,
+    supportsToolName: options?.supportsToolName ?? false,
   });
 }

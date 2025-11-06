@@ -62,6 +62,7 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     ): MCPClientFetchStub<TDefinition> => {
       const stub = createMCPFetchStub<TDefinition>({
         connection: mcpConnection,
+        supportsToolName: false,
       });
       return new Proxy<MCPClientFetchStub<TDefinition>>(
         {} as MCPClientFetchStub<TDefinition>,

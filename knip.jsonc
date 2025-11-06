@@ -22,6 +22,9 @@
     "packages/sdk": {
       // TODO: Check if we really need this observability folder
       "ignore": ["src/observability/**/*"]
+    },
+    "apps/mesh": {
+      "entry": ["public/index.html"]
     }
   },
   "ignore": [

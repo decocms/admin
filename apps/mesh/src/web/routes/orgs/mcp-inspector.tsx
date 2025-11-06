@@ -552,16 +552,16 @@ export default function McpInspector() {
                                         {};
                                       Object.entries(
                                         tool.inputSchema.properties,
-                                      ).forEach(
-                                        ([key, schema]: [
-                                          string,
-                                          { default?: unknown },
-                                        ]) => {
-                                          if (schema.default !== undefined) {
-                                            defaults[key] = schema.default;
-                                          }
-                                        },
-                                      );
+                                      ).forEach(([key, schema]) => {
+                                        if (
+                                          typeof schema === "object" &&
+                                          schema !== null &&
+                                          "default" in schema &&
+                                          schema.default !== undefined
+                                        ) {
+                                          defaults[key] = schema.default;
+                                        }
+                                      });
                                       setToolArgs(
                                         JSON.stringify(defaults, null, 2),
                                       );

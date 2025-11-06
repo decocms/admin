@@ -36,7 +36,7 @@ describe("AuditLogStorage", () => {
       // Query to verify
       const logs = await storage.query({ toolName: "TEST_TOOL" });
       expect(logs.length).toBeGreaterThan(0);
-      expect(logs[0].toolName).toBe("TEST_TOOL");
+      expect(logs[0]!.toolName).toBe("TEST_TOOL");
     });
 
     it("should handle minimal audit log", async () => {
@@ -48,8 +48,8 @@ describe("AuditLogStorage", () => {
 
       const logs = await storage.query({ toolName: "MINIMAL_TOOL" });
       expect(logs.length).toBe(1);
-      expect(logs[0].allowed).toBe(false);
-      expect(logs[0].userId).toBeNull();
+      expect(logs[0]!.allowed).toBe(false);
+      expect(logs[0]!.userId).toBeNull();
     });
 
     it("should serialize requestMetadata as JSON", async () => {
@@ -61,7 +61,7 @@ describe("AuditLogStorage", () => {
       });
 
       const logs = await storage.query({ toolName: "JSON_TEST" });
-      expect(logs[0].requestMetadata).toEqual({ complex: { nested: "data" } });
+      expect(logs[0]!.requestMetadata).toEqual({ complex: { nested: "data" } });
     });
   });
 
@@ -153,8 +153,8 @@ describe("AuditLogStorage", () => {
       });
 
       const logs = await storage.query({ toolName: "BOOL_TRUE" });
-      expect(logs[0].allowed).toBe(true);
-      expect(typeof logs[0].allowed).toBe("boolean");
+      expect(logs[0]!.allowed).toBe(true);
+      expect(typeof logs[0]!.allowed).toBe("boolean");
     });
 
     it("should convert SQLite boolean to false", async () => {
@@ -165,8 +165,8 @@ describe("AuditLogStorage", () => {
       });
 
       const logs = await storage.query({ toolName: "BOOL_FALSE" });
-      expect(logs[0].allowed).toBe(false);
-      expect(typeof logs[0].allowed).toBe("boolean");
+      expect(logs[0]!.allowed).toBe(false);
+      expect(typeof logs[0]!.allowed).toBe("boolean");
     });
   });
 });

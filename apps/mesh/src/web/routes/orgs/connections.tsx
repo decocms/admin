@@ -75,7 +75,7 @@ export default function OrgConnections() {
   const { data, isLoading } = useConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] =
-    useState<MCPConnection | null>(null);
+    useState<(typeof connections)[number] | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -349,7 +349,7 @@ export default function OrgConnections() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {connections.map((connection: MCPConnection) => (
+                {connections.map((connection) => (
                   <TableRow key={connection.id}>
                     <TableCell>
                       <div>
@@ -395,7 +395,9 @@ export default function OrgConnections() {
                             Inspect
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleEdit(connection)}
+                            onClick={() =>
+                              handleEdit(connection as unknown as MCPConnection)
+                            }
                           >
                             Edit
                           </DropdownMenuItem>

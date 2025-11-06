@@ -1,10 +1,11 @@
 import type { Kysely } from "kysely";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import type { Meter, Tracer } from "@opentelemetry/api";
 import { closeDatabase, createDatabase } from "../database";
 import { createTestSchema } from "../storage/test-helpers";
 import type { Database } from "../storage/types";
 import { createMeshContextFactory } from "./context-factory";
-import type { MockAuth, MockTracer, MockMeter } from "../test-utils";
+import type { BetterAuthInstance } from "./mesh-context";
 
 describe("createMeshContextFactory", () => {
   let db: Kysely<Database>;
@@ -19,9 +20,7 @@ describe("createMeshContextFactory", () => {
     await closeDatabase(db);
   });
 
-  const createMockHonoContext = (
-    overrides?: Partial<ReturnType<typeof createMockHonoContext>>,
-  ) => ({
+  const createMockHonoContext: any = (overrides?: any) => ({
     req: {
       url: "https://mesh.example.com/mcp/tools",
       path: "/mcp/tools",
@@ -41,9 +40,9 @@ describe("createMeshContextFactory", () => {
     ...overrides,
   });
 
-  const createMockAuth = (): MockAuth => ({
+  const createMockAuth = (): any => ({
     api: {
-      getMcpSession: vi.fn().mockResolvedValue(null),
+      getMcpSession: vi.fn().mockResolvedValue(null) as any,
       verifyApiKey: vi.fn().mockResolvedValue({
         valid: true,
         key: {
@@ -67,11 +66,11 @@ describe("createMeshContextFactory", () => {
     it("should create context factory function", () => {
       const factory = createMeshContextFactory({
         db,
-        auth: createMockAuth(),
+        auth: createMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -83,11 +82,11 @@ describe("createMeshContextFactory", () => {
     it("should create MeshContext from Hono context", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null, // No auth for this test
+        auth: null as unknown as BetterAuthInstance, // No auth for this test
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -112,11 +111,11 @@ describe("createMeshContextFactory", () => {
     it("should derive base URL from request", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -136,11 +135,11 @@ describe("createMeshContextFactory", () => {
     it("should populate request metadata", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -168,11 +167,11 @@ describe("createMeshContextFactory", () => {
     it("should extract organization from Better Auth", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: createMockAuth(),
+        auth: createMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -203,11 +202,11 @@ describe("createMeshContextFactory", () => {
 
       const factory = createMeshContextFactory({
         db,
-        auth: authWithoutOrg,
+        auth: authWithoutOrg as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -222,11 +221,11 @@ describe("createMeshContextFactory", () => {
     it("should create storage adapters", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 
@@ -250,11 +249,11 @@ describe("createMeshContextFactory", () => {
     it("should create AccessControl instance", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null,
+        auth: null as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
-          tracer: {} as MockTracer,
-          meter: {} as MockMeter,
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
         },
       });
 

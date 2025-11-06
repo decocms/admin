@@ -68,10 +68,10 @@ export class AuditLogStorage {
       query = query.where("toolName", "=", filters.toolName);
     }
     if (filters.startDate) {
-      query = query.where("timestamp", ">=", filters.startDate.toISOString());
+      query = query.where("timestamp", ">=", filters.startDate);
     }
     if (filters.endDate) {
-      query = query.where("timestamp", "<=", filters.endDate.toISOString());
+      query = query.where("timestamp", "<=", filters.endDate);
     }
 
     if (filters.limit) {
@@ -86,9 +86,10 @@ export class AuditLogStorage {
     return logs.map((log) => ({
       ...log,
       allowed: log.allowed === 1, // Convert SQLite boolean
-      requestMetadata: log.requestMetadata
-        ? (JSON.parse(log.requestMetadata as string) as Record<string, unknown>)
-        : null,
+      requestMetadata:
+        log.requestMetadata && typeof log.requestMetadata === "string"
+          ? (JSON.parse(log.requestMetadata) as Record<string, unknown>)
+          : log.requestMetadata,
     }));
   }
 }

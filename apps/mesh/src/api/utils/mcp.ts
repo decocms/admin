@@ -184,7 +184,7 @@ class McpServerBuilder {
                   text: JSON.stringify(result),
                 },
               ],
-              structuredContent: result,
+              structuredContent: result as { [x: string]: unknown } | undefined,
             };
           } catch (error) {
             const err = error as Error;

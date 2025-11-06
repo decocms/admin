@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/web/lib/auth-client";
 import { fetcher } from "@/tools/client";
 import { KEYS } from "@/web/lib/query-keys";
-import type { MCPConnection } from "@/storage/types";
 import {
   Card,
   CardContent,
@@ -39,7 +38,7 @@ export default function OrgHome() {
   const connections = connectionsData?.connections ?? [];
 
   const activeConnections = connections.filter(
-    (c: MCPConnection) => c.status === "active",
+    (c) => c.status === "active",
   ).length;
 
   return (

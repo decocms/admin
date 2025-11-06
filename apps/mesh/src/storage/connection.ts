@@ -13,7 +13,7 @@ import type {
   CreateConnectionData,
   UpdateConnectionData,
 } from "./ports";
-import type { Database, MCPConnection } from "./types";
+import type { Database, MCPConnection, ToolDefinition } from "./types";
 
 export class ConnectionStorage implements ConnectionStoragePort {
   constructor(
@@ -81,7 +81,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .where("id", "=", id)
       .executeTakeFirst();
 
-    return connection ? await this.deserializeConnection(connection) : null;
+    return connection
+      ? await this.deserializeConnection(connection as Parameters<typeof this.deserializeConnection>[0])
+      : null;
   }
 
   async list(organizationId: string): Promise<MCPConnection[]> {
@@ -92,7 +94,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .execute();
 
     return await Promise.all(
-      connections.map((c) => this.deserializeConnection(c)),
+      connections.map((c) => this.deserializeConnection(c as Parameters<typeof this.deserializeConnection>[0])),
     );
   }
 
@@ -102,7 +104,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       name: string;
       description: string;
       icon: string;
-      status: string;
+      status: "active" | "inactive" | "error";
       connectionToken: string;
       metadata: string;
       tools: string;
@@ -197,6 +199,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   /**
    * Deserialize JSON fields from database and decrypt token
+   * Kysely automatically deserializes JSON columns on SELECT
    */
   private async deserializeConnection(raw: {
     id: string;
@@ -207,17 +210,17 @@ export class ConnectionStorage implements ConnectionStoragePort {
     icon: string | null;
     appName: string | null;
     appId: string | null;
-    connectionType: string;
+    connectionType: "HTTP" | "SSE" | "Websocket";
     connectionUrl: string;
     connectionToken: string | null;
-    connectionHeaders: string | null;
-    oauthConfig: string | null;
-    metadata: string | null;
-    tools: string | null;
-    bindings: string | null;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
+    connectionHeaders: Record<string, string> | null;
+    oauthConfig: unknown;
+    metadata: Record<string, unknown> | null;
+    tools: ToolDefinition[] | null;
+    bindings: string[] | null;
+    status: "active" | "inactive" | "error";
+    createdAt: Date;
+    updatedAt: Date;
   }): Promise<MCPConnection> {
     // Decrypt token if present
     let decryptedToken: string | null = null;
@@ -232,15 +235,25 @@ export class ConnectionStorage implements ConnectionStoragePort {
     }
 
     return {
-      ...raw,
+      id: raw.id,
+      organizationId: raw.organizationId,
+      createdById: raw.createdById,
+      name: raw.name,
+      description: raw.description,
+      icon: raw.icon,
+      appName: raw.appName,
+      appId: raw.appId,
+      connectionType: raw.connectionType,
+      connectionUrl: raw.connectionUrl,
       connectionToken: decryptedToken,
-      connectionHeaders: raw.connectionHeaders
-        ? JSON.parse(raw.connectionHeaders)
-        : null,
-      oauthConfig: raw.oauthConfig ? JSON.parse(raw.oauthConfig) : null,
-      metadata: raw.metadata ? JSON.parse(raw.metadata) : null,
-      tools: raw.tools ? JSON.parse(raw.tools) : null,
-      bindings: raw.bindings ? JSON.parse(raw.bindings) : null,
+      connectionHeaders: raw.connectionHeaders,
+      oauthConfig: raw.oauthConfig as MCPConnection["oauthConfig"],
+      metadata: raw.metadata,
+      tools: raw.tools,
+      bindings: raw.bindings,
+      status: raw.status,
+      createdAt: raw.createdAt as Date | string,
+      updatedAt: raw.updatedAt as Date | string,
     };
   }
 }

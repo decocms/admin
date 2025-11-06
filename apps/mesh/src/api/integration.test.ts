@@ -26,6 +26,7 @@ describe("MCP Integration", () => {
       // Mock auth.api.verifyApiKey to return valid result
       vi.spyOn(auth.api, "verifyApiKey").mockResolvedValue({
         valid: true,
+        error: null,
         key: {
           id: "test-key-id",
           name: "Test API Key",
@@ -52,17 +53,7 @@ describe("MCP Integration", () => {
             },
           },
         },
-      } as {
-        valid: boolean;
-        key: {
-          id: string;
-          name: string;
-          permissions: Record<string, string[]>;
-          metadata?: {
-            organization?: { id: string; slug: string; name: string };
-          };
-        };
-      });
+      } as any);
 
       // Mock global fetch to route through Hono app
       global.fetch = vi.fn(
@@ -71,7 +62,7 @@ describe("MCP Integration", () => {
           init?: RequestInit,
         ): Promise<Response> => {
           // Create a proper Request object
-          const request = new Request(input as RequestInfo | URL, init);
+          const request = new Request(input as string | URL, init);
 
           // Route request through Hono app using fetch (not request)
           const response = await app.fetch(request);

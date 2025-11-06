@@ -10,7 +10,7 @@ import {
   ORGANIZATION_MEMBER_LIST,
   ORGANIZATION_MEMBER_UPDATE_ROLE,
 } from "./index";
-import type { MeshContext } from "../../core/mesh-context";
+import type { BetterAuthInstance, MeshContext } from "../../core/mesh-context";
 
 // Mock Better Auth instance
 const createMockAuth = () => ({
@@ -102,7 +102,7 @@ const createMockContext = (
     auditLogs: null as never,
   },
   vault: null as never,
-  authInstance,
+  authInstance: authInstance as unknown as BetterAuthInstance,
   access: {
     granted: () => true,
     check: vi.fn().mockResolvedValue(undefined),

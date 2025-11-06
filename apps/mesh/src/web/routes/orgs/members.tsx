@@ -32,14 +32,6 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { KEYS } from "@/web/lib/query-keys";
 
-interface Member {
-  id: string;
-  name?: string;
-  email?: string;
-  role: string;
-  createdAt?: string;
-}
-
 const useMembers = () => {
   return useQuery({
     queryKey: KEYS.members(),
@@ -119,12 +111,12 @@ export default function OrgMembers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.map((member: Member) => (
+                {members.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={member.user?.image} />
+                          <AvatarImage src={member.user?.image ?? undefined} />
                           <AvatarFallback>
                             {getInitials(member.user?.name)}
                           </AvatarFallback>

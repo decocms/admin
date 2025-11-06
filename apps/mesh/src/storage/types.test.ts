@@ -29,27 +29,16 @@ describe("Database Types", () => {
     });
   });
 
-  describe("MCPConnection scoping", () => {
+  describe("MCPConnection types", () => {
     it("should allow organization-scoped connection", () => {
       const conn: Partial<MCPConnection> = {
         id: "conn_123",
-        projectId: null, // Organization-scoped
+        organizationId: "org_123", // All connections are organization-scoped
         name: "Test",
         connectionType: "HTTP",
         connectionUrl: "https://example.com",
       };
-      expect(conn.projectId).toBeNull();
-    });
-
-    it("should allow project-scoped connection", () => {
-      const conn: Partial<MCPConnection> = {
-        id: "conn_123",
-        projectId: "proj_abc", // Project-scoped
-        name: "Test",
-        connectionType: "HTTP",
-        connectionUrl: "https://example.com",
-      };
-      expect(conn.projectId).toBe("proj_abc");
+      expect(conn.organizationId).toBe("org_123");
     });
 
     it("should support all connection types", () => {
@@ -73,10 +62,7 @@ describe("Database Types", () => {
     it("should have all required tables", () => {
       // Type-level test - if this compiles, the schema is valid
       const tableNames: (keyof Database)[] = [
-        "users",
-        "projects",
         "connections",
-        "roles",
         "api_keys",
         "audit_logs",
         "oauth_clients",
@@ -85,7 +71,7 @@ describe("Database Types", () => {
         "downstream_tokens",
       ];
 
-      expect(tableNames).toHaveLength(10);
+      expect(tableNames).toHaveLength(7);
     });
   });
 
@@ -93,14 +79,14 @@ describe("Database Types", () => {
     it("should reflect database as organization boundary", () => {
       // Conceptual test - validates our understanding
       const organizationConcept = {
-        database: "organization boundary",
-        users: "organization members",
-        projects: "namespaces (isolate resources, not users)",
-        accessControl: "via roles and permissions",
+        database: "mesh instance per organization",
+        users: "managed by Better Auth",
+        connections: "organization-scoped MCP connections",
+        accessControl: "via Better Auth permissions",
       };
 
-      expect(organizationConcept.database).toBe("organization boundary");
-      expect(organizationConcept.projects).toContain("namespaces");
+      expect(organizationConcept.database).toBe("mesh instance per organization");
+      expect(organizationConcept.connections).toContain("organization-scoped");
     });
   });
 });

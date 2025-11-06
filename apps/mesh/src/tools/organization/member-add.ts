@@ -18,6 +18,14 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
     role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["member"])
   }),
 
+  outputSchema: z.object({
+    id: z.string(),
+    organizationId: z.string(),
+    userId: z.string(),
+    role: z.union([z.string(), z.array(z.string())]), // Better Auth can return string or array
+    createdAt: z.union([z.date(), z.string()]),
+  }),
+
   handler: async (input, ctx) => {
     // Require authentication
     requireAuth(ctx);
@@ -38,14 +46,15 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
       body: {
         organizationId,
         userId: input.userId,
-        role: input.role,
-      } as { organizationId: string; userId: string; role: string[] },
+        role: input.role as ("user" | "admin")[], // Better Auth expects specific role values
+      },
     });
 
     if (!result) {
       throw new Error("Failed to add member");
     }
 
-    return result;
+    // Better Auth returns role as string, but we accept string or array
+    return result as typeof result & { role: string | string[] };
   },
 });

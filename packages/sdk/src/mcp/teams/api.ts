@@ -40,8 +40,34 @@ import {
   memberRoles as memberRolesTable,
   organizations,
   projects,
+  agents as agentsTable,
 } from "../schema.ts";
 import { enhancedThemeSchema } from "../theme/api.ts";
+import {
+  createDeconfigClientForContext,
+  MCPClient,
+  withProject,
+} from "../index.ts";
+import { NEW_AGENT_TEMPLATE } from "../../index.ts";
+import JSZip from "jszip";
+import {
+  parseGithubUrl,
+  downloadGithubRepo,
+  extractZipFiles,
+  parseManifestFromFiles,
+  prepareFileForUpload,
+  parseDatabaseSchema,
+  parseAgentFile,
+} from "./import-project.ts";
+import {
+  processFileContent,
+  prepareFileForZip,
+  exportAgent,
+  processDatabaseSchema,
+  exportDatabaseTable,
+  buildManifest,
+  generateZip,
+} from "./export-project.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1322,6 +1348,427 @@ export const listRecentProjects = createTool({
     ).filter(Boolean);
 
     return { items };
+  },
+});
+
+export const importProjectFromGithub = createTool({
+  name: "PROJECTS_IMPORT_FROM_GITHUB",
+  description:
+    "Import a project from a GitHub repository URL. The repository must contain a deco.mcp.json manifest file.",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug to import into"),
+      githubUrl: z
+        .string()
+        .describe(
+          "The GitHub repository URL (e.g., https://github.com/owner/repo)",
+        ),
+      slug: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project slug from manifest"),
+      title: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project title from manifest"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean(),
+      projectId: z.string(),
+      projectSlug: z.string(),
+      filesUploaded: z.number(),
+      agentsImported: z.number(),
+      databaseTablesImported: z.number(),
+      message: z.string(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, githubUrl, slug: overrideSlug, title: overrideTitle } = props;
+
+    // Parse GitHub URL
+    const { owner, repo, ref } = parseGithubUrl({ githubUrl });
+
+    // Download from GitHub
+    const arrayBuffer = await downloadGithubRepo({ owner, repo, ref });
+
+    // Extract files from zip
+    const { files } = await extractZipFiles({ arrayBuffer });
+
+    // Parse manifest
+    const { manifest, projectSlug, projectTitle } = parseManifestFromFiles({
+      files,
+      overrideSlug,
+      overrideTitle,
+    });
+
+    // Create project using internal logic (same as PROJECTS_CREATE)
+    const user = c.user;
+
+    // First, verify the user has access to this organization
+    const { data: orgData, error: orgError } = await c.db
+      .from("teams")
+      .select("id, slug, theme, members!inner(user_id, deleted_at)")
+      .eq("slug", org)
+      .eq("members.user_id", user.id)
+      .is("members.deleted_at", null)
+      .single();
+
+    if (orgError || !orgData) {
+      throw new Error("Organization not found or access denied");
+    }
+
+    const { data: newProject, error: createError } = await c.db
+      .from("deco_chat_projects")
+      .insert({
+        org_id: orgData.id,
+        slug: projectSlug,
+        title: projectTitle,
+        description: manifest.project?.description || null,
+      })
+      .select("id")
+      .single();
+
+    if (createError) {
+      if (createError.code === "23505") {
+        throw new UserInputError(
+          `Project with slug "${projectSlug}" already exists in this organization`,
+        );
+      }
+      throw new Error("Failed to create project");
+    }
+
+    const projectId = newProject.id;
+
+    // Get deconfig client for this project workspace using withProject helper
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+
+    // Upload files
+    let uploadedCount = 0;
+
+    console.log(`[Import] Starting file upload for project ${projectSlug}`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const uploadInfo = prepareFileForUpload({ path, contentBytes });
+
+      if (!uploadInfo.shouldUpload) {
+        continue;
+      }
+
+      try {
+        await deconfigClient.PUT_FILE({
+          path: uploadInfo.remotePath,
+          content: { base64: uploadInfo.base64Content },
+          branch: "main",
+        });
+        uploadedCount++;
+        console.log(`[Import] Successfully uploaded: ${uploadInfo.remotePath}`);
+      } catch (error) {
+        console.error(`[Import] Failed to upload ${path}:`, error);
+      }
+    }
+
+    console.log(`[Import] Finished uploading ${uploadedCount} files`);
+
+    // Import database schema using MCP database tools
+    let tablesImported = 0;
+    const workspaceClient = MCPClient.forContext(projectContext);
+    console.log(`[Import] Starting database import`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const schema = parseDatabaseSchema({ path, contentBytes });
+
+      if (!schema) {
+        continue;
+      }
+
+      try {
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: `DROP TABLE IF EXISTS ${schema.tableName}`,
+        });
+
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: schema.createSql,
+        });
+
+        for (const index of schema.indexes) {
+          if (index.sql) {
+            await workspaceClient.DATABASES_RUN_SQL({
+              sql: index.sql,
+            });
+          }
+        }
+
+        tablesImported++;
+        console.log(
+          `[Import] Successfully imported table: ${schema.tableName}`,
+        );
+      } catch (error) {
+        console.error(
+          `[Import] Failed to import table schema from ${path}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(`[Import] Finished importing ${tablesImported} tables`);
+
+    // Import agents using drizzle
+    let agentCount = 0;
+    console.log(`[Import] Starting agent import`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const agentData = parseAgentFile({ path, contentBytes });
+
+      if (!agentData) {
+        continue;
+      }
+
+      try {
+        await c.drizzle.insert(agentsTable).values({
+          name: agentData.name || NEW_AGENT_TEMPLATE.name,
+          avatar: agentData.avatar || NEW_AGENT_TEMPLATE.avatar,
+          instructions:
+            agentData.instructions || NEW_AGENT_TEMPLATE.instructions,
+          description: agentData.description,
+          tools_set: agentData.tools_set || NEW_AGENT_TEMPLATE.tools_set,
+          max_steps: agentData.max_steps,
+          max_tokens: agentData.max_tokens,
+          model: agentData.model || NEW_AGENT_TEMPLATE.model,
+          memory: agentData.memory,
+          views: agentData.views,
+          visibility:
+            agentData.visibility ||
+            (NEW_AGENT_TEMPLATE.visibility as
+              | "PUBLIC"
+              | "WORKSPACE"
+              | "PRIVATE"),
+          temperature: agentData.temperature,
+          workspace: null, // Legacy field, set to null for project-based agents
+          project_id: projectId,
+        });
+
+        agentCount++;
+        console.log(`[Import] Successfully imported agent: ${agentData.name}`);
+      } catch (error) {
+        console.error(`[Import] Failed to import agent from ${path}:`, error);
+      }
+    }
+
+    console.log(`[Import] Finished importing ${agentCount} agents`);
+
+    return {
+      success: true,
+      projectId,
+      projectSlug,
+      filesUploaded: uploadedCount,
+      agentsImported: agentCount,
+      databaseTablesImported: tablesImported,
+      message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files, ${agentCount} agents, and ${tablesImported} tables`,
+    };
+  },
+});
+
+export const exportProject = createTool({
+  name: "PROJECTS_EXPORT_ZIP",
+  description:
+    "Export a project as a zip file containing all project resources (tools, views, workflows, documents, database schemas, and agents)",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug"),
+      project: z.string().describe("The project slug"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      filename: z.string(),
+      base64: z.string(),
+      size: z.number(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, project } = props;
+    const user = c.user;
+
+    // Verify project access
+    const { data: projectData, error: projectError } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        "id, slug, title, description, org_id, teams!inner(slug, members!inner(user_id, deleted_at))",
+      )
+      .eq("slug", project)
+      .eq("teams.slug", org)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null)
+      .single();
+
+    if (projectError || !projectData) {
+      throw new NotFoundError("Project not found or access denied");
+    }
+
+    const projectId = projectData.id;
+    const projectSlug = projectData.slug;
+    const projectTitle = projectData.title;
+    const projectDescription = projectData.description;
+
+    // Create workspace client for this project
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+    const workspaceClient = MCPClient.forContext(projectContext);
+
+    // Initialize zip
+    const zip = new JSZip();
+
+    // Fetch all files from allowed roots
+    const ALLOWED_ROOTS = [
+      "/src/tools",
+      "/src/views",
+      "/src/workflows",
+      "/src/documents",
+    ];
+
+    const resourcesByType = {
+      tools: [] as string[],
+      views: [] as string[],
+      workflows: [] as string[],
+      documents: [] as string[],
+      database: [] as string[],
+    };
+
+    console.log(`[Export] Fetching files for project ${projectSlug}`);
+
+    for (const root of ALLOWED_ROOTS) {
+      try {
+        const listResponse = await deconfigClient.LIST_FILES({ prefix: root });
+        const filesMap = listResponse.files || {};
+        const files = Object.entries(filesMap).map(([path, metadata]) => ({
+          path,
+          ...metadata,
+        }));
+
+        for (const file of files) {
+          try {
+            const readResponse = await deconfigClient.READ_FILE({
+              path: file.path,
+            });
+
+            const { contentStr } = processFileContent({
+              filePath: file.path,
+              readResponse: readResponse as {
+                content?: string | { base64: string } | unknown;
+              },
+            });
+
+            // Track resources by type
+            const filePath = file.path;
+            if (filePath.startsWith("/src/tools/")) {
+              resourcesByType.tools.push(filePath);
+            } else if (filePath.startsWith("/src/views/")) {
+              resourcesByType.views.push(filePath);
+            } else if (filePath.startsWith("/src/workflows/")) {
+              resourcesByType.workflows.push(filePath);
+            } else if (filePath.startsWith("/src/documents/")) {
+              resourcesByType.documents.push(filePath);
+            }
+
+            const preparedFile = prepareFileForZip({
+              filePath,
+              contentStr,
+            });
+
+            if (!preparedFile.shouldInclude) {
+              continue;
+            }
+
+            zip.file(preparedFile.relativePath, preparedFile.finalContent);
+          } catch (error) {
+            console.warn(`[Export] Failed to read ${file.path}:`, error);
+          }
+        }
+      } catch (error) {
+        console.warn(`[Export] Failed to list files in ${root}:`, error);
+      }
+    }
+
+    // Export agents
+    console.log(`[Export] Fetching agents...`);
+    const agents = await c.drizzle
+      .select()
+      .from(agentsTable)
+      .where(eq(agentsTable.project_id, projectId));
+
+    const agentsDir = "agents";
+    for (const agent of agents || []) {
+      const { filename, content } = exportAgent({ agent });
+      zip.file(`${agentsDir}/${filename}`, content);
+    }
+
+    console.log(`[Export] Exported ${agents?.length || 0} agents`);
+
+    // Export database schema
+    console.log(`[Export] Exporting database schema...`);
+    try {
+      const schemaResponse = await workspaceClient.DATABASES_RUN_SQL({
+        sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
+      });
+
+      const { tables } = processDatabaseSchema({
+        schemaResponse: schemaResponse as {
+          result?: unknown[] | { results?: Array<Record<string, unknown>> }[];
+        },
+      });
+
+      const databaseDir = "database";
+      for (const table of tables) {
+        const { filename, content } = exportDatabaseTable({ table });
+        zip.file(`${databaseDir}/${filename}`, content);
+        resourcesByType.database.push(`/${databaseDir}/${filename}`);
+      }
+
+      console.log(`[Export] Exported ${tables.length} tables`);
+    } catch (error) {
+      console.warn(`[Export] Failed to export database schema:`, error);
+    }
+
+    // Build manifest
+    const manifest = buildManifest({
+      projectInfo: {
+        slug: projectSlug,
+        title: projectTitle,
+        description: projectDescription || undefined,
+      },
+      exporterInfo: {
+        orgSlug: org,
+        userId: user.id,
+        userEmail: user.email || undefined,
+      },
+      resources: resourcesByType,
+      dependencies: {
+        mcps: [], // Extract dependencies in future if needed
+      },
+    });
+
+    zip.file("deco.mcp.json", JSON.stringify(manifest, null, 2) + "\n");
+
+    // Generate zip
+    const { buffer, base64 } = await generateZip({ zip });
+    const filename = `${org}__${project}.zip`;
+
+    console.log(`[Export] Generated zip: ${filename} (${buffer.length} bytes)`);
+
+    return {
+      filename,
+      base64,
+      size: buffer.length,
+    };
   },
 });
 

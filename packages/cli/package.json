@@ -4,14 +4,14 @@
   "description": "CLI for managing decocms.com apps & projects",
   "license": "MIT",
   "author": "Deco team",
-  "homepage": "https://github.com/deco-cx/deco",
+  "homepage": "https://github.com/decocms/admin",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deco-cx/deco.git",
+    "url": "git+https://github.com/decocms/admin.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/deco-cx/deco/issues"
+    "url": "https://github.com/decocms/admin/issues"
   },
   "type": "module",
   "main": "./dist/cli.js",
@@ -32,6 +32,7 @@
     "postpublish": "echo 'Published deco-cli to npm registry!'"
   },
   "dependencies": {
+    "@deco/sdk": "workspace:*",
     "@deco-cx/warp-node": "0.3.16",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@supabase/ssr": "0.6.1",

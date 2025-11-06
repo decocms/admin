@@ -158,11 +158,12 @@ const Discover = () => {
     const noIconApps = integrations.integrations.filter(
       (integration) => !validIconApps.includes(integration),
     );
-    const withValidIcons = [...validIconApps, ...noIconApps];
+    const allApps = [...validIconApps, ...noIconApps];
 
-    return [...withValidIcons].sort((a, b) => {
-      if (a.verified && !b.verified) return -1;
-      if (!a.verified && b.verified) return 1;
+    return [...allApps].sort((a, b) => {
+      // Sort: verified true first, then false/null
+      if (a.verified === true && b.verified !== true) return -1;
+      if (a.verified !== true && b.verified === true) return 1;
 
       return 0;
     });

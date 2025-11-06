@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+bun.lockb
+
+# Development files
+*.md
+*.log
+.env.local
+.env.development
+.env.test
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+test
+*.test.ts
+*.spec.ts
+
+# Documentation
+docs
+*.md
+RULES.md
+TESTING-GUIDE.md
+MCP-INSPECTOR-README.md
+IMPLEMENTATION-*.md
+MIGRATION-*.md
+MVP-COMPLETE.md
+PROGRESS.md
+QUICK-START*.md
+OAUTH-*.md
+
+# Misc
+.DS_Store
+Thumbs.db
+

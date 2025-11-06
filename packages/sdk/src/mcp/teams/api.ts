@@ -43,7 +43,11 @@ import {
   agents as agentsTable,
 } from "../schema.ts";
 import { enhancedThemeSchema } from "../theme/api.ts";
-import { createDeconfigClientForContext, withProject } from "../index.ts";
+import {
+  createDeconfigClientForContext,
+  MCPClient,
+  withProject,
+} from "../index.ts";
 import { NEW_AGENT_TEMPLATE } from "../../index.ts";
 import JSZip from "jszip";
 import {
@@ -1366,6 +1370,7 @@ export const importProjectFromGithub = createTool({
       projectSlug: z.string(),
       filesUploaded: z.number(),
       agentsImported: z.number(),
+      databaseTablesImported: z.number(),
       message: z.string(),
     }),
   ),
@@ -1473,11 +1478,11 @@ export const importProjectFromGithub = createTool({
 
       const shouldProcess =
         sanitizedPath === "deco.mcp.json" ||
-        sanitizedPath.startsWith("src/") ||
         sanitizedPath.startsWith("tools/") ||
         sanitizedPath.startsWith("views/") ||
         sanitizedPath.startsWith("workflows/") ||
         sanitizedPath.startsWith("documents/") ||
+        sanitizedPath.startsWith("database/") ||
         sanitizedPath.startsWith("agents/");
 
       if (!shouldProcess) {
@@ -1589,14 +1594,11 @@ export const importProjectFromGithub = createTool({
 
     // Upload files
     const ALLOWED_ROOTS = [
-      "src/tools/",
-      "src/views/",
-      "src/workflows/",
-      "src/documents/",
       "tools/",
       "views/",
       "workflows/",
       "documents/",
+      "database/",
     ];
     let uploadedCount = 0;
 
@@ -1621,8 +1623,7 @@ export const importProjectFromGithub = createTool({
         }
       }
 
-      // Determine the remote path - if it already starts with /src/, use as-is, otherwise add /src/ prefix
-      const remotePath = path.startsWith("src/") ? `/${path}` : `/src/${path}`;
+      const remotePath = `/src/${path}`;
 
       console.log(`[Import] Uploading ${path} to ${remotePath}`);
       const base64Content = encodeBytesToBase64(contentBytes);
@@ -1641,6 +1642,62 @@ export const importProjectFromGithub = createTool({
     }
 
     console.log(`[Import] Finished uploading ${uploadedCount} files`);
+
+    // Import database schema using MCP database tools
+    let tablesImported = 0;
+    const workspaceClient = MCPClient.forContext(projectContext);
+    console.log(`[Import] Starting database import`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      if (
+        (path.startsWith("database/") || path.startsWith("src/database/")) &&
+        path.endsWith(".json")
+      ) {
+        console.log(`[Import] Importing table from: ${path}`);
+        try {
+          const payload = JSON.parse(textDecoder.decode(contentBytes)) as {
+            name?: string;
+            createSql?: string;
+            indexes?: Array<{ name?: string; sql?: string }>;
+          };
+
+          if (!payload?.name || !payload?.createSql) {
+            console.warn(`[Import] Skipping invalid table schema: ${path}`);
+            continue;
+          }
+
+          const tableName = payload.name;
+
+          await workspaceClient.DATABASES_RUN_SQL({
+            sql: `DROP TABLE IF EXISTS ${tableName}`,
+          });
+
+          await workspaceClient.DATABASES_RUN_SQL({
+            sql: payload.createSql,
+          });
+
+          if (Array.isArray(payload.indexes)) {
+            for (const index of payload.indexes) {
+              if (!index?.sql) continue;
+
+              await workspaceClient.DATABASES_RUN_SQL({
+                sql: index.sql,
+              });
+            }
+          }
+
+          tablesImported++;
+          console.log(`[Import] Successfully imported table: ${tableName}`);
+        } catch (error) {
+          console.error(
+            `[Import] Failed to import table schema from ${path}:`,
+            error,
+          );
+        }
+      }
+    }
+
+    console.log(`[Import] Finished importing ${tablesImported} tables`);
 
     // Import agents using drizzle
     let agentCount = 0;
@@ -1692,7 +1749,8 @@ export const importProjectFromGithub = createTool({
       projectSlug,
       filesUploaded: uploadedCount,
       agentsImported: agentCount,
-      message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files and ${agentCount} agents`,
+      databaseTablesImported: tablesImported,
+      message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files, ${agentCount} agents, and ${tablesImported} tables`,
     };
   },
 });

@@ -100,10 +100,7 @@ export function ImportProjectFromGithub({
     setProjectSlug(cleaned);
   };
 
-  function parseGithubUrl(
-    url: string,
-    options: { force?: boolean } = {},
-  ) {
+  function parseGithubUrl(url: string, options: { force?: boolean } = {}) {
     const { force = false } = options;
     // Try to extract repo info from GitHub URL
     // Supports: https://github.com/owner/repo or https://github.com/owner/repo.git

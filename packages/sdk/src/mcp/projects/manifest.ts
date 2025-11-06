@@ -23,6 +23,7 @@ export const manifestResourcesSchema = z.object({
   views: z.array(z.string()),
   workflows: z.array(z.string()),
   documents: z.array(z.string()),
+  database: z.array(z.string()).optional().default([]),
 });
 
 export const manifestDependenciesSchema = z.object({

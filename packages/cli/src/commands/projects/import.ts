@@ -23,6 +23,7 @@ interface ImportOptions {
 // Local directory structure (no src/ prefix)
 const ALLOWED_ROOTS = ["/tools", "/views", "/workflows", "/documents"];
 const AGENTS_DIR = "agents";
+const DATABASE_DIR = "database";
 
 async function runWithConcurrency<T>(
   items: T[],
@@ -50,6 +51,8 @@ async function runWithConcurrency<T>(
 
   await Promise.all(runners);
 }
+
+type WorkspaceClient = Awaited<ReturnType<typeof createWorkspaceClient>>;
 
 // Map local paths to remote Deconfig paths (add /src/ prefix)
 const mapToRemotePath = (localPath: string): string => {
@@ -293,20 +296,93 @@ export async function importCommand(options: ImportOptions): Promise<void> {
 
   console.log(`   ✅ Uploaded ${uploadedCount} files\n`);
 
-  // Step 7: Import agents (must use project workspace context)
-  console.log("👤 Importing agents...");
+  // Step 7: Import database schema and agents (project-context operations)
+  const databasesDir = path.join(fromDir, DATABASE_DIR);
   const agentsDir = path.join(fromDir, AGENTS_DIR);
+
+  let tablesImported = 0;
   let agentCount = 0;
+  let projectClient: WorkspaceClient | null = null;
 
-  if (existsSync(agentsDir)) {
-    // Close the global client and connect to project workspace
-    await client.close();
-    const projectClient = await createWorkspaceClient({
-      workspace: projectWorkspace,
-      local,
-    });
+  const ensureProjectClient = async () => {
+    if (!projectClient) {
+      projectClient = await createWorkspaceClient({
+        workspace: projectWorkspace,
+        local,
+      });
+    }
+    return projectClient;
+  };
 
-    try {
+  try {
+    if (existsSync(databasesDir)) {
+      const tableFiles = (await fs.readdir(databasesDir)).filter((name) =>
+        name.endsWith(".json"),
+      );
+
+      if (tableFiles.length > 0) {
+        console.log("🗄️ Importing database schema...");
+        const projectClientInstance = await ensureProjectClient();
+
+        await runWithConcurrency(tableFiles, 3, async (fileName) => {
+          try {
+            const filePath = path.join(databasesDir, fileName);
+            const raw = await fs.readFile(filePath, "utf-8");
+            const parsed = JSON.parse(raw) as {
+              name?: string;
+              createSql?: string;
+              indexes?: Array<{ name?: string; sql?: string }>;
+            };
+
+            if (!parsed?.name || !parsed?.createSql) {
+              console.warn(
+                `   ⚠️  Skipping invalid database schema file: ${fileName}`,
+              );
+              return;
+            }
+
+            const tableName = parsed.name;
+            const indexes = Array.isArray(parsed.indexes)
+              ? parsed.indexes.filter((index) => typeof index?.sql === "string")
+              : [];
+
+            await projectClientInstance.callTool({
+              name: "DATABASES_RUN_SQL",
+              arguments: {
+                sql: parsed.createSql,
+              },
+            });
+
+            for (const index of indexes) {
+              await projectClientInstance.callTool({
+                name: "DATABASES_RUN_SQL",
+                arguments: {
+                  sql: String(index.sql),
+                },
+              });
+            }
+
+            tablesImported++;
+            console.log(`   Imported table ${tableName}`);
+          } catch (error) {
+            console.error(
+              `   ❌ Failed to import database schema from ${fileName}:`,
+              error instanceof Error ? error.message : String(error),
+            );
+          }
+        });
+
+        console.log(`   ✅ Imported ${tablesImported} tables\n`);
+      } else {
+        console.log("   No database tables found, skipping\n");
+      }
+    } else {
+      console.log("   No database schema directory found, skipping\n");
+    }
+
+    if (existsSync(agentsDir)) {
+      console.log("👤 Importing agents...");
+      const projectClientInstance = await ensureProjectClient();
       const agentFiles = await fs.readdir(agentsDir);
       const jsonFiles = agentFiles.filter((f) => f.endsWith(".json"));
 
@@ -318,7 +394,7 @@ export async function importCommand(options: ImportOptions): Promise<void> {
           const agentContent = await fs.readFile(agentPath, "utf-8");
           const agentData = JSON.parse(agentContent);
 
-          const createAgentResponse = await projectClient.callTool({
+          const createAgentResponse = await projectClientInstance.callTool({
             name: "AGENTS_CREATE",
             arguments: agentData,
           });
@@ -344,11 +420,16 @@ export async function importCommand(options: ImportOptions): Promise<void> {
       });
 
       console.log(`   ✅ Imported ${agentCount} agents\n`);
-    } finally {
-      await projectClient.close();
+    } else {
+      console.log("👤 No agents directory found, skipping\n");
     }
-  } else {
-    console.log(`   No agents directory found, skipping\n`);
+  } finally {
+    const maybeClosable = projectClient as
+      | (WorkspaceClient & { close?: () => Promise<void> | void })
+      | null;
+    if (maybeClosable?.close) {
+      await maybeClosable.close();
+    }
   }
 
   // Step 8: Print summary
@@ -358,6 +439,7 @@ export async function importCommand(options: ImportOptions): Promise<void> {
   console.log(`   Project slug: ${projectSlug}`);
   console.log(`   Organization: ${orgSlug}`);
   console.log(`   Files uploaded: ${uploadedCount}`);
+  console.log(`   Database tables imported: ${tablesImported}`);
   console.log(`   Agents created: ${agentCount}`);
 
   if (manifest.dependencies.mcps.length > 0) {

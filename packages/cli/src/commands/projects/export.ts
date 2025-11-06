@@ -29,6 +29,16 @@ const ALLOWED_ROOTS = [
   "/src/documents",
 ];
 const AGENTS_DIR = "agents";
+const DATABASE_DIR = "database";
+
+function sanitizeTableFilename(tableName: string): string {
+  return tableName.replace(/[^a-zA-Z0-9-_]/g, "-");
+}
+
+type SqlStatement = {
+  results?: unknown[];
+  [key: string]: unknown;
+};
 
 async function runWithConcurrency<T>(
   items: T[],
@@ -148,6 +158,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
       views: [],
       workflows: [],
       documents: [],
+      database: [],
     };
 
     for (const root of ALLOWED_ROOTS) {
@@ -355,7 +366,103 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
       console.warn(`⚠️  Failed to export agents: ${error}`);
     }
 
-    // Step 6: Extract dependencies
+    // Step 6: Export database schema
+    console.log("🗄️ Exporting database schema...");
+    const databaseDir = path.join(outDir, DATABASE_DIR);
+    mkdirSync(databaseDir, { recursive: true });
+    let tableCount = 0;
+
+    try {
+      const schemaResponse = await client.callTool({
+        name: "DATABASES_RUN_SQL",
+        arguments: {
+          sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
+        },
+      });
+
+      if (schemaResponse.isError) {
+        console.warn(
+          `⚠️  Failed to fetch database schema: ${schemaResponse.content}`,
+        );
+      }
+
+      const statements = ((
+        schemaResponse.structuredContent as { result?: SqlStatement[] }
+      )?.result ?? []) as SqlStatement[];
+      const rows = statements.flatMap((statement) =>
+        Array.isArray(statement.results) ? statement.results : [],
+      ) as Array<Record<string, unknown>>;
+
+      const tables = rows
+        .map((row) => ({
+          type: String(row.type ?? ""),
+          name: String(row.name ?? ""),
+          tableName: String(row.tbl_name ?? row.name ?? ""),
+          sql: String(row.sql ?? ""),
+        }))
+        .filter(
+          (entry) =>
+            entry.type.toLowerCase() === "table" &&
+            entry.name &&
+            entry.sql &&
+            !entry.name.startsWith("sqlite_") &&
+            !entry.name.startsWith("mastra_") &&
+            entry.sql.trim().toLowerCase().startsWith("create table"),
+        );
+
+      const indexes = rows
+        .map((row) => ({
+          type: String(row.type ?? ""),
+          name: String(row.name ?? ""),
+          tableName: String(row.tbl_name ?? ""),
+          sql: String(row.sql ?? ""),
+        }))
+        .filter(
+          (entry) =>
+            entry.type.toLowerCase() === "index" &&
+            entry.sql &&
+            !entry.name.startsWith("sqlite_") &&
+            !entry.name.startsWith("mastra_") &&
+            tables.some((table) => table.tableName === entry.tableName),
+        );
+
+      const indexesByTable = new Map<
+        string,
+        Array<{ name: string; sql: string }>
+      >();
+      for (const index of indexes) {
+        const collection = indexesByTable.get(index.tableName) ?? [];
+        collection.push({ name: index.name, sql: index.sql });
+        indexesByTable.set(index.tableName, collection);
+      }
+
+      for (const table of tables) {
+        const safeFilename = `${sanitizeTableFilename(table.tableName || table.name)}.json`;
+        const tablePath = path.join(databaseDir, safeFilename);
+        const payload = {
+          name: table.tableName || table.name,
+          createSql: table.sql,
+          indexes: indexesByTable.get(table.tableName) ?? [],
+        };
+        await fs.writeFile(
+          tablePath,
+          JSON.stringify(payload, null, 2) + "\n",
+          "utf-8",
+        );
+        resourcesByType.database.push(`/${DATABASE_DIR}/${safeFilename}`);
+        tableCount++;
+      }
+
+      console.log(`   ✅ Exported ${tableCount} tables\n`);
+    } catch (error) {
+      console.warn(
+        `⚠️  Failed to export database schema: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    // Step 7: Extract dependencies
     console.log("🔍 Extracting dependencies...");
     const toolFiles = allFiles.filter((f) => f.path.startsWith("/src/tools/"));
     const dependencies = await extractDependenciesFromTools(toolFiles);
@@ -363,7 +470,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
       `   Found ${dependencies.length} MCP dependencies: ${dependencies.join(", ") || "none"}\n`,
     );
 
-    // Step 7: Fetch author info
+    // Step 8: Fetch author info
     console.log("👤 Fetching author info...");
     let userEmail: string | undefined;
     let userId: string | undefined;
@@ -386,7 +493,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
     }
     console.log(`   User: ${userEmail || "unknown"}\n`);
 
-    // Step 8: Build and write manifest
+    // Step 9: Build and write manifest
     console.log("📝 Writing manifest...");
 
     // Helper to strip /src/ prefix from paths
@@ -410,6 +517,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
         views: stripSrcPrefix(resourcesByType.views),
         workflows: stripSrcPrefix(resourcesByType.workflows),
         documents: stripSrcPrefix(resourcesByType.documents),
+        database: resourcesByType.database,
       },
       dependencies: {
         mcps: dependencies,
@@ -422,13 +530,14 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
       `   ✅ Manifest written to ${path.join(outDir, "deco.mcp.json")}\n`,
     );
 
-    // Step 9: Print summary
+    // Step 10: Print summary
     console.log("🎉 Export completed successfully!\n");
     console.log("📊 Summary:");
     console.log(`   Tools: ${resourcesByType.tools.length}`);
     console.log(`   Views: ${resourcesByType.views.length}`);
     console.log(`   Workflows: ${resourcesByType.workflows.length}`);
     console.log(`   Documents: ${resourcesByType.documents.length}`);
+    console.log(`   Database tables: ${resourcesByType.database.length}`);
     console.log(`   Agents: ${agentCount}`);
     console.log(`   Dependencies: ${dependencies.length}`);
     console.log(`   Output: ${outDir}`);

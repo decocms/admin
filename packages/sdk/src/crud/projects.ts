@@ -36,7 +36,7 @@ export const createProject = (
 export interface UpdateProjectInput {
   org: string;
   project: string;
-  data: Partial<Pick<Project, "title">>;
+  data: Partial<Pick<Project, "title"> & { icon?: string }>;
   [key: string]: unknown;
 }
 

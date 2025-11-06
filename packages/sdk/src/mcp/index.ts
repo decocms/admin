@@ -88,6 +88,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.listProjects,
   teamsAPI.createProject,
   teamsAPI.importProjectFromGithub,
+  teamsAPI.exportProject,
   teamsAPI.updateProject,
   teamsAPI.deleteProject,
   membersAPI.getTeamMembers,

@@ -57,12 +57,22 @@ import {
   IMPORT_MAX_FILE_COUNT,
   sanitizeProjectPath,
 } from "../projects/file-utils.ts";
-import { parseManifest, type Manifest } from "../projects/manifest.ts";
+import {
+  parseManifest,
+  type Manifest,
+  createManifest,
+} from "../projects/manifest.ts";
 import {
   viewCodeToJson,
   toolCodeToJson,
   workflowCodeToJson,
   detectResourceType,
+  viewJsonToCode,
+  toolJsonToCode,
+  workflowJsonToCode,
+  type ViewResource,
+  type ToolResource,
+  type WorkflowResource,
 } from "../projects/code-conversion.ts";
 
 const OWNER_ROLE_ID = 1;
@@ -1806,6 +1816,377 @@ export const importProjectFromGithub = createTool({
       agentsImported: agentCount,
       databaseTablesImported: tablesImported,
       message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files, ${agentCount} agents, and ${tablesImported} tables`,
+    };
+  },
+});
+
+export const exportProject = createTool({
+  name: "PROJECTS_EXPORT_ZIP",
+  description:
+    "Export a project as a zip file containing all project resources (tools, views, workflows, documents, database schemas, and agents)",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug"),
+      project: z.string().describe("The project slug"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      filename: z.string(),
+      base64: z.string(),
+      size: z.number(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, project } = props;
+    const user = c.user;
+
+    // Verify project access
+    const { data: projectData, error: projectError } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        "id, slug, title, description, org_id, teams!inner(slug, members!inner(user_id, deleted_at))",
+      )
+      .eq("slug", project)
+      .eq("teams.slug", org)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null)
+      .single();
+
+    if (projectError || !projectData) {
+      throw new NotFoundError("Project not found or access denied");
+    }
+
+    const projectId = projectData.id;
+    const projectSlug = projectData.slug;
+    const projectTitle = projectData.title;
+    const projectDescription = projectData.description;
+
+    // Create workspace client for this project
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+    const workspaceClient = MCPClient.forContext(projectContext);
+
+    // Initialize zip
+    const zip = new JSZip();
+
+    // Fetch all files from allowed roots
+    const ALLOWED_ROOTS = [
+      "/src/tools",
+      "/src/views",
+      "/src/workflows",
+      "/src/documents",
+    ];
+
+    const resourcesByType = {
+      tools: [] as string[],
+      views: [] as string[],
+      workflows: [] as string[],
+      documents: [] as string[],
+      database: [] as string[],
+    };
+
+    console.log(`[Export] Fetching files for project ${projectSlug}`);
+
+    for (const root of ALLOWED_ROOTS) {
+      try {
+        const listResponse = await deconfigClient.LIST_FILES({ prefix: root });
+        const filesMap = listResponse.files || {};
+        const files = Object.entries(filesMap).map(([path, metadata]) => ({
+          path,
+          ...metadata,
+        }));
+
+        for (const file of files) {
+          try {
+            const readResponse = await deconfigClient.READ_FILE({
+              path: file.path,
+            });
+
+            // Handle different content formats from READ_FILE
+            let contentStr: string;
+            if (typeof readResponse.content === "string") {
+              // Check if it's base64 encoded (common for deconfig)
+              // Base64 strings typically start with letters and are URL-safe
+              if (readResponse.content.match(/^[A-Za-z0-9+/=]+$/)) {
+                try {
+                  contentStr = Buffer.from(
+                    readResponse.content,
+                    "base64",
+                  ).toString("utf-8");
+                } catch {
+                  // If base64 decode fails, use as-is
+                  contentStr = readResponse.content;
+                }
+              } else {
+                contentStr = readResponse.content;
+              }
+            } else if (
+              readResponse.content &&
+              typeof readResponse.content === "object" &&
+              "base64" in readResponse.content
+            ) {
+              contentStr = Buffer.from(
+                readResponse.content.base64,
+                "base64",
+              ).toString("utf-8");
+            } else {
+              contentStr = JSON.stringify(readResponse.content);
+            }
+
+            // Track resources by type
+            const filePath = file.path;
+            if (filePath.startsWith("/src/tools/")) {
+              resourcesByType.tools.push(filePath);
+            } else if (filePath.startsWith("/src/views/")) {
+              resourcesByType.views.push(filePath);
+            } else if (filePath.startsWith("/src/workflows/")) {
+              resourcesByType.workflows.push(filePath);
+            } else if (filePath.startsWith("/src/documents/")) {
+              resourcesByType.documents.push(filePath);
+            }
+
+            // Remove /src/ prefix for cleaner structure
+            let relativePath = filePath.startsWith("/")
+              ? filePath.slice(1)
+              : filePath;
+            if (relativePath.startsWith("src/")) {
+              relativePath = relativePath.slice(4);
+            }
+
+            const sanitizedRelativePath = sanitizeProjectPath(relativePath);
+            if (!sanitizedRelativePath) {
+              console.warn(`[Export] Skipping unsafe path: ${filePath}`);
+              continue;
+            }
+
+            // Convert JSON resources to code files
+            let finalContent = contentStr;
+            let finalPath = sanitizedRelativePath;
+
+            if (filePath.endsWith(".json")) {
+              try {
+                const parsed = JSON.parse(contentStr);
+
+                if (filePath.startsWith("/src/views/")) {
+                  console.log(`[Export] Converting view: ${filePath}`);
+                  const viewResource = parsed as ViewResource;
+                  finalContent = viewJsonToCode(viewResource);
+                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".tsx");
+                  console.log(`[Export] Converted to: ${finalPath}`);
+                } else if (filePath.startsWith("/src/tools/")) {
+                  console.log(`[Export] Converting tool: ${filePath}`);
+                  const toolResource = parsed as ToolResource;
+                  finalContent = toolJsonToCode(toolResource);
+                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".ts");
+                  console.log(`[Export] Converted to: ${finalPath}`);
+                } else if (filePath.startsWith("/src/workflows/")) {
+                  console.log(`[Export] Converting workflow: ${filePath}`);
+                  const workflowResource = parsed as WorkflowResource;
+                  finalContent = workflowJsonToCode(workflowResource);
+                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".ts");
+                  console.log(`[Export] Converted to: ${finalPath}`);
+                } else {
+                  console.log(
+                    `[Export] Keeping as JSON (document): ${filePath}`,
+                  );
+                }
+              } catch (conversionError) {
+                console.error(
+                  `[Export] Failed to convert ${filePath} to code file:`,
+                  conversionError,
+                );
+                console.error(
+                  `[Export] Content was:`,
+                  contentStr.substring(0, 200),
+                );
+                // Fall back to writing the original JSON
+              }
+            }
+
+            console.log(
+              `[Export] Adding to zip: ${finalPath} (${finalContent.length} bytes)`,
+            );
+            zip.file(finalPath, finalContent);
+          } catch (error) {
+            console.warn(`[Export] Failed to read ${file.path}:`, error);
+          }
+        }
+      } catch (error) {
+        console.warn(`[Export] Failed to list files in ${root}:`, error);
+      }
+    }
+
+    // Export agents
+    console.log(`[Export] Fetching agents...`);
+    const agents = await c.drizzle
+      .select()
+      .from(agentsTable)
+      .where(eq(agentsTable.project_id, projectId));
+
+    const agentsDir = "agents";
+    for (const agent of agents || []) {
+      const exportAgent = {
+        name: agent.name,
+        avatar: agent.avatar,
+        instructions: agent.instructions,
+        description: agent.description,
+        tools_set: agent.tools_set,
+        max_steps: agent.max_steps,
+        max_tokens: agent.max_tokens,
+        model: agent.model,
+        memory: agent.memory,
+        views: agent.views,
+        visibility: agent.visibility,
+        temperature: agent.temperature,
+      };
+
+      const safeFilename = agent.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      zip.file(
+        `${agentsDir}/${safeFilename}.json`,
+        JSON.stringify(exportAgent, null, 2) + "\n",
+      );
+    }
+
+    console.log(`[Export] Exported ${agents?.length || 0} agents`);
+
+    // Export database schema
+    console.log(`[Export] Exporting database schema...`);
+    try {
+      const schemaResponse = await workspaceClient.DATABASES_RUN_SQL({
+        sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
+      });
+
+      const statements = (schemaResponse.result ?? []) as Array<{
+        results?: Array<Record<string, unknown>>;
+      }>;
+      const rows = statements.flatMap((statement) =>
+        Array.isArray(statement.results) ? statement.results : [],
+      );
+
+      const tables = rows
+        .map((row) => ({
+          type: String(row.type ?? ""),
+          name: String(row.name ?? ""),
+          tableName: String(row.tbl_name ?? row.name ?? ""),
+          sql: String(row.sql ?? ""),
+        }))
+        .filter(
+          (entry) =>
+            entry.type.toLowerCase() === "table" &&
+            entry.name &&
+            entry.sql &&
+            !entry.name.startsWith("sqlite_") &&
+            !entry.name.startsWith("mastra_") &&
+            entry.sql.trim().toLowerCase().startsWith("create table"),
+        );
+
+      const indexes = rows
+        .map((row) => ({
+          type: String(row.type ?? ""),
+          name: String(row.name ?? ""),
+          tableName: String(row.tbl_name ?? ""),
+          sql: String(row.sql ?? ""),
+        }))
+        .filter(
+          (entry) =>
+            entry.type.toLowerCase() === "index" &&
+            entry.sql &&
+            !entry.name.startsWith("sqlite_") &&
+            !entry.name.startsWith("mastra_") &&
+            tables.some((table) => table.tableName === entry.tableName),
+        );
+
+      const indexesByTable = new Map<
+        string,
+        Array<{ name: string; sql: string }>
+      >();
+      for (const index of indexes) {
+        const collection = indexesByTable.get(index.tableName) ?? [];
+        collection.push({ name: index.name, sql: index.sql });
+        indexesByTable.set(index.tableName, collection);
+      }
+
+      const databaseDir = "database";
+      for (const table of tables) {
+        const safeFilename = table.tableName
+          .toLowerCase()
+          .replace(/[^a-z0-9-_]/g, "-");
+        const payload = {
+          name: table.tableName || table.name,
+          createSql: table.sql,
+          indexes: indexesByTable.get(table.tableName) ?? [],
+        };
+        zip.file(
+          `${databaseDir}/${safeFilename}.json`,
+          JSON.stringify(payload, null, 2) + "\n",
+        );
+        resourcesByType.database.push(`/${databaseDir}/${safeFilename}.json`);
+      }
+
+      console.log(`[Export] Exported ${tables.length} tables`);
+    } catch (error) {
+      console.warn(`[Export] Failed to export database schema:`, error);
+    }
+
+    // Extract dependencies (simplified - just return empty for now)
+    const dependencies: string[] = [];
+
+    // Helper to strip /src/ prefix from paths
+    const stripSrcPrefix = (paths: string[]): string[] =>
+      paths.map((p) => p.replace(/^\/src\//, "/"));
+
+    // Build manifest
+    const manifest = createManifest(
+      {
+        slug: projectSlug,
+        title: projectTitle,
+        description: projectDescription || undefined,
+      },
+      {
+        orgSlug: org,
+        userId: user.id,
+        userEmail: user.email || undefined,
+      },
+      {
+        tools: stripSrcPrefix(resourcesByType.tools),
+        views: stripSrcPrefix(resourcesByType.views),
+        workflows: stripSrcPrefix(resourcesByType.workflows),
+        documents: stripSrcPrefix(resourcesByType.documents),
+        database: resourcesByType.database,
+      },
+      {
+        mcps: dependencies,
+      },
+    );
+
+    zip.file("deco.mcp.json", JSON.stringify(manifest, null, 2) + "\n");
+
+    // Generate zip
+    const zipBuffer = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 9 },
+    });
+
+    const base64 = zipBuffer.toString("base64");
+    const filename = `${org}__${project}.zip`;
+
+    console.log(
+      `[Export] Generated zip: ${filename} (${zipBuffer.length} bytes)`,
+    );
+
+    return {
+      filename,
+      base64,
+      size: zipBuffer.length,
     };
   },
 });

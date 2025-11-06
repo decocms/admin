@@ -14,6 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@deco/ui/components/toggle-group.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
@@ -149,10 +153,10 @@ function ExportButton() {
             </Button>
             <Button onClick={handleExport} disabled={isExporting}>
               {isExporting ? (
-                <>
-                  <Spinner className="mr-2" />
+                <div className="flex items-center gap-2">
+                  <Spinner />
                   Exporting...
-                </>
+                </div>
               ) : (
                 <>
                   <Icon name="download" className="mr-2" size={16} />
@@ -170,7 +174,9 @@ function ExportButton() {
 function LinkButton() {
   const { org, project } = useParams();
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const { copy, isCopied } = useCopy();
+  const [packageManager, setPackageManager] = useState<"bun" | "npm">("bun");
+  const { handleCopy: handleCopyCommand, copied: copiedCommand } = useCopy();
+  const { handleCopy: handleCopyInstall, copied: copiedInstall } = useCopy();
 
   // Only show in project context
   if (!org || !project) {
@@ -178,6 +184,7 @@ function LinkButton() {
   }
 
   const cliCommand = `deco project export --org ${org} --project ${project} --out ${project}/`;
+  const installCommand = `${packageManager} install -g @deco/cli`;
 
   return (
     <>
@@ -204,48 +211,71 @@ function LinkButton() {
       </TooltipProvider>
 
       <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader className="space-y-3">
             <DialogTitle>Export via CLI</DialogTitle>
             <DialogDescription>
-              Use the Deco CLI to export your project with full control over the
-              export process.
+              Use the Deco CLI to export your project with full control over the export process.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Run this command in your terminal:
-              </p>
-              <div className="flex items-start gap-2">
-                <pre className="flex-1 bg-muted p-3 rounded-md overflow-x-auto text-sm">
-                  <code>{cliCommand}</code>
-                </pre>
+          
+          <div className="space-y-6 py-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Export Command</label>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => copy(cliCommand)}
-                  title={isCopied ? "Copied!" : "Copy to clipboard"}
+                  variant={copiedCommand ? "default" : "outline"}
+                  onClick={() => handleCopyCommand(cliCommand)}
+                  className="h-8 gap-1.5"
                 >
-                  <Icon name={isCopied ? "check" : "content_copy"} size={16} />
+                  <Icon name={copiedCommand ? "check" : "content_copy"} size={14} />
+                  <span className="text-xs">{copiedCommand ? "Copied!" : "Copy"}</span>
                 </Button>
               </div>
-            </div>
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p>
-                <strong>Installation:</strong>
-              </p>
-              <pre className="bg-muted p-2 rounded-md text-xs">
-                npm install -g @deco/cli
+              <pre className="bg-muted p-4 rounded-md overflow-x-auto border font-mono text-xs leading-relaxed">
+                <code>{cliCommand}</code>
               </pre>
-              <p className="mt-2">
-                The CLI gives you access to advanced features like selective
-                database schema export, custom output paths, and more.
-              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium">Installation</label>
+                  <ToggleGroup
+                    type="single"
+                    value={packageManager}
+                    onValueChange={(value) => value && setPackageManager(value as "bun" | "npm")}
+                    className="gap-0 border rounded-md"
+                  >
+                    <ToggleGroupItem value="bun" className="h-7 px-3 text-xs data-[state=on]:bg-accent">
+                      bun
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="npm" className="h-7 px-3 text-xs data-[state=on]:bg-accent">
+                      npm
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <Button
+                  size="sm"
+                  variant={copiedInstall ? "default" : "outline"}
+                  onClick={() => handleCopyInstall(installCommand)}
+                  className="h-8 gap-1.5"
+                >
+                  <Icon name={copiedInstall ? "check" : "content_copy"} size={14} />
+                  <span className="text-xs">{copiedInstall ? "Copied!" : "Copy"}</span>
+                </Button>
+              </div>
+              <pre className="bg-muted p-4 rounded-md border font-mono text-xs">
+                <code>{installCommand}</code>
+              </pre>
             </div>
           </div>
+
           <DialogFooter>
-            <Button onClick={() => setIsLinkModalOpen(false)}>Close</Button>
+            <Button onClick={() => setIsLinkModalOpen(false)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

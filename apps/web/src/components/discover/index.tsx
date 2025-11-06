@@ -27,8 +27,25 @@ const HIGHLIGHTS = [
 const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 
 /**
+ * Filtra apps que possuem ícones válidos (não vazios e não padrão).
+ * Remove apps sem ícone e apps com ícone padrão que termina em /app.png
+ * @param integrations - Lista de integrações a filtrar
+ * @returns Lista filtrada de integrações com ícones válidos
+ */
+const filterAppsWithValidIcons = <T extends Integration>(
+  integrations: T[],
+): T[] => {
+  return integrations.filter((integration) => {
+    if (!integration.icon || integration.icon.trim() === "") return false;
+    if (integration.icon.endsWith("/app.png")) return false;
+    return true;
+  });
+};
+
+/**
  * Return the most recent apps based on the order of return from the marketplace.
  * The apps from the marketplace already come ordered by creation date (most recent first).
+ * Filtra apenas apps com ícones válidos.
  * @param integrations - List of integrations from the marketplace
  * @param limit - Number of apps to return (default: 3)
  * @returns Array with the names of the most recent apps
@@ -39,17 +56,20 @@ const getRecentApps = (
 ): string[] => {
   if (!integrations || integrations.length === 0) return FEATURED;
 
-  const appsWithCreatedAt = integrations.filter(
+  const appsWithValidIcons = filterAppsWithValidIcons(integrations);
+  const appsWithCreatedAt = appsWithValidIcons.filter(
     (integration) => integration.createdAt,
   );
 
-  return appsWithCreatedAt.slice(0, limit).map((integration) => integration.name);
+  return appsWithCreatedAt
+    .slice(0, limit)
+    .map((integration) => integration.name);
 };
 
 type FeaturedIntegration = Integration & {
   provider: string;
   friendlyName?: string;
-  verified?: boolean;
+  verified?: boolean | null;
   connection: MCPConnection;
 };
 
@@ -130,6 +150,23 @@ const Discover = () => {
   const verifiedIntegrations = integrations?.integrations.filter(
     (integration) => integration.verified,
   );
+
+  const sortedIntegrations = useMemo<FeaturedIntegration[]>(() => {
+    if (!integrations?.integrations) return [];
+
+    const validIconApps = filterAppsWithValidIcons(integrations.integrations);
+    const noIconApps = integrations.integrations.filter(
+      (integration) => !validIconApps.includes(integration),
+    );
+    const withValidIcons = [...validIconApps, ...noIconApps];
+
+    return [...withValidIcons].sort((a, b) => {
+      if (a.verified && !b.verified) return -1;
+      if (!a.verified && b.verified) return 1;
+
+      return 0;
+    });
+  }, [integrations]);
 
   const highlights = useMemo(() => {
     return HIGHLIGHTS.map((highlight) => {
@@ -261,11 +298,11 @@ const Discover = () => {
             <h2 className="text-lg pt-5 font-medium">
               All Apps
               <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                {integrations?.integrations?.length}
+                {sortedIntegrations.length}
               </span>
             </h2>
             <div className="grid grid-cols-3 gap-4">
-              {integrations?.integrations.map((integration) => (
+              {sortedIntegrations.map((integration) => (
                 <FeaturedCard key={integration.id} integration={integration} />
               ))}
             </div>

@@ -1291,6 +1291,7 @@ It's always handy to search for installed integrations with no query, since all 
           provider: MARKETPLACE_PROVIDER,
           metadata: app.metadata,
           verified: app.verified,
+          createdAt: app.createdAt,
           connection:
             app.connection || ({ type: "HTTP", url: "" } as MCPConnection),
         };

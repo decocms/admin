@@ -68,6 +68,7 @@ export const IntegrationSchema = z.object({
   ]),
   /** Metadata */
   metadata: z.record(z.any()).optional().nullable(),
+  createdAt: z.string().optional().nullable(),
   /** Tools */
   tools: z
     .array(

@@ -82,7 +82,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .executeTakeFirst();
 
     return connection
-      ? await this.deserializeConnection(connection as Parameters<typeof this.deserializeConnection>[0])
+      ? await this.deserializeConnection(
+          connection as Parameters<typeof this.deserializeConnection>[0],
+        )
       : null;
   }
 
@@ -94,7 +96,11 @@ export class ConnectionStorage implements ConnectionStoragePort {
       .execute();
 
     return await Promise.all(
-      connections.map((c) => this.deserializeConnection(c as Parameters<typeof this.deserializeConnection>[0])),
+      connections.map((c) =>
+        this.deserializeConnection(
+          c as Parameters<typeof this.deserializeConnection>[0],
+        ),
+      ),
     );
   }
 

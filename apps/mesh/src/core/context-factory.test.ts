@@ -1,3 +1,4 @@
+/* oxlint-disable no-explicit-any */
 import type { Kysely } from "kysely";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Meter, Tracer } from "@opentelemetry/api";

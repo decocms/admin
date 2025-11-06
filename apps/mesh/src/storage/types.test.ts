@@ -85,7 +85,9 @@ describe("Database Types", () => {
         accessControl: "via Better Auth permissions",
       };
 
-      expect(organizationConcept.database).toBe("mesh instance per organization");
+      expect(organizationConcept.database).toBe(
+        "mesh instance per organization",
+      );
       expect(organizationConcept.connections).toContain("organization-scoped");
     });
   });

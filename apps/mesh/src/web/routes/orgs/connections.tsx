@@ -74,8 +74,9 @@ export default function OrgConnections() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] =
-    useState<(typeof connections)[number] | null>(null);
+  const [editingConnection, setEditingConnection] = useState<
+    (typeof connections)[number] | null
+  >(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",

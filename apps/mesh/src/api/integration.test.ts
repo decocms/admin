@@ -53,6 +53,7 @@ describe("MCP Integration", () => {
             },
           },
         },
+        // oxlint-disable-next-line no-explicit-any
       } as any);
 
       // Mock global fetch to route through Hono app

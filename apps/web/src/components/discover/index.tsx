@@ -26,6 +26,26 @@ const HIGHLIGHTS = [
 // For the future, it should be controlled in a view
 const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 
+/**
+ * Return the most recent apps based on the order of return from the marketplace.
+ * The apps from the marketplace already come ordered by creation date (most recent first).
+ * @param integrations - List of integrations from the marketplace
+ * @param limit - Number of apps to return (default: 3)
+ * @returns Array with the names of the most recent apps
+ */
+const getRecentApps = (
+  integrations: Integration[] | undefined,
+  limit = 3,
+): string[] => {
+  if (!integrations || integrations.length === 0) return FEATURED;
+
+  const appsWithCreatedAt = integrations.filter(
+    (integration) => integration.createdAt,
+  );
+
+  return appsWithCreatedAt.slice(0, limit).map((integration) => integration.name);
+};
+
 type FeaturedIntegration = Integration & {
   provider: string;
   friendlyName?: string;
@@ -99,8 +119,13 @@ const Discover = () => {
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
 
+  const recentApps = useMemo(
+    () => getRecentApps(integrations?.integrations, 3),
+    [integrations],
+  );
+
   const featuredIntegrations = integrations?.integrations.filter(
-    (integration) => FEATURED.includes(integration.name),
+    (integration) => recentApps.includes(integration.name),
   );
   const verifiedIntegrations = integrations?.integrations.filter(
     (integration) => integration.verified,

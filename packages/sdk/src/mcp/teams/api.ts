@@ -1626,7 +1626,7 @@ export const importProjectFromGithub = createTool({
 
       const resourceType = detectResourceType(path);
       console.log(`[Import] Resource type for ${path}: ${resourceType}`);
-      
+
       if (resourceType) {
         try {
           const codeContent = textDecoder.decode(contentBytes);
@@ -1640,7 +1640,9 @@ export const importProjectFromGithub = createTool({
             console.log(`[Import] Converting tool to JSON...`);
             jsonResource = toolCodeToJson(codeContent);
             finalPath = path.replace(/\.ts$/, ".json");
-            console.log(`[Import] Tool JSON name: ${jsonResource.name}, has execute: ${!!jsonResource.execute}`);
+            console.log(
+              `[Import] Tool JSON name: ${jsonResource.name}, has execute: ${!!jsonResource.execute}`,
+            );
           } else if (resourceType === "workflow") {
             jsonResource = workflowCodeToJson(codeContent);
             finalPath = path.replace(/\.ts$/, ".json");
@@ -1649,14 +1651,21 @@ export const importProjectFromGithub = createTool({
           if (jsonResource) {
             const jsonString = JSON.stringify(jsonResource, null, 2);
             finalContentBytes = new TextEncoder().encode(jsonString);
-            console.log(`[Import] Converted ${path} to JSON (${jsonString.length} bytes)`);
+            console.log(
+              `[Import] Converted ${path} to JSON (${jsonString.length} bytes)`,
+            );
           }
         } catch (conversionError) {
           console.error(
             `[Import] Failed to convert ${path} to JSON:`,
-            conversionError instanceof Error ? conversionError.message : String(conversionError),
+            conversionError instanceof Error
+              ? conversionError.message
+              : String(conversionError),
           );
-          console.error(`[Import] Error stack:`, conversionError instanceof Error ? conversionError.stack : "");
+          console.error(
+            `[Import] Error stack:`,
+            conversionError instanceof Error ? conversionError.stack : "",
+          );
           continue;
         }
       } else if (path.endsWith(".json")) {

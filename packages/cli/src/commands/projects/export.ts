@@ -148,7 +148,9 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
           `Output directory '${outDir}' is not empty. Use --force to overwrite existing files.`,
         );
       }
-      console.log(`⚠️  Output directory is not empty. Using --force to overwrite.\n`);
+      console.log(
+        `⚠️  Output directory is not empty. Using --force to overwrite.\n`,
+      );
     }
   } else {
     mkdirSync(outDir, { recursive: true });

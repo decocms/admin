@@ -160,7 +160,8 @@ export const App = (props) => {
             def: {
               name: "fetch_todos",
               description: "Fetch all todos",
-              execute: "export default async function(input, ctx) { return { todos: [] }; }",
+              execute:
+                "export default async function(input, ctx) { return { todos: [] }; }",
               inputSchema: { type: "object" },
               outputSchema: { type: "object" },
             },
@@ -308,4 +309,3 @@ export const App = (props) => {
     });
   });
 });
-

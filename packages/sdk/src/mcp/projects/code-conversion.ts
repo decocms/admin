@@ -195,7 +195,7 @@ export function toolCodeToJson(code: string): ToolResource {
 
   const nameMatch = code.match(/export const name = (.+);/);
   const descMatch = code.match(/export const description = (.+);/);
-  
+
   // For multi-line JSON, match until we find the closing delimiter
   // Use a greedy match that stops at }; or ]; followed by newline
   const inputSchemaMatch = code.match(
@@ -402,14 +402,17 @@ export function detectResourceType(
 ): "view" | "tool" | "workflow" | null {
   // Normalize path to handle both /views/ and views/
   const normalizedPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
-  
+
   if (normalizedPath.includes("/views/") && normalizedPath.endsWith(".tsx")) {
     return "view";
   }
   if (normalizedPath.includes("/tools/") && normalizedPath.endsWith(".ts")) {
     return "tool";
   }
-  if (normalizedPath.includes("/workflows/") && normalizedPath.endsWith(".ts")) {
+  if (
+    normalizedPath.includes("/workflows/") &&
+    normalizedPath.endsWith(".ts")
+  ) {
     return "workflow";
   }
   return null;

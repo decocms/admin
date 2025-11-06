@@ -1,4 +1,10 @@
-import { useState, useMemo, useEffect, useDeferredValue, Suspense } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useDeferredValue,
+  Suspense,
+} from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -28,7 +34,11 @@ interface ImportProjectFormProps {
   onClose: () => void;
 }
 
-function ImportProjectForm({ org, defaultGithubUrl, onClose }: ImportProjectFormProps) {
+function ImportProjectForm({
+  org,
+  defaultGithubUrl,
+  onClose,
+}: ImportProjectFormProps) {
   const [githubUrl, setGithubUrl] = useState(defaultGithubUrl ?? "");
   const [projectSlug, setProjectSlug] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
@@ -118,70 +128,70 @@ function ImportProjectForm({ org, defaultGithubUrl, onClose }: ImportProjectForm
         </DialogTitle>
       </DialogHeader>
       <form onSubmit={handleImport} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="github-url">
-              GitHub Repository URL <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="github-url"
-              value={githubUrl}
-              onChange={(e) => {
-                setGithubUrl(e.target.value);
-                parseGithubUrl(e.target.value);
-              }}
-              placeholder="https://github.com/owner/repo"
-              disabled={importMutation.isPending}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="github-url">
+            GitHub Repository URL <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="github-url"
+            value={githubUrl}
+            onChange={(e) => {
+              setGithubUrl(e.target.value);
+              parseGithubUrl(e.target.value);
+            }}
+            placeholder="https://github.com/owner/repo"
+            disabled={importMutation.isPending}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="project-title">Project Title</Label>
-            <Input
-              id="project-title"
-              value={projectTitle}
-              onChange={(e) => setProjectTitle(e.target.value)}
-              placeholder="Auto-detected from repository"
-              disabled={importMutation.isPending}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="project-title">Project Title</Label>
+          <Input
+            id="project-title"
+            value={projectTitle}
+            onChange={(e) => setProjectTitle(e.target.value)}
+            placeholder="Auto-detected from repository"
+            disabled={importMutation.isPending}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="project-slug">Project Slug</Label>
-            <Input
-              id="project-slug"
-              value={projectSlug}
-              onChange={(e) => handleSlugChange(e.target.value)}
-              placeholder="Auto-detected from repository"
-              disabled={importMutation.isPending}
-              className={
-                slugExists
-                  ? "border-destructive focus-visible:ring-destructive"
-                  : ""
-              }
-            />
-            {slugExists && (
-              <p className="text-xs text-destructive">
-                A project with slug "{projectSlug}" already exists in this
-                organization. Please choose a different slug.
-              </p>
-            )}
-          </div>
-
-          {importMutation.isPending && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner size="sm" />
-              <span>Downloading and importing project...</span>
-            </div>
-          )}
-
-          {importMutation.error && (
-            <p className="text-sm text-destructive">
-              Failed to import project from GitHub.{" "}
-              {importMutation.error instanceof Error
-                ? importMutation.error.message
-                : "Please try again."}
+        <div className="space-y-2">
+          <Label htmlFor="project-slug">Project Slug</Label>
+          <Input
+            id="project-slug"
+            value={projectSlug}
+            onChange={(e) => handleSlugChange(e.target.value)}
+            placeholder="Auto-detected from repository"
+            disabled={importMutation.isPending}
+            className={
+              slugExists
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
+          />
+          {slugExists && (
+            <p className="text-xs text-destructive">
+              A project with slug "{projectSlug}" already exists in this
+              organization. Please choose a different slug.
             </p>
           )}
+        </div>
+
+        {importMutation.isPending && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner size="sm" />
+            <span>Downloading and importing project...</span>
+          </div>
+        )}
+
+        {importMutation.error && (
+          <p className="text-sm text-destructive">
+            Failed to import project from GitHub.{" "}
+            {importMutation.error instanceof Error
+              ? importMutation.error.message
+              : "Please try again."}
+          </p>
+        )}
 
         <div className="flex justify-end space-x-2">
           <Button

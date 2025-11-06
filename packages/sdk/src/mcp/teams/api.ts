@@ -51,29 +51,23 @@ import {
 import { NEW_AGENT_TEMPLATE } from "../../index.ts";
 import JSZip from "jszip";
 import {
-  encodeBytesToBase64,
-  IMPORT_ARCHIVE_SIZE_LIMIT_BYTES,
-  IMPORT_FILE_SIZE_LIMIT_BYTES,
-  IMPORT_MAX_FILE_COUNT,
-  sanitizeProjectPath,
-} from "../projects/file-utils.ts";
+  parseGithubUrl,
+  downloadGithubRepo,
+  extractZipFiles,
+  parseManifestFromFiles,
+  prepareFileForUpload,
+  parseDatabaseSchema,
+  parseAgentFile,
+} from "./import-project.ts";
 import {
-  parseManifest,
-  type Manifest,
-  createManifest,
-} from "../projects/manifest.ts";
-import {
-  viewCodeToJson,
-  toolCodeToJson,
-  workflowCodeToJson,
-  detectResourceType,
-  viewJsonToCode,
-  toolJsonToCode,
-  workflowJsonToCode,
-  type ViewResource,
-  type ToolResource,
-  type WorkflowResource,
-} from "../projects/code-conversion.ts";
+  processFileContent,
+  prepareFileForZip,
+  exportAgent,
+  processDatabaseSchema,
+  exportDatabaseTable,
+  buildManifest,
+  generateZip,
+} from "./export-project.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1397,174 +1391,20 @@ export const importProjectFromGithub = createTool({
     const { org, githubUrl, slug: overrideSlug, title: overrideTitle } = props;
 
     // Parse GitHub URL
-    const urlMatch = githubUrl.match(
-      /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?$/,
-    );
-    if (!urlMatch) {
-      throw new UserInputError(
-        "Invalid GitHub URL. Expected format: https://github.com/owner/repo",
-      );
-    }
-    const [, owner, repo, ref] = urlMatch;
+    const { owner, repo, ref } = parseGithubUrl({ githubUrl });
 
-    // Download from GitHub API
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${ref || "main"}`;
-    const response = await fetch(apiUrl, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "deco-cms",
-      },
-      redirect: "follow",
+    // Download from GitHub
+    const arrayBuffer = await downloadGithubRepo({ owner, repo, ref });
+
+    // Extract files from zip
+    const { files } = await extractZipFiles({ arrayBuffer });
+
+    // Parse manifest
+    const { manifest, projectSlug, projectTitle } = parseManifestFromFiles({
+      files,
+      overrideSlug,
+      overrideTitle,
     });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new UserInputError(
-          `Repository not found or branch "${ref || "main"}" does not exist. Make sure the repository is public.`,
-        );
-      }
-      throw new Error(
-        `Failed to download from GitHub: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const contentLengthHeader = response.headers.get("content-length");
-    const declaredArchiveSize = contentLengthHeader
-      ? Number.parseInt(contentLengthHeader, 10)
-      : undefined;
-    if (
-      typeof declaredArchiveSize === "number" &&
-      Number.isFinite(declaredArchiveSize) &&
-      declaredArchiveSize > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES
-    ) {
-      throw new UserInputError(
-        `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
-      );
-    }
-
-    // Extract zip using JSZip (proper npm package)
-    const arrayBuffer = await response.arrayBuffer();
-
-    if (arrayBuffer.byteLength > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES) {
-      throw new UserInputError(
-        `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
-      );
-    }
-
-    const zip = await JSZip.loadAsync(arrayBuffer);
-
-    const files = new Map<string, Uint8Array>();
-    const textDecoder = new TextDecoder();
-    let rootDir = "";
-    let totalBytes = 0;
-
-    // Find root directory (GitHub zips have a root folder like "owner-repo-sha/")
-    const zipFiles = Object.keys(zip.files);
-    if (zipFiles.length === 0) {
-      throw new Error("Failed to extract repository: zip file is empty");
-    }
-
-    const firstFile = zipFiles[0];
-    const match = firstFile.match(/^([^/]+)\//);
-    if (match) {
-      rootDir = match[1];
-    }
-
-    console.log(
-      `[Import] Extracting files from zip. Root directory: ${rootDir}`,
-    );
-
-    for (const [path, zipFile] of Object.entries(zip.files)) {
-      if ("dir" in zipFile && zipFile.dir) continue;
-
-      const relativePath = path.startsWith(rootDir + "/")
-        ? path.substring(rootDir.length + 1)
-        : path;
-
-      if (!relativePath) {
-        continue;
-      }
-
-      const sanitizedPath = sanitizeProjectPath(relativePath);
-      if (!sanitizedPath) {
-        throw new UserInputError(
-          `Repository contains an unsupported path: "${relativePath}"`,
-        );
-      }
-
-      const shouldProcess =
-        sanitizedPath === "deco.mcp.json" ||
-        sanitizedPath.startsWith("tools/") ||
-        sanitizedPath.startsWith("views/") ||
-        sanitizedPath.startsWith("workflows/") ||
-        sanitizedPath.startsWith("documents/") ||
-        sanitizedPath.startsWith("database/") ||
-        sanitizedPath.startsWith("agents/");
-
-      if (!shouldProcess) {
-        continue;
-      }
-
-      const contentBytes = await zipFile.async("uint8array");
-
-      if (contentBytes.byteLength > IMPORT_FILE_SIZE_LIMIT_BYTES) {
-        throw new UserInputError(
-          `File "${sanitizedPath}" exceeds the ${Math.round(IMPORT_FILE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB per-file limit. Trim the repository before importing.`,
-        );
-      }
-
-      totalBytes += contentBytes.byteLength;
-      if (totalBytes > IMPORT_ARCHIVE_SIZE_LIMIT_BYTES) {
-        throw new UserInputError(
-          `Repository archive exceeds the ${Math.round(IMPORT_ARCHIVE_SIZE_LIMIT_BYTES / (1024 * 1024))}MB limit. Trim the repository before importing.`,
-        );
-      }
-
-      files.set(sanitizedPath, contentBytes);
-
-      if (files.size > IMPORT_MAX_FILE_COUNT) {
-        throw new UserInputError(
-          `Repository contains more than ${IMPORT_MAX_FILE_COUNT} supported files. Trim the repository before importing.`,
-        );
-      }
-    }
-
-    console.log(`[Import] Retained ${files.size} files for import`);
-    console.log(`[Import] File paths:`, Array.from(files.keys()).slice(0, 20));
-
-    // Read manifest
-    const manifestBytes = files.get("deco.mcp.json");
-    if (!manifestBytes) {
-      throw new UserInputError(
-        "Manifest file 'deco.mcp.json' not found. This does not appear to be a valid deco project.",
-      );
-    }
-
-    let manifest: Manifest;
-    try {
-      const manifestJson = JSON.parse(textDecoder.decode(manifestBytes));
-      manifest = parseManifest(manifestJson);
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new UserInputError(
-          "Manifest file 'deco.mcp.json' is not valid JSON",
-        );
-      }
-      if (error instanceof z.ZodError) {
-        throw new UserInputError(
-          `Manifest validation failed: ${error.issues.map((issue) => issue.message).join(", ")}`,
-        );
-      }
-      throw error;
-    }
-    const projectSlug = overrideSlug || manifest.project.slug;
-    const projectTitle = overrideTitle || manifest.project.title;
-
-    if (!projectSlug || !projectTitle) {
-      throw new UserInputError(
-        "Invalid manifest: missing project slug or title",
-      );
-    }
 
     // Create project using internal logic (same as PROJECTS_CREATE)
     const user = c.user;
@@ -1609,100 +1449,27 @@ export const importProjectFromGithub = createTool({
     const deconfigClient = createDeconfigClientForContext(projectContext);
 
     // Upload files
-    const ALLOWED_ROOTS = [
-      "tools/",
-      "views/",
-      "workflows/",
-      "documents/",
-      "database/",
-    ];
     let uploadedCount = 0;
 
     console.log(`[Import] Starting file upload for project ${projectSlug}`);
 
     for (const [path, contentBytes] of files.entries()) {
-      const shouldUpload = ALLOWED_ROOTS.some((root) => path.startsWith(root));
+      const uploadInfo = prepareFileForUpload({ path, contentBytes });
 
-      if (!shouldUpload) {
-        console.log(`[Import] Skipping file (not in allowed roots): ${path}`);
+      if (!uploadInfo.shouldUpload) {
         continue;
       }
 
-      console.log(`[Import] Processing file: ${path}`);
-
-      // Convert code files to JSON before uploading
-      let finalContentBytes = contentBytes;
-      let finalPath = path;
-
-      const resourceType = detectResourceType(path);
-      console.log(`[Import] Resource type for ${path}: ${resourceType}`);
-
-      if (resourceType) {
-        try {
-          const codeContent = textDecoder.decode(contentBytes);
-          console.log(`[Import] Code content length: ${codeContent.length}`);
-          let jsonResource;
-
-          if (resourceType === "view") {
-            jsonResource = viewCodeToJson(codeContent);
-            finalPath = path.replace(/\.tsx$/, ".json");
-          } else if (resourceType === "tool") {
-            console.log(`[Import] Converting tool to JSON...`);
-            jsonResource = toolCodeToJson(codeContent);
-            finalPath = path.replace(/\.ts$/, ".json");
-            console.log(
-              `[Import] Tool JSON name: ${jsonResource.name}, has execute: ${!!jsonResource.execute}`,
-            );
-          } else if (resourceType === "workflow") {
-            jsonResource = workflowCodeToJson(codeContent);
-            finalPath = path.replace(/\.ts$/, ".json");
-          }
-
-          if (jsonResource) {
-            const jsonString = JSON.stringify(jsonResource, null, 2);
-            finalContentBytes = new TextEncoder().encode(jsonString);
-            console.log(
-              `[Import] Converted ${path} to JSON (${jsonString.length} bytes)`,
-            );
-          }
-        } catch (conversionError) {
-          console.error(
-            `[Import] Failed to convert ${path} to JSON:`,
-            conversionError instanceof Error
-              ? conversionError.message
-              : String(conversionError),
-          );
-          console.error(
-            `[Import] Error stack:`,
-            conversionError instanceof Error ? conversionError.stack : "",
-          );
-          continue;
-        }
-      } else if (path.endsWith(".json")) {
-        // Validate JSON files
-        try {
-          JSON.parse(textDecoder.decode(contentBytes));
-        } catch {
-          console.warn(`[Import] Skipping malformed JSON: ${path}`);
-          continue;
-        }
-      }
-
-      const remotePath = `/src/${finalPath}`;
-
-      console.log(`[Import] Uploading ${finalPath} to ${remotePath}`);
-      const base64Content = encodeBytesToBase64(finalContentBytes);
-
       try {
         await deconfigClient.PUT_FILE({
-          path: remotePath,
-          content: { base64: base64Content },
+          path: uploadInfo.remotePath,
+          content: { base64: uploadInfo.base64Content },
           branch: "main",
         });
         uploadedCount++;
-        console.log(`[Import] Successfully uploaded: ${remotePath}`);
+        console.log(`[Import] Successfully uploaded: ${uploadInfo.remotePath}`);
       } catch (error) {
-        console.error(`[Import] Failed to upload ${finalPath}:`, error);
+        console.error(`[Import] Failed to upload ${path}:`, error);
       }
     }
 
@@ -1714,51 +1481,38 @@ export const importProjectFromGithub = createTool({
     console.log(`[Import] Starting database import`);
 
     for (const [path, contentBytes] of files.entries()) {
-      if (
-        (path.startsWith("database/") || path.startsWith("src/database/")) &&
-        path.endsWith(".json")
-      ) {
-        console.log(`[Import] Importing table from: ${path}`);
-        try {
-          const payload = JSON.parse(textDecoder.decode(contentBytes)) as {
-            name?: string;
-            createSql?: string;
-            indexes?: Array<{ name?: string; sql?: string }>;
-          };
+      const schema = parseDatabaseSchema({ path, contentBytes });
 
-          if (!payload?.name || !payload?.createSql) {
-            console.warn(`[Import] Skipping invalid table schema: ${path}`);
-            continue;
+      if (!schema) {
+        continue;
+      }
+
+      try {
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: `DROP TABLE IF EXISTS ${schema.tableName}`,
+        });
+
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: schema.createSql,
+        });
+
+        for (const index of schema.indexes) {
+          if (index.sql) {
+            await workspaceClient.DATABASES_RUN_SQL({
+              sql: index.sql,
+            });
           }
-
-          const tableName = payload.name;
-
-          await workspaceClient.DATABASES_RUN_SQL({
-            sql: `DROP TABLE IF EXISTS ${tableName}`,
-          });
-
-          await workspaceClient.DATABASES_RUN_SQL({
-            sql: payload.createSql,
-          });
-
-          if (Array.isArray(payload.indexes)) {
-            for (const index of payload.indexes) {
-              if (!index?.sql) continue;
-
-              await workspaceClient.DATABASES_RUN_SQL({
-                sql: index.sql,
-              });
-            }
-          }
-
-          tablesImported++;
-          console.log(`[Import] Successfully imported table: ${tableName}`);
-        } catch (error) {
-          console.error(
-            `[Import] Failed to import table schema from ${path}:`,
-            error,
-          );
         }
+
+        tablesImported++;
+        console.log(
+          `[Import] Successfully imported table: ${schema.tableName}`,
+        );
+      } catch (error) {
+        console.error(
+          `[Import] Failed to import table schema from ${path}:`,
+          error,
+        );
       }
     }
 
@@ -1769,40 +1523,40 @@ export const importProjectFromGithub = createTool({
     console.log(`[Import] Starting agent import`);
 
     for (const [path, contentBytes] of files.entries()) {
-      if (
-        (path.startsWith("agents/") || path.startsWith("src/agents/")) &&
-        path.endsWith(".json")
-      ) {
-        console.log(`[Import] Importing agent from: ${path}`);
-        try {
-          const agentData = JSON.parse(textDecoder.decode(contentBytes));
+      const agentData = parseAgentFile({ path, contentBytes });
 
-          // Explicitly map agent fields to match the schema
-          await c.drizzle.insert(agentsTable).values({
-            name: agentData.name || NEW_AGENT_TEMPLATE.name,
-            avatar: agentData.avatar || NEW_AGENT_TEMPLATE.avatar,
-            instructions:
-              agentData.instructions || NEW_AGENT_TEMPLATE.instructions,
-            description: agentData.description,
-            tools_set: agentData.tools_set || NEW_AGENT_TEMPLATE.tools_set,
-            max_steps: agentData.max_steps,
-            max_tokens: agentData.max_tokens,
-            model: agentData.model || NEW_AGENT_TEMPLATE.model,
-            memory: agentData.memory,
-            views: agentData.views,
-            visibility: agentData.visibility || NEW_AGENT_TEMPLATE.visibility,
-            temperature: agentData.temperature,
-            workspace: null, // Legacy field, set to null for project-based agents
-            project_id: projectId,
-          });
+      if (!agentData) {
+        continue;
+      }
 
-          agentCount++;
-          console.log(
-            `[Import] Successfully imported agent: ${agentData.name}`,
-          );
-        } catch (error) {
-          console.error(`[Import] Failed to import agent from ${path}:`, error);
-        }
+      try {
+        await c.drizzle.insert(agentsTable).values({
+          name: agentData.name || NEW_AGENT_TEMPLATE.name,
+          avatar: agentData.avatar || NEW_AGENT_TEMPLATE.avatar,
+          instructions:
+            agentData.instructions || NEW_AGENT_TEMPLATE.instructions,
+          description: agentData.description,
+          tools_set: agentData.tools_set || NEW_AGENT_TEMPLATE.tools_set,
+          max_steps: agentData.max_steps,
+          max_tokens: agentData.max_tokens,
+          model: agentData.model || NEW_AGENT_TEMPLATE.model,
+          memory: agentData.memory,
+          views: agentData.views,
+          visibility:
+            agentData.visibility ||
+            (NEW_AGENT_TEMPLATE.visibility as
+              | "PUBLIC"
+              | "WORKSPACE"
+              | "PRIVATE"),
+          temperature: agentData.temperature,
+          workspace: null, // Legacy field, set to null for project-based agents
+          project_id: projectId,
+        });
+
+        agentCount++;
+        console.log(`[Import] Successfully imported agent: ${agentData.name}`);
+      } catch (error) {
+        console.error(`[Import] Failed to import agent from ${path}:`, error);
       }
     }
 
@@ -1906,36 +1660,12 @@ export const exportProject = createTool({
               path: file.path,
             });
 
-            // Handle different content formats from READ_FILE
-            let contentStr: string;
-            if (typeof readResponse.content === "string") {
-              // Check if it's base64 encoded (common for deconfig)
-              // Base64 strings typically start with letters and are URL-safe
-              if (readResponse.content.match(/^[A-Za-z0-9+/=]+$/)) {
-                try {
-                  contentStr = Buffer.from(
-                    readResponse.content,
-                    "base64",
-                  ).toString("utf-8");
-                } catch {
-                  // If base64 decode fails, use as-is
-                  contentStr = readResponse.content;
-                }
-              } else {
-                contentStr = readResponse.content;
-              }
-            } else if (
-              readResponse.content &&
-              typeof readResponse.content === "object" &&
-              "base64" in readResponse.content
-            ) {
-              contentStr = Buffer.from(
-                readResponse.content.base64,
-                "base64",
-              ).toString("utf-8");
-            } else {
-              contentStr = JSON.stringify(readResponse.content);
-            }
+            const { contentStr } = processFileContent({
+              filePath: file.path,
+              readResponse: readResponse as {
+                content?: string | { base64: string } | unknown;
+              },
+            });
 
             // Track resources by type
             const filePath = file.path;
@@ -1949,68 +1679,16 @@ export const exportProject = createTool({
               resourcesByType.documents.push(filePath);
             }
 
-            // Remove /src/ prefix for cleaner structure
-            let relativePath = filePath.startsWith("/")
-              ? filePath.slice(1)
-              : filePath;
-            if (relativePath.startsWith("src/")) {
-              relativePath = relativePath.slice(4);
-            }
+            const preparedFile = prepareFileForZip({
+              filePath,
+              contentStr,
+            });
 
-            const sanitizedRelativePath = sanitizeProjectPath(relativePath);
-            if (!sanitizedRelativePath) {
-              console.warn(`[Export] Skipping unsafe path: ${filePath}`);
+            if (!preparedFile.shouldInclude) {
               continue;
             }
 
-            // Convert JSON resources to code files
-            let finalContent = contentStr;
-            let finalPath = sanitizedRelativePath;
-
-            if (filePath.endsWith(".json")) {
-              try {
-                const parsed = JSON.parse(contentStr);
-
-                if (filePath.startsWith("/src/views/")) {
-                  console.log(`[Export] Converting view: ${filePath}`);
-                  const viewResource = parsed as ViewResource;
-                  finalContent = viewJsonToCode(viewResource);
-                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".tsx");
-                  console.log(`[Export] Converted to: ${finalPath}`);
-                } else if (filePath.startsWith("/src/tools/")) {
-                  console.log(`[Export] Converting tool: ${filePath}`);
-                  const toolResource = parsed as ToolResource;
-                  finalContent = toolJsonToCode(toolResource);
-                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".ts");
-                  console.log(`[Export] Converted to: ${finalPath}`);
-                } else if (filePath.startsWith("/src/workflows/")) {
-                  console.log(`[Export] Converting workflow: ${filePath}`);
-                  const workflowResource = parsed as WorkflowResource;
-                  finalContent = workflowJsonToCode(workflowResource);
-                  finalPath = sanitizedRelativePath.replace(/\.json$/, ".ts");
-                  console.log(`[Export] Converted to: ${finalPath}`);
-                } else {
-                  console.log(
-                    `[Export] Keeping as JSON (document): ${filePath}`,
-                  );
-                }
-              } catch (conversionError) {
-                console.error(
-                  `[Export] Failed to convert ${filePath} to code file:`,
-                  conversionError,
-                );
-                console.error(
-                  `[Export] Content was:`,
-                  contentStr.substring(0, 200),
-                );
-                // Fall back to writing the original JSON
-              }
-            }
-
-            console.log(
-              `[Export] Adding to zip: ${finalPath} (${finalContent.length} bytes)`,
-            );
-            zip.file(finalPath, finalContent);
+            zip.file(preparedFile.relativePath, preparedFile.finalContent);
           } catch (error) {
             console.warn(`[Export] Failed to read ${file.path}:`, error);
           }
@@ -2029,30 +1707,8 @@ export const exportProject = createTool({
 
     const agentsDir = "agents";
     for (const agent of agents || []) {
-      const exportAgent = {
-        name: agent.name,
-        avatar: agent.avatar,
-        instructions: agent.instructions,
-        description: agent.description,
-        tools_set: agent.tools_set,
-        max_steps: agent.max_steps,
-        max_tokens: agent.max_tokens,
-        model: agent.model,
-        memory: agent.memory,
-        views: agent.views,
-        visibility: agent.visibility,
-        temperature: agent.temperature,
-      };
-
-      const safeFilename = agent.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-
-      zip.file(
-        `${agentsDir}/${safeFilename}.json`,
-        JSON.stringify(exportAgent, null, 2) + "\n",
-      );
+      const { filename, content } = exportAgent({ agent });
+      zip.file(`${agentsDir}/${filename}`, content);
     }
 
     console.log(`[Export] Exported ${agents?.length || 0} agents`);
@@ -2064,71 +1720,17 @@ export const exportProject = createTool({
         sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
       });
 
-      const statements = (schemaResponse.result ?? []) as Array<{
-        results?: Array<Record<string, unknown>>;
-      }>;
-      const rows = statements.flatMap((statement) =>
-        Array.isArray(statement.results) ? statement.results : [],
-      );
-
-      const tables = rows
-        .map((row) => ({
-          type: String(row.type ?? ""),
-          name: String(row.name ?? ""),
-          tableName: String(row.tbl_name ?? row.name ?? ""),
-          sql: String(row.sql ?? ""),
-        }))
-        .filter(
-          (entry) =>
-            entry.type.toLowerCase() === "table" &&
-            entry.name &&
-            entry.sql &&
-            !entry.name.startsWith("sqlite_") &&
-            !entry.name.startsWith("mastra_") &&
-            entry.sql.trim().toLowerCase().startsWith("create table"),
-        );
-
-      const indexes = rows
-        .map((row) => ({
-          type: String(row.type ?? ""),
-          name: String(row.name ?? ""),
-          tableName: String(row.tbl_name ?? ""),
-          sql: String(row.sql ?? ""),
-        }))
-        .filter(
-          (entry) =>
-            entry.type.toLowerCase() === "index" &&
-            entry.sql &&
-            !entry.name.startsWith("sqlite_") &&
-            !entry.name.startsWith("mastra_") &&
-            tables.some((table) => table.tableName === entry.tableName),
-        );
-
-      const indexesByTable = new Map<
-        string,
-        Array<{ name: string; sql: string }>
-      >();
-      for (const index of indexes) {
-        const collection = indexesByTable.get(index.tableName) ?? [];
-        collection.push({ name: index.name, sql: index.sql });
-        indexesByTable.set(index.tableName, collection);
-      }
+      const { tables } = processDatabaseSchema({
+        schemaResponse: schemaResponse as {
+          result?: unknown[] | { results?: Array<Record<string, unknown>> }[];
+        },
+      });
 
       const databaseDir = "database";
       for (const table of tables) {
-        const safeFilename = table.tableName
-          .toLowerCase()
-          .replace(/[^a-z0-9-_]/g, "-");
-        const payload = {
-          name: table.tableName || table.name,
-          createSql: table.sql,
-          indexes: indexesByTable.get(table.tableName) ?? [],
-        };
-        zip.file(
-          `${databaseDir}/${safeFilename}.json`,
-          JSON.stringify(payload, null, 2) + "\n",
-        );
-        resourcesByType.database.push(`/${databaseDir}/${safeFilename}.json`);
+        const { filename, content } = exportDatabaseTable({ table });
+        zip.file(`${databaseDir}/${filename}`, content);
+        resourcesByType.database.push(`/${databaseDir}/${filename}`);
       }
 
       console.log(`[Export] Exported ${tables.length} tables`);
@@ -2136,57 +1738,36 @@ export const exportProject = createTool({
       console.warn(`[Export] Failed to export database schema:`, error);
     }
 
-    // Extract dependencies (simplified - just return empty for now)
-    const dependencies: string[] = [];
-
-    // Helper to strip /src/ prefix from paths
-    const stripSrcPrefix = (paths: string[]): string[] =>
-      paths.map((p) => p.replace(/^\/src\//, "/"));
-
     // Build manifest
-    const manifest = createManifest(
-      {
+    const manifest = buildManifest({
+      projectInfo: {
         slug: projectSlug,
         title: projectTitle,
         description: projectDescription || undefined,
       },
-      {
+      exporterInfo: {
         orgSlug: org,
         userId: user.id,
         userEmail: user.email || undefined,
       },
-      {
-        tools: stripSrcPrefix(resourcesByType.tools),
-        views: stripSrcPrefix(resourcesByType.views),
-        workflows: stripSrcPrefix(resourcesByType.workflows),
-        documents: stripSrcPrefix(resourcesByType.documents),
-        database: resourcesByType.database,
+      resources: resourcesByType,
+      dependencies: {
+        mcps: [], // Extract dependencies in future if needed
       },
-      {
-        mcps: dependencies,
-      },
-    );
+    });
 
     zip.file("deco.mcp.json", JSON.stringify(manifest, null, 2) + "\n");
 
     // Generate zip
-    const zipBuffer = await zip.generateAsync({
-      type: "nodebuffer",
-      compression: "DEFLATE",
-      compressionOptions: { level: 9 },
-    });
-
-    const base64 = zipBuffer.toString("base64");
+    const { buffer, base64 } = await generateZip({ zip });
     const filename = `${org}__${project}.zip`;
 
-    console.log(
-      `[Export] Generated zip: ${filename} (${zipBuffer.length} bytes)`,
-    );
+    console.log(`[Export] Generated zip: ${filename} (${buffer.length} bytes)`);
 
     return {
       filename,
       base64,
-      size: zipBuffer.length,
+      size: buffer.length,
     };
   },
 });

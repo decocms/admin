@@ -93,11 +93,17 @@ export async function extractDependenciesFromTools(
         for (const dependency of tool.dependencies) {
           if (dependency && typeof dependency === "object") {
             // Check for integrationId field
-            if (dependency.integrationId && typeof dependency.integrationId === "string") {
+            if (
+              dependency.integrationId &&
+              typeof dependency.integrationId === "string"
+            ) {
               integrationIds.add(dependency.integrationId);
             }
             // Check for integration_id field
-            if (dependency.integration_id && typeof dependency.integration_id === "string") {
+            if (
+              dependency.integration_id &&
+              typeof dependency.integration_id === "string"
+            ) {
               integrationIds.add(dependency.integration_id);
             }
           }

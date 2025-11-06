@@ -1428,6 +1428,7 @@ export const updateProject = createTool({
       project: z.string().describe("The project slug"),
       data: z.object({
         title: z.string().optional().describe("The new title for the project"),
+        icon: z.string().optional().describe("The new icon for the project"),
       }),
     }),
   ),
@@ -1471,6 +1472,10 @@ export const updateProject = createTool({
     const updateData: Record<string, unknown> = {};
     if (data.title !== undefined) {
       updateData.title = data.title;
+    }
+
+    if (data.icon !== undefined) {
+      updateData.icon = data.icon;
     }
 
     const { data: updatedProject, error: updateError } = await c.db

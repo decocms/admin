@@ -22,7 +22,11 @@ Returns:
 - Execute code (inline ES module)
 - Dependencies (integration IDs used in ctx.env calls)
 
-The tool's execute code uses \`ctx.env['{INTEGRATION_ID}'].{TOOL_NAME}(args)\` to call integrations.`;
+**IMPORTANT - Executing Tools:**
+After reading a tool, to EXECUTE it, use the \`i:self\` integration:
+\`await ctx.env['i:self'].TOOL_NAME({ params })\`
+
+Do NOT use DECO_TOOL_RUN_TOOL - always prefer the i:self integration for executing tools.`;
 
 export const TOOL_CREATE_PROMPT = `Create an executable tool with JSON Schema validation.
 
@@ -56,6 +60,12 @@ export default async function(input, ctx) {
 - Validation will show available integrations if the ID doesn't exist
 - System will guide you to the correct ID
 
+**Calling Tools (IMPORTANT):**
+- ALWAYS use the \`i:self\` integration to execute tools created via DECO_RESOURCE_TOOL_CREATE
+- Example: \`await ctx.env['i:self'].YOUR_TOOL_NAME({ param: value })\`
+- Do NOT use DECO_TOOL_RUN_TOOL - use \`i:self\` instead
+- Remember to add \`{ integrationId: 'i:self' }\` to dependencies
+
 **HTTP Requests:**
 - \`fetch\` is NOT available in this environment
 - To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
@@ -87,6 +97,12 @@ export default async function(input, ctx) {
 - Use placeholders like \`i:slack\` if you don't know the ID
 - Validation errors will list all available integrations
 - Copy the correct ID from the error message
+
+**Calling Tools (IMPORTANT):**
+- ALWAYS use the \`i:self\` integration to execute tools created via DECO_RESOURCE_TOOL_CREATE
+- Example: \`await ctx.env['i:self'].YOUR_TOOL_NAME({ param: value })\`
+- Do NOT use DECO_TOOL_RUN_TOOL - use \`i:self\` instead
+- Remember to add \`{ integrationId: 'i:self' }\` to dependencies
 
 **HTTP Requests:**
 - \`fetch\` is NOT available in this environment

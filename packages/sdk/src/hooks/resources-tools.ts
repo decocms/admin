@@ -27,11 +27,6 @@ const RESOURCE_TOOL = {
   DELETE: "DECO_RESOURCE_TOOL_DELETE" as const,
 };
 
-// Tool execution tools
-const TOOL_TOOLS = {
-  CALL: "DECO_TOOL_CALL_TOOL" as const,
-};
-
 // Helper functions
 const workspaceResourceClient = (locator: ProjectLocator) =>
   MCPClient.forLocator(locator, `/mcp`);
@@ -260,49 +255,5 @@ export function useDeleteTool() {
       // Notify about the resource deletion
       notifyResourceUpdate(variables.uri);
     },
-  });
-}
-
-// Tool execution
-export interface ToolCallParamsV2 {
-  uri: string;
-  input: Record<string, unknown>;
-}
-
-export interface ToolCallResultV2 {
-  result?: unknown;
-  error?: unknown;
-  logs?: Array<{
-    type: "log" | "warn" | "error";
-    content: string;
-  }>;
-}
-
-export function callToolV2(
-  locator: ProjectLocator,
-  params: ToolCallParamsV2,
-  signal?: AbortSignal,
-): Promise<ToolCallResultV2> {
-  // oxlint-disable-next-line no-explicit-any
-  const client = workspaceResourceClient(locator) as any;
-  return client[TOOL_TOOLS.CALL](params, {
-    signal,
-  }) as Promise<ToolCallResultV2>;
-}
-
-export function useToolCallV2() {
-  const { locator } = useSDK();
-  if (!locator) {
-    throw new InternalServerError("No locator available");
-  }
-
-  return useMutation({
-    mutationFn: ({
-      params,
-      signal,
-    }: {
-      params: ToolCallParamsV2;
-      signal?: AbortSignal;
-    }) => callToolV2(locator, params, signal),
   });
 }

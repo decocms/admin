@@ -1,0 +1,19 @@
+{
+  "emailAndPassword": {
+    "enabled": true
+  },
+  "socialProviders": {
+    "google": {
+      "clientId": "your-google-client-id",
+      "clientSecret": "your-google-client-secret"
+    },
+    "github": {
+      "clientId": "your-github-client-id",
+      "clientSecret": "your-github-client-secret"
+    }
+  },
+  "saml": {
+    "enabled": false,
+    "providers": []
+  }
+}

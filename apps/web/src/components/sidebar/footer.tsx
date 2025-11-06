@@ -311,7 +311,7 @@ export function LoggedUser({
 
         <ResponsiveDropdownItem asChild>
           <a
-            href="https://github.com/deco-cx/chat"
+            href="https://github.com/decocms/admin"
             target="_blank"
             rel="noopener noreferrer"
             className="flex w-full items-center gap-2 text-sm cursor-pointer"
@@ -321,7 +321,7 @@ export function LoggedUser({
               alt="GitHub"
               className="w-4 h-4 text-muted-foreground"
             />
-            deco-cx/chat
+            decocms/admin
             {formattedStars && (
               <span className="text-xs ml-auto text-muted-foreground">
                 {formattedStars} stars

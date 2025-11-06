@@ -20,6 +20,7 @@ import { TopbarLayout } from "../layout/home";
 import { OrgAvatars, OrgMemberCount } from "./members";
 import { ProjectCard } from "./projects";
 import { normalizeGithubImportValue } from "../../utils/github-import.ts";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 function OrganizationCard({
   name,
@@ -37,7 +38,7 @@ function OrganizationCard({
   badge?: ReactNode;
 }) {
   return (
-    <Card className="group transition-colors flex flex-col">
+    <Card className="group transition-all flex flex-col hover:ring-2 hover:ring-primary">
       <Link to={url} className="flex flex-col">
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -48,13 +49,15 @@ function OrganizationCard({
               objectFit="contain"
             />
             {badge ? (
-              <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center text-xs text-muted-foreground">
                 {badge}
-                <Icon
-                  name="chevron_right"
-                  size={20}
-                  className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                />
+                <div className="w-0 overflow-hidden group-hover:w-5 transition-all">
+                  <Icon
+                    name="chevron_right"
+                    size={20}
+                    className="text-muted-foreground"
+                  />
+                </div>
               </div>
             ) : (
               <Icon
@@ -221,6 +224,7 @@ function MyOrganizations() {
   const importGithubParam = searchParams.get("importGithub") ?? undefined;
   const { slug: importGithubSlug, url: importGithubUrl } =
     normalizeGithubImportValue(importGithubParam);
+  const { handleCopy, copied } = useCopy();
 
   const handleClearImport = useCallback(() => {
     if (!importGithubSlug) {
@@ -231,37 +235,62 @@ function MyOrganizations() {
     setSearchParams(next, { replace: true });
   }, [importGithubSlug, searchParams, setSearchParams]);
 
+  const handleCopyGithubUrl = useCallback(() => {
+    const fullUrl = importGithubUrl || `https://github.com/${importGithubSlug}`;
+    handleCopy(fullUrl);
+  }, [importGithubUrl, importGithubSlug, handleCopy]);
+
   return (
     <div className="min-h-full w-full bg-background">
       <div className="p-8 flex flex-col gap-4 w-full max-w-7xl mx-auto min-h-[calc(100vh-48px)]">
         {importGithubSlug ? (
-          <div className="rounded-lg border border-border bg-card px-6 py-5 flex flex-col gap-3">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Icon name="code" size={18} className="text-foreground" />
-              <span className="uppercase tracking-wide text-[11px] font-semibold">
-                Deploy from GitHub
-              </span>
+          <div className="rounded-xl border border-border bg-background p-4 flex items-center gap-2 shadow-xs sticky top-16 z-10">
+            <div className="shrink-0 size-[60px] flex items-center justify-center">
+              <img
+                src="/img/github.svg"
+                alt="GitHub"
+                className="size-[60px] brightness-50"
+              />
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold">
-                  Select an organization to import
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    {importGithubSlug}
-                  </span>
-                  {importGithubUrl ? (
-                    <span className="text-xs text-muted-foreground block">
-                      {importGithubUrl}
-                    </span>
-                  ) : null}
-                </p>
+            <div className="flex flex-col gap-2 flex-1 min-w-0">
+              <p className="text-base font-medium leading-6">
+                Select an organization to import
+              </p>
+              <div
+                className="border border-border rounded-lg flex items-center shrink-0 w-fit cursor-pointer hover:bg-accent transition-colors"
+                onClick={handleCopyGithubUrl}
+              >
+                {copied ? (
+                  <div className="flex items-center gap-2 px-4 py-1.5">
+                    <Icon name="check" size={16} className="text-success" />
+                    <p className="text-sm text-foreground whitespace-nowrap">
+                      Copied
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="border-r border-border px-2 py-1.5">
+                      <p className="text-sm text-muted-foreground whitespace-nowrap">
+                        https://github.com/
+                      </p>
+                    </div>
+                    <div className="px-4 py-1.5">
+                      <p className="text-sm text-foreground whitespace-nowrap">
+                        {importGithubSlug}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button variant="ghost" size="sm" onClick={handleClearImport}>
-                Dismiss
-              </Button>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearImport}
+              className="shrink-0 h-8 rounded-xl"
+            >
+              Dismiss
+            </Button>
           </div>
         ) : (
           <>
@@ -291,7 +320,7 @@ function MyOrganizations() {
             </Button>
           </div>
         </div>
-        <div className="@container overflow-y-auto flex-1 pb-28">
+        <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
           <ErrorBoundary fallback={<Organizations.Error />}>
             <Suspense fallback={<Organizations.Skeleton />}>
               <Organizations

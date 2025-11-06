@@ -143,7 +143,14 @@ export function ImportProjectFromGithub({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Import Project from GitHub</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <img
+              src="/img/github.svg"
+              alt="GitHub"
+              className="size-6 brightness-50"
+            />
+            Import Project from GitHub
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleImport} className="space-y-4">
           <div className="space-y-2">
@@ -160,9 +167,6 @@ export function ImportProjectFromGithub({
               placeholder="https://github.com/owner/repo"
               disabled={importMutation.isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              Enter the GitHub repository URL to import
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -174,9 +178,6 @@ export function ImportProjectFromGithub({
               placeholder="Auto-detected from repository"
               disabled={importMutation.isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              Optional: Override the project title
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -193,14 +194,10 @@ export function ImportProjectFromGithub({
                   : ""
               }
             />
-            {slugExists ? (
+            {slugExists && (
               <p className="text-xs text-destructive">
                 A project with slug "{projectSlug}" already exists in this
                 organization. Please choose a different slug.
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Optional: Override the URL-friendly identifier
               </p>
             )}
           </div>

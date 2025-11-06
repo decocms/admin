@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
@@ -62,6 +61,9 @@ function ExportButton() {
   const { org, project } = useParams();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [packageManager, setPackageManager] = useState<"bun" | "npm">("bun");
+  const { handleCopy: handleCopyCommand, copied: copiedCommand } = useCopy();
+  const { handleCopy: handleCopyInstall, copied: copiedInstall } = useCopy();
 
   async function handleExport() {
     if (!org || !project) {
@@ -108,6 +110,9 @@ function ExportButton() {
     return null;
   }
 
+  const cliCommand = `deco project export --org ${org} --project ${project} --out ${project}/`;
+  const installCommand = `${packageManager} install -g @deco/cli`;
+
   return (
     <>
       <TooltipProvider>
@@ -133,150 +138,100 @@ function ExportButton() {
       </TooltipProvider>
 
       <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Export Project</DialogTitle>
             <DialogDescription>
-              Export your project as a zip file containing all tools, views,
-              workflows, documents, database schemas, and agents. You can use
-              this to back up your project, share it with others, or import it
-              into another organization.
+              Choose how you want to export your project
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsExportModalOpen(false)}
-              disabled={isExporting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleExport} disabled={isExporting}>
-              {isExporting ? (
-                <div className="flex items-center gap-2">
-                  <Spinner />
-                  Exporting...
-                </div>
-              ) : (
-                <>
-                  <Icon name="download" className="mr-2" size={16} />
-                  Export & Download
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
 
-function LinkButton() {
-  const { org, project } = useParams();
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [packageManager, setPackageManager] = useState<"bun" | "npm">("bun");
-  const { handleCopy: handleCopyCommand, copied: copiedCommand } = useCopy();
-  const { handleCopy: handleCopyInstall, copied: copiedInstall } = useCopy();
-
-  // Only show in project context
-  if (!org || !project) {
-    return null;
-  }
-
-  const cliCommand = `deco project export --org ${org} --project ${project} --out ${project}/`;
-  const installCommand = `${packageManager} install -g @deco/cli`;
-
-  return (
-    <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="w-8 h-8"
-              onClick={() => setIsLinkModalOpen(true)}
-            >
-              <Icon
-                name="terminal"
-                className="text-muted-foreground"
-                size={20}
-              />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <span>CLI Export Instructions</span>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader className="space-y-3">
-            <DialogTitle>Export via CLI</DialogTitle>
-            <DialogDescription>
-              Use the Deco CLI to export your project with full control over the export process.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Export Command</label>
-                <Button
-                  size="sm"
-                  variant={copiedCommand ? "default" : "outline"}
-                  onClick={() => handleCopyCommand(cliCommand)}
-                  className="h-8 gap-1.5"
-                >
-                  <Icon name={copiedCommand ? "check" : "content_copy"} size={14} />
-                  <span className="text-xs">{copiedCommand ? "Copied!" : "Copy"}</span>
-                </Button>
+          <div className="grid grid-cols-2 gap-2 py-4">
+            {/* Download ZIP Option */}
+            <div className="flex flex-col items-center justify-center gap-4 p-6 border rounded-lg">
+              <Icon name="download" size={36} />
+              <div className="flex flex-col gap-2 items-center">
+                <h3 className="text-lg font-medium">Download ZIP</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Export your project as a zip file containing all resources
+                </p>
               </div>
-              <pre className="bg-muted p-4 rounded-md overflow-x-auto border font-mono text-xs leading-relaxed">
-                <code>{cliCommand}</code>
-              </pre>
+              <Button onClick={handleExport} disabled={isExporting} size="sm">
+                {isExporting ? (
+                  <div className="flex items-center gap-2">
+                    <Spinner />
+                    Exporting...
+                  </div>
+                ) : (
+                  "Export & Download"
+                )}
+              </Button>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium">Installation</label>
+            {/* CLI Export Option */}
+            <div className="flex flex-col gap-4 p-6 border rounded-lg">
+              <h3 className="text-lg font-medium">Export via CLI</h3>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm">Export Command</label>
+                <div className="group relative bg-muted p-2 rounded-lg overflow-x-auto">
+                  <code className="font-mono text-sm text-muted-foreground whitespace-nowrap block pr-8">
+                    {cliCommand}
+                  </code>
+                  <button
+                    onClick={() => handleCopyCommand(cliCommand)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-muted p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Icon
+                      name={copiedCommand ? "check" : "content_copy"}
+                      size={16}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm">Installation</label>
                   <ToggleGroup
                     type="single"
                     value={packageManager}
-                    onValueChange={(value) => value && setPackageManager(value as "bun" | "npm")}
-                    className="gap-0 border rounded-md"
+                    onValueChange={(value) =>
+                      value && setPackageManager(value as "bun" | "npm")
+                    }
+                    className="gap-0 border rounded-md h-7"
                   >
-                    <ToggleGroupItem value="bun" className="h-7 px-3 text-xs data-[state=on]:bg-accent">
-                      bun
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="npm" className="h-7 px-3 text-xs data-[state=on]:bg-accent">
+                    <ToggleGroupItem
+                      value="npm"
+                      className="h-full px-1.5 text-sm data-[state=on]:bg-accent"
+                    >
                       npm
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="bun"
+                      className="h-full px-1.5 text-sm data-[state=on]:bg-accent"
+                    >
+                      bun
                     </ToggleGroupItem>
                   </ToggleGroup>
                 </div>
-                <Button
-                  size="sm"
-                  variant={copiedInstall ? "default" : "outline"}
-                  onClick={() => handleCopyInstall(installCommand)}
-                  className="h-8 gap-1.5"
-                >
-                  <Icon name={copiedInstall ? "check" : "content_copy"} size={14} />
-                  <span className="text-xs">{copiedInstall ? "Copied!" : "Copy"}</span>
-                </Button>
+                <div className="group relative bg-muted p-2 rounded-lg overflow-x-auto">
+                  <code className="font-mono text-sm text-muted-foreground whitespace-nowrap block pr-8">
+                    {installCommand}
+                  </code>
+                  <button
+                    onClick={() => handleCopyInstall(installCommand)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-muted p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Icon
+                      name={copiedInstall ? "check" : "content_copy"}
+                      size={16}
+                    />
+                  </button>
+                </div>
               </div>
-              <pre className="bg-muted p-4 rounded-md border font-mono text-xs">
-                <code>{installCommand}</code>
-              </pre>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button onClick={() => setIsLinkModalOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
@@ -294,7 +249,6 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
       </div>
       <div className="flex items-center gap-2">
         <ExportButton />
-        <LinkButton />
         <Suspense fallback={null}>
           <InboxPopover />
         </Suspense>

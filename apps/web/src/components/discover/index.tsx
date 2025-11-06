@@ -1,5 +1,6 @@
 import {
   type Integration,
+  KEYS,
   MCPClient,
   MCPConnection,
   useMarketplaceIntegrations,
@@ -125,22 +126,26 @@ const AdminFeaturedCard = ({
     setIsUpdating(true);
     try {
       const newUnlistedValue = !integration.unlisted;
-      
+
       // If marking as unlisted AND it's verified, remove verification too
       const updates: { unlisted: boolean; verified?: boolean } = {
         unlisted: newUnlistedValue,
       };
-      
+
       if (newUnlistedValue && integration.verified) {
         updates.verified = false;
       }
-      
+
       await MCPClient.forLocator(locator).REGISTRY_UPDATE_APP_VISIBILITY({
         appId: integration.id,
         ...updates,
       });
+      // Invalidate both "all" and "public" queries
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(true),
+      });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(false),
       });
     } catch (error) {
       console.error("Failed to update unlisted:", error);
@@ -157,8 +162,12 @@ const AdminFeaturedCard = ({
         appId: integration.id,
         verified: !integration.verified,
       });
+      // Invalidate both "all" and "public" queries
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(true),
+      });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(false),
       });
     } catch (error) {
       console.error("Failed to update verified:", error);
@@ -178,8 +187,12 @@ const AdminFeaturedCard = ({
         icon: iconUrl,
         description: details,
       });
+      // Invalidate both "all" and "public" queries
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(true),
+      });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(false),
       });
       setIsEditing(false);
     } catch (error) {
@@ -222,9 +235,15 @@ const AdminFeaturedCard = ({
       )}
 
       {isEditing ? (
-        <form className="space-y-3 mt-6" onSubmit={handleSaveEdit} onClick={(e) => e.stopPropagation()}>
+        <form
+          className="space-y-3 mt-6"
+          onSubmit={handleSaveEdit}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+            <label className="text-xs text-muted-foreground mb-1 block">
+              Name
+            </label>
             <Input
               value={friendlyName}
               onChange={(e) => setFriendlyName(e.target.value)}
@@ -233,7 +252,9 @@ const AdminFeaturedCard = ({
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Icon URL</label>
+            <label className="text-xs text-muted-foreground mb-1 block">
+              Icon URL
+            </label>
             <Input
               value={iconUrl}
               onChange={(e) => setIconUrl(e.target.value)}
@@ -242,7 +263,9 @@ const AdminFeaturedCard = ({
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Description</label>
+            <label className="text-xs text-muted-foreground mb-1 block">
+              Description
+            </label>
             <textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
@@ -252,7 +275,12 @@ const AdminFeaturedCard = ({
             />
           </div>
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={isUpdating} className="flex-1">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isUpdating}
+              className="flex-1"
+            >
               Save
             </Button>
             <Button
@@ -278,7 +306,9 @@ const AdminFeaturedCard = ({
             {integration.friendlyName || integration.name}
             {integration.verified && <VerifiedBadge />}
           </h3>
-          <p className="text-sm text-muted-foreground">{integration.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {integration.description}
+          </p>
         </>
       )}
 
@@ -308,7 +338,10 @@ const AdminFeaturedCard = ({
             disabled={isUpdating}
             className="w-full xl:w-auto"
           >
-            <Icon name={integration.verified ? "verified" : "shield"} size={16} />
+            <Icon
+              name={integration.verified ? "verified" : "shield"}
+              size={16}
+            />
             {integration.verified ? "Verified" : "Unverified"}
           </Button>
         </div>

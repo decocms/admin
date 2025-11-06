@@ -27,10 +27,10 @@ const HIGHLIGHTS = [
 const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 
 /**
- * Filtra apps que possuem ícones válidos (não vazios e não padrão).
- * Remove apps sem ícone e apps com ícone padrão que termina em /app.png
- * @param integrations - Lista de integrações a filtrar
- * @returns Lista filtrada de integrações com ícones válidos
+ * Filter apps that have valid icons (not empty and not default).
+ * Remove apps without icon and apps with default icon that ends with /app.png
+ * @param integrations - List of integrations to filter
+ * @returns Filtered list of integrations with valid icons
  */
 const filterAppsWithValidIcons = <T extends Integration>(
   integrations: T[],
@@ -45,7 +45,7 @@ const filterAppsWithValidIcons = <T extends Integration>(
 /**
  * Return the most recent apps based on the order of return from the marketplace.
  * The apps from the marketplace already come ordered by creation date (most recent first).
- * Filtra apenas apps com ícones válidos.
+ * Filter only apps with valid icons.
  * @param integrations - List of integrations from the marketplace
  * @param limit - Number of apps to return (default: 3)
  * @returns Array with the names of the most recent apps
@@ -161,7 +161,6 @@ const Discover = () => {
     const allApps = [...validIconApps, ...noIconApps];
 
     return [...allApps].sort((a, b) => {
-      // Sort: verified true first, then false/null
       if (a.verified === true && b.verified !== true) return -1;
       if (a.verified !== true && b.verified === true) return 1;
 

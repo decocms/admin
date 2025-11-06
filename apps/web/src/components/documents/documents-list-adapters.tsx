@@ -1,0 +1,95 @@
+import type { Prompt, PinnedItem } from "@deco/sdk";
+import type { TableColumn } from "../common/table/index.tsx";
+import { TimeAgoCell } from "../common/table/table-cells.tsx";
+import type { CustomRowAction } from "../resources-v2/list.tsx";
+import { createPinAction } from "../common/pin-to-sidebar.tsx";
+
+/**
+ * Adapter to transform Prompt to a format compatible with ResourcesV2List
+ */
+export function adaptPrompt(prompt: Prompt): Record<string, unknown> {
+  return {
+    id: prompt.id,
+    uri: `legacy-prompt://${prompt.id}`,
+    // For compatibility with ResourceListItem structure
+    data: {
+      name: prompt.name || "Untitled document",
+      description: prompt.description || prompt.content || "",
+    },
+    created_at: prompt.created_at,
+    updated_at: prompt.created_at, // Prompts don't have updated_at, use created_at
+    // Store original prompt for row actions
+    _prompt: prompt,
+  };
+}
+
+/**
+ * Get columns for prompts table - matches ResourcesV2List style
+ */
+export function getPromptsColumns(): TableColumn<Record<string, unknown>>[] {
+  return [
+    {
+      id: "title",
+      header: "Name",
+      accessor: (row) => {
+        const item = row as Record<string, unknown>;
+        const data = item.data as Record<string, unknown> | undefined;
+        return (data?.name as string) || "";
+      },
+      cellClassName: "max-w-3xs font-medium",
+      sortable: true,
+    },
+    {
+      id: "description",
+      header: "Description",
+      accessor: (row) => {
+        const item = row as Record<string, unknown>;
+        const data = item.data as Record<string, unknown> | undefined;
+        return (data?.description as string) || "";
+      },
+      cellClassName: "max-w-xl",
+      sortable: true,
+    },
+    {
+      id: "updated_at",
+      header: "Updated",
+      render: (row) => {
+        const item = row as Record<string, unknown>;
+        return <TimeAgoCell value={item.updated_at as string} />;
+      },
+      cellClassName: "whitespace-nowrap min-w-30",
+      sortable: true,
+    },
+  ];
+}
+
+/**
+ * Get custom row actions for prompts (pin, delete)
+ */
+export function getPromptRowActions(
+  onDelete: (prompt: Prompt) => void,
+  isPinned: (id: string) => boolean,
+  togglePin: (resource: Omit<PinnedItem, "pinned_at">) => void,
+): (item: Record<string, unknown>) => CustomRowAction[] {
+  return (item: Record<string, unknown>) => {
+    const prompt = (item._prompt as Prompt) || (item as unknown as Prompt);
+
+    return [
+      createPinAction(
+        prompt.id,
+        prompt.name || "Untitled document",
+        "document",
+        "i:documents-management",
+        "description",
+        isPinned,
+        togglePin,
+      ),
+      {
+        label: "Delete",
+        icon: "delete",
+        variant: "destructive",
+        onClick: () => onDelete(prompt),
+      },
+    ];
+  };
+}

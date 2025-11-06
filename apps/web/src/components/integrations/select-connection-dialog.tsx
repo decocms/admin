@@ -222,7 +222,6 @@ export const useUIInstallIntegration = ({
 }: UseUIInstallIntegrationProps) => {
   const { install, isLoading } = useIntegrationInstall();
   const buildWorkspaceUrl = useWorkspaceLink();
-  const navigateWorkspace = useNavigateWorkspace();
 
   const handleConnect = async ({
     integration,
@@ -277,17 +276,7 @@ export const useUIInstallIntegration = ({
           authorizeOauthUrl: null,
         });
       } else if (!result.stateSchema) {
-        let link = `/apps/${integration.provider}:::${integration.name}`;
-        const isDecoApp = integration.name.startsWith("@deco/");
-        if (
-          result.redirectUrl === null &&
-          isDecoApp &&
-          integration.friendlyName
-        ) {
-          // special case for non oauth-apps
-          link = `/apps/deco:::${integration.friendlyName}`;
-        }
-        navigateWorkspace(link);
+        // No navigation needed - install-success page will handle opening the app in a tab
       }
     } catch (error) {
       trackEvent("integration_install", {
@@ -870,7 +859,7 @@ interface SelectConnectionDialogProps {
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   const [query] = useSearchParams();
   const appName = query.get("appName");
-  const [isOpen, setIsOpen] = useState(!!appName);
+  const [isOpen, setIsOpen] = useState(false);
 
   const trigger = useMemo(() => {
     if (props.trigger) {

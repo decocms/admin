@@ -1,4 +1,14 @@
 import { useIntegrations } from "@deco/sdk";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Collapsible,
@@ -12,38 +22,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@deco/ui/components/alert-dialog.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
-import { memo, useMemo, useRef, useState, useCallback } from "react";
-import { IntegrationIcon } from "../integrations/common.tsx";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { useCopy } from "../../hooks/use-copy.ts";
+import {
+  truncateHash,
+  useGetVersions,
+  useRevertToVersion,
+} from "../../stores/resource-version-history/index.ts";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 import {
   extractToolName,
-  parseToolName,
   getStatusStyles,
+  parseToolName,
 } from "../../utils/tool-namespace.ts";
+import { IntegrationIcon } from "../integrations/common.tsx";
 import { JsonViewer } from "./json-viewer.tsx";
 import {
   HostingAppDeploy,
   HostingAppToolLike,
 } from "./tools/hosting-app-deploy.tsx";
 import { Preview } from "./tools/render-preview.tsx";
-import {
-  truncateHash,
-  useGetVersions,
-  useRevertToVersion,
-} from "../../stores/resource-version-history/index.ts";
-import { WELL_KNOWN_VIEWS } from "../views/react-view-registry.tsx";
-import { useCopy } from "../../hooks/use-copy.ts";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -491,271 +491,164 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
-// Shared expandable tool card component
-interface ExpandableToolCardProps {
-  part: ToolUIPart;
-  integration: { icon?: string; name?: string } | null;
-  toolName?: string;
-  toolDescription?: string;
-  statusText?: string;
-  children: React.ReactNode;
-  canRevert?: boolean;
-  revertLabel?: string;
-  onConfirmRevert?: () => void;
-  headerActions?: React.ReactNode;
-}
-
-function ExpandableToolCard({
-  part,
-  integration,
-  toolName,
-  toolDescription: _toolDescription,
-  statusText: customStatusText,
-  children,
-  canRevert,
-  revertLabel,
-  onConfirmRevert,
-  headerActions,
-}: ExpandableToolCardProps) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const statusText = useMemo(() => {
-    if (customStatusText) return customStatusText;
-
-    switch (part.state) {
-      case "input-streaming":
-        return "Reading...";
-      case "input-available":
-        return "Reading...";
-      case "output-available":
-        return "Read";
-      case "output-error":
-        return "Error";
-      default:
-        return "Unknown";
-    }
-  }, [part.state, customStatusText]);
-
-  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
-
-  // Check if we should show expanded view (input states or manually expanded)
-  const shouldExpand = useMemo(() => {
-    return (
-      part.state === "input-streaming" ||
-      part.state === "input-available" ||
-      isManuallyExpanded
-    );
-  }, [part.state, isManuallyExpanded]);
-
-  const handleToggleExpand = useCallback(() => {
-    setIsManuallyExpanded((prev) => !prev);
-  }, []);
-
-  return (
-    <>
-      <div className="flex mb-5 flex-col border border-border rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={handleToggleExpand}
-          className={cn(
-            "flex items-center justify-between p-3 transition-colors cursor-pointer",
-            "hover:bg-accent/50",
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {integration ? (
-              <IntegrationIcon
-                icon={integration.icon}
-                name={integration.name}
-                size="sm"
-                className="size-5 rounded-lg shrink-0"
-              />
-            ) : (
-              <div className="size-5 rounded-full bg-muted/30 shrink-0" />
-            )}
-            <span className="text-sm font-medium text-foreground">
-              {toolName || integration?.name || "Integration"}
-            </span>
-            <div className={cn("text-xs", statusConfig.className)}>
-              {statusText}
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            {headerActions}
-            {canRevert && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmOpen(true);
-                      }}
-                    >
-                      <Icon name="undo" className="text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <span>Revert to {revertLabel}</span>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            <Icon
-              name="expand_less"
-              className={cn(
-                "transition-transform duration-200",
-                shouldExpand ? "rotate-180" : "rotate-90",
-              )}
-            />
-          </div>
-        </button>
-
-        {shouldExpand && (
-          <div
-            ref={contentRef}
-            className="text-left space-y-3 w-full min-w-0 p-3 border-t"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {children}
-          </div>
-        )}
-      </div>
-
-      {/* Confirmation dialog */}
-      {canRevert && (
-        <AlertDialog open={confirmOpen}>
-          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Revert Resource Version</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will restore the resource to version {revertLabel}.
-                Continue?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setConfirmOpen(false);
-                  onConfirmRevert?.();
-                }}
-              >
-                Revert
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </>
-  );
-}
-
 // Custom UI component for READ_MCP tool
 function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
   const { data: integrations = [] } = useIntegrations();
   const input = part.input as { id?: string } | undefined;
   const integrationId = input?.id;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const integration = useMemo(() => {
     if (!integrationId) return null;
     return integrations.find((i) => i.id === integrationId) ?? null;
   }, [integrationId, integrations]);
 
+  const statusText = useMemo(() => {
+    switch (part.state) {
+      case "input-streaming":
+        return "Generating input...";
+      case "input-available":
+        return "Reading...";
+      case "output-available":
+        return "Done";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [part.state]);
+
+  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
+  const isLoading =
+    part.state === "input-streaming" || part.state === "input-available";
+  const hasOutput = part.state === "output-available";
+  const hasError = part.state === "output-error";
+
+  const handleClick = useCallback(() => {
+    setIsExpanded((prev) => {
+      const newState = !prev;
+      setTimeout(() => {
+        if (newState && contentRef.current) {
+          contentRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+      return newState;
+    });
+  }, []);
+
   return (
-    <ExpandableToolCard
-      part={part}
-      integration={integration}
-      toolName={integration?.name}
-      toolDescription={integration?.description || undefined}
-    >
-      {/* Input Section */}
-      {part.input !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_downward" className="size-3" />
-            Input
+    <div className="flex flex-col relative p-2.5 hover:bg-accent/25 rounded-2xl max-w-4xl">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        className={cn(
+          "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground",
+        )}
+      >
+        {integration ? (
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            size="sm"
+            className="shrink-0"
+          />
+        ) : (
+          <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className={cn(
+                  "font-medium truncate",
+                  isLoading && "text-shimmer",
+                )}
+              >
+                {integration?.name || "Integration"}
+              </div>
+              <div
+                className={cn(
+                  "text-xs opacity-70 shrink-0",
+                  statusConfig.className,
+                )}
+              >
+                {statusText}
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              <Icon
+                className={cn("text-sm", isExpanded && "rotate-90")}
+                name="chevron_right"
+              />
+            </div>
           </div>
-          <JsonViewer data={part.input} defaultView="tree" maxHeight="300px" />
+          {integration?.description && (
+            <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+              {integration.description}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Output Section */}
-      {part.state === "output-available" && part.output !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_upward" className="size-3" />
-            Output
-          </div>
-          <JsonViewer data={part.output} defaultView="tree" maxHeight="300px" />
-        </div>
-      )}
+      {isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 space-y-3 w-full min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Input Section */}
+          {part.input !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_downward" className="size-3" />
+                Input
+              </div>
+              <JsonViewer
+                data={part.input}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
 
-      {/* Error Section */}
-      {part.state === "output-error" && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
-            <Icon name="error_outline" className="size-3" />
-            Error
-          </div>
-          {part.errorText && (
-            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
-              {part.errorText}
+          {/* Output Section */}
+          {hasOutput && part.output !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_upward" className="size-3" />
+                Output
+              </div>
+              <JsonViewer
+                data={part.output}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
+
+          {/* Error Section */}
+          {hasError && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+                <Icon name="error_outline" className="size-3" />
+                Error
+              </div>
+              {part.errorText && (
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+                  {part.errorText}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
-    </ExpandableToolCard>
+    </div>
   );
-}
-
-// Helper function to parse resource URI and extract resource name
-// URI format: rsc://integration-id/resource-name/resource-id
-function extractResourceNameFromUri(uri: string): string | null {
-  try {
-    // Remove the rsc:// prefix
-    const withoutPrefix = uri.replace(/^rsc:\/\//, "");
-    const parts = withoutPrefix.split("/");
-    // Return the resource-name (second segment)
-    return parts.length >= 2 ? parts[1] : null;
-  } catch {
-    return null;
-  }
-}
-
-// Map resource names to well-known view keys
-function getViewKeyFromResourceName(
-  resourceName: string,
-): keyof typeof WELL_KNOWN_VIEWS | null {
-  const mapping: Record<string, keyof typeof WELL_KNOWN_VIEWS> = {
-    document: "document_detail",
-    tool: "tool_detail",
-    workflow: "workflow_detail",
-    workflow_run: "workflow_run_detail",
-    view: "view_detail",
-  };
-  return mapping[resourceName] ?? null;
-}
-
-// Component to render the appropriate detail view based on view key and resource URI
-function ResourceDetailView({
-  viewKey,
-  resourceUri,
-}: {
-  viewKey: keyof typeof WELL_KNOWN_VIEWS;
-  resourceUri: string;
-}) {
-  const ViewComponent = WELL_KNOWN_VIEWS[viewKey];
-  if (!ViewComponent) return null;
-  return <ViewComponent resourceUri={resourceUri} />;
 }
 
 // Hook to extract tool name, URI, and integration ID from CALL_TOOL input
@@ -795,6 +688,9 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   const { data: integrations = [] } = useIntegrations();
   const { toolName: rawToolName, integrationId, uri } = useCallToolInfo(part);
   const toolName = rawToolName ?? undefined;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const integration = useMemo(() => {
     if (!integrationId) return null;
@@ -822,43 +718,11 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     }
   }, [part.state]);
 
-  // Detect if this is a resource READ/UPDATE/CREATE operation and determine if we should render a detail view
-  const detailViewInfo = useMemo(() => {
-    // Only check when output is available
-    if (part.state !== "output-available") return null;
-
-    // Check if this is a resource operation
-    if (!toolName) return null;
-    const isResourceOperation =
-      /^DECO_RESOURCE_.*_READ$/.test(toolName) ||
-      /^DECO_RESOURCE_.*_UPDATE$/.test(toolName) ||
-      /^DECO_RESOURCE_.*_CREATE$/.test(toolName);
-
-    if (!isResourceOperation) return null;
-
-    // For CREATE operations, extract URI from output structuredContent
-    // For READ/UPDATE operations, use URI from input
-    let resourceUri: string | null = uri;
-
-    if (/^DECO_RESOURCE_.*_CREATE$/.test(toolName) && part.output) {
-      const output = part.output as {
-        structuredContent?: { uri?: string };
-      };
-      resourceUri = output?.structuredContent?.uri ?? null;
-    }
-
-    if (!resourceUri) return null;
-
-    // Extract resource name from URI
-    const resourceName = extractResourceNameFromUri(resourceUri);
-    if (!resourceName) return null;
-
-    // Map to view key
-    const viewKey = getViewKeyFromResourceName(resourceName);
-    if (!viewKey) return null;
-
-    return { viewKey, resourceUri };
-  }, [toolName, uri, part.state, part.output]);
+  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
+  const isLoading =
+    part.state === "input-streaming" || part.state === "input-available";
+  const hasOutput = part.state === "output-available";
+  const hasError = part.state === "output-error";
 
   const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
     toolName || "",
@@ -872,6 +736,64 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     if (!part.input) return "";
     return JSON.stringify(part.input, null, 2);
   }, [part.input]);
+
+  // Canvas tabs management
+  const { tabs, addTab, setActiveTab } = useThreadManager();
+
+  // Check if resource URI exists in output (for resource operations)
+  const resourceUri = useMemo(() => {
+    // Try to get URI from input first
+    if (uri) return uri;
+
+    // For CREATE operations, check output
+    if (part.state === "output-available" && part.output) {
+      const output = part.output as {
+        structuredContent?: { uri?: string };
+      };
+      return output?.structuredContent?.uri ?? null;
+    }
+
+    return null;
+  }, [uri, part.state, part.output]);
+
+  // Find if this resource is already in tabs
+  const existingTab = useMemo(() => {
+    if (!resourceUri) return null;
+    return tabs.find(
+      (tab) => tab.type === "detail" && tab.resourceUri === resourceUri,
+    );
+  }, [tabs, resourceUri]);
+
+  // Handle opening resource in tab or toggling expansion
+  const handleClick = useCallback(() => {
+    if (resourceUri) {
+      // Open in tab if resource URI exists
+      if (existingTab) {
+        setActiveTab(existingTab.id);
+      } else {
+        addTab({
+          type: "detail",
+          resourceUri: resourceUri,
+          title: resourceUri.split("/").pop() || "Resource",
+          icon: integration?.icon,
+        });
+      }
+    } else {
+      // Toggle expansion if no resource URI
+      setIsExpanded((prev) => {
+        const newState = !prev;
+        setTimeout(() => {
+          if (newState && contentRef.current) {
+            contentRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }, 100);
+        return newState;
+      });
+    }
+  }, [resourceUri, existingTab, setActiveTab, addTab, integration?.icon]);
 
   const copyButton = part.input ? (
     <TooltipProvider>
@@ -901,30 +823,110 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   ) : null;
 
   return (
-    <ExpandableToolCard
-      part={part}
-      integration={integration}
-      toolName={toolName ?? undefined}
-      toolDescription={toolDescription || undefined}
-      statusText={statusText}
-      canRevert={canRevert}
-      revertLabel={revertLabel}
-      onConfirmRevert={onConfirmRevert}
-      headerActions={copyButton}
-    >
-      {/* Render detail view directly when available, otherwise show output */}
-      {detailViewInfo ? (
-        // Render detail view component directly when expanded
-        <div className="flex flex-col" style={{ height: "400px" }}>
-          <ResourceDetailView
-            viewKey={detailViewInfo.viewKey}
-            resourceUri={detailViewInfo.resourceUri}
+    <div className="flex flex-col relative p-2.5 hover:bg-accent/25 rounded-2xl max-w-4xl">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        className={cn(
+          "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground",
+        )}
+      >
+        {integration ? (
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            size="sm"
+            className="shrink-0"
           />
+        ) : (
+          <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className={cn(
+                  "font-medium truncate",
+                  isLoading && "text-shimmer",
+                )}
+              >
+                {toolName}
+              </div>
+              <div
+                className={cn(
+                  "text-xs opacity-70 shrink-0",
+                  statusConfig.className,
+                )}
+              >
+                {statusText}
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              {canRevert && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        <Icon name="undo" className="text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span>Revert to {revertLabel}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {copyButton}
+              {!resourceUri && (
+                <Icon
+                  className={cn("text-sm", isExpanded && "rotate-90")}
+                  name="chevron_right"
+                />
+              )}
+            </div>
+          </div>
+          {toolDescription && (
+            <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+              {toolDescription}
+            </div>
+          )}
         </div>
-      ) : (
-        // Fall back to JSON viewer for output
-        <>
-          {part.state === "output-available" && part.output !== undefined && (
+      </div>
+
+      {/* Expandable input/output section when no resourceUri */}
+      {!resourceUri && isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 space-y-3 w-full min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Input Section */}
+          {part.input !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_downward" className="size-3" />
+                Input
+              </div>
+              <JsonViewer
+                data={part.input}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
+
+          {/* Output Section */}
+          {hasOutput && part.output !== undefined && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
                 <Icon name="arrow_upward" className="size-3" />
@@ -937,24 +939,52 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
               />
             </div>
           )}
-        </>
-      )}
 
-      {/* Error Section */}
-      {part.state === "output-error" && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
-            <Icon name="error_outline" className="size-3" />
-            Error
-          </div>
-          {part.errorText && (
-            <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
-              {part.errorText}
+          {/* Error Section */}
+          {hasError && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+                <Icon name="error_outline" className="size-3" />
+                Error
+              </div>
+              {part.errorText && (
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+                  {part.errorText}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
-    </ExpandableToolCard>
+
+      {/* Confirmation dialog for revert */}
+      {canRevert && (
+        <AlertDialog open={confirmOpen}>
+          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Revert Resource Version</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will restore the resource to version {revertLabel}.
+                Continue?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmOpen(false);
+                  onConfirmRevert();
+                }}
+              >
+                Revert
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </div>
   );
 }
 

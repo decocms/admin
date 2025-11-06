@@ -35,7 +35,7 @@ export interface TabbedPageLayoutProps {
  */
 export function TabbedPageLayout({
   component: Component,
-  title,
+  title: _title,
   tabs,
   getActiveTab,
   viewModeKey,
@@ -68,7 +68,6 @@ export function TabbedPageLayout({
         <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
           <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
             <ResourceHeader
-              title={title}
               tabs={tabsWithHandlers}
               activeTab={activeTab}
               onTabChange={(tabId) => {

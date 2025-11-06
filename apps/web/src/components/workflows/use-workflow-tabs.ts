@@ -34,7 +34,7 @@ export function useWorkflowTabs() {
         label: "Runs",
         onClick: () => navigateWorkspace("/workflows/runs"),
       },
-      ...(showLegacyFeature("hideLegacyWorkflowRuns")
+      ...(showLegacyFeature("showLegacyWorkflowRuns")
         ? [
             {
               id: "runs-legacy",

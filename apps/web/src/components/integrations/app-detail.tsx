@@ -49,11 +49,17 @@ import {
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useRouteParams } from "../canvas/route-params-provider.tsx";
 import {
   integrationNeedsApproval,
   useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import {
+  useThreadManager,
+  buildAppUri,
+} from "../decopilot/thread-context-manager.tsx";
+import { useSearchParams } from "react-router";
 import {
   AppKeys,
   getConnectionAppKey,
@@ -211,6 +217,7 @@ function ConfigureConnectionInstanceForm({
   setOauthCompletionDialog: Dispatch<SetStateAction<OauthModalState>>;
   oauthCompletionDialog: OauthModalState;
 }) {
+  const { addTab } = useThreadManager();
   const [isEditing, setIsEditing] = useState(false);
 
   // @ts-ignore: @TODO: @tlgimenes will fix this
@@ -321,7 +328,13 @@ function ConfigureConnectionInstanceForm({
     function onSelect() {
       const key = getConnectionAppKey(connection);
       const appKey = AppKeys.build(key);
-      navigateWorkspace(`/apps/${appKey}`);
+      // Open app in a tab instead of navigating
+      addTab({
+        type: "detail",
+        resourceUri: buildAppUri(appKey),
+        title: connection.name,
+        icon: connection.icon,
+      });
     }
 
     async function onSelectWithViews() {
@@ -824,7 +837,12 @@ const InstanceSelectItem = ({ instance }: { instance: Integration }) => {
 };
 
 export default function AppDetail() {
-  const { appKey: _appKey } = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const _appKey = routeParams.appKey || urlParams.appKey;
+
   const navigateWorkspace = useNavigateWorkspace();
   const appKey = _appKey!;
   const data = useGroupedApp({
@@ -847,6 +865,39 @@ export default function AppDetail() {
 
   const { setDeletingId, deletingId, isDeletionPending, performDelete } =
     useRemoveConnection();
+
+  // Update tab title and icon when app data loads
+  const { tabs, activeTabId, addTab } = useThreadManager();
+  const [searchParams] = useSearchParams();
+  const urlActiveTabId = searchParams.get("activeTab");
+  const currentTabId = urlActiveTabId || activeTabId;
+
+  useEffect(() => {
+    if (!data.info || !currentTabId) return;
+
+    const currentTab = tabs.find((t) => t.id === currentTabId);
+    if (!currentTab) return;
+
+    // Check if we need to update the tab
+    const expectedUri = buildAppUri(appKey);
+    // Use friendlyName first to match what's displayed in the detail view (line 447)
+    const appName = data.info.friendlyName || data.info.name || "App";
+    const appIcon = data.info.icon;
+
+    if (
+      currentTab.resourceUri === expectedUri &&
+      (currentTab.title === "Loading..." ||
+        currentTab.title !== appName ||
+        currentTab.icon !== appIcon)
+    ) {
+      addTab({
+        type: "detail",
+        resourceUri: expectedUri,
+        title: appName,
+        icon: appIcon,
+      });
+    }
+  }, [data.info, appKey, currentTabId, tabs, addTab]);
 
   return (
     <div className="flex flex-col gap-6 p-6 h-full">

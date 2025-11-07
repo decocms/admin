@@ -26,7 +26,7 @@ function DecopilotChatWrapper({
   const showHeader = hasTabs;
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full [transform:translateZ(0)]">
       {showHeader && (
         <div className="flex h-10 items-center justify-between border-b border-border px-2 flex-none">
           <div className="flex items-center gap-2">
@@ -40,13 +40,13 @@ function DecopilotChatWrapper({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
             title="Close chat"
           >
             <Icon
               name="close"
               size={16}
-              className="text-muted-foreground group-hover:text-foreground transition-colors"
+              className="text-muted-foreground group-hover:text-foreground"
             />
           </button>
         </div>

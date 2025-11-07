@@ -42,6 +42,7 @@ export function ChatInput({
 }: {
   disabled?: boolean;
   rightNode?: ReactNode;
+  centered?: boolean;
 } = {}) {
   const {
     chat,
@@ -313,7 +314,7 @@ export function ChatInput({
       {enableFileUpload && isDragging && (
         <div
           className={cn(
-            "absolute left-0 right-0 bottom-0 rounded-xl overflow-hidden z-[60]",
+            "absolute left-0 right-0 bottom-0 rounded-xl overflow-hidden z-60",
             "pointer-events-none",
             "animate-in fade-in duration-200",
           )}
@@ -414,7 +415,7 @@ export function ChatInput({
                     <ModelSelector
                       model={model}
                       onModelChange={handleModelChange}
-                      className="!p-0 hover:bg-transparent"
+                      className="p-0! hover:bg-transparent"
                     />
                   )}
                   <AudioButton

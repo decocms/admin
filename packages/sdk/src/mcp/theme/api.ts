@@ -173,8 +173,11 @@ export const enhancedThemeSchema = z
       ),
     picture: z.string().optional().describe("URL to team avatar/logo image"),
     font: fontSchema
+      .nullable()
       .optional()
-      .describe("Font configuration for the workspace"),
+      .describe(
+        "Font configuration for the workspace. Pass null to remove custom font.",
+      ),
   })
   .describe(
     "Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.",

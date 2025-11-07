@@ -72,7 +72,7 @@ export interface CustomUploadedThemeFont {
 export interface Theme {
   variables?: Partial<Record<ThemeVariable, string>>;
   picture?: string;
-  font?: GoogleFontsThemeFont | CustomUploadedThemeFont;
+  font?: GoogleFontsThemeFont | CustomUploadedThemeFont | null;
 }
 
 export const DEFAULT_THEME: Theme = {
@@ -118,9 +118,5 @@ export const DEFAULT_THEME: Theme = {
     "--shadow-spread": "0px",
     "--shadow-opacity": "0.1",
   },
-
-  font: {
-    type: "Google Fonts",
-    name: "Inter",
-  },
+  // No custom font - uses default system font stack from global.css
 };

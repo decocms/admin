@@ -53,7 +53,6 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
-import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import type { TabItem } from "./resource-header.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
@@ -841,7 +840,7 @@ function ResourcesV2ListTab({
               }
             }}
             variant="default"
-            size="xs"
+            size="sm"
             className="flex-1 rounded-none rounded-l-xl"
             disabled={mutating}
           >
@@ -858,7 +857,7 @@ function ResourcesV2ListTab({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
-                size="xs"
+                size="sm"
                 className="rounded-none rounded-r-xl border-l border-white/20"
                 disabled={mutating}
               >
@@ -1101,7 +1100,7 @@ function ResourcesV2ListTab({
             }
           }}
           variant="default"
-          size="xs"
+          size="sm"
           className="rounded-xl w-full md:w-auto"
           disabled={mutating}
         >
@@ -1117,225 +1116,8 @@ function ResourcesV2ListTab({
       )
     ) : null;
 
-  // Action buttons to render in canvas header via portal
-  const actionButtons = (
-    <>
-      {/* Refresh Button */}
-      <Button
-        variant="ghost"
-        size="xs"
-        onClick={() => listQuery.refetch()}
-        className="size-6 p-0"
-      >
-        <Icon name="refresh" className="text-muted-foreground" />
-      </Button>
-
-      {/* Search Button / Input */}
-      <Button
-        variant="ghost"
-        size="xs"
-        onClick={() => setSearchOpen(!searchOpen)}
-        className="size-6 p-0"
-      >
-        <Icon name="search" className="text-muted-foreground" />
-      </Button>
-      {searchOpen && (
-        <Input
-          value={q}
-          onChange={(e) => {
-            setSearchParams((prev) => {
-              const next = new URLSearchParams(prev);
-              if (e.target.value) next.set("q", e.target.value);
-              else next.delete("q");
-              return next;
-            });
-          }}
-          onBlur={() => {
-            if (!q) {
-              setSearchOpen(false);
-            }
-          }}
-          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-              listQuery.refetch();
-            }
-            if (e.key === "Escape") {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                next.delete("q");
-                return next;
-              });
-              setSearchOpen(false);
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder="Search..."
-          className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
-        />
-      )}
-
-      {/* Filter Button */}
-      <Button
-        variant="ghost"
-        size="xs"
-        onClick={() => {
-          const newValue = !filterBarVisible;
-          setFilterBarVisible(newValue);
-          globalThis.localStorage?.setItem(
-            filterBarVisibilityKey,
-            String(newValue),
-          );
-        }}
-        className="size-6 p-0"
-      >
-        <Icon
-          name="filter_list"
-          className={
-            filters && filters.length > 0
-              ? "text-violet-500"
-              : "text-muted-foreground"
-          }
-        />
-      </Button>
-
-      {/* Menu Button */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="xs" className="size-6 p-0">
-            <Icon name="more_horiz" className="text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 p-1">
-          {/* View Mode Toggle */}
-          <div className="flex items-center p-1">
-            <div className="flex gap-1 w-full">
-              <Button
-                variant={viewMode === "cards" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("cards")}
-                className="flex-1 h-10"
-              >
-                <Icon
-                  name="grid_view"
-                  size={20}
-                  className="text-muted-foreground"
-                />
-              </Button>
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-                className="flex-1 h-10"
-              >
-                <Icon
-                  name="view_list"
-                  size={20}
-                  className="text-muted-foreground"
-                />
-              </Button>
-            </div>
-          </div>
-
-          <DropdownMenuSeparator className="my-1" />
-
-          {/* Sort By Section */}
-          <div className="p-2">
-            <p className="text-xs text-muted-foreground uppercase font-mono">
-              Sort by
-            </p>
-          </div>
-
-          <DropdownMenuItem
-            onClick={() => handleSort("title")}
-            className="cursor-pointer"
-          >
-            {sortKey === "title" && (
-              <Icon name="check" size={16} className="mr-2 text-foreground" />
-            )}
-            {sortKey !== "title" && <span className="w-4 mr-2" />}
-            <span className="flex-1">Name</span>
-            {sortKey === "title" && sortDirection && (
-              <Icon
-                name={
-                  sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
-                }
-                size={16}
-                className="ml-2 text-muted-foreground"
-              />
-            )}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => handleSort("description")}
-            className="cursor-pointer"
-          >
-            {sortKey === "description" && (
-              <Icon name="check" size={16} className="mr-2 text-foreground" />
-            )}
-            {sortKey !== "description" && <span className="w-4 mr-2" />}
-            <span className="flex-1">Description</span>
-            {sortKey === "description" && sortDirection && (
-              <Icon
-                name={
-                  sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
-                }
-                size={16}
-                className="ml-2 text-muted-foreground"
-              />
-            )}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => handleSort("updated_at")}
-            className="cursor-pointer"
-          >
-            {sortKey === "updated_at" && (
-              <Icon name="check" size={16} className="mr-2 text-foreground" />
-            )}
-            {sortKey !== "updated_at" && <span className="w-4 mr-2" />}
-            <span className="flex-1">Date updated</span>
-            {sortKey === "updated_at" && sortDirection && (
-              <Icon
-                name={
-                  sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
-                }
-                size={16}
-                className="ml-2 text-muted-foreground"
-              />
-            )}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => handleSort("updated_by")}
-            className="cursor-pointer"
-          >
-            {sortKey === "updated_by" && (
-              <Icon name="check" size={16} className="mr-2 text-foreground" />
-            )}
-            {sortKey !== "updated_by" && <span className="w-4 mr-2" />}
-            <span className="flex-1">Updated by</span>
-            {sortKey === "updated_by" && sortDirection && (
-              <Icon
-                name={
-                  sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
-                }
-                size={16}
-                className="ml-2 text-muted-foreground"
-              />
-            )}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* CTA Button */}
-      {ctaButton}
-    </>
-  );
-
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Action buttons rendered in canvas header via portal */}
-      <TabActionButton>{actionButtons}</TabActionButton>
 
       {/* Header Section - fixed, doesn't scroll with content */}
       <div className="shrink-0">
@@ -1393,7 +1175,6 @@ function ResourcesV2ListTab({
             filters={filters}
             onFiltersChange={setFilters}
             availableUsers={availableUsers}
-            hideActions={true}
             ctaButton={ctaButton}
           />
         </div>

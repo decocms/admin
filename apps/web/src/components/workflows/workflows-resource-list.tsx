@@ -252,7 +252,7 @@ export function WorkflowsResourceList({
     const newTriggerButton = (
       <Button
         variant="default"
-        size="xs"
+        size="sm"
         onClick={() => setIsCreateTriggerModalOpen(true)}
       >
         <Icon name="add" />

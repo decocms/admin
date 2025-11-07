@@ -110,224 +110,222 @@ export function ResourceHeader({
 
         {/* Right: Action Buttons */}
         {!hideActions && (
-          <div className="flex items-center gap-2 py-2 shrink-0">
-            <div className="flex items-center gap-1">
-              {/* Refresh Button */}
-              {onRefresh && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onRefresh}
-                  className="h-9 w-9 flex items-center text-muted-foreground justify-center"
-                >
-                  <Icon name="refresh" size={20} />
-                </Button>
-              )}
+          <div className="flex items-center justify-end gap-2 py-2 shrink-0">
+            {/* Refresh Button */}
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRefresh}
+                className="h-9 w-9 flex items-center text-muted-foreground justify-center"
+              >
+                <Icon name="refresh" size={20} />
+              </Button>
+            )}
 
-              {/* Search Button / Input */}
-              {onSearchToggle && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onSearchToggle}
-                  className="h-9 w-9 flex items-center text-muted-foreground justify-center"
-                >
-                  <Icon name="search" size={20} />
-                </Button>
-              )}
-              {searchOpen && (
-                <Input
-                  ref={searchInputRef}
-                  value={searchValue}
-                  onChange={(e) => onSearchChange?.(e.target.value)}
-                  onBlur={onSearchBlur}
-                  onKeyDown={onSearchKeyDown}
-                  placeholder="Search..."
-                  className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
+            {/* Search Button / Input */}
+            {onSearchToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onSearchToggle}
+                className="h-9 w-9 flex items-center text-muted-foreground justify-center"
+              >
+                <Icon name="search" size={20} />
+              </Button>
+            )}
+            {searchOpen && (
+              <Input
+                ref={searchInputRef}
+                value={searchValue}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                onBlur={onSearchBlur}
+                onKeyDown={onSearchKeyDown}
+                placeholder="Search..."
+                className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
+              />
+            )}
+
+            {/* Filter Button */}
+            {onFilterClick && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onFilterClick}
+                className="h-9 w-9 flex items-center justify-center"
+              >
+                <Icon
+                  name="filter_list"
+                  size={20}
+                  className={
+                    filters && filters.length > 0
+                      ? "text-violet-500"
+                      : "text-muted-foreground"
+                  }
                 />
-              )}
+              </Button>
+            )}
 
-              {/* Filter Button */}
-              {onFilterClick && (
+            {/* Menu Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onFilterClick}
-                  className="h-9 w-9 flex items-center justify-center"
+                  className="h-9 w-9 flex items-center text-muted-foreground justify-center"
                 >
-                  <Icon
-                    name="filter_list"
-                    size={20}
-                    className={
-                      filters && filters.length > 0
-                        ? "text-violet-500"
-                        : "text-muted-foreground"
-                    }
-                  />
+                  <Icon name="more_horiz" size={20} />
                 </Button>
-              )}
-
-              {/* Menu Button */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 flex items-center text-muted-foreground justify-center"
-                  >
-                    <Icon name="more_horiz" size={20} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-1">
-                  {/* View Mode Toggle */}
-                  <div className="flex items-center p-1">
-                    <div className="flex gap-1 w-full">
-                      <Button
-                        variant={viewMode === "cards" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => onViewModeChange?.("cards")}
-                        className="flex-1 h-10 "
-                      >
-                        <Icon
-                          name="grid_view"
-                          size={20}
-                          className="text-muted-foreground"
-                        />
-                      </Button>
-                      <Button
-                        variant={viewMode === "table" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => onViewModeChange?.("table")}
-                        className="flex-1 h-10"
-                      >
-                        <Icon
-                          name="view_list"
-                          size={20}
-                          className="text-muted-foreground"
-                        />
-                      </Button>
-                    </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1">
+                {/* View Mode Toggle */}
+                <div className="flex items-center p-1">
+                  <div className="flex gap-1 w-full">
+                    <Button
+                      variant={viewMode === "cards" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onViewModeChange?.("cards")}
+                      className="flex-1 h-10 "
+                    >
+                      <Icon
+                        name="grid_view"
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Button>
+                    <Button
+                      variant={viewMode === "table" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onViewModeChange?.("table")}
+                      className="flex-1 h-10"
+                    >
+                      <Icon
+                        name="view_list"
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Button>
                   </div>
+                </div>
 
-                  <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuSeparator className="my-1" />
 
-                  {/* Sort By Section */}
-                  <div className="p-2">
-                    <p className="text-xs text-muted-foreground uppercase font-mono">
-                      Sort by
-                    </p>
-                  </div>
+                {/* Sort By Section */}
+                <div className="p-2">
+                  <p className="text-xs text-muted-foreground uppercase font-mono">
+                    Sort by
+                  </p>
+                </div>
 
-                  <DropdownMenuItem
-                    onClick={() => onSort?.("title")}
-                    className="cursor-pointer"
-                  >
-                    {sortKey === "title" && (
-                      <Icon
-                        name="check"
-                        size={16}
-                        className="mr-2 text-foreground"
-                      />
-                    )}
-                    {sortKey !== "title" && <span className="w-4 mr-2" />}
-                    <span className="flex-1">Name</span>
-                    {sortKey === "title" && sortDirection && (
-                      <Icon
-                        name={
-                          sortDirection === "asc"
-                            ? "arrow_upward"
-                            : "arrow_downward"
-                        }
-                        size={16}
-                        className="ml-2 text-muted-foreground"
-                      />
-                    )}
-                  </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onSort?.("title")}
+                  className="cursor-pointer"
+                >
+                  {sortKey === "title" && (
+                    <Icon
+                      name="check"
+                      size={16}
+                      className="mr-2 text-foreground"
+                    />
+                  )}
+                  {sortKey !== "title" && <span className="w-4 mr-2" />}
+                  <span className="flex-1">Name</span>
+                  {sortKey === "title" && sortDirection && (
+                    <Icon
+                      name={
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
+                      }
+                      size={16}
+                      className="ml-2 text-muted-foreground"
+                    />
+                  )}
+                </DropdownMenuItem>
 
-                  <DropdownMenuItem
-                    onClick={() => onSort?.("description")}
-                    className="cursor-pointer"
-                  >
-                    {sortKey === "description" && (
-                      <Icon
-                        name="check"
-                        size={16}
-                        className="mr-2 text-foreground"
-                      />
-                    )}
-                    {sortKey !== "description" && <span className="w-4 mr-2" />}
-                    <span className="flex-1">Description</span>
-                    {sortKey === "description" && sortDirection && (
-                      <Icon
-                        name={
-                          sortDirection === "asc"
-                            ? "arrow_upward"
-                            : "arrow_downward"
-                        }
-                        size={16}
-                        className="ml-2 text-muted-foreground"
-                      />
-                    )}
-                  </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onSort?.("description")}
+                  className="cursor-pointer"
+                >
+                  {sortKey === "description" && (
+                    <Icon
+                      name="check"
+                      size={16}
+                      className="mr-2 text-foreground"
+                    />
+                  )}
+                  {sortKey !== "description" && <span className="w-4 mr-2" />}
+                  <span className="flex-1">Description</span>
+                  {sortKey === "description" && sortDirection && (
+                    <Icon
+                      name={
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
+                      }
+                      size={16}
+                      className="ml-2 text-muted-foreground"
+                    />
+                  )}
+                </DropdownMenuItem>
 
-                  <DropdownMenuItem
-                    onClick={() => onSort?.("updated_at")}
-                    className="cursor-pointer"
-                  >
-                    {sortKey === "updated_at" && (
-                      <Icon
-                        name="check"
-                        size={16}
-                        className="mr-2 text-foreground"
-                      />
-                    )}
-                    {sortKey !== "updated_at" && <span className="w-4 mr-2" />}
-                    <span className="flex-1">Date updated</span>
-                    {sortKey === "updated_at" && sortDirection && (
-                      <Icon
-                        name={
-                          sortDirection === "asc"
-                            ? "arrow_upward"
-                            : "arrow_downward"
-                        }
-                        size={16}
-                        className="ml-2 text-muted-foreground"
-                      />
-                    )}
-                  </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onSort?.("updated_at")}
+                  className="cursor-pointer"
+                >
+                  {sortKey === "updated_at" && (
+                    <Icon
+                      name="check"
+                      size={16}
+                      className="mr-2 text-foreground"
+                    />
+                  )}
+                  {sortKey !== "updated_at" && <span className="w-4 mr-2" />}
+                  <span className="flex-1">Date updated</span>
+                  {sortKey === "updated_at" && sortDirection && (
+                    <Icon
+                      name={
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
+                      }
+                      size={16}
+                      className="ml-2 text-muted-foreground"
+                    />
+                  )}
+                </DropdownMenuItem>
 
-                  <DropdownMenuItem
-                    onClick={() => onSort?.("updated_by")}
-                    className="cursor-pointer"
-                  >
-                    {sortKey === "updated_by" && (
-                      <Icon
-                        name="check"
-                        size={16}
-                        className="mr-2 text-foreground"
-                      />
-                    )}
-                    {sortKey !== "updated_by" && <span className="w-4 mr-2" />}
-                    <span className="flex-1">Updated by</span>
-                    {sortKey === "updated_by" && sortDirection && (
-                      <Icon
-                        name={
-                          sortDirection === "asc"
-                            ? "arrow_upward"
-                            : "arrow_downward"
-                        }
-                        size={16}
-                        className="ml-2 text-muted-foreground"
-                      />
-                    )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                <DropdownMenuItem
+                  onClick={() => onSort?.("updated_by")}
+                  className="cursor-pointer"
+                >
+                  {sortKey === "updated_by" && (
+                    <Icon
+                      name="check"
+                      size={16}
+                      className="mr-2 text-foreground"
+                    />
+                  )}
+                  {sortKey !== "updated_by" && <span className="w-4 mr-2" />}
+                  <span className="flex-1">Updated by</span>
+                  {sortKey === "updated_by" && sortDirection && (
+                    <Icon
+                      name={
+                        sortDirection === "asc"
+                          ? "arrow_upward"
+                          : "arrow_downward"
+                      }
+                      size={16}
+                      className="ml-2 text-muted-foreground"
+                    />
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* CTA Button - comes last */}
             {ctaButton && (
-              <div className="hidden md:block ml-auto">{ctaButton}</div>
+              <div className="hidden md:block">{ctaButton}</div>
             )}
           </div>
         )}

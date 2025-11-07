@@ -431,7 +431,7 @@ export const toBindingsContext = (
     workflowRunner: bindings.WORKFLOW_RUNNER,
     workspaceDO: bindings.WORKSPACE_DB,
     kbFileProcessor: bindings.KB_FILE_PROCESSOR,
-    // @ts-expect-error: the cloudflare fetch is not the same as the browser fetch
+    // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
     walletBinding: bindings.WALLET,
     policy,
     authorization,

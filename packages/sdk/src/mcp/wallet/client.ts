@@ -405,7 +405,7 @@ export function createWalletClient(
   // TODO (@mcandeia): this is necessary since locally wallet is not running thus the fetch is not available
   let currentFetcher: typeof fetch | null = null;
   const client = createHttpClient<WalletAPI>({
-    // @ts-expect-error: the cloudflare fetch is not the same as the browser fetch
+    // @ts-ignore: the cloudflare fetch is not the same as the browser fetch
     fetcher: fetcher?.fetch
       ? (req, opts) => {
           if (currentFetcher) {

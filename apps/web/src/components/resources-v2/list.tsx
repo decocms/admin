@@ -625,9 +625,25 @@ function ResourcesV2ListTab({
 
   // Apply filters to items (only for MCP resources, skip for custom data)
   const filteredItems = useMemo(() => {
-    if (filters.length === 0 || customData) return items;
+    // First, filter by search term if present
+    let searchFiltered = items;
+    if (deferredQ && customData) {
+      const searchTerm = deferredQ.toLowerCase();
+      searchFiltered = items.filter((item) => {
+        const resourceItem = item as ResourceListItem;
+        const name = String(resourceItem.data?.name || "").toLowerCase();
+        const description = String(
+          resourceItem.data?.description || "",
+        ).toLowerCase();
+        return name.includes(searchTerm) || description.includes(searchTerm);
+      });
+    }
 
-    return items.filter((item) => {
+    // If no advanced filters, return search-filtered items
+    if (filters.length === 0 || customData) return searchFiltered;
+
+    // Apply advanced filters
+    return searchFiltered.filter((item) => {
       const resourceItem = item as ResourceListItem;
       return filters.every((filter) => {
         const { column, operator, value } = filter;
@@ -694,7 +710,7 @@ function ResourcesV2ListTab({
         return true;
       });
     });
-  }, [items, filters, customData]);
+  }, [items, filters, customData, deferredQ]);
 
   // Sort the items based on current sort state
   // For custom data, sorting should be handled by the custom columns' sortable property

@@ -14,10 +14,17 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 
 export function ProjectHome() {
   const { tabs } = useThreadManager();
-  const { open: decopilotOpen } = useDecopilotOpen();
+  const { open: decopilotOpen, setOpen: setDecopilotOpen } = useDecopilotOpen();
   const hasTabs = tabs.length > 0;
   const canvasPanelRef = useRef<ImperativePanelHandle>(null);
   const chatPanelRef = useRef<ImperativePanelHandle>(null);
+
+  // Automatically open decopilot when tabs are added
+  useEffect(() => {
+    if (hasTabs && !decopilotOpen) {
+      setDecopilotOpen(true);
+    }
+  }, [hasTabs, decopilotOpen, setDecopilotOpen]);
 
   // Collapse/expand panels based on tabs and decopilot state
   useEffect(() => {

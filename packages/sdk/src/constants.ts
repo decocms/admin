@@ -667,7 +667,7 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     max_tokens: 64000,
     memory: { last_messages: 8 },
     id: "decopilotAgent",
-    name: "decopilot",
+    name: "deco chat",
     avatar: withImageOptimizeUrl(
       "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
     ),

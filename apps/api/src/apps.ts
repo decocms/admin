@@ -18,11 +18,7 @@ export const fetchScript = async (
     dispatcher = c.env.PROD_DISPATCHER;
   } else {
     dispatcher = {
-      get: () => {
-        return {
-          fetch: (req, opts) => fetch(req, opts),
-        };
-      },
+      get: () => ({ fetch }),
     };
   }
   const scriptFetcher = dispatcher.get<{

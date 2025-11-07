@@ -203,13 +203,15 @@ const useIsProjectContext = () => {
 
 export const TopbarControls = () => {
   const location = useLocation();
+  const { org } = useParams();
   const isProjectContext = useIsProjectContext();
 
   const isWellKnownOrgPath = WELL_KNOWN_ORG_PATHS.some((path) =>
     location.pathname.endsWith(path),
   );
 
-  if (!isProjectContext && !isWellKnownOrgPath) {
+  // Show button if we have an org context (project or org-level)
+  if (!org && !isProjectContext && !isWellKnownOrgPath) {
     return null;
   }
 

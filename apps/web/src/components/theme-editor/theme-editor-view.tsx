@@ -77,20 +77,15 @@ interface ColorCardProps {
   };
   onChange: (value: string) => void;
   label: string;
+  originalValue?: string;
 }
 
-function ColorCard({ variable, onChange, label }: ColorCardProps) {
+function ColorCard({ variable, onChange, label, originalValue }: ColorCardProps) {
   const displayValue = variable.value || variable.defaultValue;
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div
-        className="aspect-square w-full border border-border rounded-xl p-2 flex items-end justify-center"
-        style={{ backgroundColor: displayValue }}
-      >
-        <ColorPicker value={displayValue} onChange={onChange} />
-      </div>
-      <p className="text-base font-medium">{label}</p>
+    <div className="aspect-square w-full border border-border rounded-xl p-2 flex items-end justify-center" style={{ backgroundColor: displayValue }}>
+      <ColorPicker value={displayValue} onChange={onChange} originalValue={originalValue} label={label} />
     </div>
   );
 }
@@ -344,6 +339,14 @@ export function ThemeEditorView() {
       defaultValue: DEFAULT_THEME.variables?.[key] || "",
     }),
     [themeVariables],
+  );
+
+  // Helper to get the original saved value for a variable
+  const getOriginalValue = useCallback(
+    (key: ThemeVariable) => {
+      return previousValuesRef.current[key] || currentTheme?.variables?.[key];
+    },
+    [currentTheme],
   );
 
   // Thread context for AI assistance with theme editing
@@ -732,6 +735,7 @@ export function ThemeEditorView() {
                               handleVariableChange(color.key, value)
                             }
                             label={color.label}
+                            originalValue={getOriginalValue(color.key)}
                           />
                         ))}
                       </div>

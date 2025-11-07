@@ -22,7 +22,7 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
       aria-pressed={isSelected}
       aria-label={`Apply ${preset.name} preset`}
       className={cn(
-        "w-[239px] shrink-0 border border-border rounded-md overflow-hidden transition-all hover:border-primary/60 hover:shadow-sm",
+        "cursor-pointer w-[239px] shrink-0 border border-border rounded-md overflow-hidden transition-all hover:border-primary/60 hover:shadow-sm",
         isSelected && "ring-2 ring-primary ring-offset-2",
       )}
     >

@@ -88,7 +88,7 @@ export function GoogleFontsSelector({
         <SelectTrigger className="w-full h-auto py-3 cursor-pointer">
           <SelectValue>
             <span
-              className="text-lg font-medium"
+              className="text-base font-medium"
               style={{ fontFamily: formatFontFamily(value) }}
             >
               {value}

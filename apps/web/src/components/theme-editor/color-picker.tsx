@@ -367,9 +367,10 @@ interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  originalValue?: string;
 }
 
-export function ColorPicker({ value, onChange }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, originalValue, label }: ColorPickerProps) {
   // Track if user is actively editing to prevent external updates
   const isEditingRef = useRef<boolean>(false);
   const editingTimeoutRef = useRef<number | undefined>(undefined);
@@ -503,6 +504,19 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
     [formatColorOutput, onChange, markAsEditing],
   );
 
+  const setColorToOriginalValue = useCallback(() => {
+    if (!originalValue) return;
+    const hex = parseColorToHex(originalValue)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+    if (hex.length === 6) {
+      const hsl = hexToHsl({ hex });
+      setColor({ ...hsl, hex });
+      onChange(originalValue);
+      setInputValue(originalValue);
+    }
+  }, [originalValue, onChange]);
+
   return (
     <>
       <style
@@ -556,7 +570,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                   backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
                 }}
               />
-              <span className="truncate text-sm">{value}</span>
+              <span className="truncate text-sm">{label || value}</span>
             </div>
           </Button>
         </PopoverTrigger>
@@ -628,6 +642,16 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
                 </div>
               </div>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={!originalValue || originalValue === value}
+              onClick={() => setColorToOriginalValue()}
+            >
+              Reset
+            </Button>
           </div>
         </PopoverContent>
       </Popover>

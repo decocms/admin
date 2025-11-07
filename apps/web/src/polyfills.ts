@@ -25,6 +25,7 @@ if (!globalThis.crypto.randomUUID) {
 }
 
 if (!Promise.withResolvers) {
+  // @ts-ignore: Promise.withResolvers is not defined in the browser
   Promise.withResolvers = function withResolvers<T>() {
     let resolve: (value: T) => void;
     let reject: (reason?: any) => void;

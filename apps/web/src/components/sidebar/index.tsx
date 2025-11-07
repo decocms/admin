@@ -2,23 +2,11 @@ import {
   AI_APP_PRD_TEMPLATE,
   findPinnedView,
   Integration,
-  Resource,
   useConnectionViews,
-  useIntegrations,
-  useRemoveResource,
-  useRemoveView,
-  useUnpinnedNativeViews,
   useUpsertDocument,
-  View,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@deco/ui/components/collapsible.tsx";
 import {
   Dialog,
   DialogContent,
@@ -41,36 +29,21 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarSeparator,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
-  useNavigateWorkspace,
-  useWorkspaceLink,
-} from "../../hooks/use-navigate-workspace.ts";
-import {
-  buildNativeUri,
-  buildResourceUri,
-  buildViewUri,
   buildAppsListUri,
-  buildAgentUri,
   useThreadManager,
 } from "../decopilot/thread-context-manager.tsx";
-import type { CanvasTab } from "../decopilot/thread-context-manager.tsx";
-import { buildDocumentUri, buildWorkflowUri } from "@deco/sdk";
 import { useFocusTeamAgent } from "../agents/list.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { useThreadTitle } from "../decopilot/index.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
@@ -79,16 +52,9 @@ import {
   useCommandPalette,
 } from "../search/command-palette.tsx";
 import { SidebarFooter } from "./footer.tsx";
+import { TogglePin } from "../views/list.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
-
-// Helper to get display name from resource (handles both Resource and PinnedItem types)
-function getResourceDisplayName(
-  resource: { title?: string; name?: string },
-  fallback = "Resource",
-): string {
-  return resource.title || resource.name || fallback;
-}
 
 /**
  * Individual thread item with title
@@ -107,7 +73,7 @@ function ThreadListItem({
   return (
     <SidebarMenuItem key={thread.id}>
       <SidebarMenuButton
-        className={`w-full pr-2 group/thread relative ${
+        className={`w-full pr-2 group/thread relative cursor-pointer ${
           isActive ? "bg-accent" : ""
         }`}
         onClick={() => {
@@ -301,10 +267,6 @@ function WorkspaceViews() {
   const { org, project } = useParams();
   const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
-  const { data: integrations } = useIntegrations();
-  const team = useCurrentTeam();
-  const removeViewMutation = useRemoveView();
-  const navigateWorkspace = useNavigateWorkspace();
   const navigate = useNavigate();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
@@ -321,21 +283,10 @@ function WorkspaceViews() {
   // Pinned resources
   // Use team locator if params aren't available - fallback to just undefined if no params
   const projectKey = org && project ? `${org}/${project}` : undefined;
-  const {
-    pinnedTabs,
-    togglePin: togglePinnedTab,
-    unpinTab,
-    reorderPinnedTabs,
-  } = usePinnedTabs(projectKey);
+  const { pinnedTabs, unpinTab, reorderPinnedTabs } = usePinnedTabs(projectKey);
 
   // Canvas tabs management
   const { addTab, tabs, setActiveTab } = useThreadManager();
-
-  const {
-    unpinView: _unpinNativeView,
-    pinView: _pinNativeView,
-    isViewUnpinned: _isNativeViewUnpinned,
-  } = useUnpinnedNativeViews(projectKey);
 
   // Drag and drop state for pinned tabs
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
@@ -407,258 +358,11 @@ function WorkspaceViews() {
     commandPalette.setOpen(true);
   };
 
-  const handleRemoveView = async (view: View) => {
-    const isUserInView = globalThis.location.pathname.includes(
-      `/views/${view.id}`,
-    );
-    if (isUserInView) {
-      navigateWorkspace("/");
-      await removeViewMutation.mutateAsync({
-        viewId: view.id,
-      });
-      return;
-    }
-    await removeViewMutation.mutateAsync({
-      viewId: view.id,
-    });
-  };
-
-  const removeResourceMutation = useRemoveResource();
-
-  const handleRemoveResource = async (resource: { resourceId: string }) => {
-    const isUserInResource = globalThis.location.pathname.includes(
-      `/rsc/${resource.resourceId}`,
-    );
-    if (isUserInResource) {
-      navigateWorkspace("/");
-      await removeResourceMutation.mutateAsync({
-        resourceId: resource.resourceId,
-      });
-      return;
-    }
-    await removeResourceMutation.mutateAsync({
-      resourceId: resource.resourceId,
-    });
-  };
-
-  const integrationMap = new Map(
-    integrations?.map((integration) => [integration.id, integration]),
-  );
-
-  const { fromIntegration, firstLevelViews, fromIntegrationResources } =
-    useMemo(() => {
-      const result: {
-        fromIntegration: Record<string, View[]>;
-        firstLevelViews: View[];
-        fromIntegrationResources: Record<string, Resource[]>;
-      } = {
-        fromIntegration: {},
-        firstLevelViews: [],
-        fromIntegrationResources: {},
-      };
-
-      const views = (team?.views ?? []) as View[];
-      for (const view of views) {
-        const integrationId = view.integrationId as string | undefined;
-        if (integrationId) {
-          const isInstalled = integrations?.some(
-            (integration) => integration.id === integrationId,
-          );
-
-          if (!isInstalled) {
-            continue;
-          }
-
-          if (!result.fromIntegration[integrationId]) {
-            result.fromIntegration[integrationId] = [];
-          }
-          result.fromIntegration[integrationId].push(view);
-          continue;
-        }
-
-        if (view.type === "custom") {
-          if (!result.fromIntegration["custom"]) {
-            result.fromIntegration["custom"] = [];
-          }
-          result.fromIntegration["custom"].push(view);
-          continue;
-        }
-
-        result.firstLevelViews.push(view);
-      }
-      // Process resources (stored as views with type="resource")
-      const resources = team?.resources ?? [];
-      for (const resource of resources) {
-        const integrationId = resource.integration_id as string | undefined;
-        if (integrationId) {
-          const isInstalled = integrations?.some(
-            (integration) => integration.id === integrationId,
-          );
-
-          if (!isInstalled) {
-            continue;
-          }
-
-          if (!result.fromIntegrationResources[integrationId]) {
-            result.fromIntegrationResources[integrationId] = [];
-          }
-          result.fromIntegrationResources[integrationId].push(resource);
-        }
-      }
-
-      return result;
-    }, [team?.views, team?.resources, integrations]);
-
-  function buildViewHrefFromView(view: View): string {
-    if (view.type === "custom") {
-      if (view?.name) {
-        return workspaceLink(`/views/${view.integrationId}/${view.name}`);
-      }
-      const rawUrl = view?.metadata?.url as string | undefined;
-      const qs = rawUrl ? `?viewUrl=${encodeURIComponent(rawUrl)}` : "";
-      return workspaceLink(`/views/${view.integrationId}/index${qs}`);
-    }
-    const path = view?.metadata?.path as string | undefined;
-    return workspaceLink(path ?? "/");
-  }
-
-  // Helper function to check if a view should open in a tab
-  function shouldOpenInTab(view: View): boolean {
-    const displayTitle = canonicalTitle(view.title);
-    const viewKey = displayTitle.toLowerCase();
-
-    // Native resource list views that should open in tabs
-    const tabEnabledViews = [
-      "documents",
-      "workflows",
-      "tools",
-      "views",
-      "agents",
-      "database",
-    ];
-
-    // Check if it's a native tab-enabled view
-    if (view.type === "default" && tabEnabledViews.includes(viewKey)) {
-      return true;
-    }
-
-    // Custom integration views should open in tabs (legacy compatibility)
-    if (view.type === "custom") {
-      return true;
-    }
-
-    // Everything else uses direct navigation (e.g., Theme, legacy pages)
-    return false;
-  }
-
-  // Helper function to convert View to tab data
-  function viewToTabData(view: View): Omit<CanvasTab, "id"> {
-    const displayTitle = canonicalTitle(view.title);
-    const viewKey = displayTitle.toLowerCase();
-
-    // For native views, use native:// protocol
-    if (view.type === "default") {
-      return {
-        type: "list",
-        resourceUri: buildNativeUri(viewKey),
-        title: displayTitle,
-        icon: view.icon,
-      };
-    }
-
-    // For custom integration views, use view:// protocol (legacy compatibility)
-    if (view.type === "custom" && view.integrationId) {
-      // Extract viewName from metadata or use name
-      const viewName =
-        (view.metadata as { viewName?: string })?.viewName ||
-        view.name ||
-        "index";
-      return {
-        type: "list",
-        resourceUri: buildViewUri(view.integrationId, viewName),
-        title: displayTitle,
-        icon: view.icon,
-      };
-    }
-
-    // Fallback - use a generic native URI
-    return {
-      type: "list",
-      resourceUri: buildNativeUri("unknown"),
-      title: displayTitle,
-      icon: view.icon,
-    };
-  }
-
-  // Helper function to convert Resource to tab data
-  function resourceToTabData(resource: {
-    id: string;
-    name?: string;
-    title?: string;
-    icon?: string;
-    integration_id?: string;
-    type?: string;
-    path?: string;
-  }): Omit<CanvasTab, "id"> {
-    const integrationId = resource.integration_id || "unknown";
-    const integration = integrationMap.get(integrationId);
-    const displayName = getResourceDisplayName(
-      resource as { title?: string; name?: string },
-      integration?.name,
-    );
-
-    // For view type resources, use buildViewUri instead of buildResourceUri
-    if (resource.type === "view") {
-      // Use resource name or id as view name (path is deprecated)
-      const viewName = resource.name || resource.id;
-      return {
-        type: "list",
-        resourceUri: buildViewUri(integrationId, viewName),
-        title: displayName,
-        icon: resource.icon,
-      };
-    }
-
-    // For agent type resources, use buildAgentUri
-    if (resource.type === "agent") {
-      const threadId = crypto.randomUUID();
-      return {
-        type: "detail",
-        resourceUri: buildAgentUri(resource.id, threadId),
-        title: displayName,
-        icon: resource.icon,
-      };
-    }
-
-    // For document type resources, use buildDocumentUri
-    if (resource.type === "document") {
-      return {
-        type: "detail",
-        resourceUri: buildDocumentUri(resource.id),
-        title: displayName,
-        icon: resource.icon,
-      };
-    }
-
-    // For workflow type resources, use buildWorkflowUri
-    if (resource.type === "workflow") {
-      return {
-        type: "detail",
-        resourceUri: buildWorkflowUri(resource.id),
-        title: displayName,
-        icon: resource.icon,
-      };
-    }
-
-    return {
-      type: "list",
-      resourceUri: buildResourceUri(
-        integrationId,
-        resource.name || resource.id,
-      ),
-      title: displayName,
-      icon: resource.icon,
-    };
+  function buildResourceHrefFromResource(resource: {
+    integration_id: string;
+    name: string;
+  }): string {
+    return workspaceLink(`/rsc/${resource.integration_id}/${resource.name}`);
   }
 
   const renderPinnedTabIcon = (tab: PinnedTab) => {
@@ -728,7 +432,7 @@ function WorkspaceViews() {
   const renderPinnedTab = (tab: PinnedTab, index: number) => (
     <SidebarMenuItem key={tab.id} {...getDragProps(index, tab.id)}>
       <SidebarMenuButton
-        className="w-full pr-2 group/item relative"
+        className="w-full pr-2 group/item relative cursor-pointer"
         onClick={(e) => {
           if (isDragMode) {
             e.preventDefault();

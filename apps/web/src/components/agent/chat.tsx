@@ -80,7 +80,6 @@ export const MainChat = ({
   className,
   contentClassName,
   hasTabs = true,
-  isEmpty: initialIsEmpty = false,
   agent,
 }: MainChatProps = {}) => {
   // Use real-time chat messages to determine if empty, not the prop

@@ -42,10 +42,7 @@ import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import {
-  ThreadManagerProvider,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithOrgTheme } from "../theme.tsx";
@@ -98,7 +95,6 @@ export function ProjectLayout() {
 
 function ProjectLayoutContent() {
   const { org, project } = useParams();
-  const { activeThreadId } = useThreadManager();
 
   const [sidebarOpen, setSidebarOpen] = useLocalStorage(
     "deco-chat-sidebar",

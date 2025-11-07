@@ -19,10 +19,7 @@ import { useOrgDocumentTitle } from "../../hooks/use-org-document-title.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
-import {
-  ThreadManagerProvider,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
@@ -122,7 +119,6 @@ function OrgsLayoutContent({
   handlePhoneSaved: () => void;
   org: string;
 }) {
-  const { activeThreadId } = useThreadManager();
   const { open: decopilotOpen } = useDecopilotOpen();
 
   return (

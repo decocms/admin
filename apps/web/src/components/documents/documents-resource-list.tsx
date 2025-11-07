@@ -5,7 +5,7 @@ import {
   useState,
   useCallback,
 } from "react";
-import { useSearchParams, useParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";

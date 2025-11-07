@@ -4,7 +4,6 @@ import { useAgents, useRemoveAgent, useAuditEvents } from "@deco/sdk";
 import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
-import { useParams } from "react-router";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +21,6 @@ import {
   getAgentRowActions,
 } from "./agents-list-adapters.tsx";
 import { adaptThread, getThreadsColumns } from "./threads-list-adapters.tsx";
-import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 
 /**
  * Agents resource list component that renders the AgentsList
@@ -67,10 +65,6 @@ export function AgentsResourceList({
   const threads = auditData?.threads ?? [];
   const threadsItems = useMemo(() => threads.map(adaptThread), [threads]);
   const agentsItems = useMemo(() => (agents ?? []).map(adaptAgent), [agents]);
-  const { org, project } = useParams();
-  const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { togglePin, isPinned } = usePinnedTabs(projectKey);
-
   // Show threads view if active tab is "threads"
   if (activeTab === "threads") {
     const handleThreadClick = (item: Record<string, unknown>) => {
@@ -149,8 +143,6 @@ export function AgentsResourceList({
   const agentRowActions = getAgentRowActions(
     (agent) => handleDuplicate(agent),
     (agent) => setAgentToDelete(agent.id),
-    isPinned,
-    togglePin,
   );
 
   return (

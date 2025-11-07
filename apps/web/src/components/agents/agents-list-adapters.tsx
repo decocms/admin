@@ -3,7 +3,6 @@ import type { TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { buildAgentUri } from "../decopilot/thread-context-manager.tsx";
-import type { PinnedTabInput } from "../../hooks/use-pinned-tabs.ts";
 
 /**
  * Adapter to transform Agent to a format compatible with ResourcesV2List
@@ -91,8 +90,6 @@ export function getAgentsColumns(): TableColumn<Record<string, unknown>>[] {
 export function getAgentRowActions(
   onDuplicate: (agent: Agent) => void,
   onDelete: (agent: Agent) => void,
-  isPinned: (resourceUri: string) => boolean,
-  togglePin: (tab: PinnedTabInput) => void,
 ): (item: Record<string, unknown>) => CustomRowAction[] {
   return (item: Record<string, unknown>) => {
     const agent = (item._agent as Agent) || (item as unknown as Agent);

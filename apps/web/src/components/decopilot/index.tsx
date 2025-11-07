@@ -3,7 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
-import { AgenticChatProvider, useAgenticChat } from "../chat/provider.tsx";
+import { AgenticChatProvider } from "../chat/provider.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useThreadManager } from "./thread-context-manager.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";

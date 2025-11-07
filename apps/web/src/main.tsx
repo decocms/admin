@@ -1,6 +1,7 @@
 import "./polyfills.ts";
 
 import {
+  DecoQueryClientProvider,
   ForbiddenError,
   type InternalServerError,
   NotFoundError,
@@ -387,6 +388,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <DecoQueryClientProvider>
+      <RouterProvider router={router} />
+    </DecoQueryClientProvider>
   </StrictMode>,
 );

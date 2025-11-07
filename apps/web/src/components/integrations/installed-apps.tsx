@@ -1,8 +1,4 @@
-import {
-  useMarketplaceIntegrations,
-  useUnpinnedNativeViews,
-  View,
-} from "@deco/sdk";
+import { useMarketplaceIntegrations, View } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
@@ -27,6 +23,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import Discover from "../discover/index.tsx";
 import {
   buildAppUri,
@@ -64,28 +61,37 @@ function AppCard({
 }) {
   const { org, project } = useParams();
   const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { pinView, unpinView, isViewUnpinned } =
-    useUnpinnedNativeViews(projectKey);
+  const { togglePin, isPinned } = usePinnedTabs(projectKey);
 
-  // Use actual view ID for checking pinned status
-  // For Files (and other coming-soon features), use the app.id since they don't have real views
-  const actualViewId = nativeView?.id || app.id;
-  const isNativePinned = app.isNative && !isViewUnpinned(actualViewId);
+  // Build resource URI for native apps
+  const resourceUri = app.isNative
+    ? buildNativeUri(app.name.toLowerCase())
+    : null;
+
+  const isNativePinned = resourceUri && isPinned(resourceUri);
 
   const handlePinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (app.isNative) {
-      if (isNativePinned) {
-        unpinView(actualViewId);
-        trackEvent("apps_page_unpin_native", {
+
+    // Don't allow pinning "Files" since it's coming soon and has no view
+    if (app.name === "Files") {
+      return;
+    }
+
+    if (app.isNative && resourceUri && nativeView) {
+      togglePin({
+        resourceUri,
+        title: app.name,
+        type: "list",
+        icon: nativeView.icon,
+      });
+
+      trackEvent(
+        isNativePinned ? "apps_page_unpin_native" : "apps_page_pin_native",
+        {
           app: app.name,
-        });
-      } else {
-        pinView(actualViewId);
-        trackEvent("apps_page_pin_native", {
-          app: app.name,
-        });
-      }
+        },
+      );
     }
   };
 
@@ -144,8 +150,8 @@ function AppCard({
             </div>
           </div>
 
-          {/* Pin icon for native apps */}
-          {app.isNative && (
+          {/* Pin icon for native apps (except Files which is coming soon) */}
+          {app.isNative && app.name !== "Files" && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

@@ -1,9 +1,13 @@
 import { useThread, useAgentData, useAgentRoot } from "@deco/sdk";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useMemo } from "react";
 import { useParams } from "react-router";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgenticChatProvider } from "../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+} from "../chat/provider.tsx";
 
 const useThreadId = () => {
   const { id } = useParams();
@@ -30,12 +34,17 @@ function Page() {
     );
   }
 
+  const transport = useMemo(
+    () => createLegacyTransport(id, agentId, agentRoot),
+    [id, agentId, agentRoot],
+  );
+
   return (
     <AgenticChatProvider
       agentId={agentId}
       threadId={id}
       agent={agent}
-      agentRoot={agentRoot}
+      transport={transport}
     >
       <ScrollArea className="h-full py-6">
         <ChatMessages />

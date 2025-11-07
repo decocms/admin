@@ -480,10 +480,6 @@ async function fixOrgs(orgSlugs: string[]) {
 
     const hasDefaultProject = orgProjects.some((p) => p.slug === "default");
     if (hasDefaultProject) {
-      console.log(
-        "[ORG already fixed] Default project already exists",
-        orgSlug,
-      );
       continue;
     }
 

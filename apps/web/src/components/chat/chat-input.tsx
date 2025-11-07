@@ -31,7 +31,7 @@ import { AudioButton } from "./audio-button.tsx";
 import { ChatTemplates } from "./chat-templates.ts";
 import { ErrorBanner } from "./error-banner.tsx";
 import { ModelSelector } from "./model-selector.tsx";
-import { useAgenticChat } from "./provider.tsx";
+import { asUserMessage, useAgenticChat } from "./provider.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 import type { ToolsetContextItem } from "./types.ts";
 import { onLogsAdded, onScreenshotAdded } from "../../utils/custom-events.ts";
@@ -51,7 +51,6 @@ export function ChatInput({
     setInput,
     agent,
     sendMessage,
-    sendTextMessage,
     isLoading,
     uiOptions,
     runtimeError,
@@ -232,11 +231,11 @@ export function ChatInput({
     if (!runtimeError) return;
 
     // Send the error message to chat
-    sendTextMessage(runtimeError.message, runtimeError.context);
+    sendMessage(asUserMessage(runtimeError.message));
 
     // Clear the error banner after sending
     clearError();
-  }, [runtimeError, clearError, sendTextMessage]);
+  }, [runtimeError, clearError, sendMessage]);
 
   const handleDismissError = useCallback(() => {
     clearError();

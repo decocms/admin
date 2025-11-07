@@ -52,13 +52,10 @@ export default function OAuthCallback() {
             }
           } catch {
             // If decoding/parsing fails, use the state as-is
-            console.log("[OAuth Callback] Using state as-is (not wrapped)");
           }
 
           // Let use-mcp handle the authorization with the unwrapped state
           await onMcpAuthorization();
-
-          console.log("[OAuth Callback] onMcpAuthorization completed");
 
           // Notify parent window that OAuth is complete
           // The parent window will handle saving the token to the database
@@ -76,8 +73,6 @@ export default function OAuthCallback() {
           } else {
             console.warn("[OAuth Callback] Parent window not available");
           }
-
-          console.log("[OAuth Callback] OAuth flow completed successfully");
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));

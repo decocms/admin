@@ -149,8 +149,6 @@ export default function McpInspector() {
     autoReconnect: true,
     autoRetry: 5000,
     onPopupWindow: (_url, _features, popupWindow) => {
-      console.log("[MCP Inspector] OAuth popup opened");
-
       // Capture snapshot of localStorage tokens BEFORE OAuth flow
       const captureTokenSnapshot = (prefix: string): Map<string, string> => {
         const snapshot = new Map<string, string>();
@@ -246,7 +244,6 @@ export default function McpInspector() {
                 console.log(
                   `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
                 );
-                console.log("[MCP Inspector] Calling CONNECTION_UPDATE...");
 
                 // Call CONNECTION_UPDATE to save the token
                 await fetcher.CONNECTION_UPDATE({
@@ -287,7 +284,6 @@ export default function McpInspector() {
             // Close the popup after saving
             if (popupWindow && !popupWindow.closed) {
               popupWindow.close();
-              console.log("[MCP Inspector] OAuth popup closed");
             }
             window.removeEventListener("message", messageHandler);
           } else if (!event.data.success) {

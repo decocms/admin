@@ -106,20 +106,7 @@ export function DocumentsResourceList({
         (item._prompt as import("@deco/sdk").Prompt) ||
         (item as unknown as import("@deco/sdk").Prompt);
 
-      console.log("[DocumentsResourceList] Prompt clicked", {
-        promptId: prompt.id,
-        promptName: prompt.name,
-        hasContent: !!prompt.content,
-        contentLength: prompt.content?.length || 0,
-        activeTab,
-        item,
-      });
-
       const resourceUri = `legacy-prompt://${prompt.id}`;
-      console.log("[DocumentsResourceList] Opening prompt tab", {
-        resourceUri,
-        title: prompt.name || "Untitled",
-      });
 
       const newTab = createTab({
         type: "detail",

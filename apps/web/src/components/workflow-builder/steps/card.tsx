@@ -213,7 +213,7 @@ const StepContent = memo(function StepContent({
     <>
       <StepToolsUsed stepName={stepName} />
       <StepError error={error} />
-      <StepOutput stepName={stepName} output={output} views={views} />
+      <StepOutput output={output} views={views} />
       <StepAttempts attempts={attempts || []} />
     </>
   );

@@ -34,6 +34,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCallback,
   useDeferredValue,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -142,8 +143,31 @@ function ResourcesV2ListTab({
     return stored === "true";
   });
 
-  const q = searchParams.get("q") ?? "";
-  const deferredQ = useDeferredValue(q);
+  // Local state for instant search, deferred for server queries and URL updates
+  const [localSearch, setLocalSearch] = useState(
+    () => searchParams.get("q") ?? "",
+  );
+  const deferredSearch = useDeferredValue(localSearch);
+  const clientSearchValue = localSearch;
+  const serverSearchValue = deferredSearch;
+
+  // Sync URL params with deferred search for deep linking
+  useEffect(() => {
+    if (!customData) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (serverSearchValue) {
+            next.set("q", serverSearchValue);
+          } else {
+            next.delete("q");
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [serverSearchValue, customData, setSearchParams]);
 
   const connection = integration?.connection;
   const toolsQuery = useTools(connection!, false);
@@ -451,7 +475,7 @@ function ResourcesV2ListTab({
       locator,
       integrationId!,
       resourceName!,
-      deferredQ,
+      serverSearchValue,
       sortKey ?? undefined,
       sortDirection ?? undefined,
     ),
@@ -462,7 +486,7 @@ function ResourcesV2ListTab({
       const result = (await callTool(integration!.connection, {
         name: `DECO_RESOURCE_${resourceName!.toUpperCase()}_SEARCH`,
         arguments: {
-          term: deferredQ,
+          term: serverSearchValue,
           page: 1,
           pageSize: 50,
           sortBy: sortKey ?? undefined,
@@ -623,27 +647,28 @@ function ResourcesV2ListTab({
     return Array.from(userIds).map((id) => ({ id, name: id }));
   }, [items]);
 
-  // Apply filters to items (only for MCP resources, skip for custom data)
   const filteredItems = useMemo(() => {
-    // First, filter by search term if present
-    let searchFiltered = items;
-    if (deferredQ && customData) {
-      const searchTerm = deferredQ.toLowerCase();
-      searchFiltered = items.filter((item) => {
+    let result = items;
+
+    // Client-side search for custom data (MCP resources filtered server-side)
+    if (customData && clientSearchValue) {
+      const searchTerm = clientSearchValue.toLowerCase().trim();
+      result = result.filter((item) => {
         const resourceItem = item as ResourceListItem;
-        const name = String(resourceItem.data?.name || "").toLowerCase();
-        const description = String(
-          resourceItem.data?.description || "",
-        ).toLowerCase();
+        const itemRecord = item as Record<string, unknown>;
+        const itemData =
+          resourceItem.data ||
+          (itemRecord.data as Record<string, unknown> | undefined);
+        const name = String(itemData?.name || "").toLowerCase();
+        const description = String(itemData?.description || "").toLowerCase();
         return name.includes(searchTerm) || description.includes(searchTerm);
       });
     }
 
-    // If no advanced filters, return search-filtered items
-    if (filters.length === 0 || customData) return searchFiltered;
+    // Apply advanced filters (only for MCP resources, skip for custom data)
+    if (filters.length === 0 || customData) return result;
 
-    // Apply advanced filters
-    return searchFiltered.filter((item) => {
+    return result.filter((item) => {
       const resourceItem = item as ResourceListItem;
       return filters.every((filter) => {
         const { column, operator, value } = filter;
@@ -710,7 +735,7 @@ function ResourcesV2ListTab({
         return true;
       });
     });
-  }, [items, filters, customData, deferredQ]);
+  }, [items, filters, customData, clientSearchValue]);
 
   // Sort the items based on current sort state
   // For custom data, sorting should be handled by the custom columns' sortable property
@@ -1141,31 +1166,17 @@ function ResourcesV2ListTab({
             activeTab={activeTab || "all"}
             onTabChange={onTabChange}
             searchOpen={searchOpen}
-            searchValue={q}
+            searchValue={clientSearchValue}
             onSearchToggle={() => setSearchOpen(!searchOpen)}
-            onSearchChange={(value: string) => {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                if (value) next.set("q", value);
-                else next.delete("q");
-                return next;
-              });
-            }}
+            onSearchChange={setLocalSearch}
             onSearchBlur={() => {
-              if (!q) {
+              if (!clientSearchValue) {
                 setSearchOpen(false);
               }
             }}
             onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Enter") {
-                listQuery.refetch();
-              }
               if (e.key === "Escape") {
-                setSearchParams((prev) => {
-                  const next = new URLSearchParams(prev);
-                  next.delete("q");
-                  return next;
-                });
+                setLocalSearch("");
                 setSearchOpen(false);
                 (e.target as HTMLInputElement).blur();
               }

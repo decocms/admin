@@ -4,6 +4,7 @@ import {
   Integration,
   useConnectionViews,
   useUpsertDocument,
+  WELL_KNOWN_AGENT_IDS,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -39,22 +40,33 @@ import { Suspense, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
+import { useFocusChat } from "../agents/hooks.ts";
+import { useThreadTitle } from "../decopilot/index.tsx";
 import {
   buildAppsListUri,
   useThreadManager,
 } from "../decopilot/thread-context-manager.tsx";
-import { useFocusTeamAgent } from "../agents/list.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
-import { useThreadTitle } from "../decopilot/index.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
 import {
   CommandPalette,
   useCommandPalette,
 } from "../search/command-palette.tsx";
-import { SidebarFooter } from "./footer.tsx";
 import { TogglePin } from "../views/list.tsx";
+import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
-import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
+
+const useFocusTeamAgent = () => {
+  const focusChat = useFocusChat();
+  const handleCreate = () => {
+    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+      history: false,
+    });
+  };
+
+  return handleCreate;
+};
 
 /**
  * Individual thread item with title

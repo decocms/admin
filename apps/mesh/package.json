@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development bun --hot run src/index.ts",
+    "dev:client": "vite",
     "start": "bun run src/index.ts",
     "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",
@@ -98,6 +99,7 @@
     "@vitest/coverage-v8": "^4.0.5",
     "typescript": "^5.9.3",
     "vite": "^7.2.1",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.5"
   },
   "module": "src/index.ts",

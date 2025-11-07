@@ -123,6 +123,9 @@ export interface AgenticChatProviderProps {
   // UI options
   uiOptions?: Partial<UiOptions>;
 
+  // Layout options
+  forceBottomLayout?: boolean; // When true, always show input at bottom (never center)
+
   children: React.ReactNode;
 }
 
@@ -161,6 +164,9 @@ export interface AgenticChatContextValue {
 
   // UI options
   uiOptions: UiOptions;
+
+  // Layout options
+  forceBottomLayout: boolean;
 
   // Metadata
   metadata: {
@@ -462,6 +468,7 @@ export function AgenticChatProvider({
   sendReasoning,
   useDecopilotAgent,
   uiOptions,
+  forceBottomLayout = false,
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
   const { pathname } = useLocation();
@@ -1316,6 +1323,9 @@ export function AgenticChatProvider({
 
     // UI options
     uiOptions: mergedUiOptions,
+
+    // Layout options
+    forceBottomLayout,
 
     // Metadata
     metadata: {

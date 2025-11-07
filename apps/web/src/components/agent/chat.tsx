@@ -86,11 +86,11 @@ export const MainChat = ({
   agent,
 }: MainChatProps = {}) => {
   // Use real-time chat messages to determine if empty, not the prop
-  const { chat } = useAgenticChat();
+  const { chat, forceBottomLayout } = useAgenticChat();
   const user = useUser();
   const { getAllThreads } = useThreadManager();
   const isEmpty = chat.messages.length === 0;
-  const shouldCenterLayout = !hasTabs && isEmpty;
+  const shouldCenterLayout = !forceBottomLayout && !hasTabs && isEmpty;
 
   // Check if this is the first thread
   const allThreads = getAllThreads();
@@ -138,7 +138,7 @@ export const MainChat = ({
         "relative w-full flex flex-col h-full min-w-0",
         isCentered &&
           "items-center justify-center px-10 py-12 transition-all duration-300 ease-(--ease-out-quint) animate-in fade-in slide-in-from-bottom-4",
-        !isCentered && hasTabs && "transition-none [transform:translateZ(0)]",
+        !isCentered && hasTabs && "transition-none transform-[translateZ(0)]",
         className,
       )}
     >

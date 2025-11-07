@@ -64,6 +64,7 @@ import Threads from "./threads.tsx";
 interface Props {
   agentId?: string;
   threadId?: string;
+  resourceUri?: string; // For well-known views: rsc://i:agent-management/agent/{agentId}
 }
 
 // Context for managing preview visibility on mobile and chat mode
@@ -616,9 +617,19 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
 export default function Page(props: Props) {
   const params = useParams();
+
+  // Extract agentId from resourceUri if provided
+  const agentIdFromUri = useMemo(() => {
+    if (props.resourceUri) {
+      const parts = props.resourceUri.split("/");
+      return parts[parts.length - 1];
+    }
+    return null;
+  }, [props.resourceUri]);
+
   const agentId = useMemo(
-    () => props.agentId || params.id,
-    [props.agentId, params.id],
+    () => props.agentId || agentIdFromUri || params.id,
+    [props.agentId, agentIdFromUri, params.id],
   );
 
   const threadId = useMemo(

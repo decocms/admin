@@ -1,4 +1,4 @@
-import { AgentDetail } from "../agent/agent-detail.tsx";
+import AgentEdit from "../agent/edit.tsx";
 import { DocumentDetail } from "../documents/document-detail.tsx";
 import { ToolDetail } from "../tools/tool-detail.tsx";
 import { WorkflowDisplay } from "../workflow-builder/workflow-display-canvas.tsx";
@@ -20,7 +20,7 @@ import { ViewDetail } from "../views/view-detail.tsx";
  * - i:views-management:view
  */
 export const WELL_KNOWN_VIEWS = {
-  "i:agent-management:agent": AgentDetail,
+  "i:agent-management:agent": AgentEdit,
   "i:workflows-management:workflow": WorkflowDisplay,
   "i:workflows-management:workflow_run": WorkflowRunDetail,
   "i:tools-management:tool": ToolDetail,

@@ -1,9 +1,9 @@
 import { useLocalStorage } from "../../hooks/use-local-storage";
 
 export function useDecopilotOpen() {
-  const [open, setOpen] = useLocalStorage(
+  const [open, setOpen] = useLocalStorage<boolean>(
     "deco-cms-decopilot",
-    (existing) => existing ?? true,
+    (existing) => Boolean(existing ?? true),
   );
 
   const toggle = () => {

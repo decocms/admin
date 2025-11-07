@@ -96,9 +96,9 @@ export function ProjectLayout() {
 function ProjectLayoutContent() {
   const { org, project } = useParams();
 
-  const [sidebarOpen, setSidebarOpen] = useLocalStorage(
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage<boolean>(
     "deco-chat-sidebar",
-    (existing) => existing ?? true,
+    (existing) => Boolean(existing ?? true),
   );
 
   const {

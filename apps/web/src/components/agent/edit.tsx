@@ -564,7 +564,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         icon: "robot_2",
       });
     }
-  }, [agent, agentId, threadId, currentTabId, tabs, addTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent?.name, agentId, threadId, currentTabId]);
 
   useDocumentMetadata({
     title: agent ? `${agent.name} | deco CMS` : undefined,

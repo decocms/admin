@@ -62,9 +62,9 @@ function OrgDocumentTitleUpdater() {
 
 // TODO: Register activity for org so we can order them by latest accessed later
 export function OrgsLayout() {
-  const [defaultSidebarOpen, setDefaultSidebarOpen] = useLocalStorage(
+  const [defaultSidebarOpen, setDefaultSidebarOpen] = useLocalStorage<boolean>(
     "deco-chat-sidebar",
-    (existing) => existing ?? true,
+    (existing) => Boolean(existing ?? true),
   );
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
   const { org } = useParams();

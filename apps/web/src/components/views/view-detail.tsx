@@ -243,9 +243,9 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
 
   // Persist console open state
-  const [isConsoleOpen, setIsConsoleOpen] = useLocalStorage(
+  const [isConsoleOpen, setIsConsoleOpen] = useLocalStorage<boolean>(
     "deco-view-console-open",
-    (existing) => existing ?? false,
+    (existing) => Boolean(existing ?? false),
   );
 
   const updateViewMutation = useUpdateView();

@@ -25,7 +25,6 @@ if (!globalThis.crypto.randomUUID) {
 }
 
 if (!Promise.withResolvers) {
-  // @ts-expect-error - Promise.withResolvers is hard to type
   Promise.withResolvers = function withResolvers<T>() {
     let resolve: (value: T) => void;
     let reject: (reason?: any) => void;

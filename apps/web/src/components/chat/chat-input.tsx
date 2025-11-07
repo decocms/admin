@@ -39,6 +39,7 @@ import { onLogsAdded, onScreenshotAdded } from "../../utils/custom-events.ts";
 export function ChatInput({
   disabled,
   rightNode,
+  centered = false,
 }: {
   disabled?: boolean;
   rightNode?: ReactNode;
@@ -345,9 +346,14 @@ export function ChatInput({
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="w-full max-w-3xl mx-auto">
-          <div className="relative rounded-xl border border-border bg-background w-full">
-            <div className="relative flex flex-col gap-2 p-2.5">
+        <div className="w-full max-w-2xl mx-auto">
+          <div
+            className={cn(
+              "relative rounded-xl border border-border bg-background w-full min-h-[130px] flex flex-col",
+              centered ? "shadow-md" : "shadow-sm",
+            )}
+          >
+            <div className="relative flex flex-col gap-2 p-2.5 flex-1">
               {/* Context Resources */}
               {uiOptions.showContextResources && hasContextResources && (
                 <ContextResources
@@ -359,7 +365,7 @@ export function ChatInput({
 
               {/* Input Area */}
               <div
-                className="overflow-y-auto relative"
+                className="overflow-y-auto relative flex-1"
                 style={{ maxHeight: "164px" }}
               >
                 <RichTextArea
@@ -368,90 +374,88 @@ export function ChatInput({
                   onChange={handleRichTextChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask anything or @ for context"
-                  className="placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-0 px-2.5 py-2 text-sm min-h-[20px] rounded-none"
+                  className="placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-0 p-2 text-sm min-h-[20px] rounded-none"
                   disabled={isLoading || disabled}
                   allowNewLine={isMobile}
                   enableToolMentions
                 />
               </div>
+            </div>
 
-              {/* Bottom Actions Row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <DropdownMenu
-                    modal={false}
-                    open={isDropdownOpen}
-                    onOpenChange={setIsDropdownOpen}
-                  >
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        ref={addContextButtonRef}
-                        type="button"
-                        className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-0"
-                        title="Add context"
-                      >
-                        <Icon
-                          name="add"
-                          size={20}
-                          className="text-muted-foreground group-hover:text-foreground transition-colors"
-                        />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" side="top">
-                      <DropdownMenuItem onSelect={handleOpenFileDialog}>
-                        <Icon name="attach_file" className="size-4" />
-                        Add photos & files
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={handleOpenSelectDialog}>
-                        <Icon name="alternate_email" className="size-4" />
-                        Add context
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex items-center gap-1">
-                  {rightNode}
-                  {uiOptions.showModelSelector && (
-                    <ModelSelector
-                      model={model}
-                      onModelChange={handleModelChange}
-                      className="p-0! hover:bg-transparent"
-                    />
-                  )}
-                  <AudioButton
-                    onMessage={handleRichTextChange}
-                    className="hover:bg-transparent hover:text-foreground"
+            {/* Bottom Actions Row */}
+            <div className="flex items-center justify-between px-2.5 pb-2.5">
+              <div className="flex items-center">
+                <DropdownMenu
+                  modal={false}
+                  open={isDropdownOpen}
+                  onOpenChange={setIsDropdownOpen}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      ref={addContextButtonRef}
+                      type="button"
+                      className="flex size-8 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-0"
+                      title="Add context"
+                    >
+                      <Icon
+                        name="add"
+                        size={20}
+                        className="text-muted-foreground group-hover:text-foreground transition-colors"
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="top">
+                    <DropdownMenuItem onSelect={handleOpenFileDialog}>
+                      <Icon name="attach_file" className="size-4" />
+                      Add photos & files
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleOpenSelectDialog}>
+                      <Icon name="alternate_email" className="size-4" />
+                      Add context
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="flex items-center gap-1">
+                {rightNode}
+                {uiOptions.showModelSelector && (
+                  <ModelSelector
+                    model={model}
+                    onModelChange={handleModelChange}
+                    className="p-0! hover:bg-transparent"
                   />
-                  <Button
-                    type={isLoading ? "button" : "submit"}
-                    onClick={(e) => {
+                )}
+                <AudioButton
+                  onMessage={handleRichTextChange}
+                  className="hover:bg-transparent hover:text-foreground"
+                />
+                <Button
+                  type={isLoading ? "button" : "submit"}
+                  onClick={(e) => {
+                    if (isLoading) {
                       e.preventDefault();
                       e.stopPropagation();
-
-                      if (isLoading) {
-                        stop();
-                      }
-                    }}
-                    variant={canSubmit || isLoading ? "default" : "ghost"}
-                    size="icon"
-                    disabled={!canSubmit && !isLoading}
-                    className={cn(
-                      "size-8 rounded-full transition-all",
-                      !canSubmit &&
-                        !isLoading &&
-                        "bg-muted text-muted-foreground hover:bg-muted hover:text-muted-foreground cursor-not-allowed",
-                    )}
-                    title={
-                      isLoading ? "Stop generating" : "Send message (Enter)"
+                      stop();
                     }
-                  >
-                    <Icon
-                      name={isLoading ? "stop" : "arrow_upward"}
-                      size={20}
-                      filled={isLoading}
-                    />
-                  </Button>
-                </div>
+                    // Otherwise, let the form submit naturally
+                  }}
+                  variant={canSubmit || isLoading ? "default" : "ghost"}
+                  size="icon"
+                  disabled={!canSubmit && !isLoading}
+                  className={cn(
+                    "size-8 rounded-full transition-all",
+                    !canSubmit &&
+                      !isLoading &&
+                      "bg-muted text-muted-foreground hover:bg-muted hover:text-muted-foreground cursor-not-allowed",
+                  )}
+                  title={isLoading ? "Stop generating" : "Send message (Enter)"}
+                >
+                  <Icon
+                    name={isLoading ? "stop" : "arrow_upward"}
+                    size={20}
+                    filled={isLoading}
+                  />
+                </Button>
               </div>
             </div>
           </div>

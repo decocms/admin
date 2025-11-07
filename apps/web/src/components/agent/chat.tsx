@@ -1,7 +1,7 @@
 import { WELL_KNOWN_AGENT_IDS, type Agent } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "../../hooks/use-user.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
@@ -99,6 +99,7 @@ export const MainChat = ({
   // Animation state: track when we're transitioning from centered to normal
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCentered, setShowCentered] = useState(shouldCenterLayout);
+  const prevHasTabs = useRef(hasTabs);
 
   useEffect(() => {
     if (shouldCenterLayout) {
@@ -106,19 +107,28 @@ export const MainChat = ({
       setShowCentered(true);
       setIsTransitioning(false);
     } else if (showCentered && !shouldCenterLayout) {
-      // Leaving centered layout - start transition
-      // Small delay to ensure browser processes the state change
-      requestAnimationFrame(() => {
-        setIsTransitioning(true);
-      });
-      // Wait for fade animation to complete before switching layout
-      const timer = setTimeout(() => {
+      // Check if we're transitioning because tabs were opened
+      const tabsJustOpened = hasTabs && !prevHasTabs.current;
+
+      if (tabsJustOpened) {
+        // Skip animation when tabs are opened - just switch immediately
         setShowCentered(false);
         setIsTransitioning(false);
-      }, 300);
-      return () => clearTimeout(timer);
+      } else {
+        // Leaving centered layout with animation (sending message)
+        requestAnimationFrame(() => {
+          setIsTransitioning(true);
+        });
+        const timer = setTimeout(() => {
+          setShowCentered(false);
+          setIsTransitioning(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [shouldCenterLayout, showCentered]);
+
+    prevHasTabs.current = hasTabs;
+  }, [shouldCenterLayout, showCentered, hasTabs]);
 
   const isCentered = showCentered || isTransitioning;
 

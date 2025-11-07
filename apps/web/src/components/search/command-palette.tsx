@@ -145,14 +145,14 @@ export function CommandPalette({
     // Add documents/prompts
     for (const document of documents) {
       const documentName = document.data?.name || "Untitled Document";
-      const documentId = document.uri;
+      const documentUri = document.uri;
       results.push({
-        id: `document-${documentId}`,
+        id: `document-${documentUri}`,
         title: documentName,
         description: document.data?.description || undefined,
         icon: "description",
         type: "document",
-        href: `/rsc/i:documents-management/document/${encodeURIComponent(documentId)}`,
+        href: documentUri, // Use the URI directly
       });
     }
 
@@ -229,11 +229,10 @@ export function CommandPalette({
       switchToThread(result.threadId);
     } else if (result.type === "document") {
       // Open document in canvas tab
-      const documentUri = result.href?.split("/rsc/")[1]; // Extract the rsc part
-      if (documentUri) {
+      if (result.href) {
         addTab({
           type: "detail",
-          resourceUri: `rsc://${documentUri}`,
+          resourceUri: result.href, // href is already the full rsc:// URI
           title: result.title,
           icon: result.icon,
         });

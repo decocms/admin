@@ -30,7 +30,6 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { KEYS } from "@deco/sdk";
 import { useSDK } from "@deco/sdk";
-import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import type { ResourceListItem } from "../resources-v2/list.tsx";
 
@@ -118,9 +117,6 @@ export function WorkflowsResourceList({
   const [deletingTrigger, setDeletingTrigger] = useState<TriggerOutput | null>(
     null,
   );
-  const { org, project } = useParams();
-  const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { togglePin, isPinned } = usePinnedTabs(projectKey);
 
   // Handle workflow run click
   const handleWorkflowRunClick = useCallback(
@@ -207,6 +203,16 @@ export function WorkflowsResourceList({
     if (activeTab !== "triggers" || !triggersData?.triggers) return [];
     return (triggersData.triggers as TriggerOutput[]).map(adaptTrigger);
   }, [activeTab, triggersData]);
+
+  // Create default row actions for workflows (empty for now)
+  // MUST be called before any conditional returns to follow Rules of Hooks
+  const workflowRowActions = useCallback(
+    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
+      // No row actions for workflows
+      return [];
+    },
+    [],
+  );
 
   // Render workflow runs (legacy) using ResourcesV2List
   if (activeTab === "runs-legacy") {
@@ -308,15 +314,6 @@ export function WorkflowsResourceList({
       </>
     );
   }
-
-  // Create default row actions for workflows (empty for now)
-  const workflowRowActions = useCallback(
-    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
-      // No row actions for workflows
-      return [];
-    },
-    [],
-  );
 
   // Render workflows using ResourcesV2List (default MCP resources)
   return (

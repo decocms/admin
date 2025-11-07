@@ -35,25 +35,25 @@ function resolveStorageKey(projectKey?: string) {
  */
 export const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [
   {
-    resourceUri: "rsc://i:documents-management/document",
+    resourceUri: "native://documents",
     title: "Documents",
     type: "list",
     icon: "docs",
   },
   {
-    resourceUri: "rsc://i:tools-management/tool",
+    resourceUri: "native://tools",
     title: "Tools",
     type: "list",
     icon: "build",
   },
   {
-    resourceUri: "rsc://i:agent-management/agent",
+    resourceUri: "native://agents",
     title: "Agents",
     type: "list",
     icon: "robot_2",
   },
   {
-    resourceUri: "rsc://i:workflows-management/workflow",
+    resourceUri: "native://workflows",
     title: "Workflows",
     type: "list",
     icon: "flowchart",
@@ -65,7 +65,7 @@ export const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [
     icon: "storage",
   },
   {
-    resourceUri: "rsc://i:views-management/view",
+    resourceUri: "native://views",
     title: "Views",
     type: "list",
     icon: "web",

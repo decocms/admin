@@ -54,8 +54,6 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
-import { createPinAction } from "../common/pin-to-sidebar.tsx";
-import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import type { TabItem } from "./resource-header.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
@@ -150,11 +148,6 @@ function ResourcesV2ListTab({
   const q = searchParams.get("q") ?? "";
   const deferredQ = useDeferredValue(q);
 
-  // Pinned tabs for pin to sidebar functionality
-  const { org, project } = useParams();
-  const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { togglePin, isPinned } = usePinnedTabs(projectKey);
-
   const connection = integration?.connection;
   const toolsQuery = useTools(connection!, false);
   const capabilities = useMemo(() => {
@@ -179,54 +172,6 @@ function ResourcesV2ListTab({
     ((item: ResourceListItem) => Promise<void>) | null
   >(null);
   const onDeleteClickRef = useRef<((uri: string) => void) | null>(null);
-
-  // Helper function to create a pin action from a resource item
-  // This is generic and works for all resource types (workflow, document, view, tool, etc.)
-  const createPinActionForResource = useCallback(
-    (
-      item: ResourceListItem | Record<string, unknown>,
-    ): CustomRowAction | null => {
-      if (!resourceName || !integrationId) return null;
-
-      const resourceItem = item as ResourceListItem;
-      const itemRecord = item as Record<string, unknown>;
-      const itemUri = resourceItem.uri || (itemRecord.uri as string) || "";
-      const itemData =
-        resourceItem.data ||
-        (itemRecord.data as Record<string, unknown> | undefined);
-      const resourceNameValue = (itemData?.name as string) || "Untitled";
-      const resourceIcon = (itemData?.icon as string) || undefined;
-
-      if (!itemUri) return null;
-
-      // Map resource name to pin type
-      // Default to matching common resource types, otherwise treat as generic resource
-      const pinType = (
-        ["agent", "document", "workflow", "view"].includes(resourceName)
-          ? resourceName
-          : "document"
-      ) as "agent" | "document" | "workflow" | "view";
-
-      // Extract resource ID from URI
-      // Format: rsc://i:integration-id/resource-name/resource-id
-      let resourceId = itemUri;
-      const uriMatch = itemUri.match(/\/[^/]+\/([^/]+)$/);
-      if (uriMatch && uriMatch[1]) {
-        resourceId = uriMatch[1];
-      }
-
-      return createPinAction(
-        resourceId,
-        resourceNameValue,
-        pinType,
-        integrationId,
-        resourceIcon,
-        isPinned,
-        togglePin,
-      );
-    },
-    [resourceName, integrationId, isPinned, togglePin],
-  );
 
   const columns: TableColumn<ResourceListItem | Record<string, unknown>>[] =
     useMemo(() => {

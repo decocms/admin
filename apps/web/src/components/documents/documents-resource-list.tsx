@@ -28,7 +28,6 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import type { ResourceListItem } from "../resources-v2/list.tsx";
 
@@ -62,9 +61,6 @@ export function DocumentsResourceList({
   const { createTab } = useThreadManager();
   const [promptToDelete, setPromptToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const { org, project } = useParams();
-  const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { togglePin, isPinned } = usePinnedTabs(projectKey);
 
   const tabs = useMemo(() => {
     const baseTabs = [
@@ -75,23 +71,14 @@ export function DocumentsResourceList({
       },
     ];
 
-    const shouldShowLegacyPrompts = showLegacyFeature("showLegacyPrompts");
-    console.log("[DocumentsResourceList] Tab generation:", {
-      shouldShowLegacyPrompts,
-      activeTab,
-      baseTabsCount: baseTabs.length,
-    });
-
-    if (shouldShowLegacyPrompts) {
+    if (showLegacyFeature("showLegacyPrompts")) {
       baseTabs.push({
         id: "prompts",
         label: "Prompts (Legacy)",
         onClick: () => setActiveTab("prompts"),
       });
-      console.log("[DocumentsResourceList] Added Prompts (Legacy) tab");
     }
 
-    console.log("[DocumentsResourceList] Final tabs:", baseTabs);
     return baseTabs;
   }, [showLegacyFeature, activeTab]);
 
@@ -102,6 +89,15 @@ export function DocumentsResourceList({
       prompts?.filter((prompt) => !isWellKnownPromptId(prompt.id)) ?? []
     ).map(adaptPrompt);
   }, [prompts, activeTab]);
+
+  // Create default row actions for documents (empty for now)
+  const documentRowActions = useCallback(
+    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
+      // No row actions for documents
+      return [];
+    },
+    [],
+  );
 
   // Show legacy prompts if active tab is "prompts"
   if (activeTab === "prompts") {
@@ -115,7 +111,7 @@ export function DocumentsResourceList({
         promptName: prompt.name,
         hasContent: !!prompt.content,
         contentLength: prompt.content?.length || 0,
-        activeTabId,
+        activeTab,
         item,
       });
 
@@ -162,8 +158,8 @@ export function DocumentsResourceList({
           customColumns={getPromptsColumns()}
           customRowActions={getPromptRowActions(
             (prompt) => setPromptToDelete(prompt.id),
-            isPinned,
-            togglePin,
+            () => false,
+            () => {},
           )}
           onItemClick={handlePromptClick}
           customCtaButton={null}
@@ -207,15 +203,6 @@ export function DocumentsResourceList({
       </>
     );
   }
-
-  // Create default row actions for documents (empty for now)
-  const documentRowActions = useCallback(
-    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
-      // No row actions for documents
-      return [];
-    },
-    [],
-  );
 
   return (
     <ResourcesV2List

@@ -65,10 +65,6 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
     lastWorkflowKeyRef.current = workflowKey;
 
     if (import.meta.env.DEV) {
-      console.log(
-        "[WorkflowDisplay] 🏪 Created store for workflow:",
-        workflow.name,
-      );
     }
     return s;
   }, [workflowKey]); // Depend on unique identity
@@ -188,10 +184,6 @@ export const Canvas = memo(function Canvas() {
 
   const handleWorkflowUpdate = useCallback(() => {
     if (!locator) return;
-
-    if (import.meta.env.DEV) {
-      console.log("[Canvas] Watch event received, invalidating workflow query");
-    }
 
     startTransition(() => {
       queryClient.invalidateQueries({

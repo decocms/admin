@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { appendRuntimeError, clearRuntimeError } from "../chat/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
@@ -101,10 +101,12 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
   // Track as recently opened when tool is loaded (only once)
 
+  const { clearError, appendError } = useAgenticChat();
+
   // Clear errors when tool changes
   useEffect(() => {
-    clearRuntimeError();
-  }, [resourceUri]);
+    clearError();
+  }, [resourceUri, clearError]);
 
   // Tool execution state
   const [executionResult, setExecutionResult] =
@@ -189,7 +191,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         });
 
         // Clear any previous errors on successful execution
-        clearRuntimeError();
+        clearError();
       } catch (error) {
         console.error("Tool execution failed:", error);
 
@@ -202,7 +204,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         });
 
         // Send error to chat provider for AI assistance
-        appendRuntimeError(error, resourceUri, effectiveTool.name);
+        appendError(error, resourceUri, effectiveTool.name);
       } finally {
         setIsExecuting(false);
       }

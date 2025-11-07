@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo } from "react";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useThread } from "@deco/sdk";
+import { useThread, useIntegrations } from "@deco/sdk";
 import {
   CanvasTab,
   parseResourceUri,
@@ -12,6 +12,7 @@ import { WorkflowsResourceList } from "../workflows/workflows-resource-list.tsx"
 import { ToolsResourceList } from "../tools/tools-resource-list.tsx";
 import { ViewsResourceList } from "../views/views-resource-list.tsx";
 import { RouteParamsProvider } from "./route-params-provider.tsx";
+import { ResourceRouteProvider } from "../resources-v2/route-context.tsx";
 
 // Lazy load apps, agents, and database components for legacy compatibility
 const InstalledAppsList = lazy(
@@ -48,10 +49,17 @@ function ResourceDetailView({
   resourceName: string;
   resourceUri: string;
 }) {
+  const { data: integrations = [] } = useIntegrations();
+
   // Construct view key from integrationId and resourceName
   const viewKey = `${integrationId}:${resourceName}`;
   const ViewComponent =
     WELL_KNOWN_VIEWS[viewKey as keyof typeof WELL_KNOWN_VIEWS];
+
+  // Find the connection for this integration
+  const connection = useMemo(() => {
+    return integrations.find((i) => i.id === integrationId)?.connection;
+  }, [integrations, integrationId]);
 
   if (!ViewComponent) {
     return (
@@ -60,7 +68,17 @@ function ResourceDetailView({
       </div>
     );
   }
-  return <ViewComponent resourceUri={resourceUri} />;
+
+  return (
+    <ResourceRouteProvider
+      integrationId={integrationId}
+      resourceName={resourceName}
+      resourceUri={resourceUri}
+      connection={connection}
+    >
+      <ViewComponent resourceUri={resourceUri} />
+    </ResourceRouteProvider>
+  );
 }
 
 function ResourceListView({
@@ -164,10 +182,7 @@ function AgentDetailWrapper({
 function LegacyPromptDetailWrapper({ promptId }: { promptId: string }) {
   // Render legacy prompt detail page in a tab
   // Provide params via context so PromptDetail can use useParams()
-  console.log("[LegacyPromptDetailWrapper] Rendering wrapper", {
-    promptId,
-    params: { id: promptId },
-  });
+
   return (
     <RouteParamsProvider params={{ id: promptId }}>
       <LegacyPromptDetail />
@@ -252,13 +267,6 @@ export function CanvasTabContent({ tab }: CanvasTabContentProps) {
     () => parseResourceUri(tab.resourceUri),
     [tab.resourceUri],
   );
-
-  console.log("[CanvasTabContent] Rendering tab content", {
-    tabType: tab.type,
-    resourceUri: tab.resourceUri,
-    parsed,
-    title: tab.title,
-  });
 
   return (
     <Suspense

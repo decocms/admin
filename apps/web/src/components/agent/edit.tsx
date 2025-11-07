@@ -42,7 +42,6 @@ import {
 import { useLocation, useParams, useSearchParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { useSaveAgent } from "../../hooks/use-save-agent.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import {
   buildAgentUri,
   useThreadManager,
@@ -51,7 +50,11 @@ import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgenticChatProvider, useAgenticChat } from "../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+  useAgenticChat,
+} from "../chat/provider.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
@@ -306,22 +309,16 @@ function DecochatChat({
   shouldUseInitialInput,
   threadState,
   clearThreadState,
-  preferences,
 }: {
   effectiveDecochatThreadId: string;
   shouldUseInitialInput: boolean;
   threadState: { initialMessage?: string | null; autoSend?: boolean | null };
   clearThreadState: () => void;
-  preferences: {
-    defaultModel?: string;
-    useOpenRouter?: boolean;
-    sendReasoning?: boolean;
-  };
 }) {
+  const { locator } = useSDK();
   const { data: decopilotAgent } = useAgentData(
     WELL_KNOWN_AGENTS.decopilotAgent.id,
   );
-  const decopilotRoot = useAgentRoot(WELL_KNOWN_AGENTS.decopilotAgent.id);
   const { data: { messages: decochatThreadMessages } = { messages: [] } } =
     useThreadMessages(
       effectiveDecochatThreadId,
@@ -331,6 +328,16 @@ function DecochatChat({
       },
     );
 
+  const transport = useMemo(
+    () =>
+      createLegacyTransport(
+        effectiveDecochatThreadId,
+        WELL_KNOWN_AGENTS.decopilotAgent.id,
+        locator,
+      ),
+    [effectiveDecochatThreadId, locator],
+  );
+
   if (!decopilotAgent) return null;
 
   return (
@@ -339,10 +346,7 @@ function DecochatChat({
       agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
       threadId={effectiveDecochatThreadId}
       agent={decopilotAgent}
-      agentRoot={decopilotRoot}
-      model={preferences.defaultModel}
-      useOpenRouter={preferences.useOpenRouter}
-      sendReasoning={preferences.sendReasoning}
+      transport={transport}
       initialMessages={decochatThreadMessages}
       initialInput={
         shouldUseInitialInput
@@ -444,8 +448,6 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
 
   if (!chatAgentId) return null;
 
-  const { preferences } = useUserPreferences();
-
   // For agent mode, use the outer provider context (no nested provider)
   // For decochat mode, create a separate provider
   return (
@@ -464,7 +466,6 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
               shouldUseInitialInput={shouldUseInitialInput}
               threadState={threadState}
               clearThreadState={clearThreadState}
-              preferences={preferences}
             />
           </Suspense>
         )}
@@ -513,7 +514,6 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { agentId, threadId } = props;
   const { data: agent } = useAgentData(agentId);
   const agentRoot = useAgentRoot(agentId);
-  const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
     useThreadMessages(threadId, { shouldFetch: true });
   const { data: resolvedAvatar } = useFile(
@@ -587,6 +587,11 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   const handleSaveAgent = useSaveAgent();
 
+  const transport = useMemo(
+    () => createLegacyTransport(threadId, agentId, agentRoot),
+    [threadId, agentId, agentRoot],
+  );
+
   return (
     <PreviewContext.Provider
       value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
@@ -595,10 +600,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         agentId={agentId}
         threadId={threadId}
         agent={agent}
-        agentRoot={agentRoot}
-        model={preferences.defaultModel}
-        useOpenRouter={preferences.useOpenRouter}
-        sendReasoning={preferences.sendReasoning}
+        transport={transport}
         initialMessages={threadMessages}
         onSave={handleSaveAgent}
         uiOptions={{

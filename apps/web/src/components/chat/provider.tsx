@@ -3,13 +3,12 @@ import type { UIMessage } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import {
   AgentSchema,
-  appendThreadMessage,
   DECO_CMS_API_URL,
   dispatchMessages,
   getTraceDebugId,
   KEYS,
   Locator,
-  useIntegrations,
+  useAppendThreadMessage,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -49,7 +48,6 @@ import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
-import { useThreadManagerOptional } from "../decopilot/thread-context-manager.tsx";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
 import {
   deriveReadToolFromUpdate,
@@ -61,9 +59,27 @@ import {
 } from "../../stores/resource-version-history/utils.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
-import { useDecopilotThread } from "../decopilot/thread-context.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
-import type { ContextItem } from "./types.ts";
+
+// Preload notification audio at module level for instant playback
+const notificationAudio = (() => {
+  if (typeof window === "undefined") return null;
+  const audio = new Audio("/notification.mp3");
+  audio.preload = "auto";
+  // Preload the audio immediately
+  audio.load();
+  return audio;
+})();
+
+/**
+ * Helper function to create a user text message
+ */
+export function asUserMessage(text: string): UIMessage {
+  return {
+    role: "user",
+    id: crypto.randomUUID(),
+    parts: [{ type: "text", text }],
+  };
+}
 
 interface UiOptions {
   showModelSelector: boolean;
@@ -105,7 +121,7 @@ export interface AgenticChatProviderProps {
   agentId: string;
   threadId: string;
   agent: Agent; // Required agent data
-  agentRoot: string; // Required agent root path
+  transport: DefaultChatTransport<UIMessage>; // Transport for chat communication
   onSave?: (agent: Agent) => Promise<void>;
 
   // Chat options
@@ -113,12 +129,6 @@ export interface AgenticChatProviderProps {
   initialInput?: string;
   autoSend?: boolean;
   onAutoSendComplete?: () => void;
-
-  // User preferences
-  model?: string;
-  useOpenRouter?: boolean;
-  sendReasoning?: boolean;
-  useDecopilotAgent?: boolean;
 
   // UI options
   uiOptions?: Partial<UiOptions>;
@@ -148,7 +158,6 @@ export interface AgenticChatContextValue {
 
   // Chat methods
   sendMessage: (message?: UIMessage) => Promise<void>;
-  sendTextMessage: (text: string, context?: Record<string, unknown>) => void;
   retry: (context?: string[]) => Promise<void>;
 
   // Runtime error state
@@ -172,7 +181,6 @@ export interface AgenticChatContextValue {
   metadata: {
     agentId: string;
     threadId: string;
-    agentRoot: string;
   };
 
   // Refs
@@ -388,101 +396,101 @@ export const AgenticChatContext = createContext<AgenticChatContextValue | null>(
   null,
 );
 
-// Standalone functions that dispatch events for components outside the provider
-export function sendTextMessage(
-  text: string,
-  context?: Record<string, unknown>,
-) {
-  window.dispatchEvent(
-    new CustomEvent("decopilot:sendTextMessage", {
-      detail: { text, context },
-    }),
-  );
+// Standalone dispatcher functions removed - use the useAgenticChat hook instead
+
+// Transport factory functions
+export function createDecopilotTransport(
+  threadId: string,
+  agentId: string,
+  locator: string,
+): DefaultChatTransport<UIMessage> {
+  return new DefaultChatTransport({
+    api: new URL(`${locator}/agents/decopilot/stream`, DECO_CMS_API_URL).href,
+    credentials: "include",
+    prepareSendMessagesRequest: ({
+      messages,
+      requestMetadata,
+    }: {
+      messages: UIMessage[];
+      requestMetadata?: unknown;
+    }) => {
+      // oxlint-disable-next-line no-explicit-any
+      const metadata = requestMetadata as any;
+      const modelId = metadata?.model;
+      const useOpenRouterValue = metadata?.bypassOpenRouter === false;
+
+      return {
+        body: {
+          messages,
+          model: modelId
+            ? {
+                id: modelId,
+                useOpenRouter: useOpenRouterValue,
+              }
+            : undefined,
+          temperature: metadata?.temperature,
+          maxOutputTokens: metadata?.maxTokens,
+          maxStepCount: metadata?.maxSteps,
+          maxWindowSize: metadata?.lastMessages,
+          system: metadata?.instructions,
+          context: metadata?.context,
+          tools: metadata?.tools,
+          threadId: threadId ?? agentId,
+        },
+      };
+    },
+  });
 }
 
-export function createNewThreadWithMessage(
-  message: string,
-  contextItems?: ContextItem[],
-) {
-  window.dispatchEvent(
-    new CustomEvent("decopilot:createNewThreadWithMessage", {
-      detail: { message, contextItems },
+export function createLegacyTransport(
+  threadId: string,
+  agentId: string,
+  agentRoot: string,
+): DefaultChatTransport<UIMessage> {
+  return new DefaultChatTransport({
+    api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
+    credentials: "include",
+    headers: {
+      "x-deno-isolate-instance-id": agentRoot,
+      "x-trace-debug-id": getTraceDebugId(),
+    },
+    prepareSendMessagesRequest: ({
+      messages,
+      requestMetadata,
+    }: {
+      messages: UIMessage[];
+      requestMetadata?: unknown;
+    }) => ({
+      body: {
+        metadata: { threadId: threadId ?? agentId },
+        args: [messages.slice(-1), requestMetadata],
+      },
     }),
-  );
-}
-
-export function appendRuntimeError(
-  error: Error | unknown | RuntimeErrorEntry,
-  resourceUri?: string,
-  resourceName?: string,
-) {
-  // If it's already a RuntimeErrorEntry, use it directly
-  if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    "timestamp" in error
-  ) {
-    window.dispatchEvent(
-      new CustomEvent("decopilot:appendError", {
-        detail: error,
-      }),
-    );
-    return;
-  }
-
-  // Otherwise, create a RuntimeErrorEntry from the error
-  const isError = error instanceof Error;
-  const runtimeError: RuntimeErrorEntry = {
-    message: isError ? error.message : String(error),
-    name: isError ? error.name : "Error",
-    stack: isError ? error.stack : undefined,
-    timestamp: new Date().toISOString(),
-    resourceUri,
-    resourceName,
-  };
-
-  window.dispatchEvent(
-    new CustomEvent("decopilot:appendError", {
-      detail: runtimeError,
-    }),
-  );
-}
-
-export function clearRuntimeError() {
-  window.dispatchEvent(new CustomEvent("decopilot:clearError"));
+  });
 }
 
 export function AgenticChatProvider({
   agentId,
   threadId,
   agent: initialAgent,
-  agentRoot,
+  transport,
   onSave,
   initialMessages,
   initialInput,
   autoSend,
   onAutoSendComplete,
-  model: defaultModel,
-  useOpenRouter,
-  sendReasoning,
-  useDecopilotAgent,
   uiOptions,
   forceBottomLayout = false,
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
   const { pathname } = useLocation();
-  const { contextItems: threadContextItems, setContextItems } =
-    useThreadContext();
+  const { contextItems: threadContextItems } = useThreadContext();
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
-  const { createThread } = useThreadManager();
-  const { setThreadState } = useDecopilotThread();
-  const { data: integrations = [] } = useIntegrations();
-  const threadManager = useThreadManagerOptional();
-  const addTab = threadManager?.addTab;
-  const tabs = threadManager?.tabs ?? [];
+
+  // Reactive mutation for appending messages
+  const appendMessagesMutation = useAppendThreadMessage();
 
   const [state, dispatch] = useReducer(chatStateReducer, {
     finishReason: null,
@@ -492,8 +500,7 @@ export function AgenticChatProvider({
     runtimeErrorEntries: [],
   });
 
-  const { finishReason, isLoading, input, runtimeError, runtimeErrorEntries } =
-    state;
+  const { finishReason, isLoading, input, runtimeErrorEntries } = state;
 
   const setIsLoading = useCallback((value: boolean) => {
     dispatch({ type: "SET_IS_LOADING", isLoading: value });
@@ -600,75 +607,12 @@ export function AgenticChatProvider({
     form.reset(initialAgent);
   }, [form, initialAgent]);
 
-  // Memoize the transport to prevent unnecessary re-creation
-  const transport = useMemo(() => {
-    // Use new Decopilot streaming endpoint if preference is enabled
-    if (useDecopilotAgent) {
-      return new DefaultChatTransport({
-        api: new URL(`${locator}/agents/decopilot/stream`, DECO_CMS_API_URL)
-          .href,
-        credentials: "include",
-        prepareSendMessagesRequest: ({
-          messages,
-          requestMetadata,
-        }: {
-          messages: UIMessage[];
-          requestMetadata?: unknown;
-        }) => {
-          // Parse requestMetadata to extract values
-          // oxlint-disable-next-line no-explicit-any
-          const metadata = requestMetadata as any;
-          const modelId = metadata?.model || defaultModel;
-          const useOpenRouterValue = metadata?.bypassOpenRouter === false; // bypassOpenRouter: false means use OpenRouter
-
-          return {
-            body: {
-              messages,
-              model: {
-                id: modelId,
-                useOpenRouter: useOpenRouterValue,
-              },
-              temperature: metadata?.temperature,
-              maxOutputTokens: metadata?.maxTokens,
-              maxStepCount: metadata?.maxSteps,
-              maxWindowSize: metadata?.lastMessages,
-              system: metadata?.instructions,
-              context: metadata?.context,
-              tools: metadata?.tools,
-              threadId: threadId ?? agentId,
-            },
-          };
-        },
-      });
-    }
-
-    // Use original actor-based streaming for regular agents
-    return new DefaultChatTransport({
-      api: new URL("/actors/AIAgent/invoke/stream", DECO_CMS_API_URL).href,
-      credentials: "include",
-      headers: {
-        "x-deno-isolate-instance-id": agentRoot,
-        "x-trace-debug-id": getTraceDebugId(),
-      },
-      prepareSendMessagesRequest: ({
-        messages,
-        requestMetadata,
-      }: {
-        messages: UIMessage[];
-        requestMetadata?: unknown;
-      }) => ({
-        body: {
-          metadata: { threadId: threadId ?? agentId },
-          args: [messages.slice(-1), requestMetadata],
-        },
-      }),
-    });
-  }, [useDecopilotAgent, locator, agentRoot, threadId, agentId, defaultModel]);
+  // Transport is now passed in as a prop
 
   // Initialize chat
   const chat = useChat({
-    messages: initialMessages || [],
     id: threadId,
+    messages: initialMessages || [],
     transport,
     onFinish: (result) => {
       setIsLoading(false);
@@ -695,22 +639,17 @@ export function AgenticChatProvider({
         setFinishReason(null);
       }
 
-      // Save messages to IndexedDB when decopilot transport is active
-      if (useDecopilotAgent && result?.messages) {
+      // Save messages to IndexedDB for persistence (reactive mutation)
+      if (result?.messages) {
         const initialLength = initialMessages?.length ?? 0;
         const newMessages = result.messages.slice(initialLength);
 
         if (newMessages.length > 0) {
-          appendThreadMessage(
+          appendMessagesMutation.mutate({
             threadId,
-            newMessages,
-            { agentId, route: pathname },
-            locator,
-          ).catch((error) => {
-            console.error(
-              "[AgenticChatProvider] Failed to append messages to IndexedDB:",
-              error,
-            );
+            messages: newMessages,
+            metadata: { agentId, route: pathname },
+            namespace: locator,
           });
         }
       }
@@ -743,17 +682,21 @@ export function AgenticChatProvider({
               : `"${messageText}"`;
         }
 
+        // Play notification sound using preloaded audio
+        // Play sound first, then show notification for better sync
+        if (notificationAudio) {
+          // Reset audio to beginning in case it was played before
+          notificationAudio.currentTime = 0;
+          notificationAudio.play().catch((error) => {
+            console.warn("Failed to play notification sound:", error);
+          });
+        }
+
         const notification = new Notification("Task Finished", {
           body: `${userPrompt} is complete.`,
           icon: "/favicon.ico",
           tag: `chat-${threadId}`,
           requireInteraction: false,
-        });
-
-        // Play notification sound
-        const audio = new Audio("/notification.mp3");
-        audio.play().catch((error) => {
-          console.warn("Failed to play notification sound:", error);
         });
 
         // Focus the window when notification is clicked
@@ -814,34 +757,6 @@ export function AgenticChatProvider({
             // Add to set if found
             if (resourceUri) {
               resourcesToOpen.add(resourceUri);
-            }
-          }
-        }
-
-        // Open tabs for all unique resource URIs found
-        if (addTab) {
-          for (const resourceUri of resourcesToOpen) {
-            // Check if tab already exists
-            const existingTab = tabs.find(
-              (tab) => tab.type === "detail" && tab.resourceUri === resourceUri,
-            );
-
-            if (!existingTab) {
-              // Extract integration ID from resource URI (format: rsc://integration-id/resource-name/resource-id)
-              const integrationId = resourceUri
-                .replace(/^rsc:\/\//, "")
-                .split("/")[0];
-              const integration = integrations.find(
-                (i) => i.id === integrationId,
-              );
-
-              // Create new tab
-              addTab({
-                type: "detail",
-                resourceUri: resourceUri,
-                title: resourceUri.split("/").pop() || "Resource",
-                icon: integration?.icon,
-              });
             }
           }
         }
@@ -1015,17 +930,13 @@ export function AgenticChatProvider({
 
       const metadata: MessageMetadata = {
         // Agent configuration
-        model: mergedUiOptions.showModelSelector ? defaultModel : agent.model,
+        model: agent.model,
         instructions: agent.instructions,
         tools: { ...agent.tools_set, ...toolsFromContextItems },
         maxSteps: agent.max_steps,
         temperature: agent.temperature !== null ? agent.temperature : undefined,
         lastMessages: agent.memory?.last_messages,
         maxTokens: agent.max_tokens !== null ? agent.max_tokens : undefined,
-
-        // User preferences
-        bypassOpenRouter: !useOpenRouter,
-        sendReasoning: sendReasoning ?? true,
 
         // Context messages (additional context not persisted to thread)
         context: context,
@@ -1043,11 +954,6 @@ export function AgenticChatProvider({
     },
     [
       mergedUiOptions.readOnly,
-      mergedUiOptions.showModelSelector,
-      defaultModel,
-      useOpenRouter,
-      sendReasoning,
-      useDecopilotAgent,
       agent.model,
       agent.instructions,
       agent.tools_set,
@@ -1097,200 +1003,86 @@ export function AgenticChatProvider({
     [chat.messages, wrappedSendMessage, agentId, threadId],
   );
 
-  const sendTextMessage = useCallback(
-    (text: string) => {
-      if (typeof text === "string" && text.trim()) {
-        wrappedSendMessage({
-          role: "user",
-          id: crypto.randomUUID(),
-          parts: [{ type: "text", text }],
-        });
-      }
-    },
-    [wrappedSendMessage],
-  );
+  // Form reset is now handled by the key prop on the provider at a higher level
+  // The provider is remounted when the thread changes, which naturally resets the form
 
-  // Only reset if form is not dirty (no unsaved changes)
+  // Auto-send initialInput when autoSend is true (using lazy initialization)
+  // This runs only once when the component mounts with autoSend=true
   useEffect(() => {
-    if (!form.formState.isDirty) {
-      form.reset(initialAgent);
+    if (autoSendCompletedRef.current) {
+      return;
     }
-  }, [initialAgent, form]);
 
-  // Reset auto-send completed flag when autoSend becomes false or thread changes
-  useEffect(() => {
-    if (!autoSend || chat.messages.length > 0) {
-      autoSendCompletedRef.current = false;
+    if (!autoSend || !input || !initialMessages) {
+      return;
     }
-  }, [autoSend, chat.messages.length]);
 
-  // Auto-send initialInput when autoSend is true
-  useEffect(() => {
-    if (
-      autoSend &&
-      input &&
-      chat.messages.length === 0 &&
-      !autoSendCompletedRef.current
-    ) {
-      autoSendCompletedRef.current = true;
+    if (initialMessages.length > 0) {
+      return;
+    }
+
+    autoSendCompletedRef.current = true;
+
+    queueMicrotask(() => {
       wrappedSendMessage({
         role: "user",
         id: crypto.randomUUID(),
         parts: [{ type: "text", text: input }],
       });
-      // Defer the callback to avoid updating state during render
-      // Use startTransition to mark this as a non-urgent update
+
       if (onAutoSendComplete) {
         startTransition(() => {
           onAutoSendComplete();
         });
       }
-    }
+    });
   }, [
     autoSend,
     input,
-    chat.messages.length,
+    initialMessages,
     onAutoSendComplete,
     wrappedSendMessage,
   ]);
 
-  // Format runtime error entries into a single error message
-  useEffect(() => {
-    if (runtimeErrorEntries.length > 0) {
-      // Get context from the first error entry
-      const firstError = runtimeErrorEntries[0];
-      const resourceUri = firstError.resourceUri;
-      const resourceName = firstError.resourceName || "unknown";
-
-      // Format all errors into a summary
-      const errorSummary = runtimeErrorEntries
-        .map((error, index) => {
-          const location = error.source
-            ? `\n  Source: ${error.source}:${error.line}:${error.column}`
-            : "";
-          const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
-          return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
-        })
-        .join("\n\n");
-
-      const fullMessage = `The resource "${resourceName}" is encountering ${runtimeErrorEntries.length} error${runtimeErrorEntries.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix ${runtimeErrorEntries.length > 1 ? "these errors" : "this error"}.`;
-
-      const formattedError = {
-        message: fullMessage,
-        displayMessage: "App error found",
-        errorCount: runtimeErrorEntries.length,
-        context: {
-          errorType: "runtime_errors",
-          resourceUri,
-          resourceName,
-          errorCount: runtimeErrorEntries.length,
-          errors: runtimeErrorEntries,
-        },
-      };
-
-      // Dispatch directly to avoid dependency loop with showError
-      dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: formattedError });
-    } else {
-      // Clear error if no entries remain
-      dispatch({ type: "SET_RUNTIME_ERROR", runtimeError: null });
+  // Format runtime error entries into a single error message (derived state)
+  const formattedRuntimeError = useMemo((): RuntimeError | null => {
+    if (runtimeErrorEntries.length === 0) {
+      return null;
     }
+
+    // Get context from the first error entry
+    const firstError = runtimeErrorEntries[0];
+    const resourceUri = firstError.resourceUri;
+    const resourceName = firstError.resourceName || "unknown";
+
+    // Format all errors into a summary
+    const errorSummary = runtimeErrorEntries
+      .map((error, index) => {
+        const location = error.source
+          ? `\n  Source: ${error.source}:${error.line}:${error.column}`
+          : "";
+        const stack = error.stack ? `\n  Stack: ${error.stack}` : "";
+        return `${index + 1}. [${error.type || error.name}] ${error.message}${location}${stack}`;
+      })
+      .join("\n\n");
+
+    const fullMessage = `The resource "${resourceName}" is encountering ${runtimeErrorEntries.length} error${runtimeErrorEntries.length > 1 ? "s" : ""}:\n\n${errorSummary}\n\nPlease help fix ${runtimeErrorEntries.length > 1 ? "these errors" : "this error"}.`;
+
+    return {
+      message: fullMessage,
+      displayMessage: "App error found",
+      errorCount: runtimeErrorEntries.length,
+      context: {
+        errorType: "runtime_errors",
+        resourceUri,
+        resourceName,
+        errorCount: runtimeErrorEntries.length,
+        errors: runtimeErrorEntries,
+      },
+    };
   }, [runtimeErrorEntries]);
 
-  // Listen for events from components outside the provider
-  useEffect(() => {
-    function handleSendTextMessage(event: Event) {
-      const customEvent = event as CustomEvent<{
-        text: string;
-        context?: Record<string, unknown>;
-      }>;
-
-      const { text } = customEvent.detail;
-
-      if (typeof text === "string" && text.trim()) {
-        wrappedSendMessage({
-          role: "user",
-          id: crypto.randomUUID(),
-          parts: [{ type: "text", text }],
-        });
-      }
-    }
-
-    function handleAppendError(event: Event) {
-      const customEvent = event as CustomEvent<RuntimeErrorEntry>;
-      appendError(customEvent.detail);
-    }
-
-    function handleClearError() {
-      clearError();
-    }
-
-    function handleShowError(event: Event) {
-      const customEvent = event as CustomEvent<RuntimeError>;
-
-      const { message, displayMessage, errorCount, context } =
-        customEvent.detail;
-
-      if (typeof message === "string" && message.trim()) {
-        showError({ message, displayMessage, errorCount, context });
-      }
-    }
-
-    function handleCreateNewThreadWithMessage(event: Event) {
-      const customEvent = event as CustomEvent<{
-        message: string;
-        contextItems: ContextItem[];
-      }>;
-      const { message, contextItems } = customEvent.detail;
-
-      if (typeof message === "string" && message.trim()) {
-        if (contextItems && contextItems.length > 0) {
-          setContextItems(contextItems);
-        }
-        const threadId = crypto.randomUUID();
-
-        setThreadState({
-          initialMessage: message,
-          autoSend: false,
-          threadId,
-        });
-        createThread(threadId);
-      }
-    }
-
-    window.addEventListener("decopilot:sendTextMessage", handleSendTextMessage);
-    window.addEventListener("decopilot:appendError", handleAppendError);
-    window.addEventListener("decopilot:clearError", handleClearError);
-    window.addEventListener("decopilot:showError", handleShowError);
-    window.addEventListener(
-      "decopilot:createNewThreadWithMessage",
-      handleCreateNewThreadWithMessage,
-    );
-
-    return () => {
-      window.removeEventListener(
-        "decopilot:sendTextMessage",
-        handleSendTextMessage,
-      );
-      window.removeEventListener("decopilot:appendError", handleAppendError);
-      window.removeEventListener("decopilot:clearError", handleClearError);
-      window.removeEventListener("decopilot:showError", handleShowError);
-      window.removeEventListener(
-        "decopilot:createNewThreadWithMessage",
-        handleCreateNewThreadWithMessage,
-      );
-    };
-  }, [
-    pathname,
-    agentId,
-    showError,
-    clearError,
-    appendError,
-    wrappedSendMessage,
-    setContextItems,
-    createNewThreadWithMessage,
-    createThread,
-    setThreadState,
-  ]);
+  // Event listeners removed - components now use the useAgenticChat hook directly
 
   const contextValue: AgenticChatContextValue = {
     agent: agent as Agent,
@@ -1311,11 +1103,10 @@ export function AgenticChatProvider({
 
     // Chat methods
     sendMessage: wrappedSendMessage,
-    sendTextMessage,
     retry: handleRetry,
 
     // Runtime error state
-    runtimeError,
+    runtimeError: formattedRuntimeError,
     runtimeErrorEntries,
     showError,
     appendError,
@@ -1331,7 +1122,6 @@ export function AgenticChatProvider({
     metadata: {
       agentId,
       threadId,
-      agentRoot,
     },
 
     // Refs

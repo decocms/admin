@@ -1,17 +1,11 @@
-import { WELL_KNOWN_AGENTS, useAgentRoot, useThreadMessages } from "@deco/sdk";
+import { WELL_KNOWN_AGENTS, useThreadMessages } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
-import { useParams } from "react-router";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
-import { AgenticChatProvider } from "../chat/provider.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useThreadManager } from "./thread-context-manager.tsx";
-import { useDecopilotThread } from "./thread-context.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
-
-const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
 
 interface DecopilotChatWrapperProps {
   hasTabs: boolean;
@@ -88,13 +82,10 @@ export function useThreadTitle(
 }
 
 function DecopilotChatContent() {
-  const { threadState, clearThreadState } = useDecopilotThread();
   const { getThread, getAllThreads, activeThreadId, tabs } = useThreadManager();
   const { setOpen } = useDecopilotOpen();
-  const params = useParams();
 
   // Always use decopilot agent
-  const agentId = decopilotAgentId;
   const agent = WELL_KNOWN_AGENTS.decopilotAgent;
 
   // Just read the thread - don't create during render
@@ -102,22 +93,7 @@ function DecopilotChatContent() {
   const allThreads = getAllThreads();
   const needsInitialThread = allThreads.length === 0;
 
-  const agentRoot = useAgentRoot(agentId);
-  const { preferences } = useUserPreferences();
-
-  // Use unified hook that handles both backend and IndexedDB based on agentId
-  const { data: threadData } = useThreadMessages(
-    currentThread?.id || "",
-    agentId,
-    { shouldFetch: !!currentThread?.id },
-  );
-
-  const threadMessages = threadData?.messages ?? [];
   const hasTabs = tabs.length > 0;
-
-  // Determine layout mode based on route
-  // Force bottom layout on org-level routes (/:org), use dynamic layout on project routes (/:org/:project)
-  const forceBottomLayout = !params.project;
 
   // If no thread yet, show empty state
   if (!currentThread) {
@@ -161,37 +137,13 @@ function DecopilotChatContent() {
 
   return (
     <div className="h-full w-full">
-      {/* Single chat instance for current route */}
+      {/* Single chat instance for current route - provider is now at ProjectLayout level */}
       <Suspense fallback={<MainChatSkeleton />}>
-        <AgenticChatProvider
-          key={currentThread.id}
-          agentId={agentId}
-          threadId={currentThread.id}
+        <DecopilotChatWrapper
+          hasTabs={hasTabs}
           agent={agent}
-          agentRoot={agentRoot}
-          model={preferences.defaultModel}
-          useOpenRouter={preferences.useOpenRouter}
-          sendReasoning={preferences.sendReasoning}
-          useDecopilotAgent={true}
-          initialMessages={threadMessages}
-          initialInput={threadState.initialMessage || undefined}
-          autoSend={threadState.autoSend}
-          onAutoSendComplete={clearThreadState}
-          forceBottomLayout={forceBottomLayout}
-          uiOptions={{
-            showModelSelector: true,
-            showThreadMessages: true,
-            showAgentVisibility: false,
-            showEditAgent: false,
-            showContextResources: true,
-          }}
-        >
-          <DecopilotChatWrapper
-            hasTabs={hasTabs}
-            agent={agent}
-            setOpen={setOpen}
-          />
-        </AgenticChatProvider>
+          setOpen={setOpen}
+        />
       </Suspense>
     </div>
   );

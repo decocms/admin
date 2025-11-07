@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
 import { callTool, useSDK } from "@deco/sdk";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { useCallback, useState } from "react";
 import {
   useWorkflowActions,
   useWorkflowFirstStepInput,
@@ -8,9 +8,9 @@ import {
   useWorkflowStepOutputs,
   useWorkflowUri,
 } from "../../../stores/workflows/hooks.ts";
-import { resolveAtRefsInInput, unwrapMCPResponse } from "../utils.ts";
-import { appendRuntimeError, clearRuntimeError } from "../../chat/provider.tsx";
+import { useAgenticChat } from "../../chat/provider.tsx";
 import { useResourceRoute } from "../../resources-v2/route-context.tsx";
+import { resolveAtRefsInInput, unwrapMCPResponse } from "../utils.ts";
 
 export function useStepRunner(stepName: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +21,7 @@ export function useStepRunner(stepName: string) {
   const stepOutputs = useWorkflowStepOutputs();
   const stepDefinition = useWorkflowStepDefinition(stepName);
   const firstStepInput = useWorkflowFirstStepInput();
+  const { appendError, clearError } = useAgenticChat();
 
   const runStep = useCallback(
     async (data: Record<string, unknown>) => {
@@ -35,7 +36,7 @@ export function useStepRunner(stepName: string) {
 
       try {
         setIsSubmitting(true);
-        clearRuntimeError();
+        clearError();
 
         await actions.runStep({
           stepName,
@@ -49,13 +50,25 @@ export function useStepRunner(stepName: string) {
           callTool,
           resolveAtRefsInInput,
           unwrapMCPResponse,
-          onError: appendRuntimeError,
+          onError: (error: unknown) => {
+            appendError(
+              error instanceof Error ? error : new Error(String(error)),
+              workflowUri,
+              `Workflow: ${workflowUri?.split("/").pop()}`,
+            );
+            console.error("Step execution error:", error);
+          },
         });
 
         toast.success("Step executed successfully!");
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Failed to run step";
+        appendError(
+          error instanceof Error ? error : new Error(message),
+          workflowUri,
+          `Workflow: ${workflowUri?.split("/").pop()}`,
+        );
         toast.error(message);
       } finally {
         setIsSubmitting(false);
@@ -70,6 +83,8 @@ export function useStepRunner(stepName: string) {
       stepOutputs,
       firstStepInput,
       actions,
+      clearError,
+      appendError,
     ],
   );
 

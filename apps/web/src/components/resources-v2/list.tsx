@@ -1235,15 +1235,6 @@ function ResourcesV2ListTab({
                       key={itemUri || JSON.stringify(item)}
                       className="h-full group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
                       onClick={() => {
-                        console.log("[ResourcesList] Card clicked", {
-                          hasOnItemClick: !!onItemClick,
-                          itemUri,
-                          itemName,
-                          integrationId,
-                          resourceName,
-                          item: item,
-                        });
-
                         if (onItemClick) {
                           console.log(
                             "[ResourcesList] Using custom onItemClick handler",
@@ -1594,14 +1585,6 @@ function ResourcesV2ListTab({
                   onSort={handleSort}
                   onRowClick={(row) => {
                     const item = row as ResourceListItem;
-                    console.log("[ResourcesList] Table row clicked", {
-                      hasOnItemClick: !!onItemClick,
-                      itemUri: item.uri,
-                      itemName: item.data?.name,
-                      integrationId,
-                      resourceName,
-                      item: item,
-                    });
 
                     if (onItemClick) {
                       console.log(

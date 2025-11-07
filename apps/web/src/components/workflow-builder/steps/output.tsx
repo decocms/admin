@@ -1,16 +1,10 @@
-import {
-  EMPTY_VIEWS,
-  useWorkflowStepData,
-} from "../../../stores/workflows/hooks.ts";
-import { useMemo } from "react";
+import { EMPTY_VIEWS } from "../../../stores/workflows/hooks.ts";
+import { useCallback, useMemo } from "react";
 import { JsonViewer } from "../../chat/json-viewer";
 import { ViewDialogTrigger } from "../../workflows/workflow-step-card";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { createNewThreadWithMessage } from "../../chat/provider.tsx";
-import type { ContextItem } from "../../chat/types.ts";
-import { RuleContextItem, ToolsetContextItem } from "../../chat/types.ts";
-import { useCallback } from "react";
+import { asUserMessage, useAgenticChat } from "../../chat/provider.tsx";
 
 function deepParse(value: unknown, depth = 0): unknown {
   if (typeof value !== "string") {
@@ -58,16 +52,11 @@ function deepParse(value: unknown, depth = 0): unknown {
 }
 
 interface StepOutputProps {
-  stepName: string;
   output: unknown;
   views?: readonly string[];
 }
 
-export function StepOutput({
-  stepName,
-  output,
-  views = EMPTY_VIEWS,
-}: StepOutputProps) {
+export function StepOutput({ output, views = EMPTY_VIEWS }: StepOutputProps) {
   if (output === undefined || output === null) return null;
 
   const parsedOutput = useMemo(() => deepParse(output), [output]);
@@ -105,7 +94,7 @@ export function StepOutput({
             ))}
           </div>
         )}
-        <CreateViewButton stepName={stepName} />
+        <CreateViewButton />
       </div>
 
       <div className="min-w-0 overflow-hidden">
@@ -115,74 +104,17 @@ export function StepOutput({
   );
 }
 
-const stepViewRule = ({
-  outputSchema,
-  stepName,
-}: {
-  outputSchema: Record<string, unknown>;
-  stepName: string;
-}) => {
-  const text = `Create a new view for the output of the step ${stepName}.
-    The view's inputSchema should match the outputSchema of the step.
-    The outputSchema is: ${JSON.stringify(outputSchema)}
-
-    After the view is created, add the view URI to the step "views" property.
-    `;
-
-  return {
-    id: `rule-step-view-${stepName}`,
-    type: "rule",
-    text,
-  } as RuleContextItem;
-};
-
-const WORKFLOW_TOOLS = [
-  "DECO_WORKFLOW_EDIT_STEP",
-  "DECO_RESOURCE_WORKFLOW_READ",
-];
-const VIEWS_TOOLS = ["DECO_RESOURCE_VIEW_CREATE"];
-
-function CreateViewButton({ stepName }: { stepName: string }) {
-  const step = useWorkflowStepData(stepName);
-
-  const workflowsToolset: ToolsetContextItem = useMemo(
-    () => ({
-      id: "toolset-workflows-management",
-      type: "toolset",
-      integrationId: "i:workflows-management",
-      enabledTools: WORKFLOW_TOOLS,
-    }),
-    [],
-  );
-
-  const viewsToolset: ToolsetContextItem = useMemo(
-    () => ({
-      id: "toolset-views-management",
-      type: "toolset",
-      integrationId: "i:views-management",
-      enabledTools: VIEWS_TOOLS,
-    }),
-    [],
-  );
-
-  const contextItems: ContextItem[] = useMemo(
-    () => [
-      stepViewRule({
-        outputSchema: step?.definition?.outputSchema ?? {},
-        stepName,
-      }),
-      viewsToolset,
-      workflowsToolset,
-    ],
-    [step?.definition?.outputSchema, stepName, viewsToolset, workflowsToolset],
-  );
+function CreateViewButton() {
+  const { sendMessage } = useAgenticChat();
 
   const handleCreateView = useCallback(() => {
-    createNewThreadWithMessage(
-      `Please, create a view for the step "${stepName}"`,
-      contextItems,
+    sendMessage(
+      asUserMessage(
+        "I'd like to create a new view for this workflow step output. Can you help me set it up?",
+      ),
     );
-  }, [stepName, contextItems]);
+  }, [sendMessage]);
+
   return (
     <Button
       variant="ghost"

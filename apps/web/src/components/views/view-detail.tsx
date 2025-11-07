@@ -26,11 +26,7 @@ import { formatLogEntry } from "../../utils/format-time.ts";
 import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
-import {
-  appendRuntimeError,
-  clearRuntimeError,
-  type RuntimeErrorEntry,
-} from "../chat/provider.tsx";
+import { useAgenticChat, type RuntimeErrorEntry } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import {
   CodeAction,
@@ -239,6 +235,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const { org, project } = useParams<{ org: string; project: string }>();
   const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
+  const { appendError, clearError } = useAgenticChat();
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
 
@@ -357,7 +354,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
       // Handle Runtime Error messages
       if (event.data.type === "RUNTIME_ERROR") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError(
+        appendError(
           { ...errorData, type: "Runtime Error" },
           resourceUri,
           effectiveView?.name,
@@ -367,7 +364,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
       // Handle Resource Error messages
       if (event.data.type === "RESOURCE_ERROR") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError(
+        appendError(
           { ...errorData, type: "Resource Error" },
           resourceUri,
           effectiveView?.name,
@@ -377,7 +374,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
       // Handle Unhandled Promise Rejection messages
       if (event.data.type === "UNHANDLED_REJECTION") {
         const errorData = event.data.payload as RuntimeErrorEntry;
-        appendRuntimeError(
+        appendError(
           { ...errorData, type: "Unhandled Rejection" },
           resourceUri,
           effectiveView?.name,
@@ -391,8 +388,8 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
 
   // Clear errors when view changes
   useEffect(() => {
-    clearRuntimeError();
-  }, [resourceUri]);
+    clearError();
+  }, [resourceUri, clearError]);
 
   // Listen for theme updates and trigger view regeneration
   useEffect(() => {

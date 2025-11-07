@@ -43,7 +43,6 @@ import {
   buildAppsListUri,
   useThreadManager,
 } from "../decopilot/thread-context-manager.tsx";
-import { useFocusTeamAgent } from "../agents/list.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { useThreadTitle } from "../decopilot/index.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
@@ -55,6 +54,19 @@ import { SidebarFooter } from "./footer.tsx";
 import { TogglePin } from "../views/list.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { useFocusChat } from "../agents/hooks.ts";
+
+const useFocusTeamAgent = () => {
+  const focusChat = useFocusChat();
+  const handleCreate = () => {
+    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+      history: false,
+    });
+  };
+
+  return handleCreate;
+};
 
 /**
  * Individual thread item with title

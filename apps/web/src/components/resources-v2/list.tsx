@@ -20,12 +20,10 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -48,10 +46,10 @@ import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { useSortable } from "../../hooks/use-sortable.ts";
 import type { WatchEvent } from "../../stores/resource-watch/index.ts";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import type { TabItem } from "./resource-header.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
@@ -1118,7 +1116,6 @@ function ResourcesV2ListTab({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-
       {/* Header Section - fixed, doesn't scroll with content */}
       <div className="shrink-0">
         <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">

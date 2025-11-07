@@ -324,9 +324,7 @@ export function ResourceHeader({
             </DropdownMenu>
 
             {/* CTA Button - comes last */}
-            {ctaButton && (
-              <div className="hidden md:block">{ctaButton}</div>
-            )}
+            {ctaButton && <div className="hidden md:block">{ctaButton}</div>}
           </div>
         )}
       </div>

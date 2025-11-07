@@ -344,8 +344,8 @@ export function ChatInput({
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="w-full">
-          <div className="relative rounded-xl border border-border bg-background w-full mx-auto">
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="relative rounded-xl border border-border bg-background w-full">
             <div className="relative flex flex-col gap-2 p-2.5">
               {/* Context Resources */}
               {uiOptions.showContextResources && hasContextResources && (

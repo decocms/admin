@@ -1,8 +1,9 @@
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { WELL_KNOWN_AGENT_IDS, type Agent } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 
 export type WellKnownAgents =
   (typeof WELL_KNOWN_AGENT_IDS)[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -11,6 +12,9 @@ interface MainChatProps {
   showInput?: boolean;
   className?: string;
   contentClassName?: string;
+  hasTabs?: boolean;
+  isEmpty?: boolean;
+  agent?: Agent;
 }
 
 export const MainChatSkeleton = ({
@@ -75,7 +79,51 @@ export const MainChat = ({
   showInput = true,
   className,
   contentClassName,
+  hasTabs = true,
+  isEmpty: initialIsEmpty = false,
+  agent,
 }: MainChatProps = {}) => {
+  // Use real-time chat messages to determine if empty, not the prop
+  const { chat } = useAgenticChat();
+  const isEmpty = chat.messages.length === 0;
+  const shouldCenterLayout = !hasTabs && isEmpty;
+
+  if (shouldCenterLayout) {
+    return (
+      <div
+        className={cn(
+          "relative w-full flex flex-col h-full min-w-0 items-center justify-center",
+          className,
+        )}
+      >
+        <div className="flex flex-col items-center gap-6 w-full max-w-3xl px-4">
+          {agent && (
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={agent.avatar}
+                alt={agent.name}
+                className="size-16 rounded-lg"
+              />
+              <h2 className="text-2xl font-medium text-foreground">
+                {agent.name}
+              </h2>
+              {agent.description && (
+                <p className="text-muted-foreground text-center text-sm">
+                  {agent.description}
+                </p>
+              )}
+            </div>
+          )}
+          {showInput && (
+            <div className="w-full">
+              <ChatInput />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("relative w-full flex flex-col h-full min-w-0", className)}

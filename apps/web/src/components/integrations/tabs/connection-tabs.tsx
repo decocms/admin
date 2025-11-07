@@ -1,14 +1,10 @@
 /* oxlint-disable no-explicit-any */
 import {
-  buildAddViewPayload,
-  findPinnedView,
   type Integration,
   listTools,
   type MCPConnection,
   type MCPTool,
-  useAddView,
   useConnectionViews,
-  useRemoveView,
   useSDK,
   useToolCall,
   useTools,
@@ -36,10 +32,10 @@ import type { JSONSchema7 } from "json-schema";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { formatToolName } from "../../chat/utils/format-tool-name.ts";
+import { useThreadManager } from "../../decopilot/thread-context-manager.tsx";
 import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
 import JSONSchemaForm from "../../json-schema/index.tsx";
 import { generateDefaultValues } from "../../json-schema/utils/generate-default-values.ts";
-import { useCurrentTeam } from "../../sidebar/team-selector.tsx";
 import { useGroupedApp } from "../apps.ts";
 import { ToolCallResult } from "../tool-call-result.tsx";
 import type { MCPToolCallResult } from "../types.ts";
@@ -495,9 +491,7 @@ function ViewBindingDetector({ integration }: { integration: Integration }) {
 }
 
 function ViewsList({ integration }: { integration: Integration }) {
-  const currentTeam = useCurrentTeam();
-  const addViewMutation = useAddView();
-  const removeViewMutation = useRemoveView();
+  const { createTab } = useThreadManager();
 
   const { data: viewsData, isLoading: isLoadingViews } = useConnectionViews(
     integration,
@@ -505,56 +499,18 @@ function ViewsList({ integration }: { integration: Integration }) {
   );
   const views = viewsData?.views || [];
 
-  const viewsWithStatus = useMemo(() => {
-    if (!views || views.length === 0 || !currentTeam.views) return [];
-    return views.map((view) => {
-      const existingView = findPinnedView(currentTeam.views, integration.id, {
-        name: view.name,
-        url: view.url,
-      });
-      return {
-        ...view,
-        isAdded: !!existingView,
-        teamViewId: existingView?.id,
-      } as typeof view & { isAdded: boolean; teamViewId?: string };
+  const handleViewClick = (view: (typeof views)[0]) => {
+    // Open legacy view in a new canvas tab
+    const viewId = `${integration.id}/${view.name ?? "index"}`;
+    const newTab = createTab({
+      type: "detail",
+      resourceUri: `legacy-view://${viewId}`,
+      title: view.title || "Untitled",
+      icon: view.icon?.toLowerCase() || "layers",
     });
-  }, [views, currentTeam.views, integration.id]);
 
-  const handleAddView = async (view: (typeof views)[0]) => {
-    try {
-      await addViewMutation.mutateAsync({
-        view: buildAddViewPayload({
-          view: {
-            name: view.name,
-            title: view.title,
-            icon: view.icon,
-            url: view.url,
-          },
-          integrationId: integration.id,
-        }),
-      });
-      toast.success(`View "${view.title}" added successfully`);
-    } catch (error) {
-      console.error("Error adding view:", error);
-      toast.error(`Failed to add view "${view.title}"`);
-    }
-  };
-
-  const handleRemoveView = async (
-    viewWithStatus: (typeof viewsWithStatus)[0],
-  ) => {
-    if (!viewWithStatus.teamViewId) {
-      toast.error("No view to remove");
-      return;
-    }
-    try {
-      await removeViewMutation.mutateAsync({
-        viewId: viewWithStatus.teamViewId,
-      });
-      toast.success(`View "${viewWithStatus.title}" removed successfully`);
-    } catch (error) {
-      console.error("Error removing view:", error);
-      toast.error(`Failed to remove view "${viewWithStatus.title}"`);
+    if (!newTab) {
+      toast.error("Failed to open view");
     }
   };
 
@@ -595,70 +551,33 @@ function ViewsList({ integration }: { integration: Integration }) {
               Available views: {views.length}
             </span>
           </div>
-          {viewsWithStatus.length === 0 ? (
+          {views.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-4">
               No views available from this integration
             </div>
           ) : (
             <div className="space-y-2">
-              {viewsWithStatus.map((view) => (
+              {views.map((view) => (
                 <div
                   key={view.name ?? view.url ?? view.title}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
+                  className="flex items-center gap-3 p-3 border border-border rounded-lg bg-background cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleViewClick(view)}
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {view.icon && (
-                      <Icon
-                        name={view.icon}
-                        size={24}
-                        className="flex-shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-medium truncate">
-                        {view.title}
-                      </h4>
-                      {view.url && (
-                        <p className="text-xs text-muted-foreground ">
-                          {view.url}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {view.isAdded && (
-                      <div className="flex items-center gap-1 text-xs text-success">
-                        <Icon name="check_circle" size={14} />
-                        <span>Added</span>
-                      </div>
-                    )}
-                    {view.isAdded ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveView(view)}
-                        disabled={removeViewMutation.isPending}
-                      >
-                        {removeViewMutation.isPending ? (
-                          <Icon name="hourglass_empty" size={14} />
-                        ) : (
-                          <Icon name="remove" size={14} />
-                        )}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddView(view)}
-                        disabled={addViewMutation.isPending}
-                      >
-                        {addViewMutation.isPending ? (
-                          <Icon name="hourglass_empty" size={14} />
-                        ) : (
-                          <Icon name="add" size={14} />
-                        )}
-                      </Button>
+                  {view.icon && (
+                    <Icon
+                      name={view.icon}
+                      size={24}
+                      className="flex-shrink-0"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-medium truncate">
+                      {view.title}
+                    </h4>
+                    {view.url && (
+                      <p className="text-xs text-muted-foreground">
+                        {view.url}
+                      </p>
                     )}
                   </div>
                 </div>

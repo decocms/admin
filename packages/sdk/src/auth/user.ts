@@ -1,5 +1,4 @@
 import type { AuthUser, SupabaseClient } from "@supabase/supabase-js";
-import { decodeJwt } from "jose";
 import { LRUCache } from "lru-cache";
 import type { Principal } from "../mcp/context.ts";
 import {
@@ -20,8 +19,6 @@ const promiseCache = new LRUCache<string, Promise<Principal | undefined>>({
   max: 1000,
   ttl: ONE_MINUTE_MS,
 });
-
-const MILLISECONDS = 1e3;
 
 export const userFromJWT = async (
   jwt: string,
@@ -53,15 +50,13 @@ export async function getUserBySupabaseCookie(
   }
 
   // Create the promise and store it in the promise cache
-  async function fetchUserFromSession(): Promise<
-    [Principal | undefined, number]
-  > {
+  async function fetchUserFromSession(): Promise<Principal | undefined> {
     const { supabase } =
       typeof supabaseServerToken === "string"
         ? createSupabaseSessionClient(request, supabaseServerToken)
         : { supabase: supabaseServerToken };
 
-    const [{ data }, [jwt, key]] = await Promise.all([
+    const [{ data: _user }, [jwt]] = await Promise.all([
       supabase.auth.getUser(accessToken),
       JwtIssuer.forKeyPair(keyPair).then((jwtIssuer) =>
         jwtIssuer.verify(sessionToken).then((jwt) => {
@@ -69,7 +64,8 @@ export async function getUserBySupabaseCookie(
             return jwtIssuer
               .verify(accessToken)
               .then(
-                (jwt) => [jwt, accessToken] as [JwtPayloadWithClaims, string],
+                (payload) =>
+                  [payload, accessToken] as [JwtPayloadWithClaims, string],
               );
           }
           return [jwt, sessionToken] as [JwtPayloadWithClaims, string];
@@ -77,54 +73,24 @@ export async function getUserBySupabaseCookie(
       ),
     ]);
 
-    const user = data?.user;
+    const user = _user?.user;
     if (!user) {
-      const shouldCache = jwt && key;
-
-      return [jwt ?? undefined, shouldCache ? ONE_MINUTE_MS : 0];
+      return jwt ?? undefined;
     }
 
-    // Get the cache TTL
-    let cachettl = undefined;
-    if (sessionToken) {
-      const { data: session } = await supabase.auth.getSession();
-      cachettl = session?.session?.expires_at;
-    }
-    if (accessToken) {
-      try {
-        const decoded = decodeJwt(accessToken) as {
-          expires_at: number;
-        };
-        cachettl = decoded.expires_at * MILLISECONDS - Date.now();
-      } catch (err) {
-        console.error(err);
-        // ignore if any error
-      }
-    }
-
-    return [user, cachettl ?? ONE_MINUTE_MS];
+    return user;
   }
 
   const promise = fetchUserFromSession();
-  const userPromise = promise.then(([user, ttl]) => {
-    // Sets the ttl to the right value
-    if (ttl > 0) {
-      promiseCache.set(cacheKey, userPromise, { ttl });
-    } else {
-      promiseCache.delete(cacheKey);
-    }
-
-    return user ?? undefined;
-  });
 
   // Store the promise in the cache
-  promiseCache.set(cacheKey, userPromise, { ttl: ONE_MINUTE_MS });
+  promiseCache.set(cacheKey, promise);
 
   // Remove promise from cache only if it rejects (so retries can happen)
   // If it resolves, keep it in cache (with TTL) so we can reuse the value
-  userPromise.catch(() => {
+  promise.catch(() => {
     promiseCache.delete(cacheKey);
   });
 
-  return userPromise;
+  return promise;
 }

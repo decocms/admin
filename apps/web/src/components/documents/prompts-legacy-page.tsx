@@ -1,25 +1,11 @@
-import { lazy } from "react";
-import { TabbedPageLayout } from "../common/tabbed-page-layout.tsx";
+import { DocumentsResourceList } from "./documents-resource-list.tsx";
 
-const PromptsListLegacy = lazy(() => import("../prompts/list/list.tsx"));
-
+/**
+ * Legacy route handler for /documents/prompts
+ * Renders the DocumentsResourceList which now handles tabs in place
+ */
 export default function PromptsLegacyPage() {
-  return (
-    <TabbedPageLayout
-      component={PromptsListLegacy}
-      title="Documents"
-      tabs={[
-        { id: "all", label: "All", path: "/documents" },
-        {
-          id: "prompts",
-          label: "Prompts (Legacy)",
-          path: "/documents/prompts",
-        },
-      ]}
-      getActiveTab={(pathname) =>
-        pathname.includes("/documents/prompts") ? "prompts" : "all"
-      }
-      viewModeKey="prompts"
-    />
-  );
+  // This route is kept for backwards compatibility with bookmarks/direct links
+  // The actual tab switching is now handled in DocumentsResourceList via state
+  return <DocumentsResourceList />;
 }

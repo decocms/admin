@@ -100,6 +100,9 @@ function UserPreferencesModal({
       useOpenRouter: preferences.useOpenRouter,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
+      showLegacyPrompts: preferences.showLegacyPrompts ?? false,
+      showLegacyWorkflowRuns: preferences.showLegacyWorkflowRuns ?? false,
+      showLegacyAgents: preferences.showLegacyAgents ?? false,
     },
   });
   const {

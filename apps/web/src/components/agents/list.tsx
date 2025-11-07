@@ -1,11 +1,10 @@
-import type { Agent, View } from "@deco/sdk";
+import type { Agent } from "@deco/sdk";
 import {
   AgentWithActivity,
   useAgents,
   useRemoveAgent,
   useSDK,
   WELL_KNOWN_AGENT_IDS,
-  useTrackNativeViewVisit,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -28,9 +27,10 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useCopy } from "../../hooks/use-copy.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -43,8 +43,6 @@ import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { ResourceHeader } from "../resources-v2/resource-header.tsx";
 import { useFocusChat } from "./hooks.ts";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { useCopy } from "../../hooks/use-copy.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -382,7 +380,25 @@ export const useFocusTeamAgent = () => {
   return handleCreate;
 };
 
-function AgentsList() {
+interface TabItem {
+  id: string;
+  label: string;
+  onClick: () => void;
+}
+
+interface AgentsListProps {
+  headerSlot?: ReactNode;
+  tabs?: TabItem[];
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+}
+
+function AgentsList({
+  headerSlot,
+  tabs: propTabs,
+  activeTab: propActiveTab,
+  onTabChange,
+}: AgentsListProps = {}) {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const handleCreate = useFocusTeamAgent();
   const navigateWorkspace = useNavigateWorkspace();
@@ -390,37 +406,19 @@ function AgentsList() {
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useViewMode("agents");
   const [searchOpen, setSearchOpen] = useState(false);
-  const { value: selectedTab, update: setSelectedTab } = useLocalStorage<TabId>(
-    {
-      key: "agents-visibility",
-      defaultValue: "active",
-      migrate: (value) => {
-        if (value === "all") {
-          return "active";
-        }
-        return value;
-      },
+  const [selectedTab, setSelectedTab] = useLocalStorage<TabId>(
+    "agents-visibility",
+    (existing) => {
+      if (!existing) {
+        return "active";
+      }
+      // Migrate old "all" value to "active"
+      if (existing === "all") {
+        return "active";
+      }
+      return existing;
     },
   );
-
-  // Track visit to Agents page for recents (only if unpinned)
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const team = useCurrentTeam();
-
-  const agentsViewId = useMemo(() => {
-    const views = (team?.views ?? []) as View[];
-    const view = views.find((v) => v.title === "Agents");
-    return view?.id;
-  }, [team?.views]);
-
-  useTrackNativeViewVisit({
-    viewId: agentsViewId || "agents-fallback",
-    viewTitle: "Agents",
-    viewIcon: "robot_2",
-    viewPath: `/${projectKey}/agents`,
-    projectKey,
-  });
 
   const agentsByVisibility = useMemo(() => {
     const initial: Record<
@@ -521,7 +519,11 @@ function AgentsList() {
 
   useSetThreadContextEffect(threadContextItems);
 
+  // Use provided tabs or create default tabs with route navigation
   const mainTabs = useMemo(() => {
+    if (propTabs) {
+      return propTabs;
+    }
     return [
       {
         id: "agents",
@@ -534,18 +536,22 @@ function AgentsList() {
         onClick: () => navigateWorkspace("/agents/threads"),
       },
     ];
-  }, [navigateWorkspace]);
+  }, [propTabs, navigateWorkspace]);
+
+  // Use provided activeTab or default to "agents"
+  const activeTab = propActiveTab ?? "agents";
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-auto">
         {/* Header Section - sticky horizontally */}
         <div className="sticky pb-4 z-10">
-          <div className="max-w-[1600px] mx-auto w-full">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            {headerSlot}
             <ResourceHeader
-              title="Agents"
               tabs={mainTabs}
-              activeTab="agents"
+              activeTab={activeTab}
+              onTabChange={onTabChange}
               searchOpen={searchOpen}
               searchValue={filter}
               onSearchToggle={() => setSearchOpen(!searchOpen)}

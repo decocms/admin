@@ -6,6 +6,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
+import { useRouteParams } from "../canvas/route-params-provider.tsx";
 import { AuditListContent } from "../audit/list.tsx";
 import { CronDetails } from "./cron-details.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
@@ -18,10 +19,13 @@ export interface Props {
 }
 
 export function TriggerDetails({ id: _triggerId, onBack }: Props) {
-  const params = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const triggerId = _triggerId || params.id;
+  const triggerId = _triggerId || routeParams.id || urlParams.id;
 
   if (!triggerId) {
     return <div>No agent or trigger ID</div>;

@@ -40,7 +40,7 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
       {messages.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="flex flex-col gap-6 min-w-0 max-w-full">
+        <div className="flex flex-col gap-6 min-w-0 max-w-3xl mx-auto w-full">
           {messages.map((message, index) => (
             <ChatMessage
               key={message.id}

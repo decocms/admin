@@ -11,21 +11,40 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useToolCallListener } from "../../../hooks/use-tool-call-listener.ts";
 import { AgenticChatProvider } from "../../chat/provider.tsx";
 import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
+import { useRouteParams } from "../../canvas/route-params-provider.tsx";
 import { Context } from "./context.ts";
 import { PromptDetail } from "./form.tsx";
 
 export default function Page() {
   const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
 
-  const { id } = useParams();
-  const promptId = id!;
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const _id = routeParams.id || urlParams.id;
+  const promptId = _id!;
   const threadId = promptId;
 
-  const { data: _prompt, refetch: refetchPrompt } = usePrompt(promptId);
+  console.log("[LegacyPromptDetail] Component render", {
+    promptId,
+    agentId,
+    threadId,
+    routeParamsId: routeParams.id,
+    urlParamsId: urlParams.id,
+    resolvedId: _id,
+  });
+
+  const {
+    data: _prompt,
+    isLoading: isLoadingPrompt,
+    refetch: refetchPrompt,
+  } = usePrompt(promptId);
   const prompt = _prompt || {
     id: crypto.randomUUID(),
     name: "",
@@ -34,7 +53,28 @@ export default function Page() {
     created_at: new Date().toISOString(),
     updated_at: null,
   };
-  const { data: _agent } = useAgentData(agentId);
+  const { data: _agent, isLoading: isLoadingAgent } = useAgentData(agentId);
+
+  console.log("[LegacyPromptDetail] Data state", {
+    hasPrompt: !!_prompt,
+    isLoadingPrompt,
+    promptData: _prompt
+      ? {
+          id: _prompt.id,
+          name: _prompt.name,
+          hasContent: !!_prompt.content,
+          contentLength: _prompt.content?.length || 0,
+        }
+      : null,
+    hasAgent: !!_agent,
+    isLoadingAgent,
+    agentData: _agent
+      ? {
+          id: _agent.id,
+          name: _agent.name,
+        }
+      : null,
+  });
 
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt>(prompt);
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
@@ -51,11 +91,26 @@ export default function Page() {
 
   useEffect(() => {
     if (_prompt) {
+      console.log(
+        "[LegacyPromptDetail] Prompt data received, updating selectedPrompt",
+        {
+          promptId: _prompt.id,
+          name: _prompt.name,
+          hasContent: !!_prompt.content,
+          contentLength: _prompt.content?.length || 0,
+        },
+      );
       setSelectedPrompt(_prompt);
     }
   }, [_prompt]);
 
   useEffect(() => {
+    console.log("[LegacyPromptDetail] Resetting form with selectedPrompt", {
+      promptId: selectedPrompt.id,
+      name: selectedPrompt.name,
+      hasContent: !!selectedPrompt.content,
+      contentLength: selectedPrompt.content?.length || 0,
+    });
     form.reset(selectedPrompt);
   }, [selectedPrompt]);
 
@@ -142,9 +197,41 @@ export default function Page() {
     }
   });
 
-  if (!_agent) {
-    return null;
+  // Show loading state while agent or prompt is loading
+  if (isLoadingAgent || isLoadingPrompt) {
+    console.log("[LegacyPromptDetail] Rendering loading state", {
+      isLoadingAgent,
+      isLoadingPrompt,
+    });
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
   }
+
+  // Show error state if agent is not available
+  if (!_agent) {
+    console.error("[LegacyPromptDetail] Agent data not available", {
+      agentId,
+      hasAgent: !!_agent,
+      isLoadingAgent,
+    });
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        Failed to load agent data
+      </div>
+    );
+  }
+
+  console.log("[LegacyPromptDetail] Rendering prompt detail", {
+    promptId: selectedPrompt.id,
+    promptName: selectedPrompt.name,
+    hasContent: !!selectedPrompt.content,
+    contentLength: selectedPrompt.content?.length || 0,
+    agentId: _agent.id,
+    agentName: _agent.name,
+  });
 
   return (
     <>

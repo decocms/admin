@@ -25,10 +25,16 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useReducer, useState } from "react";
+import { useReducer, useState, type ReactNode } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
+import {
+  ResourceHeader,
+  type TabItem,
+} from "../../resources-v2/resource-header.tsx";
+import { useThreadManager } from "../../decopilot/thread-context-manager.tsx";
+import { useSearchParams } from "react-router";
 
 interface ListState {
   deleteDialogOpen: boolean;
@@ -213,17 +219,28 @@ function TableView({
 interface ListPromptsProps {
   searchTerm?: string;
   viewMode?: "cards" | "table";
+  tabs?: TabItem[];
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+  headerSlot?: ReactNode;
 }
 
 function ListPrompts({
   searchTerm = "",
   viewMode = "cards",
+  tabs,
+  activeTab,
+  onTabChange,
+  headerSlot,
 }: ListPromptsProps) {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { data: prompts } = usePrompts();
   const create = useCreatePrompt();
   const deletePrompt = useDeletePrompt();
   const navigateWorkspace = useNavigateWorkspace();
+  const { createTab } = useThreadManager();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const { deleteDialogOpen, promptToDelete, deleting } = state;
 
@@ -236,7 +253,17 @@ function ListPrompts({
     ) ?? [];
 
   const handleConfigure = (prompt: Prompt) => {
-    navigateWorkspace(`/documents/${prompt.id}`);
+    // Open in canvas tab instead of navigating
+    const newTab = createTab({
+      type: "detail",
+      resourceUri: `legacy-prompt://${prompt.id}`,
+      title: prompt.name || "Untitled",
+      icon: "description",
+    });
+    if (!newTab) {
+      console.warn("[PromptsListLegacy] No active tab found");
+      navigateWorkspace(`/documents/${prompt.id}`);
+    }
   };
   const handleDeleteConfirm = (promptId: string) => {
     dispatch({ type: "CONFIRM_DELETE", payload: promptId });
@@ -267,38 +294,88 @@ function ListPrompts({
     }
   };
 
+  const q = searchParams.get("q") ?? "";
+
   return (
-    <>
-      {!prompts ? (
-        <div className="flex items-center justify-center py-8">
-          <Spinner />
-        </div>
-      ) : filteredPrompts.length === 0 ? (
-        <EmptyState
-          icon="local_library"
-          title="No documents yet"
-          description="Create a document to get started."
-        />
-      ) : viewMode === "cards" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredPrompts.map((prompt) => (
-            <PromptCard
-              key={prompt.id}
-              prompt={prompt}
-              onConfigure={handleConfigure}
-              onDelete={handleDeleteConfirm}
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        {/* Header Section */}
+        <div className="sticky">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            {headerSlot}
+            <ResourceHeader
+              tabs={tabs ?? []}
+              activeTab={activeTab ?? "prompts"}
+              onTabChange={onTabChange}
+              searchOpen={searchOpen}
+              searchValue={q}
+              onSearchToggle={() => setSearchOpen(!searchOpen)}
+              onSearchChange={(value: string) => {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  if (value) next.set("q", value);
+                  else next.delete("q");
+                  return next;
+                });
+              }}
+              onSearchBlur={() => {
+                if (!q) {
+                  setSearchOpen(false);
+                }
+              }}
+              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Escape") {
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.delete("q");
+                    return next;
+                  });
+                  setSearchOpen(false);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              viewMode={viewMode}
+              onViewModeChange={() => {}} // View mode is managed by parent
             />
-          ))}
+          </div>
         </div>
-      ) : (
-        <div className="w-fit min-w-full">
-          <TableView
-            prompts={filteredPrompts}
-            onConfigure={handleConfigure}
-            onDelete={handleDeleteConfirm}
-          />
+
+        {/* Content Section */}
+        <div className="px-8">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
+            {!prompts ? (
+              <div className="flex items-center justify-center py-8">
+                <Spinner />
+              </div>
+            ) : filteredPrompts.length === 0 ? (
+              <EmptyState
+                icon="local_library"
+                title="No documents yet"
+                description="Create a document to get started."
+              />
+            ) : viewMode === "cards" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredPrompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    onConfigure={handleConfigure}
+                    onDelete={handleDeleteConfirm}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="w-fit min-w-full">
+                <TableView
+                  prompts={filteredPrompts}
+                  onConfigure={handleConfigure}
+                  onDelete={handleDeleteConfirm}
+                />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       <AlertDialog
         open={deleteDialogOpen}
@@ -331,7 +408,7 @@ function ListPrompts({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }
 

@@ -1203,17 +1203,21 @@ export const deleteIntegration = createIntegrationManagementTool({
 
     const projectId = await getProjectIdFromContext(c);
 
-    await c.drizzle
-      .delete(integrations)
-      .where(
-        and(
+    // Build where clause conditionally based on whether projectId exists
+    const whereConditions = projectId
+      ? and(
           eq(integrations.id, uuid),
           or(
             eq(integrations.workspace, c.workspace.value),
-            projectId ? eq(integrations.project_id, projectId) : undefined,
+            eq(integrations.project_id, projectId),
           ),
-        ),
-      );
+        )
+      : and(
+          eq(integrations.id, uuid),
+          eq(integrations.workspace, c.workspace.value),
+        );
+
+    await c.drizzle.delete(integrations).where(whereConditions);
 
     return { success: true };
   },

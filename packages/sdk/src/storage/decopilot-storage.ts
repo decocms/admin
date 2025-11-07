@@ -9,6 +9,20 @@ import { del, get, keys, set } from "idb-keyval";
 const MESSAGES_PREFIX = "decopilot:messages:";
 const THREAD_META_PREFIX = "decopilot:thread-meta:";
 
+/**
+ * Deduplicate messages by ID, keeping the last occurrence of each unique ID
+ */
+function deduplicateMessages(messages: UIMessage[]): UIMessage[] {
+  const seen = new Map<string, UIMessage>();
+
+  // Iterate through messages and keep the last occurrence of each ID
+  for (const message of messages) {
+    seen.set(message.id, message);
+  }
+
+  return Array.from(seen.values());
+}
+
 export interface ThreadMetadata {
   threadId: string;
   agentId: string;
@@ -29,7 +43,10 @@ export async function getDecopilotThreadMessages(
     const key = `${MESSAGES_PREFIX}${namespace ? `${namespace}:` : ""}${threadId}`;
     const messages = await get<UIMessage[]>(key);
 
-    return messages || null;
+    if (!messages) return null;
+
+    // Deduplicate messages before returning
+    return deduplicateMessages(messages);
   } catch (error) {
     console.error("[DecopilotStorage] Failed to get messages:", error);
     return null;
@@ -47,8 +64,12 @@ export async function saveThreadMessages(
 ): Promise<void> {
   try {
     const ns = namespace ? `${namespace}:` : "";
+
+    // Deduplicate messages before saving
+    const deduplicatedMessages = deduplicateMessages(messages);
+
     // Save messages
-    await set(`${MESSAGES_PREFIX}${ns}${threadId}`, messages);
+    await set(`${MESSAGES_PREFIX}${ns}${threadId}`, deduplicatedMessages);
 
     // Update thread metadata
     const metaKey = `${THREAD_META_PREFIX}${ns}${threadId}`;
@@ -61,7 +82,7 @@ export async function saveThreadMessages(
       route: metadata?.route || existingMeta?.route || "",
       createdAt: existingMeta?.createdAt || now,
       updatedAt: now,
-      messageCount: messages.length,
+      messageCount: deduplicatedMessages.length,
     };
 
     await set(metaKey, updatedMeta);
@@ -93,7 +114,9 @@ export async function appendThreadMessage(
     ]);
 
     const now = Date.now();
-    const updatedMessages = [...(existingMessages || []), ...messages];
+    // Combine existing and new messages, then deduplicate
+    const combinedMessages = [...(existingMessages || []), ...messages];
+    const deduplicatedMessages = deduplicateMessages(combinedMessages);
 
     // Update thread metadata
     const updatedMeta: ThreadMetadata = {
@@ -102,12 +125,12 @@ export async function appendThreadMessage(
       route: metadata?.route || existingMeta?.route || "",
       createdAt: existingMeta?.createdAt || now,
       updatedAt: now,
-      messageCount: updatedMessages.length,
+      messageCount: deduplicatedMessages.length,
     };
 
     // Save both messages and metadata
     await Promise.all([
-      set(messagesKey, updatedMessages),
+      set(messagesKey, deduplicatedMessages),
       set(metaKey, updatedMeta),
     ]);
   } catch (error) {

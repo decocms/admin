@@ -4,14 +4,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIntegrations, useUpdateIntegration } from "@deco/sdk";
 import { trackException } from "../../hooks/analytics.ts";
 import { notifyIntegrationUpdate } from "../../lib/broadcast-channels.ts";
+import {
+  useThreadManager,
+  buildAppUri,
+} from "../decopilot/thread-context-manager.tsx";
+import { AppKeys, getConnectionAppKey } from "./apps.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 function ConnectionInstallSuccess() {
+  const { addTab } = useThreadManager();
+  const navigateWorkspace = useNavigateWorkspace();
+  const [integrationUpdated, setIntegrationUpdated] = useState(false);
+  const [storedInstallId, setStoredInstallId] = useState<string | null>(null);
   const { mutate: updateIntegration, isPending } = useUpdateIntegration({
     onError: (error) => {
       const searchParams = new URLSearchParams(globalThis.location.search);
@@ -27,12 +37,22 @@ function ConnectionInstallSuccess() {
     },
     onSuccess: () => {
       const searchParams = new URLSearchParams(globalThis.location.search);
+      const installId = searchParams.get("installId");
+
+      // Store installId before removing it from URL
+      if (installId) {
+        setStoredInstallId(installId);
+      }
+
       searchParams.delete("installId");
       const newUrl = `${globalThis.location.pathname}?${searchParams.toString()}`;
       globalThis.history.replaceState({}, "", newUrl);
 
       // Notify other windows about the successful update
       notifyIntegrationUpdate();
+
+      // Mark that integration was updated so we can add it to tab
+      setIntegrationUpdated(true);
     },
   });
   const { data: allIntegrations } = useIntegrations();
@@ -76,6 +96,38 @@ function ConnectionInstallSuccess() {
       description: newDescription,
     });
   }, [updateIntegration, allIntegrations]);
+
+  // Add app to tab and focus it after integration is updated
+  useEffect(() => {
+    if (!integrationUpdated || !allIntegrations || !storedInstallId) {
+      return;
+    }
+
+    const connectionId = `i:${storedInstallId}`;
+    const integration = allIntegrations.find((i) => i.id === connectionId);
+
+    if (integration) {
+      const key = getConnectionAppKey(integration);
+      const appKey = AppKeys.build(key);
+
+      // Add tab for the app (addTab automatically sets it as active)
+      addTab({
+        type: "detail",
+        resourceUri: buildAppUri(appKey),
+        title: integration.name,
+        icon: integration.icon,
+      });
+
+      // Navigate away from success page
+      navigateWorkspace("/apps");
+    }
+  }, [
+    integrationUpdated,
+    allIntegrations,
+    storedInstallId,
+    addTab,
+    navigateWorkspace,
+  ]);
 
   return (
     <div className="min-h-screen h-full flex items-center justify-center bg-background p-4">

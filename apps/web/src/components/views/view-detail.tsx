@@ -2,7 +2,6 @@ import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import {
   DECO_CMS_API_URL,
-  useRecentResources,
   useSDK,
   useUpdateView,
   useViewByUriV2,
@@ -35,9 +34,9 @@ import {
 import { EmptyState } from "../common/empty-state.tsx";
 import {
   CodeAction,
-  ResourceDetailHeader,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import { ajvResolver } from "../json-schema/index.tsx";
 import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 import { useTheme } from "../theme.tsx";
@@ -240,18 +239,14 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const { org, project } = useParams<{ org: string; project: string }>();
   const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
 
   // Persist console open state
-  const { value: isConsoleOpen, update: setIsConsoleOpen } = useLocalStorage({
-    key: "deco-view-console-open",
-    defaultValue: false,
-  });
+  const [isConsoleOpen, setIsConsoleOpen] = useLocalStorage<boolean>(
+    "deco-view-console-open",
+    (existing) => Boolean(existing ?? false),
+  );
 
   const updateViewMutation = useUpdateView();
   const { data: theme } = useTheme();
@@ -319,35 +314,6 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
     // If data prop is provided, use it; otherwise use form values
     return data ?? (inputSchema ? formValues : undefined);
   }, [data, formValues, inputSchema]);
-
-  // Track as recently opened when view is loaded (only once)
-  useEffect(() => {
-    if (
-      effectiveView &&
-      resourceUri &&
-      projectKey &&
-      org &&
-      project &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Parse the resource URI to extract integration and resource name
-      // Format: rsc://integration-id/resource-name/resource-id
-      const uriWithoutPrefix = resourceUri.replace("rsc://", "");
-      const [integrationId, resourceName] = uriWithoutPrefix.split("/");
-
-      // Use setTimeout to ensure this runs after render
-      setTimeout(() => {
-        addRecent({
-          id: resourceUri,
-          name: effectiveView.name,
-          type: "view",
-          icon: "dashboard",
-          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
-        });
-      }, 0);
-    }
-  }, [effectiveView, resourceUri, projectKey, org, project, addRecent]);
 
   // Define trusted origins for secure postMessage handling
   const trustedOrigins = useMemo(() => {
@@ -522,34 +488,29 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   return (
     <ViewConsoleProvider>
       <div className="h-full w-full flex-1 flex flex-col bg-background relative">
-        {/* Header with code viewer toggle */}
-        <ResourceDetailHeader
-          title={effectiveView.name}
-          actions={
-            <>
-              {isCodeViewerOpen && (
-                <SaveDiscardActions
-                  hasChanges={isDirty}
-                  onSave={handleSaveCode}
-                  onDiscard={handleResetCode}
-                  isSaving={updateViewMutation.isPending}
-                  discardLabel="Reset"
-                />
-              )}
-              <SendLogsButton />
-              <SendScreenshotButton iframeRef={iframeRef} />
-              <ConsoleToggleButton
-                isOpen={isConsoleOpen}
-                onToggle={() => setIsConsoleOpen(!isConsoleOpen)}
-              />
-              <CodeAction
-                isOpen={isCodeViewerOpen}
-                onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-                hasCode={!!effectiveView.code}
-              />
-            </>
-          }
-        />
+        {/* Action buttons rendered in canvas header via portal */}
+        <TabActionButton>
+          {isCodeViewerOpen && (
+            <SaveDiscardActions
+              hasChanges={isDirty}
+              onSave={handleSaveCode}
+              onDiscard={handleResetCode}
+              isSaving={updateViewMutation.isPending}
+              discardLabel="Reset"
+            />
+          )}
+          <SendLogsButton />
+          <SendScreenshotButton iframeRef={iframeRef} />
+          <ConsoleToggleButton
+            isOpen={isConsoleOpen}
+            onToggle={() => setIsConsoleOpen(!isConsoleOpen)}
+          />
+          <CodeAction
+            isOpen={isCodeViewerOpen}
+            onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+            hasCode={!!effectiveView.code}
+          />
+        </TabActionButton>
 
         {/* Code Viewer Section - Shows when code button is clicked */}
         {isCodeViewerOpen && effectiveView.code ? (

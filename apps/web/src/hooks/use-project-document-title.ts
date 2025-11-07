@@ -1,28 +1,35 @@
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { useProjects } from "@deco/sdk";
-import { useEntityDocumentTitle } from "./use-entity-document-title.ts";
+import { useProjects, WELL_KNOWN_AGENTS } from "@deco/sdk";
+import { useThreadManager } from "../components/decopilot/thread-context-manager.tsx";
+import { useThreadTitle } from "../components/decopilot/index.tsx";
+import { useDocumentMetadata } from "./use-document-metadata.ts";
 
 /**
- * Hook that automatically sets the document title based on the current project and page
- * Format: "Project Name › Page Name"
- *
- * Uses React Router's handle property to get the page title from route metadata
+ * Hook that automatically sets the document title based on the current project and thread
+ * Format: "Project Name | Thread Title"
  */
 export function useProjectDocumentTitle() {
   const { org, project: projectParam } = useParams();
   const projects = useProjects({ org: org ?? "" });
+  const { activeThreadId } = useThreadManager();
 
   const currentProject = useMemo(
     () => projects.find((project) => project.slug === projectParam),
     [projects, projectParam],
   );
 
-  useEntityDocumentTitle({
-    entity: currentProject,
-    entitySlug: projectParam,
-    getEntityName: (project, slug) => project?.title ?? slug ?? "deco",
-    pathSliceIndex: 2,
-    defaultPageName: "Home",
-  });
+  const projectName = currentProject?.title ?? projectParam ?? "deco";
+
+  const threadTitle = useThreadTitle(
+    activeThreadId ?? undefined,
+    WELL_KNOWN_AGENTS.decopilotAgent.id,
+    "New chat",
+  );
+
+  const title = useMemo(() => {
+    return `${projectName} | ${threadTitle}`;
+  }, [projectName, threadTitle]);
+
+  useDocumentMetadata({ title });
 }

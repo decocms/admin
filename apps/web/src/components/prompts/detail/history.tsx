@@ -29,11 +29,16 @@ import { useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { UseFormReturn } from "react-hook-form";
 import { useParams } from "react-router";
+import { useRouteParams } from "../../canvas/route-params-provider.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { useFormContext } from "./context.ts";
 
 export default function HistoryTab() {
-  const { id } = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const id = routeParams.id || urlParams.id;
   const { locator } = useSDK();
   const { data: versions, refetch } = usePromptVersions(id ?? "");
   const { form, prompt, setSelectedPrompt, promptVersion, setPromptVersion } =

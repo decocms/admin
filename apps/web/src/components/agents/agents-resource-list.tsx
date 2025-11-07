@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   adaptAgent,
@@ -65,6 +67,26 @@ export function AgentsResourceList({
   const threads = auditData?.threads ?? [];
   const threadsItems = useMemo(() => threads.map(adaptThread), [threads]);
   const agentsItems = useMemo(() => (agents ?? []).map(adaptAgent), [agents]);
+
+  // Handler for creating a new agent
+  const handleCreateAgent = async () => {
+    const newAgent = {
+      name: "New Agent",
+      id: crypto.randomUUID(),
+      description: "",
+      instructions: "",
+    };
+    await createAgent(newAgent, { eventName: "agent_create" });
+  };
+
+  // CTA button for creating a new agent
+  const newAgentButton = (
+    <Button variant="default" size="sm" onClick={handleCreateAgent}>
+      <Icon name="add" />
+      New agent
+    </Button>
+  );
+
   // Show threads view if active tab is "threads"
   if (activeTab === "threads") {
     const handleThreadClick = (item: Record<string, unknown>) => {
@@ -140,9 +162,19 @@ export function AgentsResourceList({
     }
   };
 
+  const handleOpen = (agent: import("@deco/sdk").Agent, uri: string) => {
+    addTab({
+      type: "detail",
+      resourceUri: uri,
+      title: agent.name || "Untitled agent",
+      icon: "robot_2",
+    });
+  };
+
   const agentRowActions = getAgentRowActions(
     (agent) => handleDuplicate(agent),
     (agent) => setAgentToDelete(agent.id),
+    handleOpen,
   );
 
   return (
@@ -158,7 +190,7 @@ export function AgentsResourceList({
         customColumns={getAgentsColumns()}
         customRowActions={agentRowActions}
         onItemClick={handleAgentClick}
-        customCtaButton={null}
+        customCtaButton={newAgentButton}
         customEmptyState={{
           icon: "robot_2",
           title: "No agents yet",

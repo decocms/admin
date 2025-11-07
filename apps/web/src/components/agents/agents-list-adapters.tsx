@@ -85,20 +85,27 @@ export function getAgentsColumns(): TableColumn<Record<string, unknown>>[] {
 }
 
 /**
- * Get custom row actions for agents (pin, duplicate, delete)
+ * Get custom row actions for agents (duplicate, open, delete)
  */
 export function getAgentRowActions(
   onDuplicate: (agent: Agent) => void,
   onDelete: (agent: Agent) => void,
+  onOpen?: (agent: Agent, uri: string) => void,
 ): (item: Record<string, unknown>) => CustomRowAction[] {
   return (item: Record<string, unknown>) => {
     const agent = (item._agent as Agent) || (item as unknown as Agent);
+    const uri = (item.uri as string) || "";
 
     const actions: CustomRowAction[] = [
       {
         label: "Duplicate",
         icon: "content_copy",
         onClick: () => onDuplicate(agent),
+      },
+      {
+        label: "Open",
+        icon: "open_in_new",
+        onClick: () => onOpen?.(agent, uri),
       },
       {
         label: "Delete",

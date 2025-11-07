@@ -1,21 +1,14 @@
-import { readFile } from "fs/promises";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import * as semver from "semver";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import process from "node:process";
 import { detectRuntime } from "../../lib/runtime.js";
+import { packageInfo } from "../../lib/package-info.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Read package.json for current version
+// Get package.json info (inlined at build time)
 const getPackageJson = async () => {
-  const packageJsonPath = join(__dirname, "../../../package.json");
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
-  return packageJson;
+  return packageInfo;
 };
 
 const getLatestVersion = async (packageName: string): Promise<string> => {

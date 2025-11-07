@@ -39,9 +39,7 @@ process.on("warning", (warning) => {
 });
 
 import { Command } from "commander";
-import { readFile, writeFile } from "fs/promises";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { writeFile } from "fs/promises";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CMS_API_LOCAL } from "./lib/constants.js";
@@ -84,13 +82,7 @@ import {
 } from "./commands/deconfig/index.js";
 import { exportCommand, importCommand } from "./commands/projects/index.js";
 import { detectRuntime } from "./lib/runtime.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Read package.json for version
-const packageJsonPath = join(__dirname, "../package.json");
-const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
+import { packageInfo as packageJson } from "./lib/package-info.js";
 
 // Login command implementation
 const login = new Command("login")

@@ -6,7 +6,7 @@ export default defineConfig({
     deconfig: "src/deconfig.ts",
   },
   format: ["esm"],
-  target: "node24",
+  target: "es2022",
   bundle: true,
   sourcemap: true,
   clean: true,

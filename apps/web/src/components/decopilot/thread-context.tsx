@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -81,12 +82,13 @@ export function DecopilotThreadProvider({
     }
   }, [searchParams]);
 
-  const clearThreadState = () =>
+  const clearThreadState = useCallback(() => {
     setThreadState((old) => ({
       ...old,
       autoSend: false,
       initialMessage: null,
     }));
+  }, []);
 
   return (
     <DecopilotThreadContext.Provider

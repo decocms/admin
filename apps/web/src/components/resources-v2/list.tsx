@@ -1,14 +1,12 @@
 import {
+  AI_APP_PRD_TEMPLATE,
   callTool,
   KEYS,
   useIntegration,
   useSDK,
   useTools,
-  AI_APP_PRD_TEMPLATE,
 } from "@deco/sdk";
 import type { ResourceItem } from "@deco/sdk/mcp";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,41 +17,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  useDeferredValue,
-  useMemo,
-  useState,
   useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { formatResourceName } from "../../utils/format.ts";
 import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
+import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { useSortable } from "../../hooks/use-sortable.ts";
+import type { WatchEvent } from "../../stores/resource-watch/index.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import type { TabItem } from "./resource-header.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
-import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
-import type { WatchEvent } from "../../stores/resource-watch/index.ts";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 
 // Base resource data schema that all resources extend
 const BaseResourceDataSchema = z.object({
@@ -62,7 +63,15 @@ const BaseResourceDataSchema = z.object({
   icon: z.string().url().optional(),
 });
 
-type ResourceListItem = ResourceItem<typeof BaseResourceDataSchema>;
+export type ResourceListItem = ResourceItem<typeof BaseResourceDataSchema>;
+
+export interface CustomRowAction {
+  label: string;
+  icon?: string;
+  onClick: (item: unknown) => void;
+  variant?: "default" | "destructive";
+  disabled?: boolean;
+}
 
 function ResourcesV2ListTab({
   integrationId,
@@ -71,6 +80,13 @@ function ResourcesV2ListTab({
   tabs,
   activeTab,
   onTabChange,
+  // Custom data props
+  customData,
+  customColumns,
+  customRowActions,
+  onItemClick,
+  customCtaButton,
+  customEmptyState,
 }: {
   integrationId?: string;
   resourceName?: string;
@@ -78,12 +94,29 @@ function ResourcesV2ListTab({
   tabs?: TabItem[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
+  // Custom data props
+  customData?: Array<ResourceListItem | Record<string, unknown>>;
+  customColumns?: TableColumn<ResourceListItem | Record<string, unknown>>[];
+  customRowActions?: (
+    item: ResourceListItem | Record<string, unknown>,
+  ) => CustomRowAction[];
+  onItemClick?: (item: ResourceListItem | Record<string, unknown>) => void;
+  customCtaButton?: ReactNode;
+  customEmptyState?: { icon?: string; title?: string; description?: string };
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { locator } = useSDK();
   const integration = useIntegration(integrationId ?? "").data;
   const navigateWorkspace = useNavigateWorkspace();
   const queryClient = useQueryClient();
+
+  // Canvas tabs management
+  const {
+    addTab,
+    createTab,
+    tabs: canvasTabs,
+    setActiveTab,
+  } = useThreadManager();
   const [mutating, setMutating] = useState(false);
   const [viewMode, setViewMode] = useViewMode();
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
@@ -110,8 +143,31 @@ function ResourcesV2ListTab({
     return stored === "true";
   });
 
-  const q = searchParams.get("q") ?? "";
-  const deferredQ = useDeferredValue(q);
+  // Local state for instant search, deferred for server queries and URL updates
+  const [localSearch, setLocalSearch] = useState(
+    () => searchParams.get("q") ?? "",
+  );
+  const deferredSearch = useDeferredValue(localSearch);
+  const clientSearchValue = localSearch;
+  const serverSearchValue = deferredSearch;
+
+  // Sync URL params with deferred search for deep linking
+  useEffect(() => {
+    if (!customData) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (serverSearchValue) {
+            next.set("q", serverSearchValue);
+          } else {
+            next.delete("q");
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [serverSearchValue, customData, setSearchParams]);
 
   const connection = integration?.connection;
   const toolsQuery = useTools(connection!, false);
@@ -132,42 +188,163 @@ function ResourcesV2ListTab({
     };
   }, [toolsQuery?.data?.tools, resourceName]);
 
-  const columns: TableColumn<ResourceListItem>[] = useMemo(
-    () => [
-      {
-        id: "title",
-        header: "Name",
-        accessor: (row) => row.data?.name || "",
-        cellClassName: "max-w-3xs font-medium",
-        sortable: true,
-      },
-      {
-        id: "description",
-        header: "Description",
-        accessor: (row) => row.data?.description || "",
-        cellClassName: "max-w-xl",
-        sortable: true,
-      },
-      {
-        id: "updated_at",
-        header: "Updated",
-        render: (row) => <TimeAgoCell value={row.updated_at} />,
-        cellClassName: "whitespace-nowrap min-w-30",
-        sortable: true,
-      },
-      {
-        id: "updated_by",
-        header: "Updated by",
-        render: (row) => (
-          <UserInfo userId={row.updated_by} showEmail={false} size="sm" />
-        ),
-        cellClassName: "max-w-3xs",
-        sortable: true,
-      },
-      {
-        id: "actions",
-        header: "",
-        render: (row) => (
+  // Use refs to store handler functions so they can be accessed in the columns useMemo
+  const handleDuplicateRef = useRef<
+    ((item: ResourceListItem) => Promise<void>) | null
+  >(null);
+  const onDeleteClickRef = useRef<((uri: string) => void) | null>(null);
+
+  const columns: TableColumn<ResourceListItem | Record<string, unknown>>[] =
+    useMemo(() => {
+      // Define the actions column renderer inline
+      // It will access handleDuplicate and onDeleteClick via refs when executed
+      const actionsColumnRenderer = (
+        row: ResourceListItem | Record<string, unknown>,
+      ) => {
+        // Use custom row actions if provided
+        if (customRowActions) {
+          const customActions = customRowActions(row);
+          const allActions: CustomRowAction[] = [...customActions];
+
+          // Get the resource item and URI for default actions
+          const resourceItem = row as ResourceListItem;
+          const itemRecord = row as Record<string, unknown>;
+          const itemUri = resourceItem.uri || (itemRecord.uri as string) || "";
+
+          // Add default MCP actions if URI is available and not already in custom actions
+          if (itemUri) {
+            const hasDuplicate = customActions.some(
+              (a) => a.label === "Duplicate",
+            );
+            const hasOpen = customActions.some((a) => a.label === "Open");
+            const hasDelete = customActions.some((a) => a.label === "Delete");
+
+            if (!hasDuplicate && handleDuplicateRef.current) {
+              allActions.push({
+                label: "Duplicate",
+                icon: "content_copy",
+                onClick: () => {
+                  handleDuplicateRef.current?.(resourceItem);
+                },
+              });
+            }
+
+            if (!hasOpen) {
+              allActions.push({
+                label: "Open",
+                icon: "open_in_new",
+                onClick: () => {
+                  navigateWorkspace(
+                    `rsc/${integrationId}/${resourceName}/${encodeURIComponent(itemUri)}`,
+                  );
+                },
+              });
+            }
+
+            if (
+              capabilities.hasDelete &&
+              !hasDelete &&
+              onDeleteClickRef.current
+            ) {
+              allActions.push({
+                label: "Delete",
+                icon: "delete",
+                variant: "destructive",
+                onClick: () => {
+                  onDeleteClickRef.current?.(itemUri);
+                },
+              });
+            }
+          }
+
+          if (allActions.length === 0) return null;
+
+          return (
+            <div className="flex items-center justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="text-muted-foreground"
+                  >
+                    <Icon name="more_horiz" className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {allActions.map((action, index) => (
+                    <DropdownMenuItem
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        action.onClick(row);
+                      }}
+                      disabled={action.disabled}
+                      className={
+                        action.variant === "destructive"
+                          ? "text-destructive focus:text-destructive"
+                          : ""
+                      }
+                    >
+                      {action.icon && (
+                        <Icon name={action.icon} className="w-4 h-4 mr-2" />
+                      )}
+                      {action.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        }
+
+        // Default actions for MCP resources (when customRowActions is not provided)
+        const resourceItem = row as ResourceListItem;
+        const itemRecord = row as Record<string, unknown>;
+        const itemUri = resourceItem.uri || (itemRecord.uri as string) || "";
+
+        if (!itemUri) return null;
+
+        const defaultActions: CustomRowAction[] = [];
+
+        // Add other default actions if available
+        if (handleDuplicateRef.current) {
+          defaultActions.push({
+            label: "Duplicate",
+            icon: "content_copy",
+            onClick: () => {
+              handleDuplicateRef.current?.(resourceItem);
+            },
+          });
+        }
+
+        defaultActions.push({
+          label: "Open",
+          icon: "open_in_new",
+          onClick: () => {
+            navigateWorkspace(
+              `rsc/${integrationId}/${resourceName}/${encodeURIComponent(itemUri)}`,
+            );
+          },
+        });
+
+        if (capabilities.hasDelete && onDeleteClickRef.current) {
+          defaultActions.push({
+            label: "Delete",
+            icon: "delete",
+            variant: "destructive",
+            onClick: () => {
+              onDeleteClickRef.current?.(itemUri);
+            },
+          });
+        }
+
+        if (defaultActions.length === 0) return null;
+
+        return (
           <div className="flex items-center justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -183,66 +360,133 @@ function ResourcesV2ListTab({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDuplicate(row);
-                  }}
-                  disabled={mutating}
-                >
-                  <Icon name="content_copy" className="w-4 h-4 mr-2" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateWorkspace(
-                      `rsc/${integrationId}/${resourceName}/${encodeURIComponent(row.uri)}`,
-                    );
-                  }}
-                >
-                  <Icon name="open_in_new" className="w-4 h-4 mr-2" />
-                  Open
-                </DropdownMenuItem>
-                {capabilities.hasDelete && (
+                {defaultActions.map((action, index) => (
                   <DropdownMenuItem
+                    key={index}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDeleteClick(row.uri);
+                      action.onClick(row);
                     }}
-                    className="text-destructive focus:text-destructive"
+                    disabled={action.disabled}
+                    className={
+                      action.variant === "destructive"
+                        ? "text-destructive focus:text-destructive"
+                        : ""
+                    }
                   >
-                    <Icon name="delete" className="w-4 h-4 mr-2" />
-                    Delete
+                    {action.icon && (
+                      <Icon name={action.icon} className="w-4 h-4 mr-2" />
+                    )}
+                    {action.label}
                   </DropdownMenuItem>
-                )}
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        ),
-        cellClassName: "w-[5%]",
-      },
-    ],
-    [capabilities.hasDelete, navigateWorkspace, integrationId, resourceName],
-  );
+        );
+      };
 
+      // Use custom columns if provided
+      if (customColumns) {
+        // Check if customColumns already has an actions column
+        const hasActionsColumn = customColumns.some(
+          (col) => col.id === "actions",
+        );
+
+        // If customRowActions is provided and no actions column exists, append it
+        if (customRowActions && !hasActionsColumn) {
+          return [
+            ...customColumns,
+            {
+              id: "actions",
+              header: "",
+              render: actionsColumnRenderer,
+              cellClassName: "w-[5%]",
+            },
+          ];
+        }
+
+        return customColumns;
+      }
+
+      // Default columns for MCP resources
+      return [
+        {
+          id: "title",
+          header: "Name",
+          accessor: (row) => {
+            const item = row as ResourceListItem;
+            return item.data?.name || "";
+          },
+          cellClassName: "max-w-3xs font-medium",
+          sortable: true,
+        },
+        {
+          id: "description",
+          header: "Description",
+          accessor: (row) => {
+            const item = row as ResourceListItem;
+            return item.data?.description || "";
+          },
+          cellClassName: "max-w-xl",
+          sortable: true,
+        },
+        {
+          id: "updated_at",
+          header: "Updated",
+          render: (row) => {
+            const item = row as ResourceListItem;
+            return <TimeAgoCell value={item.updated_at} />;
+          },
+          cellClassName: "whitespace-nowrap min-w-30",
+          sortable: true,
+        },
+        {
+          id: "updated_by",
+          header: "Updated by",
+          render: (row) => {
+            const item = row as ResourceListItem;
+            return (
+              <UserInfo userId={item.updated_by} showEmail={false} size="sm" />
+            );
+          },
+          cellClassName: "max-w-3xs",
+          sortable: true,
+        },
+        {
+          id: "actions",
+          header: "",
+          render: actionsColumnRenderer,
+          cellClassName: "w-[5%]",
+        },
+      ];
+    }, [
+      customColumns,
+      customRowActions,
+      capabilities,
+      integrationId,
+      resourceName,
+      navigateWorkspace,
+    ]);
+
+  // Only use MCP query if customData is not provided
   const listQuery = useQuery({
     queryKey: KEYS.RESOURCES_LIST(
       locator,
       integrationId!,
       resourceName!,
-      deferredQ,
+      serverSearchValue,
       sortKey ?? undefined,
       sortDirection ?? undefined,
     ),
-    enabled: Boolean(integration && resourceName),
+    enabled: Boolean(integration && resourceName && !customData),
     staleTime: 0, // Always consider data stale so it refetches when invalidated
     refetchOnMount: "always", // Always refetch when component mounts
     queryFn: async () => {
       const result = (await callTool(integration!.connection, {
         name: `DECO_RESOURCE_${resourceName!.toUpperCase()}_SEARCH`,
         arguments: {
-          term: deferredQ,
+          term: serverSearchValue,
           page: 1,
           pageSize: 50,
           sortBy: sortKey ?? undefined,
@@ -292,10 +536,12 @@ function ResourcesV2ListTab({
     ),
   });
 
-  const items = listQuery.data ?? [];
+  // Use custom data if provided, otherwise use MCP query data
+  const items = customData ?? listQuery.data ?? [];
   // Only show loading spinner on initial load, not during mutations or background refetches
   // Mutations show loading on the button itself, not full-page
-  const loading = listQuery.isLoading;
+  // No loading when using custom data
+  const loading = customData ? false : listQuery.isLoading;
   const error = listQuery.isError ? (listQuery.error as Error).message : null;
 
   const handleDuplicate = async (item: ResourceListItem) => {
@@ -386,28 +632,53 @@ function ResourcesV2ListTab({
     }
   };
 
+  // Update refs with the latest functions
+  handleDuplicateRef.current = handleDuplicate;
+  onDeleteClickRef.current = onDeleteClick;
+
   // Get unique users from the items for filter dropdown
   const availableUsers = useMemo(() => {
     const userIds = new Set<string>();
     items.forEach((item) => {
-      if (item.created_by) userIds.add(item.created_by);
-      if (item.updated_by) userIds.add(item.updated_by);
+      const resourceItem = item as ResourceListItem;
+      if (resourceItem.created_by) userIds.add(resourceItem.created_by);
+      if (resourceItem.updated_by) userIds.add(resourceItem.updated_by);
     });
     return Array.from(userIds).map((id) => ({ id, name: id }));
   }, [items]);
 
-  // Apply filters to items
   const filteredItems = useMemo(() => {
-    if (filters.length === 0) return items;
+    let result = items;
 
-    return items.filter((item) => {
+    // Client-side search for custom data (MCP resources filtered server-side)
+    if (customData && clientSearchValue) {
+      const searchTerm = clientSearchValue.toLowerCase().trim();
+      result = result.filter((item) => {
+        const resourceItem = item as ResourceListItem;
+        const itemRecord = item as Record<string, unknown>;
+        const itemData =
+          resourceItem.data ||
+          (itemRecord.data as Record<string, unknown> | undefined);
+        const name = String(itemData?.name || "").toLowerCase();
+        const description = String(itemData?.description || "").toLowerCase();
+        return name.includes(searchTerm) || description.includes(searchTerm);
+      });
+    }
+
+    // Apply advanced filters (only for MCP resources, skip for custom data)
+    if (filters.length === 0 || customData) return result;
+
+    return result.filter((item) => {
+      const resourceItem = item as ResourceListItem;
       return filters.every((filter) => {
         const { column, operator, value } = filter;
 
         // Text filters (name, description)
         if (column === "name" || column === "description") {
-          const fieldValue = (item.data?.[column] || "").toLowerCase();
-          const filterValue = (value || "").toLowerCase();
+          const fieldValue = String(
+            resourceItem.data?.[column] || "",
+          ).toLowerCase();
+          const filterValue = String(value || "").toLowerCase();
 
           switch (operator) {
             case "contains":
@@ -425,16 +696,16 @@ function ResourcesV2ListTab({
 
         // User filters (created_by, updated_by)
         if (column === "created_by" || column === "updated_by") {
-          const fieldValue = item[column];
+          const fieldValue = resourceItem[column];
           return fieldValue === value;
         }
 
         // Date filters (created_at, updated_at)
         if (column === "created_at" || column === "updated_at") {
-          const fieldValue = item[column];
+          const fieldValue = resourceItem[column];
           if (!fieldValue) return false;
 
-          const itemDate = new Date(fieldValue);
+          const itemDate = new Date(String(fieldValue));
           const now = new Date();
 
           if (operator === "in_last") {
@@ -464,33 +735,42 @@ function ResourcesV2ListTab({
         return true;
       });
     });
-  }, [items, filters]);
+  }, [items, filters, customData, clientSearchValue]);
 
   // Sort the items based on current sort state
+  // For custom data, sorting should be handled by the custom columns' sortable property
   const sortedItems = useMemo(() => {
     if (!sortKey || !sortDirection) return filteredItems;
+    // If using custom columns, let the Table component handle sorting
+    if (customColumns) return filteredItems;
 
     return [...filteredItems].sort((a, b) => {
+      const resourceItemA = a as ResourceListItem;
+      const resourceItemB = b as ResourceListItem;
       let aValue: string | number;
       let bValue: string | number;
 
       // Get values based on column
       switch (sortKey) {
         case "title":
-          aValue = (a.data?.name || "").toLowerCase();
-          bValue = (b.data?.name || "").toLowerCase();
+          aValue = String(resourceItemA.data?.name || "").toLowerCase();
+          bValue = String(resourceItemB.data?.name || "").toLowerCase();
           break;
         case "description":
-          aValue = (a.data?.description || "").toLowerCase();
-          bValue = (b.data?.description || "").toLowerCase();
+          aValue = String(resourceItemA.data?.description || "").toLowerCase();
+          bValue = String(resourceItemB.data?.description || "").toLowerCase();
           break;
         case "updated_at":
-          aValue = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-          bValue = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+          aValue = resourceItemA.updated_at
+            ? new Date(String(resourceItemA.updated_at)).getTime()
+            : 0;
+          bValue = resourceItemB.updated_at
+            ? new Date(String(resourceItemB.updated_at)).getTime()
+            : 0;
           break;
         case "updated_by":
-          aValue = (a.updated_by || "").toLowerCase();
-          bValue = (b.updated_by || "").toLowerCase();
+          aValue = String(resourceItemA.updated_by || "").toLowerCase();
+          bValue = String(resourceItemB.updated_by || "").toLowerCase();
           break;
         default:
           return 0;
@@ -501,11 +781,12 @@ function ResourcesV2ListTab({
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [filteredItems, sortKey, sortDirection]);
+  }, [filteredItems, sortKey, sortDirection, customColumns]);
 
   // Removed effects in favor of TanStack Query hooks
 
-  if (!integrationId || !resourceName) {
+  // Only require integrationId/resourceName if not using custom data
+  if (!customData && (!integrationId || !resourceName)) {
     return (
       <EmptyState
         icon="report"
@@ -515,11 +796,6 @@ function ResourcesV2ListTab({
     );
   }
 
-  // Format resource name for title (e.g., "WORKFLOW_RUN" -> "Workflow Runs")
-  const title = useMemo(() => {
-    return resourceName ? formatResourceName(resourceName) : "Resources";
-  }, [resourceName]);
-
   // Always ensure there's at least an "All" tab
   const finalTabs = useMemo(() => {
     if (!tabs || tabs.length === 0) {
@@ -528,442 +804,408 @@ function ResourcesV2ListTab({
     return tabs;
   }, [tabs]);
 
+  // Create CTA button - use custom if provided
+  // If customCtaButton is explicitly null, don't show any CTA button
+  const ctaButton =
+    customCtaButton !== undefined ? (
+      customCtaButton
+    ) : capabilities.hasCreate ? (
+      resourceName === "document" ? (
+        // Split button for documents with dropdown options
+        <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
+          <Button
+            onClick={async () => {
+              if (!integration) return;
+              try {
+                setMutating(true);
+
+                const timestamp = new Date()
+                  .toISOString()
+                  .replace(/[:.]/g, "-");
+                const data = {
+                  name: `Untitled-${timestamp}`,
+                  description: "",
+                  content: "",
+                };
+
+                const result = await callTool(integration.connection, {
+                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                  arguments: { data },
+                });
+
+                const uri =
+                  (result as { uri?: string })?.uri ||
+                  (result as { data?: { uri?: string } })?.data?.uri ||
+                  (
+                    result as {
+                      structuredContent?: { uri?: string };
+                    }
+                  )?.structuredContent?.uri ||
+                  (
+                    result as {
+                      content?: Array<{ text?: string }>;
+                    }
+                  )?.content?.[0]?.text;
+
+                if (!uri) {
+                  console.error("Create result:", result);
+                  throw new Error("No URI returned from create operation");
+                }
+
+                queryClient.invalidateQueries({
+                  queryKey: KEYS.RESOURCES_LIST(
+                    locator,
+                    integrationId!,
+                    resourceName!,
+                  ),
+                });
+
+                // Open the newly created resource in a fresh canvas tab
+                const newTab = createTab({
+                  type: "detail",
+                  resourceUri: uri,
+                  title: data.name || "Untitled",
+                  icon: integration?.icon,
+                });
+                if (!newTab) {
+                  console.warn(
+                    "[ResourcesV2List] Failed to open new document tab after creation",
+                  );
+                }
+              } catch (error) {
+                console.error("Failed to create document:", error);
+                toast.error("Failed to create document. Please try again.");
+                setMutating(false);
+              }
+            }}
+            variant="default"
+            size="sm"
+            className="flex-1 rounded-none rounded-l-xl"
+            disabled={mutating}
+          >
+            {mutating ? (
+              <div className="w-4 h-4">
+                <Spinner />
+              </div>
+            ) : (
+              <Icon name="add" />
+            )}
+            New document
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="rounded-none rounded-r-xl border-l border-white/20"
+                disabled={mutating}
+              >
+                <Icon name="expand_more" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={async () => {
+                  if (!integration) return;
+                  try {
+                    setMutating(true);
+
+                    const timestamp = new Date()
+                      .toISOString()
+                      .replace(/[:.]/g, "-");
+                    const data = {
+                      name: `Untitled-${timestamp}`,
+                      description: "",
+                      content: "",
+                    };
+
+                    const result = await callTool(integration.connection, {
+                      name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                      arguments: { data },
+                    });
+
+                    const uri =
+                      (result as { uri?: string })?.uri ||
+                      (result as { data?: { uri?: string } })?.data?.uri ||
+                      (
+                        result as {
+                          structuredContent?: { uri?: string };
+                        }
+                      )?.structuredContent?.uri ||
+                      (
+                        result as {
+                          content?: Array<{ text?: string }>;
+                        }
+                      )?.content?.[0]?.text;
+
+                    if (!uri) {
+                      console.error("Create result:", result);
+                      throw new Error("No URI returned from create operation");
+                    }
+
+                    queryClient.invalidateQueries({
+                      queryKey: KEYS.RESOURCES_LIST(
+                        locator,
+                        integrationId!,
+                        resourceName!,
+                      ),
+                    });
+
+                    // Open the newly created resource in a fresh canvas tab
+                    const newTab = createTab({
+                      type: "detail",
+                      resourceUri: uri,
+                      title: data.name || "Untitled",
+                      icon: integration?.icon,
+                    });
+                    if (!newTab) {
+                      console.warn(
+                        "[ResourcesV2List] Failed to open new document tab after template creation",
+                      );
+                    }
+                  } catch (error) {
+                    console.error("Failed to create document:", error);
+                    toast.error("Failed to create document. Please try again.");
+                    setMutating(false);
+                  }
+                }}
+              >
+                <Icon name="description" className="w-4 h-4 mr-2" />
+                From template
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={async () => {
+                  if (!integration) return;
+                  try {
+                    setMutating(true);
+
+                    const result = await callTool(integration.connection, {
+                      name: "DECO_RESOURCE_DOCUMENT_CREATE",
+                      arguments: {
+                        data: AI_APP_PRD_TEMPLATE,
+                      },
+                    });
+
+                    const uri =
+                      (result as { uri?: string })?.uri ||
+                      (result as { data?: { uri?: string } })?.data?.uri ||
+                      (
+                        result as {
+                          structuredContent?: { uri?: string };
+                        }
+                      )?.structuredContent?.uri ||
+                      (
+                        result as {
+                          content?: Array<{ text?: string }>;
+                        }
+                      )?.content?.[0]?.text;
+
+                    if (!uri) {
+                      console.error("Create result:", result);
+                      throw new Error("No URI returned from create operation");
+                    }
+
+                    queryClient.invalidateQueries({
+                      queryKey: KEYS.RESOURCES_LIST(
+                        locator,
+                        integrationId!,
+                        resourceName!,
+                      ),
+                    });
+
+                    // Open the newly created resource in a fresh canvas tab
+                    const newTab = createTab({
+                      type: "detail",
+                      resourceUri: uri,
+                      title: "AI App PRD",
+                      icon: integration?.icon,
+                    });
+                    if (!newTab) {
+                      console.warn(
+                        "[ResourcesV2List] Failed to open AI App PRD tab after creation",
+                      );
+                    }
+                  } catch (error) {
+                    console.error("Failed to create document:", error);
+                    toast.error("Failed to create document. Please try again.");
+                    setMutating(false);
+                  }
+                }}
+              >
+                <Icon name="auto_awesome" className="w-4 h-4 mr-2" />
+                From AI PRD template
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : (
+        // Regular button for other resources
+        <Button
+          onClick={async () => {
+            if (!integration) return;
+            try {
+              setMutating(true);
+
+              // Generate unique name with timestamp
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              const uniqueName = `Untitled-${timestamp}`;
+
+              // Build data payload based on resource type
+              const data: Record<string, unknown> = {
+                name: uniqueName,
+                description: "",
+              };
+
+              // Add resource-specific required fields
+              if (resourceName === "workflow") {
+                data.inputSchema = {};
+                data.outputSchema = {};
+                data.steps = [
+                  {
+                    def: {
+                      name: "Start",
+                      description: "Initial step",
+                      execute:
+                        "export default async function(input, ctx) { return {}; }",
+                      inputSchema: {},
+                      outputSchema: {},
+                    },
+                  },
+                ];
+              } else if (resourceName === "tool") {
+                data.inputSchema = {};
+                data.outputSchema = {};
+                data.execute =
+                  "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
+              }
+
+              const result = await callTool(integration.connection, {
+                name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
+                arguments: { data },
+              });
+
+              // Extract URI from response (can be at different levels)
+              const uri =
+                (result as { uri?: string })?.uri ||
+                (result as { data?: { uri?: string } })?.data?.uri ||
+                (
+                  result as {
+                    structuredContent?: { uri?: string };
+                  }
+                )?.structuredContent?.uri ||
+                (
+                  result as {
+                    content?: Array<{ text?: string }>;
+                  }
+                )?.content?.[0]?.text;
+
+              if (!uri) {
+                console.error("Create result:", result);
+                throw new Error("No URI returned from create operation");
+              }
+
+              // Invalidate list query so it refreshes when user navigates back
+              queryClient.invalidateQueries({
+                queryKey: KEYS.RESOURCES_LIST(
+                  locator,
+                  integrationId!,
+                  resourceName!,
+                ),
+              });
+
+              // Open the newly created resource in a fresh canvas tab
+              const newTab = createTab({
+                type: "detail",
+                resourceUri: uri,
+                title: uniqueName || "Untitled",
+                icon: integration?.icon,
+              });
+              if (!newTab) {
+                console.warn(
+                  "[ResourcesV2List] Failed to open new resource tab after creation",
+                );
+              }
+            } catch (error) {
+              console.error(
+                `Failed to create ${resourceName || "resource"}:`,
+                error,
+              );
+              toast.error(
+                `Failed to create ${resourceName || "resource"}. Please try again.`,
+              );
+              setMutating(false);
+            }
+          }}
+          variant="default"
+          size="sm"
+          className="rounded-xl w-full md:w-auto"
+          disabled={mutating}
+        >
+          {mutating ? (
+            <div className="w-4 h-4">
+              <Spinner />
+            </div>
+          ) : (
+            <Icon name="add" />
+          )}
+          New {resourceName}
+        </Button>
+      )
+    ) : null;
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-auto">
-        {/* Header Section - sticky horizontally, doesn't scroll with content */}
-        <div className="sticky">
-          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-            {headerSlot}
-            <ResourceHeader
-              title={title}
-              tabs={finalTabs}
-              activeTab={activeTab || "all"}
-              onTabChange={onTabChange}
-              searchOpen={searchOpen}
-              searchValue={q}
-              onSearchToggle={() => setSearchOpen(!searchOpen)}
-              onSearchChange={(value: string) => {
-                setSearchParams((prev) => {
-                  const next = new URLSearchParams(prev);
-                  if (value) next.set("q", value);
-                  else next.delete("q");
-                  return next;
-                });
-              }}
-              onSearchBlur={() => {
-                if (!q) {
-                  setSearchOpen(false);
-                }
-              }}
-              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  listQuery.refetch();
-                }
-                if (e.key === "Escape") {
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.delete("q");
-                    return next;
-                  });
-                  setSearchOpen(false);
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              onRefresh={() => listQuery.refetch()}
-              onFilterClick={() => {
-                const newValue = !filterBarVisible;
-                setFilterBarVisible(newValue);
-                globalThis.localStorage?.setItem(
-                  filterBarVisibilityKey,
-                  String(newValue),
-                );
-              }}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              sortKey={sortKey}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              filterBarVisible={filterBarVisible}
-              filters={filters}
-              onFiltersChange={setFilters}
-              availableUsers={availableUsers}
-              ctaButton={
-                capabilities.hasCreate ? (
-                  resourceName === "document" ? (
-                    // Split button for documents with dropdown options
-                    <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
-                      <Button
-                        onClick={async () => {
-                          if (!integration) return;
-                          try {
-                            setMutating(true);
-
-                            const timestamp = new Date()
-                              .toISOString()
-                              .replace(/[:.]/g, "-");
-                            const data = {
-                              name: `Untitled-${timestamp}`,
-                              description: "",
-                              content: "",
-                            };
-
-                            const result = await callTool(
-                              integration.connection,
-                              {
-                                name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                                arguments: { data },
-                              },
-                            );
-
-                            const uri =
-                              (result as { uri?: string })?.uri ||
-                              (result as { data?: { uri?: string } })?.data
-                                ?.uri ||
-                              (
-                                result as {
-                                  structuredContent?: { uri?: string };
-                                }
-                              )?.structuredContent?.uri ||
-                              (
-                                result as {
-                                  content?: Array<{ text?: string }>;
-                                }
-                              )?.content?.[0]?.text;
-
-                            if (!uri) {
-                              console.error("Create result:", result);
-                              throw new Error(
-                                "No URI returned from create operation",
-                              );
-                            }
-
-                            queryClient.invalidateQueries({
-                              queryKey: KEYS.RESOURCES_LIST(
-                                locator,
-                                integrationId!,
-                                resourceName!,
-                              ),
-                            });
-
-                            navigateWorkspace(
-                              `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                            );
-                          } catch (error) {
-                            console.error("Failed to create document:", error);
-                            toast.error(
-                              "Failed to create document. Please try again.",
-                            );
-                            setMutating(false);
-                          }
-                        }}
-                        variant="default"
-                        className="flex-1 h-9 rounded-none rounded-l-xl"
-                        disabled={mutating}
-                      >
-                        {mutating ? (
-                          <div className="w-4 h-4">
-                            <Spinner />
-                          </div>
-                        ) : (
-                          <Icon name="add" />
-                        )}
-                        New document
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="default"
-                            size="icon"
-                            className="h-9 w-10 rounded-none rounded-r-xl border-l border-white/20"
-                            disabled={mutating}
-                          >
-                            <Icon name="expand_more" size={20} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-64">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={async () => {
-                              if (!integration) return;
-                              try {
-                                setMutating(true);
-
-                                const timestamp = new Date()
-                                  .toISOString()
-                                  .replace(/[:.]/g, "-");
-                                const data = {
-                                  name: `Untitled-${timestamp}`,
-                                  description: "",
-                                  content: "",
-                                };
-
-                                const result = await callTool(
-                                  integration.connection,
-                                  {
-                                    name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                                    arguments: { data },
-                                  },
-                                );
-
-                                const uri =
-                                  (result as { uri?: string })?.uri ||
-                                  (result as { data?: { uri?: string } })?.data
-                                    ?.uri ||
-                                  (
-                                    result as {
-                                      structuredContent?: { uri?: string };
-                                    }
-                                  )?.structuredContent?.uri ||
-                                  (
-                                    result as {
-                                      content?: Array<{ text?: string }>;
-                                    }
-                                  )?.content?.[0]?.text;
-
-                                if (!uri) {
-                                  console.error("Create result:", result);
-                                  throw new Error(
-                                    "No URI returned from create operation",
-                                  );
-                                }
-
-                                queryClient.invalidateQueries({
-                                  queryKey: KEYS.RESOURCES_LIST(
-                                    locator,
-                                    integrationId!,
-                                    resourceName!,
-                                  ),
-                                });
-
-                                navigateWorkspace(
-                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                                );
-                              } catch (error) {
-                                console.error(
-                                  "Failed to create document:",
-                                  error,
-                                );
-                                toast.error(
-                                  "Failed to create document. Please try again.",
-                                );
-                                setMutating(false);
-                              }
-                            }}
-                          >
-                            <Icon name="docs" size={18} className="mr-2" />
-                            <div className="flex-1">
-                              <div className="font-medium">Blank Document</div>
-                              <div className="text-xs text-muted-foreground">
-                                Start from scratch
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={async () => {
-                              if (!integration) return;
-                              try {
-                                setMutating(true);
-
-                                const timestamp = new Date()
-                                  .toISOString()
-                                  .replace(/[:.]/g, "-");
-                                const data = {
-                                  name: `AI App PRD - ${timestamp}`,
-                                  description:
-                                    "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
-                                  content: AI_APP_PRD_TEMPLATE,
-                                };
-
-                                const result = await callTool(
-                                  integration.connection,
-                                  {
-                                    name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                                    arguments: { data },
-                                  },
-                                );
-
-                                const uri =
-                                  (result as { uri?: string })?.uri ||
-                                  (result as { data?: { uri?: string } })?.data
-                                    ?.uri ||
-                                  (
-                                    result as {
-                                      structuredContent?: { uri?: string };
-                                    }
-                                  )?.structuredContent?.uri ||
-                                  (
-                                    result as {
-                                      content?: Array<{ text?: string }>;
-                                    }
-                                  )?.content?.[0]?.text;
-
-                                if (!uri) {
-                                  console.error("Create result:", result);
-                                  throw new Error(
-                                    "No URI returned from create operation",
-                                  );
-                                }
-
-                                queryClient.invalidateQueries({
-                                  queryKey: KEYS.RESOURCES_LIST(
-                                    locator,
-                                    integrationId!,
-                                    resourceName!,
-                                  ),
-                                });
-
-                                navigateWorkspace(
-                                  `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                                );
-                              } catch (error) {
-                                console.error(
-                                  "Failed to create PRD document:",
-                                  error,
-                                );
-                                toast.error(
-                                  "Failed to create PRD document. Please try again.",
-                                );
-                                setMutating(false);
-                              }
-                            }}
-                          >
-                            <Icon
-                              name="rocket_launch"
-                              size={18}
-                              className="mr-2"
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium">AI App PRD</div>
-                              <div className="text-xs text-muted-foreground">
-                                Plan tools, agents & workflows
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ) : (
-                    // Regular button for other resources
-                    <Button
-                      onClick={async () => {
-                        if (!integration) return;
-                        try {
-                          setMutating(true);
-
-                          // Generate unique name with timestamp
-                          const timestamp = new Date()
-                            .toISOString()
-                            .replace(/[:.]/g, "-");
-                          const uniqueName = `Untitled-${timestamp}`;
-
-                          // Build data payload based on resource type
-                          const data: Record<string, unknown> = {
-                            name: uniqueName,
-                            description: "",
-                          };
-
-                          // Add resource-specific required fields
-                          if (resourceName === "workflow") {
-                            data.inputSchema = {};
-                            data.outputSchema = {};
-                            data.steps = [
-                              {
-                                def: {
-                                  name: "Start",
-                                  description: "Initial step",
-                                  execute:
-                                    "export default async function(input, ctx) { return {}; }",
-                                  inputSchema: {},
-                                  outputSchema: {},
-                                },
-                              },
-                            ];
-                          } else if (resourceName === "tool") {
-                            data.inputSchema = {};
-                            data.outputSchema = {};
-                            data.execute =
-                              "// Add your tool code here\nexport default function(input) {\n  return {};\n}";
-                          }
-
-                          const result = await callTool(
-                            integration.connection,
-                            {
-                              name: `DECO_RESOURCE_${(resourceName ?? "").toUpperCase()}_CREATE`,
-                              arguments: { data },
-                            },
-                          );
-
-                          // Extract URI from response (can be at different levels)
-                          const uri =
-                            (result as { uri?: string })?.uri ||
-                            (result as { data?: { uri?: string } })?.data
-                              ?.uri ||
-                            (
-                              result as {
-                                structuredContent?: { uri?: string };
-                              }
-                            )?.structuredContent?.uri ||
-                            (
-                              result as {
-                                content?: Array<{ text?: string }>;
-                              }
-                            )?.content?.[0]?.text;
-
-                          if (!uri) {
-                            console.error("Create result:", result);
-                            throw new Error(
-                              "No URI returned from create operation",
-                            );
-                          }
-
-                          // Invalidate list query so it refreshes when user navigates back
-                          queryClient.invalidateQueries({
-                            queryKey: KEYS.RESOURCES_LIST(
-                              locator,
-                              integrationId!,
-                              resourceName!,
-                            ),
-                          });
-
-                          // Navigate immediately - the route change will unmount this component
-                          navigateWorkspace(
-                            `rsc/${integrationId}/${resourceName}/${encodeURIComponent(uri)}`,
-                          );
-                        } catch (error) {
-                          console.error(
-                            `Failed to create ${resourceName || "resource"}:`,
-                            error,
-                          );
-                          toast.error(
-                            `Failed to create ${resourceName || "resource"}. Please try again.`,
-                          );
-                          setMutating(false);
-                        }
-                      }}
-                      variant="default"
-                      className="h-9 rounded-xl w-full md:w-auto"
-                      disabled={mutating}
-                    >
-                      {mutating ? (
-                        <div className="w-4 h-4">
-                          <Spinner />
-                        </div>
-                      ) : (
-                        <Icon name="add" />
-                      )}
-                      New {resourceName}
-                    </Button>
-                  )
-                ) : undefined
+      {/* Header Section - fixed, doesn't scroll with content */}
+      <div className="shrink-0">
+        <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+          {headerSlot}
+          <ResourceHeader
+            tabs={finalTabs}
+            activeTab={activeTab || "all"}
+            onTabChange={onTabChange}
+            searchOpen={searchOpen}
+            searchValue={clientSearchValue}
+            onSearchToggle={() => setSearchOpen(!searchOpen)}
+            onSearchChange={setLocalSearch}
+            onSearchBlur={() => {
+              if (!clientSearchValue) {
+                setSearchOpen(false);
               }
-            />
-          </div>
+            }}
+            onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === "Escape") {
+                setLocalSearch("");
+                setSearchOpen(false);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            onRefresh={() => listQuery.refetch()}
+            onFilterClick={() => {
+              const newValue = !filterBarVisible;
+              setFilterBarVisible(newValue);
+              globalThis.localStorage?.setItem(
+                filterBarVisibilityKey,
+                String(newValue),
+              );
+            }}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            filterBarVisible={filterBarVisible}
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableUsers={availableUsers}
+            ctaButton={ctaButton}
+          />
         </div>
+      </div>
 
-        {/* Content Section - can scroll horizontally */}
+      {/* Content Section - scrollable */}
+      <div className="flex-1 overflow-auto">
         <div className="px-8">
           <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8 pb-8">
             {error && (
@@ -980,9 +1222,12 @@ function ResourcesV2ListTab({
               </div>
             ) : sortedItems.length === 0 ? (
               <EmptyState
-                icon="list"
-                title="No resources found"
-                description={`No ${resourceName} found for this integration.`}
+                icon={customEmptyState?.icon || "list"}
+                title={customEmptyState?.title || "No resources found"}
+                description={
+                  customEmptyState?.description ||
+                  `No ${resourceName} found for this integration.`
+                }
               />
             ) : viewMode === "cards" ? (
               <div
@@ -991,108 +1236,370 @@ function ResourcesV2ListTab({
                   gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 }}
               >
-                {sortedItems.map((it) => (
-                  <Card
-                    key={it.uri}
-                    className="group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
-                    onClick={() =>
-                      navigateWorkspace(
-                        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
-                      )
-                    }
-                  >
-                    <div className="flex flex-col h-full">
-                      {/* Content Section */}
-                      <div className="p-5 flex flex-col gap-2 flex-1 relative">
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                }}
-                                className="text-muted-foreground h-8 w-8"
-                              >
-                                <Icon name="more_horiz" className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDuplicate(it);
-                                }}
-                                disabled={mutating}
-                              >
-                                <Icon
-                                  name="content_copy"
-                                  className="w-4 h-4 mr-2"
-                                />
-                                Duplicate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigateWorkspace(
-                                    `rsc/${integrationId}/${resourceName}/${encodeURIComponent(it.uri)}`,
-                                  );
-                                }}
-                              >
-                                <Icon
-                                  name="open_in_new"
-                                  className="w-4 h-4 mr-2"
-                                />
-                                Open
-                              </DropdownMenuItem>
-                              {capabilities.hasDelete && (
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteClick(it.uri);
-                                  }}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Icon
-                                    name="delete"
-                                    className="w-4 h-4 mr-2"
-                                  />
-                                  Delete
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        <h3 className="text-base font-medium text-foreground truncate pr-10">
-                          {it.data?.name ?? ""}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
-                          {it.data?.description ?? ""}
-                        </p>
-                      </div>
+                {sortedItems.map((it) => {
+                  // Default card rendering for MCP resources
+                  const item = it as ResourceListItem | Record<string, unknown>;
+                  const resourceItem = item as ResourceListItem;
+                  const itemRecord = item as Record<string, unknown>;
+                  const thumbnail = itemRecord.thumbnail as string | undefined;
+                  const itemData =
+                    resourceItem.data ||
+                    (itemRecord.data as Record<string, unknown> | undefined);
+                  const itemUri =
+                    resourceItem.uri || (itemRecord.uri as string) || "";
+                  const itemName = (itemData?.name as string) || "";
+                  const itemDescription =
+                    (itemData?.description as string) || "";
+                  const itemUpdatedAt =
+                    resourceItem.updated_at ||
+                    (itemRecord.updated_at as string | undefined);
+                  const itemUpdatedBy =
+                    resourceItem.updated_by ||
+                    (itemRecord.updated_by as string | undefined);
 
-                      {/* Footer Section */}
-                      <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-wrap gap-x-4 gap-y-1">
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Updated</span>
-                          <span className="text-foreground">
-                            <TimeAgoCell value={it.updated_at} />
-                          </span>
+                  return (
+                    <Card
+                      key={itemUri || JSON.stringify(item)}
+                      className="h-full group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
+                      onClick={() => {
+                        if (onItemClick) {
+                          console.log(
+                            "[ResourcesList] Using custom onItemClick handler",
+                          );
+                          onItemClick(item);
+                          return;
+                        }
+
+                        if (!itemUri) {
+                          console.error(
+                            "[ResourcesList] No itemUri found - cannot navigate to detail",
+                            {
+                              item,
+                              resourceItem,
+                              itemRecord,
+                            },
+                          );
+                          return;
+                        }
+
+                        // Check if a tab with this resourceUri already exists
+                        console.log(
+                          "[ResourcesList] Card click - checking for existing tab",
+                          {
+                            itemUri,
+                            itemName,
+                            integrationId,
+                            resourceName,
+                            allCanvasTabs: canvasTabs.map((t) => ({
+                              id: t.id,
+                              type: t.type,
+                              resourceUri: t.resourceUri,
+                              title: t.title,
+                            })),
+                          },
+                        );
+
+                        const existingTab = canvasTabs.find(
+                          (tab) =>
+                            tab.type === "detail" &&
+                            tab.resourceUri === itemUri,
+                        );
+
+                        console.log(
+                          "[ResourcesList] Card click - existing tab check result",
+                          {
+                            itemUri,
+                            existingTab: existingTab
+                              ? {
+                                  id: existingTab.id,
+                                  type: existingTab.type,
+                                  resourceUri: existingTab.resourceUri,
+                                  title: existingTab.title,
+                                }
+                              : null,
+                          },
+                        );
+
+                        if (existingTab) {
+                          // Switch to existing tab instead of creating a new one
+                          console.log(
+                            "[ResourcesList] Card click - switching to existing tab",
+                            {
+                              tabId: existingTab.id,
+                              resourceUri: existingTab.resourceUri,
+                            },
+                          );
+                          setActiveTab(existingTab.id);
+                        } else {
+                          // Create new tab if it doesn't exist
+                          const newTab = {
+                            type: "detail" as const,
+                            resourceUri: itemUri,
+                            title: itemName || "Resource",
+                            icon: integration?.icon,
+                          };
+                          console.log(
+                            "[ResourcesList] Card click - creating new tab",
+                            newTab,
+                          );
+                          addTab(newTab);
+                        }
+                      }}
+                    >
+                      <div className="flex flex-col h-full">
+                        {/* Content Section */}
+                        <div className="p-5 flex flex-col gap-3 flex-1">
+                          {/* Thumbnail + Title + Dropdown Row */}
+                          <div className="flex items-start gap-3 relative">
+                            {/* Thumbnail on the left */}
+                            {thumbnail && (
+                              <div className="w-16 h-16 shrink-0 overflow-hidden bg-muted rounded">
+                                {thumbnail.startsWith("icon://") ? (
+                                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                                    <Icon
+                                      name={thumbnail.replace("icon://", "")}
+                                      size={32}
+                                      className="text-muted-foreground"
+                                    />
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={thumbnail}
+                                    alt={itemName || "Thumbnail"}
+                                    className="w-full h-full object-contain"
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Title + Dropdown on the right */}
+                            <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+                              <h3 className="text-base font-medium text-foreground truncate flex-1">
+                                {itemName}
+                              </h3>
+                              {/* Dropdown menu */}
+                              {customRowActions &&
+                                (() => {
+                                  const customActions = customRowActions(item);
+                                  const allActions: CustomRowAction[] = [
+                                    ...customActions,
+                                  ];
+
+                                  // Add default MCP actions if URI is available and not already in custom actions
+                                  if (itemUri) {
+                                    const hasDuplicate = customActions.some(
+                                      (a) => a.label === "Duplicate",
+                                    );
+                                    const hasOpen = customActions.some(
+                                      (a) => a.label === "Open",
+                                    );
+                                    const hasDelete = customActions.some(
+                                      (a) => a.label === "Delete",
+                                    );
+
+                                    if (!hasDuplicate) {
+                                      allActions.push({
+                                        label: "Duplicate",
+                                        icon: "content_copy",
+                                        onClick: () => {
+                                          handleDuplicate(resourceItem);
+                                        },
+                                      });
+                                    }
+
+                                    if (!hasOpen) {
+                                      allActions.push({
+                                        label: "Open",
+                                        icon: "open_in_new",
+                                        onClick: () => {
+                                          navigateWorkspace(
+                                            `rsc/${integrationId}/${resourceName}/${encodeURIComponent(itemUri)}`,
+                                          );
+                                        },
+                                      });
+                                    }
+
+                                    if (capabilities.hasDelete && !hasDelete) {
+                                      allActions.push({
+                                        label: "Delete",
+                                        icon: "delete",
+                                        variant: "destructive",
+                                        onClick: () => {
+                                          onDeleteClick(itemUri);
+                                        },
+                                      });
+                                    }
+                                  }
+
+                                  if (allActions.length === 0) return null;
+
+                                  return (
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                            }}
+                                            className="text-muted-foreground h-8 w-8"
+                                          >
+                                            <Icon
+                                              name="more_horiz"
+                                              className="w-4 h-4"
+                                            />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          {allActions.map((action, index) => (
+                                            <DropdownMenuItem
+                                              key={index}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                action.onClick(item);
+                                              }}
+                                              disabled={action.disabled}
+                                              className={
+                                                action.variant === "destructive"
+                                                  ? "text-destructive focus:text-destructive"
+                                                  : ""
+                                              }
+                                            >
+                                              {action.icon && (
+                                                <Icon
+                                                  name={action.icon}
+                                                  className="w-4 h-4 mr-2"
+                                                />
+                                              )}
+                                              {action.label}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  );
+                                })()}
+                              {!customRowActions &&
+                                itemUri &&
+                                (() => {
+                                  const defaultActions: CustomRowAction[] = [];
+
+                                  // Add default actions
+                                  defaultActions.push({
+                                    label: "Duplicate",
+                                    icon: "content_copy",
+                                    onClick: () => {
+                                      handleDuplicate(resourceItem);
+                                    },
+                                  });
+
+                                  defaultActions.push({
+                                    label: "Open",
+                                    icon: "open_in_new",
+                                    onClick: () => {
+                                      navigateWorkspace(
+                                        `rsc/${integrationId}/${resourceName}/${encodeURIComponent(itemUri)}`,
+                                      );
+                                    },
+                                  });
+
+                                  if (capabilities.hasDelete) {
+                                    defaultActions.push({
+                                      label: "Delete",
+                                      icon: "delete",
+                                      variant: "destructive",
+                                      onClick: () => {
+                                        onDeleteClick(itemUri);
+                                      },
+                                    });
+                                  }
+
+                                  if (defaultActions.length === 0) return null;
+
+                                  return (
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                            }}
+                                            className="text-muted-foreground h-8 w-8"
+                                          >
+                                            <Icon
+                                              name="more_horiz"
+                                              className="w-4 h-4"
+                                            />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          {defaultActions.map(
+                                            (action, index) => (
+                                              <DropdownMenuItem
+                                                key={index}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  action.onClick(item);
+                                                }}
+                                                disabled={action.disabled}
+                                                className={
+                                                  action.variant ===
+                                                  "destructive"
+                                                    ? "text-destructive focus:text-destructive"
+                                                    : ""
+                                                }
+                                              >
+                                                {action.icon && (
+                                                  <Icon
+                                                    name={action.icon}
+                                                    className="w-4 h-4 mr-2"
+                                                  />
+                                                )}
+                                                {action.label}
+                                              </DropdownMenuItem>
+                                            ),
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  );
+                                })()}
+                            </div>
+                          </div>
+
+                          {/* Description below */}
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-normal">
+                            {itemDescription || "No description"}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">by</span>
-                          <UserInfo
-                            userId={it.updated_by}
-                            size="xs"
-                            showEmail={false}
-                            noTooltip
-                          />
+
+                        {/* Footer Section */}
+                        <div className="border-t border-border px-5 py-3 flex items-center justify-between text-sm flex-wrap gap-x-4 gap-y-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">
+                              Updated
+                            </span>
+                            <span className="text-foreground">
+                              <TimeAgoCell value={itemUpdatedAt} />
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">by</span>
+                            <UserInfo
+                              userId={itemUpdatedBy}
+                              size="xs"
+                              showEmail={false}
+                              noTooltip
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : null}
             {viewMode === "table" && !loading && sortedItems.length > 0 && (
@@ -1103,11 +1610,90 @@ function ResourcesV2ListTab({
                   sortKey={sortKey}
                   sortDirection={sortDirection}
                   onSort={handleSort}
-                  onRowClick={(row) =>
-                    navigateWorkspace(
-                      `rsc/${integrationId}/${resourceName}/${encodeURIComponent(row.uri)}`,
-                    )
-                  }
+                  onRowClick={(row) => {
+                    const item = row as ResourceListItem;
+
+                    if (onItemClick) {
+                      console.log(
+                        "[ResourcesList] Using custom onItemClick handler",
+                      );
+                      onItemClick(row);
+                      return;
+                    }
+                    // Default behavior for MCP resources
+                    // Add new tab with detail view
+                    if (!item.uri) {
+                      console.error(
+                        "[ResourcesList] No itemUri found - cannot navigate to detail",
+                        {
+                          item,
+                        },
+                      );
+                      return;
+                    }
+
+                    // Check if a tab with this resourceUri already exists
+                    console.log(
+                      "[ResourcesList] Table row click - checking for existing tab",
+                      {
+                        itemUri: item.uri,
+                        itemName: item.data?.name,
+                        integrationId,
+                        resourceName,
+                        allCanvasTabs: canvasTabs.map((t) => ({
+                          id: t.id,
+                          type: t.type,
+                          resourceUri: t.resourceUri,
+                          title: t.title,
+                        })),
+                      },
+                    );
+
+                    const existingTab = canvasTabs.find(
+                      (tab) =>
+                        tab.type === "detail" && tab.resourceUri === item.uri,
+                    );
+
+                    console.log(
+                      "[ResourcesList] Table row click - existing tab check result",
+                      {
+                        itemUri: item.uri,
+                        existingTab: existingTab
+                          ? {
+                              id: existingTab.id,
+                              type: existingTab.type,
+                              resourceUri: existingTab.resourceUri,
+                              title: existingTab.title,
+                            }
+                          : null,
+                      },
+                    );
+
+                    if (existingTab) {
+                      // Switch to existing tab instead of creating a new one
+                      console.log(
+                        "[ResourcesList] Table row click - switching to existing tab",
+                        {
+                          tabId: existingTab.id,
+                          resourceUri: existingTab.resourceUri,
+                        },
+                      );
+                      setActiveTab(existingTab.id);
+                    } else {
+                      // Create new tab if it doesn't exist
+                      const newTab = {
+                        type: "detail" as const,
+                        resourceUri: item.uri,
+                        title: item.data?.name || "Resource",
+                        icon: integration?.icon,
+                      };
+                      console.log(
+                        "[ResourcesList] Table row click - creating new tab",
+                        newTab,
+                      );
+                      addTab(newTab);
+                    }
+                  }}
                 />
               </div>
             )}
@@ -1187,6 +1773,13 @@ export function ResourcesV2List({
   activeTab,
   onTabChange,
   resourceRules,
+  // Custom data props
+  customData,
+  customColumns,
+  customRowActions,
+  onItemClick,
+  customCtaButton,
+  customEmptyState,
 }: {
   integrationId?: string;
   resourceName?: string;
@@ -1195,6 +1788,15 @@ export function ResourcesV2List({
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   resourceRules?: string[];
+  // Custom data props
+  customData?: Array<ResourceListItem | Record<string, unknown>>;
+  customColumns?: TableColumn<ResourceListItem | Record<string, unknown>>[];
+  customRowActions?: (
+    item: ResourceListItem | Record<string, unknown>,
+  ) => CustomRowAction[];
+  onItemClick?: (item: ResourceListItem | Record<string, unknown>) => void;
+  customCtaButton?: ReactNode;
+  customEmptyState?: { icon?: string; title?: string; description?: string };
 }) {
   const integration = useIntegration(integrationId ?? "").data;
 
@@ -1252,6 +1854,12 @@ export function ResourcesV2List({
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={onTabChange}
+        customData={customData}
+        customColumns={customColumns}
+        customRowActions={customRowActions}
+        onItemClick={onItemClick}
+        customCtaButton={customCtaButton}
+        customEmptyState={customEmptyState}
       />
     </ResourceRouteProvider>
   );

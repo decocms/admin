@@ -1,17 +1,17 @@
 {
   "name": "deco-cli",
-  "version": "0.23.3",
+  "version": "0.24.6",
   "description": "CLI for managing decocms.com apps & projects",
   "license": "MIT",
   "author": "Deco team",
-  "homepage": "https://github.com/deco-cx/deco",
+  "homepage": "https://github.com/decocms/admin",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deco-cx/deco.git",
+    "url": "git+https://github.com/decocms/admin.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/deco-cx/deco/issues"
+    "url": "https://github.com/decocms/admin/issues"
   },
   "type": "module",
   "main": "./dist/cli.js",
@@ -24,7 +24,7 @@
     "template/**/*"
   ],
   "scripts": {
-    "build": "tsc && cp -r src/rules dist/",
+    "build": "tsup",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "type-check": "tsc --noEmit",
@@ -53,11 +53,14 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@deco/sdk": "^0.1.1",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^24.6.2",
     "@types/object-hash": "^3.0.6",
     "@types/semver": "^7.5.6",
     "@types/ws": "^8.5.10",
+    "esbuild": "^0.25.12",
+    "tsup": "^8.5.0",
     "tsx": "^4.7.1",
     "typescript": "^5.9.3"
   },

@@ -1,97 +1,81 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
-const STORAGE_EVENT = "deco-chat::storage-change";
-
-interface UseLocalStorageSetterProps {
-  key: string;
-}
-
-function useLocalStorageSetter({ key }: UseLocalStorageSetterProps) {
-  function update(value: unknown) {
-    if (value === null) {
-      localStorage.removeItem(key);
-    } else {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-    globalThis.dispatchEvent(
-      new CustomEvent(STORAGE_EVENT, {
-        detail: { key, value: value === null ? null : JSON.stringify(value) },
-      }),
-    );
+function safeParse<T>(value: string): T | undefined {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return undefined;
   }
-  return { update };
 }
 
-function useLocalStorageChange(
+/**
+ * Initialize value from localStorage using the initializer
+ * Handles reading, applying initializer, and saving back if needed
+ */
+function initializeFromStorage<T>(
   key: string,
-  callback: (value: string | null) => void,
-) {
-  useEffect(() => {
-    function handleStorageChange(
-      event: CustomEvent<{ key: string; value: string | null }>,
-    ) {
-      if (event.detail.key === key) {
-        callback(event.detail.value);
-      }
-    }
-    globalThis.addEventListener(
-      STORAGE_EVENT,
-      handleStorageChange as EventListener,
-    );
-    return () => {
-      globalThis.removeEventListener(
-        STORAGE_EVENT,
-        handleStorageChange as EventListener,
-      );
-    };
-  }, [key]);
-}
+  initializer: T | ((existing: T | undefined) => T),
+): T {
+  const item = localStorage.getItem(key);
+  const existing = item ? safeParse<T>(item) : undefined;
 
-interface UseLocalStorageProps<T> {
-  key: string;
-  defaultValue: T;
-  migrate?: (value: T) => T;
-}
+  // Call initializer (value or function)
+  const next =
+    typeof initializer === "function"
+      ? (initializer as (existing: T | undefined) => T)(existing)
+      : (existing ?? initializer);
 
-function useLocalStorage<T>({
-  key,
-  defaultValue,
-  migrate,
-}: UseLocalStorageProps<T>) {
-  const [value, setValue] = useState<T>(() => {
-    const item = localStorage.getItem(key);
-    if (!item) return defaultValue;
+  // If the initializer changed the value (migration or default), save it back
+  if (existing === undefined || next !== existing) {
     try {
-      const parsed = JSON.parse(item) as T;
-      const next = migrate ? migrate(parsed) : parsed;
-      if (migrate && next !== parsed) {
-        try {
-          localStorage.setItem(key, JSON.stringify(next));
-          globalThis.dispatchEvent(
-            new CustomEvent(STORAGE_EVENT, {
-              detail: { key, value: JSON.stringify(next) },
-            }),
-          );
-        } catch {
-          console.warn("Failed to write to localStorage", key);
-        }
-      }
-      return next;
+      const stringified = JSON.stringify(next);
+      localStorage.setItem(key, stringified);
     } catch {
-      return defaultValue;
+      // Ignore errors during migration or initial save
     }
-  });
+  }
 
-  useLocalStorageChange(key, (value) => {
-    setValue(value ? JSON.parse(value) : defaultValue);
-  });
-
-  const { update } = useLocalStorageSetter({ key });
-
-  return {
-    value,
-    update,
-  };
+  return next;
 }
 
-export { useLocalStorage, useLocalStorageChange, useLocalStorageSetter };
+function useLocalStorage<T>(
+  key: string,
+  initializer: T | ((existing: T | undefined) => T),
+): [T, (value: T) => void] {
+  const queryClientInstance = useQueryClient();
+  const queryKey = ["localStorage", key] as const;
+
+  // Use TanStack Query to read from localStorage
+  const { data: value } = useQuery({
+    queryKey,
+    queryFn: () => initializeFromStorage(key, initializer),
+    initialData: () => initializeFromStorage(key, initializer),
+    staleTime: Infinity, // localStorage doesn't change unless we update it
+    gcTime: Infinity, // Keep in cache indefinitely
+  });
+
+  // Mutation to write to localStorage
+  const mutation = useMutation({
+    mutationFn: async (newValue: T) => {
+      const stringified = JSON.stringify(newValue);
+      localStorage.setItem(key, stringified);
+      return newValue;
+    },
+    onSuccess: (newValue) => {
+      // Update the query cache optimistically
+      queryClientInstance.setQueryData(queryKey, newValue);
+    },
+  });
+
+  // Setter that updates localStorage via mutation
+  const setLocalStorageValue = useCallback(
+    (newValue: T) => mutation.mutate(newValue),
+    [mutation],
+  );
+
+  // Return the value from query (guaranteed to be T due to initialData)
+  return [value as T, setLocalStorageValue];
+}
+
+export { useLocalStorage };

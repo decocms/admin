@@ -1,9 +1,4 @@
-import {
-  Locator,
-  SDKProvider,
-  useAgentData,
-  WELL_KNOWN_AGENTS,
-} from "@deco/sdk";
+import { Locator, SDKProvider, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,10 +7,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@deco/ui/components/breadcrumb.tsx";
-import { ButtonGroup } from "@deco/ui/components/button-group.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
-  ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@deco/ui/components/resizable.tsx";
@@ -27,25 +20,18 @@ import {
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { Fragment, Suspense, useState, type ReactNode } from "react";
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router";
+import { Fragment, Suspense, type ReactNode } from "react";
+import { Link, Outlet, useLocation, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { useUser } from "../../hooks/use-user.ts";
 import { useProjectDocumentTitle } from "../../hooks/use-project-document-title.ts";
-import { MainChatSkeleton } from "../agent/chat.tsx";
+import { useUser } from "../../hooks/use-user.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
-import { DecopilotChat } from "../decopilot/index.tsx";
+import { DecopilotChatProviderWrapper } from "../decopilot/decopilot-chat-provider-wrapper.tsx";
+import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
 import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
 import { WithOrgTheme } from "../theme.tsx";
@@ -65,7 +51,6 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
 
   return (
     <SDKProvider locator={Locator.from({ org, project })}>
-      <ProjectDocumentTitleUpdater />
       {children}
       <Toaster
         position="bottom-right"
@@ -86,17 +71,24 @@ function ProjectDocumentTitleUpdater() {
 }
 
 export function ProjectLayout() {
-  const { value: defaultSidebarOpen, update: setDefaultSidebarOpen } =
-    useLocalStorage({
-      key: "deco-chat-sidebar",
-      defaultValue: true,
-    });
-  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
-  const { open: decopilotOpen } = useDecopilotOpen();
-  const location = useLocation();
-  const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
+  return (
+    <BaseRouteLayout>
+      <WithOrgTheme>
+        <ThreadManagerProvider>
+          <ProjectLayoutContent />
+        </ThreadManagerProvider>
+      </WithOrgTheme>
+    </BaseRouteLayout>
+  );
+}
 
+function ProjectLayoutContent() {
   const { org, project } = useParams();
+
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage<boolean>(
+    "deco-chat-sidebar",
+    (existing) => Boolean(existing ?? true),
+  );
 
   const {
     profileOpen,
@@ -107,162 +99,78 @@ export function ProjectLayout() {
   } = useProfileModal();
 
   return (
-    <BaseRouteLayout>
-      <WithOrgTheme>
-        <ThreadManagerProvider>
-          <ThreadContextProvider>
-            <DecopilotThreadProvider>
-              <ProfileModalProvider
-                profileOpen={profileOpen}
-                setProfileOpen={setProfileOpen}
-                openProfileModal={openProfileModal}
-                closeProfileModal={closeProfileModal}
-                handlePhoneSaved={handlePhoneSaved}
-              >
-                <SidebarProvider
-                  open={sidebarOpen}
-                  onOpenChange={(open) => {
-                    setDefaultSidebarOpen(open);
-                    setSidebarOpen(open);
-                  }}
-                >
-                  <div className="flex flex-col h-full">
-                    <TopbarLayout
-                      breadcrumb={[
+    <>
+      <ProjectDocumentTitleUpdater />
+      <ThreadContextProvider>
+        <DecopilotThreadProvider>
+          <DecopilotChatProviderWrapper forceBottomLayout={!project}>
+            <ProfileModalProvider
+              profileOpen={profileOpen}
+              setProfileOpen={setProfileOpen}
+              openProfileModal={openProfileModal}
+              closeProfileModal={closeProfileModal}
+              handlePhoneSaved={handlePhoneSaved}
+            >
+              <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <div className="flex flex-col h-full">
+                  <TopbarLayout
+                    breadcrumb={[
+                      {
+                        label: (
+                          <Suspense
+                            fallback={<BreadcrumbOrgSwitcher.Skeleton />}
+                          >
+                            <BreadcrumbOrgSwitcher />
+                          </Suspense>
+                        ),
+                      },
+                      {
+                        label: (
+                          <Suspense
+                            fallback={<BreadcrumbProjectSwitcher.Skeleton />}
+                          >
+                            <BreadcrumbProjectSwitcher />
+                          </Suspense>
+                        ),
+                        link: `/${org}/${project}`,
+                      },
+                    ]}
+                  >
+                    <SidebarLayout
+                      className="h-full bg-sidebar"
+                      style={
                         {
-                          label: (
-                            <Suspense
-                              fallback={<BreadcrumbOrgSwitcher.Skeleton />}
-                            >
-                              <BreadcrumbOrgSwitcher />
-                            </Suspense>
-                          ),
-                        },
-                        {
-                          label: (
-                            <Suspense
-                              fallback={<BreadcrumbProjectSwitcher.Skeleton />}
-                            >
-                              <BreadcrumbProjectSwitcher />
-                            </Suspense>
-                          ),
-                          link: `/${org}/${project}`,
-                        },
-                      ]}
+                          "--sidebar-width": "13rem",
+                          "--sidebar-width-mobile": "11rem",
+                        } as Record<string, string>
+                      }
                     >
-                      <SidebarLayout
-                        className="h-full bg-sidebar"
-                        style={
-                          {
-                            "--sidebar-width": "13rem",
-                            "--sidebar-width-mobile": "11rem",
-                          } as Record<string, string>
-                        }
-                      >
-                        <ProjectSidebar />
-                        <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
-                          <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel className="bg-background">
-                              <Suspense
-                                fallback={
-                                  <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
-                                    <Spinner />
-                                  </div>
-                                }
-                              >
-                                <Outlet />
-                              </Suspense>
-                            </ResizablePanel>
-                            {/* Don't show DecopilotChat panel on agent detail pages - they handle chat mode switching internally */}
-                            {decopilotOpen && !isAgentDetailPage && (
-                              <>
-                                <ResizableHandle withHandle />
-                                <ResizablePanel
-                                  defaultSize={30}
-                                  minSize={20}
-                                  className="min-w-0"
-                                >
-                                  <Suspense fallback={<MainChatSkeleton />}>
-                                    <DecopilotChat />
-                                  </Suspense>
-                                </ResizablePanel>
-                              </>
-                            )}
-                          </ResizablePanelGroup>
-                        </SidebarInset>
-                      </SidebarLayout>
-                    </TopbarLayout>
-                    <RegisterActivity orgSlug={org} projectSlug={project} />
-                  </div>
-                </SidebarProvider>
-              </ProfileModalProvider>
-            </DecopilotThreadProvider>
-          </ThreadContextProvider>
-        </ThreadManagerProvider>
-      </WithOrgTheme>
-    </BaseRouteLayout>
-  );
-}
-
-function AgentChatModeSwitch() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const params = useParams();
-  const searchParams = new URLSearchParams(location.search);
-
-  // Get agent ID from URL params
-  const agentId = params.id;
-
-  // Early return if no agent ID
-  if (!agentId) return null;
-
-  const { data: agent } = useAgentData(agentId);
-
-  // Get current chat mode from URL (default to 'agent')
-  const currentMode =
-    (searchParams.get("chat") as "agent" | "decochat") || "agent";
-
-  const handleModeChange = (mode: "agent" | "decochat") => {
-    const newParams = new URLSearchParams(location.search);
-    newParams.set("chat", mode);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
-
-  return (
-    <ButtonGroup>
-      <Button
-        size="sm"
-        variant={currentMode === "agent" ? "default" : "outline"}
-        onClick={() => handleModeChange("agent")}
-        className="flex items-center gap-1.5"
-      >
-        {agent && (
-          <AgentAvatar
-            className="rounded-sm border-none"
-            url={agent.avatar}
-            fallback={agent.name}
-            size="2xs"
-          />
-        )}
-        Agent
-      </Button>
-      <Button
-        size="sm"
-        variant={currentMode === "decochat" ? "default" : "outline"}
-        onClick={() => handleModeChange("decochat")}
-        className="flex items-center gap-1.5"
-      >
-        <AgentAvatar
-          className="rounded-sm border-none"
-          url={WELL_KNOWN_AGENTS.decochatAgent.avatar}
-          fallback={
-            <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
-          }
-          size="2xs"
-        />
-        Chat
-      </Button>
-    </ButtonGroup>
+                      <ProjectSidebar />
+                      <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
+                        <ResizablePanelGroup direction="horizontal">
+                          <ResizablePanel className="bg-background">
+                            <Suspense
+                              fallback={
+                                <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                  <Spinner />
+                                </div>
+                              }
+                            >
+                              <Outlet />
+                            </Suspense>
+                          </ResizablePanel>
+                        </ResizablePanelGroup>
+                      </SidebarInset>
+                    </SidebarLayout>
+                  </TopbarLayout>
+                  <RegisterActivity orgSlug={org} projectSlug={project} />
+                </div>
+              </SidebarProvider>
+            </ProfileModalProvider>
+          </DecopilotChatProviderWrapper>
+        </DecopilotThreadProvider>
+      </ThreadContextProvider>
+    </>
   );
 }
 
@@ -273,13 +181,13 @@ export const ToggleDecopilotButton = () => {
     <Button size="sm" variant="default" onClick={toggle}>
       <AgentAvatar
         className="rounded-sm border-none"
-        url={WELL_KNOWN_AGENTS.decochatAgent.avatar}
+        url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
         fallback={
           <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
         }
         size="2xs"
       />
-      Chat
+      deco chat
     </Button>
   );
 };
@@ -300,20 +208,16 @@ const useIsProjectContext = () => {
 
 export const TopbarControls = () => {
   const location = useLocation();
+  const { org } = useParams();
   const isProjectContext = useIsProjectContext();
-  const isAgentDetailPage = location.pathname.match(/\/agent\/[^/]+\/[^/]+$/);
 
   const isWellKnownOrgPath = WELL_KNOWN_ORG_PATHS.some((path) =>
     location.pathname.endsWith(path),
   );
 
-  if (!isProjectContext && !isWellKnownOrgPath) {
+  // Show button if we have an org context (project or org-level)
+  if (!org && !isProjectContext && !isWellKnownOrgPath) {
     return null;
-  }
-
-  if (isAgentDetailPage) {
-    // Show chat mode switch on agent detail pages
-    return <AgentChatModeSwitch />;
   }
 
   // Show regular chat button on other pages

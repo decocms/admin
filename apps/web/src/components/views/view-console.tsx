@@ -10,14 +10,14 @@ import {
   TabsContent,
 } from "@deco/ui/components/tabs.tsx";
 import {
-  useEffect,
   useState,
   useCallback,
   useMemo,
   createContext,
   useContext,
+  useEffect,
 } from "react";
-import type { RuntimeErrorEntry } from "../chat/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 
 export interface ConsoleLog {
   id: string;
@@ -52,7 +52,17 @@ interface ViewConsoleProviderProps {
 }
 
 export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
-  const [logs, setLogs] = useState<ConsoleLog[]>([]);
+  const [logs, setLogs] = useState<ConsoleLog[]>(() => [
+    {
+      id: crypto.randomUUID(),
+      type: "info",
+      message: "Welcome to deco",
+      timestamp: new Date().toISOString(),
+      expanded: false,
+    },
+  ]);
+
+  const { runtimeErrorEntries } = useAgenticChat();
 
   // Define trusted origins for postMessage validation
   const trustedOrigins = useMemo(() => {
@@ -89,9 +99,9 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
     [trustedOrigins],
   );
 
-  // Listen for console messages from iframe
-  useEffect(() => {
-    function handleConsoleMessage(event: MessageEvent) {
+  // Handle console messages from iframe via postMessage
+  const handleConsoleMessage = useCallback(
+    (event: MessageEvent) => {
       // Validate origin before processing any message data
       if (!isTrustedOrigin(event.origin)) {
         console.warn(
@@ -121,18 +131,22 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
         };
         setLogs((prev) => [...prev, logEntry]);
       }
-    }
+    },
+    [isTrustedOrigin],
+  );
 
+  // Set up message listener on mount
+  useMemo(() => {
     window.addEventListener("message", handleConsoleMessage);
     return () => window.removeEventListener("message", handleConsoleMessage);
-  }, [isTrustedOrigin]);
+  }, [handleConsoleMessage]);
 
-  // Listen for runtime errors
+  // Sync runtime errors from chat provider to console logs
   useEffect(() => {
-    function handleRuntimeError(event: CustomEvent) {
-      const error = event.detail as RuntimeErrorEntry;
-      const logEntry: ConsoleLog = {
-        id: crypto.randomUUID(),
+    // Add new runtime errors to console logs
+    const newLogs = runtimeErrorEntries.map(
+      (error): ConsoleLog => ({
+        id: error.timestamp + error.message, // Use combination for stable ID
         type: "error",
         message: error.message || "Unknown error",
         timestamp: error.timestamp || new Date().toISOString(),
@@ -141,43 +155,20 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
         column: error.column,
         stack: error.stack,
         expanded: false,
-      };
-      setLogs((prev) => [...prev, logEntry]);
-    }
-
-    window.addEventListener(
-      "decopilot:appendError",
-      handleRuntimeError as EventListener,
+      }),
     );
-    return () =>
-      window.removeEventListener(
-        "decopilot:appendError",
-        handleRuntimeError as EventListener,
+
+    // Replace existing error logs with new ones from runtime errors
+    setLogs((prev) => {
+      // Keep non-error logs
+      const nonErrorLogs = prev.filter((log) => log.type !== "error");
+      // Combine with new error logs
+      return [...nonErrorLogs, ...newLogs].sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
-  }, []);
-
-  // Clear logs when cleared
-  useEffect(() => {
-    function handleClearError() {
-      setLogs([]);
-    }
-
-    window.addEventListener("decopilot:clearError", handleClearError);
-    return () =>
-      window.removeEventListener("decopilot:clearError", handleClearError);
-  }, []);
-
-  // Add welcome log on mount
-  useEffect(() => {
-    const welcomeLog: ConsoleLog = {
-      id: crypto.randomUUID(),
-      type: "info",
-      message: "Welcome to deco",
-      timestamp: new Date().toISOString(),
-      expanded: false,
-    };
-    setLogs([welcomeLog]);
-  }, []);
+    });
+  }, [runtimeErrorEntries]);
 
   const errorCount = logs.filter((log) => log.type === "error").length;
   const warningCount = logs.filter((log) => log.type === "warn").length;
@@ -196,6 +187,7 @@ interface ViewConsoleProps {
 
 export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   const { logs, errorCount } = useConsoleState();
+  const { clearError } = useAgenticChat();
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState("console");
   const [showErrors, setShowErrors] = useState(true);
@@ -203,8 +195,8 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   const [showInfo, setShowInfo] = useState(true);
 
   const handleClear = useCallback(() => {
-    window.dispatchEvent(new CustomEvent("decopilot:clearError"));
-  }, []);
+    clearError();
+  }, [clearError]);
 
   const formatTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp);

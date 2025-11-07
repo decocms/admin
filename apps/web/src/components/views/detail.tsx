@@ -9,6 +9,7 @@ import Preview from "../agent/preview";
 import { EmptyState } from "../common/empty-state.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
+import { useRouteParams } from "../canvas/route-params-provider.tsx";
 
 interface Props {
   integrationId?: string;
@@ -75,7 +76,13 @@ function PreviewTab({
 }
 
 export default function ViewDetail() {
-  const { integrationId, viewName } = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const integrationId = routeParams.integrationId || urlParams.integrationId;
+  const viewName = routeParams.viewName || urlParams.viewName;
+
   const [searchParams] = useSearchParams();
   const url = searchParams.get("viewUrl") || searchParams.get("url");
   const { data: integrations = [] } = useIntegrations();

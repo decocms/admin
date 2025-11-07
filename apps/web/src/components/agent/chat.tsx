@@ -1,8 +1,12 @@
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { WELL_KNOWN_AGENT_IDS, type Agent } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useEffect, useRef, useState } from "react";
+import { useUser } from "../../hooks/use-user.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
 
 export type WellKnownAgents =
   (typeof WELL_KNOWN_AGENT_IDS)[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -11,6 +15,9 @@ interface MainChatProps {
   showInput?: boolean;
   className?: string;
   contentClassName?: string;
+  hasTabs?: boolean;
+  isEmpty?: boolean;
+  agent?: Agent;
 }
 
 export const MainChatSkeleton = ({
@@ -75,17 +82,115 @@ export const MainChat = ({
   showInput = true,
   className,
   contentClassName,
+  hasTabs = true,
+  agent,
 }: MainChatProps = {}) => {
+  // Use real-time chat messages to determine if empty, not the prop
+  const { chat, forceBottomLayout } = useAgenticChat();
+  const user = useUser();
+  const { getAllThreads } = useThreadManager();
+  const isEmpty = chat.messages.length === 0;
+  const shouldCenterLayout = !forceBottomLayout && !hasTabs && isEmpty;
+
+  // Check if this is the first thread
+  const allThreads = getAllThreads();
+  const isFirstThread = allThreads.length <= 1;
+
+  // Animation state: track when we're transitioning from centered to normal
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showCentered, setShowCentered] = useState(shouldCenterLayout);
+  const prevHasTabs = useRef(hasTabs);
+
+  useEffect(() => {
+    if (shouldCenterLayout) {
+      // Going to centered layout - show immediately
+      setShowCentered(true);
+      setIsTransitioning(false);
+    } else if (showCentered && !shouldCenterLayout) {
+      // Check if we're transitioning because tabs were opened
+      const tabsJustOpened = hasTabs && !prevHasTabs.current;
+
+      if (tabsJustOpened) {
+        // Skip animation when tabs are opened - just switch immediately
+        setShowCentered(false);
+        setIsTransitioning(false);
+      } else {
+        // Leaving centered layout with animation (sending message)
+        requestAnimationFrame(() => {
+          setIsTransitioning(true);
+        });
+        const timer = setTimeout(() => {
+          setShowCentered(false);
+          setIsTransitioning(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+
+    prevHasTabs.current = hasTabs;
+  }, [shouldCenterLayout, showCentered, hasTabs]);
+
+  const isCentered = showCentered || isTransitioning;
+
   return (
     <div
-      className={cn("relative w-full flex flex-col h-full min-w-0", className)}
+      className={cn(
+        "relative w-full flex flex-col h-full min-w-0",
+        isCentered &&
+          "items-center justify-center px-10 py-12 transition-all duration-300 ease-(--ease-out-quint) animate-in fade-in slide-in-from-bottom-4",
+        !isCentered && hasTabs && "transition-none transform-[translateZ(0)]",
+        className,
+      )}
     >
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <ChatMessages className={contentClassName} />
-      </div>
+      {/* Welcome header - only shown in centered mode */}
+      {showCentered && (
+        <div
+          className={cn(
+            "flex flex-col items-center gap-1 transition-opacity duration-300 ease-(--ease-out-quint) mb-16",
+            isTransitioning && "opacity-0",
+          )}
+        >
+          {agent?.avatar && (
+            <img
+              src={agent.avatar}
+              alt={agent.name}
+              className="size-[60px] rounded-[18px] border-[1.875px] border-border/10"
+            />
+          )}
+          <h2 className="text-2xl font-medium text-foreground leading-8">
+            {isFirstThread ? "Welcome" : "Hey"},{" "}
+            {user?.metadata?.full_name || "there"} 👋
+          </h2>
+          <p className="text-muted-foreground text-center text-xl leading-7">
+            What are we building today?
+          </p>
+        </div>
+      )}
+
+      {/* Messages - only shown in normal mode */}
+      {!showCentered && (
+        <div
+          className={cn(
+            "flex-1 min-h-0 overflow-y-auto overflow-x-hidden",
+            !hasTabs &&
+              "animate-in fade-in slide-in-from-bottom-4 duration-300 ease-(--ease-out-quint)",
+          )}
+        >
+          <ChatMessages className={contentClassName} />
+        </div>
+      )}
+
+      {/* Input - always present, animates position */}
       {showInput && (
-        <div className="flex-none p-2 min-w-0">
-          <ChatInput />
+        <div
+          className={cn(
+            "min-w-0",
+            isCentered &&
+              "w-full max-w-[900px] transition-all duration-300 ease-(--ease-out-quint)",
+            !isCentered && "flex-none p-2",
+          )}
+        >
+          <ChatInput centered={isCentered} />
         </div>
       )}
     </div>

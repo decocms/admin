@@ -75,8 +75,10 @@ type FeaturedIntegration = Integration & {
 
 const FeaturedCard = ({
   integration,
+  onAppClick,
 }: {
   integration: FeaturedIntegration;
+  onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
   const key = getConnectionAppKey(integration);
@@ -84,7 +86,11 @@ const FeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/apps/${appKey}`);
+        if (onAppClick) {
+          onAppClick(appKey);
+        } else {
+          navigateWorkspace(`/apps/${appKey}`);
+        }
       }}
       className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
     >
@@ -104,8 +110,10 @@ const FeaturedCard = ({
 
 const SimpleFeaturedCard = ({
   integration,
+  onAppClick,
 }: {
   integration: FeaturedIntegration;
+  onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
   const key = getConnectionAppKey(integration);
@@ -113,7 +121,11 @@ const SimpleFeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/apps/${appKey}`);
+        if (onAppClick) {
+          onAppClick(appKey);
+        } else {
+          navigateWorkspace(`/apps/${appKey}`);
+        }
       }}
       className="flex p-2 gap-2 cursor-pointer overflow-hidden items-center hover:bg-muted rounded-lg"
     >
@@ -134,7 +146,8 @@ const SimpleFeaturedCard = ({
   );
 };
 
-const Discover = () => {
+function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
+  const { onAppClick } = props;
   const [search, setSearch] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
@@ -215,6 +228,7 @@ const Discover = () => {
                   <SimpleFeaturedCard
                     key={"search-" + integration.id}
                     integration={integration}
+                    onAppClick={onAppClick}
                   />
                 ))}
                 {filteredIntegrations?.length === 0 && (
@@ -244,12 +258,20 @@ const Discover = () => {
                   key={item.appName}
                   type="button"
                   onClick={() => {
-                    navigateWorkspace(`/apps/${appKey}`);
+                    if (onAppClick) {
+                      onAppClick(appKey);
+                    } else {
+                      navigateWorkspace(`/apps/${appKey}`);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      navigateWorkspace(`/apps/${appKey}`);
+                      if (onAppClick) {
+                        onAppClick(appKey);
+                      } else {
+                        navigateWorkspace(`/apps/${appKey}`);
+                      }
                     }
                   }}
                   className="relative rounded-xl cursor-pointer overflow-hidden"
@@ -291,7 +313,11 @@ const Discover = () => {
             </h2>
             <div className="grid grid-cols-3 gap-4">
               {featuredIntegrations?.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
+                <FeaturedCard
+                  key={integration.id}
+                  integration={integration}
+                  onAppClick={onAppClick}
+                />
               ))}
             </div>
 
@@ -303,7 +329,11 @@ const Discover = () => {
             </h2>
             <div className="grid grid-cols-3 gap-4">
               {sortedIntegrations.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
+                <FeaturedCard
+                  key={integration.id}
+                  integration={integration}
+                  onAppClick={onAppClick}
+                />
               ))}
             </div>
           </div>
@@ -322,6 +352,7 @@ const Discover = () => {
                 <SimpleFeaturedCard
                   key={integration.id}
                   integration={integration}
+                  onAppClick={onAppClick}
                 />
               ))}
             </div>
@@ -330,6 +361,6 @@ const Discover = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Discover;

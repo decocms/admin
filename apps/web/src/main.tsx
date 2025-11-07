@@ -1,6 +1,7 @@
 import "./polyfills.ts";
 
 import {
+  DecoQueryClientProvider,
   ForbiddenError,
   type InternalServerError,
   NotFoundError,
@@ -12,7 +13,6 @@ import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
   RouterProvider,
-  Navigate,
   useLocation,
   useRouteError,
 } from "react-router";
@@ -138,44 +138,8 @@ const PageviewTrackerLayout = lazy(
 
 const Login = lazy(() => import("./components/login/index.tsx"));
 
-/**
- * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
- * want custom Suspense behavior.
- */
-const AppDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/integrations/app-detail.tsx")),
-);
-
-const InstalledAppsList = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/installed-apps.tsx"),
-  ),
-);
-
-const AppInstallSuccess = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/install-success.tsx"),
-  ),
-);
-
-const AgentsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/list-page.tsx")),
-);
-
-const AgentsThreadsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/threads-page.tsx")),
-);
-
-const AgentDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
-);
-
 const PublicChats = lazy(() =>
   wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
-);
-
-const AuditDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/audit/detail.tsx")),
 );
 
 const MagicLink = lazy(() =>
@@ -208,12 +172,6 @@ const Usage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/usage/usage.tsx")),
 );
 
-const TriggerDetails = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/triggers/trigger-details.tsx"),
-  ),
-);
-
 const InvitesList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/invites/index.tsx")),
 );
@@ -226,80 +184,8 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx")),
 );
 
-const DocumentsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/documents/list-page.tsx")),
-);
-
-const PromptsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/documents/prompts-legacy-page.tsx"),
-  ),
-);
-
-const DocumentEdit = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx")),
-);
-
-const WorkflowsRunsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/runs-v2-page.tsx")),
-);
-const WorkflowsRunsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/runs-legacy-page.tsx"),
-  ),
-);
-const WorkflowDetailPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
-);
-
 const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
-);
-
-const ViewDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
-);
-
-const LegacyViewRedirect = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
-);
-
-const ViewsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/list-page.tsx")),
-);
-
-const ViewsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/legacy-list-page.tsx")),
-);
-
-const Store = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
-);
-
-// Resources v2 routes
-const ResourcesV2List = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/resources-v2/list.tsx")),
-);
-
-// Detail component has its own loading state, no additional Suspense needed
-const ResourcesV2Detail = lazy(
-  () => import("./components/resources-v2/detail.tsx"),
-);
-
-// Workflows resource list
-const WorkflowsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/list-page.tsx")),
-);
-
-const WorkflowsTriggersPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/triggers-page.tsx")),
-);
-
-// Tools resource list
-const ToolsResourceList = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/tools/tools-resource-list.tsx"),
-  ),
 );
 
 function NotFound(): null {
@@ -492,151 +378,7 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome, handle: { title: "Home" } },
-          { path: "store", Component: Store, handle: { title: "Store" } },
-          {
-            path: "discover",
-            Component: () => <Navigate to="../store" replace />,
-            handle: { title: "Store" },
-          },
-          {
-            path: "tools",
-            Component: ToolsResourceList,
-            handle: { title: "Tools" },
-          },
-          {
-            path: "agents",
-            Component: AgentsListPage,
-            handle: { title: "Agents" },
-          },
-          {
-            path: "agents/threads",
-            Component: AgentsThreadsPage,
-            handle: { title: "Threads" },
-          },
-          {
-            path: "agent/:id/:threadId",
-            Component: AgentDetail,
-            handle: { title: "Agent" },
-          },
-          {
-            path: "apps",
-            Component: InstalledAppsList,
-            handle: { title: "Apps" },
-          },
-          {
-            path: "apps/:appKey",
-            Component: AppDetail,
-            handle: { title: "App Details" },
-          },
-          {
-            path: "apps/success",
-            Component: AppInstallSuccess,
-            handle: { title: "App Installed" },
-          },
-          {
-            path: "triggers",
-            Component: () => <Navigate to="../workflows/triggers" replace />,
-          },
-          {
-            path: "trigger/:id",
-            Component: TriggerDetails,
-            handle: { title: "Trigger" },
-          },
-          {
-            path: "database",
-            Component: lazy(() => import("./components/database/studio.tsx")),
-            handle: { title: "Database" },
-          },
-          {
-            path: "views",
-            Component: ViewsListPage,
-            handle: { title: "Views" },
-          },
-          {
-            path: "views/legacy",
-            Component: ViewsLegacyPage,
-            handle: { title: "Views (Legacy)" },
-          },
-          {
-            path: "views/:integrationId/:viewName",
-            Component: ViewDetail,
-            handle: { title: "View" },
-          },
-          {
-            path: "views/:id",
-            Component: LegacyViewRedirect,
-            handle: { title: "View" },
-          },
-          {
-            path: "documents",
-            Component: DocumentsListPage,
-            handle: { title: "Documents" },
-          },
-          {
-            path: "documents/prompts",
-            Component: PromptsLegacyPage,
-            handle: { title: "Prompts" },
-          },
-          {
-            path: "documents/:id",
-            Component: DocumentEdit,
-            handle: { title: "Document" },
-          },
-          {
-            path: "workflow-runs",
-            Component: () => <Navigate to="../workflows/runs-legacy" replace />,
-          },
-          {
-            path: "workflow-runs/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage,
-            handle: { title: "Workflow Run" },
-          },
-          {
-            path: "workflows",
-            Component: WorkflowsListPage,
-            handle: { title: "Workflows" },
-          },
-          {
-            path: "workflows/runs",
-            Component: WorkflowsRunsPage,
-            handle: { title: "Workflow Runs" },
-          },
-          {
-            path: "workflows/runs-legacy",
-            Component: WorkflowsRunsLegacyPage,
-            handle: { title: "Workflow Runs (Legacy)" },
-          },
-          {
-            path: "workflows/runs/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage,
-            handle: { title: "Workflow Run" },
-          },
-          {
-            path: "workflows/triggers",
-            Component: WorkflowsTriggersPage,
-            handle: { title: "Triggers" },
-          },
-          {
-            path: "activity",
-            Component: () => <Navigate to="../agents/threads" replace />,
-            handle: { title: "Activity" },
-          },
-          {
-            path: "audit/:id",
-            Component: AuditDetail,
-            handle: { title: "Audit" },
-          },
-          // Resources v2 list/detail routes
-          {
-            path: "rsc/:integrationId/:resourceName",
-            Component: ResourcesV2List,
-            handle: { title: "Resource" },
-          },
-          {
-            path: "rsc/:integrationId/:resourceName/:resourceUri",
-            Component: ResourcesV2Detail,
-            handle: { title: "Resource" },
-          },
+          { path: "*", Component: ProjectHome, handle: { title: "Home" } },
         ],
       },
       { path: "*", Component: NotFound },
@@ -646,6 +388,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <DecoQueryClientProvider>
+      <RouterProvider router={router} />
+    </DecoQueryClientProvider>
   </StrictMode>,
 );

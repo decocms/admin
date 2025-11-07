@@ -1,11 +1,23 @@
-import { type ReactNode, useEffect, useMemo } from "react";
-import { useLocation, useSearchParams } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useSearchParams } from "react-router";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
-import { useTrackNativeViewVisit, useSDK, type View } from "@deco/sdk";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { NEW_VIEW_PROMPT } from "@deco/sdk";
+import { useIntegrationViews, findPinnedView } from "@deco/sdk";
+import { useCurrentTeam } from "../sidebar/team-selector";
+import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import {
+  adaptView,
+  getViewsColumns,
+  getViewRowActions,
+} from "./views-list-adapters.tsx";
+import type { ViewWithStatus } from "./list.tsx";
 
 /**
  * Views resource list component that renders the ResourcesV2List
@@ -17,28 +29,10 @@ export function ViewsResourceList({
   headerSlot?: ReactNode;
 } = {}) {
   const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const navigateWorkspace = useNavigateWorkspace();
   const { setOpen: setDecopilotOpen } = useDecopilotOpen();
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const team = useCurrentTeam();
 
-  // Find the Views view ID
-  const viewsViewId = useMemo(() => {
-    const views = (team?.views ?? []) as View[];
-    const view = views.find((v) => v.title === "Views");
-    return view?.id;
-  }, [team?.views]);
-
-  // Track visit to Views page for recents (only if unpinned)
-  useTrackNativeViewVisit({
-    viewId: viewsViewId || "views-fallback",
-    viewTitle: "Views",
-    viewIcon: "web",
-    viewPath: `/${projectKey}/views`,
-    projectKey,
-  });
+  // State-based tab management instead of route-based
+  const [activeTab, setActiveTab] = useState<"all" | "legacy">("all");
 
   // Automatically open Decopilot if openDecopilot query param is present
   useEffect(() => {
@@ -48,31 +42,95 @@ export function ViewsResourceList({
     }
   }, [searchParams, setDecopilotOpen]);
 
-  // Determine active tab based on current route
-  const activeTab = useMemo(() => {
-    const pathname = location.pathname;
-    if (pathname.includes("/views/legacy")) return "legacy";
-    return "all";
-  }, [location.pathname]);
+  // All hooks must be called unconditionally at the top level
+  const currentTeam = useCurrentTeam();
+  const { data: views = [] } = useIntegrationViews({});
+  const { createTab } = useThreadManager();
+
+  const tabs = useMemo(
+    () => [
+      {
+        id: "all",
+        label: "All",
+        onClick: () => setActiveTab("all"),
+      },
+      {
+        id: "legacy",
+        label: "Legacy",
+        onClick: () => setActiveTab("legacy"),
+      },
+    ],
+    [],
+  );
+
+  // Compute legacy views data unconditionally (hooks must be called at top level)
+  const allViews = useMemo(() => {
+    return views.map((view) => {
+      const existingView = findPinnedView(
+        currentTeam.views,
+        view.integration.id,
+        { name: view.name },
+      );
+      return {
+        ...view,
+        isAdded: !!existingView,
+        teamViewId: existingView?.id,
+      } as ViewWithStatus;
+    });
+  }, [views, currentTeam]);
+
+  const viewsItems = useMemo(() => allViews.map(adaptView), [allViews]);
+
+  const handleViewClick = useCallback(
+    (item: Record<string, unknown>) => {
+      const view =
+        (item._view as ViewWithStatus) || (item as unknown as ViewWithStatus);
+      const viewId = `${view.integration.id}/${view.name ?? "index"}`;
+      const newTab = createTab({
+        type: "detail",
+        resourceUri: `legacy-view://${viewId}`,
+        title: view.title || "Untitled",
+        icon: view.icon.toLowerCase(),
+      });
+      if (!newTab) {
+        console.warn("[ViewsListLegacy] No active tab found");
+      }
+    },
+    [createTab],
+  );
+
+  // Show legacy views if active tab is "legacy"
+  if (activeTab === "legacy") {
+    return (
+      <ResourcesV2List
+        integrationId="i:views-management"
+        resourceName="view"
+        headerSlot={headerSlot}
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => setActiveTab(tabId as "all" | "legacy")}
+        customData={viewsItems}
+        customColumns={getViewsColumns()}
+        customRowActions={getViewRowActions()}
+        onItemClick={handleViewClick}
+        customCtaButton={null}
+        customEmptyState={{
+          icon: "dashboard",
+          title: "No views found",
+          description: "No view tools are available from your integrations.",
+        }}
+      />
+    );
+  }
 
   return (
     <ResourcesV2List
       integrationId="i:views-management"
       resourceName="view"
       headerSlot={headerSlot}
-      tabs={[
-        {
-          id: "all",
-          label: "All",
-          onClick: () => navigateWorkspace("/views"),
-        },
-        {
-          id: "legacy",
-          label: "Legacy",
-          onClick: () => navigateWorkspace("/views/legacy"),
-        },
-      ]}
+      tabs={tabs}
       activeTab={activeTab}
+      onTabChange={(tabId) => setActiveTab(tabId as "all" | "legacy")}
       resourceRules={[NEW_VIEW_PROMPT]}
     />
   );

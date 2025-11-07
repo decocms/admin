@@ -11,21 +11,34 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useToolCallListener } from "../../../hooks/use-tool-call-listener.ts";
-import { AgenticChatProvider } from "../../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+} from "../../chat/provider.tsx";
 import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
+import { useRouteParams } from "../../canvas/route-params-provider.tsx";
 import { Context } from "./context.ts";
 import { PromptDetail } from "./form.tsx";
 
 export default function Page() {
   const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
 
-  const { id } = useParams();
-  const promptId = id!;
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const _id = routeParams.id || urlParams.id;
+  const promptId = _id!;
   const threadId = promptId;
 
-  const { data: _prompt, refetch: refetchPrompt } = usePrompt(promptId);
+  const {
+    data: _prompt,
+    isLoading: isLoadingPrompt,
+    refetch: refetchPrompt,
+  } = usePrompt(promptId);
   const prompt = _prompt || {
     id: crypto.randomUUID(),
     name: "",
@@ -34,7 +47,7 @@ export default function Page() {
     created_at: new Date().toISOString(),
     updated_at: null,
   };
-  const { data: _agent } = useAgentData(agentId);
+  const { data: _agent, isLoading: isLoadingAgent } = useAgentData(agentId);
 
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt>(prompt);
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
@@ -142,9 +155,33 @@ export default function Page() {
     }
   });
 
-  if (!_agent) {
-    return null;
+  // Show loading state while agent or prompt is loading
+  if (isLoadingAgent || isLoadingPrompt) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
   }
+
+  // Show error state if agent is not available
+  if (!_agent) {
+    console.error("[LegacyPromptDetail] Agent data not available", {
+      agentId,
+      hasAgent: !!_agent,
+      isLoadingAgent,
+    });
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        Failed to load agent data
+      </div>
+    );
+  }
+
+  const transport = useMemo(
+    () => createLegacyTransport(threadId, agentId, agentRoot),
+    [threadId, agentId, agentRoot],
+  );
 
   return (
     <>
@@ -152,7 +189,7 @@ export default function Page() {
         agentId={agentId}
         threadId={threadId}
         agent={_agent}
-        agentRoot={agentRoot}
+        transport={transport}
         uiOptions={{
           showEditAgent: false,
         }}

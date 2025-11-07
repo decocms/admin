@@ -158,6 +158,7 @@ export interface CreateStubAPIOptions {
     traceId?: string,
     errorObject?: unknown,
   ) => Error;
+  supportsToolName?: boolean;
 }
 
 export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(

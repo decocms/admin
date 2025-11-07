@@ -177,7 +177,7 @@ async function authenticateRequest(
     }
   } catch (error) {
     const err = error as Error;
-    console.log("[Auth] OAuth session check failed:", err.message);
+    console.error("[Auth] OAuth session check failed:", err);
   }
 
   // Try API Key authentication
@@ -189,11 +189,6 @@ async function authenticateRequest(
       });
 
       if (result?.valid && result.key) {
-        console.log("[Auth] API key authenticated:", {
-          keyName: result.key.name,
-          permissions: result.key.permissions,
-        });
-
         // For API keys, organization might be embedded in metadata
         const orgMetadata = result.key.metadata?.organization as
           | OrganizationContext
@@ -213,7 +208,7 @@ async function authenticateRequest(
       }
     } catch (error) {
       const err = error as Error;
-      console.log("[Auth] API key check failed:", err.message);
+      console.error("[Auth] API key check failed:", err);
     }
   }
 
@@ -223,7 +218,6 @@ async function authenticateRequest(
     });
 
     if (session) {
-      // console.log("[Auth] Session authenticated:", session);
       return {
         user: { id: session.user.id, email: session.user.email },
         permissions: {
@@ -241,7 +235,7 @@ async function authenticateRequest(
     }
   } catch (error) {
     const err = error as Error;
-    console.log("[Auth] Session check failed:", err.message);
+    console.error("[Auth] Session check failed:", err);
   }
 
   // No valid authentication found - return empty auth data

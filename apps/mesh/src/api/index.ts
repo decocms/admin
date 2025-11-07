@@ -15,7 +15,8 @@ import { auth } from "../auth";
 import { createMeshContextFactory } from "../core/context-factory";
 import type { MeshContext } from "../core/mesh-context";
 import { getDb } from "../database";
-import { meter, tracer } from "../observability";
+import { meter, tracer, prometheusExporter } from "../observability";
+import { PrometheusSerializer } from "@opentelemetry/exporter-prometheus";
 import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 import authRoutes from "./routes/auth";
@@ -61,6 +62,35 @@ app.get("/health", (c) => {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   });
+});
+
+// ============================================================================
+// Prometheus Metrics Endpoint
+// ============================================================================
+
+// Create serializer for Prometheus text format
+const prometheusSerializer = new PrometheusSerializer();
+
+app.get("/metrics", async (c) => {
+  try {
+    // Collect metrics from the SDK via the Prometheus exporter
+    const collectionResult = await prometheusExporter.collect();
+    const { resourceMetrics, errors } = collectionResult;
+
+    if (errors.length > 0) {
+      console.error("Prometheus exporter errors:", errors);
+    }
+
+    // Serialize to Prometheus text format
+    const metricsText = prometheusSerializer.serialize(resourceMetrics);
+
+    return c.text(metricsText, 200, {
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+    });
+  } catch (error) {
+    console.error("Error serving metrics:", error);
+    return c.text(`# failed to export metrics: ${error}`, 500);
+  }
 });
 
 // ============================================================================
@@ -157,14 +187,15 @@ const createContext = createMeshContextFactory({
 });
 
 // Inject MeshContext into requests
-// Skip auth routes, static files, and health check - they don't need MeshContext
+// Skip auth routes, static files, health check, and metrics - they don't need MeshContext
 app.use("*", async (c, next) => {
   const path = c.req.path;
 
-  // Skip MeshContext for auth endpoints, static pages, and health check
+  // Skip MeshContext for auth endpoints, static pages, health check, and metrics
   if (
     path.startsWith("/api/auth/") ||
     path === "/health" ||
+    path === "/metrics" ||
     path.startsWith("/.well-known/")
   ) {
     return await next();

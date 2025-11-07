@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, type ReactNode } from "react";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Alert,
@@ -21,10 +21,32 @@ function ActivityErrorFallback() {
   );
 }
 
-export default function ActivitySettings() {
+interface TabItem {
+  id: string;
+  label: string;
+  onClick: () => void;
+}
+
+interface ActivitySettingsProps {
+  tabs?: TabItem[];
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+  headerSlot?: ReactNode;
+}
+
+export default function ActivitySettings({
+  tabs: propTabs,
+  activeTab: propActiveTab,
+  onTabChange,
+  headerSlot,
+}: ActivitySettingsProps = {}) {
   const navigateWorkspace = useNavigateWorkspace();
 
+  // Use provided tabs or create default tabs with route navigation
   const mainTabs = useMemo(() => {
+    if (propTabs) {
+      return propTabs;
+    }
     return [
       {
         id: "agents",
@@ -37,18 +59,22 @@ export default function ActivitySettings() {
         onClick: () => navigateWorkspace("/agents/threads"),
       },
     ];
-  }, [navigateWorkspace]);
+  }, [propTabs, navigateWorkspace]);
+
+  // Use provided activeTab or default to "threads"
+  const activeTab = propActiveTab ?? "threads";
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto h-full">
         {/* Header Section - sticky horizontally */}
-        <div className="sticky left-0 px-4 lg:px-6 xl:px-10 pt-12 pb-4 md:pb-6 lg:pb-8 z-10 bg-background">
-          <div className="max-w-[1600px] mx-auto w-full">
+        <div className="sticky left-0 p-0 z-10 bg-background">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            {headerSlot}
             <ResourceHeader
-              title="Threads"
               tabs={mainTabs}
-              activeTab="threads"
+              activeTab={activeTab}
+              onTabChange={onTabChange}
             />
           </div>
         </div>

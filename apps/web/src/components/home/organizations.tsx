@@ -3,8 +3,14 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Suspense, useState, useDeferredValue } from "react";
-import { Link } from "react-router";
+import {
+  Suspense,
+  useState,
+  useDeferredValue,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { Link, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { Avatar } from "../common/avatar";
 import { timeAgo } from "../../utils/time-ago";
@@ -13,6 +19,8 @@ import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
 import { TopbarLayout } from "../layout/home";
 import { OrgAvatars, OrgMemberCount } from "./members";
 import { ProjectCard } from "./projects";
+import { normalizeGithubImportValue } from "../../utils/github-import.ts";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 function OrganizationCard({
   name,
@@ -20,15 +28,17 @@ function OrganizationCard({
   url,
   avatarUrl,
   teamId,
+  badge,
 }: {
   name: string;
   slug: string;
   url: string;
   avatarUrl: string;
   teamId: number;
+  badge?: ReactNode;
 }) {
   return (
-    <Card className="group transition-colors flex flex-col">
+    <Card className="group transition-all flex flex-col hover:ring-2 hover:ring-primary">
       <Link to={url} className="flex flex-col">
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -38,11 +48,24 @@ function OrganizationCard({
               size="lg"
               objectFit="contain"
             />
-            <Icon
-              name="chevron_right"
-              size={20}
-              className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            />
+            {badge ? (
+              <div className="flex items-center text-xs text-muted-foreground">
+                {badge}
+                <div className="w-0 overflow-hidden group-hover:w-5 transition-all">
+                  <Icon
+                    name="chevron_right"
+                    size={20}
+                    className="text-muted-foreground"
+                  />
+                </div>
+              </div>
+            ) : (
+              <Icon
+                name="chevron_right"
+                size={20}
+                className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              />
+            )}
           </div>
           <div className="flex flex-col gap-[2px]">
             <h3 className="text-sm text-muted-foreground truncate">/{slug}</h3>
@@ -60,7 +83,13 @@ function OrganizationCard({
   );
 }
 
-function Organizations({ query }: { query?: string }) {
+function Organizations({
+  query,
+  importGithubSlug,
+}: {
+  query?: string;
+  importGithubSlug?: string;
+}) {
   const teams = useOrganizations({ searchQuery: query });
 
   if (teams.data?.length === 0) {
@@ -74,9 +103,20 @@ function Organizations({ query }: { query?: string }) {
           key={team.id}
           name={team.name}
           slug={team.slug}
-          url={`/${team.slug}`}
+          url={
+            importGithubSlug
+              ? `/${team.slug}?importGithub=${encodeURIComponent(importGithubSlug)}`
+              : `/${team.slug}`
+          }
           avatarUrl={team.avatar_url || ""}
           teamId={team.id}
+          badge={
+            importGithubSlug ? (
+              <span className="text-[10px] font-medium uppercase tracking-wide text-foreground/80">
+                Import here
+              </span>
+            ) : undefined
+          }
         />
       ))}
     </div>
@@ -180,17 +220,89 @@ function MyOrganizations() {
   const [searchQuery, setSearchQuery] = useState("");
   const deferredQuery = useDeferredValue(searchQuery);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const importGithubParam = searchParams.get("importGithub") ?? undefined;
+  const { slug: importGithubSlug, url: importGithubUrl } =
+    normalizeGithubImportValue(importGithubParam);
+  const { handleCopy, copied } = useCopy();
+
+  const handleClearImport = useCallback(() => {
+    if (!importGithubSlug) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("importGithub");
+    setSearchParams(next, { replace: true });
+  }, [importGithubSlug, searchParams, setSearchParams]);
+
+  const handleCopyGithubUrl = useCallback(() => {
+    const fullUrl = importGithubUrl || `https://github.com/${importGithubSlug}`;
+    handleCopy(fullUrl);
+  }, [importGithubUrl, importGithubSlug, handleCopy]);
 
   return (
     <div className="min-h-full w-full bg-background">
       <div className="p-8 flex flex-col gap-4 w-full max-w-7xl mx-auto min-h-[calc(100vh-48px)]">
-        <CommunityCallBanner />
-        <ErrorBoundary fallback={null}>
-          <Suspense fallback={<RecentProjectsSection.Skeleton />}>
-            <RecentProjectsSection />
-          </Suspense>
-        </ErrorBoundary>
-        <div className="flex items-center justify-between">
+        {importGithubSlug ? (
+          <div className="rounded-xl border border-border bg-background p-4 flex items-center gap-2 shadow-xs sticky top-16 z-10">
+            <div className="shrink-0 size-[60px] flex items-center justify-center">
+              <img
+                src="/img/github.svg"
+                alt="GitHub"
+                className="size-[60px] brightness-50"
+              />
+            </div>
+            <div className="flex flex-col gap-2 flex-1 min-w-0">
+              <p className="text-base font-medium leading-6">
+                Select an organization to import
+              </p>
+              <div
+                className="border border-border rounded-lg flex items-center shrink-0 w-fit cursor-pointer hover:bg-accent transition-colors"
+                onClick={handleCopyGithubUrl}
+              >
+                {copied ? (
+                  <div className="flex items-center gap-2 px-4 py-1.5">
+                    <Icon name="check" size={16} className="text-success" />
+                    <p className="text-sm text-foreground whitespace-nowrap">
+                      Copied
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="border-r border-border px-2 py-1.5">
+                      <p className="text-sm text-muted-foreground whitespace-nowrap">
+                        https://github.com/
+                      </p>
+                    </div>
+                    <div className="px-4 py-1.5">
+                      <p className="text-sm text-foreground whitespace-nowrap">
+                        {importGithubSlug}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearImport}
+              className="shrink-0 h-8 rounded-xl"
+            >
+              Dismiss
+            </Button>
+          </div>
+        ) : (
+          <>
+            <CommunityCallBanner />
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={<RecentProjectsSection.Skeleton />}>
+                <RecentProjectsSection />
+              </Suspense>
+            </ErrorBoundary>
+          </>
+        )}
+        <div className="flex items-center justify-between mt-4">
           <h2 className="text-xl font-medium">My organizations</h2>
           <div className="flex items-center gap-2">
             <Input
@@ -208,10 +320,13 @@ function MyOrganizations() {
             </Button>
           </div>
         </div>
-        <div className="@container overflow-y-auto flex-1 pb-28">
+        <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
           <ErrorBoundary fallback={<Organizations.Error />}>
             <Suspense fallback={<Organizations.Skeleton />}>
-              <Organizations query={deferredQuery} />
+              <Organizations
+                query={deferredQuery}
+                importGithubSlug={importGithubSlug}
+              />
             </Suspense>
           </ErrorBoundary>
         </div>

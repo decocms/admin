@@ -4,6 +4,7 @@ import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { MCPConnection } from "./connection.ts";
 import { createServerClient } from "./mcp-client.ts";
 import type { CreateStubAPIOptions } from "./mcp.ts";
+import { WELL_KNOWN_API_HOSTNAMES } from "./well-known.ts";
 
 const getWorkspace = (workspace?: string) => {
   if (workspace && workspace.length > 0 && !workspace.includes("/")) {
@@ -39,16 +40,8 @@ const toolsMap = new Map<
  */
 function supportsToolNameInPath(url: string): boolean {
   try {
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname.toLowerCase();
-
     // Our main APIs that support /tool/${toolName} routing
-    return (
-      hostname === "api.decocms.com" ||
-      hostname === "api.deco.chat" ||
-      hostname === "localhost" ||
-      hostname.startsWith("localhost") // covers localhost:3001, etc.
-    );
+    return WELL_KNOWN_API_HOSTNAMES.includes(new URL(url).hostname);
   } catch {
     return false;
   }

@@ -47,7 +47,7 @@ export function ProjectHome() {
     }
   }, [hasTabs, decopilotOpen]);
 
-  const showResizeHandle = hasTabs && decopilotOpen;
+  const showResizeHandle = Boolean(hasTabs && decopilotOpen);
 
   return (
     <ResizablePanelGroup direction="horizontal">

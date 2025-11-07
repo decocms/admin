@@ -219,7 +219,6 @@ export const RichTextArea = forwardRef<RichTextAreaHandle, RichTextAreaProps>(
           italic: false,
           strike: false,
           horizontalRule: false,
-          paragraph: false,
         }),
         Markdown.configure({
           html: true,

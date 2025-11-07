@@ -9,7 +9,6 @@ import {
   KEYS,
   Locator,
   useAppendThreadMessage,
-  useIntegrations,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -49,18 +48,7 @@ import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
-import { useThreadManagerOptional } from "../decopilot/thread-context-manager.tsx";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
-
-// Preload notification audio at module level for instant playback
-const notificationAudio = (() => {
-  if (typeof window === "undefined") return null;
-  const audio = new Audio("/notification.mp3");
-  audio.preload = "auto";
-  // Preload the audio immediately
-  audio.load();
-  return audio;
-})();
 import {
   deriveReadToolFromUpdate,
   extractResourceUriFromInput,
@@ -71,6 +59,16 @@ import {
 } from "../../stores/resource-version-history/utils.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+
+// Preload notification audio at module level for instant playback
+const notificationAudio = (() => {
+  if (typeof window === "undefined") return null;
+  const audio = new Audio("/notification.mp3");
+  audio.preload = "auto";
+  // Preload the audio immediately
+  audio.load();
+  return audio;
+})();
 
 /**
  * Helper function to create a user text message
@@ -490,10 +488,6 @@ export function AgenticChatProvider({
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
-  const { data: integrations = [] } = useIntegrations();
-  const threadManager = useThreadManagerOptional();
-  const addTab = threadManager?.addTab;
-  const tabs = threadManager?.tabs ?? [];
 
   // Reactive mutation for appending messages
   const appendMessagesMutation = useAppendThreadMessage();
@@ -617,11 +611,10 @@ export function AgenticChatProvider({
 
   // Initialize chat
   const chat = useChat({
-    messages: initialMessages || [],
     id: threadId,
+    messages: initialMessages || [],
     transport,
     onFinish: (result) => {
-      console.log("onFinish", result);
       setIsLoading(false);
 
       const metadata = result?.message?.metadata as
@@ -767,8 +760,6 @@ export function AgenticChatProvider({
             }
           }
         }
-
-        
       }
     },
     onError: (error) => {

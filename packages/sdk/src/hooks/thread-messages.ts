@@ -3,18 +3,31 @@
  * Provides reactive CRUD operations for thread messages with proper cache invalidation
  */
 
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { del, get, set } from "idb-keyval";
 import { WELL_KNOWN_AGENTS } from "../constants.ts";
 import { getThreadMessages as getBackendThreadMessages } from "../crud/thread.ts";
-import { getDecopilotThreadMessages, type ThreadMetadata } from "../storage/decopilot-storage.ts";
 import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
-// Constants from decopilot-storage
+// IndexedDB storage constants
 const MESSAGES_PREFIX = "decopilot:messages:";
 const THREAD_META_PREFIX = "decopilot:thread-meta:";
+
+// Thread metadata interface
+export interface ThreadMetadata {
+  threadId: string;
+  agentId: string;
+  route: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+}
 
 /**
  * Deduplicate messages by ID, keeping the last occurrence of each unique ID
@@ -80,8 +93,20 @@ export function useThreadMessages(
 
       if (isDecopilot) {
         // Fetch from IndexedDB for decopilot
-        const messages = await getDecopilotThreadMessages(threadId, locator);
-        return { messages: messages || [] };
+        try {
+          const key = `${MESSAGES_PREFIX}${locator ? `${locator}:` : ""}${threadId}`;
+          const messages = await get<UIMessage[]>(key);
+
+          if (!messages) {
+            return { messages: [] };
+          }
+
+          // Deduplicate messages before returning
+          return { messages: deduplicateMessages(messages) };
+        } catch (error) {
+          console.error("[useThreadMessages] Failed to get messages:", error);
+          return { messages: [] };
+        }
       } else {
         // Fetch from backend API for other agents
         return await getBackendThreadMessages(locator, threadId, {});
@@ -119,7 +144,7 @@ interface DeleteThreadMessagesParams {
 /**
  * Hook to append messages to a thread
  * Automatically invalidates the query cache to trigger UI updates
- * 
+ *
  * This is the ONLY way to append messages - the underlying storage function
  * is inlined here to enforce reactive usage.
  */
@@ -134,7 +159,7 @@ export function useAppendThreadMessage() {
       metadata,
       namespace,
     }: AppendThreadMessageParams) => {
-      // Inlined implementation from decopilot-storage.ts
+      // Append messages to IndexedDB
       try {
         const ns = namespace ? `${namespace}:` : "";
         const messagesKey = `${MESSAGES_PREFIX}${ns}${threadId}`;
@@ -167,7 +192,10 @@ export function useAppendThreadMessage() {
           set(metaKey, updatedMeta),
         ]);
       } catch (error) {
-        console.error("[useAppendThreadMessage] Failed to append message:", error);
+        console.error(
+          "[useAppendThreadMessage] Failed to append message:",
+          error,
+        );
         throw error;
       }
     },
@@ -197,7 +225,10 @@ export function useAppendThreadMessage() {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (error) => {
-      console.error("[useAppendThreadMessage] Failed to append messages:", error);
+      console.error(
+        "[useAppendThreadMessage] Failed to append messages:",
+        error,
+      );
     },
   });
 }
@@ -205,7 +236,7 @@ export function useAppendThreadMessage() {
 /**
  * Hook to save/replace all messages in a thread
  * Automatically invalidates the query cache to trigger UI updates
- * 
+ *
  * This is the ONLY way to save messages - the underlying storage function
  * is inlined here to enforce reactive usage.
  */
@@ -220,7 +251,7 @@ export function useSaveThreadMessages() {
       metadata,
       namespace,
     }: SaveThreadMessagesParams) => {
-      // Inlined implementation from decopilot-storage.ts
+      // Save messages to IndexedDB
       try {
         const ns = namespace ? `${namespace}:` : "";
 
@@ -246,7 +277,10 @@ export function useSaveThreadMessages() {
 
         await set(metaKey, updatedMeta);
       } catch (error) {
-        console.error("[useSaveThreadMessages] Failed to save messages:", error);
+        console.error(
+          "[useSaveThreadMessages] Failed to save messages:",
+          error,
+        );
         throw error;
       }
     },
@@ -268,7 +302,7 @@ export function useSaveThreadMessages() {
 /**
  * Hook to delete all messages in a thread
  * Automatically invalidates the query cache to trigger UI updates
- * 
+ *
  * This is the ONLY way to delete messages - the underlying storage function
  * is inlined here to enforce reactive usage.
  */
@@ -277,17 +311,17 @@ export function useDeleteThreadMessages() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      threadId,
-      namespace,
-    }: DeleteThreadMessagesParams) => {
-      // Inlined implementation from decopilot-storage.ts
+    mutationFn: async ({ threadId, namespace }: DeleteThreadMessagesParams) => {
+      // Delete messages from IndexedDB
       try {
         const ns = namespace ? `${namespace}:` : "";
         await del(`${MESSAGES_PREFIX}${ns}${threadId}`);
         await del(`${THREAD_META_PREFIX}${ns}${threadId}`);
       } catch (error) {
-        console.error("[useDeleteThreadMessages] Failed to delete messages:", error);
+        console.error(
+          "[useDeleteThreadMessages] Failed to delete messages:",
+          error,
+        );
         throw error;
       }
     },
@@ -301,7 +335,10 @@ export function useDeleteThreadMessages() {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (error) => {
-      console.error("[useDeleteThreadMessages] Failed to delete messages:", error);
+      console.error(
+        "[useDeleteThreadMessages] Failed to delete messages:",
+        error,
+      );
     },
   });
 }

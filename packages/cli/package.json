@@ -1,6 +1,6 @@
 {
   "name": "deco-cli",
-  "version": "0.24.2",
+  "version": "0.24.3",
   "description": "CLI for managing decocms.com apps & projects",
   "license": "MIT",
   "author": "Deco team",
@@ -32,7 +32,7 @@
     "postpublish": "echo 'Published deco-cli to npm registry!'"
   },
   "dependencies": {
-    "@deco/sdk": "workspace:*",
+    "@deco/sdk": "^0.1.1",
     "@deco-cx/warp-node": "0.3.16",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@supabase/ssr": "0.6.1",

@@ -432,12 +432,12 @@ export function ChatInput({
                 <Button
                   type={isLoading ? "button" : "submit"}
                   onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
                     if (isLoading) {
+                      e.preventDefault();
+                      e.stopPropagation();
                       stop();
                     }
+                    // Otherwise, let the form submit naturally
                   }}
                   variant={canSubmit || isLoading ? "default" : "ghost"}
                   size="icon"

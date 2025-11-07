@@ -5,6 +5,8 @@
  * Start with: bun run src/index.ts
  */
 
+// Import observability module early to initialize OpenTelemetry SDK
+import "./observability";
 import app from "./api";
 import { migrateToLatest } from "./database/migrate";
 import indexHtml from "../public/index.html";

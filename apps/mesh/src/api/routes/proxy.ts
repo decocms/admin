@@ -187,6 +187,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       (request: CallToolRequest) =>
         callToolPipeline(request, async (): Promise<CallToolResult> => {
           const client = await createClient();
+          const startTime = Date.now();
 
           // Start span for tracing
           return await ctx.tracer.startActiveSpan(
@@ -200,20 +201,43 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
             async (span) => {
               try {
                 const result = await client.callTool(request.params);
+                const duration = Date.now() - startTime;
 
-                // Record success metrics
+                // Record duration histogram
+                ctx.meter
+                  .createHistogram("connection.proxy.duration")
+                  .record(duration, {
+                    "connection.id": connectionId,
+                    "tool.name": request.params.name,
+                    status: "success",
+                  });
+
+                // Record success counter
                 ctx.meter.createCounter("connection.proxy.requests").add(1, {
                   "connection.id": connectionId,
                   "tool.name": request.params.name,
+                  status: "success",
                 });
 
                 span.end();
                 return result as CallToolResult;
               } catch (error) {
                 const err = error as Error;
+                const duration = Date.now() - startTime;
 
+                // Record duration histogram even on error
+                ctx.meter
+                  .createHistogram("connection.proxy.duration")
+                  .record(duration, {
+                    "connection.id": connectionId,
+                    "tool.name": request.params.name,
+                    status: "error",
+                  });
+
+                // Record error counter
                 ctx.meter.createCounter("connection.proxy.errors").add(1, {
                   "connection.id": connectionId,
+                  "tool.name": request.params.name,
                   error: err.message,
                 });
 

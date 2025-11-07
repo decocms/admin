@@ -156,7 +156,7 @@ function AppCard({
                     )}
                   >
                     <Icon
-                      name={isNativePinned ? "unpin" : "push_pin"}
+                      name={isNativePinned ? "keep_off" : "keep"}
                       size={14}
                       className={
                         isNativePinned

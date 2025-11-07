@@ -665,7 +665,7 @@ function WorkspaceViews() {
     if (!tab.icon) {
       return (
         <Icon
-          name="push_pin"
+          name="keep"
           size={18}
           className="text-muted-foreground/60 shrink-0"
         />
@@ -773,7 +773,7 @@ function WorkspaceViews() {
           {tab.title}
         </span>
         <Icon
-          name="remove"
+          name="keep_off"
           size={18}
           className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
           onClick={(e) => {

@@ -3,7 +3,6 @@ import type { TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { buildAgentUri } from "../decopilot/thread-context-manager.tsx";
-import { createPinAction } from "../common/pin-to-sidebar.tsx";
 import type { PinnedTabInput } from "../../hooks/use-pinned-tabs.ts";
 
 /**
@@ -99,15 +98,6 @@ export function getAgentRowActions(
     const agent = (item._agent as Agent) || (item as unknown as Agent);
 
     const actions: CustomRowAction[] = [
-      createPinAction(
-        agent.id,
-        agent.name || "Untitled agent",
-        "agent",
-        "i:agent-management",
-        "robot_2",
-        isPinned,
-        togglePin,
-      ),
       {
         label: "Duplicate",
         icon: "content_copy",

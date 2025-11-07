@@ -138,15 +138,12 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     effectiveDocument,
     resourceUri,
-    locator,
-    projectKey,
-    pinnedTabs,
-    pinTab,
-    isPinned,
-    form,
+    // Removed pinnedTabs, pinTab, isPinned from deps to prevent infinite loop
+    // These are only used conditionally to update the pinned tab title
   ]);
 
   // Save editor mode preference to localStorage
@@ -323,7 +320,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
       </TabActionButton>
 
       {/* Main content */}
-      <ScrollArea className="flex-1 w-full [&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="flex-1 w-full [&_[data-radix-scroll-area-viewport]>div]:block! [&_[data-radix-scroll-area-viewport]>div]:min-w-0! [&_[data-radix-scroll-area-viewport]>div]:w-full!">
         <div className="w-full max-w-3xl mx-auto pt-12">
           {/* Editable title and description section */}
           <div className="p-2 sm:px-4 md:px-6">
@@ -345,7 +342,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     e.currentTarget.textContent = "";
                   }
                 }}
-                className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent wrap-break-word overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
                 data-placeholder="Untitled document"
               />
 
@@ -366,7 +363,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     e.currentTarget.textContent = "";
                   }
                 }}
-                className="text-base text-muted-foreground outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                className="text-base text-muted-foreground outline-none bg-transparent wrap-break-word overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
                 data-placeholder="Add a description..."
               />
             </div>

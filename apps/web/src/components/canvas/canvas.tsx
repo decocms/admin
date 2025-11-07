@@ -200,11 +200,11 @@ export function Canvas() {
                 aria-pressed={isActiveTabPinned}
               >
                 <Icon
-                  name="push_pin"
+                  name={isActiveTabPinned ? "keep_off" : "keep"}
                   size={16}
                   className={
                     isActiveTabPinned
-                      ? "-rotate-45 text-foreground"
+                      ? "text-foreground"
                       : "text-muted-foreground"
                   }
                 />

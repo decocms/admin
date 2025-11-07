@@ -28,7 +28,6 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { createPinAction } from "../common/pin-to-sidebar.tsx";
 import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import type { ResourceListItem } from "../resources-v2/list.tsx";
@@ -76,16 +75,25 @@ export function DocumentsResourceList({
       },
     ];
 
-    if (showLegacyFeature("showLegacyPrompts")) {
+    const shouldShowLegacyPrompts = showLegacyFeature("showLegacyPrompts");
+    console.log("[DocumentsResourceList] Tab generation:", {
+      shouldShowLegacyPrompts,
+      activeTab,
+      baseTabsCount: baseTabs.length,
+    });
+
+    if (shouldShowLegacyPrompts) {
       baseTabs.push({
         id: "prompts",
         label: "Prompts (Legacy)",
         onClick: () => setActiveTab("prompts"),
       });
+      console.log("[DocumentsResourceList] Added Prompts (Legacy) tab");
     }
 
+    console.log("[DocumentsResourceList] Final tabs:", baseTabs);
     return baseTabs;
-  }, [showLegacyFeature]);
+  }, [showLegacyFeature, activeTab]);
 
   // All hooks must be called unconditionally at the top level
   const filteredPrompts = useMemo(() => {
@@ -200,51 +208,13 @@ export function DocumentsResourceList({
     );
   }
 
-  // Create default row actions for documents (pin action)
+  // Create default row actions for documents (empty for now)
   const documentRowActions = useCallback(
-    (item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
-      const resource = item as ResourceListItem;
-      const itemRecord = item as Record<string, unknown>;
-
-      // Get resource ID - could be in resource.id, resource.uri, or extracted from uri
-      let resourceId = resource.id || (itemRecord.id as string);
-      let resourceName =
-        (resource.data?.name as string) ||
-        ((itemRecord.data as Record<string, unknown>)?.name as string) ||
-        "Untitled document";
-
-      // If no ID but we have a URI, try to extract ID from URI
-      // Format: rsc://i:documents-management/document/{id}
-      if (!resourceId && resource.uri) {
-        const uriMatch = resource.uri.match(/\/document\/([^/]+)/);
-        if (uriMatch && uriMatch[1]) {
-          resourceId = uriMatch[1];
-        } else {
-          // Use the full URI as ID if we can't extract
-          resourceId = resource.uri;
-        }
-      }
-
-      // If still no ID, use the URI as fallback
-      if (!resourceId && resource.uri) {
-        resourceId = resource.uri;
-      }
-
-      if (!resourceId) return [];
-
-      return [
-        createPinAction(
-          resourceId,
-          resourceName,
-          "document",
-          "i:documents-management",
-          "description",
-          isPinned,
-          togglePin,
-        ),
-      ];
+    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
+      // No row actions for documents
+      return [];
     },
-    [isPinned, togglePin],
+    [],
   );
 
   return (

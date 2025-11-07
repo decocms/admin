@@ -231,7 +231,7 @@ export function PinToSidebar({ view }: { view: ViewWithStatus }) {
       title={isPinnedToSidebar ? "Unpin from sidebar" : "Pin to sidebar"}
     >
       <Icon
-        name={isPinnedToSidebar ? "unpin" : "push_pin"}
+        name={isPinnedToSidebar ? "keep_off" : "keep"}
         size={14}
         className={isPinnedToSidebar ? "" : "opacity-50"}
       />

@@ -30,7 +30,6 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { KEYS } from "@deco/sdk";
 import { useSDK } from "@deco/sdk";
-import { createPinAction } from "../common/pin-to-sidebar.tsx";
 import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import type { ResourceListItem } from "../resources-v2/list.tsx";
@@ -310,49 +309,13 @@ export function WorkflowsResourceList({
     );
   }
 
-  // Create default row actions for workflows (pin action)
+  // Create default row actions for workflows (empty for now)
   const workflowRowActions = useCallback(
-    (item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
-      const resource = item as ResourceListItem;
-      const itemRecord = item as Record<string, unknown>;
-
-      // Get workflow name - workflows use name as identifier, not ID
-      let workflowName: string | undefined =
-        (resource.data?.name as string) ||
-        ((itemRecord.data as Record<string, unknown>)?.name as
-          | string
-          | undefined);
-
-      // If no name in data, try to extract from URI
-      // Format: rsc://i:workflows-management/workflow/{name}
-      if (!workflowName && resource.uri) {
-        const uriMatch = resource.uri.match(/\/workflow\/([^/]+)/);
-        if (uriMatch && uriMatch[1]) {
-          workflowName = uriMatch[1];
-        }
-      }
-
-      // If still no name, try to get from itemRecord (some resources might store name as id)
-      if (!workflowName && itemRecord.id) {
-        workflowName = String(itemRecord.id);
-      }
-
-      if (!workflowName) return [];
-
-      // Use workflow name as the ID for pinning (workflows are identified by name)
-      return [
-        createPinAction(
-          workflowName,
-          workflowName,
-          "workflow",
-          "i:workflows-management",
-          "flowchart",
-          isPinned,
-          togglePin,
-        ),
-      ];
+    (_item: ResourceListItem | Record<string, unknown>): CustomRowAction[] => {
+      // No row actions for workflows
+      return [];
     },
-    [isPinned, togglePin],
+    [],
   );
 
   // Render workflows using ResourcesV2List (default MCP resources)

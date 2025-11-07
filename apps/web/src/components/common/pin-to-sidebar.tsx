@@ -103,7 +103,7 @@ export function PinToSidebarButton({
       title={isPinnedToSidebar ? "Unpin from sidebar" : "Pin to sidebar"}
     >
       <Icon
-        name={isPinnedToSidebar ? "unpin" : "push_pin"}
+        name={isPinnedToSidebar ? "keep_off" : "keep"}
         size={14}
         className={isPinnedToSidebar ? "" : "opacity-50"}
       />
@@ -138,7 +138,7 @@ export function createPinAction(
 
   return {
     label: pinned ? "Unpin from sidebar" : "Pin to sidebar",
-    icon: pinned ? "unpin" : "push_pin",
+    icon: pinned ? "keep_off" : "keep",
     onClick: () => {
       togglePin({
         resourceUri,

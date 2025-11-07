@@ -59,6 +59,12 @@ export const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [
     icon: "flowchart",
   },
   {
+    resourceUri: "native://database",
+    title: "Database",
+    type: "list",
+    icon: "storage",
+  },
+  {
     resourceUri: "rsc://i:views-management/view",
     title: "Views",
     type: "list",

@@ -2,7 +2,6 @@ import type { Prompt, PinnedItem } from "@deco/sdk";
 import type { TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
-import { createPinAction } from "../common/pin-to-sidebar.tsx";
 
 /**
  * Adapter to transform Prompt to a format compatible with ResourcesV2List
@@ -64,26 +63,17 @@ export function getPromptsColumns(): TableColumn<Record<string, unknown>>[] {
 }
 
 /**
- * Get custom row actions for prompts (pin, delete)
+ * Get custom row actions for prompts (delete)
  */
 export function getPromptRowActions(
   onDelete: (prompt: Prompt) => void,
-  isPinned: (id: string) => boolean,
-  togglePin: (resource: Omit<PinnedItem, "pinned_at">) => void,
+  _isPinned: (id: string) => boolean,
+  _togglePin: (resource: Omit<PinnedItem, "pinned_at">) => void,
 ): (item: Record<string, unknown>) => CustomRowAction[] {
   return (item: Record<string, unknown>) => {
     const prompt = (item._prompt as Prompt) || (item as unknown as Prompt);
 
     return [
-      createPinAction(
-        prompt.id,
-        prompt.name || "Untitled document",
-        "document",
-        "i:documents-management",
-        "description",
-        isPinned,
-        togglePin,
-      ),
       {
         label: "Delete",
         icon: "delete",

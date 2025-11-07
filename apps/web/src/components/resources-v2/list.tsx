@@ -336,7 +336,6 @@ function ResourcesV2ListTab({
         }
 
         // Default actions for MCP resources (when customRowActions is not provided)
-        // Always add at least the pin to sidebar action
         const resourceItem = row as ResourceListItem;
         const itemRecord = row as Record<string, unknown>;
         const itemUri = resourceItem.uri || (itemRecord.uri as string) || "";
@@ -344,12 +343,6 @@ function ResourcesV2ListTab({
         if (!itemUri) return null;
 
         const defaultActions: CustomRowAction[] = [];
-
-        // Add pin action
-        const pinAction = createPinActionForResource(row);
-        if (pinAction) {
-          defaultActions.push(pinAction);
-        }
 
         // Add other default actions if available
         if (handleDuplicateRef.current) {
@@ -508,7 +501,6 @@ function ResourcesV2ListTab({
       integrationId,
       resourceName,
       navigateWorkspace,
-      createPinActionForResource,
     ]);
 
   // Only use MCP query if customData is not provided
@@ -1752,14 +1744,7 @@ function ResourcesV2ListTab({
                                 (() => {
                                   const defaultActions: CustomRowAction[] = [];
 
-                                  // Add pin action (always add at least this)
-                                  const pinAction =
-                                    createPinActionForResource(item);
-                                  if (pinAction) {
-                                    defaultActions.push(pinAction);
-                                  }
-
-                                  // Add other default actions
+                                  // Add default actions
                                   defaultActions.push({
                                     label: "Duplicate",
                                     icon: "content_copy",

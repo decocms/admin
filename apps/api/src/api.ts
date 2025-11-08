@@ -1028,25 +1028,6 @@ const projectMcpHandler = createMCPHandlerFor(projectTools);
 app.all("/:org/:project/mcp", projectMcpHandler);
 app.all("/:org/:project/mcp/tool/:toolName", projectMcpHandler);
 
-/**
- * These routes make the DECO_TOOL_CALL_TOOL function call the virtual MCP integrations directly,
- * thus avoiding going through the usual withOAuth middleware, making the user available to
- * the virtual integrations.
- * To remove these routes, remove it and ask decopilot to create tools, if the user is defined
- * on the "created_by" field, you can remove it.
- */
-const globalGroups = new Set<string>([
-  WellKnownMcpGroups.Time,
-  WellKnownMcpGroups.HTTP,
-]);
-Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
-  const handler = globalGroups.has(groupPath as string)
-    ? createMCPHandlerFor(GLOBAL_TOOLS, groupPath)
-    : createMCPHandlerFor(projectTools, groupPath);
-  app.all(`/:org/:project/i:${groupPath}/mcp`, handler);
-  app.all(`/:org/:project/i:${groupPath}/mcp/tool/:toolName`, handler);
-});
-
 const agentMcpHandler = createMCPHandlerFor(AGENT_TOOLS);
 app.all("/:org/:project/agents/:agentId/mcp", agentMcpHandler);
 app.all("/:org/:project/agents/:agentId/mcp/tool/:toolName", agentMcpHandler);
@@ -1070,6 +1051,25 @@ app.post("/:org/:project/self/mcp", selfMcpHandler);
 app.post("/:org/:project/i:self/mcp", selfMcpHandler);
 app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
 app.post("/:org/:project/i:self/mcp/tool/:toolName", selfMcpHandler);
+
+/**
+ * These routes make the DECO_TOOL_CALL_TOOL function call the virtual MCP integrations directly,
+ * thus avoiding going through the usual withOAuth middleware, making the user available to
+ * the virtual integrations.
+ * To remove these routes, remove it and ask decopilot to create tools, if the user is defined
+ * on the "created_by" field, you can remove it.
+ */
+const globalGroups = new Set<string>([
+  WellKnownMcpGroups.Time,
+  WellKnownMcpGroups.HTTP,
+]);
+Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
+  const handler = globalGroups.has(groupPath as string)
+    ? createMCPHandlerFor(GLOBAL_TOOLS, groupPath)
+    : createMCPHandlerFor(projectTools, groupPath);
+  app.all(`/:org/:project/i:${groupPath}/mcp`, handler);
+  app.all(`/:org/:project/i:${groupPath}/mcp/tool/:toolName`, handler);
+});
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);

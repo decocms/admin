@@ -1047,10 +1047,10 @@ app.post(
 );
 
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
-app.post("/:org/:project/self/mcp", selfMcpHandler);
-app.post("/:org/:project/i:self/mcp", selfMcpHandler);
-app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
-app.post("/:org/:project/i:self/mcp/tool/:toolName", selfMcpHandler);
+app.post(`/:org/:project/${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(`/:org/:project/i:${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(`/:org/:project/${WellKnownMcpGroups.Self}/mcp/tool/:toolName`, selfMcpHandler);
+app.post(`/:org/:project/i:${WellKnownMcpGroups.Self}/mcp/tool/:toolName`, selfMcpHandler);
 
 /**
  * These routes make the DECO_TOOL_CALL_TOOL function call the virtual MCP integrations directly,

@@ -24,6 +24,7 @@ import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
+import { ADMIN_CHECK } from "./registry/admin-check.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as themeAPI from "./theme/api.ts";
@@ -152,6 +153,9 @@ export const PROJECT_TOOLS = [
   registryAPI.listPublishedApps,
   registryAPI.listRegistryScopes,
   registryAPI.publishApp,
+  registryAPI.MARKETPLACE_APP_UPDATE_ADMIN,
+  registryAPI.MARKETPLACE_APPS_LIST_UNLISTED_ADMIN,
+  ADMIN_CHECK,
   triggersAPI.getTrigger,
   triggersAPI.listTriggers,
   triggersAPI.createTrigger,

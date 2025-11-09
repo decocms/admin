@@ -574,9 +574,6 @@ export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
 
-    const workspace = c.workspace.value;
-    const projectId = await getProjectIdFromContext(c);
-
     // Build update object
     const updates: Partial<typeof registryApps.$inferInsert> = {
       updated_at: new Date().toISOString(),

@@ -56,6 +56,8 @@ export const IntegrationSchema = z.object({
   access: z.string().optional().nullable(),
   /** App Name */
   appName: z.string().optional().nullable(),
+  /** Friendly name of the integration */
+  friendlyName: z.string().optional().nullable(),
   /** App ID */
   appId: z.string().optional().nullable(),
   /** Verified */

@@ -56,6 +56,21 @@ export type Database = {
           },
         ];
       };
+      admin_email_domains_deco: {
+        Row: {
+          domain: string;
+          created_at: string;
+        };
+        Insert: {
+          domain: string;
+          created_at?: string;
+        };
+        Update: {
+          domain?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       ai_query_limit: {
         Row: {
           count: number | null;

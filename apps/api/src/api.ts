@@ -196,10 +196,13 @@ const createMCPHandlerFor = (
   tools:
     | readonly Tool[]
     | ((c: Context<AppEnv>) => Promise<Tool[] | readonly Tool[]>),
+  defaultGroup?: string,
 ) => {
   return async (c: Context<AppEnv>) => {
     const group =
-      c.req.query("group") ?? getGroupByAppName(c.req.param("group"));
+      c.req.query("group") ??
+      getGroupByAppName(c.req.param("group")) ??
+      defaultGroup;
 
     const server = new McpServer(
       { name: "@deco/api", version: "1.0.0" },
@@ -207,7 +210,8 @@ const createMCPHandlerFor = (
     );
 
     const registeredTools = new Set<string>();
-    for (const tool of await (typeof tools === "function" ? tools(c) : tools)) {
+    const allTools = await (typeof tools === "function" ? tools(c) : tools);
+    for (const tool of allTools) {
       if (group && tool.group !== group) {
         continue;
       }
@@ -1020,6 +1024,7 @@ const createSelfTools = async (ctx: Context) => {
 };
 
 const projectMcpHandler = createMCPHandlerFor(projectTools);
+
 app.all("/:org/:project/mcp", projectMcpHandler);
 app.all("/:org/:project/mcp/tool/:toolName", projectMcpHandler);
 
@@ -1042,10 +1047,35 @@ app.post(
 );
 
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
-app.post("/:org/:project/self/mcp", selfMcpHandler);
-app.post("/:org/:project/i:self/mcp", selfMcpHandler);
-app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
-app.post("/:org/:project/i:self/mcp/tool/:toolName", selfMcpHandler);
+app.post(`/:org/:project/${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(`/:org/:project/i:${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(
+  `/:org/:project/${WellKnownMcpGroups.Self}/mcp/tool/:toolName`,
+  selfMcpHandler,
+);
+app.post(
+  `/:org/:project/i:${WellKnownMcpGroups.Self}/mcp/tool/:toolName`,
+  selfMcpHandler,
+);
+
+/**
+ * These routes make the DECO_TOOL_CALL_TOOL function call the virtual MCP integrations directly,
+ * thus avoiding going through the usual withOAuth middleware, making the user available to
+ * the virtual integrations.
+ * To remove these routes, remove it and ask decopilot to create tools, if the user is defined
+ * on the "created_by" field, you can remove it.
+ */
+const globalGroups = new Set<string>([
+  WellKnownMcpGroups.Time,
+  WellKnownMcpGroups.HTTP,
+]);
+Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
+  const handler = globalGroups.has(groupPath as string)
+    ? createMCPHandlerFor(GLOBAL_TOOLS, groupPath)
+    : createMCPHandlerFor(projectTools, groupPath);
+  app.all(`/:org/:project/i:${groupPath}/mcp`, handler);
+  app.all(`/:org/:project/i:${groupPath}/mcp/tool/:toolName`, handler);
+});
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);

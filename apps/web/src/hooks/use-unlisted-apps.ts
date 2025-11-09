@@ -1,4 +1,4 @@
-import { MCPClient, useSDK } from "@deco/sdk";
+import { KEYS, MCPClient, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 /**
@@ -8,7 +8,7 @@ export function useUnlistedApps() {
   const { locator } = useSDK();
 
   return useQuery({
-    queryKey: ["unlisted-apps"],
+    queryKey: KEYS.UNLISTED_APPS(),
     queryFn: async () => {
       if (!locator) {
         throw new Error("No locator available");
@@ -18,9 +18,8 @@ export function useUnlistedApps() {
         const client = MCPClient.forLocator(locator);
         const result = await client.MARKETPLACE_APPS_LIST_UNLISTED_ADMIN({});
         return result.apps;
-      } catch (error) {
-        console.error("Error fetching unlisted apps:", error);
-        throw error;
+      } catch {
+        throw new Error("Failed to fetch unlisted apps");
       }
     },
     enabled: !!locator,

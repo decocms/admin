@@ -1,4 +1,4 @@
-import { MCPClient, useSDK } from "@deco/sdk";
+import { KEYS, MCPClient, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "./use-user.ts";
 
@@ -11,7 +11,7 @@ export function useIsAdmin() {
   const { locator } = useSDK();
 
   return useQuery({
-    queryKey: ["is-admin", user?.email],
+    queryKey: KEYS.ADMIN_CHECK(user?.email),
     queryFn: async () => {
       if (!user?.email || !locator) {
         return false;
@@ -21,7 +21,7 @@ export function useIsAdmin() {
         const client = MCPClient.forLocator(locator);
         const result = await client.ADMIN_CHECK({});
         return result.isAdmin;
-      } catch (error) {
+      } catch {
         return false;
       }
     },

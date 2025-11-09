@@ -1,4 +1,4 @@
-import { type Integration, MCPClient, useSDK } from "@deco/sdk";
+import { type Integration, KEYS, MCPClient, useSDK } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -67,14 +67,14 @@ export function AppEditModal({
 
       // Invalidate queries to refetch the data
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(),
       });
-      queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.UNLISTED_APPS() });
 
       toast.success("App updated successfully");
       onSave();
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update app");
     }
   };

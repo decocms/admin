@@ -1,4 +1,4 @@
-import { type Integration, MCPClient, useSDK } from "@deco/sdk";
+import { type Integration, KEYS, MCPClient, useSDK } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,9 +41,9 @@ export function AdminCardActions({
 
       // Invalidate queries to refetch the data
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(),
       });
-      queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.UNLISTED_APPS() });
 
       toast.success(
         (app as { unlisted?: boolean }).unlisted
@@ -52,7 +52,7 @@ export function AdminCardActions({
       );
 
       onUpdate?.();
-    } catch (error) {
+    } catch {
       toast.error("Failed to toggle visibility");
     } finally {
       setIsTogglingVisibility(false);
@@ -73,14 +73,14 @@ export function AdminCardActions({
 
       // Invalidate queries to refetch the data
       queryClient.invalidateQueries({
-        queryKey: ["integrations", "marketplace"],
+        queryKey: KEYS.INTEGRATIONS_MARKETPLACE(),
       });
-      queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
+      queryClient.invalidateQueries({ queryKey: KEYS.UNLISTED_APPS() });
 
       toast.success(app.verified ? "App verification removed" : "App verified");
 
       onUpdate?.();
-    } catch (error) {
+    } catch {
       toast.error("Failed to toggle verification");
     } finally {
       setIsTogglingVerified(false);

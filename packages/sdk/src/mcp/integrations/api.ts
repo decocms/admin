@@ -1335,7 +1335,10 @@ It's always handy to search for installed integrations with no query, since all 
       ),
       ...registryList,
     ];
-    console.log("📦 Apps no Marketplace:", allIntegrations.map((app) => ({ id: app.id, name: app.name })));
+    console.log(
+      "📦 Apps no Marketplace:",
+      allIntegrations.map((app) => ({ id: app.id, name: app.name })),
+    );
     return {
       integrations: allIntegrations,
     };

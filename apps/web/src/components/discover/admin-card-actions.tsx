@@ -14,8 +14,8 @@ interface AdminCardActionsProps {
   visibilityOnly?: boolean;
 }
 
-export function AdminCardActions({ 
-  app, 
+export function AdminCardActions({
+  app,
   onUpdate,
   editOnly = false,
   actionsOnly = false,
@@ -40,7 +40,9 @@ export function AdminCardActions({
       });
 
       // Invalidate queries to refetch the data
-      queryClient.invalidateQueries({ queryKey: ["integrations", "marketplace"] });
+      queryClient.invalidateQueries({
+        queryKey: ["integrations", "marketplace"],
+      });
       queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
 
       toast.success(
@@ -70,7 +72,9 @@ export function AdminCardActions({
       });
 
       // Invalidate queries to refetch the data
-      queryClient.invalidateQueries({ queryKey: ["integrations", "marketplace"] });
+      queryClient.invalidateQueries({
+        queryKey: ["integrations", "marketplace"],
+      });
       queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
 
       toast.success(app.verified ? "App verification removed" : "App verified");
@@ -117,14 +121,24 @@ export function AdminCardActions({
       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
         <Button
           size="sm"
-          variant={(app as { unlisted?: boolean }).unlisted ? "outline" : "default"}
-          title={(app as { unlisted?: boolean }).unlisted ? "Make Visible" : "Make Unlisted"}
+          variant={
+            (app as { unlisted?: boolean }).unlisted ? "outline" : "default"
+          }
+          title={
+            (app as { unlisted?: boolean }).unlisted
+              ? "Make Visible"
+              : "Make Unlisted"
+          }
           onClick={toggleVisibility}
           disabled={isTogglingVisibility}
           className="h-8 flex-1"
         >
           <Icon
-            name={(app as { unlisted?: boolean }).unlisted ? "visibility_off" : "visibility"}
+            name={
+              (app as { unlisted?: boolean }).unlisted
+                ? "visibility_off"
+                : "visibility"
+            }
             size={16}
             className="mr-1"
           />
@@ -140,14 +154,24 @@ export function AdminCardActions({
       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
         <Button
           size="sm"
-          variant={(app as { unlisted?: boolean }).unlisted ? "outline" : "default"}
-          title={(app as { unlisted?: boolean }).unlisted ? "Make Visible" : "Make Unlisted"}
+          variant={
+            (app as { unlisted?: boolean }).unlisted ? "outline" : "default"
+          }
+          title={
+            (app as { unlisted?: boolean }).unlisted
+              ? "Make Visible"
+              : "Make Unlisted"
+          }
           onClick={toggleVisibility}
           disabled={isTogglingVisibility}
           className="h-8 flex-1"
         >
           <Icon
-            name={(app as { unlisted?: boolean }).unlisted ? "visibility_off" : "visibility"}
+            name={
+              (app as { unlisted?: boolean }).unlisted
+                ? "visibility_off"
+                : "visibility"
+            }
             size={16}
             className="mr-1"
           />
@@ -162,8 +186,8 @@ export function AdminCardActions({
           disabled={isTogglingVerified}
           className="h-8 flex-1"
         >
-          <Icon 
-            name={app.verified ? "verified" : "close"} 
+          <Icon
+            name={app.verified ? "verified" : "close"}
             size={16}
             className="mr-1"
           />

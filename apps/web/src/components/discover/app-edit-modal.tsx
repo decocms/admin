@@ -66,7 +66,9 @@ export function AppEditModal({
       });
 
       // Invalidate queries to refetch the data
-      queryClient.invalidateQueries({ queryKey: ["integrations", "marketplace"] });
+      queryClient.invalidateQueries({
+        queryKey: ["integrations", "marketplace"],
+      });
       queryClient.invalidateQueries({ queryKey: ["unlisted-apps"] });
 
       toast.success("App updated successfully");

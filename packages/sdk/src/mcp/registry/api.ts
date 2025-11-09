@@ -567,7 +567,7 @@ export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
   handler: async (input, c) => {
     // Allow attempting the tool, but will be validated by assertIsAdmin
     c.resourceAccess.grant();
-    
+
     // Verify user is admin - will throw ForbiddenError if not
     await assertIsAdmin(c);
 
@@ -648,7 +648,7 @@ export const MARKETPLACE_APPS_LIST_UNLISTED_ADMIN = createTool({
   handler: async (_, c) => {
     // Allow attempting the tool, but will be validated by assertIsAdmin
     c.resourceAccess.grant();
-    
+
     // Verify user is admin - will throw ForbiddenError if not
     await assertIsAdmin(c);
 

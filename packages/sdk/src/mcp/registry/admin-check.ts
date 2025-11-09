@@ -65,7 +65,7 @@ export const ADMIN_CHECK = createAdminTool({
   handler: async (_, c) => {
     // Grant public access to this tool (it's a check, not a modification)
     c.resourceAccess.grant();
-    
+
     const user = c.user as { email?: string } | undefined;
     if (!user?.email) {
       return { isAdmin: false };

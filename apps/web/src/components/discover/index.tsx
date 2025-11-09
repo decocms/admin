@@ -112,7 +112,9 @@ const FeaturedCard = ({
           {integration.friendlyName || integration.name}
           {integration.verified && <VerifiedBadge />}
         </h3>
-        <p className="text-sm text-muted-foreground flex-1">{integration.description}</p>
+        <p className="text-sm text-muted-foreground flex-1">
+          {integration.description}
+        </p>
       </div>
 
       {isEditMode && (
@@ -373,19 +375,21 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
                   <h2 className="text-lg font-medium">
                     Unlisted Apps (Admin Only)
                     <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                      {unlistedApps.filter(
-                        (app) =>
-                          !unlistedSearchTerm ||
-                          app.name
-                            .toLowerCase()
-                            .includes(unlistedSearchTerm.toLowerCase()) ||
-                          app.friendlyName
-                            ?.toLowerCase()
-                            .includes(unlistedSearchTerm.toLowerCase()) ||
-                          app.description
-                            ?.toLowerCase()
-                            .includes(unlistedSearchTerm.toLowerCase()),
-                      ).length}
+                      {
+                        unlistedApps.filter(
+                          (app) =>
+                            !unlistedSearchTerm ||
+                            app.name
+                              .toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()) ||
+                            app.friendlyName
+                              ?.toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()) ||
+                            app.description
+                              ?.toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()),
+                        ).length
+                      }
                     </span>
                   </h2>
                   <p className="text-sm text-muted-foreground mt-2 mb-4">
@@ -415,56 +419,58 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
                             .includes(unlistedSearchTerm.toLowerCase()),
                       )
                       .map((app) => (
-                      <div key={app.id} className="opacity-60">
-                        <div
-                          onClick={() => {
-                            if (onAppClick) {
-                              onAppClick(
-                                AppKeys.build(
-                                  getConnectionAppKey(app as unknown as FeaturedIntegration),
-                                ),
-                              );
-                            }
-                          }}
-                          className="flex flex-col h-full bg-card relative rounded-xl cursor-pointer overflow-hidden"
-                        >
-                          <div className="flex flex-col gap-2 p-4 flex-1">
-                            <div className="flex items-center gap-2">
-                              <IntegrationAvatar
-                                url={app.icon}
-                                fallback={app.friendlyName ?? app.name}
-                                size="lg"
-                              />
+                        <div key={app.id} className="opacity-60">
+                          <div
+                            onClick={() => {
+                              if (onAppClick) {
+                                onAppClick(
+                                  AppKeys.build(
+                                    getConnectionAppKey(
+                                      app as unknown as FeaturedIntegration,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }}
+                            className="flex flex-col h-full bg-card relative rounded-xl cursor-pointer overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-2 p-4 flex-1">
+                              <div className="flex items-center gap-2">
+                                <IntegrationAvatar
+                                  url={app.icon}
+                                  fallback={app.friendlyName ?? app.name}
+                                  size="lg"
+                                />
+                              </div>
+                              <h3 className="text-sm flex gap-1 items-center">
+                                {app.friendlyName || app.name}
+                                {app.verified && <VerifiedBadge />}
+                              </h3>
+                              <p className="text-sm text-muted-foreground flex-1">
+                                {app.description}
+                              </p>
                             </div>
-                            <h3 className="text-sm flex gap-1 items-center">
-                              {app.friendlyName || app.name}
-                              {app.verified && <VerifiedBadge />}
-                            </h3>
-                            <p className="text-sm text-muted-foreground flex-1">
-                              {app.description}
-                            </p>
+
+                            {isEditModeActive && (
+                              <div className="absolute top-2 right-2">
+                                <AdminCardActions
+                                  app={app as unknown as Integration}
+                                  editOnly
+                                />
+                              </div>
+                            )}
+
+                            {isEditModeActive && (
+                              <div className="border-t p-2">
+                                <AdminCardActions
+                                  app={app as unknown as Integration}
+                                  visibilityOnly
+                                />
+                              </div>
+                            )}
                           </div>
-
-                          {isEditModeActive && (
-                            <div className="absolute top-2 right-2">
-                              <AdminCardActions
-                                app={app as unknown as Integration}
-                                editOnly
-                              />
-                            </div>
-                          )}
-
-                          {isEditModeActive && (
-                            <div className="border-t p-2">
-                              <AdminCardActions
-                                app={app as unknown as Integration}
-                                visibilityOnly
-                              />
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </>

@@ -96,7 +96,7 @@ function UserPreferencesModal({
 }) {
   const { preferences, setPreferences } = useUserPreferences();
   const { data: isAdmin } = useIsAdmin();
-  
+
   const form = useForm({
     defaultValues: {
       defaultModel: preferences.defaultModel,

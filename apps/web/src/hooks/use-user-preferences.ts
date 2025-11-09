@@ -10,6 +10,7 @@ export interface UserPreferences {
   showLegacyPrompts?: boolean;
   showLegacyWorkflowRuns?: boolean;
   showLegacyAgents?: boolean;
+  storeEditMode?: boolean;
 }
 
 export const userPreferencesLabels = {
@@ -33,6 +34,11 @@ export const userPreferencesLabels = {
     label: "Show Legacy Agents",
     description: "Show legacy agents in the agents view.",
   },
+  storeEditMode: {
+    label: "Store Edit Mode",
+    description:
+      "Enable marketplace editing features. This allows you to manage app visibility, verification, and metadata.",
+  },
 };
 
 const USER_PREFERENCES_KEY = "user-preferences";
@@ -51,6 +57,7 @@ export function useUserPreferences() {
         showLegacyPrompts: false,
         showLegacyWorkflowRuns: false,
         showLegacyAgents: false,
+        storeEditMode: false,
       };
 
       if (!existing) {

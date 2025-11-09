@@ -20,7 +20,7 @@ export function ThemePreview() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-full overflow-hidden">
       {/* Buttons Card */}
-      <Card className="p-4 gap-2 min-w-0 hover:bg-accent/100">
+      <Card className="p-4 gap-2 min-w-0 hover:bg-card">
         <CardHeader className="p-0">
           <CardTitle className="text-sm font-medium">Buttons</CardTitle>
         </CardHeader>
@@ -39,7 +39,7 @@ export function ThemePreview() {
       </Card>
 
       {/* Elements Card */}
-      <Card className="p-4 gap-2 min-w-0 hover:bg-accent/100">
+      <Card className="p-4 gap-2 min-w-0 hover:bg-card">
         <CardHeader className="p-0">
           <CardTitle className="text-sm font-medium">Elements</CardTitle>
         </CardHeader>
@@ -71,7 +71,7 @@ export function ThemePreview() {
       </Card>
 
       {/* Alerts Card */}
-      <Card className="p-4 gap-2 min-w-0 hover:bg-accent/100">
+      <Card className="p-4 gap-2 min-w-0 hover:bg-card">
         <CardHeader className="p-0">
           <CardTitle className="text-sm font-medium">Alerts</CardTitle>
         </CardHeader>

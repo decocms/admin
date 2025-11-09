@@ -14,13 +14,18 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Form } from "@deco/ui/components/form.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@deco/ui/components/popover.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { ThemePreview } from "./theme-preview.tsx";
 import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
 import { DetailSection } from "../common/detail-section.tsx";
-import { ColorPicker } from "./color-picker.tsx";
+import { ColorPickerContent } from "./color-picker.tsx";
 import {
   GoogleFontsSelector,
   POPULAR_GOOGLE_FONTS,
@@ -68,6 +73,62 @@ const THEME_EDITOR_AI_RULES = [
   "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, the relationship between background/foreground pairs, and font legibility.",
 ];
 
+// Helper function to convert any color format to hex
+function colorToHex(color: string): string {
+  // Already hex
+  if (color.startsWith("#")) {
+    return color;
+  }
+
+  // OKLCH format: oklch(L C H) or oklch(L C H / A)
+  if (color.startsWith("oklch(")) {
+    const match = color.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+    if (match) {
+      const l = Number.parseFloat(match[1]);
+      const c = Number.parseFloat(match[2]);
+      const h = Number.parseFloat(match[3]);
+      
+      // Convert OKLCH to RGB (simplified conversion)
+      // This is a basic conversion - for production, consider using a color library
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = `oklch(${l} ${c} ${h})`;
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        return `#${[r, g, b].map(x => x.toString(16).padStart(2, "0")).join("")}`;
+      }
+    }
+  }
+
+  // HSL format
+  if (color.startsWith("hsl(")) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      return `#${[r, g, b].map(x => x.toString(16).padStart(2, "0")).join("")}`;
+    }
+  }
+
+  // RGB format
+  if (color.startsWith("rgb(")) {
+    const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+      const r = Number.parseInt(match[1]);
+      const g = Number.parseInt(match[2]);
+      const b = Number.parseInt(match[3]);
+      return `#${[r, g, b].map(x => x.toString(16).padStart(2, "0")).join("")}`;
+    }
+  }
+
+  return "#000000";
+}
+
 interface ColorCardProps {
   variable: {
     key: ThemeVariable;
@@ -81,12 +142,85 @@ interface ColorCardProps {
 }
 
 function ColorCard({ variable, onChange, label, originalValue }: ColorCardProps) {
+  const [open, setOpen] = useState(false);
   const displayValue = variable.value || variable.defaultValue;
+  const hexValue = colorToHex(displayValue);
 
   return (
-    <div className="aspect-square w-full border border-border rounded-xl p-2 flex items-end justify-center" style={{ backgroundColor: displayValue }}>
-      <ColorPicker value={displayValue} onChange={onChange} originalValue={originalValue} label={label} />
-    </div>
+    <>
+      <style
+        id="color-picker-slider-thumb-style"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Required for custom range input styling
+        dangerouslySetInnerHTML={{
+          __html: `
+            input[type='range'].color-picker-hue::-webkit-slider-thumb {
+              -webkit-appearance: none;
+              appearance: none;
+              width: 18px; 
+              height: 18px;
+              background: transparent;
+              border: 4px solid hsl(var(--background));
+              box-shadow: 0 0 0 1px hsl(var(--border)); 
+              cursor: pointer;
+              border-radius: 50%;
+            }
+            input[type='range'].color-picker-hue::-moz-range-thumb {
+              width: 18px;
+              height: 18px;
+              cursor: pointer;
+              border-radius: 50%;
+              background: transparent;
+              border: 4px solid hsl(var(--background));
+              box-shadow: 0 0 0 1px hsl(var(--border));
+            }
+            input[type='range'].color-picker-hue::-ms-thumb {
+              width: 18px;
+              height: 18px;
+              background: transparent;
+              cursor: pointer;
+              border-radius: 50%;
+              border: 4px solid hsl(var(--background));
+              box-shadow: 0 0 0 1px hsl(var(--border));
+            }
+          `,
+        }}
+      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="w-full bg-background border border-border rounded-lg pt-3 transition-all hover:border-primary cursor-pointer flex flex-col"
+            style={{ aspectRatio: "3 / 4" }}
+          >
+            {/* Polaroid photo area - the color (quadrada mas menor) */}
+            <div className="w-full flex items-center justify-center mb-2">
+              <div
+                className="w-[85%] aspect-square rounded-md border border-border/50"
+                style={{ backgroundColor: displayValue }}
+              />
+            </div>
+            
+            {/* Polaroid text area */}
+            <div className="flex-1 flex flex-col justify-center space-y-0.5 text-center">
+              <p className="text-sm font-medium text-foreground truncate">
+                {label}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono">
+                {hexValue.toUpperCase()}
+              </p>
+            </div>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-1" align="start" side="bottom">
+          <ColorPickerContent
+            value={displayValue}
+            onChange={onChange}
+            originalValue={originalValue}
+          />
+        </PopoverContent>
+      </Popover>
+    </>
   );
 }
 
@@ -109,7 +243,7 @@ function OptionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`aspect-square w-full border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-primary ${
+      className={`cursor-pointer aspect-square w-full border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:border-primary ${
         isActive ? "border-primary bg-primary/5" : "border-border"
       }`}
     >

@@ -370,7 +370,13 @@ interface ColorPickerProps {
   originalValue?: string;
 }
 
-export function ColorPicker({ value, onChange, originalValue, label }: ColorPickerProps) {
+interface ColorPickerContentProps {
+  value: string;
+  onChange: (value: string) => void;
+  originalValue?: string;
+}
+
+export function ColorPickerContent({ value, onChange, originalValue }: ColorPickerContentProps) {
   // Track if user is actively editing to prevent external updates
   const isEditingRef = useRef<boolean>(false);
   const editingTimeoutRef = useRef<number | undefined>(undefined);
@@ -388,8 +394,6 @@ export function ColorPicker({ value, onChange, originalValue, label }: ColorPick
     const hsl = hexToHsl({ hex });
     return { ...hsl, hex };
   });
-
-  const [open, setOpen] = useState(false);
 
   // Convert hex to the specified output format
   const formatColorOutput = useCallback(
@@ -518,6 +522,98 @@ export function ColorPicker({ value, onChange, originalValue, label }: ColorPick
   }, [originalValue, onChange]);
 
   return (
+    <div className="flex w-full max-w-[300px] select-none flex-col items-center gap-3 overscroll-none">
+      <DraggableColorCanvas {...color} handleChange={handleColorChange} />
+      <input
+        type="range"
+        min="0"
+        max="360"
+        value={color.h}
+        className="color-picker-hue h-3 w-full cursor-pointer appearance-none rounded-full border border-border bg-card"
+        style={{
+          background: `linear-gradient(to right, 
+            hsl(0, 100%, 50%), 
+            hsl(60, 100%, 50%), 
+            hsl(120, 100%, 50%), 
+            hsl(180, 100%, 50%), 
+            hsl(240, 100%, 50%), 
+            hsl(300, 100%, 50%), 
+            hsl(360, 100%, 50%))`,
+        }}
+        onChange={(e) => {
+          markAsEditing();
+          const hue = e.target.valueAsNumber;
+          setColor((prev) => {
+            const { hex: _hex, ...rest } = { ...prev, h: hue };
+            const hexFormatted = hslToHex({ ...rest });
+            const newColor = { ...rest, hex: hexFormatted };
+            onChange(formatColorOutput(hexFormatted));
+            return newColor;
+          });
+        }}
+      />
+      <div className="flex gap-1 w-full">
+        <Select
+          value={outputFormat}
+          onValueChange={(v) => {
+            const newFormat = v as typeof outputFormat;
+            setOutputFormat(newFormat);
+            const formatted = formatColorOutput(color.hex, newFormat);
+            setInputValue(formatted);
+            onChange(formatted);
+          }}
+        >
+          <SelectTrigger className="w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="hex">HEX</SelectItem>
+            <SelectItem value="hsl">HSL</SelectItem>
+            <SelectItem value="oklch">OKLCH</SelectItem>
+            <SelectItem value="rgb">RGB</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="relative flex-1">
+          <Input
+            value={inputValue}
+            onChange={(e) => handleInputChange(e.target.value)}
+            className="pr-[38px]"
+          />
+          <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">
+            <div
+              className="size-7 rounded-md border border-border"
+              style={{
+                backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={!originalValue || originalValue === value}
+        onClick={() => setColorToOriginalValue()}
+      >
+        Reset
+      </Button>
+    </div>
+  );
+}
+
+export function ColorPicker({ value, onChange, originalValue, label }: ColorPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [color, setColor] = useState<Color>(() => {
+    const hex = parseColorToHex(value)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+    const hsl = hexToHsl({ hex });
+    return { ...hsl, hex };
+  });
+
+  return (
     <>
       <style
         id="color-picker-slider-thumb-style"
@@ -575,84 +671,11 @@ export function ColorPicker({ value, onChange, originalValue, label }: ColorPick
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-1" align="start" side="bottom">
-          <div className="flex w-full max-w-[300px] select-none flex-col items-center gap-3 overscroll-none">
-            <DraggableColorCanvas {...color} handleChange={handleColorChange} />
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={color.h}
-              className="color-picker-hue h-3 w-full cursor-pointer appearance-none rounded-full border border-border bg-card"
-              style={{
-                background: `linear-gradient(to right, 
-                  hsl(0, 100%, 50%), 
-                  hsl(60, 100%, 50%), 
-                  hsl(120, 100%, 50%), 
-                  hsl(180, 100%, 50%), 
-                  hsl(240, 100%, 50%), 
-                  hsl(300, 100%, 50%), 
-                  hsl(360, 100%, 50%))`,
-              }}
-              onChange={(e) => {
-                markAsEditing();
-                const hue = e.target.valueAsNumber;
-                setColor((prev) => {
-                  const { hex: _hex, ...rest } = { ...prev, h: hue };
-                  const hexFormatted = hslToHex({ ...rest });
-                  const newColor = { ...rest, hex: hexFormatted };
-                  onChange(formatColorOutput(hexFormatted));
-                  return newColor;
-                });
-              }}
-            />
-            <div className="flex gap-1 w-full">
-              <Select
-                value={outputFormat}
-                onValueChange={(v) => {
-                  const newFormat = v as typeof outputFormat;
-                  setOutputFormat(newFormat);
-                  const formatted = formatColorOutput(color.hex, newFormat);
-                  setInputValue(formatted);
-                  onChange(formatted);
-                }}
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hex">HEX</SelectItem>
-                  <SelectItem value="hsl">HSL</SelectItem>
-                  <SelectItem value="oklch">OKLCH</SelectItem>
-                  <SelectItem value="rgb">RGB</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="relative flex-1">
-                <Input
-                  value={inputValue}
-                  onChange={(e) => handleInputChange(e.target.value)}
-                  className="pr-[38px]"
-                />
-                <div className="absolute inset-y-0 right-0 flex h-full items-center px-[5px]">
-                  <div
-                    className="size-7 rounded-md border border-border"
-                    style={{
-                      backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              disabled={!originalValue || originalValue === value}
-              onClick={() => setColorToOriginalValue()}
-            >
-              Reset
-            </Button>
-          </div>
+          <ColorPickerContent
+            value={value}
+            onChange={onChange}
+            originalValue={originalValue}
+          />
         </PopoverContent>
       </Popover>
     </>

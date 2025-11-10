@@ -29,7 +29,7 @@ import {
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -57,7 +57,7 @@ export function InternalResourceListWithIntegration({
   const integration = useIntegration(integrationId).data;
 
   // Canvas tabs management
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
 
   const [caps, setCaps] = useState({
     hasCreate: false,

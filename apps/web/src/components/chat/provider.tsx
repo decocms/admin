@@ -58,7 +58,7 @@ import {
   isResourceUpdateTool,
 } from "../../stores/resource-version-history/utils.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 
 // Preload notification audio at module level for instant playback
 const notificationAudio = (() => {
@@ -484,7 +484,7 @@ export function AgenticChatProvider({
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
   const { pathname } = useLocation();
-  const { contextItems: threadContextItems } = useThreadContext();
+  const { contextItems: threadContextItems } = useThread();
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();

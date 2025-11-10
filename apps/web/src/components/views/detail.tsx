@@ -7,7 +7,6 @@ import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Preview from "../agent/preview";
 import { EmptyState } from "../common/empty-state.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
 import { useRouteParams } from "../canvas/route-params-provider.tsx";
 
@@ -112,50 +111,6 @@ export default function ViewDetail() {
       return undefined;
     }
   }, [resolvedUrl]);
-
-  // Prepare thread context for view
-  const threadContextItems = useMemo(() => {
-    if (!integrationId) return [];
-
-    const contextItems = [];
-
-    // Check if the view has specific tools defined
-    const matched = (connectionViews?.views ?? []).find(
-      (v) => v.name === viewName,
-    );
-
-    // Add rules if present
-    if (matched?.rules) {
-      contextItems.push(
-        ...matched.rules.map((text) => ({
-          id: crypto.randomUUID(),
-          type: "rule" as const,
-          text,
-        })),
-      );
-    }
-
-    // Add toolset
-    let tools: string[] = [];
-    if (matched && Array.isArray(matched.tools)) {
-      tools = matched.tools;
-    } else if (Array.isArray(integration?.tools)) {
-      tools = integration.tools.map((t) => t.name);
-    }
-
-    if (tools.length > 0) {
-      contextItems.push({
-        id: crypto.randomUUID(),
-        type: "toolset" as const,
-        integrationId,
-        enabledTools: tools,
-      });
-    }
-
-    return contextItems;
-  }, [integrationId, viewName, connectionViews, integration]);
-
-  useSetThreadContextEffect(threadContextItems);
 
   return (
     <div className="h-[calc(100vh-48px)]">

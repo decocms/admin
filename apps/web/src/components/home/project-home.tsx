@@ -6,7 +6,7 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef } from "react";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { Canvas } from "../canvas/canvas.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
@@ -14,7 +14,7 @@ import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 
 export function ProjectHome() {
-  const { tabs } = useThreadManager();
+  const { tabs } = useThread();
   const { open: decopilotOpen } = useDecopilotOpen();
   const hasTabs = tabs.length > 0;
   const canvasPanelRef = useRef<ImperativePanelHandle>(null);

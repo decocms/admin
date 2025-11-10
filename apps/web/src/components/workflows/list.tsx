@@ -30,7 +30,7 @@ import {
   ResourceHeader,
   type TabItem,
 } from "../resources-v2/resource-header.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { useSearchParams } from "react-router";
 
 function WorkflowRunsTableView({
@@ -140,7 +140,7 @@ function WorkflowRunsContent({
   const navigateWorkspace = useNavigateWorkspace();
   const { locator } = useSDK();
   const queryClient = useQueryClient();
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"cards" | "table">(initialViewMode);

@@ -1,9 +1,9 @@
 import { useUpdateThreadMessages } from "@deco/sdk";
 import { useCallback } from "react";
 import {
-  useThreadManagerOptional,
+  useThreadOptional,
   buildAgentUri,
-} from "../decopilot/thread-context-manager.tsx";
+} from "../decopilot/thread-provider.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 interface AgentNavigationOptions {
@@ -13,7 +13,7 @@ interface AgentNavigationOptions {
 }
 
 export const useFocusChat = () => {
-  const threadManager = useThreadManagerOptional();
+  const threadManager = useThreadOptional();
   const addTab = threadManager?.addTab;
   const updateMessages = useUpdateThreadMessages();
   const navigateWorkspace = useNavigateWorkspace();

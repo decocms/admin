@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import type { TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
-import { buildTriggerUri } from "../decopilot/thread-context-manager.tsx";
+import { buildTriggerUri } from "../decopilot/thread-provider.tsx";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { formatStatus, getStatusBadgeVariant } from "./utils.ts";
 import type { WorkflowRun } from "./types.ts";

@@ -15,7 +15,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateOrg } from "../../hooks/use-navigate-workspace.ts";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { useThreadTitle } from "../decopilot/index.tsx";
 import {
   CommandPalette,
@@ -33,7 +33,7 @@ function ThreadListItem({
   thread: { id: string; createdAt: number };
   isActive: boolean;
 }) {
-  const { switchToThread, hideThread } = useThreadManager();
+  const { switchToThread, hideThread } = useThread();
   const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
   const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
 
@@ -77,7 +77,7 @@ function ThreadListItem({
  * Renders the list of recent chat threads
  */
 function RecentThreadsList() {
-  const { getAllThreads, activeThreadId } = useThreadManager();
+  const { getAllThreads, activeThreadId } = useThread();
   const threads = getAllThreads();
   const maxThreads = 5; // Show up to 5 recent threads
 
@@ -240,7 +240,7 @@ OrgViews.Skeleton = () => (
 );
 
 export function OrgsSidebar() {
-  const { createThread } = useThreadManager();
+  const { createThread } = useThread();
   const commandPalette = useCommandPalette();
   const [commandPaletteInitialSearch, setCommandPaletteInitialSearch] =
     useState("");

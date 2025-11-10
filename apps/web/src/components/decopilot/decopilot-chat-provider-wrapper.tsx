@@ -4,7 +4,7 @@ import {
   AgenticChatProvider,
   createDecopilotTransport,
 } from "../chat/provider.tsx";
-import { useThreadManager } from "./thread-context-manager.tsx";
+import { useThread } from "./thread-provider.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
 
 interface DecopilotChatProviderWrapperProps {
@@ -17,7 +17,7 @@ export function DecopilotChatProviderWrapper({
   forceBottomLayout,
 }: DecopilotChatProviderWrapperProps) {
   const { locator } = useSDK();
-  const { getThread, activeThreadId } = useThreadManager();
+  const { getThread, activeThreadId } = useThread();
   const { threadState, clearThreadState } = useDecopilotThread();
 
   // Always use decopilot agent

@@ -2,7 +2,7 @@ import type { Agent } from "@deco/sdk";
 import type { TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
-import { buildAgentUri } from "../decopilot/thread-context-manager.tsx";
+import { buildAgentUri } from "../decopilot/thread-provider.tsx";
 
 /**
  * Adapter to transform Agent to a format compatible with ResourcesV2List

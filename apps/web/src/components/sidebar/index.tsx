@@ -43,10 +43,7 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useThreadTitle } from "../decopilot/index.tsx";
-import {
-  buildAppsListUri,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+import { buildAppsListUri, useThread } from "../decopilot/thread-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
 import {
@@ -78,7 +75,7 @@ function ThreadListItem({
   thread: { id: string; createdAt: number };
   isActive: boolean;
 }) {
-  const { switchToThread, hideThread } = useThreadManager();
+  const { switchToThread, hideThread } = useThread();
   const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
   const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
 
@@ -122,7 +119,7 @@ function ThreadListItem({
  * Renders the list of recent chat threads
  */
 function RecentThreadsList() {
-  const { getAllThreads, activeThreadId } = useThreadManager();
+  const { getAllThreads, activeThreadId } = useThread();
   const threads = getAllThreads();
   const maxThreads = 5; // Show up to 5 recent threads
 
@@ -290,7 +287,7 @@ function WorkspaceViews() {
   const [_searchModalOpen, _setSearchModalOpen] = useState(false);
 
   // Thread management
-  const { createThread } = useThreadManager();
+  const { createThread } = useThread();
 
   // Pinned resources
   // Use team locator if params aren't available - fallback to just undefined if no params
@@ -298,7 +295,7 @@ function WorkspaceViews() {
   const { pinnedTabs, unpinTab, reorderPinnedTabs } = usePinnedTabs(projectKey);
 
   // Canvas tabs management
-  const { addTab, tabs, setActiveTab } = useThreadManager();
+  const { addTab, tabs, setActiveTab } = useThread();
 
   // Drag and drop state for pinned tabs
   const [draggedItem, setDraggedItem] = useState<number | null>(null);

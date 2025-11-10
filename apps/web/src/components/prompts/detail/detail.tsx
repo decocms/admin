@@ -18,7 +18,6 @@ import {
   AgenticChatProvider,
   createLegacyTransport,
 } from "../../chat/provider.tsx";
-import { useSetThreadContextEffect } from "../../decopilot/thread-context-provider.tsx";
 import { useRouteParams } from "../../canvas/route-params-provider.tsx";
 import { Context } from "./context.ts";
 import { PromptDetail } from "./form.tsx";
@@ -127,26 +126,6 @@ export default function Page() {
   // passed via chat overrides instead of modifying cached agent data.
 
   const agentRoot = useAgentRoot(agentId);
-
-  // Set up thread context with rules and tools
-  const threadContextItems = useMemo(
-    () => [
-      {
-        id: crypto.randomUUID(),
-        type: "rule" as const,
-        text: `You are editing the prompt with id: ${promptId}.`,
-      },
-      {
-        id: crypto.randomUUID(),
-        type: "toolset" as const,
-        integrationId: "i:prompt-management",
-        enabledTools: ["PROMPTS_GET", "PROMPTS_UPDATE"],
-      },
-    ],
-    [promptId],
-  );
-
-  useSetThreadContextEffect(threadContextItems);
 
   // Listen for tool calls to refresh data
   useToolCallListener((toolCall) => {

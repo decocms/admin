@@ -11,7 +11,7 @@ import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
 import { usePrompts, useDeletePrompt } from "@deco/sdk";
 import { isWellKnownPromptId } from "@deco/sdk/constants";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import {
   adaptPrompt,
   getPromptsColumns,
@@ -58,7 +58,7 @@ export function DocumentsResourceList({
   // All hooks must be called unconditionally at the top level
   const { data: prompts } = usePrompts();
   const deletePrompt = useDeletePrompt();
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
   const [promptToDelete, setPromptToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 

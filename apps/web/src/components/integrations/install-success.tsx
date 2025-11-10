@@ -10,15 +10,12 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIntegrations, useUpdateIntegration } from "@deco/sdk";
 import { trackException } from "../../hooks/analytics.ts";
 import { notifyIntegrationUpdate } from "../../lib/broadcast-channels.ts";
-import {
-  useThreadManager,
-  buildAppUri,
-} from "../decopilot/thread-context-manager.tsx";
+import { useThread, buildAppUri } from "../decopilot/thread-provider.tsx";
 import { AppKeys, getConnectionAppKey } from "./apps.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 function ConnectionInstallSuccess() {
-  const { addTab } = useThreadManager();
+  const { addTab } = useThread();
   const navigateWorkspace = useNavigateWorkspace();
   const [integrationUpdated, setIntegrationUpdated] = useState(false);
   const [storedInstallId, setStoredInstallId] = useState<string | null>(null);

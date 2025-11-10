@@ -3,7 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
-import { useThreadManager } from "./thread-context-manager.tsx";
+import { useThread } from "./thread-provider.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
@@ -82,7 +82,7 @@ export function useThreadTitle(
 }
 
 function DecopilotChatContent() {
-  const { getThread, getAllThreads, activeThreadId, tabs } = useThreadManager();
+  const { getThread, getAllThreads, activeThreadId, tabs } = useThread();
   const { setOpen } = useDecopilotOpen();
 
   // Always use decopilot agent

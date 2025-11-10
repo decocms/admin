@@ -4,7 +4,7 @@ import {
   TimeAgoCell,
   UserInfo,
 } from "../common/table/table-cells.tsx";
-import { buildThreadUri } from "../decopilot/thread-context-manager.tsx";
+import { buildThreadUri } from "../decopilot/thread-provider.tsx";
 
 /**
  * Adapter to transform Thread (from audit events) to a format compatible with ResourcesV2List

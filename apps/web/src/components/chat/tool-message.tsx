@@ -31,7 +31,7 @@ import {
   useGetVersions,
   useRevertToVersion,
 } from "../../stores/resource-version-history/index.ts";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import {
   extractToolName,
   getStatusStyles,
@@ -738,7 +738,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   }, [part.input]);
 
   // Canvas tabs management
-  const { tabs, addTab, setActiveTab } = useThreadManager();
+  const { tabs, addTab, setActiveTab } = useThread();
 
   // Check if resource URI exists in output (for resource operations)
   const resourceUri = useMemo(() => {

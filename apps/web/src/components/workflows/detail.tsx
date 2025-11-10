@@ -5,10 +5,8 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo } from "react";
 import { useParams } from "react-router";
 import { useRouteParams } from "../canvas/route-params-provider.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
@@ -186,24 +184,6 @@ function WorkflowDetailContent() {
     pathFilter: watchEnabled ? `/src/workflows/${workflowName}.json` : "",
     enabled: watchEnabled,
   });
-
-  // Prepare thread context for workflow detail
-  const threadContextItems = useMemo(() => {
-    if (!instanceId) return [];
-
-    const rules: string[] = [
-      `You are helping with a workflow instance detail view. The current workflow instance ID is "${instanceId}". Focus on operations related to workflow instance monitoring, debugging, and management.`,
-      `When working with this workflow instance, prioritize operations that help users understand the instance's execution state, debug issues, monitor progress, and manage the workflow instance lifecycle. Consider the instance's current status and execution history when providing assistance.`,
-    ];
-
-    return rules.map((text) => ({
-      id: crypto.randomUUID(),
-      type: "rule" as const,
-      text,
-    }));
-  }, [instanceId]);
-
-  useSetThreadContextEffect(threadContextItems);
 
   const snapshot = data?.snapshot;
   const status =

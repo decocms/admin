@@ -23,9 +23,8 @@ import {
   createLegacyTransport,
 } from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
 import { ChatHeader } from "./chat-header.tsx";
 
 const MainChat = () => {
@@ -96,13 +95,11 @@ function Page() {
         }
       >
         <SDKProvider locator={workspace}>
-          <ThreadManagerProvider>
+          <ThreadProvider>
             <DecopilotThreadProvider>
-              <ThreadContextProvider>
-                <ChatProviderWrapper agentId={agentId} threadId={threadId} />
-              </ThreadContextProvider>
+              <ChatProviderWrapper agentId={agentId} threadId={threadId} />
             </DecopilotThreadProvider>
-          </ThreadManagerProvider>
+          </ThreadProvider>
         </SDKProvider>
       </Suspense>
     </ErrorBoundary>

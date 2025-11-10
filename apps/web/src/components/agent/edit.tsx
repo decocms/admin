@@ -42,10 +42,7 @@ import {
 import { useLocation, useParams, useSearchParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { useSaveAgent } from "../../hooks/use-save-agent.ts";
-import {
-  buildAgentUri,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+import { buildAgentUri, useThread } from "../decopilot/thread-provider.tsx";
 import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
@@ -56,7 +53,6 @@ import {
   useAgenticChat,
 } from "../chat/provider.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
@@ -374,10 +370,7 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
   // Separate stable threadId for decochat mode using useState to maintain state when switching
   const [decochatThreadId] = useState(() => crypto.randomUUID());
 
-  // Get the agent being edited for decochat context
-  const { data: editingAgent } = useAgentData(agentId || "");
-
-  // Decochat-specific hooks
+  // Decopilot-specific hooks
   const { threadState, clearThreadState } = useDecopilotThread();
 
   // Use threadState.threadId when available for decochat mode
@@ -390,61 +383,12 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
       threadState.autoSend,
   );
 
-  // Note: contextTools and contextRules are now managed via ThreadContextProvider
+  // Note: contextTools and contextRules are now managed via ThreadProvider
   // onToolCall is replaced by useToolCallListener hook
 
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
     chatMode === "decochat" ? WELL_KNOWN_AGENTS.decopilotAgent.id : agentId;
-
-  // Prepare decochat context when in decochat mode
-  const decochatContextValue = useMemo(() => {
-    if (chatMode !== "decochat" || !editingAgent) return {};
-
-    const rules: string[] = [
-      `You are helping with agent editing and configuration. The current agent being edited is "${editingAgent.name}". Focus on operations related to agent configuration, tool management, knowledge base integration, and agent optimization.`,
-      `When working with this agent (${editingAgent.name}), prioritize operations that help users configure the agent's behavior, manage its tools and integrations, optimize its performance, and understand its capabilities. Consider the agent's current configuration and settings when providing assistance.`,
-    ];
-
-    return { rules };
-  }, [chatMode, editingAgent]);
-
-  // Memoize context items for thread context
-  const threadContextItems = useMemo(() => {
-    const items = [];
-
-    if (chatMode !== "decochat") {
-      // In agent chat mode, add the agent's toolset
-      const agentToolSet = editingAgent?.tools_set ?? {};
-
-      items.push(
-        ...Object.entries(agentToolSet).map(([integrationId, tools]) => ({
-          type: "toolset" as const,
-          integrationId,
-          enabledTools: tools,
-          id: crypto.randomUUID(),
-        })),
-      );
-
-      return items;
-    }
-
-    // In decochat mode, add rules about agent editing
-    if (decochatContextValue.rules) {
-      items.push(
-        ...decochatContextValue.rules.map((text) => ({
-          type: "rule" as const,
-          text,
-          id: crypto.randomUUID(),
-        })),
-      );
-    }
-
-    return items;
-  }, [chatMode, editingAgent?.tools_set, decochatContextValue.rules]);
-
-  // Set context items in thread context
-  useSetThreadContextEffect(threadContextItems);
 
   if (!chatAgentId) return null;
 
@@ -521,7 +465,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   );
 
   // Canvas tabs context for updating tab metadata
-  const { tabs, activeTabId, addTab } = useThreadManager();
+  const { tabs, activeTabId, addTab } = useThread();
   const [searchParams] = useSearchParams();
   const urlActiveTabId = searchParams.get("activeTab");
   const currentTabId = urlActiveTabId || activeTabId;

@@ -8,10 +8,9 @@ import {
 import { useSearchParams } from "react-router";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
-import { NEW_VIEW_PROMPT } from "@deco/sdk";
 import { useIntegrationViews, findPinnedView } from "@deco/sdk";
 import { useCurrentTeam } from "../sidebar/team-selector";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import {
   adaptView,
   getViewsColumns,
@@ -45,7 +44,7 @@ export function ViewsResourceList({
   // All hooks must be called unconditionally at the top level
   const currentTeam = useCurrentTeam();
   const { data: views = [] } = useIntegrationViews({});
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
 
   const tabs = useMemo(
     () => [
@@ -131,7 +130,6 @@ export function ViewsResourceList({
       tabs={tabs}
       activeTab={activeTab}
       onTabChange={(tabId) => setActiveTab(tabId as "all" | "legacy")}
-      resourceRules={[NEW_VIEW_PROMPT]}
     />
   );
 }

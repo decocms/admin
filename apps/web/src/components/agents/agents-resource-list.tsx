@@ -1,7 +1,7 @@
 import { type ReactNode, useMemo, useState } from "react";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { useAgents, useRemoveAgent, useAuditEvents } from "@deco/sdk";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import {
@@ -41,7 +41,7 @@ export function AgentsResourceList({
     orderBy: "updatedAt_desc",
     limit: 100,
   });
-  const { addTab } = useThreadManager();
+  const { addTab } = useThread();
   const { data: agents } = useAgents();
   const removeAgent = useRemoveAgent();
   const createAgent = useCreateAgent();

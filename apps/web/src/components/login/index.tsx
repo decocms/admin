@@ -7,21 +7,9 @@ import { providers } from "./providers.tsx";
 import { Link, useSearchParams, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useState, type FormEventHandler } from "react";
-import { QueryClientProvider, useMutation } from "@tanstack/react-query";
-import { DECO_CMS_API_URL } from "@deco/sdk";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@deco/sdk/hooks";
-
-const useSendMagicLink = () => {
-  return useMutation({
-    mutationFn: (prop: { email: string; cli: boolean }) =>
-      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
-        method: "POST",
-        body: JSON.stringify(prop),
-      })
-        .then((res) => res.ok)
-        .catch(() => false),
-  });
-};
+import { useSendMagicLink } from "./hooks/useSendMagicLink.ts";
 
 function Login() {
   const [searchParams] = useSearchParams();

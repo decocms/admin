@@ -2,31 +2,13 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
-} from "@tanstack/react-query";
-import { DECO_CMS_API_URL } from "@deco/sdk";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FormEventHandler } from "react";
 import { useEffect, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
+import { useSendMagicLink } from "./hooks/useSendMagicLink.ts";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const useSendMagicLink = () => {
-  const create = useMutation({
-    mutationFn: (prop: { email: string; cli: boolean }) =>
-      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
-        method: "POST",
-        body: JSON.stringify(prop),
-      })
-        .then((res) => res.ok)
-        .catch(() => false),
-  });
-
-  return create;
-};
 
 function MagicLink() {
   const fetcher = useSendMagicLink();

@@ -29,8 +29,7 @@ import { useUser } from "../../hooks/use-user.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import RegisterActivity from "../common/register-activity.tsx";
 import { DecopilotChatProviderWrapper } from "../decopilot/decopilot-chat-provider-wrapper.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
-import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { ProjectSidebar } from "../sidebar/index.tsx";
@@ -74,9 +73,9 @@ export function ProjectLayout() {
   return (
     <BaseRouteLayout>
       <WithOrgTheme>
-        <ThreadManagerProvider>
+        <ThreadProvider>
           <ProjectLayoutContent />
-        </ThreadManagerProvider>
+        </ThreadProvider>
       </WithOrgTheme>
     </BaseRouteLayout>
   );
@@ -101,75 +100,71 @@ function ProjectLayoutContent() {
   return (
     <>
       <ProjectDocumentTitleUpdater />
-      <ThreadContextProvider>
-        <DecopilotThreadProvider>
-          <DecopilotChatProviderWrapper forceBottomLayout={!project}>
-            <ProfileModalProvider
-              profileOpen={profileOpen}
-              setProfileOpen={setProfileOpen}
-              openProfileModal={openProfileModal}
-              closeProfileModal={closeProfileModal}
-              handlePhoneSaved={handlePhoneSaved}
-            >
-              <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <div className="flex flex-col h-full">
-                  <TopbarLayout
-                    breadcrumb={[
+      <DecopilotThreadProvider>
+        <DecopilotChatProviderWrapper forceBottomLayout={!project}>
+          <ProfileModalProvider
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+            openProfileModal={openProfileModal}
+            closeProfileModal={closeProfileModal}
+            handlePhoneSaved={handlePhoneSaved}
+          >
+            <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <div className="flex flex-col h-full">
+                <TopbarLayout
+                  breadcrumb={[
+                    {
+                      label: (
+                        <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
+                          <BreadcrumbOrgSwitcher />
+                        </Suspense>
+                      ),
+                    },
+                    {
+                      label: (
+                        <Suspense
+                          fallback={<BreadcrumbProjectSwitcher.Skeleton />}
+                        >
+                          <BreadcrumbProjectSwitcher />
+                        </Suspense>
+                      ),
+                      link: `/${org}/${project}`,
+                    },
+                  ]}
+                >
+                  <SidebarLayout
+                    className="h-full bg-sidebar"
+                    style={
                       {
-                        label: (
-                          <Suspense
-                            fallback={<BreadcrumbOrgSwitcher.Skeleton />}
-                          >
-                            <BreadcrumbOrgSwitcher />
-                          </Suspense>
-                        ),
-                      },
-                      {
-                        label: (
-                          <Suspense
-                            fallback={<BreadcrumbProjectSwitcher.Skeleton />}
-                          >
-                            <BreadcrumbProjectSwitcher />
-                          </Suspense>
-                        ),
-                        link: `/${org}/${project}`,
-                      },
-                    ]}
+                        "--sidebar-width": "13rem",
+                        "--sidebar-width-mobile": "11rem",
+                      } as Record<string, string>
+                    }
                   >
-                    <SidebarLayout
-                      className="h-full bg-sidebar"
-                      style={
-                        {
-                          "--sidebar-width": "13rem",
-                          "--sidebar-width-mobile": "11rem",
-                        } as Record<string, string>
-                      }
-                    >
-                      <ProjectSidebar />
-                      <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
-                        <ResizablePanelGroup direction="horizontal">
-                          <ResizablePanel className="bg-background">
-                            <Suspense
-                              fallback={
-                                <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
-                                  <Spinner />
-                                </div>
-                              }
-                            >
-                              <Outlet />
-                            </Suspense>
-                          </ResizablePanel>
-                        </ResizablePanelGroup>
-                      </SidebarInset>
-                    </SidebarLayout>
-                  </TopbarLayout>
-                  <RegisterActivity orgSlug={org} projectSlug={project} />
-                </div>
-              </SidebarProvider>
-            </ProfileModalProvider>
-          </DecopilotChatProviderWrapper>
-        </DecopilotThreadProvider>
-      </ThreadContextProvider>
+                    <ProjectSidebar />
+                    <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
+                      <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel className="bg-background">
+                          <Suspense
+                            fallback={
+                              <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                <Spinner />
+                              </div>
+                            }
+                          >
+                            <Outlet />
+                          </Suspense>
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    </SidebarInset>
+                  </SidebarLayout>
+                </TopbarLayout>
+                <RegisterActivity orgSlug={org} projectSlug={project} />
+              </div>
+            </SidebarProvider>
+          </ProfileModalProvider>
+        </DecopilotChatProviderWrapper>
+      </DecopilotThreadProvider>
     </>
   );
 }

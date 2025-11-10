@@ -24,7 +24,7 @@ import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-s
 import { useFileUpload } from "../../hooks/use-file-upload.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { ContextResources } from "../chat/context-resources.tsx";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { ContextPicker } from "../chat/context-picker.tsx";
 import { AudioButton } from "./audio-button.tsx";
@@ -80,8 +80,8 @@ export function ChatInput({
 
   const enableFileUpload = true;
 
-  // Read from ThreadContextProvider
-  const { contextItems, addContextItem } = useThreadContext();
+  // Read from ThreadProvider
+  const { contextItems, addContextItem } = useThread();
 
   // Delay for editor focus to ensure DOM is ready
   const EDITOR_FOCUS_DELAY = 100;

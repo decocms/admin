@@ -18,7 +18,7 @@ import { Table, TableColumn } from "../common/table/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ResourceHeader } from "../resources-v2/resource-header.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { useParams, useSearchParams } from "react-router";
 
 export interface ViewWithStatus {
@@ -298,7 +298,7 @@ function ViewsList({
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchOpen, setSearchOpen] = useState(false);
 

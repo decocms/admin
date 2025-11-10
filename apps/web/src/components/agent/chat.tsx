@@ -6,7 +6,7 @@ import { useUser } from "../../hooks/use-user.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { useAgenticChat } from "../chat/provider.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 
 export type WellKnownAgents =
   (typeof WELL_KNOWN_AGENT_IDS)[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -88,7 +88,7 @@ export const MainChat = ({
   // Use real-time chat messages to determine if empty, not the prop
   const { chat, forceBottomLayout } = useAgenticChat();
   const user = useUser();
-  const { getAllThreads } = useThreadManager();
+  const { getAllThreads } = useThread();
   const isEmpty = chat.messages.length === 0;
   const shouldCenterLayout = !forceBottomLayout && !hasTabs && isEmpty;
 

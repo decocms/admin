@@ -12,10 +12,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
-import {
-  useThreadManager,
-  buildTriggerUri,
-} from "../decopilot/thread-context-manager.tsx";
+import { useThread, buildTriggerUri } from "../decopilot/thread-provider.tsx";
 import type { TriggerOutput } from "@deco/sdk";
 import {
   adaptWorkflowRun,
@@ -106,7 +103,7 @@ export function WorkflowsResourceList({
   const { data: triggersData } = useListTriggers();
   const { locator } = useSDK();
   const queryClient = useQueryClient();
-  const { createTab, addTab } = useThreadManager();
+  const { createTab, addTab } = useThread();
   const { mutate: activateTrigger } = useActivateTrigger();
   const { mutate: deactivateTrigger } = useDeactivateTrigger();
   const [isCreateTriggerModalOpen, setIsCreateTriggerModalOpen] =

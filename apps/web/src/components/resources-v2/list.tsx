@@ -50,8 +50,7 @@ import type { WatchEvent } from "../../stores/resource-watch/index.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import type { TabItem } from "./resource-header.tsx";
 import { ResourceHeader } from "./resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
@@ -111,12 +110,7 @@ function ResourcesV2ListTab({
   const queryClient = useQueryClient();
 
   // Canvas tabs management
-  const {
-    addTab,
-    createTab,
-    tabs: canvasTabs,
-    setActiveTab,
-  } = useThreadManager();
+  const { addTab, createTab, tabs: canvasTabs, setActiveTab } = useThread();
   const [mutating, setMutating] = useState(false);
   const [viewMode, setViewMode] = useViewMode();
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
@@ -1263,72 +1257,23 @@ function ResourcesV2ListTab({
                       className="h-full group cursor-pointer transition-shadow overflow-hidden bg-card min-h-48"
                       onClick={() => {
                         if (onItemClick) {
-                          console.log(
-                            "[ResourcesList] Using custom onItemClick handler",
-                          );
                           onItemClick(item);
                           return;
                         }
 
                         if (!itemUri) {
-                          console.error(
-                            "[ResourcesList] No itemUri found - cannot navigate to detail",
-                            {
-                              item,
-                              resourceItem,
-                              itemRecord,
-                            },
-                          );
                           return;
                         }
 
                         // Check if a tab with this resourceUri already exists
-                        console.log(
-                          "[ResourcesList] Card click - checking for existing tab",
-                          {
-                            itemUri,
-                            itemName,
-                            integrationId,
-                            resourceName,
-                            allCanvasTabs: canvasTabs.map((t) => ({
-                              id: t.id,
-                              type: t.type,
-                              resourceUri: t.resourceUri,
-                              title: t.title,
-                            })),
-                          },
-                        );
-
                         const existingTab = canvasTabs.find(
                           (tab) =>
                             tab.type === "detail" &&
                             tab.resourceUri === itemUri,
                         );
 
-                        console.log(
-                          "[ResourcesList] Card click - existing tab check result",
-                          {
-                            itemUri,
-                            existingTab: existingTab
-                              ? {
-                                  id: existingTab.id,
-                                  type: existingTab.type,
-                                  resourceUri: existingTab.resourceUri,
-                                  title: existingTab.title,
-                                }
-                              : null,
-                          },
-                        );
-
                         if (existingTab) {
                           // Switch to existing tab instead of creating a new one
-                          console.log(
-                            "[ResourcesList] Card click - switching to existing tab",
-                            {
-                              tabId: existingTab.id,
-                              resourceUri: existingTab.resourceUri,
-                            },
-                          );
                           setActiveTab(existingTab.id);
                         } else {
                           // Create new tab if it doesn't exist
@@ -1338,10 +1283,6 @@ function ResourcesV2ListTab({
                             title: itemName || "Resource",
                             icon: integration?.icon,
                           };
-                          console.log(
-                            "[ResourcesList] Card click - creating new tab",
-                            newTab,
-                          );
                           addTab(newTab);
                         }
                       }}
@@ -1614,70 +1555,23 @@ function ResourcesV2ListTab({
                     const item = row as ResourceListItem;
 
                     if (onItemClick) {
-                      console.log(
-                        "[ResourcesList] Using custom onItemClick handler",
-                      );
                       onItemClick(row);
                       return;
                     }
                     // Default behavior for MCP resources
                     // Add new tab with detail view
                     if (!item.uri) {
-                      console.error(
-                        "[ResourcesList] No itemUri found - cannot navigate to detail",
-                        {
-                          item,
-                        },
-                      );
                       return;
                     }
 
                     // Check if a tab with this resourceUri already exists
-                    console.log(
-                      "[ResourcesList] Table row click - checking for existing tab",
-                      {
-                        itemUri: item.uri,
-                        itemName: item.data?.name,
-                        integrationId,
-                        resourceName,
-                        allCanvasTabs: canvasTabs.map((t) => ({
-                          id: t.id,
-                          type: t.type,
-                          resourceUri: t.resourceUri,
-                          title: t.title,
-                        })),
-                      },
-                    );
-
                     const existingTab = canvasTabs.find(
                       (tab) =>
                         tab.type === "detail" && tab.resourceUri === item.uri,
                     );
 
-                    console.log(
-                      "[ResourcesList] Table row click - existing tab check result",
-                      {
-                        itemUri: item.uri,
-                        existingTab: existingTab
-                          ? {
-                              id: existingTab.id,
-                              type: existingTab.type,
-                              resourceUri: existingTab.resourceUri,
-                              title: existingTab.title,
-                            }
-                          : null,
-                      },
-                    );
-
                     if (existingTab) {
                       // Switch to existing tab instead of creating a new one
-                      console.log(
-                        "[ResourcesList] Table row click - switching to existing tab",
-                        {
-                          tabId: existingTab.id,
-                          resourceUri: existingTab.resourceUri,
-                        },
-                      );
                       setActiveTab(existingTab.id);
                     } else {
                       // Create new tab if it doesn't exist
@@ -1687,10 +1581,6 @@ function ResourcesV2ListTab({
                         title: item.data?.name || "Resource",
                         icon: integration?.icon,
                       };
-                      console.log(
-                        "[ResourcesList] Table row click - creating new tab",
-                        newTab,
-                      );
                       addTab(newTab);
                     }
                   }}
@@ -1772,7 +1662,6 @@ export function ResourcesV2List({
   tabs,
   activeTab,
   onTabChange,
-  resourceRules,
   // Custom data props
   customData,
   customColumns,
@@ -1787,7 +1676,6 @@ export function ResourcesV2List({
   tabs?: TabItem[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
-  resourceRules?: string[];
   // Custom data props
   customData?: Array<ResourceListItem | Record<string, unknown>>;
   customColumns?: TableColumn<ResourceListItem | Record<string, unknown>>[];
@@ -1798,50 +1686,6 @@ export function ResourcesV2List({
   customCtaButton?: ReactNode;
   customEmptyState?: { icon?: string; title?: string; description?: string };
 }) {
-  const integration = useIntegration(integrationId ?? "").data;
-
-  // Fetch tools for the integration
-  const connection = integration?.connection;
-  const toolsQuery = useTools(connection!, false);
-  const tools = toolsQuery?.data?.tools ?? [];
-
-  // Prepare thread context items for resource list
-  const threadContextItems = useMemo(() => {
-    if (!integrationId) return [];
-
-    const contextItems = [];
-
-    // Add rule context items
-    const rules: string[] = [
-      `You are helping with ${resourceName || "resource"} management. Focus on operations related to listing, creating, and managing ${resourceName || "resources"}.`,
-      `When working with ${resourceName || "resources"}, prioritize operations that help users understand, organize, and manage their ${resourceName || "resource"} data effectively.`,
-      ...(resourceRules ?? []),
-    ];
-
-    contextItems.push(
-      ...rules.map((text) => ({
-        id: crypto.randomUUID(),
-        type: "rule" as const,
-        text,
-      })),
-    );
-
-    // Add toolset context item
-    if (tools.length > 0) {
-      contextItems.push({
-        id: crypto.randomUUID(),
-        type: "toolset" as const,
-        integrationId,
-        enabledTools: tools.map((tool) => tool.name),
-      });
-    }
-
-    return contextItems;
-  }, [integrationId, resourceName, tools]);
-
-  // Inject context into the current route's thread
-  useSetThreadContextEffect(threadContextItems);
-
   return (
     <ResourceRouteProvider
       integrationId={integrationId}

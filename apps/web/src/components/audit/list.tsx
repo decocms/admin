@@ -29,10 +29,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import {
-  useThreadManager,
-  buildThreadUri,
-} from "../decopilot/thread-context-manager.tsx";
+import { useThread, buildThreadUri } from "../decopilot/thread-provider.tsx";
 import { AuditFilters } from "./audit-filters.tsx";
 import { AuditTable } from "./audit-table.tsx";
 
@@ -151,7 +148,7 @@ export function AuditListContent({
     setSelectedThreadFilter(threadParam ?? undefined);
   }, [searchParams]);
 
-  const { addTab } = useThreadManager();
+  const { addTab } = useThread();
 
   const { data: customAgents = [] } = useAgents();
   // Include well-known agents like Decopilot

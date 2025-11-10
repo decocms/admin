@@ -28,13 +28,12 @@ import Discover from "../discover/index.tsx";
 import {
   buildAppUri,
   buildNativeUri,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+  useThread,
+} from "../decopilot/thread-provider.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 import {
@@ -300,7 +299,7 @@ export default function InstalledAppsList() {
   const apps = useGroupedApps({
     filter,
   });
-  const { createTab, addTab } = useThreadManager();
+  const { createTab, addTab } = useThread();
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   const navigateToApp = (app: GroupedApp) => {
@@ -366,33 +365,6 @@ export default function InstalledAppsList() {
 
     return map;
   }, [team?.views]);
-
-  // Set integration management tools into thread context
-  const threadContextItems = useMemo(() => {
-    const integrationId = "i:integration-management";
-
-    return [
-      {
-        id: crypto.randomUUID(),
-        type: "rule" as const,
-        text: `The user is managing their installed integrations and MCP apps. Help them explore, configure, and manage their installed apps by actively using integration management tools. When the user asks about their integrations or wants to manage them, prefer to demonstrate the available tools in action.`,
-      },
-      {
-        id: crypto.randomUUID(),
-        type: "toolset" as const,
-        integrationId,
-        enabledTools: [
-          "INTEGRATIONS_LIST",
-          "INTEGRATIONS_GET",
-          "INTEGRATIONS_CREATE",
-          "INTEGRATIONS_UPDATE",
-          "INTEGRATIONS_DELETE",
-        ],
-      },
-    ];
-  }, []);
-
-  useSetThreadContextEffect(threadContextItems);
 
   return (
     <div className="flex flex-col gap-4 h-full py-4">

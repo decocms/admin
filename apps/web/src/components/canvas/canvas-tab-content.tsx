@@ -1,10 +1,7 @@
 import { lazy, Suspense, useMemo } from "react";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useThread, useIntegrations } from "@deco/sdk";
-import {
-  CanvasTab,
-  parseResourceUri,
-} from "../decopilot/thread-context-manager.tsx";
+import { CanvasTab, parseResourceUri } from "../decopilot/thread-provider.tsx";
 import { WELL_KNOWN_VIEWS } from "./well-known-views.tsx";
 import { ResourcesV2List } from "../resources-v2/list.tsx";
 import { DocumentsResourceList } from "../documents/documents-resource-list.tsx";

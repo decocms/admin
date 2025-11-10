@@ -26,7 +26,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { useThreadManager } from "../decopilot/thread-context-manager.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { useThreadTitle } from "../decopilot/index.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
@@ -93,7 +93,7 @@ export function CommandPalette({
   const { data: agents = [] } = useAgents();
   const { data: integrations = [] } = useIntegrations();
   const { data: documents = [] } = useDocuments();
-  const { getAllThreads, switchToThread } = useThreadManager();
+  const { getAllThreads, switchToThread } = useThread();
 
   const allThreads = useMemo(() => getAllThreads(), [getAllThreads]);
 
@@ -216,7 +216,7 @@ export function CommandPalette({
   }, [filteredResults]);
 
   // Canvas tabs context
-  const { addTab } = useThreadManager();
+  const { addTab } = useThread();
 
   // Handle result selection
   const handleSelect = (result: SearchResult) => {

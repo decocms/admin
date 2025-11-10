@@ -55,10 +55,7 @@ import {
   useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import {
-  useThreadManager,
-  buildAppUri,
-} from "../decopilot/thread-context-manager.tsx";
+import { useThread, buildAppUri } from "../decopilot/thread-provider.tsx";
 import { useSearchParams } from "react-router";
 import {
   AppKeys,
@@ -217,7 +214,7 @@ function ConfigureConnectionInstanceForm({
   setOauthCompletionDialog: Dispatch<SetStateAction<OauthModalState>>;
   oauthCompletionDialog: OauthModalState;
 }) {
-  const { addTab } = useThreadManager();
+  const { addTab } = useThread();
   const [isEditing, setIsEditing] = useState(false);
 
   // @ts-ignore: @TODO: @tlgimenes will fix this
@@ -867,7 +864,7 @@ export default function AppDetail() {
     useRemoveConnection();
 
   // Update tab title and icon when app data loads
-  const { tabs, activeTabId, addTab } = useThreadManager();
+  const { tabs, activeTabId, addTab } = useThread();
   const [searchParams] = useSearchParams();
   const urlActiveTabId = searchParams.get("activeTab");
   const currentTabId = urlActiveTabId || activeTabId;

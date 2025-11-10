@@ -5,9 +5,9 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import {
-  useThreadManagerOptional,
+  useThreadOptional,
   buildTriggerUri,
-} from "../decopilot/thread-context-manager.tsx";
+} from "../decopilot/thread-provider.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
@@ -88,7 +88,7 @@ function ListTriggersSuspended({
   const viewMode = initialViewMode;
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const threadManager = useThreadManagerOptional();
+  const threadManager = useThreadOptional();
   const addTab = threadManager?.addTab;
   const navigate = useNavigateWorkspace();
   const { data: agents } = useAgents();
@@ -245,7 +245,7 @@ function TableView({
   onSort: (key: SortKey) => void;
 }) {
   const [openModalId, setOpenModalId] = useState<string | null>(null);
-  const threadManager = useThreadManagerOptional();
+  const threadManager = useThreadOptional();
   const addTab = threadManager?.addTab;
   const navigate = useNavigateWorkspace();
   const { data: integrations = [] } = useIntegrations();

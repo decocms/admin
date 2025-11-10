@@ -20,8 +20,7 @@ import { useUser } from "../../hooks/use-user.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
 import { DecopilotChatProviderWrapper } from "../decopilot/decopilot-chat-provider-wrapper.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-context-manager.tsx";
-import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
 import { OrgsSidebar } from "../sidebar/orgs.tsx";
@@ -81,7 +80,7 @@ export function OrgsLayout() {
   return (
     <BaseRouteLayout>
       <WithOrgTheme>
-        <ThreadManagerProvider>
+        <ThreadProvider>
           <OrgsLayoutContent
             sidebarOpen={sidebarOpen}
             setSidebarOpen={(open) => {
@@ -95,7 +94,7 @@ export function OrgsLayout() {
             handlePhoneSaved={handlePhoneSaved}
             org={org!}
           />
-        </ThreadManagerProvider>
+        </ThreadProvider>
       </WithOrgTheme>
     </BaseRouteLayout>
   );
@@ -123,79 +122,77 @@ function OrgsLayoutContent({
   const { open: decopilotOpen } = useDecopilotOpen();
 
   return (
-    <ThreadContextProvider>
-      <DecopilotThreadProvider>
-        <DecopilotChatProviderWrapper forceBottomLayout={true}>
-          <ProfileModalProvider
-            profileOpen={profileOpen}
-            setProfileOpen={setProfileOpen}
-            openProfileModal={openProfileModal}
-            closeProfileModal={closeProfileModal}
-            handlePhoneSaved={handlePhoneSaved}
-          >
-            <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <div className="flex flex-col h-full">
-                <TopbarLayout
-                  breadcrumb={[
+    <DecopilotThreadProvider>
+      <DecopilotChatProviderWrapper forceBottomLayout={true}>
+        <ProfileModalProvider
+          profileOpen={profileOpen}
+          setProfileOpen={setProfileOpen}
+          openProfileModal={openProfileModal}
+          closeProfileModal={closeProfileModal}
+          handlePhoneSaved={handlePhoneSaved}
+        >
+          <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <div className="flex flex-col h-full">
+              <TopbarLayout
+                breadcrumb={[
+                  {
+                    label: (
+                      <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
+                        <BreadcrumbOrgSwitcher />
+                      </Suspense>
+                    ),
+                    link: `/${org}`,
+                  },
+                ]}
+              >
+                <SidebarLayout
+                  className="h-full bg-sidebar"
+                  style={
                     {
-                      label: (
-                        <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
-                          <BreadcrumbOrgSwitcher />
-                        </Suspense>
-                      ),
-                      link: `/${org}`,
-                    },
-                  ]}
+                      "--sidebar-width": "13rem",
+                      "--sidebar-width-mobile": "11rem",
+                    } as Record<string, string>
+                  }
                 >
-                  <SidebarLayout
-                    className="h-full bg-sidebar"
-                    style={
-                      {
-                        "--sidebar-width": "13rem",
-                        "--sidebar-width-mobile": "11rem",
-                      } as Record<string, string>
-                    }
-                  >
-                    <OrgsSidebar />
-                    <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
-                      <ResizablePanelGroup direction="horizontal">
-                        <ResizablePanel className="bg-background">
-                          {/* Topbar height is 48px */}
-                          <ScrollArea className="h-[calc(100vh-48px)]">
-                            <Suspense
-                              fallback={
-                                <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
-                                  <Spinner />
-                                </div>
-                              }
-                            >
-                              <Outlet />
+                  <OrgsSidebar />
+                  <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
+                    <ResizablePanelGroup direction="horizontal">
+                      <ResizablePanel className="bg-background">
+                        {/* Topbar height is 48px */}
+                        <ScrollArea className="h-[calc(100vh-48px)]">
+                          <Suspense
+                            fallback={
+                              <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                <Spinner />
+                              </div>
+                            }
+                          >
+                            <Outlet />
+                          </Suspense>
+                        </ScrollArea>
+                      </ResizablePanel>
+                      {decopilotOpen && (
+                        <>
+                          <ResizableHandle withHandle />
+                          <ResizablePanel
+                            defaultSize={30}
+                            minSize={20}
+                            className="min-w-0"
+                          >
+                            <Suspense fallback={<MainChatSkeleton />}>
+                              <DecopilotChat />
                             </Suspense>
-                          </ScrollArea>
-                        </ResizablePanel>
-                        {decopilotOpen && (
-                          <>
-                            <ResizableHandle withHandle />
-                            <ResizablePanel
-                              defaultSize={30}
-                              minSize={20}
-                              className="min-w-0"
-                            >
-                              <Suspense fallback={<MainChatSkeleton />}>
-                                <DecopilotChat />
-                              </Suspense>
-                            </ResizablePanel>
-                          </>
-                        )}
-                      </ResizablePanelGroup>
-                    </SidebarInset>
-                  </SidebarLayout>
-                </TopbarLayout>
-              </div>
-            </SidebarProvider>
-          </ProfileModalProvider>
-        </DecopilotChatProviderWrapper>
-      </DecopilotThreadProvider>
-    </ThreadContextProvider>
+                          </ResizablePanel>
+                        </>
+                      )}
+                    </ResizablePanelGroup>
+                  </SidebarInset>
+                </SidebarLayout>
+              </TopbarLayout>
+            </div>
+          </SidebarProvider>
+        </ProfileModalProvider>
+      </DecopilotChatProviderWrapper>
+    </DecopilotThreadProvider>
   );
 }

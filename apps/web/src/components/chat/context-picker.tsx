@@ -17,7 +17,7 @@ import {
 } from "react";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import type { ToolsetContextItem, ResourceContextItem } from "./types.ts";
 
 interface ContextItem {
@@ -73,7 +73,7 @@ export function ContextPicker({
   const { data: viewsData = [] } = useIntegrationViews({ enabled: true });
   const { appendIntegrationTool } = useAgentSettingsToolsSet();
   const { addContextItem, contextItems, updateContextItem, removeContextItem } =
-    useThreadContext();
+    useThread();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);

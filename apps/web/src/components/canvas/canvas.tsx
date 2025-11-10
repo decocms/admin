@@ -9,8 +9,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router";
 import {
   type CanvasTab as CanvasTabType,
-  useThreadManager,
-} from "../decopilot/thread-context-manager.tsx";
+  useThread,
+} from "../decopilot/thread-provider.tsx";
 import { CanvasTabContent } from "./canvas-tab-content.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
@@ -100,7 +100,7 @@ function CanvasTabTrigger({ tab, isActive, onClose }: CanvasTabTriggerProps) {
 
 export function Canvas() {
   const { threads, activeThreadId, activeTabId, setActiveTab, removeTab } =
-    useThreadManager();
+    useThread();
   const { org, project } = useParams();
   const projectKey = org && project ? `${org}/${project}` : undefined;
   const { togglePin: togglePinnedTab, isPinned: isTabPinned } =

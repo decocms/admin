@@ -21,10 +21,11 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { COMPUTED_RULE_IDS } from "../../constants/context-rules.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { useThreadContext } from "../decopilot/thread-context-provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import type {
   FileContextItem,
@@ -206,9 +207,8 @@ export function ContextResources({
   removeFile,
   rightNode,
 }: ContextResourcesProps) {
-  // Read context from ThreadContextProvider instead of contextItems
-  const { contextItems, removeContextItem, updateContextItem } =
-    useThreadContext();
+  // Read context from ThreadProvider instead of contextItems
+  const { contextItems, removeContextItem, updateContextItem } = useThread();
 
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
@@ -626,6 +626,8 @@ const RulesDisplay = memo(function RulesDisplay({
             <div className="border-t pt-3">
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {rules.map((rule, index) => {
+                  const isComputedRule =
+                    rule.id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT;
                   return (
                     <div
                       key={rule.id}
@@ -633,6 +635,7 @@ const RulesDisplay = memo(function RulesDisplay({
                     >
                       <Checkbox
                         checked={true}
+                        disabled={isComputedRule}
                         onCheckedChange={() => onToggleRule(index, true)}
                         className="mt-0.5 flex-shrink-0"
                       />
@@ -640,6 +643,11 @@ const RulesDisplay = memo(function RulesDisplay({
                         <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap line-clamp-6">
                           {rule.text}
                         </p>
+                        {isComputedRule && (
+                          <p className="text-[10px] text-muted-foreground/60 mt-1 italic">
+                            Derived from open tabs
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

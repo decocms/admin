@@ -33,7 +33,7 @@ import {
   ResourceHeader,
   type TabItem,
 } from "../../resources-v2/resource-header.tsx";
-import { useThreadManager } from "../../decopilot/thread-context-manager.tsx";
+import { useThread } from "../../decopilot/thread-provider.tsx";
 import { useSearchParams } from "react-router";
 
 interface ListState {
@@ -238,7 +238,7 @@ function ListPrompts({
   const create = useCreatePrompt();
   const deletePrompt = useDeletePrompt();
   const navigateWorkspace = useNavigateWorkspace();
-  const { createTab } = useThreadManager();
+  const { createTab } = useThread();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchOpen, setSearchOpen] = useState(false);
 

@@ -47,7 +47,9 @@
     // Path resolution
     "baseUrl": ".",
     "paths": {
-      "@deco/*": ["packages/*/src"]
+      "@deco/*": ["packages/*/src"],
+      "@decocms/runtime": ["packages/runtime/src/index.ts"],
+      "@decocms/runtime/*": ["packages/runtime/src/*"]
     },
     // Experimental decorators for compatibility
     "experimentalDecorators": true,

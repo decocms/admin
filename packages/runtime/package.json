@@ -24,54 +24,67 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist/**/*",
+    "src/**/*",
     "config-schema.json"
   ],
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./proxy": {
+      "source": "./src/proxy.ts",
       "types": "./dist/proxy.d.ts",
       "default": "./dist/proxy.js"
     },
     "./admin": {
+      "source": "./src/admin.ts",
       "types": "./dist/admin.d.ts",
       "default": "./dist/admin.js"
     },
     "./client": {
+      "source": "./src/client.ts",
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
     },
     "./mastra": {
+      "source": "./src/mastra.ts",
       "types": "./dist/mastra.d.ts",
       "default": "./dist/mastra.js"
     },
     "./drizzle": {
+      "source": "./src/drizzle.ts",
       "types": "./dist/drizzle.d.ts",
       "default": "./dist/drizzle.js"
     },
     "./d1": {
+      "source": "./src/d1-store.ts",
       "types": "./dist/d1-store.d.ts",
       "default": "./dist/d1-store.js"
     },
     "./resources": {
+      "source": "./src/resources.ts",
       "types": "./dist/resources.d.ts",
       "default": "./dist/resources.js"
     },
     "./views": {
+      "source": "./src/views.ts",
       "types": "./dist/views.d.ts",
       "default": "./dist/views.js"
     },
     "./mcp-client": {
+      "source": "./src/mcp-client.ts",
       "types": "./dist/mcp-client.d.ts",
       "default": "./dist/mcp-client.js"
     },
     "./bindings": {
+      "source": "./src/bindings/index.ts",
       "types": "./dist/bindings/index.d.ts",
       "default": "./dist/bindings/index.js"
     },
     "./deconfig": {
+      "source": "./src/bindings/deconfig/index.ts",
       "types": "./dist/bindings/deconfig/index.d.ts",
       "default": "./dist/bindings/deconfig/index.js"
     }

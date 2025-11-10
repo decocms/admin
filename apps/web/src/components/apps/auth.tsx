@@ -114,7 +114,7 @@ const useAppIntegrations = (appName: string) => {
 
 const NoAppFound = ({ client_id }: { client_id: string }) => {
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center justify-center h-full">
       <div className="text-center space-y-4">
         <h1 className="text-xl font-semibold">App not found</h1>
         <div className="flex flex-col gap-2 text-sm text-muted-foreground max-w-sm text-left">

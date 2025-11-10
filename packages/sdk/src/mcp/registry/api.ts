@@ -15,6 +15,7 @@ import {
 } from "../projects/util.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
 import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
+import { assertIsAdmin } from "./admin-check.ts";
 
 export { AppName };
 export type { RegistryApp } from "./schemas.ts";
@@ -543,8 +544,6 @@ export const publishApp = createTool({
 // ============================================================================
 // Admin Tools (Private - Not listed in discovery)
 // ============================================================================
-
-import { assertIsAdmin } from "./admin-check.ts";
 
 /**
  * Admin-only tool to update marketplace app metadata

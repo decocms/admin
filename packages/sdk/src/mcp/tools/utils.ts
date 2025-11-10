@@ -5,7 +5,7 @@ import {
   installConsole,
   QuickJSHandle,
 } from "@deco/cf-sandbox";
-import { proxyConnectionForId } from "@deco/workers-runtime";
+import { proxyConnectionForId } from "@decocms/runtime";
 import { Validator } from "jsonschema";
 import { MCPConnection } from "../../models/mcp.ts";
 import { WorkflowState } from "../../workflows/workflow-runner.ts";

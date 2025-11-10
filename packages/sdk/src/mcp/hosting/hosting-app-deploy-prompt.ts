@@ -35,7 +35,7 @@ Common patterns:
 2. Import dependencies directly in your files:
    // main.ts
    import { z } from "zod";
-   import { withRuntime } from "@deco/workers-runtime";
+   import { withRuntime } from "@decocms/runtime";
 
 3. Use wrangler.toml to configure your app:
    // wrangler.toml
@@ -88,7 +88,7 @@ Common patterns:
    # You can add any supported binding type as per Workers for Platforms documentation.
 4. You should always surround the user fetch with the withRuntime function.
 
-import { withRuntime } from "@deco/workers-runtime";
+import { withRuntime } from "@decocms/runtime";
 
 const { Workflow, ...workerAPIs } = withRuntime({
   fetch: async (request: Request, env: any) => {
@@ -127,7 +127,7 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "zod";
-      import { withRuntime } from "@deco/workers-runtime";
+      import { withRuntime } from "@decocms/runtime";
 
       const { Workflow, ...workerAPIs } = withRuntime({
         fetch: async (request: Request, env: any) => {

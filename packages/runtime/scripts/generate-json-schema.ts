@@ -1,4 +1,5 @@
 // heavily inspired by https://github.com/cloudflare/workers-sdk/blob/main/packages/wrangler/scripts/generate-json-schema.ts
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createGenerator } from "ts-json-schema-generator";
 import type { Config, Schema } from "ts-json-schema-generator";
@@ -17,7 +18,7 @@ const schema = applyFormattingRules(
   createGenerator(config).createSchema(config.type),
 );
 
-Deno.writeTextFileSync(
+writeFileSync(
   join(import.meta.dirname!, "../config-schema.json"),
   JSON.stringify(schema, null, 2),
 );

@@ -550,6 +550,41 @@ import { assertIsAdmin } from "./admin-check.ts";
  * Admin-only tool to update marketplace app metadata
  * This is a private tool and won't be listed in discovery
  */
+// Schema for app icon that accepts http(s) URLs, icon:// scheme, relative paths, or null
+const iconSchema = z
+  .string()
+  .nullable()
+  .optional()
+  .refine(
+    (value) => {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      // Allow http(s) URLs
+      if (value.startsWith("http://") || value.startsWith("https://")) {
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      // Allow custom icon:// scheme
+      if (value.startsWith("icon://")) {
+        return true;
+      }
+      // Allow relative paths starting with /
+      if (value.startsWith("/")) {
+        return true;
+      }
+      return false;
+    },
+    {
+      message:
+        "Icon must be a valid http(s) URL, icon:// URI, relative path (starting with /), or null to clear",
+    },
+  );
+
 export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
   name: "MARKETPLACE_APP_UPDATE_ADMIN",
   description: "Updates marketplace app metadata (admin only)",
@@ -557,7 +592,9 @@ export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
     appId: z.string().uuid().describe("The app ID to update"),
     friendlyName: z.string().optional().describe("Friendly display name"),
     description: z.string().optional().describe("App description"),
-    icon: z.string().url().optional().describe("App icon URL"),
+    icon: iconSchema.describe(
+      "App icon URL (accepts: http(s) URLs, icon:// scheme, relative paths /..., or null to clear)",
+    ),
     unlisted: z.boolean().optional().describe("Whether app is unlisted"),
     verified: z.boolean().optional().describe("Whether app is verified"),
   }),

@@ -52,6 +52,13 @@ import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
 import { useBidcForTopWindow } from "../../lib/bidc.ts";
 import * as z from "zod";
 
+class IntegrationNotFoundError extends Error {
+  constructor(public readonly integrationId: string) {
+    super(`Integration ${integrationId} not found in marketplace`);
+    this.name = "IntegrationNotFoundError";
+  }
+}
+
 // Schema for messages from parent window
 const ParentContextMessageSchema = z.object({
   type: z.literal("parent_context"),
@@ -467,6 +474,134 @@ const FooterButtons = ({
   );
 };
 
+// Separate component for inline installation - only renders when actually creating
+const InlineInstallationForm = ({
+  clientId,
+  onBack,
+  onInstallComplete,
+}: {
+  clientId: string;
+  onBack: () => void;
+  onInstallComplete: (data: {
+    authorizeOauthUrl: string | null;
+    connection: Integration;
+  }) => void;
+}) => {
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const integrationFromMarketplace = useMemo(() => {
+    const integration = marketplace?.integrations.find(
+      (integration) => integration.name === clientId,
+    );
+    if (!integration) {
+      throw new IntegrationNotFoundError(clientId);
+    }
+    return integration;
+  }, [marketplace, clientId]);
+
+  const integrationState = useIntegrationInstallState(
+    integrationFromMarketplace.name,
+  );
+  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+
+  const { install, isLoading } = useUIInstallIntegration({
+    onConfirm: onInstallComplete,
+    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
+  });
+
+  const {
+    stepIndex,
+    currentSchema,
+    totalSteps,
+    dependencyName,
+    handleNextDependency,
+    handleBack: handleStepBack,
+  } = useIntegrationInstallStep({
+    integrationState,
+    install: () =>
+      install({
+        integration: integrationFromMarketplace,
+        mainFormData: formRef.current?.getValues(),
+      }),
+  });
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Installation form - grid on desktop, column on mobile */}
+      <div className="flex-1 min-h-0 p-4 md:p-0 overflow-y-auto md:overflow-y-visible">
+        {/* Desktop: grid layout, Mobile: column layout */}
+        <div className="md:hidden h-full">
+          <DependencyStep
+            integration={integrationFromMarketplace}
+            dependencyName={dependencyName}
+            dependencySchema={currentSchema}
+            currentStep={stepIndex + 1}
+            totalSteps={totalSteps}
+            formRef={formRef}
+            integrationState={integrationState}
+            mode="column"
+          />
+        </div>
+        <div className="hidden md:flex h-full [&>div]:max-h-full! [&>div]:min-h-full! [&>div]:h-full!">
+          <DependencyStep
+            integration={integrationFromMarketplace}
+            dependencyName={dependencyName}
+            dependencySchema={currentSchema}
+            currentStep={stepIndex + 1}
+            totalSteps={totalSteps}
+            formRef={formRef}
+            integrationState={integrationState}
+            mode="grid"
+          />
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row justify-between gap-2 p-4 border-t border-border">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          disabled={isLoading}
+          className="w-full md:w-auto"
+        >
+          {stepIndex === 0 ? "Cancel" : "Back to Selection"}
+        </Button>
+        <div className="w-full md:w-auto flex gap-2">
+          <InstallStepsButtons
+            stepIndex={stepIndex}
+            isLoading={isLoading}
+            hasNextStep={stepIndex < totalSteps - 1}
+            integrationState={integrationState}
+            handleNextDependency={handleNextDependency}
+            handleBack={handleStepBack}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Error fallback for integration not found
+const IntegrationNotFound = ({
+  clientId,
+  error,
+}: {
+  clientId?: string;
+  error?: IntegrationNotFoundError;
+}) => {
+  const integrationId = error?.integrationId ?? clientId ?? "Unknown";
+  return (
+    <div className="flex flex-col items-center justify-center h-full py-8">
+      <Icon name="error" size={48} className="text-destructive" />
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-semibold">Integration not found</h3>
+        <p className="text-sm text-muted-foreground max-w-md">
+          The app <span className="font-semibold">{integrationId}</span> could
+          not be found in the marketplace. Please make sure it has been
+          published and is available.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const SelectProjectAppInstance = ({
   app,
   org,
@@ -507,17 +642,6 @@ const SelectProjectAppInstance = ({
       openIntegrationOnFinish: true,
     });
 
-  const { data: marketplace } = useMarketplaceIntegrations();
-  const integrationFromMarketplace = useMemo(() => {
-    return marketplace?.integrations.find(
-      (integration) => integration.name === clientId,
-    );
-  }, [marketplace, clientId]);
-
-  const integrationState = useIntegrationInstallState(
-    integrationFromMarketplace?.name || "",
-  );
-  const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
   const autoConfirmRef = useRef(false);
 
   const createOAuthCodeAndRedirectBackToApp = useCallback(
@@ -534,8 +658,14 @@ const SelectProjectAppInstance = ({
     [createOAuthCode, mode, org.slug, project, redirectUri, state],
   );
 
-  const { install, isLoading } = useUIInstallIntegration({
-    onConfirm: ({ connection, authorizeOauthUrl }) => {
+  const handleInstallComplete = useCallback(
+    ({
+      connection,
+      authorizeOauthUrl,
+    }: {
+      connection: Integration;
+      authorizeOauthUrl: string | null;
+    }) => {
       if (authorizeOauthUrl) {
         const popup = globalThis.open(authorizeOauthUrl, "_blank");
         if (!popup || popup.closed || typeof popup.closed === "undefined") {
@@ -553,27 +683,8 @@ const SelectProjectAppInstance = ({
         integrationId: connection.id,
       });
     },
-    validate: () => formRef.current?.trigger() ?? Promise.resolve(true),
-  });
-
-  const {
-    stepIndex,
-    currentSchema,
-    totalSteps,
-    dependencyName,
-    handleNextDependency,
-    handleBack,
-  } = useIntegrationInstallStep({
-    integrationState,
-    install: () => {
-      if (!integrationFromMarketplace)
-        return Promise.reject(new Error("Integration not found"));
-      return install({
-        integration: integrationFromMarketplace,
-        mainFormData: formRef.current?.getValues(),
-      });
-    },
-  });
+    [createOAuthCodeAndRedirectBackToApp],
+  );
 
   // Auto-confirm if integrationId is provided and there's only 1 integration
   useEffect(() => {
@@ -599,55 +710,25 @@ const SelectProjectAppInstance = ({
       value={{ onOpenOauthModal: setOauthCompletionDialog }}
     >
       <div className="flex flex-col h-full w-full overflow-y-auto">
-        {inlineCreatingIntegration && integrationFromMarketplace ? (
-          <div className="flex flex-col h-full">
-            {/* Installation form - grid on desktop, column on mobile */}
-            <div className="flex-1 min-h-0 p-4 md:p-0 overflow-y-auto md:overflow-y-visible">
-              {/* Desktop: grid layout, Mobile: column layout */}
-              <div className="md:hidden h-full">
-                <DependencyStep
-                  integration={integrationFromMarketplace}
-                  dependencyName={dependencyName}
-                  dependencySchema={currentSchema}
-                  currentStep={stepIndex + 1}
-                  totalSteps={totalSteps}
-                  formRef={formRef}
-                  integrationState={integrationState}
-                  mode="column"
-                />
-              </div>
-              <div className="hidden md:flex h-full [&>div]:max-h-full! [&>div]:min-h-full! [&>div]:h-full!">
-                <DependencyStep
-                  integration={integrationFromMarketplace}
-                  dependencyName={dependencyName}
-                  dependencySchema={currentSchema}
-                  currentStep={stepIndex + 1}
-                  totalSteps={totalSteps}
-                  formRef={formRef}
-                  integrationState={integrationState}
-                  mode="grid"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row justify-end gap-2 p-4 border-t border-border">
-              <div className="w-full md:w-auto flex gap-2">
-                <InstallStepsButtons
-                  stepIndex={stepIndex}
-                  isLoading={isLoading}
-                  hasNextStep={stepIndex < totalSteps - 1}
-                  integrationState={integrationState}
-                  handleNextDependency={handleNextDependency}
-                  handleBack={() => {
-                    if (stepIndex === 0) {
-                      setInlineCreatingIntegration(false);
-                    } else {
-                      handleBack();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+        {inlineCreatingIntegration ? (
+          <ErrorBoundary
+            shouldCatch={(error) => error instanceof IntegrationNotFoundError}
+            fallback={<IntegrationNotFound clientId={clientId} />}
+          >
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-full">
+                  <Spinner />
+                </div>
+              }
+            >
+              <InlineInstallationForm
+                clientId={clientId}
+                onBack={() => setInlineCreatingIntegration(false)}
+                onInstallComplete={handleInstallComplete}
+              />
+            </Suspense>
+          </ErrorBoundary>
         ) : (
           <div className="flex flex-col items-center justify-start h-full w-full py-6 px-4 md:px-0">
             <div className="text-center space-y-6 max-w-md w-full m-auto">
@@ -691,18 +772,8 @@ const SelectProjectAppInstance = ({
                 installedIntegrations={installedIntegrations}
                 setSelectedIntegration={setSelectedIntegration}
                 selectCreateNew={() => {
-                  // Check if integration has any requirements
-                  if (integrationFromMarketplace && totalSteps === 0) {
-                    // No requirements, install directly
-                    install({
-                      integration: integrationFromMarketplace,
-                      mainFormData: {},
-                    });
-                  } else {
-                    // Has requirements, show the form
-                    setInlineCreatingIntegration(true);
-                    setSelectedIntegration(null);
-                  }
+                  setInlineCreatingIntegration(true);
+                  setSelectedIntegration(null);
                 }}
                 selectedIntegration={selectedIntegration}
               />

@@ -66,20 +66,16 @@ jobs:
 
       - name: Create Release
         if: steps.version-check.outputs.version-changed == 'true'
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: runtime-v${{ steps.version-check.outputs.current-version }}
-          release_name: "@decocms/runtime v${{ steps.version-check.outputs.current-version }}"
-          body: |
-            ## Changes
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "runtime-v${{ steps.version-check.outputs.current-version }}" \
+            --title "@decocms/runtime v${{ steps.version-check.outputs.current-version }}" \
+            --notes "## Changes
 
-            Automated release of @decocms/runtime package.
+          Automated release of @decocms/runtime package.
 
-            ### Installation
-            ```bash
-            npm install @decocms/runtime
-            ```
-          draft: false
-          prerelease: false
+          ### Installation
+          \`\`\`bash
+          npm install @decocms/runtime
+          \`\`\`"

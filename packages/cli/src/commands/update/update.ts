@@ -7,7 +7,7 @@ import chalk from "chalk";
 import process from "node:process";
 
 // Hardcoded Deco dependencies to manage
-const DECO_DEPENDENCIES = ["@deco/workers-runtime"] as const;
+const DECO_DEPENDENCIES = ["@deco/workers-runtime", "@decocms/runtime"] as const;
 
 const DECO_DEV_DEPENDENCIES = ["deco-cli"] as const;
 

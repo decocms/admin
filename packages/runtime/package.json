@@ -1,8 +1,11 @@
 {
-  "name": "@deco/workers-runtime",
-  "version": "0.1.0",
+  "name": "@decocms/runtime",
+  "version": "0.24.0",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
@@ -17,25 +20,72 @@
     "zod-from-json-schema": "^0.0.5",
     "zod-to-json-schema": "^3.24.4"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "config-schema.json"
+  ],
   "exports": {
-    ".": "./src/index.ts",
-    "./proxy": "./src/proxy.ts",
-    "./admin": "./src/admin.ts",
-    "./client": "./src/client.ts",
-    "./mastra": "./src/mastra.ts",
-    "./drizzle": "./src/drizzle.ts",
-    "./d1": "./src/d1-store.ts",
-    "./resources": "./src/resources.ts",
-    "./views": "./src/views.ts",
-    "./mcp-client": "./src/mcp-client.ts",
-    "./bindings": "./src/bindings/index.ts",
-    "./deconfig": "./src/bindings/deconfig/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./proxy": {
+      "types": "./dist/proxy.d.ts",
+      "default": "./dist/proxy.js"
+    },
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "default": "./dist/admin.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./mastra": {
+      "types": "./dist/mastra.d.ts",
+      "default": "./dist/mastra.js"
+    },
+    "./drizzle": {
+      "types": "./dist/drizzle.d.ts",
+      "default": "./dist/drizzle.js"
+    },
+    "./d1": {
+      "types": "./dist/d1-store.d.ts",
+      "default": "./dist/d1-store.js"
+    },
+    "./resources": {
+      "types": "./dist/resources.d.ts",
+      "default": "./dist/resources.js"
+    },
+    "./views": {
+      "types": "./dist/views.d.ts",
+      "default": "./dist/views.js"
+    },
+    "./mcp-client": {
+      "types": "./dist/mcp-client.d.ts",
+      "default": "./dist/mcp-client.js"
+    },
+    "./bindings": {
+      "types": "./dist/bindings/index.d.ts",
+      "default": "./dist/bindings/index.js"
+    },
+    "./deconfig": {
+      "types": "./dist/bindings/deconfig/index.d.ts",
+      "default": "./dist/bindings/deconfig/index.js"
+    }
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",
-    "ts-json-schema-generator": "^2.4.0"
+    "ts-json-schema-generator": "^2.4.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

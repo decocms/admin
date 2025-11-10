@@ -49,7 +49,8 @@
     "paths": {
       "@deco/*": ["packages/*/src"],
       "@decocms/runtime": ["packages/runtime/src/index.ts"],
-      "@decocms/runtime/*": ["packages/runtime/src/*"]
+      "@decocms/runtime/*": ["packages/runtime/src/*"],
+      "@decocms/runtime/d1": ["packages/runtime/src/d1-store.ts"]
     },
     // Experimental decorators for compatibility
     "experimentalDecorators": true,

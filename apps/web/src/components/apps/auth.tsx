@@ -557,10 +557,10 @@ const InlineInstallationForm = ({
       // Additional validation for binding fields
       // Check if dependency binding has a non-empty value
       const formValues = formRef.current.getValues();
-      
+
       if (dependencyName && formValues[dependencyName]) {
         const bindingValue = formValues[dependencyName];
-        
+
         // Check if this is a binding object with a 'value' field
         if (
           typeof bindingValue === "object" &&
@@ -568,11 +568,11 @@ const InlineInstallationForm = ({
           "value" in bindingValue
         ) {
           const value = (bindingValue as Record<string, unknown>).value;
-          
+
           // If value is empty string or null/undefined, show error
           if (!value || (typeof value === "string" && value.trim() === "")) {
             // Set custom error on the form
-            formRef.current.setError(`${dependencyName}.value`, {
+            formRef.current.setError(dependencyName, {
               type: "manual",
               message: "Please select an integration",
             });

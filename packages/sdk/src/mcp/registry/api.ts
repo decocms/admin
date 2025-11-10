@@ -34,6 +34,8 @@ const OMITTED_APPS = [
   "5bd518f9-21f6-477f-8fbc-927b1a03018b",
   "b0ae29d5-7220-423c-b57b-d0bbe3816120",
   "fc348403-4bb9-4b95-8cda-b73e8beac4fd",
+  // TODO (Jonas Jesus): Remove once Agents Email is fixed
+  "1e810c3c-9da2-4e5e-8312-8e54f125d6bf",
 ];
 
 type DbTool = typeof registryTools.$inferSelect;

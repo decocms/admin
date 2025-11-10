@@ -1237,19 +1237,28 @@ const getDecoRegistryServerClient = () => {
 const DECO_PROVIDER = "deco";
 const virtualInstallableIntegrations = () => {
   return [
-    {
-      id: "AGENTS_EMAIL",
-      name: "Agents Email",
-      group: WellKnownMcpGroups.Email,
-      description: "Manage your agents email",
-      icon: "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
-      provider: DECO_PROVIDER,
-      connection: {
-        type: "HTTP",
-        url: "https://mcp.deco.site/mcp/messages",
-      } as MCPConnection,
-    },
-  ];
+    // TODO (Jonas Jesus): Re-enable and fix Agents Email app - currently broken
+    // {
+    //   id: "AGENTS_EMAIL",
+    //   name: "Agents Email",
+    //   group: WellKnownMcpGroups.Email,
+    //   description: "Manage your agents email",
+    //   icon: "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
+    //   provider: DECO_PROVIDER,
+    //   connection: {
+    //     type: "HTTP",
+    //     url: "https://mcp.deco.site/mcp/messages",
+    //   } as MCPConnection,
+    // },
+  ] as Array<{
+    id: string;
+    name: string;
+    group: string;
+    description: string;
+    icon: string;
+    provider: string;
+    connection: MCPConnection;
+  }>;
 };
 
 const appIsContract = (app: RegistryApp) => {
@@ -1320,13 +1329,16 @@ It's always handy to search for installed integrations with no query, since all 
       .filter((app) => app !== null);
 
     const virtualIntegrations = virtualInstallableIntegrations();
+    const allIntegrations = [
+      ...virtualIntegrations.filter(
+        (integration) =>
+          !query ||
+          integration.name.toLowerCase().includes(query.toLowerCase()),
+      ),
+      ...registryList,
+    ];
     return {
-      integrations: [
-        ...virtualIntegrations.filter(
-          (integration) => !query || integration.name.includes(query),
-        ),
-        ...registryList,
-      ],
+      integrations: allIntegrations,
     };
   },
 });

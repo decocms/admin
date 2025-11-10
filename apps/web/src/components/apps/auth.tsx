@@ -393,11 +393,13 @@ const SelectableInstallList = ({
   setSelectedIntegration,
   selectCreateNew,
   selectedIntegration,
+  isCreatingNew,
 }: {
   selectedIntegration: Integration | null;
   installedIntegrations: Integration[];
   setSelectedIntegration: (integration: Integration) => void;
   selectCreateNew: () => void;
+  isCreatingNew?: boolean;
 }) => {
   return (
     <div className="flex flex-col items-center space-y-2 w-full">
@@ -416,6 +418,7 @@ const SelectableInstallList = ({
               ? "border-foreground"
               : "",
           )}
+          disabled={isCreatingNew}
         >
           <IntegrationAvatar
             url={integration.icon}
@@ -430,9 +433,19 @@ const SelectableInstallList = ({
         variant="outline"
         onClick={selectCreateNew}
         className="w-full h-16 justify-start px-3 py-3"
+        disabled={isCreatingNew}
       >
-        <Icon name="add" size={16} />
-        <span className="text-sm">Create new</span>
+        {isCreatingNew ? (
+          <>
+            <Spinner size="sm" />
+            <span className="text-sm">Installing...</span>
+          </>
+        ) : (
+          <>
+            <Icon name="add" size={16} />
+            <span className="text-sm">Create new</span>
+          </>
+        )}
       </Button>
     </div>
   );
@@ -678,6 +691,18 @@ const SelectProjectAppInstance = ({
 
   const autoConfirmRef = useRef(false);
 
+  // Get marketplace integration to check if it has dependencies
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const integrationFromMarketplace = useMemo(() => {
+    return marketplace?.integrations.find(
+      (integration) => integration.name === clientId,
+    );
+  }, [marketplace, clientId]);
+
+  const integrationState = useIntegrationInstallState(
+    integrationFromMarketplace?.name || "",
+  );
+
   const createOAuthCodeAndRedirectBackToApp = useCallback(
     async ({ integrationId }: { integrationId: string }) => {
       const { redirectTo } = await createOAuthCode.mutateAsync({
@@ -719,6 +744,33 @@ const SelectProjectAppInstance = ({
     },
     [createOAuthCodeAndRedirectBackToApp],
   );
+
+  // Install hook for auto-installing apps with no dependencies
+  const { install: autoInstall, isLoading: isAutoInstalling } =
+    useUIInstallIntegration({
+      onConfirm: handleInstallComplete,
+      validate: () => Promise.resolve(true), // No validation needed for auto-install
+    });
+
+  // Calculate total steps to determine if app has dependencies
+  const totalSteps = useMemo(() => {
+    if (!integrationState.schema?.properties) return 0;
+
+    let dependenciesCount = 0;
+    let appFieldsCount = 0;
+
+    for (const [_name, property] of Object.entries(
+      integrationState.schema.properties,
+    )) {
+      if (typeof property === "object" && property.properties?.__type) {
+        dependenciesCount++;
+      } else {
+        appFieldsCount++;
+      }
+    }
+
+    return dependenciesCount + (appFieldsCount > 0 ? 1 : 0);
+  }, [integrationState.schema]);
 
   // Auto-confirm if integrationId is provided and there's only 1 integration
   useEffect(() => {
@@ -806,10 +858,21 @@ const SelectProjectAppInstance = ({
                 installedIntegrations={installedIntegrations}
                 setSelectedIntegration={setSelectedIntegration}
                 selectCreateNew={() => {
-                  setInlineCreatingIntegration(true);
-                  setSelectedIntegration(null);
+                  // Check if integration has any requirements
+                  if (integrationFromMarketplace && totalSteps === 0) {
+                    // No requirements, install directly
+                    autoInstall({
+                      integration: integrationFromMarketplace,
+                      mainFormData: {},
+                    });
+                  } else {
+                    // Has requirements, show the form
+                    setInlineCreatingIntegration(true);
+                    setSelectedIntegration(null);
+                  }
                 }}
                 selectedIntegration={selectedIntegration}
+                isCreatingNew={isAutoInstalling}
               />
 
               <FooterButtons
@@ -826,7 +889,8 @@ const SelectProjectAppInstance = ({
                 continueDisabled={
                   !selectedIntegration ||
                   createOAuthCode.isPending ||
-                  installCreatingApiKeyAndIntegration.isPending
+                  installCreatingApiKeyAndIntegration.isPending ||
+                  isAutoInstalling
                 }
                 continueLoading={
                   createOAuthCode.isPending ||

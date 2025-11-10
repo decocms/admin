@@ -21,6 +21,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { COMPUTED_RULE_IDS } from "../../constants/context-rules.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
@@ -625,7 +626,8 @@ const RulesDisplay = memo(function RulesDisplay({
             <div className="border-t pt-3">
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {rules.map((rule, index) => {
-                  const isComputedRule = rule.id === "open-tabs-context";
+                  const isComputedRule =
+                    rule.id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT;
                   return (
                     <div
                       key={rule.id}

@@ -6,6 +6,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
+import { COMPUTED_RULE_IDS } from "../../constants/context-rules.ts";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import type { ContextItem, RuleContextItem } from "../chat/types.ts";
 
@@ -335,7 +336,7 @@ function computeRulesFromTabs(
   // Create the single rule if we have any context
   if (parts.length > 0) {
     rules.push({
-      id: "open-tabs-context",
+      id: COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT,
       type: "rule",
       text: parts.join(". "),
     });
@@ -446,7 +447,7 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
   const removeContextItem = useCallback(
     (id: string) => {
       // Prevent removal of computed rules (they're derived from tabs)
-      if (id === "open-tabs-context") {
+      if (id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT) {
         return;
       }
 
@@ -477,7 +478,7 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
   const updateContextItem = useCallback(
     (id: string, updates: Partial<ContextItem>) => {
       // Prevent updates to computed rules (they're derived from tabs)
-      if (id === "open-tabs-context") {
+      if (id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT) {
         return;
       }
 

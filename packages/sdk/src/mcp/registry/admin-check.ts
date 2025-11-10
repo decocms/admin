@@ -10,7 +10,6 @@ export async function isUserAdmin(
 ): Promise<boolean> {
   if (!email) return false;
 
-  // Get all admin domains
   const { data: domains, error } = await c.db
     .from("admin_email_domains_deco")
     .select("domain");
@@ -19,7 +18,6 @@ export async function isUserAdmin(
     return false;
   }
 
-  // Check if user's email domain matches exactly any of the admin domains
   const emailTrimmed = email.trim().toLowerCase();
   const emailDomain = emailTrimmed.split("@").pop();
 
@@ -28,7 +26,7 @@ export async function isUserAdmin(
   }
 
   return domains.some((row: { domain: string }) => {
-    const domainTrimmed = row.domain.trim().toLowerCase();
+    const domainTrimmed = row.domain.trim().toLowerCase().replace(/^@/, "");
     return emailDomain === domainTrimmed;
   });
 }
@@ -38,6 +36,7 @@ export async function isUserAdmin(
  */
 export async function assertIsAdmin(c: AppContext): Promise<void> {
   const user = c.user as { email?: string } | undefined;
+
   if (!user?.email) {
     throw new Error("User not authenticated");
   }

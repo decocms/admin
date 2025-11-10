@@ -601,14 +601,10 @@ export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
     app: RegistryAppSchema.describe("The updated app"),
   }),
   handler: async (input, c) => {
-    // Verify user is admin - will throw ForbiddenError if not
     await assertIsAdmin(c);
-
+    c.resourceAccess.grant();
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
-
-    // Allow attempting the tool, but will be validated by assertIsAdmin
-    c.resourceAccess.grant();
 
     // Build update object
     const updates: Partial<typeof registryApps.$inferInsert> = {

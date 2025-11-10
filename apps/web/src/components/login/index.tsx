@@ -34,19 +34,17 @@ function Login() {
       provider: "Email",
     });
 
-    const result = await sendMagicLink.mutateAsync({
+    await sendMagicLink.mutateAsync({
       email,
       cli: searchParams.get("cli") === "true",
     });
 
-    if (result) {
-      // Navigate to confirmation page with email
-      const params = new URLSearchParams();
-      params.set("email", email);
-      if (next) params.set("next", next);
-      if (cli) params.set("cli", "true");
-      navigate(`/login/magiclink?${params.toString()}`);
-    }
+    // Navigate to confirmation page with email
+    const params = new URLSearchParams();
+    params.set("email", email);
+    if (next) params.set("next", next);
+    if (cli) params.set("cli", "true");
+    navigate(`/login/magiclink?${params.toString()}`);
   };
 
   return (

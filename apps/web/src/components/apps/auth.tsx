@@ -502,6 +502,7 @@ const InlineInstallationForm = ({
     integrationFromMarketplace.name,
   );
   const formRef = useRef<UseFormReturn<Record<string, unknown>> | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   const { install, isLoading } = useUIInstallIntegration({
     onConfirm: onInstallComplete,
@@ -513,7 +514,7 @@ const InlineInstallationForm = ({
     currentSchema,
     totalSteps,
     dependencyName,
-    handleNextDependency,
+    handleNextDependency: handleNextDependencyOriginal,
     handleBack: handleStepBack,
   } = useIntegrationInstallStep({
     integrationState,
@@ -523,6 +524,39 @@ const InlineInstallationForm = ({
         mainFormData: formRef.current?.getValues(),
       }),
   });
+
+  // Wrap handleNextDependency to validate before proceeding
+  const handleNextDependency = useCallback(async () => {
+    if (!formRef.current) {
+      handleNextDependencyOriginal();
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      // Validate only the current step's fields
+      // For dependency steps, we validate the dependency field
+      // For the app step, we validate all app fields
+      let isValid = false;
+
+      if (dependencyName) {
+        // Validate the specific dependency field for this step
+        isValid = await formRef.current.trigger(dependencyName);
+      } else {
+        // Validate all fields (final step)
+        isValid = await formRef.current.trigger();
+      }
+
+      if (!isValid) {
+        return; // Don't proceed if validation fails
+      }
+
+      // Proceed to next step or install
+      handleNextDependencyOriginal();
+    } finally {
+      setIsValidating(false);
+    }
+  }, [handleNextDependencyOriginal, dependencyName]);
 
   return (
     <div className="flex flex-col h-full">
@@ -558,7 +592,7 @@ const InlineInstallationForm = ({
         <Button
           variant="outline"
           onClick={onBack}
-          disabled={isLoading}
+          disabled={isLoading || isValidating}
           className="w-full md:w-auto"
         >
           {stepIndex === 0 ? "Cancel" : "Back to Selection"}
@@ -566,7 +600,7 @@ const InlineInstallationForm = ({
         <div className="w-full md:w-auto flex gap-2">
           <InstallStepsButtons
             stepIndex={stepIndex}
-            isLoading={isLoading}
+            isLoading={isLoading || isValidating}
             hasNextStep={stepIndex < totalSteps - 1}
             integrationState={integrationState}
             handleNextDependency={handleNextDependency}

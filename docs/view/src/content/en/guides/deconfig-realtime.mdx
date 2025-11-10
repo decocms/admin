@@ -1,0 +1,748 @@
+---
+title: Deconfig Resources - Real-time Persistent Resources
+description: Create typed, persistent, and real-time synchronized configuration resources
+icon: Database
+---
+
+import Callout from "../../../components/ui/Callout.astro";
+
+**DeconfigResource** provides a powerful system for creating typed, persistent, and real-time synchronized configuration resources. It's ideal for UI settings, themes, user preferences, and any configuration data that needs to be stored, validated, and updated instantly across all connected clients.
+
+## Overview
+
+DeconfigResource leverages the Resources 2.0 standard with:
+
+- **File-based persistence** using the DECONFIG directory system
+- **Type-safe schemas** with Zod validation
+- **Full CRUD operations** (Create, Read, Update, Delete, Search)
+- **Real-time synchronization** via Server-Sent Events (SSE)
+- **Standardized URIs** following the `rsc://` format
+- **Metadata tracking** (created_by, updated_by, timestamps)
+
+---
+
+## 1. Defining a Resource (Backend)
+
+Create a resource definition in your tools file (e.g., `server/tools/index.ts`). The data schema is defined using Zod for runtime type validation.
+
+### Example: Theme Settings Resource
+
+```typescript
+// 1. Import DeconfigResource and zod
+import { DeconfigResource } from "@decocms/runtime/deconfig";
+import { z } from "zod";
+import type { Env } from '../main.ts';
+
+// 2. Define the Schema for your Resource
+const ThemeSettings = DeconfigResource.define({
+  dataSchema: z.object({
+    name: z.string().min(1).describe("Theme name"),
+    description: z.string().describe("Theme description"),
+    primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe("Primary color (hex)"),
+    secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe("Secondary color (hex)"),
+    textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe("Text color (hex)"),
+  }),
+  resourceName: "theme_settings", // Resource directory name (rsc://app-id/theme_settings/*)
+});
+
+// 3. Export the resource creator in your tools list
+export const tools = [
+  // ... other tools
+  (env: Env) => {
+    return ThemeSettings.create(env);
+  },
+];
+
+// 4. Export the Resource definition (optional, for frontend usage)
+export { ThemeSettings };
+```
+
+### Configuration Options
+
+```typescript
+DeconfigResource.define({
+  dataSchema: z.object({ /* your schema */ }),      // Required: Zod schema for validation
+  resourceName: "my_resource",                       // Required: Resource type identifier
+  directory?: "/custom/path",                        // Optional: Custom storage directory (defaults to /resources/{resourceName})
+  enhancements?: {                                   // Optional: Custom descriptions for generated tools
+    DECO_RESOURCE_MY_RESOURCE_SEARCH: {
+      description: "Custom search description"
+    },
+  },
+  validate?: async (data) => {                       // Optional: Additional semantic validation
+    if (data.name === "forbidden") {
+      throw new Error("Name is not allowed");
+    }
+  }
+})
+```
+
+---
+
+## 2. Available Operations
+
+After defining a resource and running code generation (`deco gen` or equivalent), the following MCP tools are automatically created:
+
+### CRUD Operations Matrix
+
+| Operation | Method Name Pattern | Description |
+|-----------|-------------------|-------------|
+| **Create** | `DECO_RESOURCE_{NAME}_CREATE` | Create a new resource |
+| **Read** | `DECO_RESOURCE_{NAME}_READ` | Read a resource by URI |
+| **Search** | `DECO_RESOURCE_{NAME}_SEARCH` | List/search resources with filtering, sorting, and pagination |
+| **Update** | `DECO_RESOURCE_{NAME}_UPDATE` | Update an existing resource by URI |
+| **Delete** | `DECO_RESOURCE_{NAME}_DELETE` | Delete a resource by URI |
+| **Describe** | `DECO_RESOURCE_{NAME}_DESCRIBE` | Get metadata and SSE watch endpoint |
+
+<Callout type="info">
+  `{NAME}` is the uppercase version of your `resourceName`. For example, `theme_settings` becomes `THEME_SETTINGS`.
+</Callout>
+
+### Resource URI Format
+
+Resources follow the Resources 2.0 standard URI format:
+
+```
+rsc://{integrationId}/{resourceName}/{resourceId}
+```
+
+Example:
+```
+rsc://my-app-123/theme_settings/dark-theme
+```
+
+### Search Parameters
+
+The `SEARCH` operation supports powerful filtering and pagination:
+
+```typescript
+client.DECO_RESOURCE_THEME_SETTINGS_SEARCH({
+  term?: string,              // Search in resourceId, name, description, created_by, updated_by
+  page?: number,              // Page number (default: 1)
+  pageSize?: number,          // Items per page (default: 10, use Infinity for all)
+  filters?: {
+    created_by?: string | string[],
+    updated_by?: string | string[],
+  },
+  sortBy?: "resourceId" | "name" | "description" | "mtime",
+  sortOrder?: "asc" | "desc",
+})
+```
+
+---
+
+## 3. Real-time Consumption (Frontend)
+
+### A. Basic CRUD Operations
+
+Use the generated client methods for standard operations:
+
+```typescript
+import { client } from './your-client';
+
+// Create
+const newTheme = await client.DECO_RESOURCE_THEME_SETTINGS_CREATE({
+  data: {
+    name: "Dark Theme",
+    description: "A dark color scheme",
+    primaryColor: "#1a1a1a",
+    secondaryColor: "#2d2d2d",
+    textColor: "#ffffff",
+  }
+});
+
+// Read
+const theme = await client.DECO_RESOURCE_THEME_SETTINGS_READ({
+  uri: "rsc://my-app/theme_settings/dark-theme"
+});
+
+// Update
+const updated = await client.DECO_RESOURCE_THEME_SETTINGS_UPDATE({
+  uri: "rsc://my-app/theme_settings/dark-theme",
+  data: {
+    primaryColor: "#000000", // Changes are merged with existing data
+  }
+});
+
+// Delete
+await client.DECO_RESOURCE_THEME_SETTINGS_DELETE({
+  uri: "rsc://my-app/theme_settings/dark-theme"
+});
+
+// Search
+const results = await client.DECO_RESOURCE_THEME_SETTINGS_SEARCH({
+  term: "dark",
+  page: 1,
+  pageSize: 10,
+});
+```
+
+### B. Real-time Synchronization with SSE
+
+For live updates across all connected clients, use Server-Sent Events:
+
+```typescript
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { client } from './your-client';
+
+function useThemeRealtime() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const setupSSE = async () => {
+      // 1. Get the SSE endpoint and URI template
+      const description = await client.DECO_RESOURCE_THEME_SETTINGS_DESCRIBE({});
+      const watchPathname = description.features?.watch?.pathname;
+      const uriTemplate = description.uriTemplate; // e.g., rsc://my-app/theme_settings/*
+
+      if (!watchPathname) return;
+
+      // 2. Build the SSE URL (subscribe to all resources with *)
+      const watchUrl = `${watchPathname}?uri=${encodeURIComponent(uriTemplate)}`;
+
+      // 3. Connect to the SSE stream
+      const eventSource = new EventSource(watchUrl);
+
+      eventSource.onmessage = async (event) => {
+        const update = JSON.parse(event.data);
+        
+        // update.uri contains the URI of the changed resource
+        if (update.uri) {
+          // Invalidate queries to trigger refetch
+          queryClient.invalidateQueries({ queryKey: ["themes"] });
+          
+          // Or fetch the specific resource
+          // const updatedData = await client.DECO_RESOURCE_THEME_SETTINGS_READ({
+          //   uri: update.uri
+          // });
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+        eventSource.close();
+      };
+
+      // Cleanup
+      return () => {
+        eventSource.close();
+      };
+    };
+
+    const cleanup = setupSSE();
+    return () => {
+      cleanup.then(fn => fn?.());
+    };
+  }, [queryClient]);
+}
+```
+
+### C. Complete React Query Example
+
+Here's a full example combining CRUD operations with real-time updates:
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { client } from './your-client';
+
+export function useThemeSettings() {
+  const queryClient = useQueryClient();
+
+  // Fetch all themes
+  const { data: themes, isLoading } = useQuery({
+    queryKey: ["themes"],
+    queryFn: async () => {
+      const result = await client.DECO_RESOURCE_THEME_SETTINGS_SEARCH({
+        pageSize: Infinity,
+      });
+      return result.items;
+    },
+  });
+
+  // Create mutation
+  const createTheme = useMutation({
+    mutationFn: async (data: ThemeData) => {
+      return client.DECO_RESOURCE_THEME_SETTINGS_CREATE({ data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["themes"] });
+    },
+  });
+
+  // Update mutation
+  const updateTheme = useMutation({
+    mutationFn: async ({ uri, data }: { uri: string; data: Partial<ThemeData> }) => {
+      return client.DECO_RESOURCE_THEME_SETTINGS_UPDATE({ uri, data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["themes"] });
+    },
+  });
+
+  // Real-time SSE subscription
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+
+    const setupSSE = async () => {
+      try {
+        const description = await client.DECO_RESOURCE_THEME_SETTINGS_DESCRIBE({});
+        const watchPathname = description.features?.watch?.pathname;
+        const uriTemplate = description.uriTemplate;
+
+        if (watchPathname) {
+          const watchUrl = `${watchPathname}?uri=${encodeURIComponent(uriTemplate)}`;
+          eventSource = new EventSource(watchUrl);
+
+          eventSource.onmessage = (event) => {
+            const update = JSON.parse(event.data);
+            if (update.uri) {
+              queryClient.invalidateQueries({ queryKey: ["themes"] });
+            }
+          };
+        }
+      } catch (error) {
+        console.error("Failed to setup SSE:", error);
+      }
+    };
+
+    setupSSE();
+
+    return () => {
+      eventSource?.close();
+    };
+  }, [queryClient]);
+
+  return {
+    themes,
+    isLoading,
+    createTheme: createTheme.mutate,
+    updateTheme: updateTheme.mutate,
+  };
+}
+```
+
+---
+
+## 4. Advanced Features
+
+### Custom Validation
+
+Add semantic validation beyond schema checks:
+
+```typescript
+const UserSettings = DeconfigResource.define({
+  dataSchema: z.object({
+    username: z.string(),
+    email: z.string().email(),
+  }),
+  resourceName: "user_settings",
+  validate: async (data) => {
+    // Check if username is already taken
+    const existing = await checkUsernameExists(data.username);
+    if (existing) {
+      throw new Error("Username already exists");
+    }
+  },
+});
+```
+
+### Custom Storage Directory
+
+Override the default storage location:
+
+```typescript
+const PrivateSettings = DeconfigResource.define({
+  dataSchema: /* ... */,
+  resourceName: "private_settings",
+  directory: "/private/user_settings", // Custom path
+});
+```
+
+### Watch Specific Resources
+
+Instead of watching all resources (`*`), watch a specific one:
+
+```typescript
+// Watch only a specific resource
+const specificUri = "rsc://my-app/theme_settings/dark-theme";
+const watchUrl = `${watchPathname}?uri=${encodeURIComponent(specificUri)}`;
+```
+
+### Real-time Signaling for External Data Sources
+
+You can also create a Deconfig Resource as a **signaling mechanism** to propagate real-time updates for data that lives in external sources like Airtable, Google Sheets, or third-party APIs.
+
+This pattern is useful when:
+- Your actual data is stored externally
+- You want all connected clients to refetch when the external data changes
+- You need to track "rooms" or "channels" for different data sets
+
+#### Example: Airtable Integration with Real-time Updates
+
+Imagine you have an Airtable table with integration tools that your users can connect to. You want all clients to see updates immediately when someone adds or modifies a tool.
+
+**Step 1: Define a Minimal Signal Resource**
+
+```typescript
+// This resource doesn't store the actual Airtable data
+// It's just a "signal" to notify clients when to refetch
+const AirtableSync = DeconfigResource.define({
+  dataSchema: z.object({
+    name: z.string().describe("Sync room identifier"),
+    description: z.string().describe("What this sync tracks"),
+    lastSyncAt: z.string().datetime().describe("Last sync timestamp"),
+    syncedBy: z.string().optional().describe("User who triggered the sync"),
+  }),
+  resourceName: "airtable_sync",
+});
+
+export const tools = [
+  (env: Env) => AirtableSync.create(env),
+];
+```
+
+**Step 2: Create a Tool to Trigger Sync Notifications**
+
+```typescript
+// In your tools file
+export const tools = [
+  // ... Airtable sync resource
+  {
+    name: "NOTIFY_AIRTABLE_UPDATE" as const,
+    inputSchema: z.object({
+      tableId: z.string(),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+    }),
+    handler: async ({ tableId }, env) => {
+      // Update the sync resource to trigger SSE notifications
+      const uri = `rsc://${env.DECO_REQUEST_CONTEXT.integrationId}/airtable_sync/${tableId}`;
+      
+      await client.DECO_RESOURCE_AIRTABLE_SYNC_UPDATE({
+        uri,
+        data: {
+          name: tableId,
+          description: `Tools table ${tableId}`,
+          lastSyncAt: new Date().toISOString(),
+          syncedBy: env.DECO_REQUEST_CONTEXT.ensureAuthenticated()?.id,
+        },
+      });
+
+      return { success: true };
+    },
+  },
+];
+```
+
+**Step 3: Frontend Hook with External Data + Real-time**
+
+```typescript
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+
+// Your actual Airtable fetching function
+async function fetchAirtableTools(tableId: string) {
+  const response = await fetch(`https://api.airtable.com/v0/${tableId}/tools`, {
+    headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` },
+  });
+  return response.json();
+}
+
+export function useAirtableTools(tableId: string) {
+  const queryClient = useQueryClient();
+
+  // Query the actual Airtable data
+  const { data: tools, isLoading } = useQuery({
+    queryKey: ["airtable-tools", tableId],
+    queryFn: () => fetchAirtableTools(tableId),
+  });
+
+  // Subscribe to the sync resource for real-time updates
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+
+    const setupSSE = async () => {
+      // Get the watch endpoint
+      const description = await client.DECO_RESOURCE_AIRTABLE_SYNC_DESCRIBE({});
+      const watchPathname = description.features?.watch?.pathname;
+      
+      // Watch the specific sync resource for this table
+      const specificUri = `rsc://my-app/airtable_sync/${tableId}`;
+      const watchUrl = `${watchPathname}?uri=${encodeURIComponent(specificUri)}`;
+
+      eventSource = new EventSource(watchUrl);
+
+      eventSource.onmessage = (event) => {
+        const update = JSON.parse(event.data);
+        
+        // When the sync resource changes, refetch the Airtable data
+        if (update.uri) {
+          console.log("Airtable data changed, refetching...");
+          queryClient.invalidateQueries({ 
+            queryKey: ["airtable-tools", tableId] 
+          });
+        }
+      };
+    };
+
+    setupSSE();
+
+    return () => {
+      eventSource?.close();
+    };
+  }, [tableId, queryClient]);
+
+  return {
+    tools,
+    isLoading,
+  };
+}
+```
+
+**Step 4: Trigger the Sync from Anywhere**
+
+**Preferred: Backend Tool Triggers Sync** ⭐
+
+The best practice is to trigger sync notifications directly from your backend tools that modify external data. This ensures consistency and guarantees all clients are notified.
+
+```typescript
+// In your tools file - a tool that writes to Airtable
+export const tools = [
+  // ... other tools
+  {
+    name: "ADD_AIRTABLE_TOOL" as const,
+    inputSchema: z.object({
+      tableId: z.string(),
+      toolName: z.string(),
+      toolDescription: z.string(),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      recordId: z.string(),
+    }),
+    handler: async ({ tableId, toolName, toolDescription }, env) => {
+      // 1. Write to Airtable
+      const airtableResponse = await fetch(
+        `https://api.airtable.com/v0/${tableId}/tools`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.AIRTABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fields: {
+              name: toolName,
+              description: toolDescription,
+            },
+          }),
+        }
+      );
+
+      const record = await airtableResponse.json();
+
+      // 2. Notify all connected clients that data changed
+      const uri = `rsc://${env.DECO_REQUEST_CONTEXT.integrationId}/airtable_sync/${tableId}`;
+      
+      await client.DECO_RESOURCE_AIRTABLE_SYNC_UPDATE({
+        uri,
+        data: {
+          name: tableId,
+          description: `Tools table ${tableId}`,
+          lastSyncAt: new Date().toISOString(),
+          syncedBy: env.DECO_REQUEST_CONTEXT.ensureAuthenticated()?.id,
+        },
+      });
+
+      // 3. All clients watching this tableId will automatically refetch
+      return {
+        success: true,
+        recordId: record.id,
+      };
+    },
+  },
+];
+```
+
+**Alternative: Webhook Handler**
+
+```typescript
+// When Airtable sends a webhook about external changes
+async function onAirtableWebhook(tableId: string) {
+  await client.NOTIFY_AIRTABLE_UPDATE({ tableId });
+  // All clients watching this tableId will automatically refetch
+}
+```
+
+**Alternative: Manual UI Trigger**
+
+```typescript
+// For manual refresh from the UI
+<Button onClick={() => client.NOTIFY_AIRTABLE_UPDATE({ tableId: "appXXX" })}>
+  Sync Airtable
+</Button>
+```
+
+#### Benefits of This Pattern
+
+✅ **Minimal Storage**: The resource only stores sync metadata, not the full external data  
+✅ **Real-time Broadcast**: All connected clients get instant notifications  
+✅ **Single Source of Truth**: Actual data stays in the external source  
+✅ **Flexible**: Works with any external API (Airtable, Notion, Google Sheets, etc.)  
+✅ **Room/Channel Pattern**: Create different resources for different data sets or teams
+
+#### Other Use Cases
+
+- **Database Change Notifications**: Signal when an external database table updates
+- **Webhook Relay**: Convert incoming webhooks into real-time client notifications
+- **Collaborative Editing**: Track "rooms" where multiple users are editing external documents
+- **Cache Invalidation**: Coordinate cache invalidation across multiple frontend instances
+- **Data Pipeline Status**: Notify clients when ETL jobs or data processing completes
+
+---
+
+## 5. Best Practices
+
+### Resource Naming
+
+- Use **snake_case** for `resourceName` (e.g., `theme_settings`, `user_preferences`)
+- Keep names descriptive but concise
+- Avoid special characters
+
+### Schema Design
+
+- Include `name` and `description` fields for better searchability
+- Use `.describe()` on Zod fields for generated documentation
+- Validate formats strictly (e.g., colors, emails, URLs)
+
+```typescript
+z.object({
+  name: z.string().min(1).describe("Display name"),
+  description: z.string().describe("Description for this resource"),
+  email: z.string().email().describe("User email address"),
+  website: z.string().url().optional().describe("Optional website URL"),
+})
+```
+
+### Error Handling
+
+The system throws specific errors that you should handle:
+
+```typescript
+import { NotFoundError, UserInputError } from '@decocms/runtime/deconfig';
+
+try {
+  const theme = await client.DECO_RESOURCE_THEME_SETTINGS_READ({ uri });
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    // Resource doesn't exist
+  } else if (error instanceof UserInputError) {
+    // Validation failed or conflict occurred
+  }
+}
+```
+
+### Performance Optimization
+
+- Use `pageSize: Infinity` only when necessary; prefer pagination for large datasets
+- Implement debouncing for frequent updates
+- Use React Query's `staleTime` to reduce unnecessary refetches
+
+```typescript
+const { data } = useQuery({
+  queryKey: ["themes"],
+  queryFn: fetchThemes,
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
+```
+
+### SSE Connection Management
+
+- Always close EventSource connections on cleanup
+- Handle connection errors and implement reconnection logic
+- Consider using a single SSE connection for multiple resource types
+
+```typescript
+eventSource.onerror = () => {
+  eventSource.close();
+  // Implement exponential backoff reconnection
+  setTimeout(() => setupSSE(), retryDelay);
+};
+```
+
+---
+
+## API Reference
+
+### DeconfigResource.define()
+
+Defines a new resource type with schema and configuration.
+
+```typescript
+DeconfigResource.define<TDataSchema>({
+  dataSchema: ZodSchema,
+  resourceName: string,
+  directory?: string,
+  enhancements?: EnhancedResourcesTools<TDataSchema>,
+  validate?: (data: z.infer<TDataSchema>) => Promise<void>,
+})
+```
+
+**Returns:** An object with:
+- `create(env)`: Function to create the resource tools
+- `watcher`: Internal watcher function (advanced usage)
+
+### DeconfigResource.watchAPI()
+
+Handles SSE watch requests (used internally by the runtime).
+
+```typescript
+DeconfigResource.watchAPI(req: Request, env: DefaultEnv)
+```
+
+**Returns:** A `Response` with SSE stream (`text/event-stream`)
+
+---
+
+## Troubleshooting
+
+### "Cannot find module '@decocms/runtime/deconfig'"
+
+Make sure you've run the build/generation step after defining resources:
+
+```bash
+deco gen
+# or
+npm run build
+```
+
+### SSE Connection Fails
+
+1. Check that the `DESCRIBE` operation returns a valid `features.watch.pathname`
+2. Verify the URI template format matches `rsc://{integrationId}/{resourceName}/*`
+3. Ensure CORS headers are properly configured for your domain
+
+### Resource Not Found After Creation
+
+1. Verify the resource was created successfully (check the returned URI)
+2. Ensure you're using the correct URI format when reading
+3. Check file permissions in the DECONFIG directory
+
+---
+
+## Additional Resources
+
+- [Resources 2.0 Standard Specification](https://github.com/deco-cx/chat/blob/main/packages/runtime/src/bindings/resources/bindings.ts) (Source Code)
+- [Zod Documentation](https://zod.dev)
+- [Server-Sent Events (SSE) Guide](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
+- [React Query Documentation](https://tanstack.com/query/latest)
+
+---
+
+**Happy Building! 🚀**
+
+For questions or issues, consult the main repository documentation or open an issue.
+

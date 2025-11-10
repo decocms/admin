@@ -19,11 +19,17 @@ export async function isUserAdmin(
     return false;
   }
 
-  // Check if user's email ends with any of the admin domains
+  // Check if user's email domain matches exactly any of the admin domains
+  const emailTrimmed = email.trim().toLowerCase();
+  const emailDomain = emailTrimmed.split("@").pop();
+
+  if (!emailDomain) {
+    return false;
+  }
+
   return domains.some((row: { domain: string }) => {
-    const domainTrimmed = row.domain.trim();
-    const emailTrimmed = email.trim();
-    return emailTrimmed.endsWith(domainTrimmed);
+    const domainTrimmed = row.domain.trim().toLowerCase();
+    return emailDomain === domainTrimmed;
   });
 }
 

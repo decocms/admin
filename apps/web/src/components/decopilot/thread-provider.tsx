@@ -51,6 +51,7 @@ export interface ThreadManagerValue {
   getThread: (threadId: string) => ThreadData | null;
   getAllThreads: () => ThreadData[];
   createThread: (threadId?: string) => ThreadData;
+  copyThreadTabs: (sourceThreadId?: string) => ThreadData;
   switchToThread: (threadId: string) => void;
   hideThread: (threadId: string) => void;
   // Tab management
@@ -584,6 +585,40 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
     [updateThreadState],
   );
 
+  const copyThreadTabs = useCallback(
+    (sourceThreadId?: string): ThreadData => {
+      const sourceId = sourceThreadId || activeThreadId;
+      const sourceThread = threadState.threads[sourceId];
+
+      const newId = crypto.randomUUID();
+      const now = Date.now();
+
+      // Copy tabs and context items from source thread, but create a new empty chat
+      const newThread: ThreadData = {
+        id: newId,
+        createdAt: now,
+        updatedAt: now,
+        tabs: sourceThread ? [...sourceThread.tabs] : [],
+        activeTabId: sourceThread?.activeTabId || null,
+        contextItems: sourceThread
+          ? [...(sourceThread.contextItems || [])]
+          : [],
+      };
+
+      updateThreadState((prev) => ({
+        ...prev,
+        threads: {
+          ...prev.threads,
+          [newId]: newThread,
+        },
+        activeThreadId: newId,
+      }));
+
+      return newThread;
+    },
+    [activeThreadId, threadState.threads, updateThreadState],
+  );
+
   const switchToThread = useCallback(
     (threadId: string) => {
       setActiveThreadId(threadId);
@@ -822,6 +857,7 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
     getThread,
     getAllThreads,
     createThread,
+    copyThreadTabs,
     switchToThread,
     hideThread,
     // Tab management

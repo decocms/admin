@@ -547,24 +547,41 @@ const InlineInstallationForm = ({
 
     setIsValidating(true);
     try {
-      // Validate only the current step's fields
-      // For dependency steps, we validate the dependency field
-      // For the app step, we validate all app fields
-      let isValid = false;
-
-      if (dependencyName) {
-        // Validate the specific dependency field for this step
-        isValid = await formRef.current.trigger(dependencyName);
-      } else {
-        // Validate all fields (final step)
-        isValid = await formRef.current.trigger();
-      }
+      // Validate schema (structure, types, etc.)
+      const isValid = await formRef.current.trigger();
 
       if (!isValid) {
-        return; // Don't proceed if validation fails
+        return; // Schema validation failed
       }
 
-      // Proceed to next step or install
+      // Additional validation for binding fields
+      // Check if dependency binding has a non-empty value
+      const formValues = formRef.current.getValues();
+      
+      if (dependencyName && formValues[dependencyName]) {
+        const bindingValue = formValues[dependencyName];
+        
+        // Check if this is a binding object with a 'value' field
+        if (
+          typeof bindingValue === "object" &&
+          bindingValue !== null &&
+          "value" in bindingValue
+        ) {
+          const value = (bindingValue as Record<string, unknown>).value;
+          
+          // If value is empty string or null/undefined, show error
+          if (!value || (typeof value === "string" && value.trim() === "")) {
+            // Set custom error on the form
+            formRef.current.setError(`${dependencyName}.value`, {
+              type: "manual",
+              message: "Please select an integration",
+            });
+            return; // Block progression
+          }
+        }
+      }
+
+      // All validation passed, proceed
       handleNextDependencyOriginal();
     } finally {
       setIsValidating(false);

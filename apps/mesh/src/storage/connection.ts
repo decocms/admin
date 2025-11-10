@@ -205,7 +205,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   /**
    * Deserialize JSON fields from database and decrypt token
-   * Kysely automatically deserializes JSON columns on SELECT
+   * Note: BunWorkerDialect doesn't automatically deserialize JSON, so we parse manually
    */
   private async deserializeConnection(raw: {
     id: string;
@@ -219,14 +219,14 @@ export class ConnectionStorage implements ConnectionStoragePort {
     connectionType: "HTTP" | "SSE" | "Websocket";
     connectionUrl: string;
     connectionToken: string | null;
-    connectionHeaders: Record<string, string> | null;
-    oauthConfig: unknown;
-    metadata: Record<string, unknown> | null;
-    tools: ToolDefinition[] | null;
-    bindings: string[] | null;
+    connectionHeaders: string | Record<string, string> | null;
+    oauthConfig: string | unknown;
+    metadata: string | Record<string, unknown> | null;
+    tools: string | ToolDefinition[] | null;
+    bindings: string | string[] | null;
     status: "active" | "inactive" | "error";
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Date | string;
+    updatedAt: Date | string;
   }): Promise<MCPConnection> {
     // Decrypt token if present
     let decryptedToken: string | null = null;
@@ -240,6 +240,19 @@ export class ConnectionStorage implements ConnectionStoragePort {
       }
     }
 
+    // Parse JSON fields if they're still strings
+    const parseJson = <T>(value: string | T | null): T | null => {
+      if (value === null) return null;
+      if (typeof value === "string") {
+        try {
+          return JSON.parse(value) as T;
+        } catch {
+          return null;
+        }
+      }
+      return value as T;
+    };
+
     return {
       id: raw.id,
       organizationId: raw.organizationId,
@@ -252,11 +265,15 @@ export class ConnectionStorage implements ConnectionStoragePort {
       connectionType: raw.connectionType,
       connectionUrl: raw.connectionUrl,
       connectionToken: decryptedToken,
-      connectionHeaders: raw.connectionHeaders,
-      oauthConfig: raw.oauthConfig as MCPConnection["oauthConfig"],
-      metadata: raw.metadata,
-      tools: raw.tools,
-      bindings: raw.bindings,
+      connectionHeaders: parseJson<Record<string, string>>(
+        raw.connectionHeaders,
+      ),
+      oauthConfig: parseJson<MCPConnection["oauthConfig"]>(
+        raw.oauthConfig as string | MCPConnection["oauthConfig"] | null,
+      ),
+      metadata: parseJson<Record<string, unknown>>(raw.metadata),
+      tools: parseJson<ToolDefinition[]>(raw.tools),
+      bindings: parseJson<string[]>(raw.bindings),
       status: raw.status,
       createdAt: raw.createdAt as Date | string,
       updatedAt: raw.updatedAt as Date | string,

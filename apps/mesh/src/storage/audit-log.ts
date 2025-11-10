@@ -68,10 +68,18 @@ export class AuditLogStorage {
       query = query.where("toolName", "=", filters.toolName);
     }
     if (filters.startDate) {
-      query = query.where("timestamp", ">=", filters.startDate);
+      query = query.where(
+        "timestamp",
+        ">=",
+        filters.startDate.toISOString() as never,
+      );
     }
     if (filters.endDate) {
-      query = query.where("timestamp", "<=", filters.endDate);
+      query = query.where(
+        "timestamp",
+        "<=",
+        filters.endDate.toISOString() as never,
+      );
     }
 
     if (filters.limit) {

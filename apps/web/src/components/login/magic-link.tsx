@@ -2,31 +2,13 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
-} from "@tanstack/react-query";
-import { DECO_CMS_API_URL } from "@deco/sdk";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FormEventHandler } from "react";
 import { useEffect, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
+import { useSendMagicLink } from "./hooks/use-send-magic-link.ts";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const useSendMagicLink = () => {
-  const create = useMutation({
-    mutationFn: (prop: { email: string; cli: boolean }) =>
-      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
-        method: "POST",
-        body: JSON.stringify(prop),
-      })
-        .then((res) => res.ok)
-        .catch(() => false),
-  });
-
-  return create;
-};
 
 function MagicLink() {
   const fetcher = useSendMagicLink();
@@ -42,7 +24,14 @@ function MagicLink() {
   // Redirect to /login if email is missing or invalid
   useEffect(() => {
     if (!isValidEmail) {
-      navigate(`/login${next ? `?next=${next}` : ""}`, { replace: true });
+      const params = new URLSearchParams();
+      if (next) {
+        params.set("next", next);
+      }
+      const queryString = params.toString();
+      navigate(`/login${queryString ? `?${queryString}` : ""}`, {
+        replace: true,
+      });
     }
   }, [isValidEmail, navigate, next]);
 
@@ -72,7 +61,9 @@ function MagicLink() {
           className="text-muted-foreground self-start mb-8"
           size="sm"
         >
-          <Link to={`/login${next ? `?next=${next}` : ""}`}>
+          <Link
+            to={`/login${next ? `?${new URLSearchParams({ next }).toString()}` : ""}`}
+          >
             <Icon name="arrow_back" size={16} />
             Back to login options
           </Link>

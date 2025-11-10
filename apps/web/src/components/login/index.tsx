@@ -7,21 +7,9 @@ import { providers } from "./providers.tsx";
 import { Link, useSearchParams, useNavigate } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useState, type FormEventHandler } from "react";
-import { QueryClientProvider, useMutation } from "@tanstack/react-query";
-import { DECO_CMS_API_URL } from "@deco/sdk";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@deco/sdk/hooks";
-
-const useSendMagicLink = () => {
-  return useMutation({
-    mutationFn: (prop: { email: string; cli: boolean }) =>
-      fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
-        method: "POST",
-        body: JSON.stringify(prop),
-      })
-        .then((res) => res.ok)
-        .catch(() => false),
-  });
-};
+import { useSendMagicLink } from "./hooks/use-send-magic-link.ts";
 
 function Login() {
   const [searchParams] = useSearchParams();
@@ -46,19 +34,17 @@ function Login() {
       provider: "Email",
     });
 
-    const result = await sendMagicLink.mutateAsync({
+    await sendMagicLink.mutateAsync({
       email,
       cli: searchParams.get("cli") === "true",
     });
 
-    if (result) {
-      // Navigate to confirmation page with email
-      const params = new URLSearchParams();
-      params.set("email", email);
-      if (next) params.set("next", next);
-      if (cli) params.set("cli", "true");
-      navigate(`/login/magiclink?${params.toString()}`);
-    }
+    // Navigate to confirmation page with email
+    const params = new URLSearchParams();
+    params.set("email", email);
+    if (next) params.set("next", next);
+    if (cli) params.set("cli", "true");
+    navigate(`/login/magiclink?${params.toString()}`);
   };
 
   return (

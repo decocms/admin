@@ -11,7 +11,7 @@ import {
   ResourcesReadOutputSchema,
   ResourceUpdateInputSchema,
   ResourceUpdateOutputSchema,
-} from "@deco/workers-runtime/resources";
+} from "@decocms/runtime/resources";
 import type { Binder } from "../index.ts";
 
 // Export Schemas

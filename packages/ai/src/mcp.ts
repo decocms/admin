@@ -14,7 +14,7 @@ import { slugify } from "@deco/sdk/mcp/slugify";
 import {
   createServerClient,
   createTransport,
-} from "@deco/workers-runtime/mcp-client";
+} from "@decocms/runtime/mcp-client";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Tool } from "ai";
 import { jsonSchema } from "ai";

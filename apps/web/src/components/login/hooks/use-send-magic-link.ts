@@ -6,6 +6,7 @@ export function useSendMagicLink() {
     mutationFn: (prop: { email: string; cli: boolean }) =>
       fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(prop),
       })
         .then((res) => res.ok)

@@ -1331,14 +1331,12 @@ It's always handy to search for installed integrations with no query, since all 
     const virtualIntegrations = virtualInstallableIntegrations();
     const allIntegrations = [
       ...virtualIntegrations.filter(
-        (integration) => !query || integration.name.includes(query),
+        (integration) =>
+          !query ||
+          integration.name.toLowerCase().includes(query.toLowerCase()),
       ),
       ...registryList,
     ];
-    console.log(
-      "📦 Apps no Marketplace:",
-      allIntegrations.map((app) => ({ id: app.id, name: app.name })),
-    );
     return {
       integrations: allIntegrations,
     };

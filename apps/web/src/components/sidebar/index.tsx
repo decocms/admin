@@ -1,10 +1,7 @@
 import {
-  AI_APP_PRD_TEMPLATE,
   findPinnedView,
   Integration,
   useConnectionViews,
-  useUpsertDocument,
-  WELL_KNOWN_AGENT_IDS,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -16,13 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -37,11 +27,9 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
-import { useFocusChat } from "../agents/hooks.ts";
 import { useThreadTitle } from "../decopilot/index.tsx";
 import { buildAppsListUri, useThread } from "../decopilot/thread-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
@@ -53,17 +41,6 @@ import {
 import { TogglePin } from "../views/list.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
-
-const useFocusTeamAgent = () => {
-  const focusChat = useFocusChat();
-  const handleCreate = () => {
-    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
-      history: false,
-    });
-  };
-
-  return handleCreate;
-};
 
 /**
  * Individual thread item with title
@@ -274,14 +251,11 @@ function AddViewsDialog({
 
 function WorkspaceViews() {
   const { org, project } = useParams();
-  const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
-  const navigate = useNavigate();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
   }>({ open: false });
-  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
   const [_searchModalOpen, _setSearchModalOpen] = useState(false);
@@ -358,21 +332,9 @@ function WorkspaceViews() {
   const [commandPaletteInitialFilter, setCommandPaletteInitialFilter] =
     useState<"agent" | "app" | "document" | "thread" | undefined>();
 
-  // Hook for creating documents
-  const upsertDocument = useUpsertDocument();
-
-  const handleCreateAgent = useFocusTeamAgent();
-
   const handleOpenSearch = () => {
     commandPalette.setOpen(true);
   };
-
-  function buildResourceHrefFromResource(resource: {
-    integration_id: string;
-    name: string;
-  }): string {
-    return workspaceLink(`/rsc/${resource.integration_id}/${resource.name}`);
-  }
 
   const renderPinnedTabIcon = (tab: PinnedTab) => {
     if (!tab.icon) {
@@ -527,10 +489,13 @@ function WorkspaceViews() {
       <SidebarMenuItem>
         <SidebarMenuButton
           className="cursor-pointer"
-          onClick={() => setGenerateModalOpen(true)}
+          onClick={() => {
+            createThread();
+            trackEvent("sidebar_new_thread_click");
+          }}
         >
           <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Generate</span>
+          <span className="truncate">New thread</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
@@ -608,22 +573,6 @@ function WorkspaceViews() {
               variant="ghost"
               size="xs"
               onClick={() => {
-                createThread();
-                trackEvent("sidebar_new_thread_click");
-              }}
-              title="New chat"
-              className="size-6"
-            >
-              <Icon
-                name="add"
-                size={14}
-                className="text-muted-foreground hover:text-foreground"
-              />
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => {
                 setCommandPaletteInitialSearch("");
                 setCommandPaletteInitialFilter("thread");
                 commandPalette.setOpen(true);
@@ -642,189 +591,6 @@ function WorkspaceViews() {
         </div>
       </SidebarMenuItem>
       <RecentThreadsList />
-
-      {/* Generate Modal */}
-      <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create via AI</DialogTitle>
-            <DialogDescription>Generate content with AI</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Document Creation - Split Button with Dropdown */}
-            <div className="w-full flex items-stretch h-auto border border-border rounded-lg overflow-hidden hover:bg-accent/50 transition-colors">
-              <Button
-                variant="ghost"
-                className="flex-1 justify-start h-auto py-4 rounded-none border-0 hover:bg-transparent"
-                onClick={async () => {
-                  setGenerateModalOpen(false);
-                  isMobile && toggleSidebar();
-                  const timestamp = new Date()
-                    .toISOString()
-                    .replace(/[:.]/g, "-");
-
-                  const result = await upsertDocument.mutateAsync({
-                    params: {
-                      name: `Untitled-${timestamp}`,
-                      content: "",
-                      description: "",
-                    },
-                  });
-
-                  const documentResource = {
-                    integration_id: "i:documents-management",
-                    name: "document",
-                  };
-                  const href = buildResourceHrefFromResource(documentResource);
-                  navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                }}
-              >
-                <div className="flex items-center gap-3 text-left">
-                  <Icon
-                    name="docs"
-                    size={24}
-                    className="text-muted-foreground/75 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold">Document</div>
-                    <div className="text-sm text-muted-foreground">
-                      Create a new document with AI assistance
-                    </div>
-                  </div>
-                </div>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-auto rounded-none border-l border-border hover:bg-transparent w-12 flex-shrink-0"
-                  >
-                    <Icon name="expand_more" size={20} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onSelect={async () => {
-                      setGenerateModalOpen(false);
-                      isMobile && toggleSidebar();
-                      const timestamp = new Date()
-                        .toISOString()
-                        .replace(/[:.]/g, "-");
-
-                      const result = await upsertDocument.mutateAsync({
-                        params: {
-                          name: `Untitled-${timestamp}`,
-                          content: "",
-                          description: "",
-                        },
-                      });
-
-                      const documentResource = {
-                        integration_id: "i:documents-management",
-                        name: "document",
-                      };
-                      const href =
-                        buildResourceHrefFromResource(documentResource);
-                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                    }}
-                  >
-                    <Icon name="docs" size={18} className="mr-2" />
-                    <div className="flex-1">
-                      <div className="font-medium">Blank Document</div>
-                      <div className="text-xs text-muted-foreground">
-                        Start from scratch
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onSelect={async () => {
-                      setGenerateModalOpen(false);
-                      isMobile && toggleSidebar();
-                      const timestamp = new Date()
-                        .toISOString()
-                        .replace(/[:.]/g, "-");
-
-                      const result = await upsertDocument.mutateAsync({
-                        params: {
-                          name: `AI App PRD - ${timestamp}`,
-                          content: AI_APP_PRD_TEMPLATE,
-                          description:
-                            "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
-                        },
-                      });
-
-                      const documentResource = {
-                        integration_id: "i:documents-management",
-                        name: "document",
-                      };
-                      const href =
-                        buildResourceHrefFromResource(documentResource);
-                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                    }}
-                  >
-                    <Icon name="rocket_launch" size={18} className="mr-2" />
-                    <div className="flex-1">
-                      <div className="font-medium">AI App PRD</div>
-                      <div className="text-xs text-muted-foreground">
-                        Plan tools, agents & workflows
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={() => {
-                setGenerateModalOpen(false);
-              }}
-            >
-              <div className="flex items-center gap-3 text-left">
-                <Icon
-                  name="flowchart"
-                  size={24}
-                  className="text-muted-foreground/75 mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold">Workflow</div>
-                  <div className="text-sm text-muted-foreground">
-                    Create a new workflow
-                  </div>
-                </div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={() => {
-                setGenerateModalOpen(false);
-                isMobile && toggleSidebar();
-
-                handleCreateAgent();
-              }}
-            >
-              <div className="flex items-center gap-3 text-left">
-                <Icon
-                  name="robot_2"
-                  size={24}
-                  className="text-muted-foreground/75 mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold">Agent</div>
-                  <div className="text-sm text-muted-foreground">
-                    Create an AI agent with specialized capabilities
-                  </div>
-                </div>
-              </div>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Search Modal */}
       <SearchComingSoonModal

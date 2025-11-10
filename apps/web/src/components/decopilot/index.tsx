@@ -1,4 +1,4 @@
-import { WELL_KNOWN_AGENTS, useThreadMessages } from "@deco/sdk";
+import { useThreadMessages, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
@@ -19,6 +19,7 @@ function DecopilotChatWrapper({
   setOpen,
 }: DecopilotChatWrapperProps) {
   const showHeader = hasTabs;
+  const { copyThreadTabs } = useThread();
 
   return (
     <div className="flex flex-col h-full w-full transform-[translateZ(0)]">
@@ -32,18 +33,26 @@ function DecopilotChatWrapper({
             />
             <span className="text-sm font-medium">{agent.name}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
-            title="Close chat"
-          >
-            <Icon
-              name="close"
-              size={16}
-              className="text-muted-foreground group-hover:text-foreground"
-            />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                copyThreadTabs();
+              }}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+              title="Copy thread tabs (new empty chat)"
+            >
+              <Icon name="add" size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+              title="Close chat"
+            >
+              <Icon name="close" size={16} />
+            </button>
+          </div>
         </div>
       )}
       <div className="flex-1 min-h-0">

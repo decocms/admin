@@ -12,4 +12,3 @@ export function useSendMagicLink() {
         .catch(() => false),
   });
 }
-

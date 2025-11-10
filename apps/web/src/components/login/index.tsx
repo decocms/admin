@@ -9,7 +9,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useState, type FormEventHandler } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@deco/sdk/hooks";
-import { useSendMagicLink } from "./hooks/useSendMagicLink.ts";
+import { useSendMagicLink } from "./hooks/use-send-magic-link.ts";
 
 function Login() {
   const [searchParams] = useSearchParams();

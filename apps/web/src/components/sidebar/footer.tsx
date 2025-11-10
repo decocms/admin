@@ -53,6 +53,7 @@ import {
   useUserPreferences,
 } from "../../hooks/use-user-preferences.ts";
 import { useUser } from "../../hooks/use-user.ts";
+import { useIsAdmin } from "../../hooks/use-is-admin.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
@@ -94,6 +95,8 @@ function UserPreferencesModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const { preferences, setPreferences } = useUserPreferences();
+  const { data: isAdmin } = useIsAdmin();
+
   const form = useForm({
     defaultValues: {
       defaultModel: preferences.defaultModel,
@@ -103,6 +106,7 @@ function UserPreferencesModal({
       showLegacyPrompts: preferences.showLegacyPrompts ?? false,
       showLegacyWorkflowRuns: preferences.showLegacyWorkflowRuns ?? false,
       showLegacyAgents: preferences.showLegacyAgents ?? false,
+      storeEditMode: preferences.storeEditMode ?? false,
     },
   });
   const {
@@ -156,27 +160,36 @@ function UserPreferencesModal({
                 )}
               />
             </ErrorBoundary>
-            {Object.entries(userPreferencesLabels).map(([key, value]) => (
-              <FormField
-                name={key}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col justify-center items-start gap-2">
-                    <div className="flex items-center gap-2">
-                      <FormControl>
-                        <Switch
-                          id={key}
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>{value.label}</FormLabel>
-                    </div>
-                    <FormDescription>{value.description}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
+            {Object.entries(userPreferencesLabels)
+              .filter(([key]) => {
+                // Only show storeEditMode if user is admin
+                if (key === "storeEditMode") {
+                  return isAdmin === true;
+                }
+                return true;
+              })
+              .map(([key, value]) => (
+                <FormField
+                  key={key}
+                  name={key}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col justify-center items-start gap-2">
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Switch
+                            id={key}
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>{value.label}</FormLabel>
+                      </div>
+                      <FormDescription>{value.description}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
 
             <DialogFooter>
               <DialogClose asChild>

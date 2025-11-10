@@ -2,7 +2,7 @@ import { listToolsByConnectionType } from "@deco/ai/mcp";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
-import { UserInputError } from "../../errors.ts";
+import { NotFoundError, UserInputError } from "../../errors.ts";
 import { MCPConnectionSchema } from "../../models/mcp.ts";
 import {
   assertHasWorkspace,
@@ -15,6 +15,7 @@ import {
 } from "../projects/util.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
 import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
+import { assertIsAdmin } from "./admin-check.ts";
 
 export { AppName };
 export type { RegistryApp } from "./schemas.ts";
@@ -539,5 +540,183 @@ export const publishApp = createTool({
     );
 
     return Mappers.mapApp(data);
+  },
+});
+
+// ============================================================================
+// Admin Tools (Private - Not listed in discovery)
+// ============================================================================
+
+/**
+ * Admin-only tool to update marketplace app metadata
+ * This is a private tool and won't be listed in discovery
+ */
+// Schema for app icon that accepts http(s) URLs, icon:// scheme, relative paths, or null
+const iconSchema = z
+  .string()
+  .nullable()
+  .optional()
+  .refine(
+    (value) => {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      // Allow http(s) URLs
+      if (value.startsWith("http://") || value.startsWith("https://")) {
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      // Allow custom icon:// scheme
+      if (value.startsWith("icon://")) {
+        return true;
+      }
+      // Allow relative paths starting with /
+      if (value.startsWith("/")) {
+        return true;
+      }
+      return false;
+    },
+    {
+      message:
+        "Icon must be a valid http(s) URL, icon:// URI, relative path (starting with /), or null to clear",
+    },
+  );
+
+export const MARKETPLACE_APP_UPDATE_ADMIN = createTool({
+  name: "MARKETPLACE_APP_UPDATE_ADMIN",
+  description: "Updates marketplace app metadata (admin only)",
+  inputSchema: z.object({
+    appId: z.string().uuid().describe("The app ID to update"),
+    friendlyName: z.string().optional().describe("Friendly display name"),
+    description: z.string().optional().describe("App description"),
+    icon: iconSchema.describe(
+      "App icon URL (accepts: http(s) URLs, icon:// scheme, relative paths /..., or null to clear)",
+    ),
+    unlisted: z.boolean().optional().describe("Whether app is unlisted"),
+    verified: z.boolean().optional().describe("Whether app is verified"),
+  }),
+  outputSchema: z.object({
+    app: RegistryAppSchema.describe("The updated app"),
+  }),
+  handler: async (input, c) => {
+    await assertIsAdmin(c);
+    c.resourceAccess.grant();
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c);
+
+    // Build update object
+    const updates: Partial<typeof registryApps.$inferInsert> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (input.friendlyName !== undefined) {
+      updates.friendly_name = input.friendlyName;
+    }
+    if (input.description !== undefined) {
+      updates.description = input.description;
+    }
+    if (input.icon !== undefined) {
+      updates.icon = input.icon;
+    }
+    if (input.unlisted !== undefined) {
+      updates.unlisted = input.unlisted;
+    }
+    if (input.verified !== undefined) {
+      updates.verified = input.verified;
+    }
+
+    // Update the app
+    const [updatedApp] = await c.drizzle
+      .update(registryApps)
+      .set(updates)
+      .where(eq(registryApps.id, input.appId))
+      .returning();
+
+    if (!updatedApp) {
+      throw new NotFoundError(`App ${input.appId} not found`);
+    }
+
+    // Fetch complete app with tools and scope
+    const completeApp = await c.drizzle
+      .select()
+      .from(registryApps)
+      .innerJoin(registryScopes, eq(registryApps.scope_id, registryScopes.id))
+      .leftJoin(registryTools, eq(registryTools.app_id, registryApps.id))
+      .where(eq(registryApps.id, input.appId));
+
+    if (completeApp.length === 0) {
+      throw new NotFoundError(`App ${input.appId} not found`);
+    }
+
+    // Build the app with tools
+    const appData: DbApp = {
+      ...completeApp[0].deco_chat_apps_registry,
+      tools: completeApp
+        .filter((row) => row.deco_chat_apps_registry_tools !== null)
+        .map((row) => row.deco_chat_apps_registry_tools!),
+      scope: completeApp[0].deco_chat_registry_scopes,
+    };
+
+    return { app: Mappers.mapApp(appData) };
+  },
+});
+
+/**
+ * Admin-only tool to list unlisted marketplace apps
+ * This is a private tool and won't be listed in discovery
+ */
+export const MARKETPLACE_APPS_LIST_UNLISTED_ADMIN = createTool({
+  name: "MARKETPLACE_APPS_LIST_UNLISTED_ADMIN",
+  description: "Lists unlisted marketplace apps (admin only)",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    apps: z.array(RegistryAppSchema).describe("List of unlisted apps"),
+  }),
+  handler: async (_, c) => {
+    // Allow attempting the tool, but will be validated by assertIsAdmin
+    c.resourceAccess.grant();
+
+    // Verify user is admin - will throw ForbiddenError if not
+    await assertIsAdmin(c);
+
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c);
+
+    // Fetch all unlisted apps
+    const apps = await c.drizzle
+      .select()
+      .from(registryApps)
+      .innerJoin(registryScopes, eq(registryApps.scope_id, registryScopes.id))
+      .leftJoin(registryTools, eq(registryTools.app_id, registryApps.id))
+      .where(eq(registryApps.unlisted, true))
+      .orderBy(desc(registryApps.created_at));
+
+    // Group tools by app
+    const appsMap = new Map<string, DbApp>();
+    for (const row of apps) {
+      const app = row.deco_chat_apps_registry;
+      const scope = row.deco_chat_registry_scopes;
+      const tool = row.deco_chat_apps_registry_tools;
+
+      if (!appsMap.has(app.id)) {
+        appsMap.set(app.id, {
+          ...app,
+          tools: [],
+          scope,
+        });
+      }
+
+      if (tool) {
+        appsMap.get(app.id)!.tools.push(tool);
+      }
+    }
+
+    return {
+      apps: Array.from(appsMap.values()).map(Mappers.mapApp),
+    };
   },
 });

@@ -8,9 +8,13 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useIsAdmin } from "../../hooks/use-is-admin.ts";
+import { useUnlistedApps } from "../../hooks/use-unlisted-apps.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import { AdminCardActions } from "./admin-card-actions.tsx";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [
@@ -76,9 +80,11 @@ type FeaturedIntegration = Integration & {
 const FeaturedCard = ({
   integration,
   onAppClick,
+  isEditMode,
 }: {
   integration: FeaturedIntegration;
   onAppClick?: (appKey: string) => void;
+  isEditMode?: boolean;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
   const key = getConnectionAppKey(integration);
@@ -92,18 +98,36 @@ const FeaturedCard = ({
           navigateWorkspace(`/apps/${appKey}`);
         }
       }}
-      className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
+      className="flex flex-col h-full bg-card relative rounded-xl cursor-pointer overflow-hidden"
     >
-      <IntegrationAvatar
-        url={integration.icon}
-        fallback={integration.friendlyName ?? integration.name}
-        size="lg"
-      />
-      <h3 className="text-sm flex gap-1 items-center">
-        {integration.friendlyName || integration.name}
-        {integration.verified && <VerifiedBadge />}
-      </h3>
-      <p className="text-sm text-muted-foreground">{integration.description}</p>
+      <div className="flex flex-col gap-2 p-4 flex-1">
+        <div className="flex items-center gap-2">
+          <IntegrationAvatar
+            url={integration.icon}
+            fallback={integration.friendlyName ?? integration.name}
+            size="lg"
+          />
+        </div>
+        <h3 className="text-sm flex gap-1 items-center">
+          {integration.friendlyName || integration.name}
+          {integration.verified && <VerifiedBadge />}
+        </h3>
+        <p className="text-sm text-muted-foreground flex-1">
+          {integration.description}
+        </p>
+      </div>
+
+      {isEditMode && (
+        <div className="absolute top-2 right-2">
+          <AdminCardActions app={integration} editOnly />
+        </div>
+      )}
+
+      {isEditMode && (
+        <div className="border-t p-2">
+          <AdminCardActions app={integration} actionsOnly />
+        </div>
+      )}
     </div>
   );
 };
@@ -149,8 +173,14 @@ const SimpleFeaturedCard = ({
 function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
   const { onAppClick } = props;
   const [search, setSearch] = useState("");
+  const [unlistedSearchTerm, setUnlistedSearchTerm] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
+  const { preferences } = useUserPreferences();
+  const { data: isAdmin } = useIsAdmin();
+  const { data: unlistedApps } = useUnlistedApps();
+  const isEditModeActive =
+    isAdmin === true && preferences.storeEditMode === true;
 
   const recentApps = useMemo(
     () => getRecentApps(integrations?.integrations, 3),
@@ -317,6 +347,7 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
                   key={integration.id}
                   integration={integration}
                   onAppClick={onAppClick}
+                  isEditMode={isEditModeActive}
                 />
               ))}
             </div>
@@ -333,9 +364,117 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
                   key={integration.id}
                   integration={integration}
                   onAppClick={onAppClick}
+                  isEditMode={isEditModeActive}
                 />
               ))}
             </div>
+
+            {isEditModeActive && unlistedApps && unlistedApps.length > 0 && (
+              <>
+                <div className="border-t mt-8 pt-6">
+                  <h2 className="text-lg font-medium">
+                    Unlisted Apps (Admin Only)
+                    <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
+                      {
+                        unlistedApps.filter(
+                          (app) =>
+                            !unlistedSearchTerm ||
+                            app.name
+                              .toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()) ||
+                            app.friendlyName
+                              ?.toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()) ||
+                            app.description
+                              ?.toLowerCase()
+                              .includes(unlistedSearchTerm.toLowerCase()),
+                        ).length
+                      }
+                    </span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-2 mb-4">
+                    These apps are hidden from regular users
+                  </p>
+                  <Input
+                    placeholder="Search unlisted apps..."
+                    value={unlistedSearchTerm}
+                    onChange={(e) => setUnlistedSearchTerm(e.target.value)}
+                    className="mb-4"
+                  />
+                </div>
+                <div className="bg-muted/30 p-4 rounded-xl border border-dashed">
+                  <div className="grid grid-cols-3 gap-4">
+                    {unlistedApps
+                      .filter(
+                        (app) =>
+                          !unlistedSearchTerm ||
+                          app.name
+                            .toLowerCase()
+                            .includes(unlistedSearchTerm.toLowerCase()) ||
+                          app.friendlyName
+                            ?.toLowerCase()
+                            .includes(unlistedSearchTerm.toLowerCase()) ||
+                          app.description
+                            ?.toLowerCase()
+                            .includes(unlistedSearchTerm.toLowerCase()),
+                      )
+                      .map((app) => (
+                        <div key={app.id} className="opacity-60">
+                          <div
+                            onClick={() => {
+                              if (onAppClick) {
+                                onAppClick(
+                                  AppKeys.build(
+                                    getConnectionAppKey(
+                                      app as unknown as FeaturedIntegration,
+                                    ),
+                                  ),
+                                );
+                              }
+                            }}
+                            className="flex flex-col h-full bg-card relative rounded-xl cursor-pointer overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-2 p-4 flex-1">
+                              <div className="flex items-center gap-2">
+                                <IntegrationAvatar
+                                  url={app.icon}
+                                  fallback={app.friendlyName ?? app.name}
+                                  size="lg"
+                                />
+                              </div>
+                              <h3 className="text-sm flex gap-1 items-center">
+                                {app.friendlyName || app.name}
+                                {app.verified && <VerifiedBadge />}
+                              </h3>
+                              <p className="text-sm text-muted-foreground flex-1">
+                                {app.description}
+                              </p>
+                            </div>
+
+                            {isEditModeActive && (
+                              <div className="absolute top-2 right-2">
+                                <AdminCardActions
+                                  app={app as unknown as Integration}
+                                  editOnly
+                                />
+                              </div>
+                            )}
+
+                            {isEditModeActive && (
+                              <div className="border-t p-2">
+                                <AdminCardActions
+                                  app={app as unknown as Integration}
+                                  visibilityOnly
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

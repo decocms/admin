@@ -353,6 +353,8 @@ export const KEYS = {
   OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
   WALLET_SIMPLE: () => ["wallet"],
   GITHUB_STARS: () => ["github-stars"],
+  ADMIN_CHECK: (email?: string) => ["admin-check", email],
+  UNLISTED_APPS: () => ["unlisted-apps"],
 };
 
 /**

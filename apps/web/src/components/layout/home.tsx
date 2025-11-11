@@ -4,6 +4,7 @@ import {
   useOrganizations,
 } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useEffect } from "react";
 import { Outlet, useSearchParams } from "react-router";
 import { OnboardingDialog } from "../onboarding/onboarding-dialog";
 import { Topbar } from "./topbar";
@@ -30,7 +31,6 @@ export function TopbarLayout({
 
 function HomeLayoutContent() {
   const [searchParams] = useSearchParams();
-  const initialInput = searchParams.get("initialInput");
 
   // Fetch both data sources
   const teams = useOrganizations({});
@@ -39,28 +39,26 @@ function HomeLayoutContent() {
   // Wait for ALL data to load before deciding what to show
   const isLoading = !teams.data || onboardingStatus.isLoading;
 
-  // Show single loading spinner while gathering all data
-  if (isLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
-
-  // Data is loaded - compute state
-  const hasOrgs = teams.data.length > 0;
+  const hasOrgs = teams.data && teams.data.length > 0;
   const hasCompletedOnboarding = !!onboardingStatus.data?.completed;
+  const shouldShowOnboarding = !hasOrgs; // Show if user has no orgs
 
-  // Determine if onboarding dialog should be shown
-  const shouldShowOnboarding = initialInput
-    ? !hasOrgs // Show if user has initialInput but no orgs
-    : !hasOrgs; // Show if user has no orgs
+  // Redirect to org selector when user has orgs
+  useEffect(() => {
+    if (isLoading || !hasOrgs || !hasCompletedOnboarding) {
+      return;
+    }
 
-  // If user has initialInput and orgs, redirect to org selector
-  if (initialInput && hasOrgs) {
     const params = new URLSearchParams(searchParams);
-    location.href = `/onboarding/select-org?${params.toString()}`;
+    const url = new URL("/onboarding/select-org", globalThis.location.origin);
+    params.forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
+    location.href = url.href;
+  }, [isLoading, hasOrgs, hasCompletedOnboarding, searchParams]);
+
+  // Show single loading spinner while gathering all data or while redirect effect runs
+  if (isLoading || hasOrgs) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <Spinner />

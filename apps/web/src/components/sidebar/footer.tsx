@@ -58,6 +58,7 @@ import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
 import { PlanIcons } from "../../utils/plan-icons.tsx";
+import { AccountSwitcher } from "./account-switcher.tsx";
 
 /** Wrapped component to be suspended */
 function NotificationDot({ className }: { className?: string }) {
@@ -353,6 +354,8 @@ export function LoggedUser({
             />
           </a>
         </ResponsiveDropdownItem>
+
+        <AccountSwitcher />
 
         <ResponsiveDropdownSeparator />
 

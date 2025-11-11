@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useRef, useEffect } from "react";
 
 function safeParse<T>(value: string): T | undefined {
   try {
@@ -42,9 +42,17 @@ function initializeFromStorage<T>(
 function useLocalStorage<T>(
   key: string,
   initializer: T | ((existing: T | undefined) => T),
-): [T, (value: T) => void] {
+): [T, (value: T | ((prev: T) => T)) => void] {
   const queryClientInstance = useQueryClient();
   const queryKey = ["localStorage", key] as const;
+  const queryClientRef = useRef(queryClientInstance);
+  const queryKeyRef = useRef(queryKey);
+
+  // Keep refs up to date
+  useEffect(() => {
+    queryClientRef.current = queryClientInstance;
+    queryKeyRef.current = queryKey;
+  }, [queryClientInstance, queryKey]);
 
   // Use TanStack Query to read from localStorage
   const { data: value } = useQuery({
@@ -64,14 +72,26 @@ function useLocalStorage<T>(
     },
     onSuccess: (newValue) => {
       // Update the query cache optimistically
-      queryClientInstance.setQueryData(queryKey, newValue);
+      queryClientRef.current.setQueryData(queryKeyRef.current, newValue);
     },
   });
 
+  const mutateRef = useRef(mutation.mutate);
+  useEffect(() => {
+    mutateRef.current = mutation.mutate;
+  }, [mutation.mutate]);
+
   // Setter that updates localStorage via mutation
   const setLocalStorageValue = useCallback(
-    (newValue: T) => mutation.mutate(newValue),
-    [mutation],
+    (newValue: T | ((prev: T) => T)) => {
+      const currentValue = queryClientRef.current.getQueryData<T>(queryKeyRef.current);
+      const nextValue =
+        typeof newValue === "function"
+          ? (newValue as (prev: T) => T)(currentValue as T)
+          : newValue;
+      mutateRef.current(nextValue);
+    },
+    [],
   );
 
   // Return the value from query (guaranteed to be T due to initialData)

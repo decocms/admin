@@ -24,7 +24,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCopy } from "../../hooks/use-copy.ts";
 import {
   truncateHash,
@@ -37,6 +37,10 @@ import {
   getStatusStyles,
   parseToolName,
 } from "../../utils/tool-namespace.ts";
+import {
+  extractResourceUri,
+  openResourceTab,
+} from "../../utils/resource-tabs.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { JsonViewer } from "./json-viewer.tsx";
 import {
@@ -740,44 +744,46 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   // Canvas tabs management
   const { tabs, addTab, setActiveTab } = useThread();
 
+  // Track if we've already opened the tab for this tool call
+  const hasOpenedTabRef = useRef(false);
+
   // Check if resource URI exists in output (for resource operations)
   const resourceUri = useMemo(() => {
-    // Try to get URI from input first
-    if (uri) return uri;
+    // Extract URI using shared utility (handles both CALL_TOOL and direct resource tools)
+    const toolInput = part.input as
+      | {
+          id?: string;
+          params?: {
+            name?: string;
+            arguments?: Record<string, unknown>;
+          };
+        }
+      | undefined;
+    const toolOutput =
+      part.state === "output-available"
+        ? (part.output as { structuredContent?: { uri?: string } } | undefined)
+        : undefined;
 
-    // For CREATE operations, check output
-    if (part.state === "output-available" && part.output) {
-      const output = part.output as {
-        structuredContent?: { uri?: string };
-      };
-      return output?.structuredContent?.uri ?? null;
+    return extractResourceUri("CALL_TOOL", toolInput, toolOutput);
+  }, [part.input, part.state, part.output]);
+
+  // Automatically open/activate tab when resource URI becomes available (once)
+  useEffect(() => {
+    if (
+      resourceUri &&
+      part.state === "output-available" &&
+      !hasOpenedTabRef.current
+    ) {
+      hasOpenedTabRef.current = true;
+      openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
     }
-
-    return null;
-  }, [uri, part.state, part.output]);
-
-  // Find if this resource is already in tabs
-  const existingTab = useMemo(() => {
-    if (!resourceUri) return null;
-    return tabs.find(
-      (tab) => tab.type === "detail" && tab.resourceUri === resourceUri,
-    );
-  }, [tabs, resourceUri]);
+  }, [resourceUri, part.state, tabs, integrations, addTab, setActiveTab]);
 
   // Handle opening resource in tab or toggling expansion
   const handleClick = useCallback(() => {
     if (resourceUri) {
-      // Open in tab if resource URI exists
-      if (existingTab) {
-        setActiveTab(existingTab.id);
-      } else {
-        addTab({
-          type: "detail",
-          resourceUri: resourceUri,
-          title: resourceUri.split("/").pop() || "Resource",
-          icon: integration?.icon,
-        });
-      }
+      // Open in tab if resource URI exists (using shared utility)
+      openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
     } else {
       // Toggle expansion if no resource URI
       setIsExpanded((prev) => {
@@ -793,7 +799,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
         return newState;
       });
     }
-  }, [resourceUri, existingTab, setActiveTab, addTab, integration?.icon]);
+  }, [resourceUri, tabs, integrations, addTab, setActiveTab]);
 
   const copyButton = part.input ? (
     <TooltipProvider>

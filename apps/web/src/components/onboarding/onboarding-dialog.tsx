@@ -129,8 +129,13 @@ export function OnboardingDialog({
   const bgImage =
     "url('https://assets.decocache.com/decocms/cbef38cc-a1fe-4616-bbb6-e928bfe334ef/capybara.png')";
 
-  // Org creation/join logic
-  async function createOrJoinOrg() {
+  // Org creation/join logic (guarded)
+  async function createOrJoinOrg(options?: { force?: boolean }) {
+    // Guard: only auto-create when onboarding is completed,
+    // unless explicitly forced after submitting the questionnaire.
+    if (!hasCompletedOnboarding && !options?.force) {
+      return;
+    }
     const userEmail = user?.email || "";
     const domain = extractDomain(userEmail);
     const isWellKnownDomain = WELL_KNOWN_EMAIL_DOMAINS.has(domain);
@@ -225,7 +230,7 @@ export function OnboardingDialog({
       use_case: data.useCase,
     });
 
-    await createOrJoinOrg();
+    await createOrJoinOrg({ force: true });
   }
 
   // Auto-create org if user has already completed onboarding

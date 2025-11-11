@@ -442,8 +442,6 @@ export const createTeam = createTool({
     const { name, slug, avatar_url, domain } = props;
     const user = c.user;
 
-    console.log("[TEAMS_CREATE] Creating team:", { name, slug, domain });
-
     // Enforce unique slug if provided
     if (slug) {
       const { data: existingTeam, error: slugError } = await c.db
@@ -484,7 +482,7 @@ export const createTeam = createTool({
 
     if (createError) throw createError;
 
-    console.log("[TEAMS_CREATE] Team created successfully:", team.id);
+    /**/
 
     // Add the creator as an admin member
     const { data: member, error: memberError } = await c.db

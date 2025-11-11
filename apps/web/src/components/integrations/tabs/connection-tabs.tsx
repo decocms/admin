@@ -500,12 +500,15 @@ function ViewsList({ integration }: { integration: Integration }) {
 
   const handleViewClick = (view: (typeof views)[0]) => {
     // Open legacy view in a new canvas tab
+    // Use rules directly from the connection view (from integration)
     const viewId = `${integration.id}/${view.name ?? "index"}`;
     const newTab = createTab({
       type: "detail",
       resourceUri: `legacy-view://${viewId}`,
       title: view.title || "Untitled",
       icon: view.icon?.toLowerCase() || "layers",
+      rules: view.rules,
+      integrationId: integration.id,
     });
 
     if (!newTab) {

@@ -9,17 +9,17 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useDeferredValue, useMemo, useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
-import { Table, TableColumn } from "../common/table/index.tsx";
-import { useCurrentTeam } from "../sidebar/team-selector";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { ResourceHeader } from "../resources-v2/resource-header.tsx";
-import { useThread } from "../decopilot/thread-provider.tsx";
 import { useParams, useSearchParams } from "react-router";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
+import { EmptyState } from "../common/empty-state.tsx";
+import { Table, TableColumn } from "../common/table/index.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
+import { ResourceHeader } from "../resources-v2/resource-header.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector";
 
 export interface ViewWithStatus {
   isAdded: boolean;
@@ -34,6 +34,7 @@ export interface ViewWithStatus {
     icon?: string;
     description?: string;
   };
+  rules?: string[];
 }
 
 function TableView({

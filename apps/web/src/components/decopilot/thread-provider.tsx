@@ -30,6 +30,8 @@ export interface CanvasTab {
   resourceUri: string; // Required: uniquely identifies the tab
   title: string;
   icon?: string;
+  rules?: string[]; // View-specific rules to include in AI context
+  integrationId?: string; // Integration ID for views with rules
 }
 
 /**
@@ -274,22 +276,31 @@ function computeRulesFromTabs(
   }
 
   const rules: RuleContextItem[] = [];
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const integrationIds = new Set<string>();
+  const allIntegrationIds = new Set<string>();
 
-  // Collect all resource URIs and integration IDs
+  // Collect all resource URIs and integration IDs from all tabs
   const resourceUris: string[] = [];
-  const activeResourceUri = activeTab?.resourceUri;
-  let activeListingInfo: string | null = null;
+  let activeTab: CanvasTab | undefined;
 
+  // Collect rules from tabs with their integration IDs
+  const activeTabRules: string[] = [];
+  const otherTabRules: string[] = [];
+  const otherViewIntegrationIds = new Set<string>();
+
+  // Single pass through all tabs to collect all needed information
   for (const tab of tabs) {
+    // Find the active tab during the loop
+    if (tab.id === activeTabId) {
+      activeTab = tab;
+    }
+    // Collect integration IDs directly from tabs (includes views and resources)
+    if (tab.integrationId) {
+      allIntegrationIds.add(tab.integrationId);
+    }
+
     // Collect resource URIs for rsc:// tabs
     if (tab.resourceUri.startsWith("rsc://")) {
       resourceUris.push(tab.resourceUri);
-      const parsed = parseResourceUri(tab.resourceUri);
-      if (parsed.integrationId) {
-        integrationIds.add(parsed.integrationId);
-      }
     }
 
     // Collect integration IDs for native:// list tabs
@@ -297,49 +308,115 @@ function computeRulesFromTabs(
       const nativeView = tab.resourceUri.replace("native://", "");
       const mapping = NATIVE_VIEW_MAPPING[nativeView];
       if (mapping) {
-        integrationIds.add(mapping.integrationId);
+        allIntegrationIds.add(mapping.integrationId);
+      }
+    }
 
-        // Track active listing info
-        if (tab.id === activeTabId) {
-          const page = 1;
-          activeListingInfo = `Currently listing ${mapping.resourceName} from ${mapping.integrationId} (page ${page})`;
+    // Collect rules from tabs with their integration IDs
+    if (tab.rules && tab.rules.length > 0) {
+      if (tab.id === activeTabId) {
+        activeTabRules.push(...tab.rules);
+      } else {
+        otherTabRules.push(...tab.rules);
+        if (tab.integrationId) {
+          otherViewIntegrationIds.add(tab.integrationId);
         }
       }
     }
   }
 
-  // Build the single consolidated rule
-  const parts: string[] = [];
+  // RULE 1: Current viewing tab (resource ID + integration ID)
+  const currentTabParts: string[] = [];
 
-  // Add active context first
-  if (activeListingInfo) {
-    parts.push(activeListingInfo);
-  } else if (activeResourceUri && activeResourceUri.startsWith("rsc://")) {
-    parts.push(`Currently viewing: ${activeResourceUri}`);
-  }
-
-  // Add other open resources
-  if (resourceUris.length > 0) {
-    const otherResources = activeResourceUri
-      ? resourceUris.filter((uri) => uri !== activeResourceUri)
-      : resourceUris;
-
-    if (otherResources.length > 0) {
-      parts.push(`Other open resources: ${otherResources.join(", ")}`);
+  if (activeTab) {
+    // Check if this is a native list tab
+    if (
+      activeTab.type === "list" &&
+      activeTab.resourceUri.startsWith("native://")
+    ) {
+      const nativeView = activeTab.resourceUri.replace("native://", "");
+      const mapping = NATIVE_VIEW_MAPPING[nativeView];
+      if (mapping) {
+        const page = 1;
+        currentTabParts.push(
+          `Currently listing ${mapping.resourceName} from ${mapping.integrationId} (page ${page})`,
+        );
+      }
+    } else if (activeTab.resourceUri.startsWith("rsc://")) {
+      // Resource tab
+      if (activeTab.integrationId) {
+        currentTabParts.push(
+          `Currently viewing: ${activeTab.resourceUri} (Integration: ${activeTab.integrationId})`,
+        );
+      } else {
+        currentTabParts.push(`Currently viewing: ${activeTab.resourceUri}`);
+      }
+    } else if (activeTab.integrationId) {
+      // For non-resource tabs (like legacy views), include basic info
+      currentTabParts.push(
+        `Currently viewing: ${activeTab.title} (Integration: ${activeTab.integrationId})`,
+      );
     }
   }
 
-  // Add integration IDs
-  if (integrationIds.size > 0) {
-    parts.push(`Integration IDs: ${Array.from(integrationIds).join(", ")}`);
+  if (currentTabParts.length > 0) {
+    rules.push({
+      id: `${COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT}:current`,
+      type: "rule",
+      text: currentTabParts.join(". "),
+    });
   }
 
-  // Create the single rule if we have any context
-  if (parts.length > 0) {
+  // RULE 2: Other open tabs/resources
+  const otherTabsParts: string[] = [];
+
+  if (resourceUris.length > 0) {
+    const otherResources = activeTab
+      ? resourceUris.filter((uri) => uri !== activeTab.resourceUri)
+      : resourceUris;
+
+    if (otherResources.length > 0) {
+      otherTabsParts.push(`Other open resources: ${otherResources.join(", ")}`);
+    }
+  }
+
+  if (allIntegrationIds.size > 0) {
+    otherTabsParts.push(
+      `Open integrations: ${Array.from(allIntegrationIds).join(", ")}`,
+    );
+  }
+
+  if (otherTabsParts.length > 0) {
     rules.push({
-      id: COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT,
+      id: `${COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT}:other`,
       type: "rule",
-      text: parts.join(". "),
+      text: otherTabsParts.join(". "),
+    });
+  }
+
+  // RULE 3: Additional context from views (rules from active and other view tabs)
+  const viewContextParts: string[] = [];
+
+  if (activeTabRules.length > 0) {
+    const activeViewContext = activeTab?.integrationId
+      ? `Active view context (${activeTab.integrationId}): ${activeTabRules.join(" ")}`
+      : `Active view context: ${activeTabRules.join(" ")}`;
+    viewContextParts.push(activeViewContext);
+  }
+
+  if (otherTabRules.length > 0) {
+    const otherViewContext =
+      otherViewIntegrationIds.size > 0
+        ? `Additional view context (${Array.from(otherViewIntegrationIds).join(", ")}): ${otherTabRules.join(" ")}`
+        : `Additional view context: ${otherTabRules.join(" ")}`;
+    viewContextParts.push(otherViewContext);
+  }
+
+  if (viewContextParts.length > 0) {
+    rules.push({
+      id: `${COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT}:views`,
+      type: "rule",
+      text: viewContextParts.join(". "),
     });
   }
 
@@ -448,7 +525,10 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
   const removeContextItem = useCallback(
     (id: string) => {
       // Prevent removal of computed rules (they're derived from tabs)
-      if (id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT) {
+      if (
+        id === COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT ||
+        id.startsWith(`${COMPUTED_RULE_IDS.OPEN_TABS_CONTEXT}:`)
+      ) {
         return;
       }
 

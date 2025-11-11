@@ -312,6 +312,8 @@ function ViewsList({ integration }: { integration: Integration }) {
             title: view.title,
             icon: view.icon,
             url: view.url,
+            rules: view.rules,
+            tools: view.tools,
           },
           integrationId: integration.id,
         }),

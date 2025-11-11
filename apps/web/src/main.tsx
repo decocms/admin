@@ -188,6 +188,12 @@ const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
 );
 
+const OAuthSuccess = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/integrations/oauth-success.tsx"),
+  ),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -378,6 +384,11 @@ const router = createBrowserRouter([
         Component: ProjectLayout,
         children: [
           { index: true, Component: ProjectHome, handle: { title: "Home" } },
+          {
+            path: "apps/success",
+            Component: OAuthSuccess,
+            handle: { title: "Connecting..." },
+          },
           { path: "*", Component: ProjectHome, handle: { title: "Home" } },
         ],
       },

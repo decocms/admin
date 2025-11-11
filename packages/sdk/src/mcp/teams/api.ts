@@ -1,12 +1,22 @@
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import JSZip from "jszip";
 import { z } from "zod";
+import { RoleUpdateAction } from "../../auth/policy.ts";
+import { WebCache } from "../../cache/index.ts";
+import { TeamWithViews } from "../../crud/teams.ts";
 import {
   ForbiddenError,
   InternalServerError,
   NotFoundError,
+  UnauthorizedError,
   UserInputError,
 } from "../../errors.ts";
+import { NEW_AGENT_TEMPLATE } from "../../index.ts";
+import { Statement } from "../../models/index.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
+import { isRequired } from "../../utils/fns.ts";
+import { type View } from "../../views.ts";
 import {
   assertHasWorkspace,
   assertPrincipalIsUser,
@@ -17,57 +27,48 @@ import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "../fs/api.ts";
-import { createTool } from "../members/api.ts";
-import { mergeThemes } from "./merge-theme.ts";
-import { getWalletClient } from "../wallet/api.ts";
-import { getTeamBySlug } from "../members/invites-utils.ts";
-import {
-  isValidMonth,
-  isValidYear,
-  WellKnownTransactions,
-} from "../wallet/well-known.ts";
-import { MicroDollar, type Transaction } from "../wallet/index.ts";
-import { WebCache } from "../../cache/index.ts";
-import { TeamWithViews } from "../../crud/teams.ts";
-import { type View } from "../../views.ts";
-import { RoleUpdateAction } from "../../auth/policy.ts";
-import { Statement } from "../../models/index.ts";
-import { isRequired } from "../../utils/fns.ts";
-import { parseId } from "../integrations/api.ts";
-import { eq, inArray, and, isNull } from "drizzle-orm";
-import {
-  members as membersTable,
-  memberRoles as memberRolesTable,
-  organizations,
-  projects,
-  agents as agentsTable,
-} from "../schema.ts";
-import { enhancedThemeSchema } from "../theme/api.ts";
 import {
   createDeconfigClientForContext,
   MCPClient,
   withProject,
 } from "../index.ts";
-import { NEW_AGENT_TEMPLATE } from "../../index.ts";
-import JSZip from "jszip";
+import { parseId } from "../integrations/api.ts";
+import { createTool } from "../members/api.ts";
+import { getTeamBySlug } from "../members/invites-utils.ts";
 import {
-  parseGithubUrl,
+  agents as agentsTable,
+  memberRoles as memberRolesTable,
+  members as membersTable,
+  organizations,
+  projects,
+} from "../schema.ts";
+import { enhancedThemeSchema } from "../theme/api.ts";
+import { getWalletClient } from "../wallet/api.ts";
+import { MicroDollar, type Transaction } from "../wallet/index.ts";
+import {
+  isValidMonth,
+  isValidYear,
+  WellKnownTransactions,
+} from "../wallet/well-known.ts";
+import {
+  buildManifest,
+  exportAgent,
+  exportDatabaseTable,
+  generateZip,
+  prepareFileForZip,
+  processDatabaseSchema,
+  processFileContent,
+} from "./export-project.ts";
+import {
   downloadGithubRepo,
   extractZipFiles,
+  parseAgentFile,
+  parseDatabaseSchema,
+  parseGithubUrl,
   parseManifestFromFiles,
   prepareFileForUpload,
-  parseDatabaseSchema,
-  parseAgentFile,
 } from "./import-project.ts";
-import {
-  processFileContent,
-  prepareFileForZip,
-  exportAgent,
-  processDatabaseSchema,
-  exportDatabaseTable,
-  buildManifest,
-  generateZip,
-} from "./export-project.ts";
+import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -1994,7 +1995,7 @@ export const deleteProject = createTool({
   ),
   handler: async (props, c) => {
     if (typeof c.user.id !== "string") {
-      throw new NotFoundError("User not found");
+      throw new UnauthorizedError("User not found");
     }
 
     const { projectId } = props;

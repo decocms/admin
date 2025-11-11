@@ -69,7 +69,7 @@ export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "user"> | Pick<WithUser<TContext>, "user">,
 ): asserts c is WithUser<TContext> {
   if (!c.user || typeof c.user.id !== "string") {
-    throw new NotFoundError("User not found");
+    throw new UnauthorizedError("User not found");
   }
 }
 

@@ -930,7 +930,7 @@ export default function AppDetail() {
     }
 
     const connectionId = `i:${installId}`;
-    
+
     // Check if this installId matches any connection in the current app
     const existingIntegration = data.instances.find(
       (integration) => integration.id === connectionId,

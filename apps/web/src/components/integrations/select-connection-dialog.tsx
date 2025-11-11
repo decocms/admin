@@ -276,7 +276,7 @@ export const useUIInstallIntegration = ({
           authorizeOauthUrl: null,
         });
       } else if (!result.stateSchema) {
-        // No navigation needed - install-success page will handle opening the app in a tab
+        // No navigation needed - app-detail will handle OAuth callback with URL params
       }
     } catch (error) {
       trackEvent("integration_install", {

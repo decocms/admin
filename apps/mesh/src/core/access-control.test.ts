@@ -286,10 +286,10 @@ describe("AccessControl", () => {
   describe("Better Auth integration", () => {
     it("should use Better Auth API when available", async () => {
       const mockAuth = createMockAuth();
-      vi.mocked(mockAuth.api.userHasPermission).mockResolvedValue({
+      vi.spyOn(mockAuth.api, "userHasPermission").mockResolvedValue({
         error: null,
         success: true,
-      });
+      } as never);
 
       const ac = new AccessControl(mockAuth, "user_1", "TEST_TOOL", {}, "user");
 
@@ -306,7 +306,7 @@ describe("AccessControl", () => {
 
     it("should fall back to manual check when Better Auth fails", async () => {
       const mockAuth = createMockAuth();
-      vi.mocked(mockAuth.api.userHasPermission).mockRejectedValue(
+      vi.spyOn(mockAuth.api, "userHasPermission").mockRejectedValue(
         new Error("API error"),
       );
 

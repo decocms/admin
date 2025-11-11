@@ -223,14 +223,19 @@ export function OnboardingDialog({
 
   // Form submission handler
   async function onSubmit(data: FormData) {
-    // Save answers then create org
-    await saveAnswers.mutateAsync({
-      role: data.role,
-      company_size: data.companySize,
-      use_case: data.useCase,
-    });
-
-    await createOrJoinOrg({ force: true });
+    // Guard against duplicate auto-create effect
+    isAutoCreatingRef.current = true;
+    try {
+      // Save answers then create org
+      await saveAnswers.mutateAsync({
+        role: data.role,
+        company_size: data.companySize,
+        use_case: data.useCase,
+      });
+      await createOrJoinOrg({ force: true });
+    } finally {
+      isAutoCreatingRef.current = false;
+    }
   }
 
   // Auto-create org if user has already completed onboarding

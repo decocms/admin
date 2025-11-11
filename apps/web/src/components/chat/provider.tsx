@@ -715,50 +715,12 @@ export function AgenticChatProvider({
           threadId,
         };
 
-        // Track unique resource URIs to open in tabs
-        const resourcesToOpen = new Set<string>();
-
         for (const part of result.message.parts) {
           const info = normalizeToolPart(part);
           if (!info.isTool) continue;
           if (info.state !== "output-available" || !info.toolName) continue;
           handleReadCheckpointFromPart(info, toolDeps);
           handleUpdateOrCreateFromPart(info, toolDeps);
-
-          // Extract resource URI from CALL_TOOL parts
-          if (info.toolName === "CALL_TOOL" && info.args) {
-            // The args from CALL_TOOL are the input to the called tool
-            const callToolArgs = info.args as
-              | {
-                  id?: string;
-                  params?: {
-                    name?: string;
-                    arguments?: Record<string, unknown>;
-                  };
-                }
-              | undefined;
-
-            // Try to get URI from the nested tool arguments
-            const nestedArgs = callToolArgs?.params?.arguments;
-            let resourceUri: string | null = null;
-
-            if (nestedArgs && typeof nestedArgs === "object") {
-              const maybeUri =
-                (nestedArgs as { uri?: unknown; resource?: unknown }).uri ??
-                (nestedArgs as { resource?: unknown }).resource;
-              resourceUri = typeof maybeUri === "string" ? maybeUri : null;
-            }
-
-            // For CREATE operations, check output
-            if (!resourceUri && info.output?.structuredContent?.uri) {
-              resourceUri = info.output.structuredContent.uri;
-            }
-
-            // Add to set if found
-            if (resourceUri) {
-              resourcesToOpen.add(resourceUri);
-            }
-          }
         }
       }
     },
@@ -806,10 +768,6 @@ export function AgenticChatProvider({
         // Dispatch event for immediate UI update (same as save button)
         window.dispatchEvent(new CustomEvent("theme-updated"));
       }
-
-      // Screenshot tooling removed
-
-      // Resource update handling moved to onFinish
     },
   });
 

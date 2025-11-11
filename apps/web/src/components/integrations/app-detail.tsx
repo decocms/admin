@@ -48,7 +48,7 @@ import {
 } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
-import { trackEvent, trackException } from "../../hooks/analytics.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useRouteParams } from "../canvas/route-params-provider.tsx";
 import {
   integrationNeedsApproval,
@@ -865,7 +865,7 @@ export default function AppDetail() {
 
   // Update tab title and icon when app data loads
   const { tabs, activeTabId, addTab } = useThread();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const urlActiveTabId = searchParams.get("activeTab");
   const currentTabId = urlActiveTabId || activeTabId;
 
@@ -895,81 +895,6 @@ export default function AppDetail() {
       });
     }
   }, [data.info, appKey, currentTabId, tabs, addTab]);
-
-  // Handle OAuth success callback
-  const updateIntegrationMutation = useUpdateIntegration({
-    onError: (error) => {
-      trackException(error, {
-        properties: {
-          installId: searchParams.get("installId"),
-          name: searchParams.get("name"),
-          account: searchParams.get("account"),
-        },
-      });
-    },
-    onSuccess: () => {
-      // Clean up search params after successful update
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("installId");
-      newParams.delete("name");
-      newParams.delete("account");
-      setSearchParams(newParams, { replace: true });
-
-      toast.success("Integration connected successfully!");
-    },
-  });
-
-  useEffect(() => {
-    const installId = searchParams.get("installId");
-    const name = searchParams.get("name");
-    const account = searchParams.get("account");
-
-    // Only proceed if we have the required params and instances data
-    if (!installId || !data.instances || data.instances.length === 0) {
-      return;
-    }
-
-    const connectionId = `i:${installId}`;
-
-    // Check if this installId matches any connection in the current app
-    const existingIntegration = data.instances.find(
-      (integration) => integration.id === connectionId,
-    );
-
-    if (!existingIntegration) {
-      // installId doesn't match any connection in this app, ignore
-      return;
-    }
-
-    // Construct name: use provided name, or combine app name with account if available
-    const newName =
-      name ||
-      (account
-        ? `${existingIntegration.name} | ${account}`
-        : existingIntegration.name);
-
-    // Use account as description if provided, otherwise keep existing
-    const newDescription = account || existingIntegration.description;
-
-    // Set the token to the installId for HTTP connections
-    const updatedIntegration = { ...existingIntegration };
-    if (updatedIntegration.connection.type === "HTTP") {
-      updatedIntegration.connection.token = installId;
-    }
-
-    // Update the integration with the new data
-    updateIntegrationMutation.mutate({
-      ...updatedIntegration,
-      id: connectionId,
-      name: newName,
-      description: newDescription,
-    });
-  }, [
-    searchParams,
-    data.instances,
-    updateIntegrationMutation.mutate,
-    setSearchParams,
-  ]);
 
   return (
     <div className="flex flex-col gap-6 p-6 h-full">

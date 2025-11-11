@@ -276,7 +276,7 @@ export const useUIInstallIntegration = ({
           authorizeOauthUrl: null,
         });
       } else if (!result.stateSchema) {
-        // No navigation needed - app-detail will handle OAuth callback with URL params
+        // No OAuth redirect needed for this integration type
       }
     } catch (error) {
       trackEvent("integration_install", {

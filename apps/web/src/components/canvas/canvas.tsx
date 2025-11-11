@@ -81,7 +81,7 @@ function CanvasTabTrigger({ tab, isActive, onClose }: CanvasTabTriggerProps) {
       <div
         role="button"
         tabIndex={0}
-        className="absolute rounded-full right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center cursor-pointer hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="absolute rounded-full right-1 h-5 w-5 !opacity-0 group-hover:!opacity-100 transition-opacity inline-flex items-center justify-center cursor-pointer hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={onClose}
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => {

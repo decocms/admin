@@ -422,6 +422,8 @@ export const createTeam = createTool({
     z.object({
       name: z.string(),
       slug: z.string(),
+      avatar_url: z.string().optional(),
+      domain: z.string().optional(),
     }),
   ),
 
@@ -436,8 +438,10 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug } = props;
+    const { name, slug, avatar_url, domain } = props;
     const user = c.user;
+
+    console.log("[TEAMS_CREATE] Creating team:", { name, slug, domain });
 
     // Enforce unique slug if provided
     if (slug) {
@@ -452,14 +456,34 @@ export const createTeam = createTool({
       }
     }
 
+    // Validate domain: prevent setting domain for well-known email providers
+    if (domain) {
+      const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
+      if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
+        console.log("[TEAMS_CREATE] Rejecting well-known domain:", domain);
+        throw new UserInputError(
+          "Cannot set domain for well-known email providers (e.g., gmail.com, outlook.com). Only custom company domains are allowed.",
+        );
+      }
+    }
+
     // Create the team
     const { data: team, error: createError } = await c.db
       .from("teams")
-      .insert([{ name: sanitizeTeamName(name), slug }])
+      .insert([
+        {
+          name: sanitizeTeamName(name),
+          slug,
+          avatar_url,
+          domain: domain?.toLowerCase(),
+        },
+      ])
       .select()
       .single();
 
     if (createError) throw createError;
+
+    console.log("[TEAMS_CREATE] Team created successfully:", team.id);
 
     // Add the creator as an admin member
     const { data: member, error: memberError } = await c.db
@@ -2021,5 +2045,136 @@ export const deleteProject = createTool({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * Auto-join a team based on user's email domain
+ */
+export const autoJoinTeam = createTool({
+  name: "TEAM_AUTO_JOIN",
+  description:
+    "Join a team automatically based on email domain. Only works for non-well-known email domains (company domains).",
+  inputSchema: z.lazy(() =>
+    z.object({
+      domain: z
+        .string()
+        .describe("The email domain to match (e.g., 'acme.com')"),
+    }),
+  ),
+  handler: async ({ domain }, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const user = c.user;
+
+    console.log(
+      "[TEAM_AUTO_JOIN] Attempting to join team with domain:",
+      domain,
+    );
+
+    // Validate domain is not well-known
+    const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
+    if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
+      console.log("[TEAM_AUTO_JOIN] Rejected: well-known domain:", domain);
+      throw new UserInputError(
+        "Cannot auto-join teams with well-known email domains (e.g., gmail.com, outlook.com). Auto-join only works for company-specific domains.",
+      );
+    }
+
+    // Find team with matching domain
+    const { data: team, error: teamError } = await c.db
+      .from("teams")
+      .select("id, name, slug, domain")
+      .eq("domain", domain.toLowerCase())
+      .maybeSingle();
+
+    if (teamError) {
+      console.error("[TEAM_AUTO_JOIN] Error finding team:", teamError);
+      throw new InternalServerError(teamError.message);
+    }
+
+    if (!team) {
+      console.log("[TEAM_AUTO_JOIN] No team found with domain:", domain);
+      throw new NotFoundError(
+        `No organization found with domain '${domain}'. The organization may not exist or may not have domain-based auto-join enabled.`,
+      );
+    }
+
+    console.log("[TEAM_AUTO_JOIN] Found team:", team.slug);
+
+    // Check if user is already a member
+    const { data: existingMember, error: memberCheckError } = await c.db
+      .from("members")
+      .select("id")
+      .eq("team_id", team.id)
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (memberCheckError) {
+      console.error(
+        "[TEAM_AUTO_JOIN] Error checking membership:",
+        memberCheckError,
+      );
+      throw new InternalServerError(memberCheckError.message);
+    }
+
+    if (existingMember) {
+      console.log("[TEAM_AUTO_JOIN] User already a member of team");
+      return {
+        success: true,
+        team,
+        alreadyMember: true,
+      };
+    }
+
+    // Add user as non-admin member
+    const { data: member, error: memberError } = await c.db
+      .from("members")
+      .insert([
+        {
+          team_id: team.id,
+          user_id: user.id,
+          admin: false,
+          activity: [
+            {
+              action: "auto_join_by_domain",
+              timestamp: new Date().toISOString(),
+              domain,
+            },
+          ],
+        },
+      ])
+      .select()
+      .single();
+
+    if (memberError) {
+      console.error("[TEAM_AUTO_JOIN] Error adding member:", memberError);
+      throw new InternalServerError(memberError.message);
+    }
+
+    // Assign default member role (not owner)
+    const DEFAULT_MEMBER_ROLE_ID = 2; // Assuming role_id 2 is the default member role
+
+    const { error: roleError } = await c.db.from("member_roles").insert([
+      {
+        member_id: member.id,
+        role_id: DEFAULT_MEMBER_ROLE_ID,
+      },
+    ]);
+
+    if (roleError) {
+      console.error("[TEAM_AUTO_JOIN] Error assigning role:", roleError);
+      // Don't throw - member is already added, role is optional
+    }
+
+    console.log("[TEAM_AUTO_JOIN] Successfully joined team:", team.slug);
+
+    return {
+      success: true,
+      team,
+      alreadyMember: false,
+    };
   },
 });

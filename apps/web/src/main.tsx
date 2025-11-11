@@ -152,6 +152,12 @@ const MagicLinkCallback = lazy(() =>
   ),
 );
 
+const SelectOrgForProject = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/onboarding/select-org-for-project.tsx"),
+  ),
+);
+
 const Members = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/members/index.tsx")),
 );
@@ -366,6 +372,10 @@ const router = createBrowserRouter([
       {
         path: "/login/magiclink/callback",
         Component: MagicLinkCallback,
+      },
+      {
+        path: "/onboarding/select-org",
+        Component: SelectOrgForProject,
       },
       {
         path: "/sales-deck",

@@ -21,6 +21,7 @@ import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as oauthAPI from "./oauth/api.ts";
+import * as onboardingAPI from "./onboarding/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
@@ -87,6 +88,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.getOrgTheme,
   teamsAPI.listProjects,
   teamsAPI.createProject,
+  teamsAPI.autoJoinTeam,
   teamsAPI.importProjectFromGithub,
   teamsAPI.exportProject,
   teamsAPI.updateProject,
@@ -105,6 +107,8 @@ export const GLOBAL_TOOLS = [
   membersAPI.createIssue,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
+  onboardingAPI.saveOnboardingAnswers,
+  onboardingAPI.getOnboardingStatus,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
   registryAPI.getRegistryApp,

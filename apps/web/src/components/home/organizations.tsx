@@ -37,8 +37,11 @@ function OrganizationCard({
   teamId: number;
   badge?: ReactNode;
 }) {
+  const isSelectionMode = Boolean(badge);
   return (
-    <Card className="group transition-all flex flex-col hover:ring-2 hover:ring-primary">
+    <Card
+      className={`group transition-all flex flex-col ${isSelectionMode ? "hover:ring-2 hover:ring-primary" : ""}`}
+    >
       <Link to={url} className="flex flex-col">
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">

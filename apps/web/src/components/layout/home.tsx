@@ -31,6 +31,7 @@ export function TopbarLayout({
 
 function HomeLayoutContent() {
   const [searchParams] = useSearchParams();
+  const initialInput = searchParams.get("initialInput");
 
   // Fetch both data sources
   const teams = useOrganizations({});
@@ -45,7 +46,7 @@ function HomeLayoutContent() {
 
   // Redirect to org selector when user has orgs
   useEffect(() => {
-    if (isLoading || !hasOrgs || !hasCompletedOnboarding) {
+    if (isLoading || !hasOrgs || !hasCompletedOnboarding || !initialInput) {
       return;
     }
 

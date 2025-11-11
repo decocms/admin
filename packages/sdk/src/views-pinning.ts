@@ -5,6 +5,8 @@ export interface IntegrationViewSummary {
   title: string;
   icon: string;
   url?: string;
+  rules?: string[];
+  tools?: string[];
 }
 
 export interface TeamPinnedView {
@@ -44,6 +46,8 @@ export function buildAddViewPayload(args: {
   type: "custom";
   name: string;
   integration: { id: string };
+  rules?: string[];
+  tools?: string[];
 } {
   const { view, integrationId } = args;
   return {
@@ -53,6 +57,8 @@ export function buildAddViewPayload(args: {
     type: "custom" as const,
     name: view.name ?? view.title,
     integration: { id: integrationId },
+    rules: view.rules,
+    tools: view.tools,
   };
 }
 

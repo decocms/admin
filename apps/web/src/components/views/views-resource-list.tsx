@@ -84,13 +84,18 @@ export function ViewsResourceList({
     (item: Record<string, unknown>) => {
       const view =
         (item._view as ViewWithStatus) || (item as unknown as ViewWithStatus);
+
+      // Use rules directly from the view (from integration via useIntegrationViews)
       const viewId = `${view.integration.id}/${view.name ?? "index"}`;
       const newTab = createTab({
         type: "detail",
         resourceUri: `legacy-view://${viewId}`,
         title: view.title || "Untitled",
         icon: view.icon.toLowerCase(),
+        rules: view.rules,
+        integrationId: view.integration.id,
       });
+
       if (!newTab) {
         console.warn("[ViewsListLegacy] No active tab found");
       }

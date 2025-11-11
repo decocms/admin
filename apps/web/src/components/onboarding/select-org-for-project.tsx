@@ -211,7 +211,12 @@ function SelectOrgContent() {
           params.set("autoSend", "true");
         }
 
-        navigate(`/${orgSlug}/${project.slug}?${params.toString()}`);
+        const query = params.toString();
+        const path =
+          query.length > 0
+            ? `/${orgSlug}/${project.slug}?${query}`
+            : `/${orgSlug}/${project.slug}`;
+        navigate(path);
       } catch (error) {
         console.error("Failed to create project:", error);
         if (error instanceof Error) {

@@ -26,7 +26,7 @@ function Login() {
   const buildNextUrl = () => {
     const baseUrl = next || globalThis.location.origin;
     if (initialInput) {
-      const url = new URL(baseUrl);
+      const url = new URL(baseUrl, globalThis.location.origin);
       url.searchParams.set("initialInput", initialInput);
       if (autoSend) {
         url.searchParams.set("autoSend", autoSend);
@@ -54,7 +54,7 @@ function Login() {
 
     const ok = await sendMagicLink.mutateAsync({
       email,
-      cli: searchParams.get("cli") === "true",
+      cli,
     });
 
     if (ok) {

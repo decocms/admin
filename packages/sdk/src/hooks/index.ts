@@ -18,6 +18,7 @@ export * from "./api-keys.ts";
 export * from "./registry.ts";
 export * from "./permissions.ts";
 export * from "./models.ts";
+export * from "./onboarding.ts";
 export * from "./resources-workflow.ts";
 export * from "./resources-tools.ts";
 export * from "./documents.ts";

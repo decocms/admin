@@ -28,11 +28,11 @@ export function SplitScreenLayout({
       <div
         className={`relative w-full h-full border border-white/25 rounded-2xl overflow-hidden shadow-lg z-10 ${hideBackgroundPanel ? "max-w-full md:max-w-[900px]" : "max-w-[1280px]"}`}
       >
-        <div className="flex flex-col md:flex-row h-full">
-          {/* Left panel - window to background (same image, fixed attachment) - Hidden on mobile or when hideBackgroundPanel is true */}
+        <div className="flex flex-col lg:flex-row h-full">
+          {/* Left panel - window to background (same image, fixed attachment) - Hidden on mobile/tablet or when hideBackgroundPanel is true */}
           {!hideBackgroundPanel && (
             <div
-              className="hidden md:block relative md:w-1/2"
+              className="hidden lg:block relative lg:w-1/2"
               style={{
                 backgroundImage: bgImage,
                 backgroundSize: "cover",
@@ -49,9 +49,11 @@ export function SplitScreenLayout({
 
           {/* Right panel - form content */}
           <div
-            className={`w-full h-full bg-background overflow-y-auto ${!hideBackgroundPanel ? "md:w-1/2" : ""}`}
+            className={`w-full h-full bg-background ${!hideBackgroundPanel ? "lg:w-1/2" : ""}`}
           >
-            {children}
+            <div className="flex flex-col h-full px-6 py-8 sm:px-10 sm:py-12 md:px-16 md:py-14 overflow-y-auto gap-12">
+              {children}
+            </div>
           </div>
         </div>
       </div>

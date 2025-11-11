@@ -353,6 +353,8 @@ export const KEYS = {
   OPTIONS_LOADER: (type: string) => ["optionsLoader", type],
   WALLET_SIMPLE: () => ["wallet"],
   GITHUB_STARS: () => ["github-stars"],
+  // Onboarding
+  ONBOARDING_STATUS: () => ["onboarding", "status"],
 };
 
 /**

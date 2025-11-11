@@ -16,11 +16,12 @@ DROP INDEX IF EXISTS idx_deco_chat_customer_workspace;
 
 -- Step 4: Drop the workspace column
 ALTER TABLE public.deco_chat_customer 
-  DROP COLUMN workspace;
+  DROP COLUMN IF EXISTS workspace;
 
 -- Step 5: Update the partial unique index on org_id to a full unique constraint
--- First drop the partial index
-DROP INDEX IF EXISTS deco_chat_customer_org_id_key;
+-- Drop the existing constraint if it exists (this will also drop its underlying index)
+ALTER TABLE public.deco_chat_customer 
+  DROP CONSTRAINT IF EXISTS deco_chat_customer_org_id_key;
 
 -- Then create a full unique constraint since org_id is now NOT NULL
 ALTER TABLE public.deco_chat_customer 

@@ -56,6 +56,21 @@ export type Database = {
           },
         ];
       };
+      admin_email_domains_deco: {
+        Row: {
+          created_at: string;
+          domain: string;
+        };
+        Insert: {
+          created_at?: string;
+          domain: string;
+        };
+        Update: {
+          created_at?: string;
+          domain?: string;
+        };
+        Relationships: [];
+      };
       ai_query_limit: {
         Row: {
           count: number | null;
@@ -1022,6 +1037,47 @@ export type Database = {
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "deco_chat_projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deco_chat_onboarding: {
+        Row: {
+          company_size: string;
+          completed_at: string | null;
+          created_at: string | null;
+          id: number;
+          role: string;
+          updated_at: string | null;
+          use_case: string;
+          user_id: string;
+        };
+        Insert: {
+          company_size: string;
+          completed_at?: string | null;
+          created_at?: string | null;
+          id?: number;
+          role: string;
+          updated_at?: string | null;
+          use_case: string;
+          user_id: string;
+        };
+        Update: {
+          company_size?: string;
+          completed_at?: string | null;
+          created_at?: string | null;
+          id?: number;
+          role?: string;
+          updated_at?: string | null;
+          use_case?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_onboarding_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users_meta_data_view";
             referencedColumns: ["id"];
           },
         ];
@@ -3205,7 +3261,9 @@ export type Database = {
       };
       teams: {
         Row: {
+          avatar_url: string | null;
           created_at: string | null;
+          domain: string | null;
           id: number;
           mfa_required: boolean | null;
           name: string;
@@ -3216,7 +3274,9 @@ export type Database = {
           theme: Json | null;
         };
         Insert: {
+          avatar_url?: string | null;
           created_at?: string | null;
+          domain?: string | null;
           id?: number;
           mfa_required?: boolean | null;
           name: string;
@@ -3227,7 +3287,9 @@ export type Database = {
           theme?: Json | null;
         };
         Update: {
+          avatar_url?: string | null;
           created_at?: string | null;
+          domain?: string | null;
           id?: number;
           mfa_required?: boolean | null;
           name?: string;

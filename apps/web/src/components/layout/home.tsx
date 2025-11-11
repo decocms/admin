@@ -59,7 +59,7 @@ function HomeLayoutContent() {
   }, [isLoading, hasOrgs, hasCompletedOnboarding, searchParams]);
 
   // Show single loading spinner while gathering all data or while redirect effect runs
-  if (isLoading || hasOrgs) {
+  if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <Spinner />

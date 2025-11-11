@@ -104,6 +104,9 @@ export * from "./models/project.ts";
 
 export * from "./errors.ts";
 export * from "./theme.ts";
+export * from "./theme/site-scraper.ts";
+export * from "./theme/color-analysis.ts";
+export * from "./theme/typography-analysis.ts";
 export * from "./utils/index.ts";
 export * from "./utils/workflows.ts";
 export * from "./storage/index.ts";

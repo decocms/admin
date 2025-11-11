@@ -83,6 +83,7 @@ import { loggerMiddleware } from "./middlewares/logger.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { withOAuth } from "./oauth.ts";
 import { handleCodeExchange } from "./oauth/code.ts";
+import { themeScraperApp } from "./theme/theme-scrapper.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
@@ -1079,6 +1080,9 @@ Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
+
+// Theme scraper endpoints
+app.route("/:org/:project/theme/scrape", themeScraperApp);
 
 withOAuth({
   hono: app,

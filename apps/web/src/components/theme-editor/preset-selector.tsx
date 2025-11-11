@@ -1,5 +1,11 @@
+import { useState } from "react";
+import { Download } from "lucide-react";
 import { THEME_PRESETS, type ThemePreset } from "./theme-presets.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useUpdateOrgTheme, type Theme } from "@deco/sdk";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { ImportStylesModal } from "./import-styles-modal.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 interface PresetSelectorProps {
   onSelectPreset: (preset: ThemePreset) => void;
@@ -16,16 +22,17 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
   const vars = preset.theme.variables || {};
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={isSelected}
-      aria-label={`Apply ${preset.name} preset`}
-      className={cn(
-        "cursor-pointer w-[239px] shrink-0 border border-border rounded-md overflow-hidden transition-all hover:border-primary/60 hover:shadow-sm",
-        isSelected && "ring-2 ring-primary ring-offset-2",
-      )}
-    >
+    <div className="relative w-[239px] shrink-0">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={isSelected}
+        aria-label={`Apply ${preset.name} preset`}
+        className={cn(
+          "cursor-pointer w-full border border-border rounded-md overflow-hidden transition-all hover:border-primary/60 hover:shadow-sm",
+          isSelected && "ring-2 ring-primary ring-offset-2",
+        )}
+      >
       {/* Skeleton Preview */}
       <div
         className="h-[205px] relative"
@@ -184,42 +191,47 @@ function PresetCard({ preset, isSelected, onClick }: PresetCardProps) {
         </div>
       </div>
 
-      {/* Footer with color dots and name */}
-      <div
-        className="border-t flex items-center gap-2.5 px-3 py-2"
-        style={{
-          borderColor: vars["--border"],
-        }}
-      >
-        <div className="flex -space-x-1.5">
-          <div
-            className="size-[18px] rounded-full border-2 border-background"
-            style={{
-              backgroundColor: vars["--primary"],
-            }}
-          />
-          <div
-            className="size-[18px] rounded-full border-2 border-background"
-            style={{
-              backgroundColor: vars["--secondary"],
-            }}
-          />
-          <div
-            className="size-[18px] rounded-full border-2 border-background"
-            style={{
-              backgroundColor: vars["--accent"],
-            }}
-          />
-          <div
-            className="size-[18px] rounded-full border-2 border-background"
-            style={{
-              backgroundColor: vars["--border"],
-            }}
-          />
+        {/* Footer with color dots and name */}
+        <div
+          className="border-t flex items-center gap-2.5 px-3 py-2"
+          style={{
+            borderColor: vars["--border"],
+          }}
+        >
+          <div className="flex -space-x-1.5">
+            <div
+              className="size-[18px] rounded-full border-2 border-background"
+              style={{
+                backgroundColor: vars["--primary"],
+              }}
+            />
+            <div
+              className="size-[18px] rounded-full border-2 border-background"
+              style={{
+                backgroundColor: vars["--secondary"],
+              }}
+            />
+            <div
+              className="size-[18px] rounded-full border-2 border-background"
+              style={{
+                backgroundColor: vars["--accent"],
+              }}
+            />
+            <div
+              className="size-[18px] rounded-full border-2 border-background"
+              style={{
+                backgroundColor: vars["--border"],
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <p className="text-base font-normal text-foreground truncate">
+              {preset.name}
+            </p>
+          </div>
         </div>
-        <p className="text-base font-normal text-foreground">{preset.name}</p>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -227,18 +239,62 @@ export function PresetSelector({
   onSelectPreset,
   selectedPresetId,
 }: PresetSelectorProps) {
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const updateThemeMutation = useUpdateOrgTheme();
+
+  const handleImportComplete = async (data: {
+    url: string;
+    theme: Theme;
+  }) => {
+    try {
+      await updateThemeMutation.mutateAsync(data.theme);
+      toast.success("Theme applied successfully!");
+      setImportModalOpen(false);
+    } catch (error) {
+      console.error("Failed to apply theme:", error);
+      toast.error("Failed to apply theme");
+    }
+  };
+
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="flex gap-4 w-fit p-2 max-w-2xl">
-        {THEME_PRESETS.map((preset) => (
-          <PresetCard
-            key={preset.id}
-            preset={preset}
-            isSelected={selectedPresetId === preset.id}
-            onClick={() => onSelectPreset(preset)}
-          />
-        ))}
+    <>
+      <div className="w-full overflow-x-auto">
+        <div className="flex gap-4 w-fit p-2 max-w-2xl">
+          {/* Import button card */}
+          <button
+            type="button"
+            onClick={() => setImportModalOpen(true)}
+            className="cursor-pointer w-[239px] shrink-0 border-2 border-dashed border-border rounded-md overflow-hidden transition-all hover:border-primary hover:bg-accent/50 flex items-center justify-center"
+            style={{ aspectRatio: "239 / 205" }}
+          >
+            <div className="flex flex-col items-center gap-2 p-4 text-center">
+              <Download className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                Import Styles
+              </p>
+              <p className="text-xs text-muted-foreground">
+                From any website
+              </p>
+            </div>
+          </button>
+
+          {/* Built-in presets */}
+          {THEME_PRESETS.map((preset) => (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              isSelected={selectedPresetId === preset.id}
+              onClick={() => onSelectPreset(preset)}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      <ImportStylesModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onImportComplete={handleImportComplete}
+      />
+    </>
   );
 }

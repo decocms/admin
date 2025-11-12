@@ -1,6 +1,7 @@
 import { Locator } from "../locator.ts";
 import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
+import * as agentsV2API from "./agents-v2/api.ts";
 import * as aiAPI from "./ai/api.ts";
 import * as apiKeysAPI from "./api-keys/api.ts";
 import * as channelsAPI from "./channels/api.ts";
@@ -404,6 +405,17 @@ export {
   ViewResourceV2,
   type ViewDataV2,
 } from "./views/api.ts";
+
+export {
+  createAgentResourceV2Implementation,
+  createThreadResourceV2Implementation,
+  createModelResourceV2Implementation,
+  agentsV2CustomTools,
+  getAgentsV2IntegrationId,
+  AgentResourceV2,
+  ThreadResourceV2,
+  ModelResourceV2,
+} from "./agents-v2/api.ts";
 
 // Export Resources 2.0 bindings function
 export { createResourceV2Bindings } from "./resources-v2/bindings.ts";

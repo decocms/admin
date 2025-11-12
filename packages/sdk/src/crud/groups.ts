@@ -2,6 +2,7 @@ export const WellKnownMcpGroups = {
   AI: "ai-generation",
   Agent: "agent-management",
   AgentSetup: "agent-setup",
+  AgentsV2: "agents-management",
   APIKeys: "api-keys-management",
   Channel: "channel-management",
   Contracts: "contracts-management",

@@ -17,11 +17,14 @@ import {
   CallToolMiddleware,
   compose,
   CONTRACTS_TOOLS,
+  createAgentResourceV2Implementation,
   createDeconfigClientForContext,
   createDocumentResourceV2Implementation,
   createDocumentViewsV2,
   createItemSchema,
   createMCPToolsStub,
+  createModelResourceV2Implementation,
+  createThreadResourceV2Implementation,
   createToolResourceV2Implementation,
   createToolViewsV2,
   createViewResourceV2Implementation,
@@ -38,6 +41,7 @@ import {
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
   type IntegrationWithTools,
+  agentsV2CustomTools,
   documentViews as legacyDocumentViews,
   viewViews as legacyViewViews,
   workflowViews as legacyWorkflowViews,
@@ -76,6 +80,7 @@ import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { handleDecopilotStream } from "./decopilot-stream.ts";
+import { handleModelsStream } from "./models-stream.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
@@ -674,6 +679,23 @@ const createContextBasedTools = (ctx: Context) => {
     formatIntegrationId(WellKnownMcpGroups.Views),
   );
 
+  // Create Resources 2.0 agents-v2 implementations
+  const agentsV2IntegrationId = formatIntegrationId(
+    WellKnownMcpGroups.AgentsV2,
+  );
+  const agentResourceV2 = createAgentResourceV2Implementation(
+    client,
+    agentsV2IntegrationId,
+  );
+  const threadResourceV2 = createThreadResourceV2Implementation(
+    client,
+    agentsV2IntegrationId,
+  );
+  const modelResourceV2 = createModelResourceV2Implementation(
+    client,
+    agentsV2IntegrationId,
+  );
+
   const resourcesClient = createMCPToolsStub({
     tools: [
       ...toolResourceV2,
@@ -681,6 +703,9 @@ const createContextBasedTools = (ctx: Context) => {
       ...workflowRunsResourceV2,
       ...documentResourceV2,
       ...viewResourceV2,
+      ...agentResourceV2,
+      ...threadResourceV2,
+      ...modelResourceV2,
     ],
     context: appCtx,
   });
@@ -746,11 +771,19 @@ const createContextBasedTools = (ctx: Context) => {
     ...legacyViewViews, // Add legacy view views
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Views }));
 
+  const agentsV2Tools = [
+    ...agentResourceV2, // Add agents resource v2
+    ...threadResourceV2, // Add threads resource v2
+    ...modelResourceV2, // Add models resource v2
+    ...agentsV2CustomTools, // Add custom tools (APPEND_MESSAGE, STREAM_TEXT, etc.)
+  ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.AgentsV2 }));
+
   return [
     ...workflowTools,
     ...toolsManagementTools,
     ...documentsTools,
     ...viewsTools,
+    ...agentsV2Tools,
   ];
 };
 
@@ -1079,6 +1112,9 @@ Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
+
+// Models V2 streaming endpoint
+app.post("/:org/:project/models/:modelId/stream", handleModelsStream);
 
 withOAuth({
   hono: app,

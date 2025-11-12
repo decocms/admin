@@ -25,6 +25,7 @@ export * from "./crud/workflows.ts";
 export * from "./hooks/react-query-keys.ts";
 
 export * from "./hooks/agent.ts";
+export * from "./hooks/agents-v2.ts";
 export * from "./hooks/api-keys.ts";
 export * from "./hooks/audit.ts";
 export * from "./hooks/fs.ts";
@@ -32,10 +33,12 @@ export * from "./hooks/knowledge.ts";
 export * from "./hooks/mcp.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/models.ts";
+export * from "./hooks/models-v2.ts";
 export * from "./hooks/onboarding.ts";
 export * from "./hooks/prompts.ts";
 export * from "./hooks/registry.ts";
 export * from "./hooks/roles.ts";
+export * from "./hooks/threads-v2.ts";
 export {
   useUpsertWorkflow,
   useStartWorkflow,

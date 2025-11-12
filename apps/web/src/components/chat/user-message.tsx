@@ -94,7 +94,7 @@ export const UserMessage = memo(function UserMessage({
         >
           <div
             className={cn(
-              isLongMessage && !isExpanded && "overflow-hidden relative max-h-[70px]",
+              isLongMessage && !isExpanded && "overflow-hidden relative max-h-[60px]",
             )}
           >
             {message.parts ? (

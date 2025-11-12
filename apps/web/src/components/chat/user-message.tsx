@@ -3,7 +3,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { FileUIPart, ToolUIPart } from "ai";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
@@ -40,6 +40,7 @@ export const UserMessage = memo(function UserMessage({
   onScrollToMessage,
 }: UserMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { handleCopy: copyContent } = useCopy();
 
   const attachments = useMemo(
     () =>
@@ -72,6 +73,18 @@ export const UserMessage = memo(function UserMessage({
     return textContent.length > 100;
   }, [textContent]);
 
+  const handleCopyMessage = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await copyContent(textContent);
+  }, [textContent, copyContent]);
+
+  const hasTextContent = useMemo(() => {
+    return (
+      message.parts?.some((part) => part.type === "text") ||
+      ("content" in message && typeof message.content === "string")
+    );
+  }, [message.parts, message]);
+
   return (
     <div className="w-full group relative">
       <div className="flex flex-col gap-2 min-w-0 items-end ml-auto">
@@ -81,7 +94,7 @@ export const UserMessage = memo(function UserMessage({
         >
           <div
             className={cn(
-              isLongMessage && !isExpanded && "overflow-hidden relative",
+              isLongMessage && !isExpanded && "overflow-hidden relative max-h-[70px]",
             )}
           >
             {message.parts ? (
@@ -164,6 +177,21 @@ export const UserMessage = memo(function UserMessage({
                   />
                 ),
               )}
+            </div>
+          )}
+
+          {hasTextContent && (
+            <div className="mt-2 flex w-full items-center justify-end gap-2 text-xs text-muted-foreground opacity-0 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:pointer-events-auto">
+              <div>
+                <Button
+                  onClick={handleCopyMessage}
+                  variant="ghost"
+                  size="xs"
+                  className="text-muted-foreground hover:text-foreground p-0 h-auto absolute right-2 bottom-2"
+                >
+                  <Icon name="content_copy" className="text-sm" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

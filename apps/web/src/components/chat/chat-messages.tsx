@@ -1,5 +1,5 @@
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { ChatAskAnswerPair } from "./chat-ask-answer-pair.tsx";
 import { ChatError } from "./chat-error.tsx";
@@ -17,7 +17,10 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
     chat: { messages, status },
   } = useAgenticChat();
 
-  const formattedAskAnswerMessages = formatAskAnswerMessages(messages);
+  const formattedAskAnswerMessages = useMemo(
+    () => formatAskAnswerMessages(messages),
+    [messages],
+  );
 
   return (
     <div

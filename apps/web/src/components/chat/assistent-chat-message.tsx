@@ -30,7 +30,6 @@ export function AssistentChatMessage({
   const { chat } = useAgenticChat();
   const { status } = chat;
 
-  // Mostra dots quando é a última mensagem, não há conteúdo ainda, e está streaming/submitted
   const showDots =
     isLastMessage &&
     !message?.parts &&

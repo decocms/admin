@@ -1,19 +1,21 @@
 import { UIMessage } from "@ai-sdk/react";
 
 export function formatAskAnswerMessages(messages: UIMessage[]) {
-  return messages.reduce(
-    (acc, message, index) => {
-      if (message.role === "user") {
-        const nextMessage = messages[index + 1];
+  const pairs: Array<{ user: UIMessage; assistant?: UIMessage }> = [];
 
-        acc.push({
-          user: message,
-          assistant:
-            nextMessage?.role === "assistant" ? nextMessage : undefined,
-        });
-      }
-      return acc;
-    },
-    [] as Array<{ user: UIMessage; assistant?: UIMessage }>,
-  );
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    
+    if (message.role === "user") {
+      const nextMessage = messages[i + 1];
+      
+      pairs.push({
+        user: message,
+        assistant:
+          nextMessage?.role === "assistant" ? nextMessage : undefined,
+      });
+    }
+  }
+
+  return pairs;
 }

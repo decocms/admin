@@ -15,11 +15,7 @@ interface EntityCardContentProps {
   className?: string;
 }
 
-function EntityCardRoot({
-  children,
-  className,
-  onNavigate,
-}: EntityCardProps) {
+function EntityCardRoot({ children, className, onNavigate }: EntityCardProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (onNavigate) {
       onNavigate(e);
@@ -62,9 +58,7 @@ function EntityCardAvatar({
 
 function EntityCardHeader({ children, className }: EntityCardContentProps) {
   return (
-    <div className={cn("p-4 flex flex-col gap-4", className)}>
-      {children}
-    </div>
+    <div className={cn("p-4 flex flex-col gap-4", className)}>{children}</div>
   );
 }
 
@@ -86,7 +80,10 @@ function EntityCardContent({ children, className }: EntityCardContentProps) {
   );
 }
 
-function EntityCardAvatarSection({ children, className }: EntityCardContentProps) {
+function EntityCardAvatarSection({
+  children,
+  className,
+}: EntityCardContentProps) {
   return (
     <div className={cn("flex justify-between items-start", className)}>
       {children}
@@ -151,4 +148,3 @@ export const EntityCard = Object.assign(EntityCardRoot, {
   Badge: EntityCardBadge,
   Skeleton: EntityCardSkeleton,
 });
-

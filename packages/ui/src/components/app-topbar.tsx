@@ -55,4 +55,3 @@ export const AppTopbar = Object.assign(AppTopbarRoot, {
   Right: AppTopbarRight,
   Skeleton: AppTopbarSkeleton,
 });
-

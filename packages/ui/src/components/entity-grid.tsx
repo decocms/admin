@@ -68,4 +68,3 @@ function EntityGridSkeleton({
 export const EntityGrid = Object.assign(EntityGridRoot, {
   Skeleton: EntityGridSkeleton,
 });
-

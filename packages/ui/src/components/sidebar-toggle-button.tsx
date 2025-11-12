@@ -33,4 +33,3 @@ SidebarToggleButton.Skeleton = function SidebarToggleButtonSkeleton() {
     </>
   );
 };
-

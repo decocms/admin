@@ -31,7 +31,12 @@ interface UserMenuSeparatorProps {
   className?: string;
 }
 
-function UserMenuRoot({ user, trigger, align = "start", children }: UserMenuProps) {
+function UserMenuRoot({
+  user,
+  trigger,
+  align = "start",
+  children,
+}: UserMenuProps) {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
@@ -76,9 +81,7 @@ function UserMenuSeparator({ className }: UserMenuSeparatorProps) {
 }
 
 function UserMenuSkeleton() {
-  return (
-    <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-  );
+  return <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />;
 }
 
 export const UserMenu = Object.assign(UserMenuRoot, {
@@ -86,4 +89,3 @@ export const UserMenu = Object.assign(UserMenuRoot, {
   Separator: UserMenuSeparator,
   Skeleton: UserMenuSkeleton,
 });
-

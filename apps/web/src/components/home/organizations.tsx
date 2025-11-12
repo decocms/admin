@@ -48,7 +48,12 @@ function OrganizationCard({
     <EntityCard onNavigate={() => navigate(url)}>
       <EntityCard.Header>
         <EntityCard.AvatarSection>
-          <EntityCard.Avatar url={avatarUrl} fallback={slug} size="lg" objectFit="contain" />
+          <EntityCard.Avatar
+            url={avatarUrl}
+            fallback={slug}
+            size="lg"
+            objectFit="contain"
+          />
           {badge ? (
             <EntityCard.Badge>
               {badge}
@@ -123,7 +128,9 @@ function Organizations({
   );
 }
 
-Organizations.Skeleton = () => <EntityGrid.Skeleton count={8} columns={{ sm: 2, md: 3, lg: 4 }} />;
+Organizations.Skeleton = () => (
+  <EntityGrid.Skeleton count={8} columns={{ sm: 2, md: 3, lg: 4 }} />
+);
 
 Organizations.Error = () => (
   <div className="flex flex-col items-center justify-center mt-64 gap-4 p-8">

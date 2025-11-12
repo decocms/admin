@@ -38,4 +38,3 @@ SidebarFooterShell.Skeleton = function SidebarFooterShellSkeleton() {
     </SidebarFooterInner>
   );
 };
-

@@ -1,12 +1,6 @@
-import {
-  DecoQueryClientProvider,
-  useOnboardingAnswers,
-  useOrganizations,
-} from "@deco/sdk";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useEffect } from "react";
-import { Outlet, useSearchParams } from "react-router";
-import { OnboardingDialog } from "../onboarding/onboarding-dialog";
+import { DecoQueryClientProvider } from "@deco/sdk";
+import { Outlet } from "react-router";
+import { OnboardingStateMachine } from "../onboarding/onboarding-state-machine";
 import { Topbar } from "./topbar";
 
 interface BreadcrumbItem {
@@ -30,41 +24,10 @@ export function TopbarLayout({
 }
 
 function HomeLayoutContent() {
-  const [searchParams] = useSearchParams();
-  const initialInput = searchParams.get("initialInput");
-
-  const teams = useOrganizations({});
-  const onboardingStatus = useOnboardingAnswers();
-
-  const hasOrgs = teams.data.length > 0;
-  const hasCompletedOnboarding = !!onboardingStatus.data?.completed;
-  const shouldShowOnboarding = !hasOrgs;
-  const shouldRedirect = hasOrgs && Boolean(initialInput);
-
-  useEffect(() => {
-    if (!shouldRedirect) return;
-
-    const url = new URL("/onboarding/select-org", globalThis.location.origin);
-    searchParams.forEach((value, key) => url.searchParams.set(key, value));
-    location.href = url.href;
-  }, [shouldRedirect, searchParams]);
-
-  // Brief spinner while redirect effect runs to avoid UI flash
-  if (shouldRedirect) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
-    <>
-      {shouldShowOnboarding && (
-        <OnboardingDialog hasCompletedOnboarding={hasCompletedOnboarding} />
-      )}
+    <OnboardingStateMachine>
       <Outlet />
-    </>
+    </OnboardingStateMachine>
   );
 }
 

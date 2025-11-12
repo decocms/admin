@@ -1,5 +1,5 @@
 import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { Avatar, type AvatarProps } from "@deco/ui/components/avatar.tsx";
 
 export interface AgentAvatarProps extends Omit<AvatarProps, "shape"> {
   /**

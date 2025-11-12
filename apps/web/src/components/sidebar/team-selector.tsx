@@ -14,7 +14,7 @@ import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { CreateOrganizationDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import {

@@ -5,7 +5,8 @@ import {
   useRecentProjects,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
+import { EntityCard } from "@deco/ui/components/entity-card.tsx";
+import { EntityGrid } from "@deco/ui/components/entity-grid.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -15,9 +16,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
-import { Avatar } from "../common/avatar";
 import { timeAgo } from "../../utils/time-ago";
 import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
@@ -42,52 +42,44 @@ function OrganizationCard({
   teamId: number;
   badge?: ReactNode;
 }) {
-  const isSelectionMode = Boolean(badge);
+  const navigate = useNavigate();
+
   return (
-    <Card
-      className={`group transition-all flex flex-col ${isSelectionMode ? "hover:ring-2 hover:ring-primary" : ""}`}
-    >
-      <Link to={url} className="flex flex-col">
-        <div className="p-4 flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <Avatar
-              url={avatarUrl}
-              fallback={slug}
-              size="lg"
-              objectFit="contain"
-            />
-            {badge ? (
-              <div className="flex items-center text-xs text-muted-foreground">
-                {badge}
-                <div className="w-0 overflow-hidden group-hover:w-5 transition-all">
-                  <Icon
-                    name="chevron_right"
-                    size={20}
-                    className="text-muted-foreground"
-                  />
-                </div>
+    <EntityCard onNavigate={() => navigate(url)}>
+      <EntityCard.Header>
+        <EntityCard.AvatarSection>
+          <EntityCard.Avatar url={avatarUrl} fallback={slug} size="lg" objectFit="contain" />
+          {badge ? (
+            <EntityCard.Badge>
+              {badge}
+              <div className="w-0 overflow-hidden group-hover:w-5 transition-all">
+                <Icon
+                  name="chevron_right"
+                  size={20}
+                  className="text-muted-foreground"
+                />
               </div>
-            ) : (
-              <Icon
-                name="chevron_right"
-                size={20}
-                className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-              />
-            )}
-          </div>
-          <div className="flex flex-col gap-[2px]">
-            <h3 className="text-sm text-muted-foreground truncate">/{slug}</h3>
-            <p className="font-medium truncate">{name}</p>
-          </div>
-        </div>
-        <div className="p-4 border-t border-border flex justify-between items-center">
-          <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
-            <OrgAvatars teamId={teamId} />
-            <OrgMemberCount teamId={teamId} />
-          </ErrorBoundary>
-        </div>
-      </Link>
-    </Card>
+            </EntityCard.Badge>
+          ) : (
+            <Icon
+              name="chevron_right"
+              size={20}
+              className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+          )}
+        </EntityCard.AvatarSection>
+        <EntityCard.Content>
+          <EntityCard.Subtitle>/{slug}</EntityCard.Subtitle>
+          <EntityCard.Title>{name}</EntityCard.Title>
+        </EntityCard.Content>
+      </EntityCard.Header>
+      <EntityCard.Footer>
+        <ErrorBoundary fallback={<div className="w-full h-8"></div>}>
+          <OrgAvatars teamId={teamId} />
+          <OrgMemberCount teamId={teamId} />
+        </ErrorBoundary>
+      </EntityCard.Footer>
+    </EntityCard>
   );
 }
 
@@ -105,7 +97,7 @@ function Organizations({
   }
 
   return (
-    <div className="w-full grid grid-cols-2 @min-3xl:grid-cols-3 @min-6xl:grid-cols-4 gap-4">
+    <EntityGrid columns={{ sm: 2, md: 3, lg: 4 }}>
       {teams.data?.map((team) => (
         <OrganizationCard
           key={team.id}
@@ -127,31 +119,11 @@ function Organizations({
           }
         />
       ))}
-    </div>
+    </EntityGrid>
   );
 }
 
-Organizations.Skeleton = () => (
-  <div className="grid grid-cols-2 @min-3xl:grid-cols-3 @min-6xl:grid-cols-4 gap-4">
-    {Array.from({ length: 8 }).map((_, index) => (
-      <div
-        key={index}
-        className="bg-card hover:bg-accent transition-colors flex flex-col rounded-lg animate-pulse"
-      >
-        <div className="p-4 flex flex-col gap-4">
-          <div className="h-12 w-12 bg-card/75 rounded-lg"></div>
-          <div className="h-4 w-32 bg-card/75 rounded-lg"></div>
-          <div className="h-4 w-32 bg-card/75 rounded-lg"></div>
-        </div>
-        <div className="p-4 border-t border-border flex items-center">
-          <div className="h-6 w-6 bg-card/75 rounded-full animate-pulse"></div>
-          <div className="h-6 w-6 bg-card/75 rounded-full animate-pulse -ml-2"></div>
-          <div className="h-6 w-6 bg-card/75 rounded-full animate-pulse -ml-2"></div>
-        </div>
-      </div>
-    ))}
-  </div>
-);
+Organizations.Skeleton = () => <EntityGrid.Skeleton count={8} columns={{ sm: 2, md: 3, lg: 4 }} />;
 
 Organizations.Error = () => (
   <div className="flex flex-col items-center justify-center mt-64 gap-4 p-8">

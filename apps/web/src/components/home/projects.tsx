@@ -44,7 +44,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ErrorBoundary } from "../../error-boundary";
 import { normalizeGithubImportValue } from "../../utils/github-import.ts";
-import { Avatar } from "../common/avatar";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
 import { OrgAvatars, OrgMemberCount } from "./members";

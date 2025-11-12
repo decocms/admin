@@ -362,7 +362,7 @@ function CreateOrg() {
         if (isWellKnownDomain) {
           const username = extractUsername(userEmail) || "user";
           const orgName = `${username} personal`;
-          const baseSlug = `${username}-personal`;
+          const baseSlug = `${nameToSlug(username)}-personal`;
 
           try {
             team = await createTeam.mutateAsync({

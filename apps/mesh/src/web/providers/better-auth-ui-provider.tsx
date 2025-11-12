@@ -15,9 +15,10 @@ export function BetterAuthUIProvider({
       authClient={authClient}
       organization={{
         basePath: "/",
-        pathMode: "default",
+        pathMode: "slug",
       }}
       navigate={(href) => navigate({ to: href })}
+      replace={(href) => navigate({ to: href, replace: true })}
       Link={({ href, className, children, ...props }) => (
         <Link to={href} className={className} {...props}>
           {children}

@@ -1,5 +1,5 @@
 import { useFile } from "@deco/sdk";
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { Avatar, type AvatarProps } from "@deco/ui/components/avatar.tsx";
 
 const DEFAULT_URL = "icon://linked_services";
 

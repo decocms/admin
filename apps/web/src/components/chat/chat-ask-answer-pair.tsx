@@ -31,10 +31,7 @@ export function ChatAskAnswerPair({
         onClick={handleScrollToPair}
         className="message-block sticky top-0 z-50 bg-background px-4 pt-2 transition-all duration-500 ease-out cursor-pointer"
       >
-        <UserMessage
-          message={user}
-          onScrollToMessage={handleScrollToPair}
-        />
+        <UserMessage message={user} onScrollToMessage={handleScrollToPair} />
       </div>
 
       <div className="message-block bg-background px-4 py-4">

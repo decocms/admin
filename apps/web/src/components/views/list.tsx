@@ -301,7 +301,6 @@ function ViewsList({
 
   const { createTab } = useThread();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchOpen, setSearchOpen] = useState(false);
 
   const handleViewClick = (view: ViewWithStatus) => {
     // Open in canvas tab instead of navigating
@@ -329,42 +328,43 @@ function ViewsList({
       <div className="flex-1 overflow-auto">
         {/* Header Section */}
         <div className="sticky">
-          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-            {headerSlot}
-            <ResourceHeader
-              tabs={tabs ?? []}
-              activeTab={activeTab ?? "legacy"}
-              onTabChange={onTabChange}
-              searchOpen={searchOpen}
-              searchValue={q}
-              onSearchToggle={() => setSearchOpen(!searchOpen)}
-              onSearchChange={(value: string) => {
-                setSearchParams((prev) => {
-                  const next = new URLSearchParams(prev);
-                  if (value) next.set("q", value);
-                  else next.delete("q");
-                  return next;
-                });
-              }}
-              onSearchBlur={() => {
-                if (!q) {
-                  setSearchOpen(false);
-                }
-              }}
-              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Escape") {
+          <div className="px-8">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+              {headerSlot}
+              <ResourceHeader
+                tabs={tabs ?? []}
+                activeTab={activeTab ?? "legacy"}
+                onTabChange={onTabChange}
+                searchValue={q}
+                onSearchChange={(value: string) => {
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    if (value) next.set("q", value);
+                    else next.delete("q");
+                    return next;
+                  });
+                }}
+                onSearchBlur={() => {
                   setSearchParams((prev) => {
                     const next = new URLSearchParams(prev);
                     next.delete("q");
                     return next;
                   });
-                  setSearchOpen(false);
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              viewMode={viewMode}
-              onViewModeChange={() => {}} // View mode is managed by parent
-            />
+                }}
+                onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Escape") {
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.delete("q");
+                      return next;
+                    });
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                viewMode={viewMode}
+                onViewModeChange={() => {}} // View mode is managed by parent
+              />
+            </div>
           </div>
         </div>
 

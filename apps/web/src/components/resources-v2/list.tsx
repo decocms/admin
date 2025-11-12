@@ -34,13 +34,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCallback,
   useDeferredValue,
-  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { useParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
@@ -103,7 +102,6 @@ function ResourcesV2ListTab({
   customCtaButton?: ReactNode;
   customEmptyState?: { icon?: string; title?: string; description?: string };
 }) {
-  const [searchParams, setSearchParams] = useSearchParams();
   const { locator } = useSDK();
   const integration = useIntegration(integrationId ?? "").data;
   const navigateWorkspace = useNavigateWorkspace();
@@ -115,7 +113,6 @@ function ResourcesV2ListTab({
   const [viewMode, setViewMode] = useViewMode();
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
   const [dontAskAgain, setDontAskAgain] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const { sortKey, sortDirection, handleSort } = useSortable("updated_at");
 
   // Session storage key for skip confirmation preference
@@ -137,31 +134,11 @@ function ResourcesV2ListTab({
     return stored === "true";
   });
 
-  // Local state for instant search, deferred for server queries and URL updates
-  const [localSearch, setLocalSearch] = useState(
-    () => searchParams.get("q") ?? "",
-  );
+  // Local state for instant search, deferred for server queries
+  const [localSearch, setLocalSearch] = useState("");
   const deferredSearch = useDeferredValue(localSearch);
   const clientSearchValue = localSearch;
   const serverSearchValue = deferredSearch;
-
-  // Sync URL params with deferred search for deep linking
-  useEffect(() => {
-    if (!customData) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (serverSearchValue) {
-            next.set("q", serverSearchValue);
-          } else {
-            next.delete("q");
-          }
-          return next;
-        },
-        { replace: true },
-      );
-    }
-  }, [serverSearchValue, customData, setSearchParams]);
 
   const connection = integration?.connection;
   const toolsQuery = useTools(connection!, false);
@@ -1153,48 +1130,42 @@ function ResourcesV2ListTab({
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header Section - fixed, doesn't scroll with content */}
       <div className="shrink-0">
-        <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-          {headerSlot}
-          <ResourceHeader
-            tabs={finalTabs}
-            activeTab={activeTab || "all"}
-            onTabChange={onTabChange}
-            searchOpen={searchOpen}
-            searchValue={clientSearchValue}
-            onSearchToggle={() => setSearchOpen(!searchOpen)}
-            onSearchChange={setLocalSearch}
-            onSearchBlur={() => {
-              if (!clientSearchValue) {
-                setSearchOpen(false);
-              }
-            }}
-            onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Escape") {
-                setLocalSearch("");
-                setSearchOpen(false);
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            onRefresh={() => listQuery.refetch()}
-            onFilterClick={() => {
-              const newValue = !filterBarVisible;
-              setFilterBarVisible(newValue);
-              globalThis.localStorage?.setItem(
-                filterBarVisibilityKey,
-                String(newValue),
-              );
-            }}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            filterBarVisible={filterBarVisible}
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableUsers={availableUsers}
-            ctaButton={ctaButton}
-          />
+        <div className="px-8">
+          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+            {headerSlot}
+            <ResourceHeader
+              tabs={finalTabs}
+              activeTab={activeTab || "all"}
+              onTabChange={onTabChange}
+              searchValue={clientSearchValue}
+              onSearchChange={setLocalSearch}
+              onSearchKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Escape") {
+                  setLocalSearch("");
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              onRefresh={() => listQuery.refetch()}
+              onFilterClick={() => {
+                const newValue = !filterBarVisible;
+                setFilterBarVisible(newValue);
+                globalThis.localStorage?.setItem(
+                  filterBarVisibilityKey,
+                  String(newValue),
+                );
+              }}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              filterBarVisible={filterBarVisible}
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableUsers={availableUsers}
+              ctaButton={ctaButton}
+            />
+          </div>
         </div>
       </div>
 

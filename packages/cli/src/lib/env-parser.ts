@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import { join } from "path";
+import { join, isAbsolute } from "path";
 
 /**
  * Parse env file content in .env format (KEY=VALUE per line)
@@ -18,6 +18,12 @@ export function parseEnvFileContent(content: string): Record<string, string> {
         return acc;
       }
       const key = trimmed.substring(0, firstEqualIndex);
+      if (!key) {
+        console.warn(
+          `Warning: Skipping invalid environment variable line with empty key: "${trimmed}"`,
+        );
+        return acc;
+      }
       const value = trimmed.substring(firstEqualIndex + 1);
       acc[key] = value;
       return acc;
@@ -49,7 +55,7 @@ export async function parseEnvFile(
   filePath: string,
   workingDir: string,
 ): Promise<Record<string, string>> {
-  const envFilePath = filePath.startsWith("/")
+  const envFilePath = isAbsolute(filePath)
     ? filePath
     : join(workingDir, filePath);
 
@@ -88,6 +94,12 @@ export function parseKeyValueEnvVar(input: string): {
   }
 
   const key = input.slice(0, eqIndex);
+  if (!key) {
+    console.warn(
+      `Warning: Skipping invalid environment variable line with empty key: "${input}"`,
+    );
+    return null;
+  }
   const value = input.slice(eqIndex + 1);
   return { key, value };
 }
@@ -102,3 +114,4 @@ export function isFilePath(input: string): boolean {
 
   return false;
 }
+

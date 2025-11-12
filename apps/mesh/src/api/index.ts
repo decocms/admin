@@ -20,6 +20,8 @@ import { PrometheusSerializer } from "@opentelemetry/exporter-prometheus";
 import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 import authRoutes from "./routes/auth";
+import { serveStatic } from "hono/bun";
+
 // Define Hono variables type
 type Variables = {
   meshContext: MeshContext;
@@ -277,6 +279,15 @@ app.notFound((c) => {
     404,
   );
 });
+
+if (process.env.NODE_ENV === 'development') {
+  const { devServerProxy } = await import("./utils/dev-server-proxy");
+  app.use("*", (c) => devServerProxy(c));
+} else {
+  // --- Production static serving ---
+  app.use('/assets/*', serveStatic({ root: './dist' })) // serve Vite assets
+  app.get('*', serveStatic({ path: './dist/index.html' })) // SPA fallback
+}
 
 export default app;
 export { app };

@@ -1,4 +1,9 @@
-import { useOrganizations, useRecentProjects } from "@deco/sdk";
+import {
+  Locator,
+  SDKProvider,
+  useOrganizations,
+  useRecentProjects,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -179,19 +184,26 @@ function RecentProjectsSection() {
       <h2 className="text-xl font-medium">Recent projects</h2>
       <div className="grid grid-cols-2 @min-3xl:grid-cols-3 @min-6xl:grid-cols-4 gap-4">
         {recent.map((project) => (
-          <ProjectCard
+          <SDKProvider
             key={`${project.org.slug}/${project.slug}`}
-            project={project}
-            url={`/${project.org.slug}/${project.slug}`}
-            slugPrefix="/"
-            showMembers={false}
-            hideSlug
-            additionalInfo={
-              project.last_accessed_at
-                ? `Last seen ${timeAgo(project.last_accessed_at)}`
-                : undefined
-            }
-          />
+            locator={Locator.from({
+              org: project.org.slug,
+              project: project.slug,
+            })}
+          >
+            <ProjectCard
+              project={project}
+              url={`/${project.org.slug}/${project.slug}`}
+              slugPrefix="/"
+              showMembers={false}
+              hideSlug
+              additionalInfo={
+                project.last_accessed_at
+                  ? `Last seen ${timeAgo(project.last_accessed_at)}`
+                  : undefined
+              }
+            />
+          </SDKProvider>
         ))}
       </div>
     </div>
@@ -298,41 +310,45 @@ function MyOrganizations() {
         ) : (
           <>
             <CommunityCallBanner />
-            <ErrorBoundary fallback={null}>
-              <Suspense fallback={<RecentProjectsSection.Skeleton />}>
-                <RecentProjectsSection />
-              </Suspense>
-            </ErrorBoundary>
           </>
         )}
-        <div className="flex items-center justify-between mt-4">
-          <h2 className="text-xl font-medium">My organizations</h2>
-          <div className="flex items-center gap-2">
-            <Input
-              className="max-w-xs"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Button
-              variant="default"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <Icon name="add" size={16} />
-              <span>New organization</span>
-            </Button>
+        <Suspense
+          fallback={
+            importGithubSlug ? (
+              <MyOrganizations.ListSkeleton />
+            ) : (
+              <MyOrganizations.Skeleton />
+            )
+          }
+        >
+          {!importGithubSlug && <RecentProjectsSection />}
+          <div className="flex items-center justify-between mt-4">
+            <h2 className="text-xl font-medium">My organizations</h2>
+            <div className="flex items-center gap-2">
+              <Input
+                className="max-w-xs"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button
+                variant="default"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <Icon name="add" size={16} />
+                <span>New organization</span>
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
-          <ErrorBoundary fallback={<Organizations.Error />}>
-            <Suspense fallback={<Organizations.Skeleton />}>
+          <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
+            <ErrorBoundary fallback={<Organizations.Error />}>
               <Organizations
                 query={deferredQuery}
                 importGithubSlug={importGithubSlug}
               />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+            </ErrorBoundary>
+          </div>
+        </Suspense>
       </div>
 
       <CreateOrganizationDialog
@@ -342,6 +358,41 @@ function MyOrganizations() {
     </div>
   );
 }
+
+MyOrganizations.Skeleton = function MyOrganizationsSkeleton() {
+  return (
+    <>
+      <RecentProjectsSection.Skeleton />
+      <div className="flex items-center justify-between mt-4">
+        <div className="h-6 w-40 bg-card rounded animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-56 bg-card rounded animate-pulse" />
+          <div className="h-9 w-40 bg-card rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
+        <Organizations.Skeleton />
+      </div>
+    </>
+  );
+};
+
+MyOrganizations.ListSkeleton = function MyOrganizationsListSkeleton() {
+  return (
+    <>
+      <div className="flex items-center justify-between mt-4">
+        <div className="h-6 w-40 bg-card rounded animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-56 bg-card rounded animate-pulse" />
+          <div className="h-9 w-40 bg-card rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="@container overflow-y-auto flex-1 pb-28 p-1 -m-1">
+        <Organizations.Skeleton />
+      </div>
+    </>
+  );
+};
 
 export function OrgList() {
   return (

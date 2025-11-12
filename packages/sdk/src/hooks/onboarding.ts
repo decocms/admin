@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./react-query-keys.ts";
 import type { OnboardingAnswers } from "../mcp/onboarding/api.ts";
@@ -7,7 +7,7 @@ import type { OnboardingAnswers } from "../mcp/onboarding/api.ts";
  * Hook to get onboarding status
  */
 export function useOnboardingAnswers() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: KEYS.ONBOARDING_STATUS(),
     queryFn: async () => {
       return await MCPClient.ONBOARDING_GET_STATUS({});

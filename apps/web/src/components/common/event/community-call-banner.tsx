@@ -2,15 +2,15 @@ import { EventBanner } from "../event-banner";
 
 // Event URLs
 const COMMUNITY_CALL_URL = "https://decocms.com/discord";
-const WORKSHOP_URL = "https://luma.com/e2qlb9j4";
+const WORKSHOP_URL = "https://luma.com/6f1xmde8";
 
 // Banner decoration images
 const LEFT_BACKGROUND_IMAGE = "/img/banner-decoration-2.svg";
 const RIGHT_BACKGROUND_IMAGE = "/img/banner-decoration-1.svg";
 
-// Workshop Build in Public event - November 5, 2025, 5PM-6PM BRT
-const WORKSHOP_START_DATE = new Date(2025, 10, 5, 17, 0, 0, 0); // Month is 0-indexed (10 = November)
-const WORKSHOP_END_DATE = new Date(2025, 10, 5, 18, 0, 0, 0);
+// Applied AI for Software Development - November 19, 2025, 8:30AM-1PM BRT
+const WORKSHOP_START_DATE = new Date(2025, 10, 19, 8, 30, 0, 0); // Month is 0-indexed (10 = November)
+const WORKSHOP_END_DATE = new Date(2025, 10, 19, 13, 0, 0, 0);
 
 function getNextFridayAt2PM(now: Date = new Date()): {
   startDate: Date;
@@ -71,21 +71,21 @@ export function CommunityCallBanner() {
         startDate={WORKSHOP_START_DATE}
         endDate={WORKSHOP_END_DATE}
         upcoming={{
-          subtitle: "WORKSHOP BUILD IN PUBLIC",
-          title: "Watch us build an E-commerce Healthcheck Agent live",
+          subtitle: "APPLIED AI WORKSHOP",
+          title: "Hands-on workshops with engineers shipping AI globally",
           buttonText: "Register now!",
           buttonAction: WORKSHOP_URL,
         }}
         active={{
-          subtitle: "BUILD IN PUBLIC | LIVE NOW",
-          title: "Watch us build an E-commerce Healthcheck Agent live now.",
-          buttonText: "WATCH NOW!",
+          subtitle: "APPLIED AI | LIVE NOW",
+          title: "Hands-on AI workshops happening right now!",
+          buttonText: "Join Now!",
           buttonAction: WORKSHOP_URL,
         }}
         past={{
-          subtitle: "WORKSHOP BUILD IN PUBLIC",
-          title: "Watch us build an E-commerce Healthcheck Agent live",
-          buttonText: "Register now!",
+          subtitle: "APPLIED AI WORKSHOP",
+          title: "Hands-on workshops with engineers shipping AI globally",
+          buttonText: "Watch replay",
           buttonAction: WORKSHOP_URL,
         }}
         leftBackgroundImage={LEFT_BACKGROUND_IMAGE}

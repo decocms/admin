@@ -8,6 +8,7 @@ interface EntityCardProps {
   children: ReactNode;
   className?: string;
   onNavigate?: (e: React.MouseEvent) => void;
+  showHoverRing?: boolean;
 }
 
 interface EntityCardContentProps {
@@ -15,7 +16,12 @@ interface EntityCardContentProps {
   className?: string;
 }
 
-function EntityCardRoot({ children, className, onNavigate }: EntityCardProps) {
+function EntityCardRoot({
+  children,
+  className,
+  onNavigate,
+  showHoverRing = false,
+}: EntityCardProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (onNavigate) {
       onNavigate(e);
@@ -26,7 +32,8 @@ function EntityCardRoot({ children, className, onNavigate }: EntityCardProps) {
     <Card
       className={cn(
         "group transition-all flex flex-col gap-0",
-        onNavigate && "cursor-pointer hover:ring-2 hover:ring-primary",
+        onNavigate && "cursor-pointer",
+        showHoverRing && "hover:ring-2 hover:ring-primary",
         className,
       )}
       onClick={handleClick}

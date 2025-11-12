@@ -43,9 +43,13 @@ function OrganizationCard({
   badge?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const isSelectionMode = Boolean(badge);
 
   return (
-    <EntityCard onNavigate={() => navigate(url)}>
+    <EntityCard
+      onNavigate={() => navigate(url)}
+      showHoverRing={isSelectionMode}
+    >
       <EntityCard.Header>
         <EntityCard.AvatarSection>
           <EntityCard.Avatar

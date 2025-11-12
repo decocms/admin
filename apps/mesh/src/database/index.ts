@@ -8,7 +8,7 @@
  */
 
 import { existsSync, mkdirSync } from "fs";
-import { Kysely, PostgresDialect } from "kysely";
+import { Kysely, PostgresDialect, sql } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { Pool } from "pg";
 import type { Database as DatabaseSchema } from "../storage/types";
@@ -84,11 +84,40 @@ function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
     }
   }
 
+  console.log("Creating SQLite database at", dbPath);
+
   const dialect = new BunWorkerDialect({
     url: dbPath || ":memory:",
+    onCreateConnection: async (connection) => {
+      // Enable WAL mode for better concurrency
+      // WAL allows multiple readers while a write is in progress
+      await connection.executeQuery(
+        sql`PRAGMA journal_mode = WAL;`.compile(
+          new Kysely<DatabaseSchema>({ dialect }),
+        ),
+      );
+      await connection.executeQuery(
+        sql`PRAGMA busy_timeout = 5000;`.compile(
+          new Kysely<DatabaseSchema>({ dialect }),
+        ),
+      );
+    },
   });
 
-  return new Kysely<DatabaseSchema>({ dialect });
+  const db = new Kysely<DatabaseSchema>({ dialect });
+
+  // Enable WAL mode and busy timeout for non-memory databases
+  if (dbPath !== ":memory:") {
+    // These pragmas need to be run after the database is created
+    sql`PRAGMA journal_mode = WAL;`.execute(db).catch(() => {
+      // Ignore errors - might already be in WAL mode
+    });
+    sql`PRAGMA busy_timeout = 5000;`.execute(db).catch(() => {
+      // Ignore errors
+    });
+  }
+
+  return db;
 }
 
 /**

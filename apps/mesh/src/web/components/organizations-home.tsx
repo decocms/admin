@@ -3,11 +3,27 @@ import { useNavigate } from "@tanstack/react-router";
 import { EntityCard } from "@deco/ui/components/entity-card.tsx";
 import { EntityGrid } from "@deco/ui/components/entity-grid.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Suspense } from "react";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Suspense, useState, useMemo, useDeferredValue } from "react";
+import { CreateOrganizationDialog } from "./create-organization-dialog";
 
-function OrganizationsGrid() {
+function OrganizationsGrid({ query }: { query?: string }) {
   const { data: organizations } = authClient.useListOrganizations();
   const navigate = useNavigate();
+
+  // Filter organizations based on search query
+  const filteredOrganizations = useMemo(() => {
+    if (!organizations) return [];
+    if (!query) return organizations;
+
+    const searchLower = query.toLowerCase();
+    return organizations.filter(
+      (org) =>
+        org.name.toLowerCase().includes(searchLower) ||
+        org.slug.toLowerCase().includes(searchLower),
+    );
+  }, [organizations, query]);
 
   if (!organizations || organizations.length === 0) {
     return (
@@ -19,9 +35,19 @@ function OrganizationsGrid() {
     );
   }
 
+  if (filteredOrganizations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+        <div className="text-sm text-muted-foreground text-center">
+          No organizations found matching "{query}".
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <EntityGrid columns={{ sm: 1, md: 2, lg: 3 }}>
-      {organizations.map((org) => (
+    <EntityGrid columns={{ sm: 2, md: 3, lg: 4 }}>
+      {filteredOrganizations.map((org) => (
         <EntityCard
           key={org.id}
           onNavigate={() =>
@@ -71,12 +97,19 @@ function ErrorState({ error }: { error: Error }) {
 
 export function OrganizationsHome() {
   const { error, isPending } = authClient.useListOrganizations();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const deferredQuery = useDeferredValue(searchQuery);
 
   if (isPending) {
     return (
       <div className="max-w-6xl mx-auto p-8">
-        <h2 className="text-3xl font-bold mb-8">Your Organizations</h2>
-        <EntityGrid.Skeleton count={6} columns={{ sm: 1, md: 2, lg: 3 }} />
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-medium">My organizations</h2>
+        </div>
+        <div className="@container">
+          <EntityGrid.Skeleton count={8} columns={{ sm: 2, md: 3, lg: 4 }} />
+        </div>
       </div>
     );
   }
@@ -87,14 +120,35 @@ export function OrganizationsHome() {
 
   return (
     <div className="max-w-6xl mx-auto p-8">
-      <h2 className="text-3xl font-bold mb-8">Your Organizations</h2>
-      <Suspense
-        fallback={
-          <EntityGrid.Skeleton count={6} columns={{ sm: 1, md: 2, lg: 3 }} />
-        }
-      >
-        <OrganizationsGrid />
-      </Suspense>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-medium">My organizations</h2>
+        <div className="flex items-center gap-2">
+          <Input
+            className="max-w-xs"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Button variant="default" onClick={() => setIsCreateDialogOpen(true)}>
+            <Icon name="add" size={16} />
+            <span>New organization</span>
+          </Button>
+        </div>
+      </div>
+      <div className="@container">
+        <Suspense
+          fallback={
+            <EntityGrid.Skeleton count={8} columns={{ sm: 2, md: 3, lg: 4 }} />
+          }
+        >
+          <OrganizationsGrid query={deferredQuery} />
+        </Suspense>
+      </div>
+
+      <CreateOrganizationDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
     </div>
   );
 }

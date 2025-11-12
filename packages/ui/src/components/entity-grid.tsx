@@ -16,6 +16,73 @@ interface EntityGridProps {
   className?: string;
 }
 
+// Object maps for compile-time Tailwind class generation
+const gapClasses: Record<number, string> = {
+  0: "gap-0",
+  1: "gap-1",
+  2: "gap-2",
+  3: "gap-3",
+  4: "gap-4",
+  5: "gap-5",
+  6: "gap-6",
+  8: "gap-8",
+};
+
+const gridColsClasses: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+  7: "grid-cols-7",
+  8: "grid-cols-8",
+};
+
+const gridColsMdClasses: Record<number, string> = {
+  1: "@min-3xl:grid-cols-1",
+  2: "@min-3xl:grid-cols-2",
+  3: "@min-3xl:grid-cols-3",
+  4: "@min-3xl:grid-cols-4",
+  5: "@min-3xl:grid-cols-5",
+  6: "@min-3xl:grid-cols-6",
+  7: "@min-3xl:grid-cols-7",
+  8: "@min-3xl:grid-cols-8",
+};
+
+const gridColsLgClasses: Record<number, string> = {
+  1: "@min-6xl:grid-cols-1",
+  2: "@min-6xl:grid-cols-2",
+  3: "@min-6xl:grid-cols-3",
+  4: "@min-6xl:grid-cols-4",
+  5: "@min-6xl:grid-cols-5",
+  6: "@min-6xl:grid-cols-6",
+  7: "@min-6xl:grid-cols-7",
+  8: "@min-6xl:grid-cols-8",
+};
+
+const gridColsXlClasses: Record<number, string> = {
+  1: "@min-7xl:grid-cols-1",
+  2: "@min-7xl:grid-cols-2",
+  3: "@min-7xl:grid-cols-3",
+  4: "@min-7xl:grid-cols-4",
+  5: "@min-7xl:grid-cols-5",
+  6: "@min-7xl:grid-cols-6",
+  7: "@min-7xl:grid-cols-7",
+  8: "@min-7xl:grid-cols-8",
+};
+
+const gridCols2xlClasses: Record<number, string> = {
+  1: "@min-8xl:grid-cols-1",
+  2: "@min-8xl:grid-cols-2",
+  3: "@min-8xl:grid-cols-3",
+  4: "@min-8xl:grid-cols-4",
+  5: "@min-8xl:grid-cols-5",
+  6: "@min-8xl:grid-cols-6",
+  7: "@min-8xl:grid-cols-7",
+  8: "@min-8xl:grid-cols-8",
+};
+
 function EntityGridRoot({
   children,
   columns = { sm: 2, md: 3, lg: 4 },
@@ -24,12 +91,12 @@ function EntityGridRoot({
 }: EntityGridProps) {
   const gridClasses = cn(
     "w-full grid",
-    `gap-${gap}`,
-    columns.sm && `grid-cols-${columns.sm}`,
-    columns.md && `@min-3xl:grid-cols-${columns.md}`,
-    columns.lg && `@min-6xl:grid-cols-${columns.lg}`,
-    columns.xl && `@min-7xl:grid-cols-${columns.xl}`,
-    columns["2xl"] && `@min-8xl:grid-cols-${columns["2xl"]}`,
+    gapClasses[gap],
+    columns.sm && gridColsClasses[columns.sm],
+    columns.md && gridColsMdClasses[columns.md],
+    columns.lg && gridColsLgClasses[columns.lg],
+    columns.xl && gridColsXlClasses[columns.xl],
+    columns["2xl"] && gridCols2xlClasses[columns["2xl"]],
     className,
   );
 

@@ -26,7 +26,6 @@ export function parseKeyValueEnvVar(input: string): {
 
 /**
  * Parse env file content in .env format (KEY=VALUE per line)
- * Reuses the same logic as getCurrentEnvVars from wrangler.ts
  */
 export function parseEnvFileContent(content: string): Record<string, string> {
   return content.split("\n").reduce(

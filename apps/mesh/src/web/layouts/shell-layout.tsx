@@ -3,7 +3,8 @@ import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
 import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { MeshUserMenu } from "@/web/components/user-menu";
 import { authClient } from "@/web/lib/auth-client";
-import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { SplashScreen } from "../components/splash-screen";
 
 function Topbar() {
@@ -27,19 +28,22 @@ function OrgContextSetter({
   fallback: React.ReactNode;
 }) {
   const { org: orgSlug } = useParams({ strict: false });
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { mutate: setActiveOrg, isPending } = useMutation({
+    mutationFn: async (organizationSlug: string) => {
+      return await authClient.organization.setActive({
+        organizationSlug,
+      });
+    },
+    mutationKey: ["setActiveOrganization", orgSlug],
+  });
 
   useEffect(() => {
     if (!orgSlug) return;
-    setIsLoading(true);
-    authClient.organization
-      .setActive({
-        organizationSlug: orgSlug,
-      })
-      .finally(() => setIsLoading(false));
-  }, [orgSlug]);
+    setActiveOrg(orgSlug);
+  }, [orgSlug, setActiveOrg]);
 
-  return isLoading && orgSlug ? fallback : children;
+  return isPending && orgSlug ? fallback : children;
 }
 
 export default function ShellLayout() {

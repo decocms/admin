@@ -86,20 +86,6 @@ function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
 
   const dialect = new BunWorkerDialect({
     url: dbPath || ":memory:",
-    onCreateConnection: async (connection) => {
-      // Enable WAL mode for better concurrency
-      // WAL allows multiple readers while a write is in progress
-      await connection.executeQuery(
-        sql`PRAGMA journal_mode = WAL;`.compile(
-          new Kysely<DatabaseSchema>({ dialect }),
-        ),
-      );
-      await connection.executeQuery(
-        sql`PRAGMA busy_timeout = 5000;`.compile(
-          new Kysely<DatabaseSchema>({ dialect }),
-        ),
-      );
-    },
   });
 
   const db = new Kysely<DatabaseSchema>({ dialect });

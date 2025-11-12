@@ -195,7 +195,7 @@ export function LoggedUserSidebarTrigger({
   return (
     <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
       <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-      <span className="text-sm grow">{user.name}</span>
+      <span className="text-sm grow">{userName}</span>
 
       <Suspense fallback={null}>
         <div className="size-3 flex items-center">

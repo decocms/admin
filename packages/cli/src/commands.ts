@@ -185,6 +185,13 @@ const hostingDeploy = new Command("deploy")
     "Write deploy manifest to local filesystem instead of deploying",
   )
   .option("--no-promote", "Do not promote the deployment to production routes")
+  .option(
+    "-e, --env <value>",
+    'Set environment variables: KEY=VALUE, JSON object {"KEY":"VALUE"}, or file path /path/to/.env (can be used multiple times, overrides .dev.vars)',
+    (value, previous: string[] | undefined) => {
+      return previous ? [...previous, value] : [value];
+    },
+  )
   .argument("[cwd]", "Working directory")
   .action(async (cwd, options) => {
     try {
@@ -209,6 +216,7 @@ const hostingDeploy = new Command("deploy")
         force: options.force,
         dryRun: options.dryRun,
         promote: options.promote ?? true,
+        inlineEnvVars: options.env,
       });
     } catch (error) {
       console.error(

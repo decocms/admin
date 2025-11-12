@@ -6,6 +6,12 @@ import { join, posix, relative } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClientStub } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
+import {
+  isFilePath,
+  parseEnvFile,
+  parseInlineJsonEnvVars,
+  parseKeyValueEnvVar,
+} from "../../lib/env-parser.js";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
@@ -18,6 +24,45 @@ function tryParseJson(text: string): Record<string, unknown> | null {
 function normalizePath(path: string): string {
   // Convert Windows backslashes to Unix forward slashes
   return posix.normalize(path.replace(/\\/g, "/"));
+}
+
+/**
+ * Try to parse inline JSON env vars
+ * Returns null if parsing fails
+ */
+function tryParseInlineJson(
+  input: string,
+): { vars: Record<string, string>; count: number } | null {
+  try {
+    const parsedVars = parseInlineJsonEnvVars(input);
+    const count = Object.keys(parsedVars).length;
+    return { vars: parsedVars, count };
+  } catch (error) {
+    console.warn(
+      `⚠️  Invalid JSON format: "${input}". Error: ${error instanceof Error ? error.message : String(error)}. Skipping.`,
+    );
+    return null;
+  }
+}
+
+/**
+ * Try to parse env file (JSON or .env-like format)
+ * Returns null if parsing fails
+ */
+async function tryParseEnvFile(
+  filePath: string,
+  workingDir: string,
+): Promise<{ vars: Record<string, string>; count: number } | null> {
+  try {
+    const parsedVars = await parseEnvFile(filePath, workingDir);
+    const count = Object.keys(parsedVars).length;
+    return { vars: parsedVars, count };
+  } catch (error) {
+    console.warn(
+      `⚠️  Failed to read env file "${filePath}": ${error instanceof Error ? error.message : String(error)}. Skipping.`,
+    );
+    return null;
+  }
 }
 
 export type FileLike = {
@@ -37,6 +82,7 @@ interface Options {
   force?: boolean;
   promote?: boolean;
   dryRun?: boolean;
+  inlineEnvVars?: string[];
 }
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
@@ -52,6 +98,7 @@ export const deploy = async ({
   promote = true,
   unlisted = true,
   dryRun = false,
+  inlineEnvVars = [],
 }: Options) => {
   console.log(
     `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${
@@ -155,10 +202,59 @@ export const deploy = async ({
   }
 
   // 3. Load envVars from .dev.vars
-  const { envVars, envFilepath } = await getCurrentEnvVars(process.cwd());
-  const envVarsStatus = `Loaded ${
-    Object.keys(envVars).length
-  } env vars from ${envFilepath}`;
+  const { envVars: fileEnvVars, envFilepath } = await getCurrentEnvVars(
+    process.cwd(),
+  );
+
+  // 4. Parse inline env vars from CLI (supports multiple formats)
+  const parsedInlineEnvVars: Record<string, string> = {};
+  const envVarSources: string[] = [];
+
+  for (const envVar of inlineEnvVars) {
+    const trimmedEnvVar = envVar.trim();
+
+    if (trimmedEnvVar.startsWith("{")) {
+      const result = tryParseInlineJson(trimmedEnvVar);
+      if (result && result.count > 0) {
+        Object.assign(parsedInlineEnvVars, result.vars);
+        envVarSources.push(`JSON (${result.count} vars)`);
+      }
+      continue;
+    }
+
+    if (isFilePath(trimmedEnvVar)) {
+      const result = await tryParseEnvFile(trimmedEnvVar, process.cwd());
+      if (result && result.count > 0) {
+        Object.assign(parsedInlineEnvVars, result.vars);
+        envVarSources.push(`${trimmedEnvVar} (${result.count} vars)`);
+      }
+      continue;
+    }
+
+    const parsed = parseKeyValueEnvVar(trimmedEnvVar);
+    if (!parsed) {
+      console.warn(
+        `⚠️  Invalid env var format: "${trimmedEnvVar}". Expected KEY=VALUE, JSON object, or file path. Skipping.`,
+      );
+      continue;
+    }
+
+    parsedInlineEnvVars[parsed.key] = parsed.value;
+  }
+
+  // 5. Merge env vars: inline vars override file vars
+  const envVars = { ...fileEnvVars, ...parsedInlineEnvVars };
+
+  const envVarsFromFile = Object.keys(fileEnvVars).length;
+  const envVarsFromCLI = Object.keys(parsedInlineEnvVars).length;
+  const envVarsTotal = Object.keys(envVars).length;
+
+  let envVarsStatus = `Loaded ${envVarsFromFile} env vars from ${envFilepath}`;
+  if (envVarsFromCLI > 0) {
+    const sourcesInfo =
+      envVarSources.length > 0 ? ` [${envVarSources.join(", ")}]` : "";
+    envVarsStatus += ` + ${envVarsFromCLI} from CLI${sourcesInfo} (${envVarsTotal} total)`;
+  }
 
   const manifest = {
     appSlug,

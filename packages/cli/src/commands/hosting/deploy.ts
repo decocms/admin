@@ -194,9 +194,7 @@ export const deploy = async ({
   }
 
   // 3. Load envVars from .dev.vars
-  const { envVars: fileEnvVars, envFilepath } = await getCurrentEnvVars(
-    process.cwd(),
-  );
+  const { envVars: fileEnvVars, envFilepath } = await getCurrentEnvVars(cwd);
 
   // 4. Parse inline env vars from CLI (supports multiple formats)
   const parsedInlineEnvVars: Record<string, string> = {};
@@ -215,7 +213,7 @@ export const deploy = async ({
     }
 
     if (isFilePath(trimmedEnvVar)) {
-      const result = await tryParseEnvFile(trimmedEnvVar, process.cwd());
+      const result = await tryParseEnvFile(trimmedEnvVar, cwd);
       if (result && result.count > 0) {
         Object.assign(parsedInlineEnvVars, result.vars);
         envVarSources.push(`${trimmedEnvVar} (${result.count} vars)`);

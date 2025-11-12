@@ -96,5 +96,9 @@ export function parseKeyValueEnvVar(input: string): {
  * Check if input looks like a file path
  */
 export function isFilePath(input: string): boolean {
-  return input.includes("/") || input.includes("\\") || input.endsWith(".env");
+  if (input.includes("/") || input.includes("\\")) return true;
+  if (input.startsWith(".env")) return true;
+  if (input.endsWith(".json")) return true;
+
+  return false;
 }

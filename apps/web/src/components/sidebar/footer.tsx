@@ -2,7 +2,6 @@ import {
   DECO_CMS_API_URL,
   useInvites,
   usePlan,
-  User,
   useWorkspaceWalletBalance,
   WELL_KNOWN_PLANS,
 } from "@deco/sdk";
@@ -28,6 +27,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { UserMenu } from "@deco/ui/components/user-menu.tsx";
 import { SidebarFooterShell } from "@deco/ui/components/sidebar-footer-shell.tsx";
+import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
@@ -184,14 +184,18 @@ function UserPreferencesModal({
   );
 }
 
-export function LoggedUserSidebarTrigger({ user }: { user: User }) {
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
-  const userName = user?.metadata?.full_name || user?.email;
+export function LoggedUserSidebarTrigger({
+  user,
+}: {
+  user: { avatar?: string; name?: string; email?: string };
+}) {
+  const userAvatarURL = user?.avatar ?? undefined;
+  const userName = user?.name || user?.email;
 
   return (
     <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
       <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-      <span className="text-sm grow">{user.metadata?.full_name}</span>
+      <span className="text-sm grow">{user.name}</span>
 
       <Suspense fallback={null}>
         <div className="size-3 flex items-center">
@@ -202,11 +206,15 @@ export function LoggedUserSidebarTrigger({ user }: { user: User }) {
   );
 }
 
-export function LoggedUserAvatarTrigger({ user }: { user: User }) {
+export function LoggedUserAvatarTrigger({
+  user,
+}: {
+  user: { avatar?: string; name?: string; email?: string };
+}) {
   return (
     <UserAvatar
-      url={user?.metadata?.avatar_url}
-      fallback={user?.metadata?.full_name || user?.email}
+      url={user?.avatar}
+      fallback={user?.name || user?.email}
       size="sm"
       className="cursor-pointer hover:ring-2 ring-muted-foreground transition-all"
     />
@@ -217,7 +225,11 @@ export function LoggedUser({
   trigger,
   align = "start",
 }: {
-  trigger: (user: User) => React.ReactNode;
+  trigger: (user: {
+    avatar?: string;
+    name?: string;
+    email?: string;
+  }) => React.ReactNode;
   align?: "start" | "end";
 }) {
   const user = useUser();
@@ -251,7 +263,15 @@ export function LoggedUser({
   };
 
   return (
-    <UserMenu user={user} trigger={trigger} align={align}>
+    <UserMenu
+      user={{
+        avatar: user?.metadata?.avatar_url,
+        name: user?.metadata?.full_name,
+        email: user?.email,
+      }}
+      trigger={trigger}
+      align={align}
+    >
       <UserMenu.Item onClick={() => setProfileOpen(true)}>
         <Icon name="account_circle" className="text-muted-foreground" />
         Profile

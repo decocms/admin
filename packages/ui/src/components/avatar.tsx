@@ -87,7 +87,7 @@ function getColorFromString(input: string): string {
     hash = input.charCodeAt(i) + ((hash << 5) - hash);
   }
   const index = Math.abs(hash) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index];
+  return AVATAR_COLORS[index]!;
 }
 
 // Unified avatar variants with shape and size

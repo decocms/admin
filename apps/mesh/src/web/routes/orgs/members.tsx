@@ -15,11 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
@@ -115,12 +111,12 @@ export default function OrgMembers() {
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={member.user?.image ?? undefined} />
-                          <AvatarFallback>
-                            {getInitials(member.user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <Avatar
+                          url={member.user?.image ?? undefined}
+                          fallback={getInitials(member.user?.name)}
+                          shape="circle"
+                          size="sm"
+                        />
                         <div>
                           <div className="font-medium">
                             {member.user?.name || "Unknown"}

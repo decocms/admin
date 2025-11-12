@@ -14,20 +14,23 @@ FROM base AS deps
 COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile --production
 
-# Build stage (if needed)
+# Build stage
 FROM base AS builder
 COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile
 COPY . .
 
+# Build the frontend static assets
+RUN bun run build:client
+
 # Production stage
 FROM base AS runner
 WORKDIR /app
 
-# Copy node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-# Copy application code
+# Copy application code and built assets from builder
 COPY --from=builder /app .
+# Overwrite with production-only node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 bunapp && \
@@ -47,8 +50,8 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD bun run -e 'fetch("http://localhost:3000/health").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'
 
-# Set environment to development for debugging
-ENV NODE_ENV=development
+# Set environment to production
+ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
 
 # Run database migrations on startup and start the application

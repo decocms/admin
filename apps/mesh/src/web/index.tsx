@@ -13,6 +13,8 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { SplashScreen } from "@/web/components/splash-screen";
 import * as z from "zod";
 
+import "../../index.css";
+
 const rootRoute = createRootRoute({
   component: () => (
     <Providers>

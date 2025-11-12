@@ -263,96 +263,98 @@ export function LoggedUser({
   };
 
   return (
-    <UserMenu
-      user={{
-        avatar: user?.metadata?.avatar_url,
-        name: user?.metadata?.full_name,
-        email: user?.email,
-      }}
-      trigger={trigger}
-      align={align}
-    >
-      <UserMenu.Item onClick={() => setProfileOpen(true)}>
-        <Icon name="account_circle" className="text-muted-foreground" />
-        Profile
-      </UserMenu.Item>
-      <UserMenu.Item onClick={() => setPreferencesOpen(true)}>
-        <Icon name="tune" className="text-muted-foreground" />
-        Preferences
-      </UserMenu.Item>
-      <UserMenu.Item asChild>
-        <Link
-          to={href}
-          onClick={handleClickInvite}
-          className="flex items-center gap-2 text-sm w-full cursor-pointer"
-        >
-          <Icon
-            name="mail"
-            filled={!!match}
-            className="text-muted-foreground"
-          />
-          <span className="truncate">Invites</span>
-          <Suspense fallback={null}>
-            <InvitesCount />
-          </Suspense>
-        </Link>
-      </UserMenu.Item>
+    <>
+      <UserMenu
+        user={{
+          avatar: user?.metadata?.avatar_url,
+          name: user?.metadata?.full_name,
+          email: user?.email,
+        }}
+        trigger={trigger}
+        align={align}
+      >
+        <UserMenu.Item onClick={() => setProfileOpen(true)}>
+          <Icon name="account_circle" className="text-muted-foreground" />
+          Profile
+        </UserMenu.Item>
+        <UserMenu.Item onClick={() => setPreferencesOpen(true)}>
+          <Icon name="tune" className="text-muted-foreground" />
+          Preferences
+        </UserMenu.Item>
+        <UserMenu.Item asChild>
+          <Link
+            to={href}
+            onClick={handleClickInvite}
+            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+          >
+            <Icon
+              name="mail"
+              filled={!!match}
+              className="text-muted-foreground"
+            />
+            <span className="truncate">Invites</span>
+            <Suspense fallback={null}>
+              <InvitesCount />
+            </Suspense>
+          </Link>
+        </UserMenu.Item>
 
-      <UserMenu.Separator />
+        <UserMenu.Separator />
 
-      <UserMenu.Item asChild>
-        <a
-          href="https://github.com/decocms/admin"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center gap-2 text-sm cursor-pointer"
-        >
-          <img
-            src="/img/github.svg"
-            alt="GitHub"
-            className="w-4 h-4 text-muted-foreground"
-          />
-          decocms/admin
-          {formattedStars && (
-            <span className="text-xs ml-auto text-muted-foreground">
-              {formattedStars} stars
-            </span>
-          )}
-          <Icon
-            name="arrow_outward"
-            size={18}
-            className="text-muted-foreground"
-          />
-        </a>
-      </UserMenu.Item>
-      <UserMenu.Item asChild>
-        <a
-          href="https://decocms.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center gap-2 text-sm cursor-pointer"
-        >
-          <Icon name="language" className="text-muted-foreground" />
-          Homepage
-          <Icon
-            name="arrow_outward"
-            size={18}
-            className="ml-auto text-muted-foreground"
-          />
-        </a>
-      </UserMenu.Item>
+        <UserMenu.Item asChild>
+          <a
+            href="https://github.com/decocms/admin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-2 text-sm cursor-pointer"
+          >
+            <img
+              src="/img/github.svg"
+              alt="GitHub"
+              className="w-4 h-4 text-muted-foreground"
+            />
+            decocms/admin
+            {formattedStars && (
+              <span className="text-xs ml-auto text-muted-foreground">
+                {formattedStars} stars
+              </span>
+            )}
+            <Icon
+              name="arrow_outward"
+              size={18}
+              className="text-muted-foreground"
+            />
+          </a>
+        </UserMenu.Item>
+        <UserMenu.Item asChild>
+          <a
+            href="https://decocms.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-2 text-sm cursor-pointer"
+          >
+            <Icon name="language" className="text-muted-foreground" />
+            Homepage
+            <Icon
+              name="arrow_outward"
+              size={18}
+              className="ml-auto text-muted-foreground"
+            />
+          </a>
+        </UserMenu.Item>
 
-      <UserMenu.Separator />
+        <UserMenu.Separator />
 
-      <UserMenu.Item asChild>
-        <a
-          href={logoutUrl}
-          className="flex items-center gap-2 text-sm cursor-pointer"
-        >
-          <Icon name="logout" size={18} className="text-muted-foreground" />
-          Log out
-        </a>
-      </UserMenu.Item>
+        <UserMenu.Item asChild>
+          <a
+            href={logoutUrl}
+            className="flex items-center gap-2 text-sm cursor-pointer"
+          >
+            <Icon name="logout" size={18} className="text-muted-foreground" />
+            Log out
+          </a>
+        </UserMenu.Item>
+      </UserMenu>
 
       {profileOpen && (
         <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
@@ -363,7 +365,7 @@ export function LoggedUser({
           onOpenChange={setPreferencesOpen}
         />
       )}
-    </UserMenu>
+    </>
   );
 }
 

@@ -21,7 +21,7 @@ import { IntegrationIcon } from "./common.tsx";
 export interface MarketplaceIntegration extends Integration {
   provider: string;
   friendlyName?: string;
-  verified?: boolean;
+  verified?: boolean | null;
 }
 
 interface ConnectIntegrationModalProps {

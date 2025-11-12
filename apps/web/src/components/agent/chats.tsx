@@ -16,14 +16,15 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgenticChatProvider } from "../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+} from "../chat/provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ChatHeader } from "./chat-header.tsx";
 
 const MainChat = () => {
@@ -32,7 +33,7 @@ const MainChat = () => {
       <ScrollArea className="flex-1 min-h-0">
         <ChatMessages />
       </ScrollArea>
-      <div className="flex-none p-2">
+      <div className="flex-none pb-4 px-4">
         <ChatInput />
       </div>
     </div>
@@ -94,13 +95,11 @@ function Page() {
         }
       >
         <SDKProvider locator={workspace}>
-          <ThreadManagerProvider>
+          <ThreadProvider>
             <DecopilotThreadProvider>
-              <ThreadContextProvider>
-                <ChatProviderWrapper agentId={agentId} threadId={threadId} />
-              </ThreadContextProvider>
+              <ChatProviderWrapper agentId={agentId} threadId={threadId} />
             </DecopilotThreadProvider>
-          </ThreadManagerProvider>
+          </ThreadProvider>
         </SDKProvider>
       </Suspense>
     </ErrorBoundary>
@@ -116,7 +115,6 @@ function ChatProviderWrapper({
 }) {
   const { data: agent } = useAgentData(agentId);
   const agentRoot = useAgentRoot(agentId);
-  const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
     useThreadMessages(threadId, { shouldFetch: false });
 
@@ -128,16 +126,19 @@ function ChatProviderWrapper({
     );
   }
 
+  const transport = useMemo(
+    () => createLegacyTransport(threadId, agentId, agentRoot),
+    [threadId, agentId, agentRoot],
+  );
+
   return (
     <AgenticChatProvider
       agentId={agentId}
       threadId={threadId}
       agent={agent}
-      agentRoot={agentRoot}
-      model={preferences.defaultModel}
-      useOpenRouter={preferences.useOpenRouter}
-      sendReasoning={preferences.sendReasoning}
+      transport={transport}
       initialMessages={threadMessages}
+      forceBottomLayout={true}
       uiOptions={{
         showModelSelector: false,
         showThreadMessages: false,

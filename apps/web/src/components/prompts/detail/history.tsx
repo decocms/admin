@@ -11,11 +11,7 @@ import {
   useTeamMembers,
   useUpdatePrompt,
 } from "@deco/sdk";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -29,11 +25,16 @@ import { useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { UseFormReturn } from "react-hook-form";
 import { useParams } from "react-router";
+import { useRouteParams } from "../../canvas/route-params-provider.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { useFormContext } from "./context.ts";
 
 export default function HistoryTab() {
-  const { id } = useParams();
+  // Check for params from RouteParamsProvider (for tab rendering)
+  // Fall back to URL params (for direct navigation)
+  const routeParams = useRouteParams();
+  const urlParams = useParams();
+  const id = routeParams.id || urlParams.id;
   const { locator } = useSDK();
   const { data: versions, refetch } = usePromptVersions(id ?? "");
   const { form, prompt, setSelectedPrompt, promptVersion, setPromptVersion } =
@@ -261,18 +262,18 @@ export function HistoryCard({
             </span>
           )}
           <div className="flex items-center gap-1">
-            <Avatar className="size-4">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={userName} />
-              ) : (
-                <AvatarFallback className="text-xs">
-                  {userName
-                    ?.split(" ")
-                    .map((n: string) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              )}
-            </Avatar>
+            <Avatar
+              className="size-4"
+              url={avatarUrl}
+              fallback={
+                userName
+                  ?.split(" ")
+                  .map((n: string) => n[0])
+                  .join("") || "?"
+              }
+              shape="circle"
+              size="2xs"
+            />
             <span className="text-xs text-muted-foreground font-normal">
               {userName}
             </span>

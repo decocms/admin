@@ -301,10 +301,16 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             props.command({ item });
           };
 
+          // Create onClose callback that hides the popup
+          const handleClose = () => {
+            popup?.[0]?.hide();
+          };
+
           component = new ReactRenderer(MentionDropdown, {
             props: {
               ...props,
               command: simpleCommand,
+              onClose: handleClose,
             },
             editor: props.editor,
           });
@@ -321,8 +327,8 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
             showOnCreate: true,
             interactive: true,
             trigger: "manual",
-            placement: "top-start",
-            maxWidth: 400,
+            placement: "top",
+            maxWidth: 750,
           });
 
           // Progressive update kick-off
@@ -341,6 +347,13 @@ export function createUnifiedMentions(options: UnifiedMentionsOptions) {
           popup?.[0]?.setProps({
             // @ts-expect-error - tippy is not well typed
             getReferenceClientRect: props.clientRect,
+            offset: [0, 8],
+          });
+
+          // Update component props to sync query
+          component?.updateProps({
+            ...props,
+            query: props.query,
           });
 
           const baseItems = computeBaseItems(props.query ?? "", tools);

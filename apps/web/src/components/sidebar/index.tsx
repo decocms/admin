@@ -1,26 +1,10 @@
 import {
   findPinnedView,
   Integration,
-  type PinnedResource,
-  Resource,
   useConnectionViews,
-  useIntegrations,
-  usePinnedResources,
-  useRecentResources,
-  useRemoveResource,
-  useRemoveView,
-  useUnpinnedNativeViews,
-  useUpsertDocument,
-  View,
-  AI_APP_PRD_TEMPLATE,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@deco/ui/components/collapsible.tsx";
 import {
   Dialog,
   DialogContent,
@@ -29,13 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -43,67 +20,129 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarSeparator,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import {
-  type ReactNode,
-  Suspense,
-  useMemo,
-  useState,
-  useEffect,
-  useRef,
-} from "react";
-import {
-  Link,
-  useLocation,
-  useMatch,
-  useNavigate,
-  useParams,
-} from "react-router";
+import { Suspense, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import {
-  useNavigateWorkspace,
-  useWorkspaceLink,
-} from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { TogglePin } from "../views/list.tsx";
-import { SidebarFooter } from "./footer.tsx";
-import { useCurrentTeam } from "./team-selector.tsx";
-import { useFocusTeamAgent } from "../agents/list.tsx";
+import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
+import { useThreadTitle } from "../decopilot/index.tsx";
+import { buildAppsListUri, useThread } from "../decopilot/thread-provider.tsx";
+import { IntegrationIcon } from "../integrations/common.tsx";
 import { SearchComingSoonModal } from "../modals/search-coming-soon-modal.tsx";
 import {
   CommandPalette,
   useCommandPalette,
 } from "../search/command-palette.tsx";
+import { TogglePin } from "../views/list.tsx";
+import { SidebarFooter } from "./footer.tsx";
+import { useCurrentTeam } from "./team-selector.tsx";
 
-// Helper to get display name from resource (handles both Resource and PinnedResource types)
-function getResourceDisplayName(
-  resource: { title?: string; name?: string },
-  fallback = "Resource",
-): string {
-  return resource.title || resource.name || fallback;
+/**
+ * Individual thread item with title
+ */
+function ThreadListItem({
+  thread,
+  isActive,
+}: {
+  thread: { id: string; createdAt: number };
+  isActive: boolean;
+}) {
+  const { switchToThread, hideThread } = useThread();
+  const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
+  const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
+
+  return (
+    <SidebarMenuItem key={thread.id}>
+      <SidebarMenuButton
+        className={`w-full pr-2 group/thread relative cursor-pointer ${
+          isActive ? "bg-accent" : ""
+        }`}
+        onClick={() => {
+          switchToThread(thread.id);
+          trackEvent("sidebar_thread_switch", {
+            threadId: thread.id,
+          });
+        }}
+      >
+        <div className="flex-1 min-w-0 flex flex-col items-start">
+          <span className="truncate text-sm w-full">{threadTitle}</span>
+        </div>
+        {!isActive && (
+          <Icon
+            name="close"
+            size={16}
+            className="text-muted-foreground opacity-0 group-hover/thread:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              hideThread(thread.id);
+              trackEvent("sidebar_thread_hide", {
+                threadId: thread.id,
+              });
+            }}
+          />
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 }
 
-const WithActive = ({
-  children,
-  ...props
-}: {
-  to: string;
-  children: (props: { isActive: boolean }) => ReactNode;
-}) => {
-  const match = useMatch(props.to);
+/**
+ * Renders the list of recent chat threads
+ */
+function RecentThreadsList() {
+  const { getAllThreads, activeThreadId } = useThread();
+  const threads = getAllThreads();
+  const maxThreads = 5; // Show up to 5 recent threads
 
-  return <div {...props}>{children({ isActive: !!match })}</div>;
-};
+  // Get the most recent threads (limited)
+  const recentThreads = threads.slice(0, maxThreads);
+
+  if (recentThreads.length === 0) {
+    return (
+      <SidebarMenuItem>
+        <div className="px-4 py-2 text-xs text-muted-foreground text-center">
+          No recent chats
+        </div>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <>
+      {recentThreads.map((thread) => (
+        <Suspense key={thread.id} fallback={<ThreadItemSkeleton />}>
+          <ThreadListItem
+            thread={thread}
+            isActive={thread.id === activeThreadId}
+          />
+        </Suspense>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Skeleton for loading thread items
+ */
+function ThreadItemSkeleton() {
+  return (
+    <SidebarMenuItem>
+      <div className="flex items-center gap-2 px-2 py-2">
+        <Skeleton className="size-[18px] rounded shrink-0" />
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+    </SidebarMenuItem>
+  );
+}
 
 function AddViewsDialog({
   integration,
@@ -212,1269 +251,215 @@ function AddViewsDialog({
 
 function WorkspaceViews() {
   const { org, project } = useParams();
-  const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
-  const { data: integrations } = useIntegrations();
-  const team = useCurrentTeam();
-  const removeViewMutation = useRemoveView();
-  const navigateWorkspace = useNavigateWorkspace();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
   }>({ open: false });
-  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [databaseModalOpen, setDatabaseModalOpen] = useState(false);
   const [_searchModalOpen, _setSearchModalOpen] = useState(false);
-  const [_showAllRecents, _setShowAllRecents] = useState(false);
 
-  // Recent and pinned resources
+  // Thread management
+  const { createThread } = useThread();
+
+  // Pinned resources
   // Use team locator if params aren't available - fallback to just undefined if no params
   const projectKey = org && project ? `${org}/${project}` : undefined;
+  const { pinnedTabs, unpinTab, reorderPinnedTabs } = usePinnedTabs(projectKey);
 
-  const { recents: _recents, removeRecent: _removeRecent } =
-    useRecentResources(projectKey);
-  const {
-    pinnedResources: _pinnedResources,
-    togglePin: _togglePin,
-    isPinned: _isPinned,
-    reorderPinnedResources: _reorderPinnedResources,
-  } = usePinnedResources(projectKey);
+  // Canvas tabs management
+  const { addTab, tabs, setActiveTab } = useThread();
 
-  const {
-    unpinView: _unpinNativeView,
-    pinView: _pinNativeView,
-    isViewUnpinned: _isNativeViewUnpinned,
-  } = useUnpinnedNativeViews(projectKey);
-
-  // Drag and drop state for pinned items
+  // Drag and drop state for pinned tabs
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
-  const [_dragOverItem, setDragOverItem] = useState<number | null>(null);
   const [isDragMode, setIsDragMode] = useState(false);
   const draggedItemIdRef = useRef<string | null>(null);
-
-  // Unified pinned items order stored in localStorage
-  const [pinnedOrder, setPinnedOrder] = useState<string[]>(() => {
-    if (typeof window === "undefined" || !org || !project) return [];
-    try {
-      const stored = localStorage.getItem(`pinned-order-${org}-${project}`);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     e.stopPropagation();
 
-    const itemId = allPinnedItems[index]?.id;
+    const tab = pinnedTabs[index];
+    if (!tab) return;
+
     setDraggedItem(index);
-    // Store the item ID to track it as it moves
-    draggedItemIdRef.current = itemId || null;
+    draggedItemIdRef.current = tab.id;
 
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", itemId || "");
+    e.dataTransfer.setData("text/plain", tab.id);
 
-    // Use the current element as drag image with better offset
-    // Position it so the cursor is at the left edge, vertically centered
     if (e.currentTarget instanceof HTMLElement) {
-      const offsetX = 20; // Small offset from left edge (where drag handle is)
-      const offsetY = e.currentTarget.offsetHeight / 2; // Vertically centered
+      const offsetX = 20;
+      const offsetY = e.currentTarget.offsetHeight / 2;
       e.dataTransfer.setDragImage(e.currentTarget, offsetX, offsetY);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-
-    if (draggedItemIdRef.current === null) return;
-
-    // Find current position of the dragged item
-    const currentDraggedIndex = allPinnedItems.findIndex(
-      (item) => item.id === draggedItemIdRef.current,
-    );
-
-    if (currentDraggedIndex === -1) return;
-    if (currentDraggedIndex === index) return;
-
-    // Live swap: reorder items as we drag over them
-    setPinnedOrder((prev) => {
-      const newOrder = [...prev];
-      const [removed] = newOrder.splice(currentDraggedIndex, 1);
-      newOrder.splice(index, 0, removed);
-      return newOrder;
-    });
   };
 
-  const handleDragLeave = () => {
-    // Not needed for swap behavior
-  };
-
-  const handleDrop = (e: React.DragEvent, _dropIndex: number) => {
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Just save to localStorage (order already updated during dragOver)
-    if (org && project) {
-      try {
-        localStorage.setItem(
-          `pinned-order-${org}-${project}`,
-          JSON.stringify(pinnedOrder),
-        );
-      } catch (error) {
-        console.error("Failed to save pinned order:", error);
-      }
+    const draggedId = draggedItemIdRef.current;
+    if (!draggedId) {
+      handleDragEnd();
+      return;
     }
 
-    setDraggedItem(null);
-    setDragOverItem(null);
+    const fromIndex = pinnedTabs.findIndex((tab) => tab.id === draggedId);
+    if (fromIndex === -1 || fromIndex === dropIndex) {
+      handleDragEnd();
+      return;
+    }
+
+    reorderPinnedTabs(fromIndex, dropIndex);
+    handleDragEnd();
   };
 
   const handleDragEnd = () => {
     setDraggedItem(null);
-    setDragOverItem(null);
     draggedItemIdRef.current = null;
   };
 
   // Command palette
   const commandPalette = useCommandPalette();
-
-  // Hook for creating documents
-  const upsertDocument = useUpsertDocument();
-
-  const handleCreateAgent = useFocusTeamAgent();
+  const [commandPaletteInitialSearch, setCommandPaletteInitialSearch] =
+    useState("");
+  const [commandPaletteInitialFilter, setCommandPaletteInitialFilter] =
+    useState<"agent" | "app" | "document" | "thread" | undefined>();
 
   const handleOpenSearch = () => {
     commandPalette.setOpen(true);
   };
 
-  const handleRemoveView = async (view: View) => {
-    const isUserInView = globalThis.location.pathname.includes(
-      `/views/${view.id}`,
-    );
-    if (isUserInView) {
-      navigateWorkspace("/");
-      await removeViewMutation.mutateAsync({
-        viewId: view.id,
-      });
-      return;
-    }
-    await removeViewMutation.mutateAsync({
-      viewId: view.id,
-    });
-  };
-
-  const removeResourceMutation = useRemoveResource();
-
-  const handleRemoveResource = async (resource: { resourceId: string }) => {
-    const isUserInResource = globalThis.location.pathname.includes(
-      `/rsc/${resource.resourceId}`,
-    );
-    if (isUserInResource) {
-      navigateWorkspace("/");
-      await removeResourceMutation.mutateAsync({
-        resourceId: resource.resourceId,
-      });
-      return;
-    }
-    await removeResourceMutation.mutateAsync({
-      resourceId: resource.resourceId,
-    });
-  };
-
-  const integrationMap = new Map(
-    integrations?.map((integration) => [integration.id, integration]),
-  );
-
-  const { fromIntegration, firstLevelViews, fromIntegrationResources } =
-    useMemo(() => {
-      const result: {
-        fromIntegration: Record<string, View[]>;
-        firstLevelViews: View[];
-        fromIntegrationResources: Record<string, Resource[]>;
-      } = {
-        fromIntegration: {},
-        firstLevelViews: [],
-        fromIntegrationResources: {},
-      };
-
-      const views = (team?.views ?? []) as View[];
-      for (const view of views) {
-        const integrationId = view.integrationId as string | undefined;
-        if (integrationId) {
-          const isInstalled = integrations?.some(
-            (integration) => integration.id === integrationId,
-          );
-
-          if (!isInstalled) {
-            continue;
-          }
-
-          if (!result.fromIntegration[integrationId]) {
-            result.fromIntegration[integrationId] = [];
-          }
-          result.fromIntegration[integrationId].push(view);
-          continue;
-        }
-
-        if (view.type === "custom") {
-          if (!result.fromIntegration["custom"]) {
-            result.fromIntegration["custom"] = [];
-          }
-          result.fromIntegration["custom"].push(view);
-          continue;
-        }
-
-        result.firstLevelViews.push(view);
-      }
-      // Process resources (stored as views with type="resource")
-      const resources = team?.resources ?? [];
-      for (const resource of resources) {
-        const integrationId = resource.integration_id as string | undefined;
-        if (integrationId) {
-          const isInstalled = integrations?.some(
-            (integration) => integration.id === integrationId,
-          );
-
-          if (!isInstalled) {
-            continue;
-          }
-
-          if (!result.fromIntegrationResources[integrationId]) {
-            result.fromIntegrationResources[integrationId] = [];
-          }
-          result.fromIntegrationResources[integrationId].push(resource);
-        }
-      }
-
-      return result;
-    }, [team?.views, team?.resources, integrations]);
-
-  function buildViewHrefFromView(view: View): string {
-    if (view.type === "custom") {
-      if (view?.name) {
-        return workspaceLink(`/views/${view.integrationId}/${view.name}`);
-      }
-      const rawUrl = view?.metadata?.url as string | undefined;
-      const qs = rawUrl ? `?viewUrl=${encodeURIComponent(rawUrl)}` : "";
-      return workspaceLink(`/views/${view.integrationId}/index${qs}`);
-    }
-    const path = view?.metadata?.path as string | undefined;
-    return workspaceLink(path ?? "/");
-  }
-
-  const wellKnownItems = [
-    "Tools",
-    "Views",
-    "Database",
-    "Workflows",
-    "Documents",
-    "Agents",
-    ...(project ? [] : ["Theme"]),
-  ];
-  const legacyTitleMap: Record<string, string> = {
-    Prompts: "Documents",
-  };
-  const canonicalTitle = (title: string) => legacyTitleMap[title] ?? title;
-
-  function buildResourceHrefFromResource(resource: {
-    integration_id: string;
-    name: string;
-  }): string {
-    return workspaceLink(`/rsc/${resource.integration_id}/${resource.name}`);
-  }
-
-  // Separate items for organization
-  const mcpItems = firstLevelViews
-    .filter((item) => wellKnownItems.includes(canonicalTitle(item.title)))
-    .sort((a, b) => {
-      const predefinedOrder = wellKnownItems;
+  const renderPinnedTabIcon = (tab: PinnedTab) => {
+    if (!tab.icon) {
       return (
-        predefinedOrder.indexOf(canonicalTitle(a.title)) -
-        predefinedOrder.indexOf(canonicalTitle(b.title))
+        <Icon
+          name="keep"
+          size={18}
+          className="text-muted-foreground/60 shrink-0"
+        />
       );
-    });
-
-  // Building blocks are now handled by resourceItems below
-
-  // Resource type order for main resources section
-  const resourceTypeOrder = [
-    "Documents",
-    "Views",
-    "Agents",
-    "Workflows",
-    "Tools",
-    "Database",
-    "Files",
-    ...(project ? [] : ["Theme"]),
-  ];
-  const resourceItems = resourceTypeOrder
-    .map((title) => {
-      if (title === "Files") {
-        return {
-          id: "native:::files",
-          title: "Files",
-          icon: "folder",
-          onClick: () => setFilesModalOpen(true),
-          comingSoon: true,
-        };
-      }
-      const item = mcpItems.find(
-        (item) => canonicalTitle(item.title) === title,
-      );
-      return item ? { ...item, comingSoon: false } : null;
-    })
-    .filter(
-      (
-        item,
-      ): item is
-        | (View & { comingSoon: boolean })
-        | {
-            id: string;
-            title: string;
-            icon: string;
-            onClick: () => void;
-            comingSoon: boolean;
-          } => item !== null,
-    )
-    // Filter out unpinned native views
-    .filter((item) => {
-      if ("onClick" in item && item.id) {
-        return !_isNativeViewUnpinned(item.id);
-      }
-      if ("id" in item && item.id) {
-        return !_isNativeViewUnpinned(item.id);
-      }
-      return true;
-    });
-
-  // Create unified list of all pinned items for drag-and-drop
-  const allPinnedItems = useMemo(() => {
-    const items: Array<{
-      id: string;
-      type: "native" | "integration" | "resource";
-      data:
-        | View
-        | PinnedResource
-        | { integrationId: string; views: View[] }
-        | {
-            integrationId: string;
-            resources: PinnedResource[];
-            isResource: true;
-          }
-        | {
-            id: string;
-            title: string;
-            icon: string;
-            onClick: () => void;
-            comingSoon: boolean;
-          };
-    }> = [];
-
-    // Add native views (Documents, Agents, etc.)
-    resourceItems.forEach((item) => {
-      if ("onClick" in item && item.comingSoon) {
-        items.push({
-          id: `native:::${item.title}`,
-          type: "native",
-          data: item,
-        });
-      } else {
-        items.push({ id: (item as View).id, type: "native", data: item });
-      }
-    });
-
-    // Add integration views (Site, Database)
-    Object.entries(fromIntegration).forEach(([integrationId, views]) => {
-      items.push({
-        id: `integration:::${integrationId}`,
-        type: "integration",
-        data: { integrationId, views },
-      });
-    });
-
-    // Add resources from integrations
-    Object.entries(fromIntegrationResources).forEach(
-      ([integrationId, resources]) => {
-        items.push({
-          id: `integration-resource:::${integrationId}`,
-          type: "integration",
-          data: {
-            integrationId,
-            resources: resources as unknown as PinnedResource[],
-            isResource: true,
-          },
-        });
-      },
-    );
-
-    // Add pinned resources
-    _pinnedResources.forEach((resource) => {
-      items.push({
-        id: `pinned:::${resource.id}`,
-        type: "resource",
-        data: resource,
-      });
-    });
-
-    // Apply custom order if it exists
-    if (pinnedOrder.length > 0) {
-      const ordered = [];
-      const itemsMap = new Map(items.map((item) => [item.id, item]));
-
-      // Add items in stored order
-      for (const id of pinnedOrder) {
-        if (itemsMap.has(id)) {
-          ordered.push(itemsMap.get(id)!);
-          itemsMap.delete(id);
-        }
-      }
-
-      // Add any new items that aren't in the order yet
-      ordered.push(...Array.from(itemsMap.values()));
-
-      return ordered;
     }
 
-    return items;
-  }, [
-    resourceItems,
-    fromIntegration,
-    fromIntegrationResources,
-    _pinnedResources,
-    pinnedOrder,
-  ]);
+    const isAppTab = tab.resourceUri.startsWith("app://");
 
-  // Helper to get common drag props
-  const getDragProps = (index: number, itemId: string) => ({
+    if (isAppTab) {
+      return (
+        <IntegrationIcon
+          icon={tab.icon}
+          name={tab.title}
+          size="xs"
+          className="!w-[18px] !h-[18px] shrink-0"
+        />
+      );
+    }
+
+    if (tab.icon.startsWith("http") || tab.icon.startsWith("/")) {
+      return (
+        <img
+          src={tab.icon}
+          alt=""
+          className="size-[18px] rounded-sm shrink-0 object-cover"
+        />
+      );
+    }
+
+    return (
+      <Icon
+        name={tab.icon}
+        size={18}
+        className="text-muted-foreground/75 shrink-0"
+      />
+    );
+  };
+
+  const getDragProps = (index: number, tabId: string) => ({
     draggable: isDragMode,
     onDragStart: isDragMode
       ? (e: React.DragEvent) => handleDragStart(e, index)
       : undefined,
     onDragOver: isDragMode
-      ? (e: React.DragEvent) => handleDragOver(e, index)
+      ? (e: React.DragEvent) => handleDragOver(e)
       : undefined,
-    onDragLeave: isDragMode ? handleDragLeave : undefined,
     onDrop: isDragMode
       ? (e: React.DragEvent) => handleDrop(e, index)
       : undefined,
     onDragEnd: isDragMode ? handleDragEnd : undefined,
     className: isDragMode
       ? `cursor-grab active:cursor-grabbing transition-all duration-150 ${
-          draggedItem !== null && draggedItemIdRef.current === itemId
+          draggedItem !== null && draggedItemIdRef.current === tabId
             ? "opacity-50"
             : ""
         }`
       : "",
   });
 
-  // Helper to handle pinning from recents
-  const handlePinFromRecents = (resource: (typeof _recents)[0]) => {
-    const isNativeView =
-      resource.type === "view" &&
-      mcpItems.some((item) => item.id === resource.id);
+  const renderPinnedTab = (tab: PinnedTab, index: number) => (
+    <SidebarMenuItem key={tab.id} {...getDragProps(index, tab.id)}>
+      <SidebarMenuButton
+        className="w-full pr-2 group/item relative cursor-pointer"
+        onClick={(e) => {
+          if (isDragMode) {
+            e.preventDefault();
+            return;
+          }
+          e.preventDefault();
 
-    if (isNativeView) {
-      _pinNativeView(resource.id);
-      trackEvent("sidebar_pin_native_view_from_recents", {
-        view: resource.name,
-      });
-    } else {
-      _togglePin({
-        id: resource.id,
-        name: resource.name,
-        type: resource.type,
-        integration_id: resource.integration_id,
-        icon: resource.icon,
-        path: resource.path,
-      });
-    }
-  };
-
-  // Update pinnedOrder when items change
-  useEffect(() => {
-    const currentIds = allPinnedItems.map((item) => item.id);
-    const currentIdsSet = new Set(currentIds);
-    const storedIdsSet = new Set(pinnedOrder);
-
-    // Check if items were added or removed
-    const hasChanges =
-      currentIds.length !== pinnedOrder.length ||
-      currentIds.some((id) => !storedIdsSet.has(id)) ||
-      pinnedOrder.some((id) => !currentIdsSet.has(id));
-
-    if (hasChanges) {
-      // Merge: keep existing order, add new items at the end
-      const newOrder = pinnedOrder.filter((id) => currentIdsSet.has(id));
-      currentIds.forEach((id) => {
-        if (!storedIdsSet.has(id)) {
-          newOrder.push(id);
-        }
-      });
-
-      setPinnedOrder(newOrder);
-      if (org && project) {
-        try {
-          localStorage.setItem(
-            `pinned-order-${org}-${project}`,
-            JSON.stringify(newOrder),
+          // Check if a tab with this resourceUri already exists
+          const existingTab = tabs.find(
+            (t) => t.resourceUri === tab.resourceUri,
           );
-        } catch (error) {
-          console.error("Failed to save pinned order:", error);
-        }
-      }
-    }
-  }, [allPinnedItems, org, project]);
 
-  // Render native items (Documents, Agents, Workflows, Tools, Views, Files)
-  const renderNativeItem = (
-    item: (typeof allPinnedItems)[0],
-    index: number,
-  ) => {
-    const nativeItem = item.data;
-    if ("onClick" in nativeItem && nativeItem.comingSoon) {
-      // Files button (coming soon)
-      const filesViewId = "native:::files";
-      return (
-        <SidebarMenuItem key={item.id} {...getDragProps(index, item.id)}>
-          <SidebarMenuButton
-            className="cursor-pointer group/item relative w-full pr-2"
-            onClick={
-              isDragMode ? undefined : (nativeItem.onClick as () => void)
-            }
-          >
-            {isDragMode && (
-              <Icon
-                name="drag_indicator"
-                size={16}
-                className="text-muted-foreground shrink-0"
-              />
-            )}
-            <Icon
-              name={(nativeItem as { icon: string }).icon}
-              size={20}
-              className="text-muted-foreground/75 shrink-0"
-            />
-            <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-              {(nativeItem as { title: string }).title}
-            </span>
-            <Badge
-              variant="secondary"
-              className="text-xs group-hover/item:opacity-0 transition-opacity"
-            >
-              Soon
-            </Badge>
-            <Icon
-              name="unpin"
-              size={18}
-              className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                _unpinNativeView(filesViewId);
-                trackEvent("sidebar_unpin_native_view", {
-                  view: (nativeItem as { title: string }).title,
-                });
-              }}
-            />
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      );
-    }
-    // Regular native view (Documents, Agents, etc.)
-    const view = nativeItem as View;
-    const href = buildViewHrefFromView(view);
-    const displayTitle = canonicalTitle(view.title);
-    return (
-      <SidebarMenuItem key={item.id} {...getDragProps(index, item.id)}>
-        <WithActive to={href}>
-          {({ isActive }) => (
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              className="w-full pr-2"
-            >
-              <Link
-                to={href}
-                className="group/item relative"
-                onClick={(e) => {
-                  if (isDragMode) {
-                    e.preventDefault();
-                    return;
-                  }
-                  trackEvent("sidebar_navigation_click", {
-                    item: displayTitle,
-                  });
-                  isMobile && toggleSidebar();
-                }}
-              >
-                {isDragMode && (
-                  <Icon
-                    name="drag_indicator"
-                    size={16}
-                    className="text-muted-foreground shrink-0"
-                  />
-                )}
-                <Icon
-                  name={view.icon}
-                  size={20}
-                  className="text-muted-foreground/75 shrink-0"
-                />
-                <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-                  {displayTitle}
-                </span>
-                {view.badge && (
-                  <Badge variant="secondary" className="text-xs">
-                    {view.badge}
-                  </Badge>
-                )}
-                <Icon
-                  name="unpin"
-                  size={18}
-                  className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    _unpinNativeView(view.id);
-                    trackEvent("sidebar_unpin_native_view", {
-                      view: displayTitle,
-                    });
-                  }}
-                />
-              </Link>
-            </SidebarMenuButton>
-          )}
-        </WithActive>
-      </SidebarMenuItem>
-    );
-  };
-
-  // Render integration items (Site, Database, and integration resources)
-  const renderIntegrationItem = (
-    item: (typeof allPinnedItems)[0],
-    index: number,
-  ) => {
-    const data = item.data;
-
-    // Type guard to check if this is integration data
-    if (!("integrationId" in data)) {
-      return null;
-    }
-
-    const { integrationId, views, isResource, resources } = data as {
-      integrationId: string;
-      views?: View[];
-      isResource?: boolean;
-      resources?: PinnedResource[];
-    };
-    const integration = integrationMap.get(integrationId);
-
-    if (isResource && resources) {
-      // This is an integration resource section
-      const isSingleResource = resources.length === 1;
-
-      if (isSingleResource) {
-        const [resource] = resources;
-        const href = buildResourceHrefFromResource({
-          ...resource,
-          integration_id: integrationId,
-        } as { integration_id: string; name: string });
-
-        return (
-          <SidebarMenuItem
-            key={item.id}
-            draggable={isDragMode}
-            onDragStart={
-              isDragMode ? (e) => handleDragStart(e, index) : undefined
-            }
-            onDragOver={
-              isDragMode ? (e) => handleDragOver(e, index) : undefined
-            }
-            onDragLeave={isDragMode ? handleDragLeave : undefined}
-            onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
-            onDragEnd={isDragMode ? handleDragEnd : undefined}
-            className={
-              isDragMode
-                ? `cursor-grab active:cursor-grabbing transition-all duration-150
-                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-                : ""
-            }
-          >
-            <WithActive to={href}>
-              {({ isActive }) => (
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  className="w-full pr-8"
-                >
-                  <Link
-                    to={href}
-                    className="group/item relative"
-                    onClick={(e) => {
-                      if (isDragMode) {
-                        e.preventDefault();
-                        return;
-                      }
-                      if (location.pathname === href) {
-                        e.preventDefault();
-                        navigate(0);
-                        return;
-                      }
-                      trackEvent("sidebar_navigation_click", {
-                        item: getResourceDisplayName(
-                          resource as { title?: string; name?: string },
-                        ),
-                      });
-                      isMobile && toggleSidebar();
-                    }}
-                  >
-                    {isDragMode && (
-                      <Icon
-                        name="drag_indicator"
-                        size={16}
-                        className="text-muted-foreground shrink-0"
-                      />
-                    )}
-                    <div className="relative">
-                      <IntegrationAvatar
-                        size="xs"
-                        url={integration?.icon}
-                        fallback={integration?.name}
-                        className="!w-[18px] !h-[18px] !rounded-md"
-                      />
-                    </div>
-                    <span className="truncate group-hover/item:pr-8">
-                      {getResourceDisplayName(
-                        resource as { title?: string; name?: string },
-                        integration?.name,
-                      )}
-                    </span>
-                    <Icon
-                      name="remove"
-                      size={18}
-                      className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleRemoveResource({ resourceId: resource.id });
-                      }}
-                    />
-                  </Link>
-                </SidebarMenuButton>
-              )}
-            </WithActive>
-          </SidebarMenuItem>
-        );
-      }
-      // Multiple resources - render collapsible
-      return (
-        <SidebarMenuItem
-          key={item.id}
-          draggable={isDragMode}
-          onDragStart={
-            isDragMode ? (e) => handleDragStart(e, index) : undefined
+          if (existingTab) {
+            // Switch to existing tab instead of creating a new one
+            setActiveTab(existingTab.id);
+          } else {
+            // Create new tab if it doesn't exist
+            addTab({
+              type: tab.type,
+              resourceUri: tab.resourceUri,
+              title: tab.title,
+              icon: tab.icon,
+            });
           }
-          onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
-          onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
-          onDragEnd={isDragMode ? handleDragEnd : undefined}
-          className={
-            isDragMode
-              ? `cursor-grab active:cursor-grabbing transition-all duration-150
-                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-              : ""
-          }
-        >
-          <Collapsible
-            asChild
-            defaultOpen={false}
-            className="group/collapsible"
-          >
-            <div className="group/integration-header relative">
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton
-                  className="w-full pr-8"
-                  onClick={(e) => {
-                    if (isDragMode) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                >
-                  {isDragMode && (
-                    <Icon
-                      name="drag_indicator"
-                      size={16}
-                      className="text-muted-foreground shrink-0"
-                    />
-                  )}
-                  <div className="relative">
-                    <IntegrationAvatar
-                      size="xs"
-                      url={integration?.icon}
-                      fallback={integration?.name}
-                      className="!w-[18px] !h-[18px] !rounded-md"
-                    />
-                  </div>
-                  <span className="truncate">
-                    {integration?.name ?? "Resources"}
-                  </span>
-                  <Icon
-                    name="chevron_right"
-                    size={18}
-                    className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
-                  />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {resources.map((resource: PinnedResource) => {
-                    const href = buildResourceHrefFromResource({
-                      ...resource,
-                      integration_id: integrationId,
-                    } as { integration_id: string; name: string });
 
-                    return (
-                      <SidebarMenuSubItem key={resource.id}>
-                        <SidebarMenuSubButton asChild>
-                          <Link
-                            to={href}
-                            className="group/item relative"
-                            onClick={() => {
-                              if (isDragMode) {
-                                return;
-                              }
-                              trackEvent("sidebar_navigation_click", {
-                                item: getResourceDisplayName(
-                                  resource as { title?: string; name?: string },
-                                ),
-                              });
-                              isMobile && toggleSidebar();
-                            }}
-                          >
-                            <Icon
-                              name="folder"
-                              size={18}
-                              className="text-muted-foreground/75"
-                            />
-                            <span className="truncate group-hover/item:pr-8">
-                              {getResourceDisplayName(
-                                resource as { title?: string; name?: string },
-                              )}
-                            </span>
-                            {!isDragMode && (
-                              <Icon
-                                name="remove"
-                                size={18}
-                                className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleRemoveResource({
-                                    resourceId: resource.id,
-                                  });
-                                }}
-                              />
-                            )}
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    );
-                  })}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-        </SidebarMenuItem>
-      );
-    }
-
-    // Integration view section (Site, Database)
-    if (!views) return null;
-
-    const isSingleView = views.length === 1;
-
-    if (isSingleView) {
-      const [view] = views;
-      const href = buildViewHrefFromView(view as View);
-
-      return (
-        <SidebarMenuItem
-          key={item.id}
-          draggable={isDragMode}
-          onDragStart={
-            isDragMode ? (e) => handleDragStart(e, index) : undefined
-          }
-          onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
-          onDragLeave={isDragMode ? handleDragLeave : undefined}
-          onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
-          onDragEnd={isDragMode ? handleDragEnd : undefined}
-          className={
-            isDragMode
-              ? `cursor-grab active:cursor-grabbing transition-all duration-150
-                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-              : ""
-          }
-        >
-          <WithActive to={href}>
-            {({ isActive }) => (
-              <SidebarMenuButton
-                asChild
-                isActive={isActive}
-                className="w-full pr-2"
-              >
-                <Link
-                  to={href}
-                  className="group/item relative"
-                  onClick={(e) => {
-                    if (isDragMode) {
-                      e.preventDefault();
-                      return;
-                    }
-                    trackEvent("sidebar_navigation_click", {
-                      item: view.title,
-                    });
-                    isMobile && toggleSidebar();
-                  }}
-                >
-                  {isDragMode && (
-                    <Icon
-                      name="drag_indicator"
-                      size={16}
-                      className="text-muted-foreground shrink-0"
-                    />
-                  )}
-                  <div className="relative">
-                    <IntegrationAvatar
-                      size="xs"
-                      url={integration?.icon}
-                      fallback={integration?.name}
-                      className="!w-[22px] !h-[22px] !rounded-md"
-                    />
-                  </div>
-                  <span
-                    className={
-                      view.type === "custom"
-                        ? "truncate group-hover/item:pr-8"
-                        : "truncate"
-                    }
-                  >
-                    {view.title ?? integration?.name ?? "Custom"}
-                  </span>
-                  {view.type === "custom" && (
-                    <Icon
-                      name="push_pin"
-                      size={18}
-                      className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        handleRemoveView(view);
-                      }}
-                    />
-                  )}
-                </Link>
-              </SidebarMenuButton>
-            )}
-          </WithActive>
-        </SidebarMenuItem>
-      );
-    }
-
-    // Multiple views - render collapsible (Site with Pages/Assets)
-    return (
-      <SidebarMenuItem
-        key={item.id}
-        draggable={isDragMode}
-        onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
-        onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
-        onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
-        onDragEnd={isDragMode ? handleDragEnd : undefined}
-        className={
-          isDragMode
-            ? `cursor-grab active:cursor-grabbing transition-all duration-150
-                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-            : ""
-        }
+          trackEvent("sidebar_navigation_click", {
+            item: tab.title,
+            type: "pinned-tab",
+          });
+          isMobile && toggleSidebar();
+        }}
       >
-        <Collapsible asChild defaultOpen={false} className="group/collapsible">
-          <div className="group/integration-header relative">
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton
-                className="w-full pr-2"
-                onClick={(e) => {
-                  if (isDragMode) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                {isDragMode && (
-                  <Icon
-                    name="drag_indicator"
-                    size={16}
-                    className="text-muted-foreground shrink-0"
-                  />
-                )}
-                <div className="relative">
-                  <IntegrationAvatar
-                    size="xs"
-                    url={integration?.icon}
-                    fallback={integration?.name}
-                    className="!w-[22px] !h-[22px] !rounded-md"
-                  />
-                  {integration && integrationId !== "custom" && !isDragMode && (
-                    <SidebarMenuAction
-                      asChild
-                      className="absolute inset-0 hidden items-center justify-center rounded-md border border-border/80 bg-background/95 shadow-sm transition-opacity group-hover/integration-header:flex"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setAddViewsDialogState({
-                          open: true,
-                          integration,
-                        });
-                      }}
-                      aria-label={`Add view to ${
-                        integration?.name ?? "integration"
-                      }`}
-                      showOnHover
-                    >
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className="flex h-full w-full items-center justify-center"
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setAddViewsDialogState({
-                              open: true,
-                              integration,
-                            });
-                          }
-                        }}
-                      >
-                        <Icon
-                          name="add"
-                          size={14}
-                          className="text-muted-foreground"
-                        />
-                      </span>
-                    </SidebarMenuAction>
-                  )}
-                </div>
-                <span className="truncate">
-                  {integration?.name ?? "Custom"}
-                </span>
-                <Icon
-                  name="chevron_right"
-                  size={18}
-                  className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 text-muted-foreground/75"
-                />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                {views.map((view: View) => {
-                  const href = buildViewHrefFromView(view as View);
-
-                  return (
-                    <SidebarMenuSubItem key={view.id}>
-                      <SidebarMenuSubButton asChild>
-                        <Link
-                          to={href}
-                          className="group/item relative"
-                          onClick={(e) => {
-                            if (isDragMode) {
-                              e.preventDefault();
-                              return;
-                            }
-                            trackEvent("sidebar_navigation_click", {
-                              item: view.title,
-                            });
-                            isMobile && toggleSidebar();
-                          }}
-                        >
-                          <Icon
-                            name={view.icon}
-                            size={18}
-                            className="text-muted-foreground/75"
-                          />
-                          <span
-                            className={
-                              view.type === "custom"
-                                ? "truncate group-hover/item:pr-8"
-                                : "truncate"
-                            }
-                          >
-                            {view.title}
-                          </span>
-                          {view.type === "custom" && !isDragMode && (
-                            <Icon
-                              name="push_pin"
-                              size={18}
-                              className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                handleRemoveView(view);
-                              }}
-                            />
-                          )}
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  );
-                })}
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-      </SidebarMenuItem>
-    );
-  };
-
-  // Render pinned resources (individual documents, agents, workflows, etc.)
-  const renderResourceItem = (
-    item: (typeof allPinnedItems)[0],
-    index: number,
-  ) => {
-    const resource = item.data as PinnedResource;
-    return (
-      <SidebarMenuItem
-        key={item.id}
-        draggable={isDragMode}
-        onDragStart={isDragMode ? (e) => handleDragStart(e, index) : undefined}
-        onDragOver={isDragMode ? (e) => handleDragOver(e, index) : undefined}
-        onDragLeave={isDragMode ? handleDragLeave : undefined}
-        onDrop={isDragMode ? (e) => handleDrop(e, index) : undefined}
-        onDragEnd={isDragMode ? handleDragEnd : undefined}
-        className={
-          isDragMode
-            ? `cursor-grab active:cursor-grabbing transition-all duration-150
-                        ${draggedItemIdRef.current === item.id ? "opacity-50" : ""}`
-            : ""
-        }
-      >
-        <WithActive to={resource.path}>
-          {({ isActive }) => (
-            <SidebarMenuButton
-              asChild={!isDragMode}
-              isActive={isActive}
-              className="w-full pr-2"
-            >
-              {isDragMode ? (
-                <div className="group/item relative flex items-center gap-2">
-                  <Icon
-                    name="drag_indicator"
-                    size={16}
-                    className="text-muted-foreground shrink-0"
-                  />
-                  {resource.type === "agent" ? (
-                    <AgentAvatar
-                      size="xs"
-                      url={resource.icon}
-                      fallback={resource.name}
-                      className="!w-[20px] !h-[20px] shrink-0"
-                    />
-                  ) : resource.icon ? (
-                    <Icon
-                      name={resource.icon}
-                      size={20}
-                      className="text-muted-foreground/75 shrink-0"
-                    />
-                  ) : null}
-                  <span className="truncate flex-1 min-w-0">
-                    {resource.name}
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  to={resource.path}
-                  className="group/item relative"
-                  onClick={() => {
-                    trackEvent("sidebar_navigation_click", {
-                      item: resource.name,
-                      type: "pinned-resource",
-                    });
-                    isMobile && toggleSidebar();
-                  }}
-                >
-                  {resource.type === "agent" ? (
-                    <AgentAvatar
-                      size="xs"
-                      url={resource.icon}
-                      fallback={resource.name}
-                      className="!w-[20px] !h-[20px] shrink-0"
-                    />
-                  ) : resource.icon ? (
-                    <Icon
-                      name={resource.icon}
-                      size={20}
-                      className="text-muted-foreground/75 shrink-0"
-                    />
-                  ) : null}
-                  <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
-                    {resource.name}
-                  </span>
-                  <Icon
-                    name="push_pin"
-                    size={18}
-                    className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2 -rotate-45"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      _togglePin(resource);
-                    }}
-                  />
-                </Link>
-              )}
-            </SidebarMenuButton>
-          )}
-        </WithActive>
-      </SidebarMenuItem>
-    );
-  };
-
-  // Main dispatcher function
-  const renderPinnedItem = (
-    item: (typeof allPinnedItems)[0],
-    index: number,
-  ) => {
-    switch (item.type) {
-      case "native":
-        return renderNativeItem(item, index);
-      case "integration":
-        return renderIntegrationItem(item, index);
-      case "resource":
-        return renderResourceItem(item, index);
-      default:
-        return null;
-    }
-  };
-
-  // Filter out pinned items from recents and limit to 5 initially
-  const _filteredRecents = _recents.filter((recent) => {
-    // Filter out pinned resource instances
-    if (_isPinned(recent.id)) return false;
-
-    const isNativeView =
-      recent.type === "view" && mcpItems.some((item) => item.id === recent.id);
-
-    // Filter out native views that are currently pinned (not unpinned)
-    if (isNativeView && !_isNativeViewUnpinned(recent.id)) return false;
-
-    return true;
-  });
-  const _displayedRecents = _showAllRecents
-    ? _filteredRecents
-    : _filteredRecents.slice(0, 5);
-  const _hasMoreRecents = _filteredRecents.length > 5;
+        {isDragMode && (
+          <Icon
+            name="drag_indicator"
+            size={16}
+            className="text-muted-foreground shrink-0"
+          />
+        )}
+        {renderPinnedTabIcon(tab)}
+        <span className="truncate flex-1 min-w-0 group-hover/item:pr-8">
+          {tab.title}
+        </span>
+        <Icon
+          name="keep_off"
+          size={18}
+          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            unpinTab(tab.resourceUri);
+          }}
+        />
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 
   return (
     <>
@@ -1494,7 +479,7 @@ function WorkspaceViews() {
             />
             <span className="truncate">Search</span>
           </div>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-transparent px-1.5 text-[10px] font-normal text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
         </SidebarMenuButton>
@@ -1504,10 +489,13 @@ function WorkspaceViews() {
       <SidebarMenuItem>
         <SidebarMenuButton
           className="cursor-pointer"
-          onClick={() => setGenerateModalOpen(true)}
+          onClick={() => {
+            createThread();
+            trackEvent("sidebar_new_thread_click");
+          }}
         >
           <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">Generate</span>
+          <span className="truncate">New thread</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
@@ -1516,7 +504,12 @@ function WorkspaceViews() {
         <SidebarMenuButton
           className="cursor-pointer"
           onClick={() => {
-            navigateWorkspace("/apps");
+            addTab({
+              type: "list",
+              resourceUri: buildAppsListUri(),
+              title: "Apps",
+              icon: "grid_view",
+            });
             trackEvent("sidebar_navigation_click", {
               item: "Apps",
             });
@@ -1561,286 +554,43 @@ function WorkspaceViews() {
       </SidebarMenuItem>
 
       {/* Render all pinned items in custom order */}
-      {allPinnedItems.map((item, index) => renderPinnedItem(item, index))}
-
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      <SidebarMenuItem>
-        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-          Recents
-        </div>
-      </SidebarMenuItem>
-
-      {/* Recent Resource Instances */}
-      {_displayedRecents.length > 0 && (
-        <>
-          {_displayedRecents.map((resource) => (
-            <SidebarMenuItem key={`recent-${resource.id}`}>
-              <WithActive to={resource.path}>
-                {({ isActive }) => (
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    className="w-full pr-2"
-                  >
-                    <Link
-                      to={resource.path}
-                      className="group/item relative"
-                      onClick={() => {
-                        trackEvent("sidebar_navigation_click", {
-                          item: resource.name,
-                          type: "recent-resource",
-                        });
-                        isMobile && toggleSidebar();
-                      }}
-                    >
-                      {resource.type === "agent" ? (
-                        <AgentAvatar
-                          size="xs"
-                          url={resource.icon}
-                          fallback={resource.name}
-                          className="!w-[20px] !h-[20px] shrink-0"
-                        />
-                      ) : resource.icon ? (
-                        <Icon
-                          name={resource.icon}
-                          size={20}
-                          className="text-muted-foreground/75 shrink-0"
-                        />
-                      ) : null}
-                      <span className="truncate flex-1 min-w-0 group-hover/item:pr-10">
-                        {resource.name}
-                      </span>
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        <Icon
-                          name="close"
-                          size={18}
-                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            _removeRecent(resource.id);
-                          }}
-                        />
-                        <Icon
-                          name="push_pin"
-                          size={18}
-                          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handlePinFromRecents(resource);
-                          }}
-                        />
-                      </div>
-                    </Link>
-                  </SidebarMenuButton>
-                )}
-              </WithActive>
-            </SidebarMenuItem>
-          ))}
-
-          {/* Show All / Show Less toggle */}
-          {_hasMoreRecents && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                className="cursor-pointer text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => _setShowAllRecents(!_showAllRecents)}
-              >
-                <Icon
-                  name={_showAllRecents ? "expand_less" : "expand_more"}
-                  size={16}
-                  className="text-muted-foreground/75"
-                />
-                <span>{_showAllRecents ? "Show less" : "Show all"}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-        </>
+      {pinnedTabs.length === 0 && (
+        <SidebarMenuItem>
+          <div className="px-3 py-2 text-xs text-muted-foreground">
+            Pin tabs from the canvas to keep them here.
+          </div>
+        </SidebarMenuItem>
       )}
+      {pinnedTabs.map((tab, index) => renderPinnedTab(tab, index))}
 
-      {/* Generate Modal */}
-      <Dialog open={generateModalOpen} onOpenChange={setGenerateModalOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create via AI</DialogTitle>
-            <DialogDescription>Generate content with AI</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Document Creation - Split Button with Dropdown */}
-            <div className="w-full flex items-stretch h-auto border border-border rounded-lg overflow-hidden hover:bg-accent/50 transition-colors">
-              <Button
-                variant="ghost"
-                className="flex-1 justify-start h-auto py-4 rounded-none border-0 hover:bg-transparent"
-                onClick={async () => {
-                  setGenerateModalOpen(false);
-                  isMobile && toggleSidebar();
-                  const timestamp = new Date()
-                    .toISOString()
-                    .replace(/[:.]/g, "-");
-
-                  const result = await upsertDocument.mutateAsync({
-                    params: {
-                      name: `Untitled-${timestamp}`,
-                      content: "",
-                      description: "",
-                    },
-                  });
-
-                  const documentResource = {
-                    integration_id: "i:documents-management",
-                    name: "document",
-                  };
-                  const href = buildResourceHrefFromResource(documentResource);
-                  navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                }}
-              >
-                <div className="flex items-center gap-3 text-left">
-                  <Icon
-                    name="docs"
-                    size={24}
-                    className="text-muted-foreground/75 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold">Document</div>
-                    <div className="text-sm text-muted-foreground">
-                      Create a new document with AI assistance
-                    </div>
-                  </div>
-                </div>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-auto rounded-none border-l border-border hover:bg-transparent w-12 flex-shrink-0"
-                  >
-                    <Icon name="expand_more" size={20} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onSelect={async () => {
-                      setGenerateModalOpen(false);
-                      isMobile && toggleSidebar();
-                      const timestamp = new Date()
-                        .toISOString()
-                        .replace(/[:.]/g, "-");
-
-                      const result = await upsertDocument.mutateAsync({
-                        params: {
-                          name: `Untitled-${timestamp}`,
-                          content: "",
-                          description: "",
-                        },
-                      });
-
-                      const documentResource = {
-                        integration_id: "i:documents-management",
-                        name: "document",
-                      };
-                      const href =
-                        buildResourceHrefFromResource(documentResource);
-                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                    }}
-                  >
-                    <Icon name="docs" size={18} className="mr-2" />
-                    <div className="flex-1">
-                      <div className="font-medium">Blank Document</div>
-                      <div className="text-xs text-muted-foreground">
-                        Start from scratch
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onSelect={async () => {
-                      setGenerateModalOpen(false);
-                      isMobile && toggleSidebar();
-                      const timestamp = new Date()
-                        .toISOString()
-                        .replace(/[:.]/g, "-");
-
-                      const result = await upsertDocument.mutateAsync({
-                        params: {
-                          name: `AI App PRD - ${timestamp}`,
-                          content: AI_APP_PRD_TEMPLATE,
-                          description:
-                            "Product Requirements Document for an AI-native application on decocms.com platform. This document helps plan tools, agents, workflows, views, and databases.",
-                        },
-                      });
-
-                      const documentResource = {
-                        integration_id: "i:documents-management",
-                        name: "document",
-                      };
-                      const href =
-                        buildResourceHrefFromResource(documentResource);
-                      navigate(`${href}/${encodeURIComponent(result.uri)}`);
-                    }}
-                  >
-                    <Icon name="rocket_launch" size={18} className="mr-2" />
-                    <div className="flex-1">
-                      <div className="font-medium">AI App PRD</div>
-                      <div className="text-xs text-muted-foreground">
-                        Plan tools, agents & workflows
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+      {/* SECTION 3: RECENT THREADS */}
+      <SidebarSeparator className="my-2 -ml-1" />
+      <SidebarMenuItem>
+        <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
+          <span>Recent Threads</span>
+          <div className="flex items-center gap-1">
             <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
+              variant="ghost"
+              size="xs"
               onClick={() => {
-                setGenerateModalOpen(false);
+                setCommandPaletteInitialSearch("");
+                setCommandPaletteInitialFilter("thread");
+                commandPalette.setOpen(true);
+                trackEvent("sidebar_thread_selector_open");
               }}
+              title="Browse all chats"
+              className="size-6"
             >
-              <div className="flex items-center gap-3 text-left">
-                <Icon
-                  name="flowchart"
-                  size={24}
-                  className="text-muted-foreground/75 mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold">Workflow</div>
-                  <div className="text-sm text-muted-foreground">
-                    Create a new workflow
-                  </div>
-                </div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={() => {
-                setGenerateModalOpen(false);
-                isMobile && toggleSidebar();
-
-                handleCreateAgent();
-              }}
-            >
-              <div className="flex items-center gap-3 text-left">
-                <Icon
-                  name="robot_2"
-                  size={24}
-                  className="text-muted-foreground/75 mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold">Agent</div>
-                  <div className="text-sm text-muted-foreground">
-                    Create an AI agent with specialized capabilities
-                  </div>
-                </div>
-              </div>
+              <Icon
+                name="forum"
+                size={14}
+                className="text-muted-foreground hover:text-foreground"
+              />
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SidebarMenuItem>
+      <RecentThreadsList />
 
       {/* Search Modal */}
       <SearchComingSoonModal
@@ -1933,7 +683,15 @@ function WorkspaceViews() {
       )}
       <CommandPalette
         open={commandPalette.open}
-        onOpenChange={commandPalette.onOpenChange}
+        onOpenChange={(open) => {
+          commandPalette.onOpenChange(open);
+          if (!open) {
+            setCommandPaletteInitialSearch("");
+            setCommandPaletteInitialFilter(undefined);
+          }
+        }}
+        initialSearch={commandPaletteInitialSearch}
+        initialFilter={commandPaletteInitialFilter}
       />
     </>
   );

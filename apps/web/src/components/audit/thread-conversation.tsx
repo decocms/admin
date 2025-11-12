@@ -10,7 +10,10 @@ import {
 } from "@deco/sdk";
 import type { UIMessage } from "@ai-sdk/react";
 import { ThreadDetailPanel } from "./thread-detail-panel.tsx";
-import { AgenticChatProvider } from "../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+} from "../chat/provider.tsx";
 import { MainChat } from "../agent/chat.tsx";
 import { threadCache } from "../../utils/thread-cache.ts";
 
@@ -114,6 +117,11 @@ function CachedThreadMessages({
   const { data: agent } = useAgentData(agentId);
   const agentRoot = useAgentRoot(agentId);
 
+  const transport = useMemo(
+    () => createLegacyTransport(cachedData.threadDetail.id, agentId, agentRoot),
+    [cachedData.threadDetail.id, agentId, agentRoot],
+  );
+
   if (!agent) return null;
 
   return (
@@ -122,7 +130,7 @@ function CachedThreadMessages({
         agentId={agentId}
         threadId={cachedData.threadDetail.id}
         agent={agent}
-        agentRoot={agentRoot}
+        transport={transport}
         uiOptions={{
           showModelSelector: false,
           showThreadMessages: false,
@@ -217,6 +225,11 @@ function ThreadMessages({ threadId }: { threadId: string }) {
   const { data: agent } = useAgentData(agentId);
   const agentRoot = useAgentRoot(agentId);
 
+  const transport = useMemo(
+    () => createLegacyTransport(threadDetail.id, agentId, agentRoot),
+    [threadDetail.id, agentId, agentRoot],
+  );
+
   if (!agent) return null;
 
   return (
@@ -225,7 +238,7 @@ function ThreadMessages({ threadId }: { threadId: string }) {
         agentId={agentId}
         threadId={threadDetail.id}
         agent={agent}
-        agentRoot={agentRoot}
+        transport={transport}
         uiOptions={{
           showModelSelector: false,
           showThreadMessages: false,

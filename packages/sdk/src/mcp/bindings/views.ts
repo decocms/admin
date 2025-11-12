@@ -1,4 +1,4 @@
-import { ViewsListOutputSchema } from "@deco/workers-runtime/views";
+import { ViewsListOutputSchema } from "@decocms/runtime/views";
 import { z } from "zod";
 import type { Binder } from "../index.ts";
 

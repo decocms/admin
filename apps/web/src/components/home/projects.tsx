@@ -1,18 +1,12 @@
 import {
-  useProjects,
-  useUpdateProject,
   useCreateProject,
   useDeleteProject,
+  useFile,
+  useProjects,
+  useUpdateProject,
+  useWriteFile,
   type Project,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@deco/ui/components/dialog.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,19 +17,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useState, useDeferredValue } from "react";
-import { Link, useParams } from "react-router";
-import { ErrorBoundary } from "../../error-boundary";
-import { Avatar } from "../common/avatar";
-import { CommunityCallBanner } from "../common/event/community-call-banner";
-import { OrgAvatars, OrgMemberCount } from "./members";
 import { Separator } from "@deco/ui/components/separator.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import {
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Link, useParams, useSearchParams } from "react-router";
+import { toast } from "sonner";
+import { ErrorBoundary } from "../../error-boundary";
+import { normalizeGithubImportValue } from "../../utils/github-import.ts";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
+import { CommunityCallBanner } from "../common/event/community-call-banner";
+import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
+import { OrgAvatars, OrgMemberCount } from "./members";
+
+const AVATAR_UPLOAD_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
+const PROJECT_AVATAR_PATH = "project-avatars";
 
 function ProjectCard({
   project,
@@ -56,26 +71,90 @@ function ProjectCard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newName, setNewName] = useState(project.title);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
+  const writeFileMutation = useWriteFile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRename = async (e: React.FormEvent) => {
+  // Cleanup object URL on unmount or when it changes
+  useEffect(() => {
+    const currentUrl = localAvatarUrl;
+    return () => {
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [localAvatarUrl]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName.trim() === project.title || !newName.trim()) {
+
+    const hasNameChange = newName.trim() !== project.title && newName.trim();
+    if (!hasNameChange && !selectedFile) {
       setIsSettingsDialogOpen(false);
       return;
     }
 
     try {
+      // Upload avatar if a file was selected
+      let avatarUrl: string | undefined = project.avatar_url || undefined;
+      if (selectedFile) {
+        if (selectedFile.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+          toast.error("File size exceeds the limit of 5MB");
+          setSelectedFile(null);
+          setLocalAvatarUrl(null);
+          return;
+        }
+
+        const allowedTypes = [
+          "image/png",
+          "image/jpeg",
+          "image/jpg",
+          "image/webp",
+        ];
+        if (!allowedTypes.includes(selectedFile.type)) {
+          toast.error("Please upload a PNG, JPEG, JPG, or WebP image file");
+          setSelectedFile(null);
+          setLocalAvatarUrl(null);
+          return;
+        }
+
+        const filename = `${project.slug}-${crypto.randomUUID()}.${
+          selectedFile.name.split(".").pop() || "png"
+        }`;
+        const path = `${PROJECT_AVATAR_PATH}/${filename}`;
+        await writeFileMutation.mutateAsync({
+          path,
+          content: new Uint8Array(await selectedFile.arrayBuffer()),
+          contentType: selectedFile.type,
+        });
+        avatarUrl = path;
+      }
+
+      const updateData: { title?: string; icon?: string } = {};
+      if (hasNameChange) {
+        updateData.title = newName.trim();
+      }
+      if (selectedFile) {
+        updateData.icon = avatarUrl;
+      }
+
       await updateProjectMutation.mutateAsync({
         org: project.org.slug,
         project: project.slug,
-        data: { title: newName.trim() },
+        data: updateData,
       });
+
+      // Reset states
+      setSelectedFile(null);
+      setLocalAvatarUrl(null);
       setIsSettingsDialogOpen(false);
+      toast.success("Project settings updated successfully");
     } catch (error) {
-      console.error("Failed to rename project:", error);
-      // Error state is handled by the mutation hook
+      console.error("Failed to update project:", error);
+      toast.error("Failed to update project settings");
     }
   };
 
@@ -96,6 +175,7 @@ function ProjectCard({
       );
     }
   };
+  const { data: resolvedAvatarUrl } = useFile(project.avatar_url || "");
 
   return (
     <Card className="group transition-colors flex flex-col relative">
@@ -103,7 +183,7 @@ function ProjectCard({
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
             <Avatar
-              url={project.avatar_url || project.org.avatar_url || ""}
+              url={resolvedAvatarUrl || ""}
               fallback={project.title || project.slug}
               size="lg"
               objectFit="contain"
@@ -152,6 +232,8 @@ function ProjectCard({
             onClick={(e) => {
               e.stopPropagation();
               setNewName(project.title);
+              setSelectedFile(null);
+              setLocalAvatarUrl(null);
             }}
           >
             <Icon name="settings" size={16} />
@@ -161,7 +243,62 @@ function ProjectCard({
           <DialogHeader>
             <DialogTitle>Project Settings</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleRename} className="space-y-4">
+
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-avatar">Project Icon</Label>
+              <div className="flex items-center gap-4">
+                <div
+                  className="relative group cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Avatar
+                    shape="square"
+                    fallback={project.title}
+                    url={
+                      localAvatarUrl ||
+                      resolvedAvatarUrl ||
+                      project.org.avatar_url ||
+                      ""
+                    }
+                    objectFit="contain"
+                    size="2xl"
+                    className="group-hover:opacity-50 transition-opacity"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Icon name="upload" size={32} className="text-white" />
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (file) {
+                      if (file.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+                        toast.error("File size exceeds the limit of 5MB");
+                        e.target.value = "";
+                        return;
+                      }
+                      setSelectedFile(file);
+                      const objectUrl = URL.createObjectURL(file);
+                      setLocalAvatarUrl(objectUrl);
+                    }
+                  }}
+                  disabled={
+                    updateProjectMutation.isPending ||
+                    writeFileMutation.isPending
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Click the icon to upload a new project avatar (PNG, JPEG,
+                  WebP, max 5MB)
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="project-name">Project Name</Label>
               <Input
@@ -169,11 +306,13 @@ function ProjectCard({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter project name"
-                disabled={updateProjectMutation.isPending}
+                disabled={
+                  updateProjectMutation.isPending || writeFileMutation.isPending
+                }
               />
               {updateProjectMutation.error && (
                 <p className="text-sm text-destructive">
-                  Failed to rename project. Please try again.
+                  Failed to update project. Please try again.
                 </p>
               )}
             </div>
@@ -181,16 +320,28 @@ function ProjectCard({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsSettingsDialogOpen(false)}
-                disabled={updateProjectMutation.isPending}
+                onClick={() => {
+                  setIsSettingsDialogOpen(false);
+                  setSelectedFile(null);
+                  setLocalAvatarUrl(null);
+                }}
+                disabled={
+                  updateProjectMutation.isPending || writeFileMutation.isPending
+                }
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={updateProjectMutation.isPending || !newName.trim()}
+                disabled={
+                  updateProjectMutation.isPending ||
+                  writeFileMutation.isPending ||
+                  !newName.trim()
+                }
               >
-                {updateProjectMutation.isPending ? "Saving..." : "Save"}
+                {updateProjectMutation.isPending || writeFileMutation.isPending
+                  ? "Saving..."
+                  : "Save"}
               </Button>
             </div>
           </form>
@@ -330,7 +481,21 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const createProjectMutation = useCreateProject();
+  const writeFileMutation = useWriteFile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup object URL on unmount or when it changes
+  useEffect(() => {
+    const currentUrl = localAvatarUrl;
+    return () => {
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [localAvatarUrl]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -339,20 +504,60 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
     }
 
     try {
+      // Upload avatar if a file was selected
+      let icon: string | undefined;
+      if (selectedFile) {
+        if (selectedFile.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+          toast.error("File size exceeds the limit of 5MB");
+          setSelectedFile(null);
+          setLocalAvatarUrl(null);
+          return;
+        }
+
+        const allowedTypes = [
+          "image/png",
+          "image/jpeg",
+          "image/jpg",
+          "image/webp",
+        ];
+        if (!allowedTypes.includes(selectedFile.type)) {
+          toast.error("Please upload a PNG, JPEG, JPG, or WebP image file");
+          setSelectedFile(null);
+          setLocalAvatarUrl(null);
+          return;
+        }
+
+        const filename = `${slug.trim()}-${crypto.randomUUID()}.${
+          selectedFile.name.split(".").pop() || "png"
+        }`;
+        const path = `${PROJECT_AVATAR_PATH}/${filename}`;
+        await writeFileMutation.mutateAsync({
+          path,
+          content: new Uint8Array(await selectedFile.arrayBuffer()),
+          contentType: selectedFile.type,
+        });
+        icon = path;
+      }
+
       await createProjectMutation.mutateAsync({
         org,
         slug: slug.trim(),
         title: title.trim(),
         description: description.trim() || undefined,
+        icon,
       });
+
       // Reset form and close dialog on success
       setSlug("");
       setTitle("");
       setDescription("");
+      setSelectedFile(null);
+      setLocalAvatarUrl(null);
       setIsOpen(false);
+      toast.success("Project created successfully");
     } catch (error) {
       console.error("Failed to create project:", error);
-      // Error state is handled by the mutation hook
+      toast.error("Failed to create project");
     }
   };
 
@@ -379,6 +584,54 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
         </DialogHeader>
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="project-icon">Project Icon</Label>
+            <div className="flex items-center gap-4">
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Avatar
+                  shape="square"
+                  fallback={title || "Project"}
+                  url={localAvatarUrl || ""}
+                  objectFit="contain"
+                  size="2xl"
+                  className="group-hover:opacity-50 transition-opacity"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Icon name="upload" size={32} className="text-white" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file) {
+                    if (file.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+                      toast.error("File size exceeds the limit of 5MB");
+                      e.target.value = "";
+                      return;
+                    }
+                    setSelectedFile(file);
+                    const objectUrl = URL.createObjectURL(file);
+                    setLocalAvatarUrl(objectUrl);
+                  }
+                }}
+                disabled={
+                  createProjectMutation.isPending || writeFileMutation.isPending
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Click the icon to upload a project avatar (PNG, JPEG, WebP, max
+                5MB)
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="project-title">
               Project Title <span className="text-destructive">*</span>
             </Label>
@@ -390,7 +643,9 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
                 handleSlugChange(e.target.value);
               }}
               placeholder="My Awesome Project"
-              disabled={createProjectMutation.isPending}
+              disabled={
+                createProjectMutation.isPending || writeFileMutation.isPending
+              }
             />
           </div>
 
@@ -403,7 +658,9 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               placeholder="my-awesome-project"
-              disabled={createProjectMutation.isPending}
+              disabled={
+                createProjectMutation.isPending || writeFileMutation.isPending
+              }
             />
             <p className="text-xs text-muted-foreground">
               URL-friendly identifier (lowercase, no spaces)
@@ -417,7 +674,9 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this project about?"
-              disabled={createProjectMutation.isPending}
+              disabled={
+                createProjectMutation.isPending || writeFileMutation.isPending
+              }
               rows={3}
             />
           </div>
@@ -435,18 +694,29 @@ function CreateProject({ org, disabled }: { org: string; disabled?: boolean }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
-              disabled={createProjectMutation.isPending}
+              onClick={() => {
+                setIsOpen(false);
+                setSelectedFile(null);
+                setLocalAvatarUrl(null);
+              }}
+              disabled={
+                createProjectMutation.isPending || writeFileMutation.isPending
+              }
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={
-                createProjectMutation.isPending || !slug.trim() || !title.trim()
+                createProjectMutation.isPending ||
+                writeFileMutation.isPending ||
+                !slug.trim() ||
+                !title.trim()
               }
             >
-              {createProjectMutation.isPending ? "Creating..." : "Create"}
+              {createProjectMutation.isPending || writeFileMutation.isPending
+                ? "Creating..."
+                : "Create"}
             </Button>
           </div>
         </form>
@@ -459,6 +729,92 @@ function OrgProjectListContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const deferredQuery = useDeferredValue(searchQuery);
   const { org } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const createProjectMutation = useCreateProject();
+  const importGithubParam = searchParams.get("importGithub") ?? undefined;
+  const { slug: importGithubSlug, url: normalizedGithubUrl } =
+    normalizeGithubImportValue(importGithubParam);
+  const importGithubUrl = normalizedGithubUrl ?? undefined;
+
+  // Handle initialInput param - auto-create project with that prompt
+  useEffect(() => {
+    const initialInput = searchParams.get("initialInput");
+    const autoSend = searchParams.get("autoSend");
+
+    if (!initialInput || !org || createProjectMutation.isPending) {
+      return;
+    }
+
+    // Create project with default name and retry logic for slug collisions
+    const projectName = "New Project";
+    const baseSlug = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const attemptCreate = async (attempt = 0): Promise<void> => {
+      const maxAttempts = 10;
+      const slugToTry = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+
+      createProjectMutation.mutate(
+        {
+          org,
+          slug: slugToTry,
+          title: projectName,
+        },
+        {
+          onSuccess: (project) => {
+            // Navigate to project with initialInput params
+            const params = new URLSearchParams();
+            params.set("initialInput", initialInput);
+            if (autoSend) {
+              params.set("autoSend", autoSend);
+            }
+            globalThis.location.href = `/${org}/${project.slug}?${params.toString()}`;
+          },
+          onError: (error) => {
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+            // Check if it's a slug collision error
+            if (
+              errorMsg.toLowerCase().includes("slug") &&
+              (errorMsg.toLowerCase().includes("exists") ||
+                errorMsg.toLowerCase().includes("already") ||
+                errorMsg.toLowerCase().includes("taken") ||
+                errorMsg.toLowerCase().includes("duplicate"))
+            ) {
+              if (attempt + 1 < maxAttempts) {
+                // Try next attempt
+                attemptCreate(attempt + 1);
+              } else {
+                console.error(
+                  "Failed to create project: all slug attempts failed",
+                );
+                toast.error(
+                  "Failed to create project: all slug attempts failed",
+                );
+              }
+            } else {
+              // Not a slug error
+              console.error("Failed to create project:", error);
+              toast.error("Failed to create project");
+            }
+          },
+        },
+      );
+    };
+
+    attemptCreate();
+  }, [searchParams, org, createProjectMutation]);
+
+  const handleImportDialogClose = useCallback(() => {
+    if (!importGithubParam) {
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("importGithub");
+    setSearchParams(next, { replace: true });
+  }, [importGithubParam, searchParams, setSearchParams]);
 
   return (
     <div className="min-h-full w-full bg-background">
@@ -472,6 +828,12 @@ function OrgProjectListContent() {
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <ImportProjectFromGithub
+              org={org ?? ""}
+              defaultOpen={Boolean(importGithubSlug)}
+              defaultGithubUrl={importGithubUrl}
+              onClose={handleImportDialogClose}
             />
             <CreateProject org={org ?? ""} />
           </div>

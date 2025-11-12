@@ -1,5 +1,5 @@
 // deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-import { Avatar } from "../common/avatar";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { useLazyTeamMembers } from "../../hooks/use-lazy-team-members";
 
 export function OrgAvatars({ teamId }: { teamId: number }) {

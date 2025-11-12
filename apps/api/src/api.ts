@@ -22,7 +22,6 @@ import {
   createDocumentViewsV2,
   createItemSchema,
   createMCPToolsStub,
-  createToolBindingImpl,
   createToolResourceV2Implementation,
   createToolViewsV2,
   createViewResourceV2Implementation,
@@ -50,7 +49,6 @@ import {
   SearchOutput,
   toBindingsContext,
   Tool,
-  ToolBindingImplOptions,
   type ToolLike,
   watchSSE,
   withMCPAuthorization,
@@ -198,10 +196,13 @@ const createMCPHandlerFor = (
   tools:
     | readonly Tool[]
     | ((c: Context<AppEnv>) => Promise<Tool[] | readonly Tool[]>),
+  defaultGroup?: string,
 ) => {
   return async (c: Context<AppEnv>) => {
     const group =
-      c.req.query("group") ?? getGroupByAppName(c.req.param("group"));
+      c.req.query("group") ??
+      getGroupByAppName(c.req.param("group")) ??
+      defaultGroup;
 
     const server = new McpServer(
       { name: "@deco/api", version: "1.0.0" },
@@ -209,7 +210,8 @@ const createMCPHandlerFor = (
     );
 
     const registeredTools = new Set<string>();
-    for (const tool of await (typeof tools === "function" ? tools(c) : tools)) {
+    const allTools = await (typeof tools === "function" ? tools(c) : tools);
+    for (const tool of allTools) {
       if (group && tool.group !== group) {
         continue;
       }
@@ -683,15 +685,6 @@ const createContextBasedTools = (ctx: Context) => {
     context: appCtx,
   });
 
-  const resourceToolRead: ToolBindingImplOptions["resourceToolRead"] = ((uri) =>
-    State.run(
-      appCtx,
-      async () => await resourcesClient.DECO_RESOURCE_TOOL_READ({ uri }),
-    )) as ToolBindingImplOptions["resourceToolRead"];
-
-  // Create tool execution functionality using createToolBindingImpl
-  const callTool = createToolBindingImpl({ resourceToolRead });
-
   // Create Views 2.0 implementation for tool views
   const toolViewsV2 = createToolViewsV2();
 
@@ -737,7 +730,6 @@ const createContextBasedTools = (ctx: Context) => {
 
   const toolsManagementTools = [
     ...toolResourceV2, // Add new Resources 2.0 implementation
-    ...callTool, // Add tool execution functionality
     runTool,
     ...toolViewsV2, // Add Views 2.0 implementation
   ].map((tool) => ({ ...tool, group: WellKnownMcpGroups.Tools }));
@@ -879,8 +871,6 @@ const createSelfTools = async (ctx: Context) => {
         inputSchema,
         outputSchema,
         handler: async (input) => {
-          await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
-
           // Execute the tool without JSON schema validation (already validated by MCP layer via Zod schema)
           return await State.run(appCtx, async () => {
             const contextWithTool = {
@@ -989,8 +979,6 @@ const createSelfTools = async (ctx: Context) => {
           uri: z.string(),
         }),
         handler: async (input: unknown) => {
-          await assertWorkspaceResourceAccess(appCtx, "DECO_TOOL_CALL_TOOL");
-
           // Use DECO_WORKFLOW_START to start the workflow
           return await State.run(appCtx, async () => {
             const workflowBinding = createWorkflowBindingImpl({
@@ -1036,6 +1024,7 @@ const createSelfTools = async (ctx: Context) => {
 };
 
 const projectMcpHandler = createMCPHandlerFor(projectTools);
+
 app.all("/:org/:project/mcp", projectMcpHandler);
 app.all("/:org/:project/mcp/tool/:toolName", projectMcpHandler);
 
@@ -1058,8 +1047,35 @@ app.post(
 );
 
 const selfMcpHandler = createMCPHandlerFor(createSelfTools);
-app.post("/:org/:project/self/mcp", selfMcpHandler);
-app.post("/:org/:project/self/mcp/tool/:toolName", selfMcpHandler);
+app.post(`/:org/:project/${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(`/:org/:project/i:${WellKnownMcpGroups.Self}/mcp`, selfMcpHandler);
+app.post(
+  `/:org/:project/${WellKnownMcpGroups.Self}/mcp/tool/:toolName`,
+  selfMcpHandler,
+);
+app.post(
+  `/:org/:project/i:${WellKnownMcpGroups.Self}/mcp/tool/:toolName`,
+  selfMcpHandler,
+);
+
+/**
+ * These routes make the DECO_TOOL_CALL_TOOL function call the virtual MCP integrations directly,
+ * thus avoiding going through the usual withOAuth middleware, making the user available to
+ * the virtual integrations.
+ * To remove these routes, remove it and ask decopilot to create tools, if the user is defined
+ * on the "created_by" field, you can remove it.
+ */
+const globalGroups = new Set<string>([
+  WellKnownMcpGroups.Time,
+  WellKnownMcpGroups.HTTP,
+]);
+Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
+  const handler = globalGroups.has(groupPath as string)
+    ? createMCPHandlerFor(GLOBAL_TOOLS, groupPath)
+    : createMCPHandlerFor(projectTools, groupPath);
+  app.all(`/:org/:project/i:${groupPath}/mcp`, handler);
+  app.all(`/:org/:project/i:${groupPath}/mcp/tool/:toolName`, handler);
+});
 
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);

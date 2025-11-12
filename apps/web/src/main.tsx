@@ -1,6 +1,7 @@
 import "./polyfills.ts";
 
 import {
+  DecoQueryClientProvider,
   ForbiddenError,
   type InternalServerError,
   NotFoundError,
@@ -12,7 +13,6 @@ import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
   RouterProvider,
-  Navigate,
   useLocation,
   useRouteError,
 } from "react-router";
@@ -138,44 +138,8 @@ const PageviewTrackerLayout = lazy(
 
 const Login = lazy(() => import("./components/login/index.tsx"));
 
-/**
- * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
- * want custom Suspense behavior.
- */
-const AppDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/integrations/app-detail.tsx")),
-);
-
-const InstalledAppsList = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/installed-apps.tsx"),
-  ),
-);
-
-const AppInstallSuccess = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/install-success.tsx"),
-  ),
-);
-
-const AgentsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/list-page.tsx")),
-);
-
-const AgentsThreadsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agents/threads-page.tsx")),
-);
-
-const AgentDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
-);
-
 const PublicChats = lazy(() =>
   wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
-);
-
-const AuditDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/audit/detail.tsx")),
 );
 
 const MagicLink = lazy(() =>
@@ -185,6 +149,12 @@ const MagicLink = lazy(() =>
 const MagicLinkCallback = lazy(() =>
   wrapWithUILoadingFallback(
     import("./components/login/magic-link-callback.tsx"),
+  ),
+);
+
+const SelectOrgForProject = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/onboarding/select-org-for-project.tsx"),
   ),
 );
 
@@ -208,12 +178,6 @@ const Usage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/usage/usage.tsx")),
 );
 
-const TriggerDetails = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/triggers/trigger-details.tsx"),
-  ),
-);
-
 const InvitesList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/invites/index.tsx")),
 );
@@ -226,79 +190,13 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx")),
 );
 
-const DocumentsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/documents/list-page.tsx")),
-);
-
-const PromptsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/documents/prompts-legacy-page.tsx"),
-  ),
-);
-
-const DocumentEdit = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx")),
-);
-
-const WorkflowsRunsPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/runs-v2-page.tsx")),
-);
-const WorkflowsRunsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/runs-legacy-page.tsx"),
-  ),
-);
-const WorkflowDetailPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/detail.tsx")),
-);
-
 const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx")),
 );
 
-const ViewDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
-);
-
-const LegacyViewRedirect = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/legacy-redirect.tsx")),
-);
-
-const ViewsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/list-page.tsx")),
-);
-
-const ViewsLegacyPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/views/legacy-list-page.tsx")),
-);
-
-const Store = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/discover/index.tsx")),
-);
-
-// Resources v2 routes
-const ResourcesV2List = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/resources-v2/list.tsx")),
-);
-
-// Detail component has its own loading state, no additional Suspense needed
-const ResourcesV2Detail = lazy(
-  () => import("./components/resources-v2/detail.tsx"),
-);
-
-// Workflows resource list
-const WorkflowsListPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/list-page.tsx")),
-);
-
-const WorkflowsTriggersPage = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/workflows/triggers-page.tsx")),
-);
-
-// Tools resource list
-const ToolsResourceList = lazy(() =>
+const OAuthSuccess = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/tools/tools-resource-list.tsx"),
+    import("./components/integrations/oauth-success.tsx"),
   ),
 );
 
@@ -418,29 +316,36 @@ const router = createBrowserRouter([
           {
             index: true,
             Component: OrgProjectList,
+            handle: { title: "Projects" },
           },
           {
             path: "members",
             Component: Members,
+            handle: { title: "Members" },
           },
           {
             path: "billing",
             Component: Billing,
+            handle: { title: "Billing" },
           },
           {
             path: "models",
             Component: Models,
+            handle: { title: "Models" },
           },
           {
             path: "usage",
             Component: Usage,
+            handle: { title: "Usage" },
           },
           {
             path: "settings",
             Component: OrgSettings,
+            handle: { title: "Settings" },
           },
           {
             path: "theme-editor",
+            handle: { title: "Theme Editor" },
             lazy: () =>
               import(
                 "./components/theme-editor/theme-editor-resource-list.tsx"
@@ -469,6 +374,10 @@ const router = createBrowserRouter([
         Component: MagicLinkCallback,
       },
       {
+        path: "/onboarding/select-org",
+        Component: SelectOrgForProject,
+      },
+      {
         path: "/sales-deck",
         Component: SalesDeck,
       },
@@ -484,65 +393,13 @@ const router = createBrowserRouter([
         path: "/:org/:project",
         Component: ProjectLayout,
         children: [
-          { index: true, Component: ProjectHome },
-          { path: "store", Component: Store },
+          { index: true, Component: ProjectHome, handle: { title: "Home" } },
           {
-            path: "discover",
-            Component: () => <Navigate to="../store" replace />,
+            path: "apps/success",
+            Component: OAuthSuccess,
+            handle: { title: "Connecting..." },
           },
-          { path: "tools", Component: ToolsResourceList },
-          { path: "agents", Component: AgentsListPage },
-          { path: "agents/threads", Component: AgentsThreadsPage },
-          { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "apps", Component: InstalledAppsList },
-          { path: "apps/:appKey", Component: AppDetail },
-          { path: "apps/success", Component: AppInstallSuccess },
-          {
-            path: "triggers",
-            Component: () => <Navigate to="../workflows/triggers" replace />,
-          },
-          { path: "trigger/:id", Component: TriggerDetails },
-          {
-            path: "database",
-            Component: lazy(() => import("./components/database/studio.tsx")),
-          },
-          { path: "views", Component: ViewsListPage },
-          { path: "views/legacy", Component: ViewsLegacyPage },
-          { path: "views/:integrationId/:viewName", Component: ViewDetail },
-          { path: "views/:id", Component: LegacyViewRedirect },
-          { path: "documents", Component: DocumentsListPage },
-          { path: "documents/prompts", Component: PromptsLegacyPage },
-          { path: "documents/:id", Component: DocumentEdit },
-          {
-            path: "workflow-runs",
-            Component: () => <Navigate to="../workflows/runs-legacy" replace />,
-          },
-          {
-            path: "workflow-runs/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage,
-          },
-          { path: "workflows", Component: WorkflowsListPage },
-          { path: "workflows/runs", Component: WorkflowsRunsPage },
-          { path: "workflows/runs-legacy", Component: WorkflowsRunsLegacyPage },
-          {
-            path: "workflows/runs/:workflowName/instances/:instanceId",
-            Component: WorkflowDetailPage,
-          },
-          { path: "workflows/triggers", Component: WorkflowsTriggersPage },
-          {
-            path: "activity",
-            Component: () => <Navigate to="../agents/threads" replace />,
-          },
-          { path: "audit/:id", Component: AuditDetail },
-          // Resources v2 list/detail routes
-          {
-            path: "rsc/:integrationId/:resourceName",
-            Component: ResourcesV2List,
-          },
-          {
-            path: "rsc/:integrationId/:resourceName/:resourceUri",
-            Component: ResourcesV2Detail,
-          },
+          { path: "*", Component: ProjectHome, handle: { title: "Home" } },
         ],
       },
       { path: "*", Component: NotFound },
@@ -552,6 +409,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <DecoQueryClientProvider>
+      <RouterProvider router={router} />
+    </DecoQueryClientProvider>
   </StrictMode>,
 );

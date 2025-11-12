@@ -26,17 +26,59 @@ const HIGHLIGHTS = [
 // For the future, it should be controlled in a view
 const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 
+/**
+ * Filter apps that have valid icons (not empty and not default).
+ * Remove apps without icon and apps with default icon that ends with /app.png
+ * @param integrations - List of integrations to filter
+ * @returns Filtered list of integrations with valid icons
+ */
+const filterAppsWithValidIcons = <T extends Integration>(
+  integrations: T[],
+): T[] => {
+  return integrations.filter((integration) => {
+    if (!integration.icon || integration.icon.trim() === "") return false;
+    if (integration.icon.endsWith("/app.png")) return false;
+    return true;
+  });
+};
+
+/**
+ * Return the most recent apps based on the order of return from the marketplace.
+ * The apps from the marketplace already come ordered by creation date (most recent first).
+ * Filter only apps with valid icons.
+ * @param integrations - List of integrations from the marketplace
+ * @param limit - Number of apps to return (default: 3)
+ * @returns Array with the names of the most recent apps
+ */
+const getRecentApps = (
+  integrations: Integration[] | undefined,
+  limit = 3,
+): string[] => {
+  if (!integrations || integrations.length === 0) return FEATURED;
+
+  const appsWithValidIcons = filterAppsWithValidIcons(integrations);
+  const appsWithCreatedAt = appsWithValidIcons.filter(
+    (integration) => integration.createdAt,
+  );
+
+  return appsWithCreatedAt.length === 0
+    ? FEATURED
+    : appsWithCreatedAt.slice(0, limit).map((integration) => integration.name);
+};
+
 type FeaturedIntegration = Integration & {
   provider: string;
   friendlyName?: string;
-  verified?: boolean;
+  verified?: boolean | null;
   connection: MCPConnection;
 };
 
 const FeaturedCard = ({
   integration,
+  onAppClick,
 }: {
   integration: FeaturedIntegration;
+  onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
   const key = getConnectionAppKey(integration);
@@ -44,7 +86,11 @@ const FeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/apps/${appKey}`);
+        if (onAppClick) {
+          onAppClick(appKey);
+        } else {
+          navigateWorkspace(`/apps/${appKey}`);
+        }
       }}
       className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
     >
@@ -64,8 +110,10 @@ const FeaturedCard = ({
 
 const SimpleFeaturedCard = ({
   integration,
+  onAppClick,
 }: {
   integration: FeaturedIntegration;
+  onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
   const key = getConnectionAppKey(integration);
@@ -73,7 +121,11 @@ const SimpleFeaturedCard = ({
   return (
     <div
       onClick={() => {
-        navigateWorkspace(`/apps/${appKey}`);
+        if (onAppClick) {
+          onAppClick(appKey);
+        } else {
+          navigateWorkspace(`/apps/${appKey}`);
+        }
       }}
       className="flex p-2 gap-2 cursor-pointer overflow-hidden items-center hover:bg-muted rounded-lg"
     >
@@ -94,17 +146,40 @@ const SimpleFeaturedCard = ({
   );
 };
 
-const Discover = () => {
+function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
+  const { onAppClick } = props;
   const [search, setSearch] = useState("");
   const { data: integrations } = useMarketplaceIntegrations();
   const navigateWorkspace = useNavigateWorkspace();
 
+  const recentApps = useMemo(
+    () => getRecentApps(integrations?.integrations, 3),
+    [integrations],
+  );
+
   const featuredIntegrations = integrations?.integrations.filter(
-    (integration) => FEATURED.includes(integration.name),
+    (integration) => recentApps.includes(integration.name),
   );
   const verifiedIntegrations = integrations?.integrations.filter(
     (integration) => integration.verified,
   );
+
+  const sortedIntegrations = useMemo<FeaturedIntegration[]>(() => {
+    if (!integrations?.integrations) return [];
+
+    const validIconApps = filterAppsWithValidIcons(integrations.integrations);
+    const noIconApps = integrations.integrations.filter(
+      (integration) => !validIconApps.includes(integration),
+    );
+    const allApps = [...validIconApps, ...noIconApps];
+
+    return [...allApps].sort((a, b) => {
+      if (a.verified === true && b.verified !== true) return -1;
+      if (a.verified !== true && b.verified === true) return 1;
+
+      return 0;
+    });
+  }, [integrations]);
 
   const highlights = useMemo(() => {
     return HIGHLIGHTS.map((highlight) => {
@@ -153,6 +228,7 @@ const Discover = () => {
                   <SimpleFeaturedCard
                     key={"search-" + integration.id}
                     integration={integration}
+                    onAppClick={onAppClick}
                   />
                 ))}
                 {filteredIntegrations?.length === 0 && (
@@ -182,12 +258,20 @@ const Discover = () => {
                   key={item.appName}
                   type="button"
                   onClick={() => {
-                    navigateWorkspace(`/apps/${appKey}`);
+                    if (onAppClick) {
+                      onAppClick(appKey);
+                    } else {
+                      navigateWorkspace(`/apps/${appKey}`);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      navigateWorkspace(`/apps/${appKey}`);
+                      if (onAppClick) {
+                        onAppClick(appKey);
+                      } else {
+                        navigateWorkspace(`/apps/${appKey}`);
+                      }
                     }
                   }}
                   className="relative rounded-xl cursor-pointer overflow-hidden"
@@ -229,19 +313,27 @@ const Discover = () => {
             </h2>
             <div className="grid grid-cols-3 gap-4">
               {featuredIntegrations?.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
+                <FeaturedCard
+                  key={integration.id}
+                  integration={integration}
+                  onAppClick={onAppClick}
+                />
               ))}
             </div>
 
             <h2 className="text-lg pt-5 font-medium">
               All Apps
               <span className="text-muted-foreground font-mono font-normal text-sm ml-2">
-                {integrations?.integrations?.length}
+                {sortedIntegrations.length}
               </span>
             </h2>
             <div className="grid grid-cols-3 gap-4">
-              {integrations?.integrations.map((integration) => (
-                <FeaturedCard key={integration.id} integration={integration} />
+              {sortedIntegrations.map((integration) => (
+                <FeaturedCard
+                  key={integration.id}
+                  integration={integration}
+                  onAppClick={onAppClick}
+                />
               ))}
             </div>
           </div>
@@ -260,6 +352,7 @@ const Discover = () => {
                 <SimpleFeaturedCard
                   key={integration.id}
                   integration={integration}
+                  onAppClick={onAppClick}
                 />
               ))}
             </div>
@@ -268,6 +361,6 @@ const Discover = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Discover;

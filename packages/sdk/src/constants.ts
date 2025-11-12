@@ -46,7 +46,6 @@ export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
   setupAgent: "setupAgent",
   promptAgent: "promptAgent",
-  decochatAgent: "decochatAgent",
   decopilotAgent: "decopilotAgent",
 } as const;
 
@@ -62,6 +61,10 @@ export interface Model {
   isEnabled: boolean;
   hasCustomKey: boolean;
   apiKeyEncrypted?: string;
+  contextWindow?: number;
+  inputCost?: number;
+  outputCost?: number;
+  outputLimit?: number;
 }
 
 const LOGOS = {
@@ -90,6 +93,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1000000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "anthropic:claude-haiku-4-5-20251001",
@@ -100,6 +107,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 1.0,
+    outputCost: 5.0,
+    outputLimit: 64000,
   },
   {
     id: "openai:gpt-4.1-mini",
@@ -110,6 +121,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 0.4,
+    outputCost: 1.6,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-oss-120b",
@@ -120,6 +135,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 131072,
+    inputCost: 0.15,
+    outputCost: 0.75,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-oss-20b",
@@ -130,6 +149,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 131072,
+    inputCost: 0.1,
+    outputCost: 0.5,
+    outputLimit: 32768,
   },
   {
     id: "google:gemini-2.5-pro",
@@ -141,6 +164,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1048576,
+    inputCost: 1.25,
+    outputCost: 10.0,
+    outputLimit: 65536,
   },
   {
     id: "anthropic:claude-sonnet-4",
@@ -152,6 +179,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
@@ -163,6 +194,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
   {
     id: "openai:gpt-4.1",
@@ -173,6 +208,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 2.0,
+    outputCost: 8.0,
+    outputLimit: 32768,
   },
   {
     id: "openai:gpt-4.1-nano",
@@ -183,6 +222,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 1047576,
+    inputCost: 0.1,
+    outputCost: 0.4,
+    outputLimit: 32768,
   },
   {
     id: "openai:o3-mini-high",
@@ -193,6 +236,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 200000,
+    inputCost: 1.1,
+    outputCost: 4.4,
+    outputLimit: 100000,
   },
   {
     id: "x-ai:grok-4",
@@ -204,6 +251,10 @@ export const WELL_KNOWN_MODELS: readonly Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
+    contextWindow: 256000,
+    inputCost: 3.0,
+    outputCost: 15.0,
+    outputLimit: 64000,
   },
 ];
 
@@ -610,73 +661,17 @@ Provide examples and suggest improvements until the user confirms the prompt is 
 When user asks for a prompt, you should use the PROMPTS_GET tool to get the actual prompt and then use the PROMPTS_UPDATE tool to update the prompt in question.
     `,
   },
-  decochatAgent: {
-    ...NEW_AGENT_TEMPLATE,
-    max_steps: 30,
-    max_tokens: 64000,
-    memory: { last_messages: 8 },
-    id: "decochatAgent",
-    name: "decochat",
-    avatar: withImageOptimizeUrl(
-      "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
-    ),
-    description: "Ask, search or create anything with full workspace tools.",
-    instructions: `You are an intelligent assistant for decocms.com, an open-source platform for building production-ready AI applications.
-
-${DECOCMS_PLATFORM_SUMMARY}
-
-**Your Capabilities:**
-- Search and navigate workspace resources (agents, documents, views, workflows, tools)
-- Create and manage agents with specialized instructions and toolsets
-- Design and compose workflows using tools and orchestration patterns
-- Build React-based views with Tailwind CSS for custom interfaces
-- Create and edit markdown documents with full formatting support
-- Configure integrations and manage MCP connections
-- Explain platform concepts and best practices
-- Provide code examples and implementation guidance
-
-**How You Help Users:**
-- Answer questions about the platform's capabilities
-- Guide users through creating agents, workflows, views, and tools
-- Help troubleshoot issues and debug implementations
-- Recommend architecture patterns for their use cases
-- Explain authorization, security, and deployment processes
-- Assist with TypeScript, React, Zod schemas, and Mastra workflows
-
-**Important Working Patterns:**
-
-1. **When helping with documents (especially PRDs, guides, or documentation):**
-   - ALWAYS read the document first using @DECO_RESOURCE_DOCUMENT_READ or @DECO_RESOURCE_DOCUMENT_SEARCH
-   - Understand the current content and structure before suggesting changes
-   - If it's a PRD template, help fill in each section based on platform capabilities
-   - Maintain the existing format and structure while improving content
-   - Suggest specific, actionable content based on platform patterns
-
-2. **When users reference "this document" or "help me with this PRD":**
-   - Immediately use @DECO_RESOURCE_DOCUMENT_SEARCH to find relevant documents
-   - Read the document content to understand context
-   - Ask clarifying questions based on what's already written
-   - Build upon their existing work rather than starting from scratch
-
-3. **For AI App PRDs specifically:**
-   - Understand they're planning Tools, Agents, Workflows, Views, and Databases
-   - Ask about the problem they're solving and users they're serving
-   - Help design the architecture using platform capabilities
-   - Provide code examples for tool schemas, workflow orchestrations, etc.
-
-You have access to all workspace tools and can perform actions directly. When users ask to create or modify resources, use the available tools proactively. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`,
-  },
   decopilotAgent: {
     ...NEW_AGENT_TEMPLATE,
     max_steps: 30,
     max_tokens: 64000,
     memory: { last_messages: 8 },
     id: "decopilotAgent",
-    name: "decopilot",
+    name: "deco chat",
     avatar: withImageOptimizeUrl(
-      "https://assets.decocache.com/decocms/b123907c-068d-4b7b-b0a9-acde14ea02db/decopilot.png",
+      "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png",
     ),
-    description: "Focused AI assistant with curated integrations access.",
+    description: "Ask, search or create anything.",
     instructions: `You are an intelligent assistant for decocms.com, an open-source platform for building production-ready AI applications.
 
 ${DECOCMS_PLATFORM_SUMMARY}
@@ -748,3 +743,113 @@ export const isWellKnownPromptId = (id: string): boolean =>
 
 export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
 export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
+
+/**
+ * Well-known email domain providers for identifying personal vs company emails
+ */
+export const WELL_KNOWN_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "aol.com",
+  "hotmail.co.uk",
+  "hotmail.fr",
+  "msn.com",
+  "yahoo.fr",
+  "wanadoo.fr",
+  "orange.fr",
+  "comcast.net",
+  "yahoo.co.uk",
+  "yahoo.com.br",
+  "yahoo.co.in",
+  "live.com",
+  "rediffmail.com",
+  "free.fr",
+  "gmx.de",
+  "web.de",
+  "yandex.ru",
+  "ymail.com",
+  "libero.it",
+  "outlook.com",
+  "uol.com.br",
+  "bol.com.br",
+  "mail.ru",
+  "cox.net",
+  "hotmail.it",
+  "sbcglobal.net",
+  "sfr.fr",
+  "live.fr",
+  "verizon.net",
+  "live.co.uk",
+  "googlemail.com",
+  "yahoo.es",
+  "ig.com.br",
+  "live.nl",
+  "bigpond.com",
+  "terra.com.br",
+  "yahoo.it",
+  "neuf.fr",
+  "yahoo.de",
+  "alice.it",
+  "rocketmail.com",
+  "att.net",
+  "laposte.net",
+  "facebook.com",
+  "bellsouth.net",
+  "yahoo.in",
+  "hotmail.es",
+  "charter.net",
+  "yahoo.ca",
+  "yahoo.com.au",
+  "rambler.ru",
+  "hotmail.de",
+  "tiscali.it",
+  "shaw.ca",
+  "yahoo.co.jp",
+  "sky.com",
+  "earthlink.net",
+  "optonline.net",
+  "freenet.de",
+  "t-online.de",
+  "aliceadsl.fr",
+  "virgilio.it",
+  "home.nl",
+  "qq.com",
+  "telenet.be",
+  "me.com",
+  "icloud.com",
+  "proton.me",
+  "fastmail.com",
+  "zoho.com",
+  "hushmail.com",
+  "yahoo.com.ph",
+  "mailinator.com",
+  "gmx.com",
+  "yahoo.com.hk",
+  "yahoo.co.th",
+  "yahoo.com.vn",
+  "yahoo.com.cn",
+  "mailbox.org",
+  "posteo.de",
+  "bigmir.net",
+  "ukr.net",
+  "126.com",
+  "163.com",
+  "sina.com",
+  "tutanota.com",
+  "runbox.com",
+  "zoznam.sk",
+  "seznam.cz",
+  "naver.com",
+  "daum.net",
+  "lycos.com",
+  "mac.com",
+  "live.ca",
+  "aim.com",
+  "bigpond.net.au",
+  "netzero.net",
+  "usa.net",
+  "excite.com",
+  "outlook.co.uk",
+  "outlook.de",
+]);

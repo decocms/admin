@@ -9,6 +9,7 @@ export interface Team {
   name: string;
   slug: string;
   avatar_url?: string;
+  domain?: string;
   theme?: Theme;
   created_at: string;
 }
@@ -47,6 +48,9 @@ export interface CreateTeamInput {
   name: string;
   slug: string;
   stripe_subscription_id?: string;
+  avatar_url?: string;
+  domain?: string;
+  theme?: Theme;
   [key: string]: unknown;
 }
 

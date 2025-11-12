@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 interface GeneralSettingsFormValues {

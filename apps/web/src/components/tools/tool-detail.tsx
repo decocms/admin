@@ -1,12 +1,10 @@
 import {
   ToolDefinitionSchema,
-  useRecentResources,
   useSDK,
   useToolByUriV2,
-  useToolCallV2,
   useUpdateTool,
 } from "@deco/sdk";
-import { ToolCallResultV2 } from "@deco/sdk/hooks";
+import { useToolCall, type MCPToolCallResult } from "@deco/sdk/hooks";
 import {
   Alert,
   AlertDescription,
@@ -18,22 +16,21 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { appendRuntimeError, clearRuntimeError } from "../chat/provider.tsx";
+import { useAgenticChat } from "../chat/provider.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import {
-  ResourceDetailHeader,
   CodeAction,
   SaveDiscardActions,
 } from "../common/resource-detail-header.tsx";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
 
 // Tool type inferred from the Zod schema
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -56,11 +53,6 @@ interface ToolDisplayCanvasProps {
 export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   const { data: resource, isLoading } = useToolByUriV2(resourceUri);
   const effectiveTool = resource?.data;
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const params = useParams<{ org: string; project: string }>();
-  const hasTrackedRecentRef = useRef(false);
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
   const updateToolMutation = useUpdateTool();
@@ -108,49 +100,17 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   }, []);
 
   // Track as recently opened when tool is loaded (only once)
-  useEffect(() => {
-    if (
-      effectiveTool &&
-      resourceUri &&
-      projectKey &&
-      params.org &&
-      params.project &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Parse the resource URI to extract integration and resource name
-      // Format: rsc://integration-id/resource-name/resource-id
-      const uriWithoutPrefix = resourceUri.replace("rsc://", "");
-      const [integrationId, resourceName] = uriWithoutPrefix.split("/");
 
-      // Use setTimeout to ensure this runs after render
-      setTimeout(() => {
-        addRecent({
-          id: resourceUri,
-          name: effectiveTool.name,
-          type: "tool",
-          icon: "build",
-          path: `/${projectKey}/rsc/${integrationId.startsWith("i:") ? integrationId : `i:${integrationId}`}/${resourceName}/${encodeURIComponent(resourceUri)}`,
-        });
-      }, 0);
-    }
-  }, [
-    effectiveTool,
-    resourceUri,
-    projectKey,
-    params.org,
-    params.project,
-    addRecent,
-  ]);
+  const { clearError, appendError } = useAgenticChat();
 
   // Clear errors when tool changes
   useEffect(() => {
-    clearRuntimeError();
-  }, [resourceUri]);
+    clearError();
+  }, [resourceUri, clearError]);
 
   // Tool execution state
   const [executionResult, setExecutionResult] =
-    useState<ToolCallResultV2 | null>(null);
+    useState<MCPToolCallResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStats, setExecutionStats] = useState<{
     latency?: number;
@@ -161,8 +121,11 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
   // Form data state to prevent clearing after submission
   const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-  // Tool call hook
-  const toolCallMutation = useToolCallV2();
+  // Get locator from SDK context
+  const { locator } = useSDK();
+
+  // Tool call hook - extract tool name from URI and use i:self integration
+  const toolCallMutation = useToolCall({ id: "i:self" }, locator);
 
   // Token estimation function
   const estimateTokens = useCallback((text: string): number => {
@@ -198,11 +161,15 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         const inputText = JSON.stringify(formData);
         const inputTokens = estimateTokens(inputText);
 
+        // Extract tool name from URI (format: rsc://i:self/tool/<name>)
+        const toolName = resourceUri.split("/").pop();
+        if (!toolName) {
+          throw new Error(`Invalid tool URI: ${resourceUri}`);
+        }
+
         const result = await toolCallMutation.mutateAsync({
-          params: {
-            uri: resourceUri,
-            input: formData,
-          },
+          name: toolName,
+          arguments: formData,
         });
 
         const endTime = performance.now();
@@ -211,12 +178,9 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         const resultText = JSON.stringify(result);
         const resultTokens = estimateTokens(resultText);
 
-        if (result.error) {
-          throw new Error(
-            typeof result.error === "string"
-              ? result.error
-              : JSON.stringify(result.error),
-          );
+        if (result.isError) {
+          const errorMessage = result.content.map((c) => c.text).join("\n");
+          throw new Error(errorMessage || "Tool execution failed");
         }
 
         setExecutionResult(result);
@@ -227,7 +191,7 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
         });
 
         // Clear any previous errors on successful execution
-        clearRuntimeError();
+        clearError();
       } catch (error) {
         console.error("Tool execution failed:", error);
 
@@ -235,11 +199,12 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
           error instanceof Error ? error.message : "Unknown error occurred";
 
         setExecutionResult({
-          error: errorMessage,
+          content: [{ type: "text", text: errorMessage }],
+          isError: true,
         });
 
         // Send error to chat provider for AI assistance
-        appendRuntimeError(error, resourceUri, effectiveTool.name);
+        appendError(error, resourceUri, effectiveTool.name);
       } finally {
         setIsExecuting(false);
       }
@@ -267,28 +232,23 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      {/* Header with code viewer toggle */}
-      <ResourceDetailHeader
-        title={effectiveTool.name}
-        actions={
-          <>
-            {isCodeViewerOpen && (
-              <SaveDiscardActions
-                hasChanges={isDirty}
-                onSave={handleSaveCode}
-                onDiscard={handleResetCode}
-                isSaving={updateToolMutation.isPending}
-                discardLabel="Reset"
-              />
-            )}
-            <CodeAction
-              isOpen={isCodeViewerOpen}
-              onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
-              hasCode={!!effectiveTool.execute}
-            />
-          </>
-        }
-      />
+      {/* Action buttons rendered in canvas header via portal */}
+      <TabActionButton>
+        {isCodeViewerOpen && (
+          <SaveDiscardActions
+            hasChanges={isDirty}
+            onSave={handleSaveCode}
+            onDiscard={handleResetCode}
+            isSaving={updateToolMutation.isPending}
+            discardLabel="Reset"
+          />
+        )}
+        <CodeAction
+          isOpen={isCodeViewerOpen}
+          onToggle={() => setIsCodeViewerOpen(!isCodeViewerOpen)}
+          hasCode={!!effectiveTool.execute}
+        />
+      </TabActionButton>
 
       {/* Code Viewer Section - Shows when code button is clicked */}
       {isCodeViewerOpen && effectiveTool.execute ? (
@@ -382,14 +342,12 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
                 ) : null}
 
                 {/* Error Alert */}
-                {executionResult?.error ? (
+                {executionResult?.isError ? (
                   <Alert className="bg-destructive/5 border-none">
                     <Icon name="error" className="h-4 w-4 text-destructive" />
                     <AlertTitle className="text-destructive">Error</AlertTitle>
                     <AlertDescription className="text-destructive">
-                      {typeof executionResult.error === "string"
-                        ? executionResult.error
-                        : JSON.stringify(executionResult.error)}
+                      {executionResult.content.map((c) => c.text).join("\n")}
                     </AlertDescription>
                   </Alert>
                 ) : null}
@@ -466,35 +424,13 @@ export function ToolDetail({ resourceUri }: ToolDisplayCanvasProps) {
             {/* Result Section - only show if we have a result */}
             {executionResult && (
               <DetailSection title="Result">
-                {/* Logs Section */}
-                {executionResult.logs && executionResult.logs.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="font-mono text-sm text-muted-foreground uppercase">
-                      Console Logs
-                    </p>
-                    <div className="bg-muted rounded-xl p-3 max-h-[200px] overflow-auto">
-                      {executionResult.logs.map((log, index) => (
-                        <div
-                          key={index}
-                          className={`text-xs font-mono ${
-                            log.type === "error"
-                              ? "text-destructive"
-                              : log.type === "warn"
-                                ? "text-yellow-600"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          [{log.type.toUpperCase()}] {log.content}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Output */}
-                {!executionResult.error && (
+                {!executionResult.isError && (
                   <JsonViewer
-                    data={executionResult.result || executionResult}
+                    data={
+                      executionResult.structuredContent ||
+                      executionResult.content
+                    }
                   />
                 )}
               </DetailSection>

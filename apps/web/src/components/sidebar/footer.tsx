@@ -2,7 +2,6 @@ import {
   DECO_CMS_API_URL,
   useInvites,
   usePlan,
-  User,
   useWorkspaceWalletBalance,
   WELL_KNOWN_PLANS,
 } from "@deco/sdk";
@@ -26,19 +25,9 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  ResponsiveDropdown,
-  ResponsiveDropdownContent,
-  ResponsiveDropdownItem,
-  ResponsiveDropdownSeparator,
-  ResponsiveDropdownTrigger,
-} from "@deco/ui/components/responsive-dropdown.tsx";
-import {
-  SidebarFooter as SidebarFooterInner,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@deco/ui/components/sidebar.tsx";
+import { UserMenu } from "@deco/ui/components/user-menu.tsx";
+import { SidebarFooterShell } from "@deco/ui/components/sidebar-footer-shell.tsx";
+import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
@@ -100,6 +89,9 @@ function UserPreferencesModal({
       useOpenRouter: preferences.useOpenRouter,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
+      showLegacyPrompts: preferences.showLegacyPrompts ?? false,
+      showLegacyWorkflowRuns: preferences.showLegacyWorkflowRuns ?? false,
+      showLegacyAgents: preferences.showLegacyAgents ?? false,
     },
   });
   const {
@@ -192,14 +184,18 @@ function UserPreferencesModal({
   );
 }
 
-export function LoggedUserSidebarTrigger({ user }: { user: User }) {
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
-  const userName = user?.metadata?.full_name || user?.email;
+export function LoggedUserSidebarTrigger({
+  user,
+}: {
+  user: { avatar?: string; name?: string; email?: string };
+}) {
+  const userAvatarURL = user?.avatar ?? undefined;
+  const userName = user?.name || user?.email;
 
   return (
     <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
       <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-      <span className="text-sm grow">{user.metadata?.full_name}</span>
+      <span className="text-sm grow">{userName}</span>
 
       <Suspense fallback={null}>
         <div className="size-3 flex items-center">
@@ -210,11 +206,15 @@ export function LoggedUserSidebarTrigger({ user }: { user: User }) {
   );
 }
 
-export function LoggedUserAvatarTrigger({ user }: { user: User }) {
+export function LoggedUserAvatarTrigger({
+  user,
+}: {
+  user: { avatar?: string; name?: string; email?: string };
+}) {
   return (
     <UserAvatar
-      url={user?.metadata?.avatar_url}
-      fallback={user?.metadata?.full_name || user?.email}
+      url={user?.avatar}
+      fallback={user?.name || user?.email}
       size="sm"
       className="cursor-pointer hover:ring-2 ring-muted-foreground transition-all"
     />
@@ -225,7 +225,11 @@ export function LoggedUser({
   trigger,
   align = "start",
 }: {
-  trigger: (user: User) => React.ReactNode;
+  trigger: (user: {
+    avatar?: string;
+    name?: string;
+    email?: string;
+  }) => React.ReactNode;
   align?: "start" | "end";
 }) {
   const user = useUser();
@@ -259,36 +263,25 @@ export function LoggedUser({
   };
 
   return (
-    <ResponsiveDropdown>
-      <ResponsiveDropdownTrigger asChild>
-        <div>{trigger(user)}</div>
-      </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent
-        side="top"
+    <>
+      <UserMenu
+        user={{
+          avatar: user?.metadata?.avatar_url,
+          name: user?.metadata?.full_name,
+          email: user?.email,
+        }}
+        trigger={trigger}
         align={align}
-        className="md:w-[240px]"
       >
-        <ResponsiveDropdownItem asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setProfileOpen(true)}
-          >
-            <Icon name="account_circle" className="text-muted-foreground" />
-            Profile
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setPreferencesOpen(true)}
-          >
-            <Icon name="tune" className="text-muted-foreground" />
-            Preferences
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
+        <UserMenu.Item onClick={() => setProfileOpen(true)}>
+          <Icon name="account_circle" className="text-muted-foreground" />
+          Profile
+        </UserMenu.Item>
+        <UserMenu.Item onClick={() => setPreferencesOpen(true)}>
+          <Icon name="tune" className="text-muted-foreground" />
+          Preferences
+        </UserMenu.Item>
+        <UserMenu.Item asChild>
           <Link
             to={href}
             onClick={handleClickInvite}
@@ -300,18 +293,17 @@ export function LoggedUser({
               className="text-muted-foreground"
             />
             <span className="truncate">Invites</span>
-
             <Suspense fallback={null}>
               <InvitesCount />
             </Suspense>
           </Link>
-        </ResponsiveDropdownItem>
+        </UserMenu.Item>
 
-        <ResponsiveDropdownSeparator />
+        <UserMenu.Separator />
 
-        <ResponsiveDropdownItem asChild>
+        <UserMenu.Item asChild>
           <a
-            href="https://github.com/deco-cx/chat"
+            href="https://github.com/decocms/admin"
             target="_blank"
             rel="noopener noreferrer"
             className="flex w-full items-center gap-2 text-sm cursor-pointer"
@@ -321,7 +313,7 @@ export function LoggedUser({
               alt="GitHub"
               className="w-4 h-4 text-muted-foreground"
             />
-            deco-cx/chat
+            decocms/admin
             {formattedStars && (
               <span className="text-xs ml-auto text-muted-foreground">
                 {formattedStars} stars
@@ -333,8 +325,8 @@ export function LoggedUser({
               className="text-muted-foreground"
             />
           </a>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
+        </UserMenu.Item>
+        <UserMenu.Item asChild>
           <a
             href="https://decocms.com"
             target="_blank"
@@ -349,11 +341,11 @@ export function LoggedUser({
               className="ml-auto text-muted-foreground"
             />
           </a>
-        </ResponsiveDropdownItem>
+        </UserMenu.Item>
 
-        <ResponsiveDropdownSeparator />
+        <UserMenu.Separator />
 
-        <ResponsiveDropdownItem asChild>
+        <UserMenu.Item asChild>
           <a
             href={logoutUrl}
             className="flex items-center gap-2 text-sm cursor-pointer"
@@ -361,8 +353,9 @@ export function LoggedUser({
             <Icon name="logout" size={18} className="text-muted-foreground" />
             Log out
           </a>
-        </ResponsiveDropdownItem>
-      </ResponsiveDropdownContent>
+        </UserMenu.Item>
+      </UserMenu>
+
       {profileOpen && (
         <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
       )}
@@ -372,7 +365,7 @@ export function LoggedUser({
           onOpenChange={setPreferencesOpen}
         />
       )}
-    </ResponsiveDropdown>
+    </>
   );
 }
 
@@ -441,28 +434,14 @@ function TeamPlanAndBalance() {
   );
 }
 
-function Skeleton() {
-  return (
-    <SidebarMenuButton>
-      <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted hover:text-foreground h-8 px-4 py-2 gap-2">
-        <span className="w-24 h-8"></span>
-      </div>
-    </SidebarMenuButton>
-  );
-}
-
 export function SidebarFooter({ className }: { className?: string }) {
   return (
-    <SidebarFooterInner className={cn("bg-sidebar pt-4", className)}>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <Suspense fallback={<Skeleton />}>
-            <ErrorBoundary fallback={null}>
-              <TeamPlanAndBalance />
-            </ErrorBoundary>
-          </Suspense>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarFooterInner>
+    <SidebarFooterShell className={className}>
+      <Suspense fallback={<SidebarFooterShell.Skeleton />}>
+        <ErrorBoundary fallback={null}>
+          <TeamPlanAndBalance />
+        </ErrorBoundary>
+      </Suspense>
+    </SidebarFooterShell>
   );
 }

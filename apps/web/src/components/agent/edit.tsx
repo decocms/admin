@@ -5,7 +5,6 @@ import {
   useAgentData,
   useAgentRoot,
   useFile,
-  useRecentResources,
   useSDK,
   useThreadMessages,
 } from "@deco/sdk";
@@ -38,20 +37,22 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { useLocation, useParams } from "react-router";
+import { useLocation, useParams, useSearchParams } from "react-router";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 import { useSaveAgent } from "../../hooks/use-save-agent.ts";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { buildAgentUri, useThread } from "../decopilot/thread-provider.tsx";
 import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { AgenticChatProvider, useAgenticChat } from "../chat/provider.tsx";
+import {
+  AgenticChatProvider,
+  createLegacyTransport,
+  useAgenticChat,
+} from "../chat/provider.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { useDecopilotThread } from "../decopilot/thread-context.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
 import AgentProfileTab from "../settings/agent-profile.tsx";
@@ -62,6 +63,7 @@ import Threads from "./threads.tsx";
 interface Props {
   agentId?: string;
   threadId?: string;
+  resourceUri?: string; // For well-known views: rsc://i:agent-management/agent/{agentId}
 }
 
 // Context for managing preview visibility on mobile and chat mode
@@ -163,10 +165,12 @@ function UnifiedChat() {
           </div>
         </div>
       </div>
-      <ScrollArea className="flex-1 min-h-0">
-        <ChatMessages />
-      </ScrollArea>
-      <div className="flex-none pb-4 px-4">
+      <div className="flex-1 min-h-0">
+        <ScrollArea>
+          <ChatMessages />
+        </ScrollArea>
+      </div>
+      <div className="flex-none pb-2 px-2">
         <ChatInput rightNode={<PreviewToggleButton />} />
       </div>
     </div>
@@ -301,43 +305,44 @@ function DecochatChat({
   shouldUseInitialInput,
   threadState,
   clearThreadState,
-  preferences,
 }: {
   effectiveDecochatThreadId: string;
   shouldUseInitialInput: boolean;
   threadState: { initialMessage?: string | null; autoSend?: boolean | null };
   clearThreadState: () => void;
-  preferences: {
-    defaultModel?: string;
-    useOpenRouter?: boolean;
-    sendReasoning?: boolean;
-  };
 }) {
-  const { data: decochatAgent } = useAgentData(
-    WELL_KNOWN_AGENTS.decochatAgent.id,
+  const { locator } = useSDK();
+  const { data: decopilotAgent } = useAgentData(
+    WELL_KNOWN_AGENTS.decopilotAgent.id,
   );
-  const decochatRoot = useAgentRoot(WELL_KNOWN_AGENTS.decochatAgent.id);
   const { data: { messages: decochatThreadMessages } = { messages: [] } } =
     useThreadMessages(
       effectiveDecochatThreadId,
-      WELL_KNOWN_AGENTS.decochatAgent.id,
+      WELL_KNOWN_AGENTS.decopilotAgent.id,
       {
         shouldFetch: true,
       },
     );
 
-  if (!decochatAgent) return null;
+  const transport = useMemo(
+    () =>
+      createLegacyTransport(
+        effectiveDecochatThreadId,
+        WELL_KNOWN_AGENTS.decopilotAgent.id,
+        locator,
+      ),
+    [effectiveDecochatThreadId, locator],
+  );
+
+  if (!decopilotAgent) return null;
 
   return (
     <AgenticChatProvider
       key={effectiveDecochatThreadId}
-      agentId={WELL_KNOWN_AGENTS.decochatAgent.id}
+      agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
       threadId={effectiveDecochatThreadId}
-      agent={decochatAgent}
-      agentRoot={decochatRoot}
-      model={preferences.defaultModel}
-      useOpenRouter={preferences.useOpenRouter}
-      sendReasoning={preferences.sendReasoning}
+      agent={decopilotAgent}
+      transport={transport}
       initialMessages={decochatThreadMessages}
       initialInput={
         shouldUseInitialInput
@@ -365,10 +370,7 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
   // Separate stable threadId for decochat mode using useState to maintain state when switching
   const [decochatThreadId] = useState(() => crypto.randomUUID());
 
-  // Get the agent being edited for decochat context
-  const { data: editingAgent } = useAgentData(agentId || "");
-
-  // Decochat-specific hooks
+  // Decopilot-specific hooks
   const { threadState, clearThreadState } = useDecopilotThread();
 
   // Use threadState.threadId when available for decochat mode
@@ -381,65 +383,14 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
       threadState.autoSend,
   );
 
-  // Note: contextTools and contextRules are now managed via ThreadContextProvider
+  // Note: contextTools and contextRules are now managed via ThreadProvider
   // onToolCall is replaced by useToolCallListener hook
 
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
-    chatMode === "decochat" ? WELL_KNOWN_AGENTS.decochatAgent.id : agentId;
-
-  // Prepare decochat context when in decochat mode
-  const decochatContextValue = useMemo(() => {
-    if (chatMode !== "decochat" || !editingAgent) return {};
-
-    const rules: string[] = [
-      `You are helping with agent editing and configuration. The current agent being edited is "${editingAgent.name}". Focus on operations related to agent configuration, tool management, knowledge base integration, and agent optimization.`,
-      `When working with this agent (${editingAgent.name}), prioritize operations that help users configure the agent's behavior, manage its tools and integrations, optimize its performance, and understand its capabilities. Consider the agent's current configuration and settings when providing assistance.`,
-    ];
-
-    return { rules };
-  }, [chatMode, editingAgent]);
-
-  // Memoize context items for thread context
-  const threadContextItems = useMemo(() => {
-    const items = [];
-
-    if (chatMode !== "decochat") {
-      // In agent chat mode, add the agent's toolset
-      const agentToolSet = editingAgent?.tools_set ?? {};
-
-      items.push(
-        ...Object.entries(agentToolSet).map(([integrationId, tools]) => ({
-          type: "toolset" as const,
-          integrationId,
-          enabledTools: tools,
-          id: crypto.randomUUID(),
-        })),
-      );
-
-      return items;
-    }
-
-    // In decochat mode, add rules about agent editing
-    if (decochatContextValue.rules) {
-      items.push(
-        ...decochatContextValue.rules.map((text) => ({
-          type: "rule" as const,
-          text,
-          id: crypto.randomUUID(),
-        })),
-      );
-    }
-
-    return items;
-  }, [chatMode, editingAgent?.tools_set, decochatContextValue.rules]);
-
-  // Set context items in thread context
-  useSetThreadContextEffect(threadContextItems);
+    chatMode === "decochat" ? WELL_KNOWN_AGENTS.decopilotAgent.id : agentId;
 
   if (!chatAgentId) return null;
-
-  const { preferences } = useUserPreferences();
 
   // For agent mode, use the outer provider context (no nested provider)
   // For decochat mode, create a separate provider
@@ -459,7 +410,6 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
               shouldUseInitialInput={shouldUseInitialInput}
               threadState={threadState}
               clearThreadState={clearThreadState}
-              preferences={preferences}
             />
           </Suspense>
         )}
@@ -493,11 +443,11 @@ function ResponsiveLayout({
   // Desktop layout: resizable panels
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={60}>
+      <ResizablePanel className="h-[calc(100vh-88px)]" defaultSize={60}>
         <AgentConfigs />
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel className="h-[calc(100vh-48px)]" defaultSize={40}>
+      <ResizablePanel className="h-[calc(100vh-88px)]" defaultSize={40}>
         <ChatWithProvider agentId={agentId} threadId={threadId} />
       </ResizablePanel>
     </ResizablePanelGroup>
@@ -508,53 +458,17 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { agentId, threadId } = props;
   const { data: agent } = useAgentData(agentId);
   const agentRoot = useAgentRoot(agentId);
-  const { preferences } = useUserPreferences();
   const { data: { messages: threadMessages } = { messages: [] } } =
     useThreadMessages(threadId, { shouldFetch: true });
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
-  const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const params = useParams<{ org: string; project: string }>();
-  const hasTrackedRecentRef = useRef(false);
 
-  // Track as recently opened when agent is loaded (only once)
-  useEffect(() => {
-    if (
-      agent &&
-      agentId &&
-      threadId &&
-      projectKey &&
-      params.org &&
-      params.project &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      // Use the resolved avatar URL if available, otherwise fall back to the agent's avatar or default icon
-      const avatarUrl =
-        resolvedAvatar ||
-        (agent.avatar && !isFilePath(agent.avatar) ? agent.avatar : undefined);
-
-      addRecent({
-        id: `${agentId}-${threadId}`,
-        name: agent.name,
-        type: "agent",
-        icon: avatarUrl || "robot_2",
-        path: `/${projectKey}/agent/${agentId}/${threadId}`,
-      });
-    }
-  }, [
-    agent,
-    agentId,
-    threadId,
-    projectKey,
-    params.org,
-    params.project,
-    addRecent,
-    resolvedAvatar,
-  ]);
+  // Canvas tabs context for updating tab metadata
+  const { tabs, activeTabId, addTab } = useThread();
+  const [searchParams] = useSearchParams();
+  const urlActiveTabId = searchParams.get("activeTab");
+  const currentTabId = urlActiveTabId || activeTabId;
 
   // Mobile detection
   const isMobile = useIsMobile();
@@ -564,9 +478,9 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   // Chat mode state (agent chat vs decochat chat)
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
+  const chatSearchParams = new URLSearchParams(location.search);
   const urlChatMode =
-    (searchParams.get("chat") as "agent" | "decochat") || "agent";
+    (chatSearchParams.get("chat") as "agent" | "decochat") || "agent";
 
   const [chatMode, setChatMode] = useState<"agent" | "decochat">(urlChatMode);
 
@@ -574,6 +488,29 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   useEffect(() => {
     setChatMode(urlChatMode);
   }, [urlChatMode]);
+
+  // Update tab title when agent loads
+  useEffect(() => {
+    if (!agent || !currentTabId) return;
+
+    const currentTab = tabs.find((t) => t.id === currentTabId);
+    if (!currentTab) return;
+
+    // Check if we need to update the tab
+    const expectedUri = buildAgentUri(agentId, threadId);
+    if (
+      currentTab.resourceUri === expectedUri &&
+      (currentTab.title === "Loading..." || currentTab.title !== agent.name)
+    ) {
+      addTab({
+        type: "detail",
+        resourceUri: expectedUri,
+        title: agent.name,
+        icon: "robot_2",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent?.name, agentId, threadId, currentTabId]);
 
   useDocumentMetadata({
     title: agent ? `${agent.name} | deco CMS` : undefined,
@@ -594,6 +531,11 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   const handleSaveAgent = useSaveAgent();
 
+  const transport = useMemo(
+    () => createLegacyTransport(threadId, agentId, agentRoot),
+    [threadId, agentId, agentRoot],
+  );
+
   return (
     <PreviewContext.Provider
       value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
@@ -602,10 +544,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         agentId={agentId}
         threadId={threadId}
         agent={agent}
-        agentRoot={agentRoot}
-        model={preferences.defaultModel}
-        useOpenRouter={preferences.useOpenRouter}
-        sendReasoning={preferences.sendReasoning}
+        transport={transport}
         initialMessages={threadMessages}
         onSave={handleSaveAgent}
         uiOptions={{
@@ -624,9 +563,19 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
 export default function Page(props: Props) {
   const params = useParams();
+
+  // Extract agentId from resourceUri if provided
+  const agentIdFromUri = useMemo(() => {
+    if (props.resourceUri) {
+      const parts = props.resourceUri.split("/");
+      return parts[parts.length - 1];
+    }
+    return null;
+  }, [props.resourceUri]);
+
   const agentId = useMemo(
-    () => props.agentId || params.id,
-    [props.agentId, params.id],
+    () => props.agentId || agentIdFromUri || params.id,
+    [props.agentId, agentIdFromUri, params.id],
   );
 
   const threadId = useMemo(

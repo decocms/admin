@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 export function useSendMagicLink() {
   return useMutation({
-    mutationFn: (prop: { email: string; cli: boolean }) =>
+    mutationFn: (prop: { email: string; cli: boolean; next?: string }) =>
       fetch(new URL("/login/magiclink", DECO_CMS_API_URL), {
         method: "POST",
         headers: { "Content-Type": "application/json" },

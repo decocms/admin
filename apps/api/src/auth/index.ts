@@ -165,9 +165,14 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
 });
 
 appLogin.all("/magiclink", async (ctx: AppContext) => {
-  const formData = (await ctx.req.json()) as { email: string; cli: boolean };
+  const formData = (await ctx.req.json()) as {
+    email: string;
+    cli: boolean;
+    next?: string;
+  };
   const email = formData.email;
   const cli = formData.cli;
+  const next = formData.next;
   const request = ctx.req.raw;
 
   try {
@@ -177,11 +182,18 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
 
     // We do not send the full path to supabase but the email template
     // includes a condition to insert it (/auth/callback/magiclink)
-    const redirectTo = cli
+    let redirectTo = cli
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
         ? "http://localhost:3000/"
         : "https://admin.decocms.com/";
+
+    // Add the next parameter to the redirect URL if provided
+    if (next && !cli) {
+      const redirectUrl = new URL(redirectTo);
+      redirectUrl.searchParams.set("next", next);
+      redirectTo = redirectUrl.toString();
+    }
 
     await db.auth.signInWithOtp({
       email,

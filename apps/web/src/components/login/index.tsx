@@ -55,6 +55,7 @@ function Login() {
     const ok = await sendMagicLink.mutateAsync({
       email,
       cli,
+      next: next || undefined,
     });
 
     if (ok) {

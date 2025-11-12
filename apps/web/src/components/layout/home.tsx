@@ -33,33 +33,24 @@ function HomeLayoutContent() {
   const [searchParams] = useSearchParams();
   const initialInput = searchParams.get("initialInput");
 
-  // Fetch both data sources
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
 
-  // Wait for ALL data to load before deciding what to show
-  const isLoading = !teams.data || onboardingStatus.isLoading;
-
-  const hasOrgs = teams.data && teams.data.length > 0;
+  const hasOrgs = teams.data.length > 0;
   const hasCompletedOnboarding = !!onboardingStatus.data?.completed;
-  const shouldShowOnboarding = !hasOrgs; // Show if user has no orgs
+  const shouldShowOnboarding = !hasOrgs;
+  const shouldRedirect = hasOrgs && Boolean(initialInput);
 
-  // Redirect to org selector when user has orgs
   useEffect(() => {
-    if (isLoading || !hasOrgs || !hasCompletedOnboarding || !initialInput) {
-      return;
-    }
+    if (!shouldRedirect) return;
 
-    const params = new URLSearchParams(searchParams);
     const url = new URL("/onboarding/select-org", globalThis.location.origin);
-    params.forEach((value, key) => {
-      url.searchParams.set(key, value);
-    });
+    searchParams.forEach((value, key) => url.searchParams.set(key, value));
     location.href = url.href;
-  }, [isLoading, hasOrgs, hasCompletedOnboarding, searchParams]);
+  }, [shouldRedirect, searchParams]);
 
-  // Show single loading spinner while gathering all data or while redirect effect runs
-  if (isLoading) {
+  // Brief spinner while redirect effect runs to avoid UI flash
+  if (shouldRedirect) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <Spinner />

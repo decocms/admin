@@ -2,6 +2,29 @@ import { promises as fs } from "fs";
 import { join, isAbsolute } from "path";
 
 /**
+ * Parse KEY=VALUE format env var
+ */
+export function parseKeyValueEnvVar(input: string): {
+  key: string;
+  value: string;
+} | null {
+  const eqIndex = input.indexOf("=");
+  if (eqIndex === -1) {
+    return null;
+  }
+
+  const key = input.slice(0, eqIndex);
+  if (!key) {
+    console.warn(
+      `Warning: Skipping invalid environment variable line with empty key: "${input}"`,
+    );
+    return null;
+  }
+  const value = input.slice(eqIndex + 1);
+  return { key, value };
+}
+
+/**
  * Parse env file content in .env format (KEY=VALUE per line)
  * Reuses the same logic as getCurrentEnvVars from wrangler.ts
  */
@@ -13,19 +36,11 @@ export function parseEnvFileContent(content: string): Record<string, string> {
       if (!trimmed || trimmed.startsWith("#")) {
         return acc;
       }
-      const firstEqualIndex = trimmed.indexOf("=");
-      if (firstEqualIndex === -1) {
-        return acc;
+
+      const parsed = parseKeyValueEnvVar(trimmed);
+      if (parsed) {
+        acc[parsed.key] = parsed.value;
       }
-      const key = trimmed.substring(0, firstEqualIndex);
-      if (!key) {
-        console.warn(
-          `Warning: Skipping invalid environment variable line with empty key: "${trimmed}"`,
-        );
-        return acc;
-      }
-      const value = trimmed.substring(firstEqualIndex + 1);
-      acc[key] = value;
       return acc;
     },
     {} as Record<string, string>,
@@ -79,29 +94,6 @@ export function parseInlineJsonEnvVars(
 ): Record<string, string> {
   const jsonObj = JSON.parse(jsonString);
   return parseJsonEnvVars(jsonObj);
-}
-
-/**
- * Parse KEY=VALUE format env var
- */
-export function parseKeyValueEnvVar(input: string): {
-  key: string;
-  value: string;
-} | null {
-  const eqIndex = input.indexOf("=");
-  if (eqIndex === -1) {
-    return null;
-  }
-
-  const key = input.slice(0, eqIndex);
-  if (!key) {
-    console.warn(
-      `Warning: Skipping invalid environment variable line with empty key: "${input}"`,
-    );
-    return null;
-  }
-  const value = input.slice(eqIndex + 1);
-  return { key, value };
 }
 
 /**

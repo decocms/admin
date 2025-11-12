@@ -50,6 +50,7 @@ export interface CreateTeamInput {
   stripe_subscription_id?: string;
   avatar_url?: string;
   domain?: string;
+  theme?: Theme;
   [key: string]: unknown;
 }
 

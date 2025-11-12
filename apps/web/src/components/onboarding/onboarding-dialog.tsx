@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
-import { useSearchParams } from "react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import {
+  useAutoJoinTeam,
+  useCreateTeam,
+  useSaveOnboardingAnswers,
+  WELL_KNOWN_EMAIL_DOMAINS,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -19,13 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import {
-  useAutoJoinTeam,
-  useCreateTeam,
-  useSaveOnboardingAnswers,
-  WELL_KNOWN_EMAIL_DOMAINS,
-} from "@deco/sdk";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { useSearchParams } from "react-router";
+import { z } from "zod";
 import { useUser } from "../../hooks/use-user.ts";
+import { findThemeByName } from "../theme-editor/theme-presets.ts";
 
 const ROLES = [
   { value: "engineering", label: "Engineering" },
@@ -111,6 +112,10 @@ export function OnboardingDialog({
   const autoJoinTeam = useAutoJoinTeam();
   const saveAnswers = useSaveOnboardingAnswers();
 
+  // Get theme from query params and look it up, fallback to undefined for default
+  const themeParam = searchParams.get("theme");
+  const selectedTheme = themeParam ? findThemeByName(themeParam) : undefined;
+
   // Track if auto org creation is in flight to prevent duplicate execution
   const isAutoCreatingRef = useRef(false);
 
@@ -150,7 +155,11 @@ export function OnboardingDialog({
 
       // Try base slug first, then with random suffix if collision
       try {
-        team = await createTeam.mutateAsync({ name: orgName, slug: baseSlug });
+        team = await createTeam.mutateAsync({
+          name: orgName,
+          slug: baseSlug,
+          ...(selectedTheme && { theme: selectedTheme }),
+        });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         const isSlugError =
@@ -164,6 +173,7 @@ export function OnboardingDialog({
           team = await createTeam.mutateAsync({
             name: orgName,
             slug: randomSlug,
+            ...(selectedTheme && { theme: selectedTheme }),
           });
         } else {
           throw err;
@@ -191,6 +201,7 @@ export function OnboardingDialog({
             slug: baseSlug,
             avatar_url: avatarUrl || undefined,
             domain: domain,
+            ...(selectedTheme && { theme: selectedTheme }),
           });
         } catch (createErr) {
           const errorMsg =
@@ -208,6 +219,7 @@ export function OnboardingDialog({
               slug: randomSlug,
               avatar_url: avatarUrl || undefined,
               domain: domain,
+              ...(selectedTheme && { theme: selectedTheme }),
             });
           } else {
             throw createErr;

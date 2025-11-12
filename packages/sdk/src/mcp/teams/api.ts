@@ -425,6 +425,7 @@ export const createTeam = createTool({
       slug: z.string(),
       avatar_url: z.string().optional(),
       domain: z.string().optional(),
+      theme: enhancedThemeSchema.optional(),
     }),
   ),
 
@@ -439,7 +440,7 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug, avatar_url, domain } = props;
+    const { name, slug, avatar_url, domain, theme } = props;
     const user = c.user;
 
     // Enforce unique slug if provided
@@ -475,6 +476,7 @@ export const createTeam = createTool({
           slug,
           avatar_url,
           domain: domain?.toLowerCase(),
+          ...(theme ? { theme: theme as Json } : {}),
         },
       ])
       .select()

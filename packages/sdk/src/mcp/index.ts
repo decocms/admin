@@ -21,6 +21,7 @@ import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as oauthAPI from "./oauth/api.ts";
+import * as onboardingAPI from "./onboarding/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
 import * as registryAPI from "./registry/api.ts";
@@ -32,10 +33,7 @@ import { runTool } from "./tools/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as utilsAPI from "./utils/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-export {
-  createToolBindingImpl as createToolTools,
-  createToolViewsV2,
-} from "./tools/api.ts";
+export { createToolViewsV2 } from "./tools/api.ts";
 
 export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 export * from "../errors.ts";
@@ -90,6 +88,9 @@ export const GLOBAL_TOOLS = [
   teamsAPI.getOrgTheme,
   teamsAPI.listProjects,
   teamsAPI.createProject,
+  teamsAPI.autoJoinTeam,
+  teamsAPI.importProjectFromGithub,
+  teamsAPI.exportProject,
   teamsAPI.updateProject,
   teamsAPI.deleteProject,
   membersAPI.getTeamMembers,
@@ -106,6 +107,8 @@ export const GLOBAL_TOOLS = [
   membersAPI.createIssue,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
+  onboardingAPI.saveOnboardingAnswers,
+  onboardingAPI.getOnboardingStatus,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
   registryAPI.getRegistryApp,
@@ -380,11 +383,9 @@ export {
 } from "./workflows/api.ts";
 
 export {
-  createToolBindingImpl,
   createToolResourceV2Implementation,
   runTool,
   ToolResourceV2,
-  type ToolBindingImplOptions,
   type ToolDataV2,
 } from "./tools/api.ts";
 

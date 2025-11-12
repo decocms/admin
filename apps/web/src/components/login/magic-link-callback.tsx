@@ -2,7 +2,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useSearchParams } from "react-router";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { DECO_CMS_API_URL } from "@deco/sdk";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
 
 function MagicLinkCallback() {
@@ -13,6 +13,8 @@ function MagicLinkCallback() {
     searchParams.get("token_hash") || searchParams.get("tokenHash");
   const type = searchParams.get("type");
   const next = searchParams.get("next");
+  const initialInput = searchParams.get("initialInput");
+  const autoSend = searchParams.get("autoSend");
 
   const handleConfirmLogin = () => {
     if (!tokenHash || !type) {
@@ -27,9 +29,22 @@ function MagicLinkCallback() {
     if (next) {
       apiUrl.searchParams.set("next", next);
     }
+    if (initialInput) {
+      apiUrl.searchParams.set("initialInput", initialInput);
+    }
+    if (autoSend) {
+      apiUrl.searchParams.set("autoSend", autoSend);
+    }
 
     globalThis.location.href = apiUrl.toString();
   };
+
+  // Auto-redirect on mount if we have valid params
+  useEffect(() => {
+    if (tokenHash && type) {
+      handleConfirmLogin();
+    }
+  }, [tokenHash, type]);
 
   const hasRequiredParams = tokenHash && type;
 

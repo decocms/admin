@@ -131,6 +131,9 @@ export interface View {
     path: string;
     url?: string;
   };
+  // Optional rules and tools for custom views
+  rules?: string[];
+  tools?: string[];
 }
 
 export type ViewMetadata = z.infer<typeof viewMetadataSchema>;

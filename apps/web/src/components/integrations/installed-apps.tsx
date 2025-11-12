@@ -1,15 +1,7 @@
+import { useMarketplaceIntegrations, View } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
   DialogContent,
@@ -17,69 +9,90 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { useMemo, useState } from "react";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
-  useNavigateWorkspace,
-  useWorkspaceLink,
-} from "../../hooks/use-navigate-workspace.ts";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useMemo, useState } from "react";
+import { useParams } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
+import Discover from "../discover/index.tsx";
+import {
+  buildAppUri,
+  buildNativeUri,
+  useThread,
+} from "../decopilot/thread-provider.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 import {
+  AppKeys,
   type GroupedApp,
-  useGroupedApps,
   NATIVE_APP_NAME_MAP,
+  useGroupedApps,
 } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { Link, useParams } from "react-router";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
-import { useUnpinnedNativeViews, View } from "@deco/sdk";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";
 
 function AppCard({
   app,
   onClick,
   nativeView,
   onFilesClick,
+  onNativeClick,
 }: {
   app: GroupedApp;
   onClick: (app: GroupedApp) => void;
   nativeView?: View;
   onFilesClick?: () => void;
+  onNativeClick?: (view: View) => void;
 }) {
   const { org, project } = useParams();
   const projectKey = org && project ? `${org}/${project}` : undefined;
-  const { pinView, unpinView, isViewUnpinned } =
-    useUnpinnedNativeViews(projectKey);
+  const { togglePin, isPinned } = usePinnedTabs(projectKey);
 
-  // Use actual view ID for checking pinned status
-  // For Files (and other coming-soon features), use the app.id since they don't have real views
-  const actualViewId = nativeView?.id || app.id;
-  const isNativePinned = app.isNative && !isViewUnpinned(actualViewId);
+  // Build resource URI for native apps
+  const resourceUri = app.isNative
+    ? buildNativeUri(app.name.toLowerCase())
+    : null;
+
+  const isNativePinned = resourceUri && isPinned(resourceUri);
 
   const handlePinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (app.isNative) {
-      if (isNativePinned) {
-        unpinView(actualViewId);
-        trackEvent("apps_page_unpin_native", {
+
+    // Don't allow pinning "Files" since it's coming soon and has no view
+    if (app.name === "Files") {
+      return;
+    }
+
+    if (app.isNative && resourceUri && nativeView) {
+      togglePin({
+        resourceUri,
+        title: app.name,
+        type: "list",
+        icon: nativeView.icon,
+      });
+
+      trackEvent(
+        isNativePinned ? "apps_page_unpin_native" : "apps_page_pin_native",
+        {
           app: app.name,
-        });
-      } else {
-        pinView(actualViewId);
-        trackEvent("apps_page_pin_native", {
-          app: app.name,
-        });
-      }
+        },
+      );
     }
   };
-
-  const navigateWorkspace = useNavigateWorkspace();
 
   const handleCardClick = () => {
     // Open modal for coming soon features (like Files)
@@ -91,9 +104,10 @@ function AppCard({
     }
 
     if (app.isNative && nativeView) {
-      // Client-side navigate to the native view
-      const path = nativeView?.metadata?.path as string | undefined;
-      navigateWorkspace(path ?? "/");
+      // Use tab for native views
+      if (onNativeClick) {
+        onNativeClick(nativeView);
+      }
       trackEvent("apps_page_navigate_native", {
         app: app.name,
       });
@@ -108,7 +122,7 @@ function AppCard({
       onClick={handleCardClick}
     >
       <CardContent className="p-0">
-        <div className="relative grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
+        <div className="relative grid grid-cols-[min-content_1fr_min-content] items-center gap-4 p-4">
           <IntegrationAvatar
             url={app.icon}
             fallback={app.name}
@@ -135,20 +149,24 @@ function AppCard({
             </div>
           </div>
 
-          {/* Pin icon for native apps */}
-          {app.isNative && (
+          {/* Pin icon for native apps (except Files which is coming soon) */}
+          {app.isNative && app.name !== "Files" && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={handlePinClick}
-                    className="p-2 rounded-md hover:bg-accent/80 transition-all border border-border hover:border-primary/30 cursor-pointer"
+                    className={cn(
+                      "flex items-center justify-center h-8 w-8 rounded-md transition-all border border-border cursor-pointer",
+                    )}
                   >
                     <Icon
-                      name={isNativePinned ? "check" : "push_pin"}
-                      size={18}
+                      name={isNativePinned ? "keep_off" : "keep"}
+                      size={14}
                       className={
-                        isNativePinned ? "text-primary" : "text-foreground/70"
+                        isNativePinned
+                          ? "text-foreground/70"
+                          : "text-foreground/70"
                       }
                     />
                   </button>
@@ -164,17 +182,6 @@ function AppCard({
             </TooltipProvider>
           )}
         </div>
-
-        {/* Footer section - instances badge for non-native, empty space for native to maintain consistent height */}
-        <div className="px-4 py-3 border-t border-border min-h-[52px] flex items-center">
-          {!app.isNative ? (
-            <Badge variant="secondary" className="text-xs">
-              {app.instances} Instance{app.instances > 1 ? "s" : ""}
-            </Badge>
-          ) : (
-            <div className="h-5" />
-          )}
-        </div>
       </CardContent>
     </Card>
   );
@@ -185,11 +192,13 @@ function CardsView({
   onClick,
   nativeViewsMap,
   onFilesClick,
+  onNativeClick,
 }: {
   apps: GroupedApp[];
   onClick: (app: GroupedApp) => void;
   nativeViewsMap: Map<string, View>;
   onFilesClick?: () => void;
+  onNativeClick?: (view: View) => void;
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
@@ -200,6 +209,7 @@ function CardsView({
           onClick={onClick}
           nativeView={app.isNative ? nativeViewsMap.get(app.id) : undefined}
           onFilesClick={onFilesClick}
+          onNativeClick={onNativeClick}
         />
       ))}
     </div>
@@ -246,22 +256,6 @@ function TableView({
       ),
     },
     {
-      id: "used-by",
-      header: "Agents",
-      render: (app) => (
-        <div className="flex items-center gap-2">
-          {app.usedBy.map((agent) => (
-            <AgentAvatar
-              key={agent.avatarUrl}
-              url={agent.avatarUrl}
-              fallback={agent.avatarUrl}
-              size="sm"
-            />
-          ))}
-        </div>
-      ),
-    },
-    {
       id: "people-with-access",
       header: "People with access",
       render: () => (
@@ -299,15 +293,54 @@ export default function InstalledAppsList() {
   const [filter, setFilter] = useState<string>("");
   const [filesModalOpen, setFilesModalOpen] = useState(false);
   const [addCustomAppOpen, setAddCustomAppOpen] = useState(false);
-  const workspaceLink = useWorkspaceLink();
+  const [storeModalOpen, setStoreModalOpen] = useState(false);
   const navigateWorkspace = useNavigateWorkspace();
   const team = useCurrentTeam();
   const apps = useGroupedApps({
     filter,
   });
+  const { createTab, addTab } = useThread();
+  const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   const navigateToApp = (app: GroupedApp) => {
-    navigateWorkspace(`/apps/${app.id}`);
+    // Open app detail view in a new canvas tab
+    const newTab = createTab({
+      type: "detail",
+      resourceUri: buildAppUri(app.id),
+      title: app.name,
+      icon: app.icon,
+    });
+    if (!newTab) {
+      console.warn(
+        "[InstalledAppsList] No active thread found - falling back to navigation",
+      );
+      navigateWorkspace(`/apps/${app.id}`);
+    }
+  };
+
+  const handleNativeAppClick = (view: View) => {
+    // Open native view in a new canvas tab
+    // Legacy title mapping
+    const legacyTitleMap: Record<string, string> = {
+      Prompts: "Documents",
+    };
+    const canonicalTitle = (title: string) => legacyTitleMap[title] ?? title;
+    const displayTitle = canonicalTitle(view.title);
+    const viewKey = displayTitle.toLowerCase();
+
+    const newTab = createTab({
+      type: "list",
+      resourceUri: buildNativeUri(viewKey),
+      title: displayTitle,
+      icon: view.icon,
+    });
+    if (!newTab) {
+      console.warn(
+        "[InstalledAppsList] No active thread found - falling back to navigation",
+      );
+      const path = view?.metadata?.path as string | undefined;
+      navigateWorkspace(path ?? "/");
+    }
   };
 
   // Build a map of native app IDs to their actual views
@@ -333,33 +366,6 @@ export default function InstalledAppsList() {
     return map;
   }, [team?.views]);
 
-  // Set integration management tools into thread context
-  const threadContextItems = useMemo(() => {
-    const integrationId = "i:integration-management";
-
-    return [
-      {
-        id: crypto.randomUUID(),
-        type: "rule" as const,
-        text: `The user is managing their installed integrations and MCP apps. Help them explore, configure, and manage their installed apps by actively using integration management tools. When the user asks about their integrations or wants to manage them, prefer to demonstrate the available tools in action.`,
-      },
-      {
-        id: crypto.randomUUID(),
-        type: "toolset" as const,
-        integrationId,
-        enabledTools: [
-          "INTEGRATIONS_LIST",
-          "INTEGRATIONS_GET",
-          "INTEGRATIONS_CREATE",
-          "INTEGRATIONS_UPDATE",
-          "INTEGRATIONS_DELETE",
-        ],
-      },
-    ];
-  }, []);
-
-  useSetThreadContextEffect(threadContextItems);
-
   return (
     <div className="flex flex-col gap-4 h-full py-4">
       <div className="px-4 overflow-x-auto">
@@ -376,8 +382,8 @@ export default function InstalledAppsList() {
               >
                 Add custom
               </Button>
-              <Button asChild variant="default">
-                <Link to={workspaceLink(`/store`)}>Store</Link>
+              <Button variant="default" onClick={() => setStoreModalOpen(true)}>
+                Store
               </Button>
             </div>
           }
@@ -404,6 +410,7 @@ export default function InstalledAppsList() {
             onClick={navigateToApp}
             nativeViewsMap={nativeViewsMap}
             onFilesClick={() => setFilesModalOpen(true)}
+            onNativeClick={handleNativeAppClick}
           />
         ) : (
           <TableView apps={apps} onClick={navigateToApp} />
@@ -451,6 +458,40 @@ export default function InstalledAppsList() {
         open={addCustomAppOpen}
         onOpenChange={setAddCustomAppOpen}
       />
+
+      {/* Store Modal */}
+      <Dialog open={storeModalOpen} onOpenChange={setStoreModalOpen}>
+        <DialogContent className="w-full sm:w-[90vw] max-w-full sm:max-w-[90vw] h-[90vh] max-h-[90vh] p-0 top-0 sm:top-[5vh] left-0 sm:left-[5vw] translate-x-0 translate-y-0 rounded-none sm:rounded-xl">
+          <div className="h-full overflow-hidden">
+            <Discover
+              onAppClick={(appKey) => {
+                // Find app info from marketplace or installed integrations
+                const { appId, provider } = AppKeys.parse(appKey);
+                const marketplaceApp =
+                  marketplaceIntegrations?.integrations?.find(
+                    (app) => app.id === appId && app.provider === provider,
+                  );
+
+                // Get app name and icon
+                const appName =
+                  marketplaceApp?.name || marketplaceApp?.friendlyName || "App";
+                const appIcon = marketplaceApp?.icon;
+
+                // Add tab for the app
+                addTab({
+                  type: "detail",
+                  resourceUri: buildAppUri(appKey),
+                  title: appName,
+                  icon: appIcon,
+                });
+
+                // Close the modal
+                setStoreModalOpen(false);
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

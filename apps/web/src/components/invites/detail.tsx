@@ -8,7 +8,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { TopbarLayout } from "../layout/home.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 
 function InviteDetailContent() {
   const { id } = useParams<{ id: string }>();

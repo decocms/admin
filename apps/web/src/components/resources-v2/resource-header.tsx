@@ -20,7 +20,6 @@ export interface TabItem {
 }
 
 interface ResourceHeaderProps {
-  title: string;
   tabs?: TabItem[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
@@ -42,10 +41,10 @@ interface ResourceHeaderProps {
   filters?: Filter[];
   onFiltersChange?: (filters: Filter[]) => void;
   availableUsers?: Array<{ id: string; name: string }>;
+  hideActions?: boolean;
 }
 
 export function ResourceHeader({
-  title,
   tabs,
   activeTab,
   onTabChange,
@@ -67,6 +66,7 @@ export function ResourceHeader({
   filters = [],
   onFiltersChange,
   availableUsers = [],
+  hideActions = false,
 }: ResourceHeaderProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,14 +78,7 @@ export function ResourceHeader({
   }, [searchOpen]);
 
   return (
-    <div className="flex flex-col gap-3 w-full">
-      {/* Title */}
-      <div className="flex items-center">
-        <h1 className="text-xl md:text-2xl font-medium text-foreground">
-          {title}
-        </h1>
-      </div>
-
+    <div className="flex flex-col gap-3 w-full px-8 py-4">
       {/* Tabs and Actions Row */}
       <div className="flex items-center justify-between border-b border-border w-full min-w-0">
         {/* Left: Tabs (if provided) */}
@@ -116,8 +109,8 @@ export function ResourceHeader({
         )}
 
         {/* Right: Action Buttons */}
-        <div className="flex items-center gap-2 py-2 flex-shrink-0">
-          <div className="flex items-center gap-1">
+        {!hideActions && (
+          <div className="flex items-center justify-end gap-2 py-2 shrink-0">
             {/* Refresh Button */}
             {onRefresh && (
               <Button
@@ -329,16 +322,11 @@ export function ResourceHeader({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
 
-          {/* Divider + CTA Button */}
-          {ctaButton && (
-            <>
-              <div className="self-stretch border-l border-border hidden md:block" />
-              <div className="hidden md:block">{ctaButton}</div>
-            </>
-          )}
-        </div>
+            {/* CTA Button - comes last */}
+            {ctaButton && <div className="hidden md:block">{ctaButton}</div>}
+          </div>
+        )}
       </div>
 
       {/* Mobile CTA Button */}

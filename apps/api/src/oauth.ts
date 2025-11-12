@@ -175,9 +175,9 @@ export const withOAuth = ({
     const project = c.req.param("project");
     const integrationId = c.req.param("integrationId");
 
-    const authHeader = c.req.raw.headers.get("Authorization");
+    const ctx = honoCtxToAppCtx(c);
 
-    if (!authHeader) {
+    if (!ctx.user) {
       // Return 401 with resource_metadata pointing to workspace-specific endpoint
       const resourceMetadataUrl = `${url.origin}/${org}/${project}/${integrationId}/mcp/.well-known/oauth-protected-resource`;
       const wwwAuthenticateValue = `Bearer resource_metadata="${resourceMetadataUrl}", scope="*"`;
@@ -433,6 +433,7 @@ export const withOAuth = ({
   // Authorization Endpoint (workspace-specific URL path)
   hono.get(authorizationEndpoint, async (c) => {
     await ensureTables(c);
+    const ctx = honoCtxToAppCtx(c);
     const db = await getWorkspaceDB(c);
 
     const org = c.req.param("org");
@@ -511,6 +512,8 @@ export const withOAuth = ({
     consentUrl.searchParams.set("scope", scope || "*");
     consentUrl.searchParams.set("state", state); // Encoded workspace + client state
     consentUrl.searchParams.set("mode", "proxy");
+    ctx.workspace?.value &&
+      consentUrl.searchParams.set("workspace_hint", ctx.workspace.value);
     org && consentUrl.searchParams.set("org", org);
     project && consentUrl.searchParams.set("project", project);
     integrationId &&

@@ -479,15 +479,11 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
         // Read existing file to get current data
         let existingData: Record<string, unknown> = {};
         try {
-          const startReadFile = performance.now();
-
-          console.log(`READ_FILE started ${resourceName}`);
           const fileData = await deconfig.READ_FILE({
             path: filePath,
             format: "plainString",
           });
           existingData = JSON.parse(fileData.content as string);
-          console.log(`READ_FILE took ${performance.now() - startReadFile}ms`);
         } catch {
           throw new NotFoundError(`Resource not found: ${uri}`);
         }
@@ -507,19 +503,12 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
 
         // Run semantic validation if provided
         if (semanticValidate) {
-          const startSemanticValidate = performance.now();
           await semanticValidate(validatedData, c, deconfig);
-          console.log(
-            `semanticValidate took ${performance.now() - startSemanticValidate}ms`,
-          );
         }
 
         const updatedData = validatedData;
 
         const fileContent = JSON.stringify(updatedData, null, 2);
-        const startPutFile = performance.now();
-
-        console.log(`PUT_FILE started ${resourceName}`);
 
         await deconfig.PUT_FILE({
           path: filePath,
@@ -532,8 +521,6 @@ export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
             description: validatedData.description || "",
           },
         });
-
-        console.log(`PUT_FILE took ${performance.now() - startPutFile}ms`);
 
         // Extract timestamps from the merged data
         const created_at =

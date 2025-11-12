@@ -10,7 +10,7 @@
     "@deco/actors": "npm:@jsr/deco__actors@0.35.1",
     "@deco/ai": "^1.0.0",
     "@deco/cf-sandbox": "workspace:*",
-    "@deco/workers-runtime": "^0.1.0",
+    "@decocms/runtime": "^0.24.0",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",
@@ -38,6 +38,7 @@
     "idb-keyval": "^6.2.1",
     "jose": "^6.0.11",
     "jsonschema": "^1.5.0",
+    "jszip": "^3.10.1",
     "lru-cache": "^11.1.0",
     "object-hash": "^3.0.0",
     "postgres": "3.4.7",
@@ -52,7 +53,8 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250510.0",
     "@types/react": "^19.1.0",
-    "@types/object-hash": "^3.0.6"
+    "@types/object-hash": "^3.0.6",
+    "@types/jszip": "^3.4.1"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -84,6 +86,10 @@
     "./models": "./src/models/index.ts",
     "./workflows": "./src/workflows/index.ts",
     "./posthog": "./src/posthog.ts",
-    "./deconfig": "./src/mcp/deconfig/index.ts"
+    "./deconfig": "./src/mcp/deconfig/index.ts",
+    "./mcp/projects/manifest": "./src/mcp/projects/manifest.ts",
+    "./mcp/projects/file-utils": "./src/mcp/projects/file-utils.ts",
+    "./mcp/projects/db-schemas": "./src/mcp/projects/db-schemas.ts",
+    "./mcp/projects/code-conversion": "./src/mcp/projects/code-conversion.ts"
   }
 }

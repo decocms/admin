@@ -1,5 +1,5 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import type { RegistryApp } from "@deco/sdk";
 import type { CurrentTeam } from "../sidebar/team-selector.tsx";

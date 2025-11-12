@@ -27,13 +27,12 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import { useParams } from "react-router";
 import { ResourceCreateDialog } from "./resource-create-dialog.tsx";
 
 export function InternalResourceList({ name }: { name: string }) {
@@ -56,7 +55,10 @@ export function InternalResourceListWithIntegration({
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const integration = useIntegration(integrationId).data;
-  const navigateWorkspace = useNavigateWorkspace();
+
+  // Canvas tabs management
+  const { createTab } = useThread();
+
   const [caps, setCaps] = useState({
     hasCreate: false,
     hasDelete: false,
@@ -147,51 +149,17 @@ export function InternalResourceListWithIntegration({
     })();
   }, [integration?.connection, name]);
 
-  const _uri = useMemo(() => searchParams.get("uri") ?? "", [searchParams]);
-
-  // Inline detail state removed in favor of navigation
-
-  // Detail lookup now happens in openItem via navigate
-
-  async function openItem(it: { uri: string }) {
-    try {
-      const result = (await callTool(integration?.connection, {
-        name: "DECO_CHAT_VIEWS_LIST",
-        arguments: {},
-      })) as {
-        structuredContent?: {
-          views?: Array<{
-            name?: string;
-            url?: string;
-            resourceName?: string;
-          }>;
-        };
-      };
-      const views = result.structuredContent?.views ?? [];
-      const selected = views.find((v) => v.resourceName === name);
-      const targetViewName = selected?.name ?? `${name.toUpperCase()}_DETAIL`;
-      const targetUrl = selected?.url
-        ? `${selected.url}${selected.url.includes("?") ? "&" : "?"}uri=${encodeURIComponent(
-            it.uri,
-          )}`
-        : `internal://resource/detail?name=${encodeURIComponent(name)}&uri=${encodeURIComponent(
-            it.uri,
-          )}`;
-      navigateWorkspace(
-        `/views/${integrationId}/${targetViewName}?viewUrl=${encodeURIComponent(
-          targetUrl,
-        )}`,
-      );
-    } catch {
-      // fallback: internal detail
-      const targetViewName = `${name.toUpperCase()}_DETAIL`;
-      const targetUrl = `internal://resource/detail?name=${encodeURIComponent(
-        name,
-      )}&uri=${encodeURIComponent(it.uri)}`;
-      navigateWorkspace(
-        `/views/${integrationId}/${targetViewName}?viewUrl=${encodeURIComponent(
-          targetUrl,
-        )}`,
+  async function openItem(it: { uri: string; name?: string }) {
+    // Open detail view in a new tab
+    const newTab = createTab({
+      type: "detail" as const,
+      resourceUri: it.uri,
+      title: it.name || name,
+      icon: integration?.icon,
+    });
+    if (!newTab) {
+      console.warn(
+        "[InternalResourceList] No active tab found - this should not happen",
       );
     }
   }
@@ -327,9 +295,6 @@ export function InternalResourceListWithIntegration({
     return uri.length > max ? `${uri.slice(0, max)}…` : uri;
   }
 
-  // Detail rendering removed – clicking an item navigates to the dedicated detail view
-
-  // List mode
   const header = (
     <ListPageHeader
       input={{

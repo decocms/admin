@@ -9,8 +9,8 @@ import {
 } from "@deco/ui/components/popover.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Suspense, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { Avatar } from "../common/avatar";
+import { Link, useNavigate, useParams } from "react-router";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
 import { SwitcherProjects } from "./project-switcher";
 
@@ -49,18 +49,24 @@ export function BreadcrumbOrgSwitcher() {
   return (
     <>
       <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 cursor-pointer rounded-md hover:bg-accent p-0.5">
-            <Avatar
-              url={currentOrg?.avatar_url}
-              fallback={currentOrg?.name ?? org}
-              size="xs"
-              objectFit="contain"
-            />
-            <span>{currentOrg?.name ?? org}</span>
-            <Icon name="expand_all" size={16} className="opacity-50" />
-          </div>
-        </PopoverTrigger>
+        <div className="flex items-center gap-1">
+          <Button variant="link" className="p-0.5" asChild>
+            <Link to={`/${org}`} className="flex items-center gap-2 h-auto">
+              <Avatar
+                url={currentOrg?.avatar_url}
+                fallback={currentOrg?.name ?? org}
+                size="xs"
+                objectFit="contain"
+              />
+              <span>{currentOrg?.name ?? org}</span>
+            </Link>
+          </Button>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="ghost" className="w-6 h-6 p-0">
+              <Icon name="expand_all" size={16} className="opacity-50" />
+            </Button>
+          </PopoverTrigger>
+        </div>
         <PopoverContent
           align="start"
           className="p-0 flex items-start w-[480px]"
@@ -91,7 +97,7 @@ export function BreadcrumbOrgSwitcher() {
                     url={organization.avatar_url}
                     fallback={organization.name}
                     size="xs"
-                    className="!w-[22px] !h-[22px]"
+                    className="w-[22px]! h-[22px]!"
                     objectFit="contain"
                   />
                   <span className="overflow-hidden text-ellipsis whitespace-nowrap">
@@ -112,6 +118,15 @@ export function BreadcrumbOrgSwitcher() {
             </div>
             <Separator />
             <div className="px-1 pb-1 pt-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start font-normal"
+                onClick={() => navigate("/")}
+              >
+                <Icon name="grid_view" size={16} />
+                <span>See all organizations</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"

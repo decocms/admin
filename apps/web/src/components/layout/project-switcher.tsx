@@ -8,8 +8,8 @@ import {
   PopoverTrigger,
 } from "@deco/ui/components/popover.tsx";
 import { Suspense, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { Avatar } from "../common/avatar";
+import { Link, useNavigate, useParams } from "react-router";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { useFile } from "@deco/sdk";
 
 function SwitcherProjectItem({
@@ -89,18 +89,27 @@ export function BreadcrumbProjectSwitcher() {
   return (
     <>
       <Popover>
-        <PopoverTrigger asChild>
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-accent p-0.5 rounded-md">
-            <Avatar
-              url={resolvedAvatar ?? undefined}
-              fallback={currentProject?.title ?? projectParam}
-              size="xs"
-              objectFit="contain"
-            />
-            <span>{currentProject?.title ?? projectParam}</span>
-            <Icon name="expand_all" size={16} className="opacity-50" />
-          </div>
-        </PopoverTrigger>
+        <div className="flex items-center gap-1">
+          <Button variant="link" className="p-0.5" asChild>
+            <Link
+              to={`/${org}/${projectParam}`}
+              className="flex items-center gap-2 h-auto"
+            >
+              <Avatar
+                url={resolvedAvatar ?? undefined}
+                fallback={currentProject?.title ?? projectParam}
+                size="xs"
+                objectFit="contain"
+              />
+              <span>{currentProject?.title ?? projectParam}</span>
+            </Link>
+          </Button>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="ghost" className="w-6 h-6 p-0">
+              <Icon name="expand_all" size={16} className="opacity-50" />
+            </Button>
+          </PopoverTrigger>
+        </div>
         <PopoverContent
           align="start"
           className="rounded-xl p-0 flex items-start w-full"

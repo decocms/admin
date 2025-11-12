@@ -1,11 +1,10 @@
-import { useRecentResources, useSDK, useStartWorkflow } from "@deco/sdk";
+import { useSDK, useStartWorkflow } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   memo,
@@ -35,7 +34,7 @@ import { useWorkflowSync } from "./hooks.ts";
 import { WorkflowStepsList } from "./steps/list.tsx";
 import { ResetWorkflowButton } from "./reset-workflow-button.tsx";
 import { SaveWorkflowButton } from "./save-workflow-button.tsx";
-import { ResourceDetailHeader } from "../common/resource-detail-header.tsx";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
 
 interface WorkflowDisplayCanvasProps {
   resourceUri: string;
@@ -66,10 +65,6 @@ export function WorkflowDisplay({ resourceUri }: WorkflowDisplayCanvasProps) {
     lastWorkflowKeyRef.current = workflowKey;
 
     if (import.meta.env.DEV) {
-      console.log(
-        "[WorkflowDisplay] 🏪 Created store for workflow:",
-        workflow.name,
-      );
     }
     return s;
   }, [workflowKey]); // Depend on unique identity
@@ -174,10 +169,7 @@ export const Canvas = memo(function Canvas() {
   const workflowName = useWorkflowName();
   const workflowDescription = useWorkflowDescription();
   const { locator } = useSDK();
-  const projectKey = typeof locator === "string" ? locator : undefined;
   const queryClient = useQueryClient();
-  const { addRecent } = useRecentResources(projectKey);
-  const hasTrackedRecentRef = useRef(false);
   const store = useContext(WorkflowStoreContext);
 
   if (!store) {
@@ -192,10 +184,6 @@ export const Canvas = memo(function Canvas() {
 
   const handleWorkflowUpdate = useCallback(() => {
     if (!locator) return;
-
-    if (import.meta.env.DEV) {
-      console.log("[Canvas] Watch event received, invalidating workflow query");
-    }
 
     startTransition(() => {
       queryClient.invalidateQueries({
@@ -212,39 +200,13 @@ export const Canvas = memo(function Canvas() {
     onNewEvent: handleWorkflowUpdate,
   });
 
-  useEffect(() => {
-    if (
-      workflowName &&
-      resourceUri &&
-      projectKey &&
-      !hasTrackedRecentRef.current
-    ) {
-      hasTrackedRecentRef.current = true;
-      startTransition(() => {
-        addRecent({
-          id: resourceUri,
-          name: workflowName,
-          type: "workflow",
-          icon: "flowchart",
-          path: `/${projectKey}/rsc/i:workflows-management/workflow/${encodeURIComponent(
-            resourceUri,
-          )}`,
-        });
-      });
-    }
-  }, [workflowName, resourceUri, projectKey, addRecent]);
-
   return (
     <div className="h-full w-full flex flex-col">
-      <ResourceDetailHeader
-        title={workflowName}
-        actions={
-          <>
-            <ResetWorkflowButton />
-            <SaveWorkflowButton />
-          </>
-        }
-      />
+      {/* Action buttons rendered in canvas header via portal */}
+      <TabActionButton>
+        <ResetWorkflowButton />
+        <SaveWorkflowButton />
+      </TabActionButton>
 
       <DetailSection>
         <div className="flex items-center justify-between">

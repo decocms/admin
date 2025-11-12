@@ -3,7 +3,7 @@ import { getErrorByStatusCode } from "../errors.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import type { AppContext } from "./context.ts";
 import type { ToolBinder } from "./index.ts";
-import { createMCPClientProxy } from "@deco/workers-runtime/proxy";
+import { createMCPClientProxy } from "@decocms/runtime/proxy";
 
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
@@ -36,6 +36,7 @@ export interface CreateStubAPIOptions {
   workspace?: string;
   connection?: MCPConnection;
   mcpPath?: string;
+  supportsToolName?: boolean;
 }
 
 export type CreateStubOptions<TDefinition extends ToolBinder[]> =

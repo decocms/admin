@@ -43,6 +43,10 @@ const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
     isEnabled: model.is_enabled,
     hasCustomKey: !!model.api_key_hash,
     apiKeyEncrypted: showApiKey ? (model.api_key_hash ?? undefined) : undefined,
+    contextWindow: defaultModel?.contextWindow,
+    inputCost: defaultModel?.inputCost,
+    outputCost: defaultModel?.outputCost,
+    outputLimit: defaultModel?.outputLimit,
   };
 };
 

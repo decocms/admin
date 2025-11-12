@@ -1,17 +1,5 @@
 import chalk from "chalk";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { join } from "node:path";
-import { readFile } from "node:fs/promises";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Read package.json for version
-const decoCliPackageJsonPath = join(__dirname, "../../package.json");
-const decoCliPackageJson = JSON.parse(
-  await readFile(decoCliPackageJsonPath, "utf-8"),
-);
+import { packageInfo as decoCliPackageJson } from "./package-info.js";
 
 /**
  * Displays a simple DECO ASCII art banner

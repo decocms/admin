@@ -1,4 +1,4 @@
-import { mimeType } from "@deco/workers-runtime/resources";
+import { mimeType } from "@decocms/runtime/resources";
 import z from "zod";
 import { NotFoundError, UserInputError } from "../../index.ts";
 import {

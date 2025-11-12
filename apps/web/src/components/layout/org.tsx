@@ -15,18 +15,19 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type ReactNode, Suspense, useState } from "react";
 import { Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
+import { useOrgDocumentTitle } from "../../hooks/use-org-document-title.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { MainChatSkeleton } from "../agent/chat.tsx";
 import { DecopilotChat } from "../decopilot/index.tsx";
-import { ThreadContextProvider } from "../decopilot/thread-context-provider.tsx";
+import { DecopilotChatProviderWrapper } from "../decopilot/decopilot-chat-provider-wrapper.tsx";
+import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
-import { ThreadManagerProvider } from "../decopilot/thread-manager-context.tsx";
 import { ProfileModalProvider, useProfileModal } from "../profile-modal.tsx";
+import { OrgsSidebar } from "../sidebar/orgs.tsx";
 import { WithOrgTheme } from "../theme.tsx";
 import { useDecopilotOpen } from "./decopilot-layout.tsx";
 import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
-import { OrgsSidebar } from "../sidebar/orgs.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
@@ -39,6 +40,7 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
 
   return (
     <SDKProvider locator={Locator.from({ org, project: "default" })}>
+      <OrgDocumentTitleUpdater />
       {children}
       <Toaster
         position="bottom-right"
@@ -53,16 +55,18 @@ export function BaseRouteLayout({ children }: { children: ReactNode }) {
   );
 }
 
+function OrgDocumentTitleUpdater() {
+  useOrgDocumentTitle();
+  return null;
+}
+
 // TODO: Register activity for org so we can order them by latest accessed later
 export function OrgsLayout() {
-  const { value: defaultSidebarOpen, update: setDefaultSidebarOpen } =
-    useLocalStorage({
-      key: "deco-chat-sidebar",
-      defaultValue: true,
-    });
+  const [defaultSidebarOpen, setDefaultSidebarOpen] = useLocalStorage<boolean>(
+    "deco-chat-sidebar",
+    (existing) => Boolean(existing ?? true),
+  );
   const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
-  const { open: decopilotOpen } = useDecopilotOpen();
-
   const { org } = useParams();
 
   const {
@@ -76,89 +80,119 @@ export function OrgsLayout() {
   return (
     <BaseRouteLayout>
       <WithOrgTheme>
-        <ThreadManagerProvider>
-          <ThreadContextProvider>
-            <DecopilotThreadProvider>
-              <ProfileModalProvider
-                profileOpen={profileOpen}
-                setProfileOpen={setProfileOpen}
-                openProfileModal={openProfileModal}
-                closeProfileModal={closeProfileModal}
-                handlePhoneSaved={handlePhoneSaved}
-              >
-                <SidebarProvider
-                  open={sidebarOpen}
-                  onOpenChange={(open) => {
-                    setDefaultSidebarOpen(open);
-                    setSidebarOpen(open);
-                  }}
-                >
-                  <div className="flex flex-col h-full">
-                    <TopbarLayout
-                      breadcrumb={[
-                        {
-                          label: (
-                            <Suspense
-                              fallback={<BreadcrumbOrgSwitcher.Skeleton />}
-                            >
-                              <BreadcrumbOrgSwitcher />
-                            </Suspense>
-                          ),
-                          link: `/${org}`,
-                        },
-                      ]}
-                    >
-                      <SidebarLayout
-                        className="h-full bg-sidebar"
-                        style={
-                          {
-                            "--sidebar-width": "13rem",
-                            "--sidebar-width-mobile": "11rem",
-                          } as Record<string, string>
-                        }
-                      >
-                        <OrgsSidebar />
-                        <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
-                          <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel className="bg-background">
-                              {/* Topbar height is 48px */}
-                              <ScrollArea className="h-[calc(100vh-48px)]">
-                                <Suspense
-                                  fallback={
-                                    <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
-                                      <Spinner />
-                                    </div>
-                                  }
-                                >
-                                  <Outlet />
-                                </Suspense>
-                              </ScrollArea>
-                            </ResizablePanel>
-                            {decopilotOpen && (
-                              <>
-                                <ResizableHandle withHandle />
-                                <ResizablePanel
-                                  defaultSize={30}
-                                  minSize={20}
-                                  className="min-w-0"
-                                >
-                                  <Suspense fallback={<MainChatSkeleton />}>
-                                    <DecopilotChat />
-                                  </Suspense>
-                                </ResizablePanel>
-                              </>
-                            )}
-                          </ResizablePanelGroup>
-                        </SidebarInset>
-                      </SidebarLayout>
-                    </TopbarLayout>
-                  </div>
-                </SidebarProvider>
-              </ProfileModalProvider>
-            </DecopilotThreadProvider>
-          </ThreadContextProvider>
-        </ThreadManagerProvider>
+        <ThreadProvider>
+          <OrgsLayoutContent
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={(open) => {
+              setDefaultSidebarOpen(open);
+              setSidebarOpen(open);
+            }}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+            openProfileModal={openProfileModal}
+            closeProfileModal={closeProfileModal}
+            handlePhoneSaved={handlePhoneSaved}
+            org={org!}
+          />
+        </ThreadProvider>
       </WithOrgTheme>
     </BaseRouteLayout>
+  );
+}
+
+function OrgsLayoutContent({
+  sidebarOpen,
+  setSidebarOpen,
+  profileOpen,
+  setProfileOpen,
+  openProfileModal,
+  closeProfileModal,
+  handlePhoneSaved,
+  org,
+}: {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  profileOpen: boolean;
+  setProfileOpen: (open: boolean) => void;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
+  handlePhoneSaved: () => void;
+  org: string;
+}) {
+  const { open: decopilotOpen } = useDecopilotOpen();
+
+  return (
+    <DecopilotThreadProvider>
+      <DecopilotChatProviderWrapper forceBottomLayout={true}>
+        <ProfileModalProvider
+          profileOpen={profileOpen}
+          setProfileOpen={setProfileOpen}
+          openProfileModal={openProfileModal}
+          closeProfileModal={closeProfileModal}
+          handlePhoneSaved={handlePhoneSaved}
+        >
+          <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <div className="flex flex-col h-full">
+              <TopbarLayout
+                breadcrumb={[
+                  {
+                    label: (
+                      <Suspense fallback={<BreadcrumbOrgSwitcher.Skeleton />}>
+                        <BreadcrumbOrgSwitcher />
+                      </Suspense>
+                    ),
+                    link: `/${org}`,
+                  },
+                ]}
+              >
+                <SidebarLayout
+                  className="h-full bg-sidebar"
+                  style={
+                    {
+                      "--sidebar-width": "13rem",
+                      "--sidebar-width-mobile": "11rem",
+                    } as Record<string, string>
+                  }
+                >
+                  <OrgsSidebar />
+                  <SidebarInset className="h-[calc(100vh-48px)] flex-col bg-sidebar">
+                    <ResizablePanelGroup direction="horizontal">
+                      <ResizablePanel className="bg-background">
+                        {/* Topbar height is 48px */}
+                        <ScrollArea className="h-[calc(100vh-48px)]">
+                          <Suspense
+                            fallback={
+                              <div className="h-[calc(100vh-48px)] w-full grid place-items-center">
+                                <Spinner />
+                              </div>
+                            }
+                          >
+                            <Outlet />
+                          </Suspense>
+                        </ScrollArea>
+                      </ResizablePanel>
+                      {decopilotOpen && (
+                        <>
+                          <ResizableHandle withHandle />
+                          <ResizablePanel
+                            defaultSize={30}
+                            minSize={20}
+                            className="min-w-0"
+                          >
+                            <Suspense fallback={<MainChatSkeleton />}>
+                              <DecopilotChat />
+                            </Suspense>
+                          </ResizablePanel>
+                        </>
+                      )}
+                    </ResizablePanelGroup>
+                  </SidebarInset>
+                </SidebarLayout>
+              </TopbarLayout>
+            </div>
+          </SidebarProvider>
+        </ProfileModalProvider>
+      </DecopilotChatProviderWrapper>
+    </DecopilotThreadProvider>
   );
 }

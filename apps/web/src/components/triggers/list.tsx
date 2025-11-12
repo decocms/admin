@@ -1,8 +1,15 @@
 import type { TriggerOutput } from "@deco/sdk";
 import { useAgents, useIntegrations, useListTriggers } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import {
+  useThreadOptional,
+  buildTriggerUri,
+} from "../decopilot/thread-provider.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
@@ -71,115 +78,66 @@ export default function ListTriggers({
 
 function ListTriggersSuspended({
   searchTerm = "",
-  viewMode = "cards",
+  viewMode: initialViewMode = "cards",
 }: {
   searchTerm?: string;
   viewMode?: "cards" | "table";
 }) {
   const { data, isLoading } = useListTriggers();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const navigate = useNavigateWorkspace();
-
-  const triggers = (data?.triggers || []) as TriggerOutput[];
-
-  const handleTriggerClick = useCallback(
-    (trigger: TriggerOutput) => {
-      navigate(`/trigger/${trigger.id}`);
-    },
-    [navigate],
-  );
-
-  const filteredTriggers =
-    searchTerm.trim().length > 0
-      ? triggers.filter((t) =>
-          t.data.title.toLowerCase().includes(searchTerm.toLowerCase()),
-        )
-      : triggers;
-
-  if (isLoading) {
-    return <ListTriggersSkeleton />;
-  }
-
-  return (
-    <>
-      {isCreateModalOpen && (
-        <TriggerModal
-          isOpen={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-        />
-      )}
-
-      {filteredTriggers.length === 0 ? (
-        <EmptyState
-          icon="cable"
-          title={
-            searchTerm.trim().length > 0
-              ? "No triggers found"
-              : "No triggers yet"
-          }
-          description={
-            searchTerm.trim().length > 0
-              ? "Try adjusting your search terms to find what you're looking for."
-              : "Create your first trigger to automate your agent workflows and respond to events automatically."
-          }
-        />
-      ) : viewMode === "table" ? (
-        <div className="w-fit min-w-full">
-          <TableView triggers={filteredTriggers} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTriggers.map((trigger) => (
-            <TriggerCard
-              key={trigger.id}
-              trigger={trigger}
-              onClick={handleTriggerClick}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-function TableView({ triggers }: { triggers: TriggerOutput[] }) {
+  const viewMode = initialViewMode;
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [openModalId, setOpenModalId] = useState<string | null>(null);
+  const threadManager = useThreadOptional();
+  const addTab = threadManager?.addTab;
   const navigate = useNavigateWorkspace();
   const { data: agents } = useAgents();
   const { data: integrations = [] } = useIntegrations();
 
-  function TargetInfo({ trigger }: { trigger: TriggerOutput }) {
-    const data = trigger.data;
+  const triggers = (data?.triggers || []) as TriggerOutput[];
 
-    // For agent triggers - use type assertion to handle the schema
-    if ("agentId" in data && data.agentId) {
-      return <AgentInfo agentId={data.agentId} />;
-    }
-
-    // For tool triggers - use type assertion to handle the complex union type
-    if ("callTool" in data && data.callTool) {
-      const integration = integrations.find(
-        (i) => i.id === data.callTool.integrationId,
-      );
-      const toolName = data.callTool.toolName;
-
-      return <IntegrationInfo integration={integration} toolName={toolName} />;
-    }
-
-    return <span className="text-muted-foreground">Unknown target</span>;
-  }
-
-  function handleSort(key: string) {
-    const k = key as SortKey;
-    if (sortKey === k) {
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
-      setSortKey(k);
+      setSortKey(key);
       setSortDirection("asc");
     }
   }
+
+  const handleTriggerClick = useCallback(
+    (trigger: TriggerOutput) => {
+      if (addTab) {
+        addTab({
+          type: "detail",
+          resourceUri: buildTriggerUri(trigger.id),
+          title: trigger.data.title || "Trigger",
+          icon: "cable",
+        });
+      } else {
+        navigate(`/trigger/${trigger.id}`);
+      }
+    },
+    [addTab, navigate],
+  );
+
+  const filteredTriggers = useMemo(() => {
+    const filtered =
+      searchTerm.trim().length > 0
+        ? triggers.filter((t) =>
+            t.data.title.toLowerCase().includes(searchTerm.toLowerCase()),
+          )
+        : triggers;
+
+    // Sort triggers
+    return [...filtered].sort((a, b) => {
+      const aVal = getSortValue(a, sortKey);
+      const bVal = getSortValue(b, sortKey);
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [triggers, searchTerm, sortKey, sortDirection, agents, integrations]);
 
   function getSortValue(trigger: TriggerOutput, key: SortKey): string {
     if (key === "target") {
@@ -213,21 +171,127 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
     return "";
   }
 
-  const sortedTriggers = [...triggers].sort((a, b) => {
-    const aVal = getSortValue(a, sortKey);
-    const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+  if (isLoading) {
+    return <ListTriggersSkeleton />;
+  }
+
+  return (
+    <>
+      <TabActionButton>
+        <Button
+          variant="default"
+          size="xs"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          <Icon name="add" />
+          New trigger
+        </Button>
+      </TabActionButton>
+
+      {isCreateModalOpen && (
+        <TriggerModal
+          isOpen={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+        />
+      )}
+
+      {filteredTriggers.length === 0 ? (
+        <EmptyState
+          icon="cable"
+          title={
+            searchTerm.trim().length > 0
+              ? "No triggers found"
+              : "No triggers yet"
+          }
+          description={
+            searchTerm.trim().length > 0
+              ? "Try adjusting your search terms to find what you're looking for."
+              : "Create your first trigger to automate your agent workflows and respond to events automatically."
+          }
+        />
+      ) : viewMode === "table" ? (
+        <div className="w-fit min-w-full">
+          <TableView
+            triggers={filteredTriggers}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTriggers.map((trigger) => (
+            <TriggerCard
+              key={trigger.id}
+              trigger={trigger}
+              onClick={handleTriggerClick}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function TableView({
+  triggers,
+  sortKey,
+  sortDirection,
+  onSort,
+}: {
+  triggers: TriggerOutput[];
+  sortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
+}) {
+  const [openModalId, setOpenModalId] = useState<string | null>(null);
+  const threadManager = useThreadOptional();
+  const addTab = threadManager?.addTab;
+  const navigate = useNavigateWorkspace();
+  const { data: integrations = [] } = useIntegrations();
+
+  function TargetInfo({ trigger }: { trigger: TriggerOutput }) {
+    const data = trigger.data;
+
+    // For agent triggers - use type assertion to handle the schema
+    if ("agentId" in data && data.agentId) {
+      return <AgentInfo agentId={data.agentId} />;
+    }
+
+    // For tool triggers - use type assertion to handle the complex union type
+    if ("callTool" in data && data.callTool) {
+      const integration = integrations.find(
+        (i) => i.id === data.callTool.integrationId,
+      );
+      const toolName = data.callTool.toolName;
+
+      return <IntegrationInfo integration={integration} toolName={toolName} />;
+    }
+
+    return <span className="text-muted-foreground">Unknown target</span>;
+  }
+
+  function handleSort(key: string) {
+    const k = key as SortKey;
+    onSort(k);
+  }
 
   const handleTriggerClick = useCallback(
     (trigger: TriggerOutput) => {
       if (!openModalId) {
-        navigate(`/trigger/${trigger.id}`);
+        if (addTab) {
+          addTab({
+            type: "detail",
+            resourceUri: buildTriggerUri(trigger.id),
+            title: trigger.data.title || "Trigger",
+            icon: "cable",
+          });
+        } else {
+          navigate(`/trigger/${trigger.id}`);
+        }
       }
     },
-    [openModalId, navigate],
+    [openModalId, addTab, navigate],
   );
 
   const columns: TableColumn<TriggerOutput>[] = [
@@ -281,7 +345,7 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
   return (
     <Table
       columns={columns}
-      data={sortedTriggers}
+      data={triggers}
       sortKey={sortKey}
       sortDirection={sortDirection}
       onSort={handleSort}

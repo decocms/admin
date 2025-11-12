@@ -11,7 +11,7 @@ import { RolesTableView } from "./roles.tsx";
 // Components
 function MembersViewLoading({ loadingMessage }: { loadingMessage: string }) {
   return (
-    <div className="px-6 py-10 flex flex-col gap-6">
+    <div className="p-6 flex flex-col gap-6">
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">{loadingMessage}</span>
@@ -60,7 +60,7 @@ function MembersViewContent({
   );
 
   return (
-    <div className="px-6 py-10 flex flex-col gap-6">
+    <div className="p-6 flex flex-col gap-6">
       <div className="flex flex-col gap-4">
         <ListPageHeader
           filter={{

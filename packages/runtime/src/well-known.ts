@@ -7,6 +7,12 @@ export const Hosts = {
   WEB_APP_LEGACY: "deco.chat",
 } as const;
 
+export const WELL_KNOWN_API_HOSTNAMES = [
+  Hosts.API,
+  Hosts.API_LEGACY,
+  Hosts.LOCALHOST.split(":")[0],
+] as const;
+
 export const WELL_KNOWN_ORIGINS = [
   `http://${Hosts.LOCALHOST}`,
   `https://${Hosts.WEB_APP}`,

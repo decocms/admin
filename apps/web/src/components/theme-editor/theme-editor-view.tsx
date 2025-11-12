@@ -16,7 +16,6 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { ThemePreview } from "./theme-preview.tsx";
-import { useSetThreadContextEffect } from "../decopilot/thread-context-provider.tsx";
 import { PresetSelector } from "./preset-selector.tsx";
 import type { ThemePreset } from "./theme-presets.ts";
 import { DetailSection } from "../common/detail-section.tsx";
@@ -35,24 +34,6 @@ const ThemeVariableEnum = z.enum([...THEME_VARIABLES] as [
 const themeEditorSchema = z.object({
   themeVariables: z.record(ThemeVariableEnum, z.string()).optional(),
 });
-
-// AI context rules for theme editing
-const THEME_EDITOR_AI_RULES = [
-  "You are helping the user customize their organization workspace theme. The Theme Editor allows editing organization-level themes that apply to all projects.",
-  `Available theme variables and their purposes:
-- Brand Colors: Primary brand color (--primary) and its foreground text (--primary-foreground) for buttons and highlights
-- Base Colors: Main background (--background) and text color (--foreground) - the foundation of the entire theme
-- Interactive Elements: Secondary actions (--secondary), accent highlights (--accent), and their respective text colors
-- Cards & Surfaces: Card backgrounds (--card), borders (--border), and input field borders (--input)
-- Feedback Colors: Destructive/error (--destructive), success (--success), warning (--warning) states with their text colors
-- Sidebar: All sidebar-related colors including background, text, accent, borders, and focus rings
-- Layout: Border radius (--radius) and spacing (--spacing) for consistent UI dimensions
-- Advanced: Popovers and muted text colors`,
-  'Colors should be in OKLCH format (preferred) like "oklch(0.5 0.2 180)" or hex format like "#ff0000". OKLCH provides better color manipulation and perception.',
-  "Use UPDATE_ORG_THEME to update the organization-level theme. Do NOT pass orgId - it will be automatically determined from the current workspace context.",
-  'To update a theme, only pass the "theme" parameter with the variables you want to change. Example: { "theme": { "variables": { "--primary": "oklch(0.65 0.18 200)", "--radius": "0.5rem" } } }',
-  "When suggesting theme changes, consider: contrast ratios for accessibility, color harmony, and the relationship between background/foreground pairs.",
-];
 
 interface ColorCardProps {
   variable: {
@@ -246,8 +227,12 @@ export function ThemeEditorView() {
   // Track previous values for undo functionality
   const previousValuesRef = useRef<Record<string, string>>({});
 
+  // Track current theme in a ref to avoid recreating handleVariableChange
+  const currentThemeRef = useRef<Theme | undefined>(currentTheme);
+
   // Update form when theme changes
   useEffect(() => {
+    currentThemeRef.current = currentTheme;
     form.reset({
       themeVariables: currentTheme?.variables ?? {},
     });
@@ -283,53 +268,6 @@ export function ThemeEditorView() {
     [themeVariables],
   );
 
-  // Thread context for AI assistance with theme editing
-  const threadContextItems = useMemo<
-    Array<
-      | { id: string; type: "rule"; text: string }
-      | {
-          id: string;
-          type: "toolset";
-          integrationId: string;
-          enabledTools: string[];
-        }
-    >
-  >(() => {
-    const contextItems: Array<
-      | { id: string; type: "rule"; text: string }
-      | {
-          id: string;
-          type: "toolset";
-          integrationId: string;
-          enabledTools: string[];
-        }
-    > = THEME_EDITOR_AI_RULES.map((text) => ({
-      id: crypto.randomUUID(),
-      type: "rule" as const,
-      text,
-    }));
-
-    // Add theme management toolset
-    contextItems.push({
-      id: crypto.randomUUID(),
-      type: "toolset" as const,
-      integrationId: "i:theme-management",
-      enabledTools: ["UPDATE_ORG_THEME"],
-    });
-
-    // Add HTTP Fetch tool for fetching inspiration/color palettes
-    contextItems.push({
-      id: crypto.randomUUID(),
-      type: "toolset" as const,
-      integrationId: "i:http",
-      enabledTools: ["HTTP_FETCH"],
-    });
-
-    return contextItems;
-  }, []);
-
-  useSetThreadContextEffect(threadContextItems);
-
   const hasChanges = useMemo(() => {
     const currentValues = currentTheme?.variables || {};
     return JSON.stringify(themeVariables) !== JSON.stringify(currentValues);
@@ -340,7 +278,7 @@ export function ThemeEditorView() {
       // Store the ORIGINAL saved value from currentTheme only once
       // This way undo always goes back to the saved theme, not the -1 change
       if (!(key in previousValuesRef.current)) {
-        const savedValue = currentTheme?.variables?.[key];
+        const savedValue = currentThemeRef.current?.variables?.[key];
         if (savedValue) {
           previousValuesRef.current[key] = savedValue;
         }
@@ -370,7 +308,7 @@ export function ThemeEditorView() {
         form.setValue("themeVariables", updatedValues, { shouldDirty: true });
       }, 100);
     },
-    [form, currentTheme],
+    [form],
   );
 
   async function onSubmit(data: ThemeEditorFormValues) {

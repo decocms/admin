@@ -66,7 +66,7 @@ export function Table<T = Record<string, unknown>>({
     <div className="w-full bg-background">
       <UITable className="w-full border-collapse">
         <TableHeader className="sticky top-0 z-10 border-b border-border bg-background">
-          <TableRow className="h-10 hover:!bg-transparent [&:hover]:!bg-transparent">
+          <TableRow className="h-10 !hover:bg-transparent">
             {columns.map((col, idx) => {
               const isActiveSort = sortKey === col.id;
               return (

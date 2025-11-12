@@ -1,4 +1,4 @@
-import { WorkersMCPBindings } from "@deco/workers-runtime";
+import { WorkersMCPBindings } from "@decocms/runtime";
 import type {
   ScriptUpdateParams,
   ScriptUpdateResponse,

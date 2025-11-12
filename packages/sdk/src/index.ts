@@ -32,6 +32,7 @@ export * from "./hooks/knowledge.ts";
 export * from "./hooks/mcp.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/models.ts";
+export * from "./hooks/onboarding.ts";
 export * from "./hooks/prompts.ts";
 export * from "./hooks/registry.ts";
 export * from "./hooks/roles.ts";
@@ -43,7 +44,6 @@ export {
 export { useWorkflow as useWorkflowByUriV2 } from "./hooks/resources-workflow.ts";
 export {
   useTool as useToolByUriV2,
-  useToolCallV2,
   useUpdateTool,
 } from "./hooks/resources-tools.ts";
 export {
@@ -70,10 +70,7 @@ export * from "./hooks/wallet.ts";
 export * from "./hooks/workflow-builder.ts";
 export * from "./hooks/workflow-step-generator.ts";
 export * from "./hooks/workflows.ts";
-export * from "./hooks/use-recent-resources.ts";
 export * from "./hooks/use-pinned-resources.ts";
-export * from "./hooks/use-unpinned-native-views.ts";
-export * from "./hooks/use-track-native-view-visit.ts";
 export {
   WorkflowDefinitionSchema,
   WorkflowStepDefinitionSchema,

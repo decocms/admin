@@ -1,12 +1,22 @@
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import JSZip from "jszip";
 import { z } from "zod";
+import { RoleUpdateAction } from "../../auth/policy.ts";
+import { WebCache } from "../../cache/index.ts";
+import { TeamWithViews } from "../../crud/teams.ts";
 import {
   ForbiddenError,
   InternalServerError,
   NotFoundError,
+  UnauthorizedError,
   UserInputError,
 } from "../../errors.ts";
+import { NEW_AGENT_TEMPLATE } from "../../index.ts";
+import { Statement } from "../../models/index.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
+import { isRequired } from "../../utils/fns.ts";
+import { type View } from "../../views.ts";
 import {
   assertHasWorkspace,
   assertPrincipalIsUser,
@@ -17,31 +27,48 @@ import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "../fs/api.ts";
+import {
+  createDeconfigClientForContext,
+  MCPClient,
+  withProject,
+} from "../index.ts";
+import { parseId } from "../integrations/api.ts";
 import { createTool } from "../members/api.ts";
-import { mergeThemes } from "./merge-theme.ts";
-import { getWalletClient } from "../wallet/api.ts";
 import { getTeamBySlug } from "../members/invites-utils.ts";
+import {
+  agents as agentsTable,
+  memberRoles as memberRolesTable,
+  members as membersTable,
+  organizations,
+  projects,
+} from "../schema.ts";
+import { enhancedThemeSchema } from "../theme/api.ts";
+import { getWalletClient } from "../wallet/api.ts";
+import { MicroDollar, type Transaction } from "../wallet/index.ts";
 import {
   isValidMonth,
   isValidYear,
   WellKnownTransactions,
 } from "../wallet/well-known.ts";
-import { MicroDollar, type Transaction } from "../wallet/index.ts";
-import { WebCache } from "../../cache/index.ts";
-import { TeamWithViews } from "../../crud/teams.ts";
-import { type View } from "../../views.ts";
-import { RoleUpdateAction } from "../../auth/policy.ts";
-import { Statement } from "../../models/index.ts";
-import { isRequired } from "../../utils/fns.ts";
-import { parseId } from "../integrations/api.ts";
-import { eq, inArray, and, isNull } from "drizzle-orm";
 import {
-  members as membersTable,
-  memberRoles as memberRolesTable,
-  organizations,
-  projects,
-} from "../schema.ts";
-import { enhancedThemeSchema } from "../theme/api.ts";
+  buildManifest,
+  exportAgent,
+  exportDatabaseTable,
+  generateZip,
+  prepareFileForZip,
+  processDatabaseSchema,
+  processFileContent,
+} from "./export-project.ts";
+import {
+  downloadGithubRepo,
+  extractZipFiles,
+  parseAgentFile,
+  parseDatabaseSchema,
+  parseGithubUrl,
+  parseManifestFromFiles,
+  prepareFileForUpload,
+} from "./import-project.ts";
+import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -396,6 +423,9 @@ export const createTeam = createTool({
     z.object({
       name: z.string(),
       slug: z.string(),
+      avatar_url: z.string().optional(),
+      domain: z.string().optional(),
+      theme: enhancedThemeSchema.optional(),
     }),
   ),
 
@@ -410,7 +440,7 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug } = props;
+    const { name, slug, avatar_url, domain, theme } = props;
     const user = c.user;
 
     // Enforce unique slug if provided
@@ -426,14 +456,35 @@ export const createTeam = createTool({
       }
     }
 
+    // Validate domain: prevent setting domain for well-known email providers
+    if (domain) {
+      const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
+      if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
+        console.log("[TEAMS_CREATE] Rejecting well-known domain:", domain);
+        throw new UserInputError(
+          "Cannot set domain for well-known email providers (e.g., gmail.com, outlook.com). Only custom company domains are allowed.",
+        );
+      }
+    }
+
     // Create the team
     const { data: team, error: createError } = await c.db
       .from("teams")
-      .insert([{ name: sanitizeTeamName(name), slug }])
+      .insert([
+        {
+          name: sanitizeTeamName(name),
+          slug,
+          avatar_url,
+          domain: domain?.toLowerCase(),
+          theme: theme || null,
+        },
+      ])
       .select()
       .single();
 
     if (createError) throw createError;
+
+    /**/
 
     // Add the creator as an admin member
     const { data: member, error: memberError } = await c.db
@@ -1325,6 +1376,427 @@ export const listRecentProjects = createTool({
   },
 });
 
+export const importProjectFromGithub = createTool({
+  name: "PROJECTS_IMPORT_FROM_GITHUB",
+  description:
+    "Import a project from a GitHub repository URL. The repository must contain a deco.mcp.json manifest file.",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug to import into"),
+      githubUrl: z
+        .string()
+        .describe(
+          "The GitHub repository URL (e.g., https://github.com/owner/repo)",
+        ),
+      slug: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project slug from manifest"),
+      title: z
+        .string()
+        .optional()
+        .describe("Optional: Override the project title from manifest"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      success: z.boolean(),
+      projectId: z.string(),
+      projectSlug: z.string(),
+      filesUploaded: z.number(),
+      agentsImported: z.number(),
+      databaseTablesImported: z.number(),
+      message: z.string(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, githubUrl, slug: overrideSlug, title: overrideTitle } = props;
+
+    // Parse GitHub URL
+    const { owner, repo, ref } = parseGithubUrl({ githubUrl });
+
+    // Download from GitHub
+    const arrayBuffer = await downloadGithubRepo({ owner, repo, ref });
+
+    // Extract files from zip
+    const { files } = await extractZipFiles({ arrayBuffer });
+
+    // Parse manifest
+    const { manifest, projectSlug, projectTitle } = parseManifestFromFiles({
+      files,
+      overrideSlug,
+      overrideTitle,
+    });
+
+    // Create project using internal logic (same as PROJECTS_CREATE)
+    const user = c.user;
+
+    // First, verify the user has access to this organization
+    const { data: orgData, error: orgError } = await c.db
+      .from("teams")
+      .select("id, slug, theme, members!inner(user_id, deleted_at)")
+      .eq("slug", org)
+      .eq("members.user_id", user.id)
+      .is("members.deleted_at", null)
+      .single();
+
+    if (orgError || !orgData) {
+      throw new Error("Organization not found or access denied");
+    }
+
+    const { data: newProject, error: createError } = await c.db
+      .from("deco_chat_projects")
+      .insert({
+        org_id: orgData.id,
+        slug: projectSlug,
+        title: projectTitle,
+        description: manifest.project?.description || null,
+      })
+      .select("id")
+      .single();
+
+    if (createError) {
+      if (createError.code === "23505") {
+        throw new UserInputError(
+          `Project with slug "${projectSlug}" already exists in this organization`,
+        );
+      }
+      throw new Error("Failed to create project");
+    }
+
+    const projectId = newProject.id;
+
+    // Get deconfig client for this project workspace using withProject helper
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+
+    // Upload files
+    let uploadedCount = 0;
+
+    console.log(`[Import] Starting file upload for project ${projectSlug}`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const uploadInfo = prepareFileForUpload({ path, contentBytes });
+
+      if (!uploadInfo.shouldUpload) {
+        continue;
+      }
+
+      try {
+        await deconfigClient.PUT_FILE({
+          path: uploadInfo.remotePath,
+          content: { base64: uploadInfo.base64Content },
+          branch: "main",
+        });
+        uploadedCount++;
+        console.log(`[Import] Successfully uploaded: ${uploadInfo.remotePath}`);
+      } catch (error) {
+        console.error(`[Import] Failed to upload ${path}:`, error);
+      }
+    }
+
+    console.log(`[Import] Finished uploading ${uploadedCount} files`);
+
+    // Import database schema using MCP database tools
+    let tablesImported = 0;
+    const workspaceClient = MCPClient.forContext(projectContext);
+    console.log(`[Import] Starting database import`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const schema = parseDatabaseSchema({ path, contentBytes });
+
+      if (!schema) {
+        continue;
+      }
+
+      try {
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: `DROP TABLE IF EXISTS ${schema.tableName}`,
+        });
+
+        await workspaceClient.DATABASES_RUN_SQL({
+          sql: schema.createSql,
+        });
+
+        for (const index of schema.indexes) {
+          if (index.sql) {
+            await workspaceClient.DATABASES_RUN_SQL({
+              sql: index.sql,
+            });
+          }
+        }
+
+        tablesImported++;
+        console.log(
+          `[Import] Successfully imported table: ${schema.tableName}`,
+        );
+      } catch (error) {
+        console.error(
+          `[Import] Failed to import table schema from ${path}:`,
+          error,
+        );
+      }
+    }
+
+    console.log(`[Import] Finished importing ${tablesImported} tables`);
+
+    // Import agents using drizzle
+    let agentCount = 0;
+    console.log(`[Import] Starting agent import`);
+
+    for (const [path, contentBytes] of files.entries()) {
+      const agentData = parseAgentFile({ path, contentBytes });
+
+      if (!agentData) {
+        continue;
+      }
+
+      try {
+        await c.drizzle.insert(agentsTable).values({
+          name: agentData.name || NEW_AGENT_TEMPLATE.name,
+          avatar: agentData.avatar || NEW_AGENT_TEMPLATE.avatar,
+          instructions:
+            agentData.instructions || NEW_AGENT_TEMPLATE.instructions,
+          description: agentData.description,
+          tools_set: agentData.tools_set || NEW_AGENT_TEMPLATE.tools_set,
+          max_steps: agentData.max_steps,
+          max_tokens: agentData.max_tokens,
+          model: agentData.model || NEW_AGENT_TEMPLATE.model,
+          memory: agentData.memory,
+          views: agentData.views,
+          visibility:
+            agentData.visibility ||
+            (NEW_AGENT_TEMPLATE.visibility as
+              | "PUBLIC"
+              | "WORKSPACE"
+              | "PRIVATE"),
+          temperature: agentData.temperature,
+          workspace: null, // Legacy field, set to null for project-based agents
+          project_id: projectId,
+        });
+
+        agentCount++;
+        console.log(`[Import] Successfully imported agent: ${agentData.name}`);
+      } catch (error) {
+        console.error(`[Import] Failed to import agent from ${path}:`, error);
+      }
+    }
+
+    console.log(`[Import] Finished importing ${agentCount} agents`);
+
+    return {
+      success: true,
+      projectId,
+      projectSlug,
+      filesUploaded: uploadedCount,
+      agentsImported: agentCount,
+      databaseTablesImported: tablesImported,
+      message: `Successfully imported project "${projectTitle}" with ${uploadedCount} files, ${agentCount} agents, and ${tablesImported} tables`,
+    };
+  },
+});
+
+export const exportProject = createTool({
+  name: "PROJECTS_EXPORT_ZIP",
+  description:
+    "Export a project as a zip file containing all project resources (tools, views, workflows, documents, database schemas, and agents)",
+  inputSchema: z.lazy(() =>
+    z.object({
+      org: z.string().describe("The organization slug"),
+      project: z.string().describe("The project slug"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      filename: z.string(),
+      base64: z.string(),
+      size: z.number(),
+    }),
+  ),
+  handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+    c.resourceAccess.grant();
+
+    const { org, project } = props;
+    const user = c.user;
+
+    // Verify project access
+    const { data: projectData, error: projectError } = await c.db
+      .from("deco_chat_projects")
+      .select(
+        "id, slug, title, description, org_id, teams!inner(slug, members!inner(user_id, deleted_at))",
+      )
+      .eq("slug", project)
+      .eq("teams.slug", org)
+      .eq("teams.members.user_id", user.id)
+      .is("teams.members.deleted_at", null)
+      .single();
+
+    if (projectError || !projectData) {
+      throw new NotFoundError("Project not found or access denied");
+    }
+
+    const projectId = projectData.id;
+    const projectSlug = projectData.slug;
+    const projectTitle = projectData.title;
+    const projectDescription = projectData.description;
+
+    // Create workspace client for this project
+    const projectContext = withProject(c, `/${org}/${projectSlug}`, "main");
+    const deconfigClient = createDeconfigClientForContext(projectContext);
+    const workspaceClient = MCPClient.forContext(projectContext);
+
+    // Initialize zip
+    const zip = new JSZip();
+
+    // Fetch all files from allowed roots
+    const ALLOWED_ROOTS = [
+      "/src/tools",
+      "/src/views",
+      "/src/workflows",
+      "/src/documents",
+    ];
+
+    const resourcesByType = {
+      tools: [] as string[],
+      views: [] as string[],
+      workflows: [] as string[],
+      documents: [] as string[],
+      database: [] as string[],
+    };
+
+    console.log(`[Export] Fetching files for project ${projectSlug}`);
+
+    for (const root of ALLOWED_ROOTS) {
+      try {
+        const listResponse = await deconfigClient.LIST_FILES({ prefix: root });
+        const filesMap = listResponse.files || {};
+        const files = Object.entries(filesMap).map(([path, metadata]) => ({
+          path,
+          ...metadata,
+        }));
+
+        for (const file of files) {
+          try {
+            const readResponse = await deconfigClient.READ_FILE({
+              path: file.path,
+            });
+
+            const { contentStr } = processFileContent({
+              filePath: file.path,
+              readResponse: readResponse as {
+                content?: string | { base64: string } | unknown;
+              },
+            });
+
+            // Track resources by type
+            const filePath = file.path;
+            if (filePath.startsWith("/src/tools/")) {
+              resourcesByType.tools.push(filePath);
+            } else if (filePath.startsWith("/src/views/")) {
+              resourcesByType.views.push(filePath);
+            } else if (filePath.startsWith("/src/workflows/")) {
+              resourcesByType.workflows.push(filePath);
+            } else if (filePath.startsWith("/src/documents/")) {
+              resourcesByType.documents.push(filePath);
+            }
+
+            const preparedFile = prepareFileForZip({
+              filePath,
+              contentStr,
+            });
+
+            if (!preparedFile.shouldInclude) {
+              continue;
+            }
+
+            zip.file(preparedFile.relativePath, preparedFile.finalContent);
+          } catch (error) {
+            console.warn(`[Export] Failed to read ${file.path}:`, error);
+          }
+        }
+      } catch (error) {
+        console.warn(`[Export] Failed to list files in ${root}:`, error);
+      }
+    }
+
+    // Export agents
+    console.log(`[Export] Fetching agents...`);
+    const agents = await c.drizzle
+      .select()
+      .from(agentsTable)
+      .where(eq(agentsTable.project_id, projectId));
+
+    const agentsDir = "agents";
+    for (const agent of agents || []) {
+      const { filename, content } = exportAgent({ agent });
+      zip.file(`${agentsDir}/${filename}`, content);
+    }
+
+    console.log(`[Export] Exported ${agents?.length || 0} agents`);
+
+    // Export database schema
+    console.log(`[Export] Exporting database schema...`);
+    try {
+      const schemaResponse = await workspaceClient.DATABASES_RUN_SQL({
+        sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
+      });
+
+      const { tables } = processDatabaseSchema({
+        schemaResponse: schemaResponse as {
+          result?: unknown[] | { results?: Array<Record<string, unknown>> }[];
+        },
+      });
+
+      const databaseDir = "database";
+      for (const table of tables) {
+        const { filename, content } = exportDatabaseTable({ table });
+        zip.file(`${databaseDir}/${filename}`, content);
+        resourcesByType.database.push(`/${databaseDir}/${filename}`);
+      }
+
+      console.log(`[Export] Exported ${tables.length} tables`);
+    } catch (error) {
+      console.warn(`[Export] Failed to export database schema:`, error);
+    }
+
+    // Build manifest
+    const manifest = buildManifest({
+      projectInfo: {
+        slug: projectSlug,
+        title: projectTitle,
+        description: projectDescription || undefined,
+      },
+      exporterInfo: {
+        orgSlug: org,
+        userId: user.id,
+        userEmail: user.email || undefined,
+      },
+      resources: resourcesByType,
+      dependencies: {
+        mcps: [], // Extract dependencies in future if needed
+      },
+    });
+
+    zip.file("deco.mcp.json", JSON.stringify(manifest, null, 2) + "\n");
+
+    // Generate zip
+    const { buffer, base64 } = await generateZip({ zip });
+    const filename = `${org}__${project}.zip`;
+
+    console.log(`[Export] Generated zip: ${filename} (${buffer.length} bytes)`);
+
+    return {
+      filename,
+      base64,
+      size: buffer.length,
+    };
+  },
+});
+
 export const createProject = createTool({
   name: "PROJECTS_CREATE",
   description: "Create a new project in an organization",
@@ -1428,6 +1900,7 @@ export const updateProject = createTool({
       project: z.string().describe("The project slug"),
       data: z.object({
         title: z.string().optional().describe("The new title for the project"),
+        icon: z.string().optional().describe("The new icon for the project"),
       }),
     }),
   ),
@@ -1471,6 +1944,10 @@ export const updateProject = createTool({
     const updateData: Record<string, unknown> = {};
     if (data.title !== undefined) {
       updateData.title = data.title;
+    }
+
+    if (data.icon !== undefined) {
+      updateData.icon = data.icon;
     }
 
     const { data: updatedProject, error: updateError } = await c.db
@@ -1518,7 +1995,7 @@ export const deleteProject = createTool({
   ),
   handler: async (props, c) => {
     if (typeof c.user.id !== "string") {
-      throw new NotFoundError("User not found");
+      throw new UnauthorizedError("User not found");
     }
 
     const { projectId } = props;
@@ -1569,5 +2046,136 @@ export const deleteProject = createTool({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * Auto-join a team based on user's email domain
+ */
+export const autoJoinTeam = createTool({
+  name: "TEAM_AUTO_JOIN",
+  description:
+    "Join a team automatically based on email domain. Only works for non-well-known email domains (company domains).",
+  inputSchema: z.lazy(() =>
+    z.object({
+      domain: z
+        .string()
+        .describe("The email domain to match (e.g., 'acme.com')"),
+    }),
+  ),
+  handler: async ({ domain }, c) => {
+    c.resourceAccess.grant();
+
+    assertPrincipalIsUser(c);
+    const user = c.user;
+
+    console.log(
+      "[TEAM_AUTO_JOIN] Attempting to join team with domain:",
+      domain,
+    );
+
+    // Validate domain is not well-known
+    const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
+    if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
+      console.log("[TEAM_AUTO_JOIN] Rejected: well-known domain:", domain);
+      throw new UserInputError(
+        "Cannot auto-join teams with well-known email domains (e.g., gmail.com, outlook.com). Auto-join only works for company-specific domains.",
+      );
+    }
+
+    // Find team with matching domain
+    const { data: team, error: teamError } = await c.db
+      .from("teams")
+      .select("id, name, slug, domain")
+      .eq("domain", domain.toLowerCase())
+      .maybeSingle();
+
+    if (teamError) {
+      console.error("[TEAM_AUTO_JOIN] Error finding team:", teamError);
+      throw new InternalServerError(teamError.message);
+    }
+
+    if (!team) {
+      console.log("[TEAM_AUTO_JOIN] No team found with domain:", domain);
+      throw new NotFoundError(
+        `No organization found with domain '${domain}'. The organization may not exist or may not have domain-based auto-join enabled.`,
+      );
+    }
+
+    console.log("[TEAM_AUTO_JOIN] Found team:", team.slug);
+
+    // Check if user is already a member
+    const { data: existingMember, error: memberCheckError } = await c.db
+      .from("members")
+      .select("id")
+      .eq("team_id", team.id)
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (memberCheckError) {
+      console.error(
+        "[TEAM_AUTO_JOIN] Error checking membership:",
+        memberCheckError,
+      );
+      throw new InternalServerError(memberCheckError.message);
+    }
+
+    if (existingMember) {
+      console.log("[TEAM_AUTO_JOIN] User already a member of team");
+      return {
+        success: true,
+        team,
+        alreadyMember: true,
+      };
+    }
+
+    // Add user as non-admin member
+    const { data: member, error: memberError } = await c.db
+      .from("members")
+      .insert([
+        {
+          team_id: team.id,
+          user_id: user.id,
+          admin: false,
+          activity: [
+            {
+              action: "auto_join_by_domain",
+              timestamp: new Date().toISOString(),
+              domain,
+            },
+          ],
+        },
+      ])
+      .select()
+      .single();
+
+    if (memberError) {
+      console.error("[TEAM_AUTO_JOIN] Error adding member:", memberError);
+      throw new InternalServerError(memberError.message);
+    }
+
+    // Assign default member role (not owner)
+    const DEFAULT_MEMBER_ROLE_ID = 2; // Assuming role_id 2 is the default member role
+
+    const { error: roleError } = await c.db.from("member_roles").insert([
+      {
+        member_id: member.id,
+        role_id: DEFAULT_MEMBER_ROLE_ID,
+      },
+    ]);
+
+    if (roleError) {
+      console.error("[TEAM_AUTO_JOIN] Error assigning role:", roleError);
+      // Don't throw - member is already added, role is optional
+    }
+
+    console.log("[TEAM_AUTO_JOIN] Successfully joined team:", team.slug);
+
+    return {
+      success: true,
+      team,
+      alreadyMember: false,
+    };
   },
 });

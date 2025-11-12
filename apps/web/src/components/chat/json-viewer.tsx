@@ -177,7 +177,8 @@ export function JsonViewer({
   const [showButtons, setShowButtons] = useState(false);
 
   const jsonString = useMemo(() => {
-    return JSON.stringify(data, null, 2).replace(/"(\w+)":/g, '"$1":');
+    const stringified = JSON.stringify(data, null, 2);
+    return stringified ? stringified.replace(/"(\w+)":/g, '"$1":') : "{}";
   }, [data]);
 
   const isFullHeight = maxHeight === "100%";

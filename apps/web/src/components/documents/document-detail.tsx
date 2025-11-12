@@ -1,8 +1,6 @@
 import {
   DocumentDefinitionSchema,
   useDocumentByUriV2,
-  usePinnedResources,
-  useRecentResources,
   useSDK,
   useUpdateDocument,
 } from "@deco/sdk";
@@ -21,11 +19,12 @@ import { z } from "zod";
 import { EmptyState } from "../common/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
 import {
-  ResourceDetailHeader,
   RefreshAction,
   SaveDiscardActions,
   CodeAction,
 } from "../common/resource-detail-header.tsx";
+import { TabActionButton } from "../canvas/tab-action-button.tsx";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -56,11 +55,10 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   } = useDocumentByUriV2(resourceUri);
   const effectiveDocument = resource?.data;
 
-  // Track recent resources
+  // Track pinned tabs
   // Locator is a string "org/project", not an object
   const projectKey = typeof locator === "string" ? locator : undefined;
-  const { addRecent } = useRecentResources(projectKey);
-  const { updatePinnedResource } = usePinnedResources(projectKey);
+  const { pinnedTabs, pinTab, isPinned } = usePinnedTabs(projectKey);
 
   // Update mutation
   const updateMutation = useUpdateDocument();
@@ -90,7 +88,6 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
   const tagInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
-  const hasTrackedRecentRef = useRef(false); // Track if we've already added to recents
   const isProgrammaticUpdateRef = useRef(false); // Track programmatic updates to avoid marking as dirty
 
   // Watch form values
@@ -126,34 +123,27 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
         isProgrammaticUpdateRef.current = false;
       }, 500);
 
-      // Track as recently opened (only once)
-      if (locator && projectKey && !hasTrackedRecentRef.current) {
-        hasTrackedRecentRef.current = true;
-        // Use setTimeout to ensure this runs after render
-        setTimeout(() => {
-          addRecent({
-            id: resourceUri,
-            name: effectiveDocument.name,
-            type: "document",
-            icon: "description",
-            path: `/${projectKey}/rsc/i:documents-management/document/${encodeURIComponent(resourceUri)}`,
+      // Update pinned tab title if it's already pinned
+      if (isPinned(resourceUri)) {
+        const existingTab = pinnedTabs.find(
+          (tab) => tab.resourceUri === resourceUri,
+        );
+        if (existingTab && existingTab.title !== effectiveDocument.name) {
+          pinTab({
+            resourceUri: existingTab.resourceUri,
+            title: effectiveDocument.name,
+            type: existingTab.type,
+            icon: existingTab.icon,
           });
-        }, 0);
+        }
       }
-
-      // Also update pinned resource name if it's pinned
-      updatePinnedResource(resourceUri, {
-        name: effectiveDocument.name,
-      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     effectiveDocument,
     resourceUri,
-    locator,
-    addRecent,
-    projectKey,
-    updatePinnedResource,
-    form,
+    // Removed pinnedTabs, pinTab, isPinned from deps to prevent infinite loop
+    // These are only used conditionally to update the pinned tab title
   ]);
 
   // Save editor mode preference to localStorage
@@ -311,34 +301,26 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Header */}
-      <ResourceDetailHeader
-        title={effectiveDocument.name}
-        actions={
-          <>
-            <RefreshAction
-              onRefresh={handleRefresh}
-              isRefreshing={isFetching}
-            />
-            <CodeAction
-              isOpen={editorMode === "raw"}
-              onToggle={() =>
-                setEditorMode((prev) => (prev === "raw" ? "pretty" : "raw"))
-              }
-              hasCode={true}
-            />
-            <SaveDiscardActions
-              hasChanges={hasChanges}
-              onSave={handleSave}
-              onDiscard={handleDiscard}
-              isSaving={updateMutation.isPending}
-            />
-          </>
-        }
-      />
+      {/* Action buttons rendered in canvas header via portal */}
+      <TabActionButton>
+        <RefreshAction onRefresh={handleRefresh} isRefreshing={isFetching} />
+        <CodeAction
+          isOpen={editorMode === "raw"}
+          onToggle={() =>
+            setEditorMode((prev) => (prev === "raw" ? "pretty" : "raw"))
+          }
+          hasCode={true}
+        />
+        <SaveDiscardActions
+          hasChanges={hasChanges}
+          onSave={handleSave}
+          onDiscard={handleDiscard}
+          isSaving={updateMutation.isPending}
+        />
+      </TabActionButton>
 
       {/* Main content */}
-      <ScrollArea className="flex-1 w-full [&_[data-radix-scroll-area-viewport]>div]:!block [&_[data-radix-scroll-area-viewport]>div]:!min-w-0 [&_[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="flex-1 w-full [&_[data-radix-scroll-area-viewport]>div]:block! [&_[data-radix-scroll-area-viewport]>div]:min-w-0! [&_[data-radix-scroll-area-viewport]>div]:w-full!">
         <div className="w-full max-w-3xl mx-auto pt-12">
           {/* Editable title and description section */}
           <div className="p-2 sm:px-4 md:px-6">
@@ -360,7 +342,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     e.currentTarget.textContent = "";
                   }
                 }}
-                className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                className="text-3xl font-semibold text-foreground leading-tight outline-none bg-transparent wrap-break-word overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
                 data-placeholder="Untitled document"
               />
 
@@ -381,7 +363,7 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
                     e.currentTarget.textContent = "";
                   }
                 }}
-                className="text-base text-muted-foreground outline-none bg-transparent break-words overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
+                className="text-base text-muted-foreground outline-none bg-transparent wrap-break-word overflow-wrap-anywhere empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50"
                 data-placeholder="Add a description..."
               />
             </div>

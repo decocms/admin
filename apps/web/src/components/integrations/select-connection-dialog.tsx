@@ -137,12 +137,15 @@ export const useIntegrationInstallStep = ({
       const dependencyName = maybeAppDependencyList?.[stepIndex] ?? "";
       const dependencySchema =
         integrationState.schema?.properties?.[dependencyName] ?? {};
+      const isRequired =
+        integrationState.schema?.required?.includes(dependencyName);
+
       return {
         type: "object",
         properties: {
           [dependencyName]: dependencySchema,
         },
-        required: [dependencyName],
+        required: isRequired ? [dependencyName] : undefined,
       } satisfies JSONSchema7;
     } else {
       const properties: Record<string, JSONSchema7Definition> =
@@ -156,10 +159,17 @@ export const useIntegrationInstallStep = ({
           {} as Record<string, JSONSchema7Definition>,
         ) ?? {};
 
+      const requiredFields = maybeAppList?.filter((app) =>
+        integrationState.schema?.required?.includes(app),
+      );
+
       return {
         type: "object",
         properties,
-        required: maybeAppList ? maybeAppList : undefined,
+        required:
+          requiredFields && requiredFields.length > 0
+            ? requiredFields
+            : undefined,
       } satisfies JSONSchema7;
     }
   }, [totalSteps, stepIndex, integrationState.schema]);
@@ -212,7 +222,6 @@ export const useUIInstallIntegration = ({
 }: UseUIInstallIntegrationProps) => {
   const { install, isLoading } = useIntegrationInstall();
   const buildWorkspaceUrl = useWorkspaceLink();
-  const navigateWorkspace = useNavigateWorkspace();
 
   const handleConnect = async ({
     integration,
@@ -267,17 +276,7 @@ export const useUIInstallIntegration = ({
           authorizeOauthUrl: null,
         });
       } else if (!result.stateSchema) {
-        let link = `/apps/${integration.provider}:::${integration.name}`;
-        const isDecoApp = integration.name.startsWith("@deco/");
-        if (
-          result.redirectUrl === null &&
-          isDecoApp &&
-          integration.friendlyName
-        ) {
-          // special case for non oauth-apps
-          link = `/apps/deco:::${integration.friendlyName}`;
-        }
-        navigateWorkspace(link);
+        // No OAuth redirect needed for this integration type
       }
     } catch (error) {
       trackEvent("integration_install", {
@@ -388,7 +387,12 @@ export function InstallStepsButtons({
   return (
     <>
       {stepIndex > 0 && (
-        <Button variant="outline" disabled={isLoading} onClick={handleBack}>
+        <Button
+          variant="outline"
+          disabled={isLoading}
+          onClick={handleBack}
+          className="flex-1 md:flex-initial"
+        >
           Back
         </Button>
       )}
@@ -400,6 +404,7 @@ export function InstallStepsButtons({
             : handleNextDependency
         }
         disabled={isLoading || integrationState.isLoading}
+        className="flex-1 md:flex-initial"
       >
         {isLoading || integrationState.isLoading
           ? "Connecting..."
@@ -860,7 +865,7 @@ interface SelectConnectionDialogProps {
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   const [query] = useSearchParams();
   const appName = query.get("appName");
-  const [isOpen, setIsOpen] = useState(!!appName);
+  const [isOpen, setIsOpen] = useState(false);
 
   const trigger = useMemo(() => {
     if (props.trigger) {

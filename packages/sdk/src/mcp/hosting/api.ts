@@ -1,4 +1,4 @@
-import { D1Store } from "@deco/workers-runtime/d1";
+import { D1Store } from "@decocms/runtime/d1";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { purge } from "../../cache/routing.ts";

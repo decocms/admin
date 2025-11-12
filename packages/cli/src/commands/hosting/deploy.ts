@@ -26,10 +26,6 @@ function normalizePath(path: string): string {
   return posix.normalize(path.replace(/\\/g, "/"));
 }
 
-/**
- * Try to parse inline JSON env vars
- * Returns null if parsing fails
- */
 function tryParseInlineJson(
   input: string,
 ): { vars: Record<string, string>; count: number } | null {
@@ -45,10 +41,6 @@ function tryParseInlineJson(
   }
 }
 
-/**
- * Try to parse env file (JSON or .env-like format)
- * Returns null if parsing fails
- */
 async function tryParseEnvFile(
   filePath: string,
   workingDir: string,

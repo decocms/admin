@@ -280,13 +280,13 @@ app.notFound((c) => {
   );
 });
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === "development") {
   const { devServerProxy } = await import("./utils/dev-server-proxy");
   app.use("*", (c) => devServerProxy(c));
 } else {
   // --- Production static serving ---
-  app.use('/assets/*', serveStatic({ root: './dist' })) // serve Vite assets
-  app.get('*', serveStatic({ path: './dist/index.html' })) // SPA fallback
+  app.use("/assets/*", serveStatic({ root: "./dist" })); // serve Vite assets
+  app.get("*", serveStatic({ path: "./dist/index.html" })); // SPA fallback
 }
 
 export default app;

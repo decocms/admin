@@ -114,4 +114,3 @@ export function isFilePath(input: string): boolean {
 
   return false;
 }
-

@@ -133,12 +133,14 @@ export function AssistentChatMessage({
 
           {attachments && attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {attachments.map((attachment: MessageAttachment, index: number) => (
-                <AttachmentCard
-                  key={`${message.id}-${index}`}
-                  attachment={attachment}
-                />
-              ))}
+              {attachments.map(
+                (attachment: MessageAttachment, index: number) => (
+                  <AttachmentCard
+                    key={`${message.id}-${index}`}
+                    attachment={attachment}
+                  />
+                ),
+              )}
             </div>
           )}
 

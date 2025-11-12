@@ -73,10 +73,13 @@ export const UserMessage = memo(function UserMessage({
     return textContent.length > 100;
   }, [textContent]);
 
-  const handleCopyMessage = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await copyContent(textContent);
-  }, [textContent, copyContent]);
+  const handleCopyMessage = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      await copyContent(textContent);
+    },
+    [textContent, copyContent],
+  );
 
   const hasTextContent = useMemo(() => {
     return (
@@ -94,7 +97,9 @@ export const UserMessage = memo(function UserMessage({
         >
           <div
             className={cn(
-              isLongMessage && !isExpanded && "overflow-hidden relative max-h-[60px]",
+              isLongMessage &&
+                !isExpanded &&
+                "overflow-hidden relative max-h-[60px]",
             )}
           >
             {message.parts ? (

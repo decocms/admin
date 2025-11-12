@@ -84,8 +84,6 @@ function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
     }
   }
 
-  console.log("Creating SQLite database at", dbPath);
-
   const dialect = new BunWorkerDialect({
     url: dbPath || ":memory:",
     onCreateConnection: async (connection) => {

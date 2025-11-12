@@ -26,19 +26,8 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  ResponsiveDropdown,
-  ResponsiveDropdownContent,
-  ResponsiveDropdownItem,
-  ResponsiveDropdownSeparator,
-  ResponsiveDropdownTrigger,
-} from "@deco/ui/components/responsive-dropdown.tsx";
-import {
-  SidebarFooter as SidebarFooterInner,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@deco/ui/components/sidebar.tsx";
+import { UserMenu } from "@deco/ui/components/user-menu.tsx";
+import { SidebarFooterShell } from "@deco/ui/components/sidebar-footer-shell.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
@@ -262,110 +251,89 @@ export function LoggedUser({
   };
 
   return (
-    <ResponsiveDropdown>
-      <ResponsiveDropdownTrigger asChild>
-        <div>{trigger(user)}</div>
-      </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent
-        side="top"
-        align={align}
-        className="md:w-[240px]"
-      >
-        <ResponsiveDropdownItem asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setProfileOpen(true)}
-          >
-            <Icon name="account_circle" className="text-muted-foreground" />
-            Profile
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setPreferencesOpen(true)}
-          >
-            <Icon name="tune" className="text-muted-foreground" />
-            Preferences
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
-          <Link
-            to={href}
-            onClick={handleClickInvite}
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-          >
-            <Icon
-              name="mail"
-              filled={!!match}
-              className="text-muted-foreground"
-            />
-            <span className="truncate">Invites</span>
+    <UserMenu user={user} trigger={trigger} align={align}>
+      <UserMenu.Item onClick={() => setProfileOpen(true)}>
+        <Icon name="account_circle" className="text-muted-foreground" />
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item onClick={() => setPreferencesOpen(true)}>
+        <Icon name="tune" className="text-muted-foreground" />
+        Preferences
+      </UserMenu.Item>
+      <UserMenu.Item asChild>
+        <Link
+          to={href}
+          onClick={handleClickInvite}
+          className="flex items-center gap-2 text-sm w-full cursor-pointer"
+        >
+          <Icon
+            name="mail"
+            filled={!!match}
+            className="text-muted-foreground"
+          />
+          <span className="truncate">Invites</span>
+          <Suspense fallback={null}>
+            <InvitesCount />
+          </Suspense>
+        </Link>
+      </UserMenu.Item>
 
-            <Suspense fallback={null}>
-              <InvitesCount />
-            </Suspense>
-          </Link>
-        </ResponsiveDropdownItem>
+      <UserMenu.Separator />
 
-        <ResponsiveDropdownSeparator />
+      <UserMenu.Item asChild>
+        <a
+          href="https://github.com/decocms/admin"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center gap-2 text-sm cursor-pointer"
+        >
+          <img
+            src="/img/github.svg"
+            alt="GitHub"
+            className="w-4 h-4 text-muted-foreground"
+          />
+          decocms/admin
+          {formattedStars && (
+            <span className="text-xs ml-auto text-muted-foreground">
+              {formattedStars} stars
+            </span>
+          )}
+          <Icon
+            name="arrow_outward"
+            size={18}
+            className="text-muted-foreground"
+          />
+        </a>
+      </UserMenu.Item>
+      <UserMenu.Item asChild>
+        <a
+          href="https://decocms.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center gap-2 text-sm cursor-pointer"
+        >
+          <Icon name="language" className="text-muted-foreground" />
+          Homepage
+          <Icon
+            name="arrow_outward"
+            size={18}
+            className="ml-auto text-muted-foreground"
+          />
+        </a>
+      </UserMenu.Item>
 
-        <ResponsiveDropdownItem asChild>
-          <a
-            href="https://github.com/decocms/admin"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
-          >
-            <img
-              src="/img/github.svg"
-              alt="GitHub"
-              className="w-4 h-4 text-muted-foreground"
-            />
-            decocms/admin
-            {formattedStars && (
-              <span className="text-xs ml-auto text-muted-foreground">
-                {formattedStars} stars
-              </span>
-            )}
-            <Icon
-              name="arrow_outward"
-              size={18}
-              className="text-muted-foreground"
-            />
-          </a>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownItem asChild>
-          <a
-            href="https://decocms.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
-          >
-            <Icon name="language" className="text-muted-foreground" />
-            Homepage
-            <Icon
-              name="arrow_outward"
-              size={18}
-              className="ml-auto text-muted-foreground"
-            />
-          </a>
-        </ResponsiveDropdownItem>
+      <UserMenu.Separator />
 
-        <ResponsiveDropdownSeparator />
+      <UserMenu.Item asChild>
+        <a
+          href={logoutUrl}
+          className="flex items-center gap-2 text-sm cursor-pointer"
+        >
+          <Icon name="logout" size={18} className="text-muted-foreground" />
+          Log out
+        </a>
+      </UserMenu.Item>
 
-        <ResponsiveDropdownItem asChild>
-          <a
-            href={logoutUrl}
-            className="flex items-center gap-2 text-sm cursor-pointer"
-          >
-            <Icon name="logout" size={18} className="text-muted-foreground" />
-            Log out
-          </a>
-        </ResponsiveDropdownItem>
-      </ResponsiveDropdownContent>
       {profileOpen && (
         <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
       )}
@@ -375,7 +343,7 @@ export function LoggedUser({
           onOpenChange={setPreferencesOpen}
         />
       )}
-    </ResponsiveDropdown>
+    </UserMenu>
   );
 }
 
@@ -444,28 +412,14 @@ function TeamPlanAndBalance() {
   );
 }
 
-function Skeleton() {
-  return (
-    <SidebarMenuButton>
-      <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted hover:text-foreground h-8 px-4 py-2 gap-2">
-        <span className="w-24 h-8"></span>
-      </div>
-    </SidebarMenuButton>
-  );
-}
-
 export function SidebarFooter({ className }: { className?: string }) {
   return (
-    <SidebarFooterInner className={cn("bg-sidebar pt-4", className)}>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <Suspense fallback={<Skeleton />}>
-            <ErrorBoundary fallback={null}>
-              <TeamPlanAndBalance />
-            </ErrorBoundary>
-          </Suspense>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarFooterInner>
+    <SidebarFooterShell className={className}>
+      <Suspense fallback={<SidebarFooterShell.Skeleton />}>
+        <ErrorBoundary fallback={null}>
+          <TeamPlanAndBalance />
+        </ErrorBoundary>
+      </Suspense>
+    </SidebarFooterShell>
   );
 }

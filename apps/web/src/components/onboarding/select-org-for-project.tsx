@@ -6,7 +6,7 @@ import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ErrorBoundary } from "../../error-boundary";
-import { Avatar } from "../common/avatar";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { TopbarLayout } from "../layout/home";
 import { OrgAvatars, OrgMemberCount } from "../home/members";
 

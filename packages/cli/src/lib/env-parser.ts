@@ -68,10 +68,9 @@ export async function parseEnvFile(
 /**
  * Parse inline JSON env vars from CLI
  */
-export function parseInlineJsonEnvVars(jsonString: string): Record<
-  string,
-  string
-> {
+export function parseInlineJsonEnvVars(
+  jsonString: string,
+): Record<string, string> {
   const jsonObj = JSON.parse(jsonString);
   return parseJsonEnvVars(jsonObj);
 }
@@ -97,8 +96,5 @@ export function parseKeyValueEnvVar(input: string): {
  * Check if input looks like a file path
  */
 export function isFilePath(input: string): boolean {
-  return (
-    input.includes("/") || input.includes("\\") || input.endsWith(".env")
-  );
+  return input.includes("/") || input.includes("\\") || input.endsWith(".env");
 }
-

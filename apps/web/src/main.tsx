@@ -21,6 +21,10 @@ import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
 import { OrgsLayout } from "./components/layout/org.tsx";
 import { queryClient } from "@deco/sdk";
 import { createResourceWatchStore } from "./stores/resource-watch/store.ts";
+import {
+  saveOnboardingParams,
+  searchParamsToOnboardingParams,
+} from "./utils/onboarding-storage.ts";
 
 const cache = queryClient.getQueryCache();
 const originalOnError = cache.config.onError;
@@ -152,10 +156,8 @@ const MagicLinkCallback = lazy(() =>
   ),
 );
 
-const SelectOrgForProject = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/onboarding/select-org-for-project.tsx"),
-  ),
+const OnboardingPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/onboarding/index.tsx")),
 );
 
 const Members = lazy(() =>
@@ -217,6 +219,13 @@ function ErrorFallback() {
   useEffect(() => {
     if (!isUnauthorized) {
       return;
+    }
+
+    // Save onboarding params to localStorage before redirecting to login
+    const searchParams = new URLSearchParams(search);
+    const onboardingParams = searchParamsToOnboardingParams(searchParams);
+    if (Object.keys(onboardingParams).length > 0) {
+      saveOnboardingParams(onboardingParams);
     }
 
     const next = new URL(`${pathname}${search}`, globalThis.location.origin);
@@ -374,8 +383,8 @@ const router = createBrowserRouter([
         Component: MagicLinkCallback,
       },
       {
-        path: "/onboarding/select-org",
-        Component: SelectOrgForProject,
+        path: "/new",
+        Component: OnboardingPage,
       },
       {
         path: "/sales-deck",

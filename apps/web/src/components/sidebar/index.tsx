@@ -486,6 +486,58 @@ function WorkspaceViews() {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
+      {/* HOME button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            addTab({
+              type: "detail",
+              resourceUri: "home://self",
+              title: "Home",
+              icon: "home",
+            });
+            trackEvent("sidebar_navigation_click", {
+              item: "Home",
+            });
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon
+            name="home"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">Home</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      {/* Manage MCPs button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            addTab({
+              type: "list",
+              resourceUri: buildAppsListUri(),
+              title: "MCPs",
+              icon: "grid_view",
+            });
+            trackEvent("sidebar_navigation_click", {
+              item: "MCPs",
+            });
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon
+            name="grid_view"
+            size={20}
+            className="text-muted-foreground/75"
+          />
+          <span className="truncate">MCPs</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
       {/* Generate button */}
       <SidebarMenuItem>
         <SidebarMenuButton
@@ -505,69 +557,39 @@ function WorkspaceViews() {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      {/* Manage Apps button */}
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            addTab({
-              type: "list",
-              resourceUri: buildAppsListUri(),
-              title: "Apps",
-              icon: "grid_view",
-            });
-            trackEvent("sidebar_navigation_click", {
-              item: "Apps",
-            });
-            isMobile && toggleSidebar();
-          }}
-        >
-          <Icon
-            name="grid_view"
-            size={20}
-            className="text-muted-foreground/75"
-          />
-          <span className="truncate">Apps</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
+      {/* SECTION 2: PINNED - Only show if there are pinned tabs */}
+      {pinnedTabs.length > 0 && (
+        <>
+          <SidebarSeparator className="my-2 -ml-1" />
+          <SidebarMenuItem>
+            <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Pinned</span>
+              <button
+                onClick={() => setIsDragMode(!isDragMode)}
+                className="p-1 hover:bg-accent rounded transition-colors"
+                title={
+                  isDragMode
+                    ? "Click to exit drag mode"
+                    : "Click to reorder pinned items"
+                }
+              >
+                <Icon
+                  name={isDragMode ? "lock_open" : "lock"}
+                  size={14}
+                  className={
+                    isDragMode
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }
+                />
+              </button>
+            </div>
+          </SidebarMenuItem>
 
-      <SidebarSeparator className="my-2 -ml-1" />
-
-      {/* SECTION 2: PINNED */}
-      <SidebarMenuItem>
-        <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
-          <span>Pinned</span>
-          <button
-            onClick={() => setIsDragMode(!isDragMode)}
-            className="p-1 hover:bg-accent rounded transition-colors"
-            title={
-              isDragMode
-                ? "Click to exit drag mode"
-                : "Click to reorder pinned items"
-            }
-          >
-            <Icon
-              name={isDragMode ? "lock_open" : "lock"}
-              size={14}
-              className={
-                isDragMode
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }
-            />
-          </button>
-        </div>
-      </SidebarMenuItem>
-
-      {/* Render all pinned items in custom order */}
-      {pinnedTabs.length === 0 && (
-        <SidebarMenuItem>
-          <div className="px-3 py-2 text-xs text-muted-foreground">
-            Pin tabs from the canvas to keep them here.
-          </div>
-        </SidebarMenuItem>
+          {/* Render all pinned items in custom order */}
+          {pinnedTabs.map((tab, index) => renderPinnedTab(tab, index))}
+        </>
       )}
-      {pinnedTabs.map((tab, index) => renderPinnedTab(tab, index))}
 
       {/* SECTION 3: RECENT THREADS */}
       <SidebarSeparator className="my-2 -ml-1" />

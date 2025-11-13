@@ -66,6 +66,13 @@ export function openResourceTab(
     icon?: string;
   }) => void,
   setActiveTab: (tabId: string) => void,
+  pinTab?: (tab: {
+    resourceUri: string;
+    title: string;
+    type: "list" | "detail";
+    icon?: string;
+  }) => void,
+  shouldPin = false,
 ): void {
   // Check if tab already exists
   const existingTab = tabs.find(
@@ -82,12 +89,24 @@ export function openResourceTab(
       (i: Integration) => i.id === integrationId,
     );
 
+    const title = resourceUri.split("/").pop() || "Resource";
+
     // Create new tab (addTab automatically activates it)
     addTab({
       type: "detail",
       resourceUri: resourceUri,
-      title: resourceUri.split("/").pop() || "Resource",
+      title,
       icon: integration?.icon,
     });
+
+    // Auto-pin if requested
+    if (shouldPin && pinTab) {
+      pinTab({
+        resourceUri,
+        title,
+        type: "detail",
+        icon: integration?.icon,
+      });
+    }
   }
 }

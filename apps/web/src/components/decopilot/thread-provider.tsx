@@ -169,6 +169,13 @@ export function parseResourceUri(resourceUri: string): {
       };
     }
 
+    // Check for home URI
+    if (resourceUri === "home://self") {
+      return {
+        protocol: "home",
+      };
+    }
+
     // Check for agents list
     if (resourceUri === "agents://list") {
       return {

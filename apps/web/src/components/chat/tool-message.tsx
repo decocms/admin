@@ -1,4 +1,4 @@
-import { useIntegrations } from "@deco/sdk";
+import { useIntegrations, useSDK } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCopy } from "../../hooks/use-copy.ts";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import {
   truncateHash,
   useGetVersions,
@@ -690,6 +691,8 @@ function useCallToolInfo(part: ToolUIPart) {
 // Custom UI component for CALL_TOOL tool
 function CallToolUI({ part }: { part: ToolUIPart }) {
   const { data: integrations = [] } = useIntegrations();
+  const { locator } = useSDK();
+  const { pinTab } = usePinnedTabs(locator);
   const { toolName: rawToolName, integrationId, uri } = useCallToolInfo(part);
   const toolName = rawToolName ?? undefined;
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -767,6 +770,11 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     return extractResourceUri("CALL_TOOL", toolInput, toolOutput);
   }, [part.input, part.state, part.output]);
 
+  // Detect if this is a CREATE operation
+  const isCreateOperation = useMemo(() => {
+    return toolName?.includes("_CREATE") ?? false;
+  }, [toolName]);
+
   // Automatically open/activate tab when resource URI becomes available (once)
   useEffect(() => {
     if (
@@ -775,14 +783,32 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
       !hasOpenedTabRef.current
     ) {
       hasOpenedTabRef.current = true;
-      openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
+      openResourceTab(
+        resourceUri,
+        tabs,
+        integrations,
+        addTab,
+        setActiveTab,
+        pinTab,
+        isCreateOperation,
+      );
     }
-  }, [resourceUri, part.state, tabs, integrations, addTab, setActiveTab]);
+  }, [
+    resourceUri,
+    part.state,
+    tabs,
+    integrations,
+    addTab,
+    setActiveTab,
+    pinTab,
+    isCreateOperation,
+  ]);
 
   // Handle opening resource in tab or toggling expansion
   const handleClick = useCallback(() => {
     if (resourceUri) {
       // Open in tab if resource URI exists (using shared utility)
+      // Don't auto-pin on manual clicks, only on automatic opens after creation
       openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
     } else {
       // Toggle expansion if no resource URI

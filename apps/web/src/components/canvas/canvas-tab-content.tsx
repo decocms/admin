@@ -16,6 +16,7 @@ const InstalledAppsList = lazy(
   () => import("../integrations/installed-apps.tsx"),
 );
 const AppDetail = lazy(() => import("../integrations/app-detail.tsx"));
+const ProjectHome = lazy(() => import("../project/home.tsx"));
 const AgentsResourceList = lazy(() =>
   import("../agents/agents-resource-list.tsx").then((m) => ({
     default: m.AgentsResourceList,
@@ -301,6 +302,9 @@ export function CanvasTabContent({ tab }: CanvasTabContentProps) {
       ) : /* App detail page */
       parsed.protocol === "app" ? (
         <AppDetailWrapper appKey={parsed.appKey!} />
+      ) : /* HOME page - native project resources */
+      parsed.protocol === "home" ? (
+        <ProjectHome />
       ) : /* Agents list page */
       parsed.protocol === "agents" ? (
         <AgentsListWrapper />

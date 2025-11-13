@@ -1,4 +1,4 @@
-import { useCreateProject, type Project } from "@deco/sdk";
+import { type Project, useCreateProject } from "@deco/sdk";
 import { useCallback, useState } from "react";
 import { useGenerateProjectName } from "./use-generate-project-name.ts";
 
@@ -96,4 +96,3 @@ export function useCreateProjectWithRetry(
     isPending: createProject.isPending || isRetrying,
   };
 }
-

@@ -814,7 +814,7 @@ export function OnboardingPage() {
         setSearchParams(newSearchParams, { replace: true });
       }
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   // Check conditions
   const hasInitialInput = searchParams.has("initialInput");

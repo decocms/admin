@@ -78,11 +78,11 @@ interface GenerateProjectNameResult {
 
 /**
  * Hook to generate random project names using adjective + noun pattern
- * 
+ *
  * @param options - Configuration options
  * @param options.fallbackName - Name to use if generation fails (default: "New Project")
  * @returns Object with generateName function
- * 
+ *
  * @example
  * const { generateName } = useGenerateProjectName();
  * const name = await generateName(); // Returns something like "Swift Falcon"
@@ -120,4 +120,3 @@ export function useGenerateProjectName(
     error: null,
   };
 }
-

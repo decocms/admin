@@ -356,15 +356,21 @@ function QuestionnaireForm() {
  *
  * Automatically creates or joins an organization
  */
-function CreateOrg({ onProjectCreationStart }: { onProjectCreationStart?: () => void }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+function CreateOrg({
+  onProjectCreationStart,
+}: {
+  onProjectCreationStart?: () => void;
+}) {
+  const [searchParams] = useSearchParams();
   const user = useUser();
   const createTeam = useCreateTeam();
   const autoJoinTeam = useAutoJoinTeam();
   const createProject = useCreateProject();
   const { generateName } = useGenerateProjectName();
   const isCreatingRef = useRef(false);
-  const [statusMessage, setStatusMessage] = useState("Creating your organization...");
+  const [statusMessage, setStatusMessage] = useState(
+    "Creating your organization...",
+  );
 
   const themeParam = searchParams.get("theme");
   const selectedTheme = themeParam ? findThemeByName(themeParam) : undefined;
@@ -928,9 +934,10 @@ export function OnboardingPage() {
   }, [state.type, navigate]);
 
   // Render based on state, but override if we're in the middle of CreateOrg's project creation
-  const effectiveState = isCreatingOrgProjectRef.current && state.type === "SELECT_ORG"
-    ? "CREATE_ORG"
-    : state.type;
+  const effectiveState =
+    isCreatingOrgProjectRef.current && state.type === "SELECT_ORG"
+      ? "CREATE_ORG"
+      : state.type;
 
   switch (effectiveState) {
     case "QUESTIONNAIRE":
@@ -943,9 +950,11 @@ export function OnboardingPage() {
     case "CREATE_ORG":
       return (
         <OnboardingLayout>
-          <CreateOrg onProjectCreationStart={() => {
-            isCreatingOrgProjectRef.current = true;
-          }} />
+          <CreateOrg
+            onProjectCreationStart={() => {
+              isCreatingOrgProjectRef.current = true;
+            }}
+          />
         </OnboardingLayout>
       );
 

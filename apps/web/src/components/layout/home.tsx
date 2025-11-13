@@ -1,7 +1,12 @@
 import { DecoQueryClientProvider } from "@deco/sdk";
-import { Outlet } from "react-router";
-import { OnboardingStateMachine } from "../onboarding/onboarding-state-machine";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
 import { Topbar } from "./topbar";
+import { useEffect } from "react";
+import {
+  hasStoredOnboardingParams,
+  restoreOnboardingParams,
+  onboardingParamsToSearchParams,
+} from "../../utils/onboarding-storage.ts";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -23,18 +28,31 @@ export function TopbarLayout({
   );
 }
 
-function HomeLayoutContent() {
-  return (
-    <OnboardingStateMachine>
-      <Outlet />
-    </OnboardingStateMachine>
-  );
-}
-
 export function HomeLayout() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Check if we have initialInput in URL or stored onboarding params
+    const hasInitialInput = searchParams.has("initialInput");
+    const hasStoredParams = hasStoredOnboardingParams();
+
+    if (hasInitialInput) {
+      // User has initialInput params in URL, redirect to /new with params
+      navigate(`/new?${searchParams.toString()}`, { replace: true });
+    } else if (hasStoredParams) {
+      // User has stored params in localStorage, restore and redirect to /new
+      const storedParams = restoreOnboardingParams();
+      if (storedParams) {
+        const newSearchParams = onboardingParamsToSearchParams(storedParams);
+        navigate(`/new?${newSearchParams.toString()}`, { replace: true });
+      }
+    }
+  }, [searchParams, navigate]);
+
   return (
     <DecoQueryClientProvider>
-      <HomeLayoutContent />
+      <Outlet />
     </DecoQueryClientProvider>
   );
 }

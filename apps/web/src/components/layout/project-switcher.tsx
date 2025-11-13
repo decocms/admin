@@ -80,17 +80,6 @@ export function BreadcrumbProjectSwitcher() {
 
   const [projectSearch, setProjectSearch] = useState("");
 
-  // Map SDK project shape to TopbarSwitcher entity shape
-  const mappedProjects = useMemo(
-    () =>
-      projects.map((p) => ({
-        slug: p.slug,
-        name: p.title,
-        avatarUrl: p.avatar_url,
-      })),
-    [projects],
-  );
-
   const mappedCurrentProject = currentProject
     ? {
         slug: currentProject.slug,

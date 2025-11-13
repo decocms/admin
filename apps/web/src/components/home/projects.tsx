@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -44,7 +45,6 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ErrorBoundary } from "../../error-boundary";
 import { normalizeGithubImportValue } from "../../utils/github-import.ts";
-import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
 import { OrgAvatars, OrgMemberCount } from "./members";
@@ -730,82 +730,10 @@ function OrgProjectListContent() {
   const deferredQuery = useDeferredValue(searchQuery);
   const { org } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const createProjectMutation = useCreateProject();
   const importGithubParam = searchParams.get("importGithub") ?? undefined;
   const { slug: importGithubSlug, url: normalizedGithubUrl } =
     normalizeGithubImportValue(importGithubParam);
   const importGithubUrl = normalizedGithubUrl ?? undefined;
-
-  // Handle initialInput param - auto-create project with that prompt
-  useEffect(() => {
-    const initialInput = searchParams.get("initialInput");
-    const autoSend = searchParams.get("autoSend");
-
-    if (!initialInput || !org || createProjectMutation.isPending) {
-      return;
-    }
-
-    // Create project with default name and retry logic for slug collisions
-    const projectName = "New Project";
-    const baseSlug = projectName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-
-    const attemptCreate = async (attempt = 0): Promise<void> => {
-      const maxAttempts = 10;
-      const slugToTry = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-
-      createProjectMutation.mutate(
-        {
-          org,
-          slug: slugToTry,
-          title: projectName,
-        },
-        {
-          onSuccess: (project) => {
-            // Navigate to project with initialInput params
-            const params = new URLSearchParams();
-            params.set("initialInput", initialInput);
-            if (autoSend) {
-              params.set("autoSend", autoSend);
-            }
-            globalThis.location.href = `/${org}/${project.slug}?${params.toString()}`;
-          },
-          onError: (error) => {
-            const errorMsg =
-              error instanceof Error ? error.message : String(error);
-            // Check if it's a slug collision error
-            if (
-              errorMsg.toLowerCase().includes("slug") &&
-              (errorMsg.toLowerCase().includes("exists") ||
-                errorMsg.toLowerCase().includes("already") ||
-                errorMsg.toLowerCase().includes("taken") ||
-                errorMsg.toLowerCase().includes("duplicate"))
-            ) {
-              if (attempt + 1 < maxAttempts) {
-                // Try next attempt
-                attemptCreate(attempt + 1);
-              } else {
-                console.error(
-                  "Failed to create project: all slug attempts failed",
-                );
-                toast.error(
-                  "Failed to create project: all slug attempts failed",
-                );
-              }
-            } else {
-              // Not a slug error
-              console.error("Failed to create project:", error);
-              toast.error("Failed to create project");
-            }
-          },
-        },
-      );
-    };
-
-    attemptCreate();
-  }, [searchParams, org, createProjectMutation]);
 
   const handleImportDialogClose = useCallback(() => {
     if (!importGithubParam) {

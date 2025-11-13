@@ -35,7 +35,6 @@ export interface TabbedPageLayoutProps {
  */
 export function TabbedPageLayout({
   component: Component,
-  title: _title,
   tabs,
   getActiveTab,
   viewModeKey,

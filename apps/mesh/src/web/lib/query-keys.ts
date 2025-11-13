@@ -9,10 +9,10 @@ export const KEYS = {
   // Auth-related queries
   authConfig: () => ["authConfig"] as const,
 
-  // Organization members
-  members: () => ["members"] as const,
+  // Organization members (scoped by org)
+  members: (orgId: string) => ["members", orgId] as const,
 
-  // Connections
-  connections: () => ["connections"] as const,
+  // Connections (scoped by org)
+  connections: (orgId: string) => ["connections", orgId] as const,
   connection: (id: string) => ["connection", id] as const,
 } as const;

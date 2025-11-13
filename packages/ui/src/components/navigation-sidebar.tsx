@@ -86,4 +86,3 @@ NavigationSidebar.Skeleton = function NavigationSidebarSkeleton() {
     </div>
   );
 };
-

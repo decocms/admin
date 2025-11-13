@@ -32,4 +32,3 @@ export function MeshSidebar() {
 
   return <NavigationSidebar navigationItems={navigationItems} />;
 }
-

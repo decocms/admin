@@ -48,9 +48,9 @@ import {
 import { KEYS } from "@/web/lib/query-keys";
 import type { MCPConnection } from "@/storage/types";
 
-const useConnections = () => {
+const useConnections = (orgSlug: string) => {
   return useQuery({
-    queryKey: KEYS.connections(),
+    queryKey: KEYS.connections(orgSlug),
     queryFn: () => fetcher.CONNECTION_LIST({}),
   });
 };
@@ -72,7 +72,7 @@ export default function OrgConnections() {
   const { org } = useParams({ strict: false });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useConnections();
+  const { data, isLoading } = useConnections(org ?? "");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<
     (typeof connections)[number] | null
@@ -111,7 +111,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(org ?? "") });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -131,7 +131,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(org ?? "") });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -142,7 +142,7 @@ export default function OrgConnections() {
       return fetcher.CONNECTION_DELETE({ id });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(org ?? "") });
     },
   });
 

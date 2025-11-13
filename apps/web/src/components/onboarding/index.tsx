@@ -1,6 +1,5 @@
 import {
   useAutoJoinTeam,
-  useCreateProject,
   useCreateTeam,
   useOnboardingAnswers,
   useOrganizations,
@@ -41,7 +40,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 import { ErrorBoundary } from "../../error-boundary";
-import { useGenerateProjectName } from "../../hooks/use-generate-project-name.ts";
+import { useCreateProjectWithRetry } from "../../hooks/use-create-project-with-retry.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import {
   clearOnboardingParams,
@@ -358,15 +357,17 @@ function QuestionnaireForm() {
  */
 function CreateOrg({
   onProjectCreationStart,
+  onProjectCreationEnd,
 }: {
   onProjectCreationStart?: () => void;
+  onProjectCreationEnd?: () => void;
 }) {
   const [searchParams] = useSearchParams();
   const user = useUser();
   const createTeam = useCreateTeam();
   const autoJoinTeam = useAutoJoinTeam();
-  const createProject = useCreateProject();
-  const { generateName } = useGenerateProjectName();
+  const { createWithRetry, isPending: isCreatingProject } =
+    useCreateProjectWithRetry();
   const isCreatingRef = useRef(false);
   const [statusMessage, setStatusMessage] = useState(
     "Creating your organization...",
@@ -376,7 +377,7 @@ function CreateOrg({
   const selectedTheme = themeParam ? findThemeByName(themeParam) : undefined;
 
   const isCreating =
-    createTeam.isPending || autoJoinTeam.isPending || createProject.isPending;
+    createTeam.isPending || autoJoinTeam.isPending || isCreatingProject;
 
   useEffect(() => {
     if (isCreating || isCreatingRef.current) return;
@@ -478,53 +479,7 @@ function CreateOrg({
               setStatusMessage("Creating your project...");
 
               // Create project with retry logic for name/slug collisions
-              let project;
-              let attempt = 0;
-              const maxAttempts = 10;
-
-              while (attempt < maxAttempts) {
-                try {
-                  // Generate a new random name for each attempt
-                  const projectName = await generateName();
-                  const baseSlug = projectName
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-|-$/g, "");
-
-                  project = await createProject.mutateAsync({
-                    org: team.slug,
-                    slug: baseSlug,
-                    title: projectName,
-                  });
-                  break; // Success, exit loop
-                } catch (err) {
-                  const errorMsg =
-                    err instanceof Error ? err.message : String(err);
-                  // Check if it's a slug collision error
-                  if (
-                    errorMsg.toLowerCase().includes("slug") &&
-                    (errorMsg.toLowerCase().includes("exists") ||
-                      errorMsg.toLowerCase().includes("already") ||
-                      errorMsg.toLowerCase().includes("taken") ||
-                      errorMsg.toLowerCase().includes("duplicate"))
-                  ) {
-                    attempt++;
-                    if (attempt >= maxAttempts) {
-                      throw new Error(
-                        "Failed to create project: all name attempts failed",
-                      );
-                    }
-                    // Try next attempt with a new random name
-                    continue;
-                  }
-                  // Not a slug error, throw it
-                  throw err;
-                }
-              }
-
-              if (!project) {
-                throw new Error("Failed to create project");
-              }
+              const project = await createWithRetry(team.slug);
 
               // Clear onboarding params on success
               clearOnboardingParams();
@@ -544,7 +499,8 @@ function CreateOrg({
               location.href = path;
             } catch (error) {
               console.error("Failed to create project:", error);
-              // Fallback to org home on error
+              // Reset state and fallback to org home on error
+              onProjectCreationEnd?.();
               clearOnboardingParams();
               location.href = `/${team.slug}`;
             }
@@ -725,64 +681,17 @@ function SelectOrg() {
   const deferredQuery = useDeferredValue(searchQuery);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const createProject = useCreateProject();
-  const { generateName } = useGenerateProjectName();
-  const [isCreating, setIsCreating] = useState(false);
+  const { createWithRetry, isPending: isCreating } =
+    useCreateProjectWithRetry();
 
   const initialInput = searchParams.get("initialInput") || "";
   const autoSend = searchParams.get("autoSend") === "true";
 
   const handleSelectOrg = useCallback(
     async (orgSlug: string) => {
-      setIsCreating(true);
       try {
         // Create project with retry logic for name/slug collisions
-        let project;
-        let attempt = 0;
-        const maxAttempts = 10;
-
-        while (attempt < maxAttempts) {
-          try {
-            // Generate a new random name for each attempt
-            const projectName = await generateName();
-            const baseSlug = projectName
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-|-$/g, "");
-
-            project = await createProject.mutateAsync({
-              org: orgSlug,
-              slug: baseSlug,
-              title: projectName,
-            });
-            break; // Success, exit loop
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : String(err);
-            // Check if it's a slug collision error
-            if (
-              errorMsg.toLowerCase().includes("slug") &&
-              (errorMsg.toLowerCase().includes("exists") ||
-                errorMsg.toLowerCase().includes("already") ||
-                errorMsg.toLowerCase().includes("taken") ||
-                errorMsg.toLowerCase().includes("duplicate"))
-            ) {
-              attempt++;
-              if (attempt >= maxAttempts) {
-                throw new Error(
-                  "Failed to create project: all name attempts failed",
-                );
-              }
-              // Try next attempt with a new random name
-              continue;
-            }
-            // Not a slug error, throw it
-            throw err;
-          }
-        }
-
-        if (!project) {
-          throw new Error("Failed to create project");
-        }
+        const project = await createWithRetry(orgSlug);
 
         // Clear onboarding params on success
         clearOnboardingParams();
@@ -807,11 +716,9 @@ function SelectOrg() {
         if (error instanceof Error) {
           alert(`Failed to create project: ${error.message}`);
         }
-      } finally {
-        setIsCreating(false);
       }
     },
-    [initialInput, autoSend, createProject, navigate, generateName],
+    [initialInput, autoSend, createWithRetry, navigate],
   );
 
   const handleDismiss = useCallback(() => {
@@ -895,7 +802,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
-  const isCreatingOrgProjectRef = useRef(false);
+  const [isCreatingOrgProject, setIsCreatingOrgProject] = useState(false);
 
   // On mount, check if we need to restore params from localStorage
   useEffect(() => {
@@ -933,9 +840,16 @@ export function OnboardingPage() {
     }
   }, [state.type, navigate]);
 
+  // Reset project creation state when navigating away from CREATE_ORG flow or back to /new
+  useEffect(() => {
+    if (state.type !== "CREATE_ORG" && isCreatingOrgProject) {
+      setIsCreatingOrgProject(false);
+    }
+  }, [state.type, isCreatingOrgProject]);
+
   // Render based on state, but override if we're in the middle of CreateOrg's project creation
   const effectiveState =
-    isCreatingOrgProjectRef.current && state.type === "SELECT_ORG"
+    isCreatingOrgProject && state.type === "SELECT_ORG"
       ? "CREATE_ORG"
       : state.type;
 
@@ -952,7 +866,10 @@ export function OnboardingPage() {
         <OnboardingLayout>
           <CreateOrg
             onProjectCreationStart={() => {
-              isCreatingOrgProjectRef.current = true;
+              setIsCreatingOrgProject(true);
+            }}
+            onProjectCreationEnd={() => {
+              setIsCreatingOrgProject(false);
             }}
           />
         </OnboardingLayout>

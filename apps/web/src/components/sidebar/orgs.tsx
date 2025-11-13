@@ -13,10 +13,11 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
+import { useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useNavigateOrg } from "../../hooks/use-navigate-workspace.ts";
-import { useThread } from "../decopilot/thread-provider.tsx";
 import { useThreadTitle } from "../decopilot/index.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import {
   CommandPalette,
   useCommandPalette,
@@ -242,6 +243,7 @@ OrgViews.Skeleton = () => (
 export function OrgsSidebar() {
   const { createThread } = useThread();
   const commandPalette = useCommandPalette();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [commandPaletteInitialSearch, setCommandPaletteInitialSearch] =
     useState("");
   const [commandPaletteInitialFilter, setCommandPaletteInitialFilter] =
@@ -267,6 +269,11 @@ export function OrgsSidebar() {
                       size="xs"
                       onClick={() => {
                         createThread();
+                        // Clear initialInput and autoSend params when creating a new thread
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.delete("initialInput");
+                        newParams.delete("autoSend");
+                        setSearchParams(newParams, { replace: true });
                         trackEvent("sidebar_new_thread_click");
                       }}
                       title="New chat"

@@ -1,4 +1,5 @@
 import {
+  KEYS,
   useAutoJoinTeam,
   useCreateTeam,
   useOnboardingAnswers,
@@ -27,12 +28,14 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Suspense,
   useCallback,
   useDeferredValue,
   useEffect,
-  useMemo,
+  useLayoutEffect,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -138,40 +141,61 @@ function generateRandomSuffix(): string {
   return result;
 }
 
+/**
+ * Onboarding State Machine
+ *
+ * States:
+ * - QUESTIONNAIRE: User needs to complete onboarding questions
+ * - CREATE_ORG: Creating org (and optionally project) - stays here until complete
+ * - SELECT_ORG: User selects which org to create project in
+ * - REDIRECT_HOME: No onboarding needed, redirect to home
+ */
+
 type OnboardingState =
   | { type: "QUESTIONNAIRE" }
   | { type: "SELECT_ORG" }
   | { type: "CREATE_ORG" }
   | { type: "REDIRECT_HOME" };
 
+interface OnboardingConditions {
+  hasInitialInput: boolean;
+  hasCompletedQuestionnaire: boolean;
+  hasOrgs: boolean;
+}
+
 function deriveOnboardingState(
-  hasInitialInput: boolean,
-  hasCompletedQuestionnaire: boolean,
-  hasOrgs: boolean,
+  conditions: OnboardingConditions,
 ): OnboardingState {
+  const { hasInitialInput, hasCompletedQuestionnaire, hasOrgs } = conditions;
+
   // User has NO orgs - always show onboarding
   if (!hasOrgs) {
-    // Need to complete questionnaire first
     if (!hasCompletedQuestionnaire) {
       return { type: "QUESTIONNAIRE" };
     }
-    // Questionnaire done, create org
     return { type: "CREATE_ORG" };
   }
 
   // User has orgs AND initialInput - onboarding for project creation
   if (hasOrgs && hasInitialInput) {
-    // But first, ensure they've completed the questionnaire
     if (!hasCompletedQuestionnaire) {
       return { type: "QUESTIONNAIRE" };
     }
-    // Questionnaire done, show org selection
     return { type: "SELECT_ORG" };
   }
 
   // User has orgs but no initialInput - redirect to home
   return { type: "REDIRECT_HOME" };
 }
+
+function onboardingReducer(
+  _state: OnboardingState,
+  conditions: OnboardingConditions,
+): OnboardingState {
+  return deriveOnboardingState(conditions);
+}
+
+type OnboardingDispatch = (conditions: OnboardingConditions) => void;
 
 /**
  * OnboardingLayout
@@ -206,8 +230,17 @@ function OnboardingLayout({ children }: { children: React.ReactNode }) {
  *
  * Collects user profile data (role, company size, use case)
  */
-function QuestionnaireForm() {
+function QuestionnaireForm({
+  dispatch,
+  hasInitialInput,
+  hasOrgs,
+}: {
+  dispatch: OnboardingDispatch;
+  hasInitialInput: boolean;
+  hasOrgs: boolean;
+}) {
   const saveAnswers = useSaveOnboardingAnswers();
+  const queryClient = useQueryClient();
 
   const form = useForm<QuestionnaireFormData>({
     resolver: zodResolver(questionnaireSchema),
@@ -224,8 +257,18 @@ function QuestionnaireForm() {
       company_size: data.companySize,
       use_case: data.useCase,
     });
-    // Reload to let state machine re-evaluate
-    window.location.reload();
+
+    // Invalidate the onboarding status query
+    await queryClient.invalidateQueries({
+      queryKey: KEYS.ONBOARDING_STATUS(),
+    });
+
+    // Actively transition to next state
+    dispatch({
+      hasInitialInput,
+      hasCompletedQuestionnaire: true,
+      hasOrgs,
+    });
   }
 
   return (
@@ -355,13 +398,7 @@ function QuestionnaireForm() {
  *
  * Automatically creates or joins an organization
  */
-function CreateOrg({
-  onProjectCreationStart,
-  onProjectCreationEnd,
-}: {
-  onProjectCreationStart?: () => void;
-  onProjectCreationEnd?: () => void;
-}) {
+function CreateOrg() {
   const [searchParams] = useSearchParams();
   const user = useUser();
   const createTeam = useCreateTeam();
@@ -388,6 +425,7 @@ function CreateOrg({
       const userEmail = user?.email || "";
       const domain = extractDomain(userEmail);
       const isWellKnownDomain = WELL_KNOWN_EMAIL_DOMAINS.has(domain);
+      const initialInput = searchParams.get("initialInput");
 
       let team;
 
@@ -468,14 +506,9 @@ function CreateOrg({
         }
 
         if (team) {
-          const initialInput = searchParams.get("initialInput");
-          const autoSend = searchParams.get("autoSend");
-
           // If initialInput exists, create a project with random name
           if (initialInput) {
             try {
-              // Notify parent that we're starting project creation (prevents unmounting)
-              onProjectCreationStart?.();
               setStatusMessage("Creating your project...");
 
               // Create project with retry logic for name/slug collisions
@@ -484,14 +517,8 @@ function CreateOrg({
               // Clear onboarding params on success
               clearOnboardingParams();
 
-              // Navigate to project with initialInput params
-              const params = new URLSearchParams();
-              params.set("initialInput", initialInput);
-              if (autoSend) {
-                params.set("autoSend", "true");
-              }
-
-              const query = params.toString();
+              // Navigate to project with all search params preserved
+              const query = searchParams.toString();
               const path =
                 query.length > 0
                   ? `/${team.slug}/${project.slug}?${query}`
@@ -499,8 +526,7 @@ function CreateOrg({
               location.href = path;
             } catch (error) {
               console.error("Failed to create project:", error);
-              // Reset state and fallback to org home on error
-              onProjectCreationEnd?.();
+              // Fallback to org home on error
               clearOnboardingParams();
               location.href = `/${team.slug}`;
             }
@@ -524,6 +550,7 @@ function CreateOrg({
     selectedTheme,
     searchParams,
     isCreating,
+    createWithRetry,
   ]);
 
   return (
@@ -557,7 +584,7 @@ function OrganizationCard({
       <button
         type="button"
         onClick={() => onSelect(slug)}
-        className="flex flex-col text-left"
+        className="flex flex-col text-left cursor-pointer"
       >
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -685,7 +712,6 @@ function SelectOrg() {
     useCreateProjectWithRetry();
 
   const initialInput = searchParams.get("initialInput") || "";
-  const autoSend = searchParams.get("autoSend") === "true";
 
   const handleSelectOrg = useCallback(
     async (orgSlug: string) => {
@@ -696,16 +722,8 @@ function SelectOrg() {
         // Clear onboarding params on success
         clearOnboardingParams();
 
-        // Navigate to project with initialInput params
-        const params = new URLSearchParams();
-        if (initialInput) {
-          params.set("initialInput", initialInput);
-        }
-        if (autoSend) {
-          params.set("autoSend", "true");
-        }
-
-        const query = params.toString();
+        // Navigate to project with all search params preserved
+        const query = searchParams.toString();
         const path =
           query.length > 0
             ? `/${orgSlug}/${project.slug}?${query}`
@@ -718,7 +736,7 @@ function SelectOrg() {
         }
       }
     },
-    [initialInput, autoSend, createWithRetry, navigate],
+    [searchParams, createWithRetry, navigate],
   );
 
   const handleDismiss = useCallback(() => {
@@ -802,7 +820,18 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
-  const [isCreatingOrgProject, setIsCreatingOrgProject] = useState(false);
+
+  // Check conditions
+  const hasInitialInput = searchParams.has("initialInput");
+  const hasOrgs = teams.data.length > 0;
+  const hasCompletedQuestionnaire = !!onboardingStatus.data?.completed;
+
+  // Use reducer to derive state from conditions
+  const [state, dispatch] = useReducer(
+    onboardingReducer,
+    { hasInitialInput, hasCompletedQuestionnaire, hasOrgs },
+    deriveOnboardingState,
+  );
 
   // On mount, check if we need to restore params from localStorage
   useEffect(() => {
@@ -817,61 +846,30 @@ export function OnboardingPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Check conditions
-  const hasInitialInput = searchParams.has("initialInput");
-  const hasOrgs = teams.data.length > 0;
-  const hasCompletedQuestionnaire = !!onboardingStatus.data?.completed;
-
-  // Derive state from conditions
-  const state = useMemo(
-    () =>
-      deriveOnboardingState(
-        hasInitialInput,
-        hasCompletedQuestionnaire,
-        hasOrgs,
-      ),
-    [hasInitialInput, hasCompletedQuestionnaire, hasOrgs],
-  );
-
-  // Handle redirect to home if not in onboarding flow
-  useEffect(() => {
+  // Handle redirect to home if not in onboarding flow - using useLayoutEffect
+  // to make the redirect synchronous with state changes
+  useLayoutEffect(() => {
     if (state.type === "REDIRECT_HOME") {
       navigate("/", { replace: true });
     }
   }, [state.type, navigate]);
 
-  // Reset project creation state when navigating away from CREATE_ORG flow or back to /new
-  useEffect(() => {
-    if (state.type !== "CREATE_ORG" && isCreatingOrgProject) {
-      setIsCreatingOrgProject(false);
-    }
-  }, [state.type, isCreatingOrgProject]);
-
-  // Render based on state, but override if we're in the middle of CreateOrg's project creation
-  const effectiveState =
-    isCreatingOrgProject && state.type === "SELECT_ORG"
-      ? "CREATE_ORG"
-      : state.type;
-
-  switch (effectiveState) {
+  switch (state.type) {
     case "QUESTIONNAIRE":
       return (
         <OnboardingLayout>
-          <QuestionnaireForm />
+          <QuestionnaireForm
+            dispatch={dispatch}
+            hasInitialInput={hasInitialInput}
+            hasOrgs={hasOrgs}
+          />
         </OnboardingLayout>
       );
 
     case "CREATE_ORG":
       return (
         <OnboardingLayout>
-          <CreateOrg
-            onProjectCreationStart={() => {
-              setIsCreatingOrgProject(true);
-            }}
-            onProjectCreationEnd={() => {
-              setIsCreatingOrgProject(false);
-            }}
-          />
+          <CreateOrg />
         </OnboardingLayout>
       );
 

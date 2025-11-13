@@ -149,7 +149,7 @@ export function TextPreviewCard({
     return () => {
       cancelled = true;
     };
-  }, [attachment.url, expanded, text]);
+  }, [attachment.url, expanded]);
 
   return (
     <div className="relative group p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors w-full max-w-[480px]">

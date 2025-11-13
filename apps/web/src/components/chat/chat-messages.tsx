@@ -5,7 +5,7 @@ import { ChatAskAnswerPair } from "./chat-ask-answer-pair.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
 import { EmptyState } from "./empty-state.tsx";
-import { formatAskAnswerMessages } from "./utils/format-ask-answer-messages.ts";
+import { groupMessagesInPairs } from "./utils/format-ask-answer-messages.ts";
 
 interface ChatMessagesProps {
   className?: string;
@@ -17,8 +17,8 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
     chat: { messages, status },
   } = useAgenticChat();
 
-  const formattedAskAnswerMessages = useMemo(
-    () => formatAskAnswerMessages(messages),
+  const messagePairs = useMemo(
+    () => groupMessagesInPairs(messages),
     [messages],
   );
 
@@ -26,16 +26,16 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
     <div
       className={cn("w-full min-w-0 max-w-full overflow-visible", className)}
     >
-      {formattedAskAnswerMessages.length === 0 ? (
+      {messagePairs.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex flex-col min-w-0 max-w-2xl mx-auto w-full">
-          {formattedAskAnswerMessages.map((pair, index) => (
+          {messagePairs.map((pair, index) => (
             <ChatAskAnswerPair
               key={pair.user.id}
               user={pair.user}
               assistant={pair.assistant}
-              isLastPair={formattedAskAnswerMessages.length === index + 1}
+              isLastPair={messagePairs.length === index + 1}
             />
           ))}
           <ChatError />

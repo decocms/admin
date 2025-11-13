@@ -1,6 +1,6 @@
 import { UIMessage } from "@ai-sdk/react";
 
-export function formatAskAnswerMessages(messages: UIMessage[]) {
+export function groupMessagesInPairs(messages: UIMessage[]) {
   const pairs: Array<{ user: UIMessage; assistant?: UIMessage }> = [];
 
   for (let i = 0; i < messages.length; i++) {

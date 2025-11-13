@@ -87,7 +87,7 @@ export function AssistentChatMessage({
     <div
       className={cn(
         "w-full transition-all duration-500 ease-out group",
-        isLastMessage && "min-h-[68vh]",
+        isLastMessage && "min-h-[65vh]",
       )}
     >
       {message?.parts ? (

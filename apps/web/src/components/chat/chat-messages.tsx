@@ -12,7 +12,7 @@ interface ChatMessagesProps {
 }
 
 export function ChatMessages({ className }: ChatMessagesProps = {}) {
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const lastPairRef = useRef<HTMLDivElement | null>(null);
   const {
     chat: { messages, status },
   } = useAgenticChat();
@@ -30,14 +30,18 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
         <EmptyState />
       ) : (
         <div className="flex flex-col min-w-0 max-w-2xl mx-auto w-full">
-          {messagePairs.map((pair, index) => (
-            <ChatAskAnswerPair
-              key={pair.user.id}
-              user={pair.user}
-              assistant={pair.assistant}
-              isLastPair={messagePairs.length === index + 1}
-            />
-          ))}
+          {messagePairs.map((pair, index) => {
+            const isLastPair = messagePairs.length === index + 1;
+            return (
+              <ChatAskAnswerPair
+                key={pair.user.id}
+                user={pair.user}
+                assistant={pair.assistant}
+                isLastPair={isLastPair}
+                ref={isLastPair ? lastPairRef : undefined}
+              />
+            );
+          })}
           <ChatError />
           <div className="px-4">
             <ChatFinishReason />
@@ -48,18 +52,21 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
       <div
         key={messages.length}
         ref={(el) => {
-          const isFirstMount = !sentinelRef.current;
+          if (!el) return;
+
+          const isFirstMount = !lastPairRef.current;
           const shouldScroll = status === "submitted" || isFirstMount;
 
           if (!shouldScroll) {
             return;
           }
 
-          sentinelRef.current = el;
-          sentinelRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+          if (lastPairRef.current) {
+            lastPairRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
         }}
       />
     </div>

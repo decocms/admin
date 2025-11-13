@@ -13,7 +13,7 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
   svg: "image/svg+xml",
-  
+
   // Documents
   pdf: "application/pdf",
   doc: "application/msword",
@@ -22,21 +22,21 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ppt: "application/vnd.ms-powerpoint",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  
+
   // Text
   txt: "text/plain",
   csv: "text/csv",
   html: "text/html",
   htm: "text/html",
-  
+
   // Data
   json: "application/json",
-  
+
   // Media
   mp4: "video/mp4",
   mp3: "audio/mpeg",
   wav: "audio/wav",
-  
+
   // Archives
   zip: "application/zip",
   rar: "application/x-rar-compressed",
@@ -64,11 +64,13 @@ export function getMimeTypeFromPath(path: string): string {
  * Extracts content type from a data URL
  * Example: "data:image/png;base64,..." -> "image/png"
  */
-export function extractContentTypeFromDataUrl(dataUrl: string): string | undefined {
+export function extractContentTypeFromDataUrl(
+  dataUrl: string,
+): string | undefined {
   if (!dataUrl.startsWith("data:")) {
     return undefined;
   }
-  
+
   const match = dataUrl.match(/^data:([^;,]+)/);
   return match?.[1];
 }
@@ -88,11 +90,11 @@ export function getContentType(
   if (explicitContentType) {
     return explicitContentType;
   }
-  
+
   if (url.startsWith("data:")) {
     return extractContentTypeFromDataUrl(url) || "application/octet-stream";
   }
-  
+
   return getMimeTypeFromPath(url);
 }
 
@@ -130,4 +132,3 @@ export function isTextContentType(contentType: string): boolean {
 export function isImageMediaType(mediaType?: string): boolean {
   return mediaType?.startsWith("image/") ?? false;
 }
-

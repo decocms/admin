@@ -171,7 +171,7 @@ export const UserMessage = memo(function UserMessage({
           )}
 
           {hasTextContent && (
-            <div className="mt-2 flex w-full items-center justify-end gap-2 text-xs text-muted-foreground opacity-0 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:pointer-events-auto">
+            <div className="flex w-full items-center justify-end gap-2 text-xs text-muted-foreground opacity-0 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:pointer-events-auto">
               <div>
                 <Button
                   onClick={handleCopyMessage}

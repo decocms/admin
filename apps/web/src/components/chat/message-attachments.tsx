@@ -17,7 +17,9 @@ export interface MessageAttachment {
   name?: string;
 }
 
-export const isToolPart = (part: UIMessage["parts"][number]): part is ToolUIPart => {
+export const isToolPart = (
+  part: UIMessage["parts"][number],
+): part is ToolUIPart => {
   return part.type.startsWith("tool-") && "toolCallId" in part;
 };
 
@@ -40,7 +42,11 @@ export function ImagePart({ part }: { part: FileUIPart }) {
   );
 }
 
-export function AttachmentCard({ attachment }: { attachment: MessageAttachment }) {
+export function AttachmentCard({
+  attachment,
+}: {
+  attachment: MessageAttachment;
+}) {
   const contentType = getContentType(attachment.url, attachment.contentType);
   const isImage = isImageContentType(contentType);
   const isPDF = isPdfContentType(contentType);
@@ -218,4 +224,3 @@ export function TextPreviewCard({
     </div>
   );
 }
-

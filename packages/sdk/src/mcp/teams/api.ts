@@ -458,7 +458,6 @@ export const createTeam = createTool({
     if (domain) {
       const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
       if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
-        console.log("[TEAMS_CREATE] Rejecting well-known domain:", domain);
         throw new UserInputError(
           "Cannot set domain for well-known email providers (e.g., gmail.com, outlook.com). Only custom company domains are allowed.",
         );
@@ -516,20 +515,6 @@ export const createTeam = createTool({
     ]);
 
     if (roleError) throw roleError;
-
-    // Insert default project
-    const { error: projectError } = await c.db
-      .from("deco_chat_projects")
-      .insert([
-        {
-          org_id: team.id,
-          slug: "default",
-          title: `${team.name} Default project`,
-          description: `${team.name}'s Default project`,
-        },
-      ]);
-
-    if (projectError) throw projectError;
 
     return team;
   },
@@ -1474,8 +1459,6 @@ export const importProjectFromGithub = createTool({
     // Upload files
     let uploadedCount = 0;
 
-    console.log(`[Import] Starting file upload for project ${projectSlug}`);
-
     for (const [path, contentBytes] of files.entries()) {
       const uploadInfo = prepareFileForUpload({ path, contentBytes });
 
@@ -1490,18 +1473,14 @@ export const importProjectFromGithub = createTool({
           branch: "main",
         });
         uploadedCount++;
-        console.log(`[Import] Successfully uploaded: ${uploadInfo.remotePath}`);
       } catch (error) {
         console.error(`[Import] Failed to upload ${path}:`, error);
       }
     }
 
-    console.log(`[Import] Finished uploading ${uploadedCount} files`);
-
     // Import database schema using MCP database tools
     let tablesImported = 0;
     const workspaceClient = MCPClient.forContext(projectContext);
-    console.log(`[Import] Starting database import`);
 
     for (const [path, contentBytes] of files.entries()) {
       const schema = parseDatabaseSchema({ path, contentBytes });
@@ -1528,9 +1507,6 @@ export const importProjectFromGithub = createTool({
         }
 
         tablesImported++;
-        console.log(
-          `[Import] Successfully imported table: ${schema.tableName}`,
-        );
       } catch (error) {
         console.error(
           `[Import] Failed to import table schema from ${path}:`,
@@ -1539,11 +1515,8 @@ export const importProjectFromGithub = createTool({
       }
     }
 
-    console.log(`[Import] Finished importing ${tablesImported} tables`);
-
     // Import agents using drizzle
     let agentCount = 0;
-    console.log(`[Import] Starting agent import`);
 
     for (const [path, contentBytes] of files.entries()) {
       const agentData = parseAgentFile({ path, contentBytes });
@@ -1577,13 +1550,10 @@ export const importProjectFromGithub = createTool({
         });
 
         agentCount++;
-        console.log(`[Import] Successfully imported agent: ${agentData.name}`);
       } catch (error) {
         console.error(`[Import] Failed to import agent from ${path}:`, error);
       }
     }
-
-    console.log(`[Import] Finished importing ${agentCount} agents`);
 
     return {
       success: true,
@@ -1666,8 +1636,6 @@ export const exportProject = createTool({
       database: [] as string[],
     };
 
-    console.log(`[Export] Fetching files for project ${projectSlug}`);
-
     for (const root of ALLOWED_ROOTS) {
       try {
         const listResponse = await deconfigClient.LIST_FILES({ prefix: root });
@@ -1722,7 +1690,6 @@ export const exportProject = createTool({
     }
 
     // Export agents
-    console.log(`[Export] Fetching agents...`);
     const agents = await c.drizzle
       .select()
       .from(agentsTable)
@@ -1734,10 +1701,7 @@ export const exportProject = createTool({
       zip.file(`${agentsDir}/${filename}`, content);
     }
 
-    console.log(`[Export] Exported ${agents?.length || 0} agents`);
-
     // Export database schema
-    console.log(`[Export] Exporting database schema...`);
     try {
       const schemaResponse = await workspaceClient.DATABASES_RUN_SQL({
         sql: "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE sql IS NOT NULL",
@@ -1755,8 +1719,6 @@ export const exportProject = createTool({
         zip.file(`${databaseDir}/${filename}`, content);
         resourcesByType.database.push(`/${databaseDir}/${filename}`);
       }
-
-      console.log(`[Export] Exported ${tables.length} tables`);
     } catch (error) {
       console.warn(`[Export] Failed to export database schema:`, error);
     }
@@ -1784,8 +1746,6 @@ export const exportProject = createTool({
     // Generate zip
     const { buffer, base64 } = await generateZip({ zip });
     const filename = `${org}__${project}.zip`;
-
-    console.log(`[Export] Generated zip: ${filename} (${buffer.length} bytes)`);
 
     return {
       filename,
@@ -2067,15 +2027,9 @@ export const autoJoinTeam = createTool({
     assertPrincipalIsUser(c);
     const user = c.user;
 
-    console.log(
-      "[TEAM_AUTO_JOIN] Attempting to join team with domain:",
-      domain,
-    );
-
     // Validate domain is not well-known
     const { WELL_KNOWN_EMAIL_DOMAINS } = await import("../../constants.ts");
     if (WELL_KNOWN_EMAIL_DOMAINS.has(domain.toLowerCase())) {
-      console.log("[TEAM_AUTO_JOIN] Rejected: well-known domain:", domain);
       throw new UserInputError(
         "Cannot auto-join teams with well-known email domains (e.g., gmail.com, outlook.com). Auto-join only works for company-specific domains.",
       );
@@ -2094,13 +2048,10 @@ export const autoJoinTeam = createTool({
     }
 
     if (!team) {
-      console.log("[TEAM_AUTO_JOIN] No team found with domain:", domain);
       throw new NotFoundError(
         `No organization found with domain '${domain}'. The organization may not exist or may not have domain-based auto-join enabled.`,
       );
     }
-
-    console.log("[TEAM_AUTO_JOIN] Found team:", team.slug);
 
     // Check if user is already a member
     const { data: existingMember, error: memberCheckError } = await c.db
@@ -2120,7 +2071,6 @@ export const autoJoinTeam = createTool({
     }
 
     if (existingMember) {
-      console.log("[TEAM_AUTO_JOIN] User already a member of team");
       return {
         success: true,
         team,
@@ -2165,8 +2115,6 @@ export const autoJoinTeam = createTool({
       console.error("[TEAM_AUTO_JOIN] Error assigning role:", roleError);
       // Don't throw - member is already added, role is optional
     }
-
-    console.log("[TEAM_AUTO_JOIN] Successfully joined team:", team.slug);
 
     return {
       success: true,

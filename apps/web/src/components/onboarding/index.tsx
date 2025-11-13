@@ -1,26 +1,15 @@
 import {
-  Suspense,
-  useState,
-  useDeferredValue,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
-import { useSearchParams, useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
+  useAutoJoinTeam,
+  useCreateProject,
+  useCreateTeam,
   useOnboardingAnswers,
   useOrganizations,
   useSaveOnboardingAnswers,
-  useCreateTeam,
-  useAutoJoinTeam,
-  useCreateProject,
   WELL_KNOWN_EMAIL_DOMAINS,
 } from "@deco/sdk";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   Form,
   FormControl,
@@ -29,6 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   Select,
   SelectContent,
@@ -36,19 +27,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Avatar } from "@deco/ui/components/avatar.tsx";
-import { useUser } from "../../hooks/use-user.ts";
-import { findThemeByName } from "../theme-editor/theme-presets.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  restoreOnboardingParams,
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate, useSearchParams } from "react-router";
+import { z } from "zod";
+import { ErrorBoundary } from "../../error-boundary";
+import { useGenerateProjectName } from "../../hooks/use-generate-project-name.ts";
+import { useUser } from "../../hooks/use-user.ts";
+import {
   clearOnboardingParams,
   onboardingParamsToSearchParams,
+  restoreOnboardingParams,
 } from "../../utils/onboarding-storage.ts";
-import { ErrorBoundary } from "../../error-boundary";
 import { OrgAvatars, OrgMemberCount } from "../home/members";
+import { findThemeByName } from "../theme-editor/theme-presets.ts";
 
 /**
  * Onboarding Page
@@ -355,17 +356,21 @@ function QuestionnaireForm() {
  *
  * Automatically creates or joins an organization
  */
-function CreateOrg() {
-  const [searchParams] = useSearchParams();
+function CreateOrg({ onProjectCreationStart }: { onProjectCreationStart?: () => void }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useUser();
   const createTeam = useCreateTeam();
   const autoJoinTeam = useAutoJoinTeam();
+  const createProject = useCreateProject();
+  const { generateName } = useGenerateProjectName();
   const isCreatingRef = useRef(false);
+  const [statusMessage, setStatusMessage] = useState("Creating your organization...");
 
   const themeParam = searchParams.get("theme");
   const selectedTheme = themeParam ? findThemeByName(themeParam) : undefined;
 
-  const isCreating = createTeam.isPending || autoJoinTeam.isPending;
+  const isCreating =
+    createTeam.isPending || autoJoinTeam.isPending || createProject.isPending;
 
   useEffect(() => {
     if (isCreating || isCreatingRef.current) return;
@@ -456,9 +461,92 @@ function CreateOrg() {
         }
 
         if (team) {
-          // Clear onboarding params on success
-          clearOnboardingParams();
-          location.href = `/${team.slug}/default?${new URLSearchParams(searchParams)}`;
+          const initialInput = searchParams.get("initialInput");
+          const autoSend = searchParams.get("autoSend");
+
+          // If initialInput exists, create a project with random name
+          if (initialInput) {
+            try {
+              // Notify parent that we're starting project creation (prevents unmounting)
+              onProjectCreationStart?.();
+              setStatusMessage("Creating your project...");
+
+              // Create project with retry logic for name/slug collisions
+              let project;
+              let attempt = 0;
+              const maxAttempts = 10;
+
+              while (attempt < maxAttempts) {
+                try {
+                  // Generate a new random name for each attempt
+                  const projectName = await generateName();
+                  const baseSlug = projectName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
+
+                  project = await createProject.mutateAsync({
+                    org: team.slug,
+                    slug: baseSlug,
+                    title: projectName,
+                  });
+                  break; // Success, exit loop
+                } catch (err) {
+                  const errorMsg =
+                    err instanceof Error ? err.message : String(err);
+                  // Check if it's a slug collision error
+                  if (
+                    errorMsg.toLowerCase().includes("slug") &&
+                    (errorMsg.toLowerCase().includes("exists") ||
+                      errorMsg.toLowerCase().includes("already") ||
+                      errorMsg.toLowerCase().includes("taken") ||
+                      errorMsg.toLowerCase().includes("duplicate"))
+                  ) {
+                    attempt++;
+                    if (attempt >= maxAttempts) {
+                      throw new Error(
+                        "Failed to create project: all name attempts failed",
+                      );
+                    }
+                    // Try next attempt with a new random name
+                    continue;
+                  }
+                  // Not a slug error, throw it
+                  throw err;
+                }
+              }
+
+              if (!project) {
+                throw new Error("Failed to create project");
+              }
+
+              // Clear onboarding params on success
+              clearOnboardingParams();
+
+              // Navigate to project with initialInput params
+              const params = new URLSearchParams();
+              params.set("initialInput", initialInput);
+              if (autoSend) {
+                params.set("autoSend", "true");
+              }
+
+              const query = params.toString();
+              const path =
+                query.length > 0
+                  ? `/${team.slug}/${project.slug}?${query}`
+                  : `/${team.slug}/${project.slug}`;
+              location.href = path;
+            } catch (error) {
+              console.error("Failed to create project:", error);
+              // Fallback to org home on error
+              clearOnboardingParams();
+              location.href = `/${team.slug}`;
+            }
+          } else {
+            // No initialInput, redirect to org home page
+            clearOnboardingParams();
+            location.href = `/${team.slug}`;
+          }
         }
       } catch (error) {
         console.error("Failed to create or join org:", error);
@@ -479,7 +567,7 @@ function CreateOrg() {
   return (
     <div className="flex flex-col gap-4 items-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      <p className="text-lg text-muted">Creating your organization...</p>
+      <p className="text-lg text-muted">{statusMessage}</p>
     </div>
   );
 }
@@ -632,6 +720,7 @@ function SelectOrg() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const createProject = useCreateProject();
+  const { generateName } = useGenerateProjectName();
   const [isCreating, setIsCreating] = useState(false);
 
   const initialInput = searchParams.get("initialInput") || "";
@@ -641,25 +730,23 @@ function SelectOrg() {
     async (orgSlug: string) => {
       setIsCreating(true);
       try {
-        // Create project with default name
-        const projectName = "New Project";
-        const baseSlug = projectName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-
-        // Create project with retry logic for slug collisions
+        // Create project with retry logic for name/slug collisions
         let project;
         let attempt = 0;
         const maxAttempts = 10;
 
         while (attempt < maxAttempts) {
           try {
-            const slugToTry =
-              attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+            // Generate a new random name for each attempt
+            const projectName = await generateName();
+            const baseSlug = projectName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
+
             project = await createProject.mutateAsync({
               org: orgSlug,
-              slug: slugToTry,
+              slug: baseSlug,
               title: projectName,
             });
             break; // Success, exit loop
@@ -676,10 +763,10 @@ function SelectOrg() {
               attempt++;
               if (attempt >= maxAttempts) {
                 throw new Error(
-                  "Failed to create project: all slug attempts failed",
+                  "Failed to create project: all name attempts failed",
                 );
               }
-              // Try next attempt
+              // Try next attempt with a new random name
               continue;
             }
             // Not a slug error, throw it
@@ -718,7 +805,7 @@ function SelectOrg() {
         setIsCreating(false);
       }
     },
-    [initialInput, autoSend, createProject, navigate],
+    [initialInput, autoSend, createProject, navigate, generateName],
   );
 
   const handleDismiss = useCallback(() => {
@@ -802,6 +889,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
+  const isCreatingOrgProjectRef = useRef(false);
 
   // On mount, check if we need to restore params from localStorage
   useEffect(() => {
@@ -839,8 +927,12 @@ export function OnboardingPage() {
     }
   }, [state.type, navigate]);
 
-  // Render based on state
-  switch (state.type) {
+  // Render based on state, but override if we're in the middle of CreateOrg's project creation
+  const effectiveState = isCreatingOrgProjectRef.current && state.type === "SELECT_ORG"
+    ? "CREATE_ORG"
+    : state.type;
+
+  switch (effectiveState) {
     case "QUESTIONNAIRE":
       return (
         <OnboardingLayout>
@@ -851,7 +943,9 @@ export function OnboardingPage() {
     case "CREATE_ORG":
       return (
         <OnboardingLayout>
-          <CreateOrg />
+          <CreateOrg onProjectCreationStart={() => {
+            isCreatingOrgProjectRef.current = true;
+          }} />
         </OnboardingLayout>
       );
 

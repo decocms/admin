@@ -1,7 +1,7 @@
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useRef } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
-import { ChatAskAnswerPair } from "./chat-ask-answer-pair.tsx";
+import { ChatAskAnswerPair } from "./chat-pair-messages.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
 import { EmptyState } from "./empty-state.tsx";

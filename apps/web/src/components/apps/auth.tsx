@@ -36,7 +36,7 @@ import {
   useIntegrationInstallState,
 } from "../../hooks/use-integration-install.tsx";
 import { useUser } from "../../hooks/use-user.ts";
-import { Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
 import { OAuthCompletionDialog } from "../integrations/oauth-completion-dialog.tsx";

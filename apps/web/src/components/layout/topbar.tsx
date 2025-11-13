@@ -1,3 +1,5 @@
+import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
+import { SidebarToggleButton } from "@deco/ui/components/sidebar-toggle-button.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -17,7 +19,6 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@deco/ui/components/toggle-group.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ReportIssueButton } from "../common/report-issue-button.tsx";
@@ -33,28 +34,6 @@ import { useExportProjectToZip } from "../../hooks/use-export-project.ts";
 interface BreadcrumbItem {
   label: string | React.ReactNode;
   link?: string;
-}
-
-function SidebarToggle() {
-  const { toggleSidebar } = useSidebar();
-
-  return (
-    <>
-      <Button
-        onClick={toggleSidebar}
-        size="icon"
-        variant="ghost"
-        className="w-8 h-8 rounded-md"
-      >
-        <Icon
-          name="dock_to_right"
-          className="text-muted-foreground"
-          size={20}
-        />
-      </Button>
-      <div className="h-8 w-px bg-border" />
-    </>
-  );
 }
 
 function ExportButton() {
@@ -214,14 +193,14 @@ function ExportButton() {
 
 export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-20 bg-sidebar flex items-center justify-between w-full p-4 h-12 border-b border-border">
-      <div className="flex items-center gap-2">
+    <AppTopbar>
+      <AppTopbar.Left>
         <ErrorBoundary fallback={null}>
-          <SidebarToggle />
+          <SidebarToggleButton />
         </ErrorBoundary>
         <DefaultBreadcrumb items={breadcrumb} useWorkspaceLink={false} />
-      </div>
-      <div className="flex items-center gap-2">
+      </AppTopbar.Left>
+      <AppTopbar.Right>
         <ExportButton />
         <Suspense fallback={null}>
           <InboxPopover />
@@ -234,7 +213,7 @@ export function Topbar({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) {
           trigger={(user) => <LoggedUserAvatarTrigger user={user} />}
           align="end"
         />
-      </div>
-    </div>
+      </AppTopbar.Right>
+    </AppTopbar>
   );
 }

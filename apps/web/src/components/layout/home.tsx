@@ -1,13 +1,12 @@
-import {
-  DecoQueryClientProvider,
-  useOnboardingAnswers,
-  useOrganizations,
-} from "@deco/sdk";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useEffect } from "react";
-import { Outlet, useSearchParams } from "react-router";
-import { OnboardingDialog } from "../onboarding/onboarding-dialog";
+import { DecoQueryClientProvider } from "@deco/sdk";
+import { Outlet, useNavigate, useSearchParams } from "react-router";
 import { Topbar } from "./topbar";
+import { useEffect } from "react";
+import {
+  hasStoredOnboardingParams,
+  restoreOnboardingParams,
+  onboardingParamsToSearchParams,
+} from "../../utils/onboarding-storage.ts";
 
 interface BreadcrumbItem {
   label: string | React.ReactNode;
@@ -29,49 +28,31 @@ export function TopbarLayout({
   );
 }
 
-function HomeLayoutContent() {
+export function HomeLayout() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialInput = searchParams.get("initialInput");
-
-  const teams = useOrganizations({});
-  const onboardingStatus = useOnboardingAnswers();
-
-  const hasOrgs = teams.data.length > 0;
-  const hasCompletedOnboarding = !!onboardingStatus.data?.completed;
-  const shouldShowOnboarding = !hasOrgs;
-  const shouldRedirect = hasOrgs && Boolean(initialInput);
 
   useEffect(() => {
-    if (!shouldRedirect) return;
+    // Check if we have initialInput in URL or stored onboarding params
+    const hasInitialInput = searchParams.has("initialInput");
+    const hasStoredParams = hasStoredOnboardingParams();
 
-    const url = new URL("/onboarding/select-org", globalThis.location.origin);
-    searchParams.forEach((value, key) => url.searchParams.set(key, value));
-    location.href = url.href;
-  }, [shouldRedirect, searchParams]);
+    if (hasInitialInput) {
+      // User has initialInput params in URL, redirect to /new with params
+      navigate(`/new?${searchParams.toString()}`, { replace: true });
+    } else if (hasStoredParams) {
+      // User has stored params in localStorage, restore and redirect to /new
+      const storedParams = restoreOnboardingParams();
+      if (storedParams) {
+        const newSearchParams = onboardingParamsToSearchParams(storedParams);
+        navigate(`/new?${newSearchParams.toString()}`, { replace: true });
+      }
+    }
+  }, [searchParams, navigate]);
 
-  // Brief spinner while redirect effect runs to avoid UI flash
-  if (shouldRedirect) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {shouldShowOnboarding && (
-        <OnboardingDialog hasCompletedOnboarding={hasCompletedOnboarding} />
-      )}
-      <Outlet />
-    </>
-  );
-}
-
-export function HomeLayout() {
   return (
     <DecoQueryClientProvider>
-      <HomeLayoutContent />
+      <Outlet />
     </DecoQueryClientProvider>
   );
 }

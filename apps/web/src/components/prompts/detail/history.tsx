@@ -11,11 +11,7 @@ import {
   useTeamMembers,
   useUpdatePrompt,
 } from "@deco/sdk";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -266,18 +262,18 @@ export function HistoryCard({
             </span>
           )}
           <div className="flex items-center gap-1">
-            <Avatar className="size-4">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={userName} />
-              ) : (
-                <AvatarFallback className="text-xs">
-                  {userName
-                    ?.split(" ")
-                    .map((n: string) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              )}
-            </Avatar>
+            <Avatar
+              className="size-4"
+              url={avatarUrl}
+              fallback={
+                userName
+                  ?.split(" ")
+                  .map((n: string) => n[0])
+                  .join("") || "?"
+              }
+              shape="circle"
+              size="2xs"
+            />
             <span className="text-xs text-muted-foreground font-normal">
               {userName}
             </span>

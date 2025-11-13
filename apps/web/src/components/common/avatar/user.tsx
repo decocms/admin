@@ -1,4 +1,4 @@
-import { Avatar, type AvatarProps } from "./index.tsx";
+import { Avatar, type AvatarProps } from "@deco/ui/components/avatar.tsx";
 
 export interface UserAvatarProps extends Omit<AvatarProps, "shape"> {
   /**

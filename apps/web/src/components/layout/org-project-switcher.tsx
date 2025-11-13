@@ -10,7 +10,7 @@ import {
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Avatar } from "../common/avatar";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
 import { SwitcherProjects } from "./project-switcher";
 

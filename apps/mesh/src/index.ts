@@ -8,14 +8,8 @@
 // Import observability module early to initialize OpenTelemetry SDK
 import "./observability";
 import app from "./api";
-import { migrateToLatest } from "./database/migrate";
 
 const port = parseInt(process.env.PORT || "3000", 10);
-
-// Run migrations before starting server
-console.log("🔄 Running database migrations...");
-await migrateToLatest();
-console.log("");
 
 // Log startup info
 console.log("✅ MCP Mesh starting...");

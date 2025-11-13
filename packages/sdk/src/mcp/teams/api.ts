@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import JSZip from "jszip";
 import { z } from "zod";
-import { RoleUpdateAction } from "../../auth/policy.ts";
+import { BASE_ROLES_ID, RoleUpdateAction } from "../../auth/policy.ts";
 import { WebCache } from "../../cache/index.ts";
 import { TeamWithViews } from "../../crud/teams.ts";
 import {
@@ -69,8 +69,6 @@ import {
   prepareFileForUpload,
 } from "./import-project.ts";
 import { mergeThemes } from "./merge-theme.ts";
-
-const OWNER_ROLE_ID = 1;
 
 const ToolPermissionSchema = z.object({
   toolName: z.string(),
@@ -425,6 +423,7 @@ export const createTeam = createTool({
       slug: z.string(),
       avatar_url: z.string().optional(),
       domain: z.string().optional(),
+      theme: enhancedThemeSchema.optional(),
     }),
   ),
 
@@ -439,7 +438,7 @@ export const createTeam = createTool({
     c.resourceAccess.grant();
 
     assertPrincipalIsUser(c);
-    const { name, slug, avatar_url, domain } = props;
+    const { name, slug, avatar_url, domain, theme } = props;
     const user = c.user;
 
     // Enforce unique slug if provided
@@ -475,6 +474,7 @@ export const createTeam = createTool({
           slug,
           avatar_url,
           domain: domain?.toLowerCase(),
+          theme: theme || null,
         },
       ])
       .select()
@@ -511,7 +511,7 @@ export const createTeam = createTool({
     const { error: roleError } = await c.db.from("member_roles").insert([
       {
         member_id: member.id,
-        role_id: OWNER_ROLE_ID,
+        role_id: BASE_ROLES_ID.OWNER,
       },
     ]);
 
@@ -2153,13 +2153,11 @@ export const autoJoinTeam = createTool({
       throw new InternalServerError(memberError.message);
     }
 
-    // Assign default member role (not owner)
-    const DEFAULT_MEMBER_ROLE_ID = 2; // Assuming role_id 2 is the default member role
-
+    // Assign admin role to auto-joined members
     const { error: roleError } = await c.db.from("member_roles").insert([
       {
         member_id: member.id,
-        role_id: DEFAULT_MEMBER_ROLE_ID,
+        role_id: BASE_ROLES_ID.ADMIN,
       },
     ]);
 

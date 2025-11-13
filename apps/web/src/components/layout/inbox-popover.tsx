@@ -18,7 +18,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
-import { Avatar, AvatarFallback } from "@deco/ui/components/avatar.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAcceptInvite, useInvites, useRejectInvite } from "@deco/sdk";
 import { useState } from "react";
@@ -46,11 +46,12 @@ function InviteItem({
 
   return (
     <div className="group flex items-center gap-3 px-1 py-2 hover:bg-muted/50 rounded-lg transition-colors">
-      <Avatar className="size-5 rounded-md">
-        <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-xs">
-          {getInitial(invite.teamName)}
-        </AvatarFallback>
-      </Avatar>
+      <Avatar
+        className="size-5 rounded-md bg-primary text-primary-foreground"
+        fallback={getInitial(invite.teamName)}
+        shape="square"
+        size="xs"
+      />
       <p className="flex-1 text-sm min-w-0">
         <span className="font-semibold">{invite.inviter.name}</span>
         {" invited you to join "}

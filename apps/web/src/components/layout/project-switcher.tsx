@@ -9,7 +9,7 @@ import {
 } from "@deco/ui/components/popover.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Avatar } from "../common/avatar";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { useFile } from "@deco/sdk";
 
 function SwitcherProjectItem({

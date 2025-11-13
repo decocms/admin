@@ -1321,3 +1321,16 @@ export const THEME_PRESETS = [
     },
   },
 ] as const satisfies ReadonlyArray<ThemePreset>;
+
+/**
+ * Find a theme preset by name (case-insensitive)
+ * @param name - The name of the theme (e.g., "Cyberpunk", "cyberpunk")
+ * @returns The theme object if found, undefined otherwise
+ */
+export function findThemeByName(name: string): Theme | undefined {
+  const normalizedName = name.toLowerCase().trim();
+  const preset = THEME_PRESETS.find(
+    (p) => p.name.toLowerCase() === normalizedName || p.id === normalizedName,
+  );
+  return preset?.theme;
+}

@@ -43,4 +43,9 @@ kv-wal
 .specstory/**
 .tsbuildinfo
 
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
 .playwright-mcp/

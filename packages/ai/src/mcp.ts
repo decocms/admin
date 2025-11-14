@@ -22,6 +22,7 @@ import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
+import { patchedJsonSchema } from "./utils/json-schema.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
 
@@ -87,19 +88,23 @@ const getMCPServerTools = async (
     const mtools: Record<string, Tool> = Object.fromEntries(
       tools.map((tool: (typeof tools)[number]) => {
         const slug = slugify(tool.name);
+
+        // @ts-expect-error - tool.inputSchema is not a JSONSchema7
+        const inputSchema = patchedJsonSchema(tool.inputSchema);
+        const outputSchema = patchedJsonSchema(
+          tool.outputSchema ?? {
+            type: "object",
+            additionalProperties: true,
+          },
+        );
+
         return [
           slug,
           createTool({
             id: slug,
             description: tool.description ?? "",
-            // @ts-expect-error - tool.inputSchema is not a JSONSchema7
-            inputSchema: jsonSchema(tool.inputSchema),
-            outputSchema: jsonSchema(
-              tool.outputSchema ?? {
-                type: "object",
-                additionalProperties: true,
-              },
-            ),
+            inputSchema,
+            outputSchema,
             execute: async (input) => {
               const innerClient = await createServerClient(mcpServer).catch(
                 console.error,

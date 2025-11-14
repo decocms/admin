@@ -17,12 +17,10 @@ import {
 
 interface UserMessageProps {
   message: UIMessage;
-  onScrollToMessage?: () => void;
 }
 
 export const UserMessage = memo(function UserMessage({
   message,
-  onScrollToMessage,
 }: UserMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { handleCopy: copyContent } = useCopy();
@@ -76,10 +74,7 @@ export const UserMessage = memo(function UserMessage({
   return (
     <div className="w-full group relative">
       <div className="flex flex-col gap-2 min-w-0 items-end ml-auto">
-        <div
-          onClick={onScrollToMessage}
-          className="w-full border min-w-0 shadow-[0_3px_6px_-1px_rgba(0,0,0,0.1)] rounded-lg text-[0.9375rem] break-words overflow-wrap-anywhere bg-muted px-4 pt-2 pb-1 cursor-pointer hover:bg-muted/80 transition-colors"
-        >
+        <div className="w-full border min-w-0 shadow-[0_3px_6px_-1px_rgba(0,0,0,0.1)] rounded-lg text-[0.9375rem] break-words overflow-wrap-anywhere bg-muted px-4 pt-2 pb-1 cursor-pointer hover:bg-muted/80 transition-colors">
           <div
             className={cn(
               isLongMessage &&

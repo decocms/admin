@@ -1,7 +1,10 @@
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useRef } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
-import { ChatAskAnswerPair } from "./chat-pair-messages.tsx";
+import {
+  ChatAskAnswerPair,
+  type ChatAskAnswerPairHandle,
+} from "./chat-pair-messages.tsx";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
 import { EmptyState } from "./empty-state.tsx";
@@ -12,7 +15,7 @@ interface ChatMessagesProps {
 }
 
 export function ChatMessages({ className }: ChatMessagesProps = {}) {
-  const lastPairRef = useRef<HTMLDivElement | null>(null);
+  const lastPairRef = useRef<ChatAskAnswerPairHandle | null>(null);
   const {
     chat: { messages, status },
   } = useAgenticChat();
@@ -62,10 +65,7 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
           }
 
           if (lastPairRef.current) {
-            lastPairRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
+            lastPairRef.current.scrollToPair();
           }
         }}
       />

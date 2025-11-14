@@ -11,15 +11,18 @@ interface ChatAskAnswerPairProps {
   isLastPair?: boolean;
 }
 
+export interface ChatAskAnswerPairHandle {
+  scrollToPair: () => void;
+  getElement: () => HTMLDivElement | null;
+}
+
 export const ChatAskAnswerPair = forwardRef<
-  HTMLDivElement,
+  ChatAskAnswerPairHandle,
   ChatAskAnswerPairProps
 >(function ChatAskAnswerPair({ user, assistant, isLastPair }, ref) {
   const internalRef = useRef<HTMLDivElement>(null);
   const { tabs } = useThread();
   const hasTabs = tabs.length > 0;
-
-  useImperativeHandle(ref, () => internalRef.current as HTMLDivElement);
 
   const handleScrollToPair = () => {
     if (internalRef.current) {
@@ -30,6 +33,11 @@ export const ChatAskAnswerPair = forwardRef<
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    scrollToPair: handleScrollToPair,
+    getElement: () => internalRef.current,
+  }));
+
   return (
     <div ref={internalRef} className="flex flex-col">
       <div
@@ -39,7 +47,7 @@ export const ChatAskAnswerPair = forwardRef<
           !hasTabs && "bg-background",
         )}
       >
-        <UserMessage message={user} onScrollToMessage={handleScrollToPair} />
+        <UserMessage message={user} />
       </div>
 
       <div className="message-block px-4 py-4">

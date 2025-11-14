@@ -128,6 +128,9 @@ export const createResourceVersionHistoryStore = create<VersionHistoryStore>()(
 
             if (parsedToolName) {
               // Tool name is namespaced, call via INTEGRATIONS_CALL_TOOL
+              // TODO: parsedToolName.integrationId may be truncated (16-24 chars) due to 64-char limit.
+              // This works for now because INTEGRATIONS_CALL_TOOL is called with truncated ID,
+              // but if we need the full UUID, use resolveFullIntegrationId() with available integrations.
               result = await client.INTEGRATIONS_CALL_TOOL({
                 id: parsedToolName.integrationId,
                 params: {

@@ -44,3 +44,8 @@ kv-wal
 .tsbuildinfo
 
 .playwright-mcp/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal

@@ -12,8 +12,10 @@ import { authClient } from "@/web/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState, Suspense } from "react";
 import { SplashScreen } from "../components/splash-screen";
-import { MeshSidebar } from "../components/org-sidebar";
+import { MeshSidebar } from "../components/mesh-sidebar";
 import { MeshOrgSwitcher } from "../components/org-switcher";
+import { ProjectContextProvider } from "../providers/project-context-provider";
+import { Locator } from "../lib/locator";
 
 function Topbar({
   showSidebarToggle = false,
@@ -74,25 +76,28 @@ export default function ShellLayout() {
     <RequiredAuthLayout>
       <OrgContextSetter fallback={<SplashScreen />}>
         {hasOrg ? (
-          <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <div className="flex flex-col h-screen">
-              <Topbar showSidebarToggle showOrgSwitcher />
-              <SidebarLayout
-                className="flex-1 bg-sidebar"
-                style={
-                  {
-                    "--sidebar-width": "13rem",
-                    "--sidebar-width-mobile": "11rem",
-                  } as Record<string, string>
-                }
-              >
-                <MeshSidebar />
-                <SidebarInset className="pt-12">
-                  <Outlet />
-                </SidebarInset>
-              </SidebarLayout>
-            </div>
-          </SidebarProvider>
+          <ProjectContextProvider locator={Locator.adminProject(org)}>
+            // Should use "project ?? org-admin" when projects are introduced
+            <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <div className="flex flex-col h-screen">
+                <Topbar showSidebarToggle showOrgSwitcher />
+                <SidebarLayout
+                  className="flex-1 bg-sidebar"
+                  style={
+                    {
+                      "--sidebar-width": "13rem",
+                      "--sidebar-width-mobile": "11rem",
+                    } as Record<string, string>
+                  }
+                >
+                  <MeshSidebar />
+                  <SidebarInset className="pt-12">
+                    <Outlet />
+                  </SidebarInset>
+                </SidebarLayout>
+              </div>
+            </SidebarProvider>
+          </ProjectContextProvider>
         ) : (
           <div className="min-h-screen bg-background">
             <Topbar />

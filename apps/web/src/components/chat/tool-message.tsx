@@ -36,6 +36,7 @@ import {
   extractToolName,
   getStatusStyles,
   parseToolName,
+  resolveFullIntegrationId,
 } from "../../utils/tool-namespace.ts";
 import {
   extractResourceUri,
@@ -138,11 +139,18 @@ const ToolStatus = memo(function ToolStatus({
   const { data: integrations = [] } = useIntegrations();
 
   // Parse integration ID from namespaced tool name
-  const integrationId = useMemo(() => {
+  const truncatedIntegrationId = useMemo(() => {
     if (!rawToolName) return null;
     const parsed = parseToolName(rawToolName);
     return parsed?.integrationId ?? null;
   }, [rawToolName]);
+
+  // Resolve full integration ID from truncated version
+  const integrationId = useMemo(() => {
+    if (!truncatedIntegrationId) return null;
+    const availableIds = integrations.map((i) => i.id);
+    return resolveFullIntegrationId(truncatedIntegrationId, availableIds);
+  }, [truncatedIntegrationId, integrations]);
 
   // Find matching integration
   const integration = useMemo(() => {

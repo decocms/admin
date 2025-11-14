@@ -141,7 +141,6 @@ function WorkflowRunsContent({
   const { locator } = useSDK();
   const queryClient = useQueryClient();
   const { createTab } = useThread();
-  const [searchOpen, setSearchOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"cards" | "table">(initialViewMode);
   const [sortKey, setSortKey] = useState<string>("createdAt");
@@ -237,16 +236,9 @@ function WorkflowRunsContent({
           <Icon name="refresh" className="text-muted-foreground" />
         </Button>
 
-        {/* Search Button / Input */}
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => setSearchOpen(!searchOpen)}
-          className="size-6 p-0"
-        >
-          <Icon name="search" className="text-muted-foreground" />
-        </Button>
-        {searchOpen && (
+        {/* Search Input - Always Visible */}
+        <div className="flex items-center gap-1">
+          <Icon name="search" className="text-muted-foreground" size={16} />
           <Input
             value={q}
             onChange={(e) => {
@@ -258,9 +250,11 @@ function WorkflowRunsContent({
               });
             }}
             onBlur={() => {
-              if (!q) {
-                setSearchOpen(false);
-              }
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("q");
+                return next;
+              });
             }}
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Escape") {
@@ -269,15 +263,13 @@ function WorkflowRunsContent({
                   next.delete("q");
                   return next;
                 });
-                setSearchOpen(false);
                 (e.target as HTMLInputElement).blur();
               }
             }}
             placeholder="Search..."
             className="h-6 w-32 border-0 shadow-none focus-visible:ring-0 px-2"
-            autoFocus
           />
-        )}
+        </div>
 
         {/* Menu Button */}
         <DropdownMenu>
@@ -431,16 +423,18 @@ function WorkflowRunsContent({
 
       <div className="flex-1 overflow-auto">
         <div className="sticky">
-          <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
-            {headerSlot}
-            {tabs && (
-              <ResourceHeader
-                tabs={tabs}
-                activeTab={activeTab ?? "runs-legacy"}
-                onTabChange={onTabChange}
-                hideActions={true}
-              />
-            )}
+          <div className="px-8">
+            <div className="max-w-[1600px] mx-auto w-full space-y-4 md:space-y-6 lg:space-y-8">
+              {headerSlot}
+              {tabs && (
+                <ResourceHeader
+                  tabs={tabs}
+                  activeTab={activeTab ?? "runs-legacy"}
+                  onTabChange={onTabChange}
+                  hideActions={true}
+                />
+              )}
+            </div>
           </div>
         </div>
 

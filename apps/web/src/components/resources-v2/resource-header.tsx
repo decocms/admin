@@ -9,7 +9,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { FilterBar, type Filter } from "./filter-bar.tsx";
 
 export interface TabItem {
@@ -23,9 +23,7 @@ interface ResourceHeaderProps {
   tabs?: TabItem[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
-  searchOpen?: boolean;
   searchValue?: string;
-  onSearchToggle?: () => void;
   onSearchChange?: (value: string) => void;
   onSearchBlur?: () => void;
   onSearchKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
@@ -48,9 +46,7 @@ export function ResourceHeader({
   tabs,
   activeTab,
   onTabChange,
-  searchOpen,
   searchValue,
-  onSearchToggle,
   onSearchChange,
   onSearchBlur,
   onSearchKeyDown,
@@ -70,15 +66,8 @@ export function ResourceHeader({
 }: ResourceHeaderProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-focus search input when opened
-  useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchOpen]);
-
   return (
-    <div className="flex flex-col gap-3 w-full px-8 py-4">
+    <div className="flex flex-col gap-3 w-full py-4">
       {/* Tabs and Actions Row */}
       <div className="flex items-center justify-between border-b border-border w-full min-w-0">
         {/* Left: Tabs (if provided) */}
@@ -111,6 +100,26 @@ export function ResourceHeader({
         {/* Right: Action Buttons */}
         {!hideActions && (
           <div className="flex items-center justify-end gap-2 py-2 shrink-0">
+            {/* Search Input - Always Visible, First on Right */}
+            {onSearchChange && (
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="search"
+                  size={20}
+                  className="text-muted-foreground"
+                />
+                <Input
+                  ref={searchInputRef}
+                  value={searchValue}
+                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  onBlur={onSearchBlur}
+                  onKeyDown={onSearchKeyDown}
+                  placeholder="Search..."
+                  className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
+                />
+              </div>
+            )}
+
             {/* Refresh Button */}
             {onRefresh && (
               <Button
@@ -121,29 +130,6 @@ export function ResourceHeader({
               >
                 <Icon name="refresh" size={20} />
               </Button>
-            )}
-
-            {/* Search Button / Input */}
-            {onSearchToggle && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onSearchToggle}
-                className="h-9 w-9 flex items-center text-muted-foreground justify-center"
-              >
-                <Icon name="search" size={20} />
-              </Button>
-            )}
-            {searchOpen && (
-              <Input
-                ref={searchInputRef}
-                value={searchValue}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                onBlur={onSearchBlur}
-                onKeyDown={onSearchKeyDown}
-                placeholder="Search..."
-                className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 w-32 md:w-auto"
-              />
             )}
 
             {/* Filter Button */}

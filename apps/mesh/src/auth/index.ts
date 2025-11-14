@@ -19,6 +19,7 @@ import {
   openAPI,
   organization,
   magicLink,
+  OrganizationOptions,
 } from "better-auth/plugins";
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
@@ -92,19 +93,7 @@ export const authConfig: Partial<BetterAuthOptions> & {
   inviteEmailProviderId?: string;
 } = loadAuthConfig();
 
-// Build organization plugin config with optional invite email support
-const organizationConfig: Parameters<typeof organization>[0] = {
-  ac,
-  allowUserToCreateOrganization: true, // Users can create organizations by default
-  dynamicAccessControl: {
-    enabled: true,
-    maximumRolesPerOrganization: 500,
-  },
-  roles: {
-    user,
-    admin,
-  },
-};
+let sendInvitationEmail: OrganizationOptions["sendInvitationEmail"] = undefined;
 
 // Configure invitation emails if provider is set
 if (
@@ -120,7 +109,7 @@ if (
   if (inviteProvider) {
     const sendEmail = createEmailSender(inviteProvider);
 
-    organizationConfig.sendInvitationEmail = async (data) => {
+    sendInvitationEmail = async (data) => {
       const inviterName = data.inviter.user?.name || data.inviter.user?.email;
       const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?token=${data.invitation.id}`;
 
@@ -140,7 +129,19 @@ if (
 const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
-  organization(organizationConfig),
+  organization({
+    ac,
+    allowUserToCreateOrganization: true, // Users can create organizations by default
+    dynamicAccessControl: {
+      enabled: true,
+      maximumRolesPerOrganization: 500,
+    },
+    roles: {
+      user,
+      admin,
+    },
+    sendInvitationEmail,
+  }),
 
   // MCP plugin for OAuth 2.1 server
   // https://www.better-auth.com/docs/plugins/mcp

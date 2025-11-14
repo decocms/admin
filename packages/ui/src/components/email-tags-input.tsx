@@ -238,7 +238,10 @@ export function EmailTagsInput({
       }
     } else if (e.key === "Backspace" && !inputValue && emails.length > 0) {
       // Remove last email when backspace is pressed on empty input
-      removeEmail(emails[emails.length - 1]);
+      const lastEmail = emails[emails.length - 1];
+      if (lastEmail) {
+        removeEmail(lastEmail);
+      }
     }
   };
 

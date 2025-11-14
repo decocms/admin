@@ -42,10 +42,12 @@ import {
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import type { MCPConnection } from "@/storage/types";
 import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 
 const useConnection = (connectionId: string) => {
+  const { locator } = useProjectContext();
   return useQuery({
-    queryKey: KEYS.connection(connectionId),
+    queryKey: KEYS.connection(locator, connectionId),
     queryFn: () => fetcher.CONNECTION_GET({ id: connectionId }),
   });
 };

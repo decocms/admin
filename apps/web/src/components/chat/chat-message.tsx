@@ -8,6 +8,12 @@ import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
 import { useCopy } from "../../hooks/use-copy.ts";
+import { getAgentAvatar, getAgentName } from "../../utils/agent-avatars.ts";
+import type { AgentId } from "@deco/sdk";
+import { useAgentStore } from "../../stores/mode-store.ts";
+import { UserInfo } from "../common/table/table-cells.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
+import { useUser } from "../../hooks/use-user.ts";
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -86,6 +92,46 @@ export const ChatMessage = memo(function ChatMessage({
     );
   }, [message.parts, message]);
 
+  // Get agent info for assistant messages from message metadata
+  // The agentId is set in the stream response metadata, so it should always be available
+  const agentId = useMemo(() => {
+    if (!isUser && message.metadata) {
+      return (message.metadata as { agentId?: AgentId })?.agentId;
+    }
+    return undefined;
+  }, [isUser, message.metadata]);
+
+  // Get user info for user messages from message metadata
+  const userId = useMemo(() => {
+    if (isUser && message.metadata) {
+      return (message.metadata as { userId?: string })?.userId;
+    }
+    return undefined;
+  }, [isUser, message.metadata]);
+
+  const agentAvatar = useMemo(() => getAgentAvatar(agentId), [agentId]);
+  const agentName = useMemo(() => getAgentName(agentId), [agentId]);
+
+  // Get user avatar and name for user messages
+  const user = useUser();
+  const isCurrentUser = userId && user && userId === user.id;
+  const userAvatarUrl = useMemo(() => {
+    if (!userId) return undefined;
+    if (isCurrentUser) {
+      return user.metadata.avatar_url;
+    }
+    // For other users, we'd need to fetch from team members
+    // For now, just return undefined and let UserInfo handle it
+    return undefined;
+  }, [userId, isCurrentUser, user]);
+  const userName = useMemo(() => {
+    if (!userId) return undefined;
+    if (isCurrentUser) {
+      return user.metadata.full_name || user.email;
+    }
+    return undefined;
+  }, [userId, isCurrentUser, user]);
+
   return (
     <div
       className={cn(
@@ -93,6 +139,49 @@ export const ChatMessage = memo(function ChatMessage({
         isUser ? "flex-row-reverse py-4" : "flex-row",
       )}
     >
+      {/* Agent Avatar for assistant messages */}
+      {!isUser && (
+        <div className="flex-shrink-0">
+          <div className="relative">
+            <img
+              src={agentAvatar}
+              alt={agentName}
+              className="size-8 rounded-full object-cover border border-border"
+              onError={(e) => {
+                // Fallback to a default icon if image fails to load
+                const target = e.currentTarget;
+                target.style.display = "none";
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) {
+                  fallback.style.display = "flex";
+                }
+              }}
+            />
+            <div
+              className="size-8 rounded-full bg-muted border border-border items-center justify-center hidden"
+              style={{ display: "none" }}
+            >
+              <Icon name="smart_toy" size={20} className="text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Avatar for user messages */}
+      {isUser && userId && (
+        <div className="flex-shrink-0">
+          {userAvatarUrl ? (
+            <UserAvatar
+              url={userAvatarUrl}
+              fallback={userName || "U"}
+              size="sm"
+            />
+          ) : (
+            <UserInfo userId={userId} size="xs" noTooltip showEmail={false} />
+          )}
+        </div>
+      )}
+
       <div
         className={cn(
           "flex flex-col gap-2 min-w-0",
@@ -100,6 +189,12 @@ export const ChatMessage = memo(function ChatMessage({
         )}
       >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {!isUser && agentId && (
+            <span className="font-medium text-foreground">{agentName}</span>
+          )}
+          {isUser && userId && (
+            <UserInfo userId={userId} nameOnly size="xs" noTooltip className="font-medium text-foreground" />
+          )}
           <span>{timestamp}</span>
         </div>
 

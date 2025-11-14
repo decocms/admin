@@ -49,6 +49,7 @@ import {
   HostingAppToolLike,
 } from "./tools/hosting-app-deploy.tsx";
 import { Preview } from "./tools/render-preview.tsx";
+import { ModeSwitchTool } from "./mode-switch-tool.tsx";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -78,6 +79,7 @@ const CUSTOM_UI_TOOLS = new Set([
   "GENERATE_IMAGE",
   "READ_MCP",
   "CALL_TOOL",
+  "MODE_SWITCH_REQUEST",
 ]);
 
 // Helper to extract toolName from ToolUIPart (handles both static and dynamic tools)
@@ -1027,6 +1029,10 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
 
   if (toolName === "CALL_TOOL") {
     return <CallToolUI part={part} />;
+  }
+
+  if (toolName === "MODE_SWITCH_REQUEST") {
+    return <ModeSwitchTool part={part} />;
   }
 
   // For other tools, only show output when available

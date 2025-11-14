@@ -6,6 +6,7 @@ import {
 } from "../chat/provider.tsx";
 import { useThread } from "./thread-provider.tsx";
 import { useDecopilotThread } from "./thread-context.tsx";
+import { useAgentStore } from "../../stores/mode-store.ts";
 
 interface DecopilotChatProviderWrapperProps {
   children: ReactNode;

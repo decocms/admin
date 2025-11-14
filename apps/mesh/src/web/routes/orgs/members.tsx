@@ -81,9 +81,12 @@ export default function OrgMembers() {
 
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      await authClient.organization.removeMember({
+      const result = await authClient.organization.removeMember({
         memberIdOrEmail: memberId,
       });
+      if (result?.error) {
+        throw new Error(result.error.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.members(locator) });
@@ -105,10 +108,13 @@ export default function OrgMembers() {
       memberId: string;
       role: string;
     }) => {
-      await authClient.organization.updateMemberRole({
+      const result = await authClient.organization.updateMemberRole({
         memberId,
         role: [role],
       });
+      if (result?.error) {
+        throw new Error(result.error.message);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEYS.members(locator) });
@@ -223,6 +229,7 @@ export default function OrgMembers() {
                                     role: "member",
                                   })
                                 }
+                                disabled={updateRoleMutation.isPending}
                               >
                                 Change to Member
                               </DropdownMenuItem>
@@ -234,6 +241,7 @@ export default function OrgMembers() {
                                     role: "admin",
                                   })
                                 }
+                                disabled={updateRoleMutation.isPending}
                               >
                                 Change to Admin
                               </DropdownMenuItem>
@@ -285,6 +293,7 @@ export default function OrgMembers() {
               onClick={() =>
                 memberToRemove && removeMemberMutation.mutate(memberToRemove)
               }
+              disabled={removeMemberMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove

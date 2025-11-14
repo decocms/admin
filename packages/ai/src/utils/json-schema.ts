@@ -13,47 +13,52 @@ export const fixJsonSchemaArrayItems = (schema: JSONSchema7): JSONSchema7 => {
     return schema;
   }
 
+  // Shallow clone the root schema
+  const cloned = { ...schema };
+
   // Fix arrays without items
-  if (schema.type === "array" && !("items" in schema)) {
-    schema.items = {};
+  if (cloned.type === "array" && !("items" in cloned)) {
+    cloned.items = {};
   }
 
   // Recursively fix array items
-  if (schema.items && typeof schema.items === "object") {
-    schema.items = fixJsonSchemaArrayItems(schema.items as JSONSchema7);
+  if (cloned.items && typeof cloned.items === "object") {
+    cloned.items = fixJsonSchemaArrayItems(cloned.items as JSONSchema7);
   }
 
   // Recursively fix properties
-  if (schema.properties && typeof schema.properties === "object") {
-    for (const key of Object.keys(schema.properties)) {
-      if (typeof schema.properties[key] === "object") {
-        schema.properties[key] = fixJsonSchemaArrayItems(
-          schema.properties[key] as JSONSchema7,
+  if (cloned.properties && typeof cloned.properties === "object") {
+    const newProperties = { ...cloned.properties };
+    for (const key of Object.keys(newProperties)) {
+      if (typeof newProperties[key] === "object") {
+        newProperties[key] = fixJsonSchemaArrayItems(
+          newProperties[key] as JSONSchema7,
         );
       }
     }
+    cloned.properties = newProperties;
   }
 
   // Recursively fix additionalProperties
   if (
-    schema.additionalProperties &&
-    typeof schema.additionalProperties === "object"
+    cloned.additionalProperties &&
+    typeof cloned.additionalProperties === "object"
   ) {
-    schema.additionalProperties = fixJsonSchemaArrayItems(
-      schema.additionalProperties as JSONSchema7,
+    cloned.additionalProperties = fixJsonSchemaArrayItems(
+      cloned.additionalProperties as JSONSchema7,
     );
   }
 
   // Recursively fix anyOf, oneOf, allOf
   for (const key of ["anyOf", "oneOf", "allOf"] as const) {
-    if (Array.isArray(schema[key])) {
-      schema[key] = schema[key]!.map((s) =>
+    if (Array.isArray(cloned[key])) {
+      cloned[key] = cloned[key]!.map((s) =>
         typeof s === "object" ? fixJsonSchemaArrayItems(s as JSONSchema7) : s,
       );
     }
   }
 
-  return schema;
+  return cloned;
 };
 
 /**

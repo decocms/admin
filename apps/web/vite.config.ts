@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ],
-  server: { host: "0.0.0.0", port: 4001, allowedHosts: [".deco.host"] },
+  server: { host: "0.0.0.0", port: 3000, allowedHosts: [".deco.host"] },
   resolve: {
     conditions: ["source", "import", "module", "browser", "default"],
   },

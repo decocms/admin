@@ -51,7 +51,11 @@ export const ChatAskAnswerPair = forwardRef<
       </div>
 
       <div className="message-block px-4 py-4">
-        <AssistantChatMessage hasTabs={hasTabs} message={assistant} isLastMessage={isLastPair} />
+        <AssistantChatMessage
+          hasTabs={hasTabs}
+          message={assistant}
+          isLastMessage={isLastPair}
+        />
       </div>
     </div>
   );

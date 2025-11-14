@@ -50,10 +50,10 @@ export function AssistantChatMessage({
     !message?.parts &&
     (status === "streaming" || status === "submitted");
 
-    const minHeightClass = useMemo(() => {
-      if (!isLastMessage) return "";
-      return hasTabs ? "min-h-[63vh]" : "min-h-[69vh]";
-    }, [isLastMessage, hasTabs]);
+  const minHeightClass = useMemo(() => {
+    if (!isLastMessage) return "";
+    return hasTabs ? "min-h-[63vh]" : "min-h-[69vh]";
+  }, [isLastMessage, hasTabs]);
 
   return (
     <div

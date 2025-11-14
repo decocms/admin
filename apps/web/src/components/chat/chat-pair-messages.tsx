@@ -2,7 +2,6 @@ import type { UIMessage } from "@ai-sdk/react";
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useThread } from "../decopilot/thread-provider.tsx";
-import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { UserMessage } from "./user-message.tsx";
 import { AssistentChatMessage } from "./assistent-chat-message.tsx";
 
@@ -37,7 +36,7 @@ export const ChatAskAnswerPair = forwardRef<
         onClick={handleScrollToPair}
         className={cn(
           "message-block sticky top-0 z-50 px-4 pt-2 transition-all duration-500 ease-out cursor-pointer bg-sidebar",
-          !hasTabs && "bg-background"
+          !hasTabs && "bg-background",
         )}
       >
         <UserMessage message={user} onScrollToMessage={handleScrollToPair} />

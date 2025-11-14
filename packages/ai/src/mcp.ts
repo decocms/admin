@@ -16,15 +16,15 @@ import {
   createTransport,
 } from "@decocms/runtime/mcp-client";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import type { JSONSchema7, Tool } from "ai";
+import type { Tool } from "ai";
 import { jsonSchema } from "ai";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
+import { patchedJsonSchema } from "./utils/json-schema.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
-import { FlexibleSchema } from "@ai-sdk/provider-utils";
 
 export { createServerClient, createTransport, jsonSchemaToModel };
 
@@ -50,50 +50,6 @@ export const patchApiDecoChatTokenHTTPConnection = (
     ...connection,
     headers: cookie ? { cookie } : {},
   };
-};
-
-/**
- * Zod schemas with z.array(z.any()) can generate invalid JSON Schema
- * for some providers. (without items property)
- *
- * This function fixes the schema by adding the items property if it's missing.
- */
-const fixJsonSchemaArrayItems = (schema: JSONSchema7) => {
-  if ("properties" in schema && typeof schema.properties === "object") {
-    for (const key of Object.keys(schema.properties)) {
-      if (
-        typeof schema.properties[key] === "object" &&
-        "type" in schema.properties[key] &&
-        schema.properties[key].type === "array" &&
-        !("items" in schema.properties[key])
-      ) {
-        schema.properties[key].items = {};
-      }
-
-      if (
-        typeof schema.properties[key] === "object" &&
-        "properties" in schema.properties[key] &&
-        typeof schema.properties[key].properties === "object"
-      ) {
-        const nested = fixJsonSchemaArrayItems(
-          schema.properties[key].properties as JSONSchema7,
-        );
-        if (nested.properties) {
-          schema.properties[key].properties = nested.properties;
-        }
-      }
-    }
-  }
-
-  return schema;
-};
-
-export const patchedJsonSchema = (input: Parameters<typeof jsonSchema>[0]) => {
-  const schema = jsonSchema(input);
-  return {
-    ...schema,
-    jsonSchema: fixJsonSchemaArrayItems(schema.jsonSchema),
-  } as FlexibleSchema<any>;
 };
 
 const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(

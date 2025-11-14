@@ -27,7 +27,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { usePinnedTabs, type PinnedTab } from "../../hooks/use-pinned-tabs.ts";
 import { useThreadTitle } from "../decopilot/index.tsx";
@@ -252,6 +252,7 @@ function AddViewsDialog({
 function WorkspaceViews() {
   const { org, project } = useParams();
   const { isMobile, toggleSidebar } = useSidebar();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [addViewsDialogState, setAddViewsDialogState] = useState<{
     open: boolean;
     integration?: Integration;
@@ -491,6 +492,11 @@ function WorkspaceViews() {
           className="cursor-pointer"
           onClick={() => {
             createThread();
+            // Clear initialInput and autoSend params when creating a new thread
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete("initialInput");
+            newParams.delete("autoSend");
+            setSearchParams(newParams, { replace: true });
             trackEvent("sidebar_new_thread_click");
           }}
         >

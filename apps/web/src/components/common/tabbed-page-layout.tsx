@@ -35,7 +35,6 @@ export interface TabbedPageLayoutProps {
  */
 export function TabbedPageLayout({
   component: Component,
-  title: _title,
   tabs,
   getActiveTab,
   viewModeKey,
@@ -74,9 +73,7 @@ export function TabbedPageLayout({
                 const tab = tabsWithHandlers.find((t) => t.id === tabId);
                 tab?.onClick?.();
               }}
-              searchOpen={searchControls.searchOpen}
               searchValue={searchControls.searchValue}
-              onSearchToggle={searchControls.onSearchToggle}
               onSearchChange={searchControls.onSearchChange}
               onSearchBlur={searchControls.onSearchBlur}
               onSearchKeyDown={searchControls.onSearchKeyDown}

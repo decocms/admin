@@ -1,26 +1,15 @@
 import {
-  Suspense,
-  useState,
-  useDeferredValue,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
-import { useSearchParams, useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
+  KEYS,
+  useAutoJoinTeam,
+  useCreateTeam,
   useOnboardingAnswers,
   useOrganizations,
   useSaveOnboardingAnswers,
-  useCreateTeam,
-  useAutoJoinTeam,
-  useCreateProject,
   WELL_KNOWN_EMAIL_DOMAINS,
 } from "@deco/sdk";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   Form,
   FormControl,
@@ -29,6 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   Select,
   SelectContent,
@@ -36,19 +27,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Avatar } from "@deco/ui/components/avatar.tsx";
-import { useUser } from "../../hooks/use-user.ts";
-import { findThemeByName } from "../theme-editor/theme-presets.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  restoreOnboardingParams,
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate, useSearchParams } from "react-router";
+import { z } from "zod";
+import { ErrorBoundary } from "../../error-boundary";
+import { useCreateProjectWithRetry } from "../../hooks/use-create-project-with-retry.ts";
+import { useUser } from "../../hooks/use-user.ts";
+import {
   clearOnboardingParams,
   onboardingParamsToSearchParams,
+  restoreOnboardingParams,
 } from "../../utils/onboarding-storage.ts";
-import { ErrorBoundary } from "../../error-boundary";
 import { OrgAvatars, OrgMemberCount } from "../home/members";
+import { findThemeByName } from "../theme-editor/theme-presets.ts";
 
 /**
  * Onboarding Page
@@ -138,40 +141,61 @@ function generateRandomSuffix(): string {
   return result;
 }
 
+/**
+ * Onboarding State Machine
+ *
+ * States:
+ * - QUESTIONNAIRE: User needs to complete onboarding questions
+ * - CREATE_ORG: Creating org (and optionally project) - stays here until complete
+ * - SELECT_ORG: User selects which org to create project in
+ * - REDIRECT_HOME: No onboarding needed, redirect to home
+ */
+
 type OnboardingState =
   | { type: "QUESTIONNAIRE" }
   | { type: "SELECT_ORG" }
   | { type: "CREATE_ORG" }
   | { type: "REDIRECT_HOME" };
 
+interface OnboardingConditions {
+  hasInitialInput: boolean;
+  hasCompletedQuestionnaire: boolean;
+  hasOrgs: boolean;
+}
+
 function deriveOnboardingState(
-  hasInitialInput: boolean,
-  hasCompletedQuestionnaire: boolean,
-  hasOrgs: boolean,
+  conditions: OnboardingConditions,
 ): OnboardingState {
+  const { hasInitialInput, hasCompletedQuestionnaire, hasOrgs } = conditions;
+
   // User has NO orgs - always show onboarding
   if (!hasOrgs) {
-    // Need to complete questionnaire first
     if (!hasCompletedQuestionnaire) {
       return { type: "QUESTIONNAIRE" };
     }
-    // Questionnaire done, create org
     return { type: "CREATE_ORG" };
   }
 
   // User has orgs AND initialInput - onboarding for project creation
   if (hasOrgs && hasInitialInput) {
-    // But first, ensure they've completed the questionnaire
     if (!hasCompletedQuestionnaire) {
       return { type: "QUESTIONNAIRE" };
     }
-    // Questionnaire done, show org selection
     return { type: "SELECT_ORG" };
   }
 
   // User has orgs but no initialInput - redirect to home
   return { type: "REDIRECT_HOME" };
 }
+
+function onboardingReducer(
+  _state: OnboardingState,
+  conditions: OnboardingConditions,
+): OnboardingState {
+  return deriveOnboardingState(conditions);
+}
+
+type OnboardingDispatch = (conditions: OnboardingConditions) => void;
 
 /**
  * OnboardingLayout
@@ -206,8 +230,17 @@ function OnboardingLayout({ children }: { children: React.ReactNode }) {
  *
  * Collects user profile data (role, company size, use case)
  */
-function QuestionnaireForm() {
+function QuestionnaireForm({
+  dispatch,
+  hasInitialInput,
+  hasOrgs,
+}: {
+  dispatch: OnboardingDispatch;
+  hasInitialInput: boolean;
+  hasOrgs: boolean;
+}) {
   const saveAnswers = useSaveOnboardingAnswers();
+  const queryClient = useQueryClient();
 
   const form = useForm<QuestionnaireFormData>({
     resolver: zodResolver(questionnaireSchema),
@@ -224,8 +257,18 @@ function QuestionnaireForm() {
       company_size: data.companySize,
       use_case: data.useCase,
     });
-    // Reload to let state machine re-evaluate
-    window.location.reload();
+
+    // Invalidate the onboarding status query
+    await queryClient.invalidateQueries({
+      queryKey: KEYS.ONBOARDING_STATUS(),
+    });
+
+    // Actively transition to next state
+    dispatch({
+      hasInitialInput,
+      hasCompletedQuestionnaire: true,
+      hasOrgs,
+    });
   }
 
   return (
@@ -360,12 +403,18 @@ function CreateOrg() {
   const user = useUser();
   const createTeam = useCreateTeam();
   const autoJoinTeam = useAutoJoinTeam();
+  const { createWithRetry, isPending: isCreatingProject } =
+    useCreateProjectWithRetry();
   const isCreatingRef = useRef(false);
+  const [statusMessage, setStatusMessage] = useState(
+    "Creating your organization...",
+  );
 
   const themeParam = searchParams.get("theme");
   const selectedTheme = themeParam ? findThemeByName(themeParam) : undefined;
 
-  const isCreating = createTeam.isPending || autoJoinTeam.isPending;
+  const isCreating =
+    createTeam.isPending || autoJoinTeam.isPending || isCreatingProject;
 
   useEffect(() => {
     if (isCreating || isCreatingRef.current) return;
@@ -376,6 +425,7 @@ function CreateOrg() {
       const userEmail = user?.email || "";
       const domain = extractDomain(userEmail);
       const isWellKnownDomain = WELL_KNOWN_EMAIL_DOMAINS.has(domain);
+      const initialInput = searchParams.get("initialInput");
 
       let team;
 
@@ -456,9 +506,35 @@ function CreateOrg() {
         }
 
         if (team) {
-          // Clear onboarding params on success
-          clearOnboardingParams();
-          location.href = `/${team.slug}/default?${new URLSearchParams(searchParams)}`;
+          // If initialInput exists, create a project with random name
+          if (initialInput) {
+            try {
+              setStatusMessage("Creating your project...");
+
+              // Create project with retry logic for name/slug collisions
+              const project = await createWithRetry(team.slug);
+
+              // Clear onboarding params on success
+              clearOnboardingParams();
+
+              // Navigate to project with all search params preserved
+              const query = searchParams.toString();
+              const path =
+                query.length > 0
+                  ? `/${team.slug}/${project.slug}?${query}`
+                  : `/${team.slug}/${project.slug}`;
+              location.href = path;
+            } catch (error) {
+              console.error("Failed to create project:", error);
+              // Fallback to org home on error
+              clearOnboardingParams();
+              location.href = `/${team.slug}`;
+            }
+          } else {
+            // No initialInput, redirect to org home page
+            clearOnboardingParams();
+            location.href = `/${team.slug}`;
+          }
         }
       } catch (error) {
         console.error("Failed to create or join org:", error);
@@ -474,12 +550,13 @@ function CreateOrg() {
     selectedTheme,
     searchParams,
     isCreating,
+    createWithRetry,
   ]);
 
   return (
     <div className="flex flex-col gap-4 items-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      <p className="text-lg text-muted">Creating your organization...</p>
+      <p className="text-lg text-muted">{statusMessage}</p>
     </div>
   );
 }
@@ -507,7 +584,7 @@ function OrganizationCard({
       <button
         type="button"
         onClick={() => onSelect(slug)}
-        className="flex flex-col text-left"
+        className="flex flex-col text-left cursor-pointer"
       >
         <div className="p-4 flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -631,79 +708,22 @@ function SelectOrg() {
   const deferredQuery = useDeferredValue(searchQuery);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const createProject = useCreateProject();
-  const [isCreating, setIsCreating] = useState(false);
+  const { createWithRetry, isPending: isCreating } =
+    useCreateProjectWithRetry();
 
   const initialInput = searchParams.get("initialInput") || "";
-  const autoSend = searchParams.get("autoSend") === "true";
 
   const handleSelectOrg = useCallback(
     async (orgSlug: string) => {
-      setIsCreating(true);
       try {
-        // Create project with default name
-        const projectName = "New Project";
-        const baseSlug = projectName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-
-        // Create project with retry logic for slug collisions
-        let project;
-        let attempt = 0;
-        const maxAttempts = 10;
-
-        while (attempt < maxAttempts) {
-          try {
-            const slugToTry =
-              attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-            project = await createProject.mutateAsync({
-              org: orgSlug,
-              slug: slugToTry,
-              title: projectName,
-            });
-            break; // Success, exit loop
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : String(err);
-            // Check if it's a slug collision error
-            if (
-              errorMsg.toLowerCase().includes("slug") &&
-              (errorMsg.toLowerCase().includes("exists") ||
-                errorMsg.toLowerCase().includes("already") ||
-                errorMsg.toLowerCase().includes("taken") ||
-                errorMsg.toLowerCase().includes("duplicate"))
-            ) {
-              attempt++;
-              if (attempt >= maxAttempts) {
-                throw new Error(
-                  "Failed to create project: all slug attempts failed",
-                );
-              }
-              // Try next attempt
-              continue;
-            }
-            // Not a slug error, throw it
-            throw err;
-          }
-        }
-
-        if (!project) {
-          throw new Error("Failed to create project");
-        }
+        // Create project with retry logic for name/slug collisions
+        const project = await createWithRetry(orgSlug);
 
         // Clear onboarding params on success
         clearOnboardingParams();
 
-        // Navigate to project with initialInput params
-        const params = new URLSearchParams();
-        if (initialInput) {
-          params.set("initialInput", initialInput);
-        }
-        if (autoSend) {
-          params.set("autoSend", "true");
-        }
-
-        const query = params.toString();
+        // Navigate to project with all search params preserved
+        const query = searchParams.toString();
         const path =
           query.length > 0
             ? `/${orgSlug}/${project.slug}?${query}`
@@ -714,11 +734,9 @@ function SelectOrg() {
         if (error instanceof Error) {
           alert(`Failed to create project: ${error.message}`);
         }
-      } finally {
-        setIsCreating(false);
       }
     },
-    [initialInput, autoSend, createProject, navigate],
+    [searchParams, createWithRetry, navigate],
   );
 
   const handleDismiss = useCallback(() => {
@@ -803,6 +821,18 @@ export function OnboardingPage() {
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
 
+  // Check conditions
+  const hasInitialInput = searchParams.has("initialInput");
+  const hasOrgs = teams.data.length > 0;
+  const hasCompletedQuestionnaire = !!onboardingStatus.data?.completed;
+
+  // Use reducer to derive state from conditions
+  const [state, dispatch] = useReducer(
+    onboardingReducer,
+    { hasInitialInput, hasCompletedQuestionnaire, hasOrgs },
+    deriveOnboardingState,
+  );
+
   // On mount, check if we need to restore params from localStorage
   useEffect(() => {
     const storedParams = restoreOnboardingParams();
@@ -816,35 +846,23 @@ export function OnboardingPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Check conditions
-  const hasInitialInput = searchParams.has("initialInput");
-  const hasOrgs = teams.data.length > 0;
-  const hasCompletedQuestionnaire = !!onboardingStatus.data?.completed;
-
-  // Derive state from conditions
-  const state = useMemo(
-    () =>
-      deriveOnboardingState(
-        hasInitialInput,
-        hasCompletedQuestionnaire,
-        hasOrgs,
-      ),
-    [hasInitialInput, hasCompletedQuestionnaire, hasOrgs],
-  );
-
-  // Handle redirect to home if not in onboarding flow
-  useEffect(() => {
+  // Handle redirect to home if not in onboarding flow - using useLayoutEffect
+  // to make the redirect synchronous with state changes
+  useLayoutEffect(() => {
     if (state.type === "REDIRECT_HOME") {
       navigate("/", { replace: true });
     }
   }, [state.type, navigate]);
 
-  // Render based on state
   switch (state.type) {
     case "QUESTIONNAIRE":
       return (
         <OnboardingLayout>
-          <QuestionnaireForm />
+          <QuestionnaireForm
+            dispatch={dispatch}
+            hasInitialInput={hasInitialInput}
+            hasOrgs={hasOrgs}
+          />
         </OnboardingLayout>
       );
 

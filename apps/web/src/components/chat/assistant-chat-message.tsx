@@ -2,12 +2,10 @@ import type { UIMessage } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useCallback, useMemo } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
-import { ReasoningPart } from "./reasoning-part";
+import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
 import { useAgenticChat } from "./provider.tsx";
-import { useCopy } from "../../hooks/use-copy.ts";
 import { isImageMediaType } from "../../utils/mime-types.ts";
 import {
   type MessageAttachment,
@@ -15,10 +13,13 @@ import {
   AttachmentCard,
   isToolPart,
 } from "./message-attachments.tsx";
+import { useMessageContent } from "./use-message-content.ts";
+import { useMemo } from "react";
 
 interface ChatMessageProps {
   message?: UIMessage;
   isLastMessage?: boolean;
+  hasTabs?: boolean;
 }
 
 function Dots() {
@@ -33,61 +34,32 @@ function Dots() {
   );
 }
 
-export function AssistentChatMessage({
+export function AssistantChatMessage({
+  hasTabs,
   message,
   isLastMessage,
 }: ChatMessageProps) {
   const { chat } = useAgenticChat();
   const { status } = chat;
-  const { handleCopy: copyContent } = useCopy();
+  const { attachments, handleCopyMessage, hasTextContent } = useMessageContent({
+    message,
+  });
 
   const showDots =
     isLastMessage &&
     !message?.parts &&
     (status === "streaming" || status === "submitted");
 
-  const attachments = useMemo(
-    () =>
-      message?.parts
-        ?.filter((part) => part.type === "file")
-        .filter((part) => !isImageMediaType(part.mediaType))
-        .map((part) => ({
-          contentType: part.mediaType,
-          url: part.url,
-          name: part.filename,
-        })) as MessageAttachment[] | undefined,
-    [message?.parts],
-  );
-
-  const textContent = useMemo(() => {
-    if (message?.parts) {
-      return message.parts
-        .filter((part) => part.type === "text" && "text" in part)
-        .map((part) =>
-          part.type === "text" && "text" in part ? part.text : "",
-        )
-        .join("\n");
-    }
-    return "";
-  }, [message?.parts]);
-
-  const handleCopyMessage = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      await copyContent(textContent);
-    },
-    [textContent, copyContent],
-  );
-
-  const hasTextContent = useMemo(() => {
-    return message?.parts?.some((part) => part.type === "text") ?? false;
-  }, [message?.parts]);
+    const minHeightClass = useMemo(() => {
+      if (!isLastMessage) return "";
+      return hasTabs ? "min-h-[63vh]" : "min-h-[69vh]";
+    }, [isLastMessage, hasTabs]);
 
   return (
     <div
       className={cn(
         "w-full transition-all duration-500 ease-out group",
-        isLastMessage && "min-h-[65vh]",
+        minHeightClass,
       )}
     >
       {message?.parts ? (

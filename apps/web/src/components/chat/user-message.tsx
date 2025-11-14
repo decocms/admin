@@ -2,11 +2,10 @@ import type { UIMessage } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
-import { useCopy } from "../../hooks/use-copy.ts";
 import { isImageMediaType } from "../../utils/mime-types.ts";
 import {
   type MessageAttachment,
@@ -14,6 +13,7 @@ import {
   AttachmentCard,
   isToolPart,
 } from "./message-attachments.tsx";
+import { useMessageContent } from "./use-message-content.ts";
 
 interface UserMessageProps {
   message: UIMessage;
@@ -23,53 +23,15 @@ export const UserMessage = memo(function UserMessage({
   message,
 }: UserMessageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { handleCopy: copyContent } = useCopy();
-
-  const attachments = useMemo(
-    () =>
-      message.parts
-        ?.filter((part) => part.type === "file")
-        .filter((part) => !isImageMediaType(part.mediaType))
-        .map((part) => ({
-          contentType: part.mediaType,
-          url: part.url,
-          name: part.filename,
-        })) as MessageAttachment[] | undefined,
-    [message.parts],
-  );
-
-  const textContent = useMemo(() => {
-    if (message.parts) {
-      return message.parts
-        .filter((part) => part.type === "text" && "text" in part)
-        .map((part) =>
-          part.type === "text" && "text" in part ? part.text : "",
-        )
-        .join("\n");
-    }
-    return "content" in message && typeof message.content === "string"
-      ? message.content
-      : "";
-  }, [message.parts, message]);
+  const { attachments, textContent, handleCopyMessage, hasTextContent } =
+    useMessageContent({
+      message,
+      fallbackToMessageContent: true,
+    });
 
   const isLongMessage = useMemo(() => {
     return textContent.length > 100;
   }, [textContent]);
-
-  const handleCopyMessage = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      await copyContent(textContent);
-    },
-    [textContent, copyContent],
-  );
-
-  const hasTextContent = useMemo(() => {
-    return (
-      message.parts?.some((part) => part.type === "text") ||
-      ("content" in message && typeof message.content === "string")
-    );
-  }, [message.parts, message]);
 
   return (
     <div className="w-full group relative">

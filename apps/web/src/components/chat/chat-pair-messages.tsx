@@ -3,7 +3,7 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useThread } from "../decopilot/thread-provider.tsx";
 import { UserMessage } from "./user-message.tsx";
-import { AssistentChatMessage } from "./assistent-chat-message.tsx";
+import { AssistantChatMessage } from "./assistant-chat-message.tsx";
 
 interface ChatAskAnswerPairProps {
   user: UIMessage;
@@ -51,7 +51,7 @@ export const ChatAskAnswerPair = forwardRef<
       </div>
 
       <div className="message-block px-4 py-4">
-        <AssistentChatMessage message={assistant} isLastMessage={isLastPair} />
+        <AssistantChatMessage hasTabs={hasTabs} message={assistant} isLastMessage={isLastPair} />
       </div>
     </div>
   );

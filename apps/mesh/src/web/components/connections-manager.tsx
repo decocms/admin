@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetcher } from "@/tools/client";
 import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 
 export function ConnectionsManager() {
+  const { locator } = useProjectContext();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: "",
@@ -15,7 +17,7 @@ export function ConnectionsManager() {
 
   // Query to list connections
   const query = useQuery({
-    queryKey: KEYS.connections(),
+    queryKey: KEYS.connections(locator),
     queryFn: () => fetcher.CONNECTION_LIST({}),
   });
 
@@ -34,7 +36,7 @@ export function ConnectionsManager() {
     },
     onSuccess: () => {
       // Invalidate and refetch connections list
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
       // Reset form
       setFormData({
         name: "",

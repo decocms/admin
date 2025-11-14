@@ -1,29 +1,25 @@
-import { useOrganizations } from "@deco/sdk";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { authClient } from "@/web/lib/auth-client";
+import { CreateOrganizationDialog } from "./create-organization-dialog";
 import { TopbarSwitcher } from "@deco/ui/components/topbar-switcher.tsx";
-import { Suspense, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
-import { SwitcherProjects } from "./project-switcher";
 
-export function BreadcrumbOrgSwitcher() {
-  const { org } = useParams();
-  const organizations = useOrganizations();
+export function MeshOrgSwitcher() {
+  const { org } = useParams({ strict: false });
+  const { data: organizations } = authClient.useListOrganizations();
   const navigate = useNavigate();
+
   const currentOrg = useMemo(
-    () => organizations.data?.find((organization) => organization.slug === org),
-    [organizations.data, org],
+    () => organizations?.find((organization) => organization.slug === org),
+    [organizations, org],
   );
 
   const [orgSearch, setOrgSearch] = useState("");
-  const [projectSearch, setProjectSearch] = useState("");
-  const [hoveredOrg, setHoveredOrg] = useState<string | null>(
-    currentOrg?.slug ?? null,
-  );
   const [creatingOrganization, setCreatingOrganization] = useState(false);
 
   const filteredOrganizations = useMemo(() => {
-    if (!organizations.data) return [];
-    const filtered = organizations.data.filter((organization) =>
+    if (!organizations) return [];
+    const filtered = organizations.filter((organization) =>
       organization.name.toLowerCase().includes(orgSearch.toLowerCase()),
     );
     // Move currentOrg (by slug) to the front if present
@@ -38,15 +34,15 @@ export function BreadcrumbOrgSwitcher() {
       }
     }
     return filtered;
-  }, [organizations.data, orgSearch, org]);
+  }, [organizations, orgSearch, org]);
 
-  // Map SDK org shape to TopbarSwitcher entity shape
+  // Map Better Auth org shape to generic shape
   const mappedOrgs = useMemo(
     () =>
       filteredOrganizations.map((o) => ({
         slug: o.slug,
         name: o.name,
-        avatarUrl: o.avatar_url,
+        avatarUrl: o.logo,
       })),
     [filteredOrganizations],
   );
@@ -55,24 +51,20 @@ export function BreadcrumbOrgSwitcher() {
     ? {
         slug: currentOrg.slug,
         name: currentOrg.name,
-        avatarUrl: currentOrg.avatar_url,
+        avatarUrl: currentOrg.logo,
       }
     : undefined;
 
   return (
     <>
-      <TopbarSwitcher onItemHover={(slug) => setHoveredOrg(slug)}>
-        <TopbarSwitcher.Trigger onClick={() => navigate(`/${org}`)}>
-          <Link to={`/${org}`} className="flex items-center gap-2">
-            <TopbarSwitcher.CurrentItem
-              item={mappedCurrentOrg}
-              fallback={org}
-            />
-          </Link>
+      <TopbarSwitcher>
+        <TopbarSwitcher.Trigger
+          onClick={() => navigate({ to: "/$org", params: { org: org ?? "" } })}
+        >
+          <TopbarSwitcher.CurrentItem item={mappedCurrentOrg} />
         </TopbarSwitcher.Trigger>
 
         <TopbarSwitcher.Content>
-          {/* Left panel - Organizations */}
           <TopbarSwitcher.Panel>
             <TopbarSwitcher.Search
               placeholder="Search organizations..."
@@ -85,8 +77,9 @@ export function BreadcrumbOrgSwitcher() {
                 <TopbarSwitcher.Item
                   key={organization.slug}
                   item={organization}
-                  onClick={() => navigate(`/${organization.slug}`)}
-                  onHover={(item) => setHoveredOrg(item.slug)}
+                  onClick={(item) =>
+                    navigate({ to: "/$org", params: { org: item.slug } })
+                  }
                 />
               ))}
             </TopbarSwitcher.Items>
@@ -104,33 +97,12 @@ export function BreadcrumbOrgSwitcher() {
 
             <TopbarSwitcher.Actions>
               <TopbarSwitcher.Action
-                onClick={() => navigate("/")}
+                onClick={() => navigate({ to: "/" })}
                 icon="grid_view"
               >
                 See all organizations
               </TopbarSwitcher.Action>
-              <TopbarSwitcher.Action
-                onClick={() => navigate(`/${org}/settings`)}
-                icon="settings"
-              >
-                Settings
-              </TopbarSwitcher.Action>
             </TopbarSwitcher.Actions>
-          </TopbarSwitcher.Panel>
-
-          {/* Right panel - Projects */}
-          <TopbarSwitcher.Panel>
-            <TopbarSwitcher.Search
-              placeholder="Search projects..."
-              value={projectSearch}
-              onChange={setProjectSearch}
-            />
-
-            {hoveredOrg && (
-              <Suspense fallback={<SwitcherProjects.Skeleton />}>
-                <SwitcherProjects org={hoveredOrg} search={projectSearch} />
-              </Suspense>
-            )}
           </TopbarSwitcher.Panel>
         </TopbarSwitcher.Content>
       </TopbarSwitcher>
@@ -143,4 +115,4 @@ export function BreadcrumbOrgSwitcher() {
   );
 }
 
-BreadcrumbOrgSwitcher.Skeleton = TopbarSwitcher.Skeleton;
+MeshOrgSwitcher.Skeleton = TopbarSwitcher.Skeleton;

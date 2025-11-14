@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { fetcher } from "@/tools/client";
 import {
   Card,
@@ -47,10 +47,12 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { KEYS } from "@/web/lib/query-keys";
 import type { MCPConnection } from "@/storage/types";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 
 const useConnections = () => {
+  const { locator } = useProjectContext();
   return useQuery({
-    queryKey: KEYS.connections(),
+    queryKey: KEYS.connections(locator),
     queryFn: () => fetcher.CONNECTION_LIST({}),
   });
 };
@@ -69,7 +71,7 @@ function getStatusBadgeVariant(status: string) {
 }
 
 export default function OrgConnections() {
-  const { org } = useParams({ strict: false });
+  const { locator, org } = useProjectContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useConnections();
@@ -111,7 +113,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -131,7 +133,7 @@ export default function OrgConnections() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -142,7 +144,7 @@ export default function OrgConnections() {
       return fetcher.CONNECTION_DELETE({ id });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections() });
+      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
     },
   });
 

@@ -1,16 +1,9 @@
-import { Project, useProjects } from "@deco/sdk";
+import { Project, useProjects, useFile } from "@deco/sdk";
+import { TopbarSwitcher } from "@deco/ui/components/topbar-switcher.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@deco/ui/components/popover.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
-import { useFile } from "@deco/sdk";
 
 function SwitcherProjectItem({
   project,
@@ -75,6 +68,7 @@ SwitcherProjects.Skeleton = () => (
 
 export function BreadcrumbProjectSwitcher() {
   const { org, project: projectParam } = useParams();
+  const navigate = useNavigate();
 
   const projects = useProjects({ org: org ?? "" });
   const currentProject = useMemo(
@@ -86,53 +80,47 @@ export function BreadcrumbProjectSwitcher() {
 
   const [projectSearch, setProjectSearch] = useState("");
 
+  const mappedCurrentProject = currentProject
+    ? {
+        slug: currentProject.slug,
+        name: currentProject.title,
+        avatarUrl: resolvedAvatar ?? currentProject.avatar_url,
+      }
+    : undefined;
+
   return (
-    <>
-      <Popover>
-        <div className="flex items-center gap-1">
-          <Button variant="link" className="p-0.5" asChild>
-            <Link
-              to={`/${org}/${projectParam}`}
-              className="flex items-center gap-2 h-auto"
-            >
-              <Avatar
-                url={resolvedAvatar ?? undefined}
-                fallback={currentProject?.title ?? projectParam}
-                size="xs"
-                objectFit="contain"
-              />
-              <span>{currentProject?.title ?? projectParam}</span>
-            </Link>
-          </Button>
-          <PopoverTrigger asChild>
-            <Button size="icon" variant="ghost" className="w-6 h-6 p-0">
-              <Icon name="expand_all" size={16} className="opacity-50" />
-            </Button>
-          </PopoverTrigger>
-        </div>
-        <PopoverContent
-          align="start"
-          className="rounded-xl p-0 flex items-start w-full"
+    <TopbarSwitcher>
+      <TopbarSwitcher.Trigger
+        onClick={() => navigate(`/${org}/${projectParam}`)}
+      >
+        <Link
+          to={`/${org}/${projectParam}`}
+          className="flex items-center gap-2"
         >
-          <div className="flex flex-col w-full">
-            <Input
-              placeholder="Search projects..."
-              value={projectSearch}
-              onChange={(e) => setProjectSearch(e.target.value)}
-              className="rounded-b-none border-l-0 border-r-0 focus-visible:border-border focus-visible:ring-0 border-t-0 w-full"
-            />
-            {org && (
-              <Suspense fallback={<SwitcherProjects.Skeleton />}>
-                <SwitcherProjects org={org} search={projectSearch} />
-              </Suspense>
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
-    </>
+          <TopbarSwitcher.CurrentItem
+            item={mappedCurrentProject}
+            fallback={projectParam}
+          />
+        </Link>
+      </TopbarSwitcher.Trigger>
+
+      <TopbarSwitcher.Content>
+        <TopbarSwitcher.Panel>
+          <TopbarSwitcher.Search
+            placeholder="Search projects..."
+            value={projectSearch}
+            onChange={setProjectSearch}
+          />
+
+          {org && (
+            <Suspense fallback={<SwitcherProjects.Skeleton />}>
+              <SwitcherProjects org={org} search={projectSearch} />
+            </Suspense>
+          )}
+        </TopbarSwitcher.Panel>
+      </TopbarSwitcher.Content>
+    </TopbarSwitcher>
   );
 }
 
-BreadcrumbProjectSwitcher.Skeleton = () => (
-  <div className="h-4 w-16 bg-accent rounded-full animate-pulse"></div>
-);
+BreadcrumbProjectSwitcher.Skeleton = TopbarSwitcher.Skeleton;

@@ -5,14 +5,21 @@
  * and prevents inline array declarations that are harder to maintain.
  */
 
+import { ProjectLocator } from "./locator";
+
 export const KEYS = {
   // Auth-related queries
   authConfig: () => ["authConfig"] as const,
 
-  // Organization members
-  members: () => ["members"] as const,
+  // Organization members (scoped by org)
+  members: (locator: ProjectLocator) => [locator, "members"] as const,
 
-  // Connections
-  connections: () => ["connections"] as const,
-  connection: (id: string) => ["connection", id] as const,
+  // Connections (scoped by project)
+  connections: (locator: ProjectLocator) => [locator, "connections"] as const,
+  connection: (locator: ProjectLocator, id: string) =>
+    [locator, "connection", id] as const,
+
+  // Sidebar items (scoped by project)
+  sidebarItems: (locator: ProjectLocator) =>
+    [locator, "sidebar-items"] as const,
 } as const;

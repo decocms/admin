@@ -49,3 +49,8 @@ kv-wal
 *.db-wal
 
 .playwright-mcp/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal

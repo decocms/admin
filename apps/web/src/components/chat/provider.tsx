@@ -45,9 +45,11 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
+import { useAgentStore } from "../../stores/mode-store.ts";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
 import {
   deriveReadToolFromUpdate,
@@ -436,8 +438,53 @@ export function createDecopilotTransport(
           context: metadata?.context,
           tools: metadata?.tools,
           threadId: threadId ?? agentId,
+          agentId: metadata?.agentId,
         },
       };
+    },
+    async fetch(input, init) {
+      const response = await fetch(input, init);
+
+      // Check if response is a mode decision (JSON, not stream)
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        // Clone response to read body without consuming it
+        const clonedResponse = response.clone();
+        try {
+          const data = await clonedResponse.json();
+          if (data.type === "mode_decision") {
+            // Trigger mode switch via store
+            const { useAgentStore } = await import(
+              "../../stores/mode-store.ts"
+            );
+            useAgentStore.getState().requestAgentChange({
+              agentId: data.agentId,
+              reasoning: data.reasoning,
+              confidence: data.confidence,
+            });
+
+            // Return a response that the transport can handle
+            // Create a mock stream response to avoid transport errors
+            return new Response(
+              new ReadableStream({
+                start(controller) {
+                  controller.close();
+                },
+              }),
+              {
+                status: 200,
+                headers: {
+                  "content-type": "text/event-stream",
+                },
+              },
+            );
+          }
+        } catch {
+          // If JSON parsing fails, continue with normal response
+        }
+      }
+
+      return response;
     },
   });
 }
@@ -488,6 +535,7 @@ export function AgenticChatProvider({
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
+  const user = useUser();
 
   // Reactive mutation for appending messages
   const appendMessagesMutation = useAppendThreadMessage();
@@ -644,10 +692,28 @@ export function AgenticChatProvider({
         const initialLength = initialMessages?.length ?? 0;
         const newMessages = result.messages.slice(initialLength);
 
-        if (newMessages.length > 0) {
+        // Add agentId to assistant messages and userId to user messages
+        const messagesWithMetadata = newMessages.map((msg) => {
+          if (msg.role === "assistant") {
+            return {
+              ...msg,
+              metadata: {
+                ...msg.metadata,
+                agentId,
+              },
+            };
+          }
+          if (msg.role === "user" && msg.metadata?.userId) {
+            // userId is already in metadata from when message was sent
+            return msg;
+          }
+          return msg;
+        });
+
+        if (messagesWithMetadata.length > 0) {
           appendMessagesMutation.mutate({
             threadId,
-            messages: newMessages,
+            messages: messagesWithMetadata,
             metadata: { agentId, route: pathname },
             namespace: locator,
           });
@@ -886,6 +952,12 @@ export function AgenticChatProvider({
         }
       }
 
+      // Get current agent ID from agent store
+      const agentId = useAgentStore.getState().agentId;
+
+      // Get current user ID for user messages
+      const userId = user?.id;
+
       const metadata: MessageMetadata = {
         // Agent configuration
         model: agent.model,
@@ -898,17 +970,30 @@ export function AgenticChatProvider({
 
         // Context messages (additional context not persisted to thread)
         context: context,
+        agentId,
+      };
+
+      // Add userId to user message metadata
+      const messageWithMetadata: UIMessage = {
+        ...message,
+        metadata: {
+          ...message.metadata,
+          userId: userId,
+        },
       };
 
       // Dispatch messages to track them
       dispatchMessages({
-        messages: [message],
+        messages: [messageWithMetadata],
         threadId: threadId,
         agentId: agentId,
       });
 
       // Send message with metadata in options
-      return chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
+      return (
+        chat.sendMessage?.(messageWithMetadata, { metadata }) ??
+        Promise.resolve()
+      );
     },
     [
       mergedUiOptions.readOnly,
@@ -926,6 +1011,7 @@ export function AgenticChatProvider({
       pathname,
       setIsLoading,
       threadContextItems,
+      user,
     ],
   );
 

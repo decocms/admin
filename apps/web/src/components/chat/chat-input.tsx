@@ -35,6 +35,7 @@ import { asUserMessage, useAgenticChat } from "./provider.tsx";
 import { RichTextArea, type RichTextAreaHandle } from "./rich-text.tsx";
 import type { ToolsetContextItem } from "./types.ts";
 import { onLogsAdded, onScreenshotAdded } from "../../utils/custom-events.ts";
+import { ModeSelector } from "./mode-selector.tsx";
 
 export function ChatInput({
   disabled,
@@ -383,7 +384,8 @@ export function ChatInput({
 
             {/* Bottom Actions Row */}
             <div className="flex items-center justify-between px-2.5 pb-2.5">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                <ModeSelector />
                 <DropdownMenu
                   modal={false}
                   open={isDropdownOpen}

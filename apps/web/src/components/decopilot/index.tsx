@@ -4,6 +4,8 @@ import { Suspense, useMemo } from "react";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useThread } from "./thread-provider.tsx";
+import { ModeDecisionDialog } from "../chat/mode-decision-dialog.tsx";
+import { ModeIndicator } from "../chat/mode-indicator.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
@@ -32,6 +34,7 @@ function DecopilotChatWrapper({
               className="size-5 rounded"
             />
             <span className="text-sm font-medium">{agent.name}</span>
+            <ModeIndicator />
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -146,6 +149,7 @@ function DecopilotChatContent() {
 
   return (
     <div className="h-full w-full">
+      <ModeDecisionDialog />
       {/* Single chat instance for current route - provider is now at ProjectLayout level */}
       <Suspense fallback={<MainChatSkeleton />}>
         <DecopilotChatWrapper

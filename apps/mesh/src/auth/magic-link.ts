@@ -1,39 +1,38 @@
 import type { magicLink } from "better-auth/plugins";
-import { Resend } from "./known-email-providers";
+import {
+  createEmailSender,
+  EmailProviderConfig,
+  findEmailProvider,
+} from "./email-providers";
 
 type BetterAuthMagicLinkConfig = Parameters<typeof magicLink>[0];
 
 export const createMagicLinkConfig = (
   config: MagicLinkConfig,
+  emailProviders: EmailProviderConfig[],
 ): BetterAuthMagicLinkConfig => {
-  if (config.provider === "resend") {
-    return {
-      sendMagicLink: async ({ email, url }) => {
-        const resend = new Resend(config.resend.apiKey);
+  const provider = findEmailProvider(emailProviders, config.emailProviderId);
 
-        await resend.sendEmail({
-          to: email,
-          from: config.resend.fromEmail,
-          subject: "Magic Link",
-          html: `<p>Click <a href="${url}">here</a> to login</p>`,
-        });
-      },
-    };
+  if (!provider) {
+    throw new Error(
+      `Email provider with id '${config.emailProviderId}' not found`,
+    );
   }
 
-  throw new Error(`Invalid magic link provider: ${config.provider}`);
+  const sendEmail = createEmailSender(provider);
+
+  return {
+    sendMagicLink: async ({ email, url }) => {
+      await sendEmail({
+        to: email,
+        subject: "Magic Link",
+        html: `<p>Click <a href="${url}">here</a> to login</p>`,
+      });
+    },
+  };
 };
 
-interface BaseMagicLinkConfig {
+export interface MagicLinkConfig {
   enabled: boolean;
+  emailProviderId: string;
 }
-
-interface ResendMagicLinkConfig extends BaseMagicLinkConfig {
-  provider: "resend";
-  resend: {
-    apiKey: string;
-    fromEmail: string;
-  };
-}
-
-export type MagicLinkConfig = ResendMagicLinkConfig;

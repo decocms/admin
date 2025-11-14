@@ -26,6 +26,11 @@ import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
 import { createSSOConfig, SSOConfig } from "./sso";
 import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
+import {
+  createEmailSender,
+  EmailProviderConfig,
+  findEmailProvider,
+} from "./email-providers";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -83,25 +88,59 @@ const scopes = Object.values(getToolsByCategory())
 export const authConfig: Partial<BetterAuthOptions> & {
   ssoConfig?: SSOConfig;
   magicLinkConfig?: MagicLinkConfig;
+  emailProviders?: EmailProviderConfig[];
+  inviteEmailProviderId?: string;
 } = loadAuthConfig();
 
-console.log("authConfig", authConfig);
+// Build organization plugin config with optional invite email support
+const organizationConfig: Parameters<typeof organization>[0] = {
+  ac,
+  allowUserToCreateOrganization: true, // Users can create organizations by default
+  dynamicAccessControl: {
+    enabled: true,
+    maximumRolesPerOrganization: 500,
+  },
+  roles: {
+    user,
+    admin,
+  },
+};
+
+// Configure invitation emails if provider is set
+if (
+  authConfig.inviteEmailProviderId &&
+  authConfig.emailProviders &&
+  authConfig.emailProviders.length > 0
+) {
+  const inviteProvider = findEmailProvider(
+    authConfig.emailProviders,
+    authConfig.inviteEmailProviderId,
+  );
+
+  if (inviteProvider) {
+    const sendEmail = createEmailSender(inviteProvider);
+
+    organizationConfig.sendInvitationEmail = async (data) => {
+      const inviterName = data.inviter.user?.name || data.inviter.user?.email;
+      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?token=${data.invitation.id}`;
+
+      await sendEmail({
+        to: data.email,
+        subject: `Invitation to join ${data.organization.name}`,
+        html: `
+          <h2>You've been invited!</h2>
+          <p>${inviterName} has invited you to join <strong>${data.organization.name}</strong>.</p>
+          <p><a href="${acceptUrl}">Click here to accept the invitation</a></p>
+        `,
+      });
+    };
+  }
+}
 
 const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
-  organization({
-    ac,
-    allowUserToCreateOrganization: true, // Users can create organizations by default
-    dynamicAccessControl: {
-      enabled: true,
-      maximumRolesPerOrganization: 500,
-    },
-    roles: {
-      user,
-      admin,
-    },
-  }),
+  organization(organizationConfig),
 
   // MCP plugin for OAuth 2.1 server
   // https://www.better-auth.com/docs/plugins/mcp
@@ -145,8 +184,17 @@ const plugins = [
 
   sso(authConfig.ssoConfig ? createSSOConfig(authConfig.ssoConfig) : undefined),
 
-  ...(authConfig.magicLinkConfig
-    ? [magicLink(createMagicLinkConfig(authConfig.magicLinkConfig))]
+  ...(authConfig.magicLinkConfig &&
+  authConfig.emailProviders &&
+  authConfig.emailProviders.length > 0
+    ? [
+        magicLink(
+          createMagicLinkConfig(
+            authConfig.magicLinkConfig,
+            authConfig.emailProviders,
+          ),
+        ),
+      ]
     : []),
 ];
 

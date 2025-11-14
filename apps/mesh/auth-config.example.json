@@ -15,5 +15,20 @@
   "saml": {
     "enabled": false,
     "providers": []
+  },
+  "emailProviders": [
+    {
+      "id": "resend-primary",
+      "provider": "resend",
+      "config": {
+        "apiKey": "your-resend-api-key",
+        "fromEmail": "noreply@yourdomain.com"
+      }
+    }
+  ],
+  "inviteEmailProviderId": "resend-primary",
+  "magicLinkConfig": {
+    "enabled": true,
+    "emailProviderId": "resend-primary"
   }
 }

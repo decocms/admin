@@ -29,30 +29,39 @@ function resolveStorageKey(projectKey?: string) {
 }
 
 /**
- * Default pinned tabs that are added when a user first opens a project.
- * Users can manually pin items they want to keep in the sidebar.
+ * Old default pinned tabs that were auto-added (now removed)
+ * Kept here for migration purposes to filter them out
+ */
+const OLD_DEFAULT_NATIVE_URIS = [
+  "native://documents",
+  "native://tools",
+  "native://agents",
+  "native://workflows",
+  "native://database",
+  "native://views",
+];
+
+/**
+ * Default pinned tabs - now empty by default
+ * Users manually pin what they want
  */
 export const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [];
-
-function getDefaultPinnedTabs(): PinnedTab[] {
-  const now = new Date().toISOString();
-  return DEFAULT_PINNED_TABS.map((tab) => ({
-    ...tab,
-    id: tab.resourceUri,
-    pinnedAt: now,
-  }));
-}
 
 export function usePinnedTabs(projectKey?: string) {
   const storageKey = resolveStorageKey(projectKey);
   const [pinnedTabs, setPinnedTabs] = useLocalStorage<PinnedTab[]>(
     storageKey,
-    // Initialize with empty array - users can manually pin items
+    // Initialize with empty array and migrate old tabs
     (existing) => {
       if (!existing) {
         return [];
       }
-      return existing;
+      // Migration: Remove old default native views that were auto-pinned
+      // Keep only user-pinned tabs (non-native URIs)
+      const migrated = existing.filter(
+        (tab) => !OLD_DEFAULT_NATIVE_URIS.includes(tab.resourceUri),
+      );
+      return migrated;
     },
   );
 

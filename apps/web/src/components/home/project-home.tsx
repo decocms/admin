@@ -69,7 +69,7 @@ export function ProjectHome() {
         ref={chatPanelRef}
         defaultSize={30}
         minSize={30}
-        className="min-w-0 overflow-hidden transition-[flex] duration-300 ease-(--ease-out-quint)"
+        className="min-w-0 overflow-hidden transition-[flex] bg-sidebar duration-300 ease-(--ease-out-quint)"
         collapsible={true}
       >
         <div className={cn("h-full w-full", hasTabs && "min-w-[380px]")}>

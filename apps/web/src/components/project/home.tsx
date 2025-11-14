@@ -7,11 +7,36 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 type ResourceType = "documents" | "tools" | "workflows" | "views" | "agents";
 
 const RESOURCE_TABS = [
-  { id: "documents", label: "Documents", integrationId: "i:documents-management", resourceName: "document" },
-  { id: "tools", label: "Tools", integrationId: "i:tools-management", resourceName: "tool" },
-  { id: "workflows", label: "Workflows", integrationId: "i:workflows-management", resourceName: "workflow" },
-  { id: "views", label: "Views", integrationId: "i:views-management", resourceName: "view" },
-  { id: "agents", label: "Agents", integrationId: "i:agent-management", resourceName: "agent" },
+  {
+    id: "documents",
+    label: "Documents",
+    integrationId: "i:documents-management",
+    resourceName: "document",
+  },
+  {
+    id: "tools",
+    label: "Tools",
+    integrationId: "i:tools-management",
+    resourceName: "tool",
+  },
+  {
+    id: "workflows",
+    label: "Workflows",
+    integrationId: "i:workflows-management",
+    resourceName: "workflow",
+  },
+  {
+    id: "views",
+    label: "Views",
+    integrationId: "i:views-management",
+    resourceName: "view",
+  },
+  {
+    id: "agents",
+    label: "Agents",
+    integrationId: "i:agent-management",
+    resourceName: "agent",
+  },
 ];
 
 /**
@@ -57,7 +82,11 @@ export default function ProjectHome() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">Instance:</span>
                   <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-md">
-                    <Icon name="link" size={14} className="text-muted-foreground" />
+                    <Icon
+                      name="link"
+                      size={14}
+                      className="text-muted-foreground"
+                    />
                     <code className="text-xs">
                       {selfIntegration.connection?.type === "HTTP"
                         ? selfIntegration.connection.url
@@ -86,4 +115,3 @@ export default function ProjectHome() {
     </div>
   );
 }
-

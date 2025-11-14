@@ -503,11 +503,7 @@ function WorkspaceViews() {
             isMobile && toggleSidebar();
           }}
         >
-          <Icon
-            name="home"
-            size={20}
-            className="text-muted-foreground/75"
-          />
+          <Icon name="home" size={20} className="text-muted-foreground/75" />
           <span className="truncate">Home</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -535,25 +531,6 @@ function WorkspaceViews() {
             className="text-muted-foreground/75"
           />
           <span className="truncate">MCPs</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      {/* Generate button */}
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          className="cursor-pointer"
-          onClick={() => {
-            createThread();
-            // Clear initialInput and autoSend params when creating a new thread
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete("initialInput");
-            newParams.delete("autoSend");
-            setSearchParams(newParams, { replace: true });
-            trackEvent("sidebar_new_thread_click");
-          }}
-        >
-          <Icon name="add" size={20} className="text-muted-foreground/75" />
-          <span className="truncate">New thread</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
@@ -591,11 +568,12 @@ function WorkspaceViews() {
         </>
       )}
 
-      {/* SECTION 3: RECENT THREADS */}
+      {/* SECTION 3: THREADS */}
       <SidebarSeparator className="my-2 -ml-1" />
+
       <SidebarMenuItem>
         <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
-          <span>Recent Threads</span>
+          <span>Threads</span>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
@@ -618,6 +596,21 @@ function WorkspaceViews() {
           </div>
         </div>
       </SidebarMenuItem>
+
+      {/* Generate button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            createThread();
+            trackEvent("sidebar_new_thread_click");
+          }}
+        >
+          <Icon name="add" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">New thread</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
       <RecentThreadsList />
 
       {/* Search Modal */}

@@ -111,9 +111,10 @@ function ResourcesV2ListTab({
   // Canvas tabs management
   const { addTab, createTab, tabs: canvasTabs, setActiveTab } = useThread();
   const [mutating, setMutating] = useState(false);
-  
-  // Pinned tabs management - use locator as the project key
+
+  // Pinned tabs management
   const { pinTab } = usePinnedTabs(locator);
+
   const [viewMode, setViewMode] = useViewMode();
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -1121,7 +1122,6 @@ function ResourcesV2ListTab({
                 title: uniqueName || "Untitled",
                 icon: integration?.icon,
               });
-              
               if (!newTab) {
                 console.warn(
                   "[ResourcesV2List] Failed to open new resource tab after creation",

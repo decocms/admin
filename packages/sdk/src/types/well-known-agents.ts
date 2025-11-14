@@ -36,8 +36,8 @@ export const WELL_KNOWN_DECOPILOT_AGENTS: Record<
       "DOCUMENT_UPDATE",
       "DOCUMENT_READ",
       "DOCUMENT_SEARCH",
-      "DISCOVER_MCP_TOOLS",
-      "INSTALL_MARKETPLACE_INTEGRATION",
+      "STORE_SEARCH_INTEGRATION",
+      "STORE_GET_INTEGRATION",
     ],
   },
   code: {
@@ -63,8 +63,8 @@ export const WELL_KNOWN_DECOPILOT_AGENTS: Record<
       "VIEW_DELETE",
       "VIEW_READ",
       "VIEW_SEARCH",
-      "DISCOVER_MCP_TOOLS",
-      "INSTALL_MARKETPLACE_INTEGRATION",
+      "STORE_SEARCH_INTEGRATION",
+      "STORE_GET_INTEGRATION",
     ],
   },
   explore: {
@@ -75,8 +75,8 @@ export const WELL_KNOWN_DECOPILOT_AGENTS: Record<
     tools: [
       "READ_MCP",
       "EXECUTE_CODE",
-      "DISCOVER_MCP_TOOLS",
-      "INSTALL_MARKETPLACE_INTEGRATION",
+      "STORE_SEARCH_INTEGRATION",
+      "STORE_GET_INTEGRATION",
     ],
   },
 };

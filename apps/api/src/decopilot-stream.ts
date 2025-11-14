@@ -35,7 +35,8 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { honoCtxToAppCtx } from "./api.ts";
-import { getAgentSystemPrompt } from "./mode-prompts.ts";
+import { WELL_KNOWN_AGENTS } from "./well_known_agents/index.ts";
+import { WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
 import { filterToolsForAgent } from "./tool-filter.ts";
 import type { AppEnv } from "./utils/context.ts";
 import { State } from "./utils/context.ts";
@@ -316,11 +317,11 @@ const createDecopilotTools = async (
       },
       {
         toolName: "DECO_INTEGRATIONS_SEARCH",
-        wrapperName: "DISCOVER_MCP_TOOLS",
+        wrapperName: "STORE_SEARCH_INTEGRATION",
       },
       {
         toolName: "DECO_INTEGRATION_INSTALL",
-        wrapperName: "INSTALL_MARKETPLACE_INTEGRATION",
+        wrapperName: "STORE_GET_INTEGRATION",
       },
     ]);
 
@@ -414,8 +415,8 @@ const createDecopilotTools = async (
   return {
     // External MCP Tools
     READ_MCP: readMcpTool,
-    DISCOVER_MCP_TOOLS: discoverMcpToolsTool,
-    INSTALL_MARKETPLACE_INTEGRATION: installMarketplaceTool,
+    STORE_SEARCH_INTEGRATION: discoverMcpToolsTool,
+    STORE_GET_INTEGRATION: installMarketplaceTool,
 
     // Code Execution
     EXECUTE_CODE: executeCodeTool,
@@ -517,83 +518,41 @@ const formatAvailableTools = (
   const keys = ["name", "inputSchema", "outputSchema", "description"] as const;
   const availableTools = Array.from(toolsByIntegration.entries()).map(
     ([id, tools]) =>
-      `For integration with id ${id}:\n${keys.join(",")}\n${tools.map((t) => keys.map((k) => JSON.stringify(t[k])).join(",")).join("\n")}`,
+      `For MCP with id ${id}:\n${keys.join(",")}\n${tools.map((t) => keys.map((k) => JSON.stringify(t[k])).join(",")).join("\n")}`,
   );
 
   return availableTools.join("\n\n");
 };
 
-const DECOCMS_PLATFORM_SUMMARY = `
-decocms.com is an open-source platform for building and deploying production-ready AI applications. It provides developers with a complete infrastructure to rapidly create, manage, and scale AI-native internal software using the Model Context Protocol (MCP).
+const PLATFORM_DESCRIPTION = `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
 
-**Core Platform Capabilities:**
+**Building Blocks:**
+- **Tools:** Basic logic blocks with typed inputs/outputs. Can call other tools. Naming: RESOURCE_ACTION (TOOL_CREATE, DOCUMENT_READ).
+- **Workflows:** Tools run step by step in the background.
+- **Views:** Display tool outputs/inputs in a rich format for the user.
+- **Documents:** Markdown storage to document the system, design docs, PRDs, searchable.
+- **MCPs:** Tool creation and pack layer protocol. Marketplace integrations exposing tools. Installed MCPs' tools are available.
 
-**1. Tools:** Atomic capabilities exposed via MCP integrations. Tools are reusable functions that call external APIs, databases, or AI models. Each tool has typed input/output schemas using Zod validation, making them composable across agents and workflows. Tools follow the pattern RESOURCE_ACTION (e.g., AGENTS_CREATE, DOCUMENTS_UPDATE) and are organized into tool groups by functionality.
+**Relationships:** Tools → Workflows (orchestrate) → Views (UI). Documents store planning. MCPs provide pre-built capabilities.`;
 
-**2. Agents:** AI-powered assistants that combine a language model, specialized instructions (system prompt), and a curated toolset. Agents solve focused problems through conversational experiences. Each agent has configurable parameters including max steps, max tokens, memory settings, and visibility (workspace/public). Agents can invoke tools dynamically during conversations to accomplish complex tasks.
+// Format nested [title, content] arrays into readable text
 
-**3. Workflows:** Orchestrated processes that combine tools, code steps, and conditional logic into automated sequences. Workflows use the Mastra framework with operators like .then(), .parallel(), .branch(), and .dountil(). They follow an alternating pattern: Input → Code → Tool Call → Code → Tool Call → Output. Code steps transform data between tool calls, and workflows can sleep, wait, and manage complex state.
+type FormattableLeaf = [string, string | null];
+type FormattableNode = FormattableLeaf | [string, FormattableNode[]];
 
-**4. Views:** Custom React-based UI components that render in isolated iframes. Views provide tailored interfaces, dashboards, and interactive experiences. They use React 19, Tailwind CSS v4, and a global callTool() function to invoke any workspace tool. Views support custom import maps and are sandboxed for security.
+const format = (node: FormattableNode): string | null => {
+  const [title, content] = node;
 
-**5. Documents:** Markdown-based content storage with full editing capabilities. Documents support standard markdown syntax (headers, lists, code blocks, tables) and are searchable by name, description, content, and tags. They're ideal for documentation, notes, guides, and collaborative content.
+  if (typeof content === "string") {
+    return `${title}\n\n${content}`;
+  }
 
-**6. Databases:** Resources 2.0 system providing typed, versioned data models stored in DECONFIG (a git-like filesystem on Cloudflare Durable Objects). Supports full CRUD operations with schema validation, enabling admin tables and forms.
+  if (!content) {
+    return null;
+  }
 
-**7. Apps & Marketplace:** Pre-built MCP integrations installable with one click. Apps expose tools that appear in the admin menu and can be used by agents, workflows, and views. The marketplace provides curated integrations for popular services.
-
-**Architecture:** Built on Cloudflare Workers for global, low-latency deployment. Uses TypeScript throughout with React 19 + Vite frontend, Tailwind CSS v4 design system, and typed RPC between client and server. Authorization follows policy-based access control with role-based permissions (Owner, Admin, Member). Data flows through React Query with optimistic updates.
-
-**Development Workflow:** Developers vibecode their apps across tools, agents, workflows, and views. The platform auto-generates a beautiful admin interface with navigation, permissions, and deployment hooks. Local development via 'deco dev', type generation via 'deco gen', deployment to edge via 'deco deploy'.
-
-**Key Benefits:** Open-source and self-hostable, full ownership of code and data, bring your own AI models and keys, unified TypeScript stack, visual workspace management, secure multi-tenancy, cost control and observability, rapid prototyping to production scale.
-`;
-
-const SYSTEM_PROMPT = `You are an intelligent assistant for decocms.com, an open-source platform for building production-ready AI applications.
-
-${DECOCMS_PLATFORM_SUMMARY}
-
-**Your Capabilities:**
-- Search and navigate workspace resources (agents, documents, views, workflows, tools)
-- Create and manage agents with specialized instructions and toolsets
-- Design and compose workflows using tools and orchestration patterns
-- Build React-based views with Tailwind CSS for custom interfaces
-- Create and edit markdown documents with full formatting support
-- Configure integrations and manage MCP connections
-- Explain platform concepts and best practices
-- Provide code examples and implementation guidance
-
-**How You Help Users:**
-- Answer questions about the platform's capabilities
-- Guide users through creating agents, workflows, views, and tools
-- Help troubleshoot issues and debug implementations
-- Recommend architecture patterns for their use cases
-- Explain authorization, security, and deployment processes
-- Assist with TypeScript, React, Zod schemas, and Mastra workflows
-
-**Important Working Patterns:**
-
-1. **When helping with documents (especially PRDs, guides, or documentation):**
-   - ALWAYS read the document first using @DECO_RESOURCE_DOCUMENT_READ or @DECO_RESOURCE_DOCUMENT_SEARCH
-   - Understand the current content and structure before suggesting changes
-   - If it's a PRD template, help fill in each section based on platform capabilities
-   - Maintain the existing format and structure while improving content
-   - Suggest specific, actionable content based on platform patterns
-
-2. **When users reference "this document" or "help me with this PRD":**
-   - Immediately use @DECO_RESOURCE_DOCUMENT_SEARCH to find relevant documents
-   - Read the document content to understand context
-   - Ask clarifying questions based on what's already written
-   - Build upon their existing work rather than starting from scratch
-
-3. **For AI App PRDs specifically:**
-   - Understand they're planning Tools, Agents, Workflows, Views, and Databases
-   - Ask about the problem they're solving and users they're serving
-   - Help design the architecture using platform capabilities
-   - Provide code examples for tool schemas, workflow orchestrations, etc.
-   - Recommend authorization patterns and best practices
-
-You have access to all workspace tools and can perform actions directly. When users ask to create or modify resources, use the available tools proactively. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`;
+  return `${title}\n\n${content.map(format).filter(Boolean).join("\n\n")}`;
+};
 
 /**
  * Decopilot streaming endpoint handler
@@ -656,35 +615,46 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     throw new PaymentRequiredError("Insufficient funds");
   }
 
-  // Get agent-specific system prompt
-  let agentPrompt: string;
-  let allDecopilotTools: Record<string, any>;
-  let decopilotTools: Record<string, any>;
+  // Get agent-specific system prompt from well-known agents
+  const agentConfig = WELL_KNOWN_AGENTS[agentId];
+  const agentPrompt = agentConfig?.systemPrompt ?? "";
+  const agentName = WELL_KNOWN_DECOPILOT_AGENTS[agentId]?.name ?? "Assistant";
 
-  try {
-    agentPrompt = getAgentSystemPrompt(agentId);
+  // Create all decopilot tools (wrappers around MCP tools)
+  const allDecopilotTools = await createDecopilotTools(ctx, integrations);
 
-    // Create all decopilot tools (wrappers around MCP tools)
-    allDecopilotTools = await createDecopilotTools(ctx, integrations);
+  // Filter tools based on agent
+  const decopilotTools = filterToolsForAgent(allDecopilotTools, agentId);
 
-    // Filter tools based on agent
-    decopilotTools = filterToolsForAgent(allDecopilotTools, agentId);
-  } catch (error) {
-    console.error("[DECOPILOT] Error creating tools", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      agentId,
-    });
-    throw error;
-  }
+  // Build structured system prompt with clear sections
+  const systemPromptParts: FormattableNode[] = [
+    [`You are ${agentName}`, agentPrompt || null],
+    ["Platform Context", PLATFORM_DESCRIPTION || null],
+    ["User Context", system || null],
+    [
+      "Installed MCPs in Workspace",
+      [
+        [
+          "Note",
+          "All tools from these MCPs are available for use. The MCPs listed below are installed in your workspace.",
+        ],
+        ["MCPs", formatAvailableIntegrations(integrations) || null],
+      ],
+    ],
+    [
+      "User-Added Tools",
+      [
+        [
+          "Note",
+          "These are tools manually added by the user. All tools from the installed MCPs above are also available.",
+        ],
+        ["Tools", formatAvailableTools(integrations, tools) || null],
+      ],
+    ],
+  ];
 
-  const systemPrompt = [
-    system, // User-provided instructions (if any)
-    SYSTEM_PROMPT,
-    agentPrompt, // Agent-specific instructions
-    `Available integrations:\n${formatAvailableIntegrations(integrations)}`,
-    `Available tools:\n${formatAvailableTools(integrations, tools)}`,
-  ]
+  const systemPrompt = systemPromptParts
+    .map(format)
     .filter(Boolean)
     .join("\n\n");
 

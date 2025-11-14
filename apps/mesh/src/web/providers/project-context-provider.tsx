@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { ProjectLocator } from "../lib/locator";
+import { Locator, ProjectLocator } from "../lib/locator";
 
 interface ProjectContextType {
   locator: ProjectLocator;
@@ -14,7 +14,10 @@ export const useProjectContext = () => {
       "useProjectContext must be used within a ProjectContextProvider",
     );
   }
-  return context;
+  return {
+    ...context,
+    ...Locator.parse(context.locator),
+  };
 };
 
 export const ProjectContextProvider = ({

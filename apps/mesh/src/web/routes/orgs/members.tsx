@@ -1,6 +1,5 @@
 import { authClient } from "@/web/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
@@ -28,10 +27,12 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 
-const useMembers = (orgSlug: string) => {
+const useMembers = () => {
+  const { locator } = useProjectContext();
   return useQuery({
-    queryKey: KEYS.members(orgSlug),
+    queryKey: KEYS.members(locator),
     queryFn: () => authClient.organization.listMembers(),
   });
 };
@@ -58,8 +59,7 @@ function getRoleBadgeVariant(role: string) {
 }
 
 export default function OrgMembers() {
-  const { org: orgSlug } = useParams({ from: "/shell/$org" });
-  const { data, isLoading } = useMembers(orgSlug);
+  const { data, isLoading } = useMembers();
 
   const members = data?.data?.members ?? [];
 

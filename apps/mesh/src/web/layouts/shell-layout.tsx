@@ -76,8 +76,8 @@ export default function ShellLayout() {
     <RequiredAuthLayout>
       <OrgContextSetter fallback={<SplashScreen />}>
         {hasOrg ? (
+          // Should use "project ?? org-admin" when projects are introduced
           <ProjectContextProvider locator={Locator.adminProject(org)}>
-            // Should use "project ?? org-admin" when projects are introduced
             <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <div className="flex flex-col h-screen">
                 <Topbar showSidebarToggle showOrgSwitcher />

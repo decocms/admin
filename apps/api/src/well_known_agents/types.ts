@@ -5,4 +5,3 @@ export interface Agent {
   systemPrompt: string;
   tools: string[];
 }
-

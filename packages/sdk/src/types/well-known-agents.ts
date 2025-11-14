@@ -120,4 +120,3 @@ export function getAgentName(agentId: AgentId | string | undefined): string {
   const agent = getAgent(agentId);
   return agent?.name ?? "Assistant";
 }
-

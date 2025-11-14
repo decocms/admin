@@ -161,7 +161,11 @@ export const ChatMessage = memo(function ChatMessage({
               className="size-8 rounded-full bg-muted border border-border items-center justify-center hidden"
               style={{ display: "none" }}
             >
-              <Icon name="smart_toy" size={20} className="text-muted-foreground" />
+              <Icon
+                name="smart_toy"
+                size={20}
+                className="text-muted-foreground"
+              />
             </div>
           </div>
         </div>
@@ -193,7 +197,13 @@ export const ChatMessage = memo(function ChatMessage({
             <span className="font-medium text-foreground">{agentName}</span>
           )}
           {isUser && userId && (
-            <UserInfo userId={userId} nameOnly size="xs" noTooltip className="font-medium text-foreground" />
+            <UserInfo
+              userId={userId}
+              nameOnly
+              size="xs"
+              noTooltip
+              className="font-medium text-foreground"
+            />
           )}
           <span>{timestamp}</span>
         </div>

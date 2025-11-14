@@ -51,4 +51,3 @@ You have access to all workspace tools and can perform actions directly. When us
     "STORE_GET_INTEGRATION",
   ],
 };
-

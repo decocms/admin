@@ -57,4 +57,3 @@ After creating a design document, users can switch to the Code Agent to implemen
     "STORE_GET_INTEGRATION",
   ],
 };
-

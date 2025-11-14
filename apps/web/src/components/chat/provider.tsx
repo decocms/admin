@@ -454,7 +454,9 @@ export function createDecopilotTransport(
           const data = await clonedResponse.json();
           if (data.type === "mode_decision") {
             // Trigger mode switch via store
-            const { useAgentStore } = await import("../../stores/mode-store.ts");
+            const { useAgentStore } = await import(
+              "../../stores/mode-store.ts"
+            );
             useAgentStore.getState().requestAgentChange({
               agentId: data.agentId,
               reasoning: data.reasoning,
@@ -988,7 +990,10 @@ export function AgenticChatProvider({
       });
 
       // Send message with metadata in options
-      return chat.sendMessage?.(messageWithMetadata, { metadata }) ?? Promise.resolve();
+      return (
+        chat.sendMessage?.(messageWithMetadata, { metadata }) ??
+        Promise.resolve()
+      );
     },
     [
       mergedUiOptions.readOnly,

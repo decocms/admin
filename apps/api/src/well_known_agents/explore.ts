@@ -39,4 +39,3 @@ export const exploreAgent: Agent = {
     "STORE_GET_INTEGRATION",
   ],
 };
-

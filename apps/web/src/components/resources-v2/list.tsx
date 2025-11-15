@@ -43,6 +43,7 @@ import { useParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
+import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { useSortable } from "../../hooks/use-sortable.ts";
 import type { WatchEvent } from "../../stores/resource-watch/index.ts";
@@ -110,6 +111,10 @@ function ResourcesV2ListTab({
   // Canvas tabs management
   const { addTab, createTab, tabs: canvasTabs, setActiveTab } = useThread();
   const [mutating, setMutating] = useState(false);
+
+  // Pinned tabs management
+  const { pinTab } = usePinnedTabs(locator);
+
   const [viewMode, setViewMode] = useViewMode();
   const [deleteUri, setDeleteUri] = useState<string | null>(null);
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -842,6 +847,14 @@ function ResourcesV2ListTab({
                   console.warn(
                     "[ResourcesV2List] Failed to open new document tab after creation",
                   );
+                } else {
+                  // Auto-pin the newly created resource
+                  pinTab({
+                    resourceUri: uri,
+                    title: data.name || "Untitled",
+                    type: "detail",
+                    icon: integration?.icon,
+                  });
                 }
               } catch (error) {
                 console.error("Failed to create document:", error);
@@ -934,6 +947,14 @@ function ResourcesV2ListTab({
                       console.warn(
                         "[ResourcesV2List] Failed to open new document tab after template creation",
                       );
+                    } else {
+                      // Auto-pin the newly created resource
+                      pinTab({
+                        resourceUri: uri,
+                        title: data.name || "Untitled",
+                        type: "detail",
+                        icon: integration?.icon,
+                      });
                     }
                   } catch (error) {
                     console.error("Failed to create document:", error);
@@ -997,6 +1018,14 @@ function ResourcesV2ListTab({
                       console.warn(
                         "[ResourcesV2List] Failed to open AI App PRD tab after creation",
                       );
+                    } else {
+                      // Auto-pin the newly created resource
+                      pinTab({
+                        resourceUri: uri,
+                        title: "AI App PRD",
+                        type: "detail",
+                        icon: integration?.icon,
+                      });
                     }
                   } catch (error) {
                     console.error("Failed to create document:", error);
@@ -1097,6 +1126,14 @@ function ResourcesV2ListTab({
                 console.warn(
                   "[ResourcesV2List] Failed to open new resource tab after creation",
                 );
+              } else {
+                // Auto-pin the newly created resource
+                pinTab({
+                  resourceUri: uri,
+                  title: uniqueName || "Untitled",
+                  type: "detail",
+                  icon: integration?.icon,
+                });
               }
             } catch (error) {
               console.error(

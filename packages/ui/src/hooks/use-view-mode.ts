@@ -5,17 +5,18 @@ type ViewMode = "cards" | "table";
 
 export function useViewMode(
   key?: string,
+  defaultMode: ViewMode = "cards",
 ): [ViewMode, (mode: ViewMode) => void] {
   const isMobile = useIsMobile();
   const previousIsMobile = useRef<boolean>(isMobile);
   const storageKey = key ? `deco-view-mode-${key}` : "deco-view-mode";
 
-  // Simple initialization: check localStorage, otherwise default to cards
+  // Simple initialization: check localStorage, otherwise default to provided mode
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const stored = globalThis.localStorage?.getItem(storageKey);
     return stored === "cards" || stored === "table"
       ? (stored as ViewMode)
-      : "cards";
+      : defaultMode;
   });
 
   // Save to localStorage when user manually changes view

@@ -27,7 +27,7 @@ import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
 import { useAgenticChat, type RuntimeErrorEntry } from "../chat/provider.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import {
   CodeAction,
   SaveDiscardActions,

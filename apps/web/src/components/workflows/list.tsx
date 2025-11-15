@@ -16,8 +16,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import type { WorkflowRun } from "./types.ts";
 import type { WatchEvent } from "../../stores/resource-watch/index.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
@@ -28,8 +31,8 @@ import {
 } from "./utils.ts";
 import {
   ResourceHeader,
-  type TabItem,
-} from "../resources-v2/resource-header.tsx";
+  type ResourceHeaderTab,
+} from "@deco/ui/components/resource-header.tsx";
 import { useThread } from "../decopilot/thread-provider.tsx";
 import { useSearchParams } from "react-router";
 
@@ -123,7 +126,7 @@ function WorkflowRunsTableView({
 interface WorkflowRunsProps {
   searchTerm?: string;
   viewMode?: "cards" | "table";
-  tabs?: TabItem[];
+  tabs?: ResourceHeaderTab[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   headerSlot?: ReactNode;

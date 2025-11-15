@@ -1,25 +1,10 @@
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { fetcher } from "@/tools/client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@deco/ui/components/card.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@deco/ui/components/table.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Plus, MoreVertical, Search } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +30,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Table as ResourceTable,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
+import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { usePersistedFilters } from "@deco/ui/hooks/use-persisted-filters.ts";
+import { useSortable } from "@deco/ui/hooks/use-sortable.ts";
 import { KEYS } from "@/web/lib/query-keys";
 import type { MCPConnection } from "@/storage/types";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -74,7 +69,7 @@ export default function OrgConnections() {
   const { locator, org } = useProjectContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useConnections();
+  const { data, isLoading, isError, error } = useConnections();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<
     (typeof connections)[number] | null
@@ -87,7 +82,23 @@ export default function OrgConnections() {
     token: "",
   });
 
-  const connections = data?.connections ?? [];
+  const connections = (data?.connections ?? []) as MCPConnection[];
+  const [localSearch, setLocalSearch] = useState("");
+  const deferredSearch = useDeferredValue(localSearch);
+  const filterPersistKey = `${org}-mcp-connections`;
+  const [filters, setFilters] = usePersistedFilters(filterPersistKey);
+  const filterBarVisibilityKey = `mesh-connections-filter-visible-${org}`;
+  const [filterBarVisible, setFilterBarVisible] = useState(() => {
+    const stored = globalThis.localStorage?.getItem(filterBarVisibilityKey);
+    return stored === "true";
+  });
+  const [viewMode, setViewMode] = useViewMode(`mesh-connections-${org}`, "table");
+  const { sortKey, sortDirection, handleSort } = useSortable("title");
+  const errorMessage = isError
+    ? error instanceof Error
+      ? error.message
+      : "Failed to load connections."
+    : null;
 
   const resetForm = () => {
     setFormData({
@@ -182,21 +193,215 @@ export default function OrgConnections() {
     }
   };
 
-  return (
-    <div className="container max-w-6xl mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Connections</h1>
-          <p className="text-muted-foreground">
-            Manage your organization connections
-          </p>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Connection
-        </Button>
-      </div>
+  const filteredConnections = useMemo(() => {
+    let result = connections;
+    const searchTerm = deferredSearch.trim().toLowerCase();
+    if (searchTerm) {
+      result = result.filter((connection) => {
+        const name = connection.name?.toLowerCase() ?? "";
+        const description = connection.description?.toLowerCase() ?? "";
+        return name.includes(searchTerm) || description.includes(searchTerm);
+      });
+    }
 
+    if (filters.length === 0) {
+      return result;
+    }
+
+    return result.filter((connection) => {
+      return filters.every((filter) => {
+        if (filter.column === "name") {
+          const value = connection.name?.toLowerCase() ?? "";
+          const filterValue = filter.value.toLowerCase();
+          switch (filter.operator) {
+            case "contains":
+              return value.includes(filterValue);
+            case "does_not_contain":
+              return !value.includes(filterValue);
+            case "is":
+              return value === filterValue;
+            case "is_not":
+              return value !== filterValue;
+            default:
+              return true;
+          }
+        }
+
+        if (filter.column === "description") {
+          const value = connection.description?.toLowerCase() ?? "";
+          const filterValue = filter.value.toLowerCase();
+          switch (filter.operator) {
+            case "contains":
+              return value.includes(filterValue);
+            case "does_not_contain":
+              return !value.includes(filterValue);
+            case "is":
+              return value === filterValue;
+            case "is_not":
+              return value !== filterValue;
+            default:
+              return true;
+          }
+        }
+
+        return true;
+      });
+    });
+  }, [connections, deferredSearch, filters]);
+
+  const sortedConnections = useMemo(() => {
+    if (!sortKey || !sortDirection) {
+      return filteredConnections;
+    }
+
+    const compareStrings = (a: string, b: string) => {
+      if (a < b) return sortDirection === "asc" ? -1 : 1;
+      if (a > b) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    };
+
+    return [...filteredConnections].sort((a, b) => {
+      switch (sortKey) {
+        case "title":
+          return compareStrings(
+            (a.name ?? "").toLowerCase(),
+            (b.name ?? "").toLowerCase(),
+          );
+        case "description":
+          return compareStrings(
+            (a.description ?? "").toLowerCase(),
+            (b.description ?? "").toLowerCase(),
+          );
+        case "status":
+          return compareStrings(
+            (a.status ?? "").toLowerCase(),
+            (b.status ?? "").toLowerCase(),
+          );
+        case "connectionType":
+          return compareStrings(
+            (a.connectionType ?? "").toLowerCase(),
+            (b.connectionType ?? "").toLowerCase(),
+          );
+        default:
+          return 0;
+      }
+    });
+  }, [filteredConnections, sortKey, sortDirection]);
+
+  const columns: TableColumn<MCPConnection>[] = [
+    {
+      id: "title",
+      header: "Name",
+      render: (connection) => (
+        <div>
+          <div className="font-medium">{connection.name}</div>
+          {connection.description && (
+            <div className="text-sm text-muted-foreground">
+              {connection.description}
+            </div>
+          )}
+        </div>
+      ),
+      cellClassName: "max-w-md",
+      sortable: true,
+    },
+    {
+      id: "connectionType",
+      header: "Type",
+      accessor: (connection) => (
+        <span className="text-sm font-medium">{connection.connectionType}</span>
+      ),
+      cellClassName: "w-[120px]",
+      sortable: true,
+    },
+    {
+      id: "connectionUrl",
+      header: "URL",
+      render: (connection) => (
+        <span className="text-sm text-muted-foreground block truncate max-w-sm">
+          {connection.connectionUrl}
+        </span>
+      ),
+      wrap: true,
+      cellClassName: "max-w-sm",
+    },
+    {
+      id: "status",
+      header: "Status",
+      render: (connection) => (
+        <Badge variant={getStatusBadgeVariant(connection.status)}>
+          {connection.status}
+        </Badge>
+      ),
+      cellClassName: "w-[120px]",
+      sortable: true,
+    },
+    {
+      id: "actions",
+      header: "",
+      render: (connection) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate({
+                  to: `/${org}/connections/${connection.id}/inspector`,
+                });
+              }}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              Inspect
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(event) => {
+                event.stopPropagation();
+                handleEdit(connection);
+              }}
+            >
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(event) => event.stopPropagation()}>
+              Test Connection
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDelete(connection.id);
+              }}
+            >
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+      cellClassName: "w-[80px]",
+    },
+  ];
+
+  const ctaButton = (
+    <Button
+      onClick={() => setIsDialogOpen(true)}
+      size="sm"
+      className="rounded-xl"
+    >
+      <Plus className="mr-2 h-4 w-4" />
+      New Connection
+    </Button>
+  );
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -321,116 +526,190 @@ export default function OrgConnections() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Connections</CardTitle>
-          <CardDescription>
-            {connections.length} connection(s) in this organization
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-[200px]" />
-                    <Skeleton className="h-3 w-[300px]" />
-                  </div>
-                </div>
-              ))}
+      <div className="shrink-0 bg-background">
+        <div className="px-8 py-6">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Connections</h1>
+              <p className="text-muted-foreground">
+                Manage your organization connections
+              </p>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {connections.map((connection) => (
-                  <TableRow key={connection.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{connection.name}</div>
-                        {connection.description && (
-                          <div className="text-sm text-muted-foreground">
-                            {connection.description}
+            <ResourceHeader
+              tabs={[{ id: "all", label: "All" }]}
+              activeTab="all"
+              searchValue={localSearch}
+              onSearchChange={setLocalSearch}
+              onSearchKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setLocalSearch("");
+                  (event.target as HTMLInputElement).blur();
+                }
+              }}
+              onRefresh={() =>
+                queryClient.invalidateQueries({
+                  queryKey: KEYS.connections(locator),
+                })
+              }
+              onFilterClick={() => {
+                const newValue = !filterBarVisible;
+                setFilterBarVisible(newValue);
+                globalThis.localStorage?.setItem(
+                  filterBarVisibilityKey,
+                  String(newValue),
+                );
+              }}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              filterBarVisible={filterBarVisible}
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableUsers={[]}
+              ctaButton={ctaButton}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        <div className="px-8 py-2">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {errorMessage ? (
+              <Card className="border-destructive/30 bg-destructive/10">
+                <div className="p-4 text-sm text-destructive">
+                  {errorMessage}
+                </div>
+              </Card>
+            ) : isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Spinner />
+              </div>
+            ) : sortedConnections.length === 0 ? (
+              <EmptyState
+                icon="cable"
+                title="No connections found"
+                description="Create a connection to get started."
+                buttonProps={{
+                  onClick: () => setIsDialogOpen(true),
+                  children: "New Connection",
+                }}
+              />
+            ) : viewMode === "cards" ? (
+              <div
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                }}
+              >
+                {sortedConnections.map((connection) => (
+                  <Card
+                    key={connection.id}
+                    className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer"
+                    onClick={() =>
+                      navigate({
+                        to: `/${org}/connections/${connection.id}/inspector`,
+                      })
+                    }
+                  >
+                    <div className="flex flex-col gap-3 h-full">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-foreground">
+                            {connection.name}
                           </div>
-                        )}
+                          {connection.description && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {connection.description}
+                            </div>
+                          )}
+                        </div>
+                        <Badge
+                          variant={getStatusBadgeVariant(connection.status)}
+                        >
+                          {connection.status}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">
-                        {connection.connectionType}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground truncate max-w-xs block">
+                      <div className="text-xs text-muted-foreground break-words">
                         {connection.connectionUrl}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(connection.status)}>
-                        {connection.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium uppercase text-muted-foreground">
+                          {connection.connectionType}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
                               navigate({
                                 to: `/${org}/connections/${connection.id}/inspector`,
-                              })
-                            }
+                              });
+                            }}
                           >
-                            <Search className="mr-2 h-4 w-4" />
                             Inspect
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleEdit(connection as unknown as MCPConnection)
-                            }
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Test Connection</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDelete(connection.id)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleEdit(connection);
+                                }}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                Test Connection
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleDelete(connection.id);
+                                }}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
                 ))}
-                {connections.length === 0 && !isLoading && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No connections found. Create one to get started.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ) : (
+              <ResourceTable
+                columns={columns}
+                data={sortedConnections}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                onRowClick={(connection) =>
+                  navigate({
+                    to: `/${org}/connections/${connection.id}/inspector`,
+                  })
+                }
+              />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

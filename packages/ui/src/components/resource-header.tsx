@@ -1,4 +1,11 @@
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
+
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  FilterBar,
+  type FilterBarUser,
+  type Filter,
+} from "@deco/ui/components/filter-bar.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,10 +16,8 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
-import { useRef, type KeyboardEvent, type ReactNode } from "react";
-import { FilterBar, type Filter } from "./filter-bar.tsx";
 
-export interface TabItem {
+export interface ResourceHeaderTab {
   id: string;
   label: string;
   onClick?: () => void;
@@ -20,7 +25,7 @@ export interface TabItem {
 }
 
 interface ResourceHeaderProps {
-  tabs?: TabItem[];
+  tabs?: ResourceHeaderTab[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   searchValue?: string;
@@ -38,8 +43,13 @@ interface ResourceHeaderProps {
   filterBarVisible?: boolean;
   filters?: Filter[];
   onFiltersChange?: (filters: Filter[]) => void;
-  availableUsers?: Array<{ id: string; name: string }>;
+  availableUsers?: FilterBarUser[];
   hideActions?: boolean;
+  renderUserItem?: (user: FilterBarUser) => ReactNode;
+  renderUserFilter?: (props: {
+    users: FilterBarUser[];
+    onSelect: (userId: string) => void;
+  }) => ReactNode;
 }
 
 export function ResourceHeader({
@@ -63,19 +73,18 @@ export function ResourceHeader({
   onFiltersChange,
   availableUsers = [],
   hideActions = false,
+  renderUserItem,
+  renderUserFilter,
 }: ResourceHeaderProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex flex-col gap-3 w-full py-4">
-      {/* Tabs and Actions Row */}
       <div className="flex items-center justify-between border-b border-border w-full min-w-0">
-        {/* Left: Tabs (if provided) */}
         {tabs && tabs.length > 0 ? (
           <Tabs
             value={activeTab}
             onValueChange={(tabId) => {
-              // Prefer onTabChange if provided, otherwise use tab.onClick
               if (onTabChange) {
                 onTabChange(tabId);
               } else {
@@ -97,10 +106,8 @@ export function ResourceHeader({
           <div className="flex-1" />
         )}
 
-        {/* Right: Action Buttons */}
         {!hideActions && (
           <div className="flex items-center justify-end gap-2 py-2 shrink-0">
-            {/* Search Input - Always Visible, First on Right */}
             {onSearchChange && (
               <div className="flex items-center gap-2">
                 <Icon
@@ -120,7 +127,6 @@ export function ResourceHeader({
               </div>
             )}
 
-            {/* Refresh Button */}
             {onRefresh && (
               <Button
                 variant="ghost"
@@ -132,7 +138,6 @@ export function ResourceHeader({
               </Button>
             )}
 
-            {/* Filter Button */}
             {onFilterClick && (
               <Button
                 variant="ghost"
@@ -152,7 +157,6 @@ export function ResourceHeader({
               </Button>
             )}
 
-            {/* Menu Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -164,7 +168,6 @@ export function ResourceHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-1">
-                {/* View Mode Toggle */}
                 <div className="flex items-center p-1">
                   <div className="flex gap-1 w-full">
                     <Button
@@ -196,7 +199,6 @@ export function ResourceHeader({
 
                 <DropdownMenuSeparator className="my-1" />
 
-                {/* Sort By Section */}
                 <div className="p-2">
                   <p className="text-xs text-muted-foreground uppercase font-mono">
                     Sort by
@@ -309,21 +311,20 @@ export function ResourceHeader({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* CTA Button - comes last */}
             {ctaButton && <div className="hidden md:block">{ctaButton}</div>}
           </div>
         )}
       </div>
 
-      {/* Mobile CTA Button */}
       {ctaButton && <div className="md:hidden w-full">{ctaButton}</div>}
 
-      {/* Filter Bar */}
       {filterBarVisible && onFiltersChange && (
         <FilterBar
           filters={filters}
           onFiltersChange={onFiltersChange}
           availableUsers={availableUsers}
+          renderUserItem={renderUserItem}
+          renderUserFilter={renderUserFilter}
         />
       )}
     </div>

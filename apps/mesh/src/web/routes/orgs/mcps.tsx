@@ -92,7 +92,10 @@ export default function OrgConnections() {
     const stored = globalThis.localStorage?.getItem(filterBarVisibilityKey);
     return stored === "true";
   });
-  const [viewMode, setViewMode] = useViewMode(`mesh-connections-${org}`, "table");
+  const [viewMode, setViewMode] = useViewMode(
+    `mesh-connections-${org}`,
+    "table",
+  );
   const { sortKey, sortDirection, handleSort } = useSortable("title");
   const errorMessage = isError
     ? error instanceof Error

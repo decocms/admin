@@ -10,8 +10,11 @@ import {
 } from "../decopilot/thread-provider.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   AgentInfo,
   DateTimeCell,

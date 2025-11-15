@@ -27,12 +27,15 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useReducer, useState, type ReactNode } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../../common/empty-state.tsx";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   ResourceHeader,
-  type TabItem,
-} from "../../resources-v2/resource-header.tsx";
+  type ResourceHeaderTab,
+} from "@deco/ui/components/resource-header.tsx";
 import { useThread } from "../../decopilot/thread-provider.tsx";
 import { useSearchParams } from "react-router";
 
@@ -219,7 +222,7 @@ function TableView({
 interface ListPromptsProps {
   searchTerm?: string;
   viewMode?: "cards" | "table";
-  tabs?: TabItem[];
+  tabs?: ResourceHeaderTab[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   headerSlot?: ReactNode;

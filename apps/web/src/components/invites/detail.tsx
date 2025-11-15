@@ -6,7 +6,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { TopbarLayout } from "../layout/home.tsx";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
 

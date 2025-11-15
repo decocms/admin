@@ -49,7 +49,10 @@ import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 
 interface ModelLogoProps {
   logo: string;

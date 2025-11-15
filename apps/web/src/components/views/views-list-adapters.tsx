@@ -1,5 +1,5 @@
 import type { ViewWithStatus } from "./list.tsx";
-import type { TableColumn } from "../common/table/index.tsx";
+import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
 import { TimeAgoCell } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

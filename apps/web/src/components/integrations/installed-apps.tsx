@@ -31,8 +31,11 @@ import {
   useThread,
 } from "../decopilot/thread-provider.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { AddCustomAppDialog } from "./add-custom-app-dialog.tsx";

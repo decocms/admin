@@ -1,3 +1,5 @@
+import { useMemo, useState, type ReactNode } from "react";
+
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Command,
@@ -16,8 +18,6 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useState } from "react";
-import { UserInfo } from "../common/table/table-cells.tsx";
 
 export type FilterOperator =
   | "contains"
@@ -44,10 +44,20 @@ export interface Filter {
   value: string;
 }
 
+export interface FilterBarUser {
+  id: string;
+  name?: string;
+}
+
 interface FilterBarProps {
   filters: Filter[];
   onFiltersChange: (filters: Filter[]) => void;
-  availableUsers?: Array<{ id: string; name: string }>;
+  availableUsers?: FilterBarUser[];
+  renderUserItem?: (user: FilterBarUser) => ReactNode;
+  renderUserFilter?: (props: {
+    users: FilterBarUser[];
+    onSelect: (userId: string) => void;
+  }) => ReactNode;
 }
 
 const COLUMN_LABELS: Record<FilterColumn, string> = {
@@ -90,14 +100,12 @@ function getOperatorsForColumn(column: FilterColumn): Record<string, string> {
 function getDefaultOperatorForAutoStep(
   column: FilterColumn,
 ): FilterOperator | null {
-  // Only set default operator for columns that skip the operator step
   if (column === "created_by" || column === "updated_by") {
     return "is";
   }
   if (column === "created_at" || column === "updated_at") {
     return "in_last";
   }
-  // For text columns, we want to show the operator selection step
   return null;
 }
 
@@ -112,6 +120,8 @@ export function FilterBar({
   filters,
   onFiltersChange,
   availableUsers = [],
+  renderUserItem,
+  renderUserFilter,
 }: FilterBarProps) {
   const [addingFilter, setAddingFilter] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<FilterColumn | null>(
@@ -122,20 +132,22 @@ export function FilterBar({
   const [filterValue, setFilterValue] = useState<string>("");
   const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
 
+  const userLookup = useMemo(() => {
+    return new Map(availableUsers.map((user) => [user.id, user]));
+  }, [availableUsers]);
+
   function addFilter(
     column: FilterColumn,
     operator: FilterOperator,
     value: string,
   ) {
     if (editingFilterId) {
-      // Update existing filter
       onFiltersChange(
         filters.map((f) =>
           f.id === editingFilterId ? { id: f.id, column, operator, value } : f,
         ),
       );
     } else {
-      // Add new filter
       const newFilter: Filter = {
         id: crypto.randomUUID(),
         column,
@@ -162,27 +174,54 @@ export function FilterBar({
   function getFilterLabel(filter: Filter): string {
     const columnLabel = COLUMN_LABELS[filter.column];
 
-    // For text columns, show operator
     if (filter.column === "name" || filter.column === "description") {
       const operators = getOperatorsForColumn(filter.column);
       const operatorLabel = operators[filter.operator] || filter.operator;
       return `${columnLabel} ${operatorLabel} "${filter.value}"`;
     }
 
-    // For date columns, show preset label without operator
     if (filter.column === "created_at" || filter.column === "updated_at") {
       const preset = DATE_PRESETS.find((p) => p.value === filter.value);
       const valueLabel = preset ? preset.label : filter.value;
       return `${columnLabel}: ${valueLabel}`;
     }
 
-    // For user columns, just show column label (value shown via UserInfo component)
     return columnLabel;
+  }
+
+  function renderUserSelection(onSelect: (userId: string) => void) {
+    if (renderUserFilter) {
+      return renderUserFilter({ users: availableUsers, onSelect });
+    }
+
+    return (
+      <Command className="border-0">
+        <CommandInput placeholder="Search users..." className="h-9" />
+        <CommandList>
+          <CommandEmpty>No users found.</CommandEmpty>
+          <CommandGroup>
+            {availableUsers.map((user) => (
+              <CommandItem
+                key={user.id}
+                onSelect={() => {
+                  onSelect(user.id);
+                }}
+              >
+                {renderUserItem ? (
+                  renderUserItem(user)
+                ) : (
+                  <span className="truncate">{user.name ?? user.id}</span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    );
   }
 
   function renderDropdownContent() {
     if (!selectedColumn) {
-      // Step 1: Select Column
       return (
         <>
           <div className="px-2 py-1.5">
@@ -197,8 +236,6 @@ export function FilterBar({
                 e.preventDefault();
                 const col = key as FilterColumn;
                 setSelectedColumn(col);
-                // For user/date columns, set operator automatically to skip step 2
-                // For text columns, keep operator null to show step 2
                 setSelectedOperator(getDefaultOperatorForAutoStep(col));
                 setFilterValue(getDefaultValue(col));
               }}
@@ -211,7 +248,6 @@ export function FilterBar({
     }
 
     if (!selectedOperator) {
-      // Step 2: Select Operator
       return (
         <>
           <div className="px-2 py-1.5 flex items-center gap-2">
@@ -248,7 +284,18 @@ export function FilterBar({
       );
     }
 
-    // Step 3: Select Value
+    if (
+      (selectedColumn === "created_by" || selectedColumn === "updated_by") &&
+      availableUsers.length === 0 &&
+      !renderUserFilter
+    ) {
+      return (
+        <div className="px-2 py-3 text-sm text-muted-foreground">
+          No users available for filtering.
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="px-2 py-1.5 flex items-center gap-2">
@@ -257,8 +304,6 @@ export function FilterBar({
             size="icon"
             className="h-6 w-6"
             onClick={() => {
-              // For text columns, go back to operator selection
-              // For user/date columns, go back to column selection
               if (
                 selectedColumn === "name" ||
                 selectedColumn === "description"
@@ -280,7 +325,6 @@ export function FilterBar({
         </div>
         <DropdownMenuSeparator />
 
-        {/* Text Input */}
         {(selectedColumn === "name" || selectedColumn === "description") && (
           <div className="p-2">
             <Input
@@ -310,133 +354,108 @@ export function FilterBar({
           </div>
         )}
 
-        {/* User Selector */}
-        {(selectedColumn === "created_by" ||
-          selectedColumn === "updated_by") && (
-          <Command className="border-0">
-            <CommandInput placeholder="Search users..." className="h-9" />
-            <CommandList>
-              <CommandEmpty>No users found.</CommandEmpty>
-              <CommandGroup>
-                {availableUsers.map((user) => (
-                  <CommandItem
-                    key={user.id}
-                    onSelect={() => {
-                      addFilter(selectedColumn, selectedOperator, user.id);
-                    }}
-                  >
-                    <UserInfo
-                      userId={user.id}
-                      showEmail={false}
-                      noTooltip
-                      size="sm"
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        )}
+        {(selectedColumn === "created_by" || selectedColumn === "updated_by") &&
+          renderUserSelection((userId) => {
+            addFilter(selectedColumn, selectedOperator, userId);
+          })}
 
-        {/* Date Presets */}
-        {(selectedColumn === "created_at" ||
-          selectedColumn === "updated_at") && (
-          <>
-            {DATE_PRESETS.map((preset) => (
-              <DropdownMenuItem
-                key={preset.value}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  addFilter(selectedColumn, selectedOperator, preset.value);
-                }}
-              >
-                {preset.label}
-              </DropdownMenuItem>
-            ))}
-          </>
-        )}
+        {(selectedColumn === "created_at" || selectedColumn === "updated_at") &&
+          DATE_PRESETS.map((preset) => (
+            <DropdownMenuItem
+              key={preset.value}
+              onSelect={(e) => {
+                e.preventDefault();
+                addFilter(selectedColumn, selectedOperator, preset.value);
+              }}
+            >
+              {preset.label}
+            </DropdownMenuItem>
+          ))}
       </>
     );
   }
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Active Filters */}
-      {filters.map((filter) => (
-        <DropdownMenu
-          key={filter.id}
-          open={addingFilter && editingFilterId === filter.id}
-          onOpenChange={(open) => {
-            if (!open && editingFilterId === filter.id) {
-              resetAddFilter();
-            }
-          }}
-        >
-          <DropdownMenuTrigger asChild>
-            <div
-              className="group flex items-center gap-1 px-3 h-8 bg-accent rounded-lg text-sm cursor-pointer hover:bg-accent/80 transition-colors"
-              onClick={() => {
-                // Set up the filter for editing (don't remove it)
-                setEditingFilterId(filter.id);
-                setSelectedColumn(filter.column);
+      {filters.map((filter) => {
+        const isUserFilter =
+          (filter.column === "created_by" || filter.column === "updated_by") &&
+          filter.value;
+        const userData = isUserFilter
+          ? (userLookup.get(filter.value) ?? { id: filter.value })
+          : undefined;
 
-                // For text columns, show operator selection
-                if (
-                  filter.column === "name" ||
-                  filter.column === "description"
-                ) {
-                  setSelectedOperator(filter.operator);
-                } else {
-                  // For user/date columns, set operator to skip that step
-                  setSelectedOperator(
-                    getDefaultOperatorForAutoStep(filter.column),
-                  );
-                }
+        return (
+          <DropdownMenu
+            key={filter.id}
+            open={addingFilter && editingFilterId === filter.id}
+            onOpenChange={(open) => {
+              if (!open && editingFilterId === filter.id) {
+                resetAddFilter();
+              }
+            }}
+          >
+            <DropdownMenuTrigger asChild>
+              <div
+                className="group flex items-center gap-1 px-3 h-8 bg-accent rounded-lg text-sm cursor-pointer hover:bg-accent/80 transition-colors"
+                onClick={() => {
+                  setEditingFilterId(filter.id);
+                  setSelectedColumn(filter.column);
 
-                setFilterValue(filter.value);
-                setAddingFilter(true);
-              }}
-            >
-              {(filter.column === "created_by" ||
-                filter.column === "updated_by") &&
-              filter.value ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">
-                    {COLUMN_LABELS[filter.column]}:
-                  </span>
-                  <UserInfo
-                    userId={filter.value}
-                    showEmail={false}
-                    noTooltip
-                    size="sm"
-                  />
-                </div>
-              ) : (
-                <span className="text-foreground">
-                  {getFilterLabel(filter)}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFilter(filter.id);
+                  if (
+                    filter.column === "name" ||
+                    filter.column === "description"
+                  ) {
+                    setSelectedOperator(filter.operator);
+                  } else {
+                    setSelectedOperator(
+                      getDefaultOperatorForAutoStep(filter.column),
+                    );
+                  }
+
+                  setFilterValue(filter.value);
+                  setAddingFilter(true);
                 }}
-                className="flex items-center justify-center w-0 opacity-0 group-hover:w-4 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all overflow-hidden"
               >
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-          </DropdownMenuTrigger>
-          {addingFilter && editingFilterId === filter.id && (
-            <DropdownMenuContent align="start" className="w-64">
-              {renderDropdownContent()}
-            </DropdownMenuContent>
-          )}
-        </DropdownMenu>
-      ))}
+                {isUserFilter ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">
+                      {COLUMN_LABELS[filter.column]}:
+                    </span>
+                    {renderUserItem ? (
+                      renderUserItem(userData!)
+                    ) : (
+                      <span className="text-foreground">
+                        {userData?.name ?? userData?.id}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-foreground">
+                    {getFilterLabel(filter)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFilter(filter.id);
+                  }}
+                  className="flex items-center justify-center w-0 opacity-0 group-hover:w-4 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all overflow-hidden"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+            </DropdownMenuTrigger>
+            {addingFilter && editingFilterId === filter.id && (
+              <DropdownMenuContent align="start" className="w-64">
+                {renderDropdownContent()}
+              </DropdownMenuContent>
+            )}
+          </DropdownMenu>
+        );
+      })}
 
-      {/* Add Filter Dropdown */}
       <DropdownMenu
         open={addingFilter && !editingFilterId}
         onOpenChange={(open) => {

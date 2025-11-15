@@ -42,16 +42,21 @@ import {
 import { useParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { usePersistedFilters } from "../../hooks/use-persisted-filters.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
-import { useSortable } from "../../hooks/use-sortable.ts";
+import { usePersistedFilters } from "@deco/ui/hooks/use-persisted-filters.ts";
+import { useSortable } from "@deco/ui/hooks/use-sortable.ts";
 import type { WatchEvent } from "../../stores/resource-watch/index.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useThread } from "../decopilot/thread-provider.tsx";
-import type { TabItem } from "./resource-header.tsx";
-import { ResourceHeader } from "./resource-header.tsx";
+import {
+  ResourceHeader,
+  type ResourceHeaderTab,
+} from "@deco/ui/components/resource-header.tsx";
 import { ResourceRouteProvider } from "./route-context.tsx";
 
 // Base resource data schema that all resources extend
@@ -89,7 +94,7 @@ function ResourcesV2ListTab({
   integrationId?: string;
   resourceName?: string;
   headerSlot?: ReactNode;
-  tabs?: TabItem[];
+  tabs?: ResourceHeaderTab[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   // Custom data props
@@ -1163,6 +1168,14 @@ function ResourcesV2ListTab({
               filters={filters}
               onFiltersChange={setFilters}
               availableUsers={availableUsers}
+              renderUserItem={(user) => (
+                <UserInfo
+                  userId={user.id}
+                  showEmail={false}
+                  noTooltip
+                  size="sm"
+                />
+              )}
               ctaButton={ctaButton}
             />
           </div>
@@ -1644,7 +1657,7 @@ export function ResourcesV2List({
   integrationId?: string;
   resourceName?: string;
   headerSlot?: ReactNode;
-  tabs?: TabItem[];
+  tabs?: ResourceHeaderTab[];
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   // Custom data props

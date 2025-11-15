@@ -19,7 +19,10 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";

@@ -1,5 +1,5 @@
 import type { Agent } from "@deco/sdk";
-import type { TableColumn } from "../common/table/index.tsx";
+import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { buildAgentUri } from "../decopilot/thread-provider.tsx";

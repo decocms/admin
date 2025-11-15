@@ -22,7 +22,7 @@ import {
   AgenticChatProvider,
   createLegacyTransport,
 } from "../chat/provider.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { ThreadProvider } from "../decopilot/thread-provider.tsx";
 import { DecopilotThreadProvider } from "../decopilot/thread-context.tsx";
 import { ChatHeader } from "./chat-header.tsx";

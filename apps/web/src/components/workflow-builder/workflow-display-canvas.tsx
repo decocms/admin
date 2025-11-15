@@ -10,7 +10,7 @@ import {
   memo,
   startTransition,
 } from "react";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
 import {
   useWorkflowDescription,

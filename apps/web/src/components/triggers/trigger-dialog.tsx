@@ -52,7 +52,7 @@ import JsonSchemaForm from "../json-schema/index.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 
 // Form schema for the new trigger form
 const TriggerFormSchema = z

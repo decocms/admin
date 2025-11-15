@@ -20,8 +20,7 @@ async function getProjectSidebarItems({
       key: "mcps",
       label: "MCPs",
       icon: "grid_view",
-      onClick: () =>
-        navigate({ to: "/$org/connections", params: { org: org ?? "" } }),
+      onClick: () => navigate({ to: "/$org/mcps", params: { org: org ?? "" } }),
     },
     {
       key: "members",

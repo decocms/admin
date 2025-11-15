@@ -30,9 +30,12 @@ import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { useThread } from "../decopilot/thread-provider.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { ResourceCreateDialog } from "./resource-create-dialog.tsx";
 
 export function InternalResourceList({ name }: { name: string }) {

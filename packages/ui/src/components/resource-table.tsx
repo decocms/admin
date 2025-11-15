@@ -10,7 +10,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { ReactNode } from "react";
 
-export interface TableColumn<T> {
+export interface ResourceTableColumn<T> {
   id: string;
   header: ReactNode;
   accessor?: (row: T) => ReactNode;
@@ -21,8 +21,8 @@ export interface TableColumn<T> {
   wrap?: boolean;
 }
 
-export interface TableProps<T = Record<string, unknown>> {
-  columns: TableColumn<T>[];
+export interface ResourceTableProps<T = Record<string, unknown>> {
+  columns: ResourceTableColumn<T>[];
   data: T[];
   sortKey?: string;
   sortDirection?: "asc" | "desc" | null;
@@ -31,7 +31,7 @@ export interface TableProps<T = Record<string, unknown>> {
   rowClassName?: (row: T) => string | undefined;
 }
 
-export function Table<T = Record<string, unknown>>({
+export function ResourceTable<T = Record<string, unknown>>({
   columns,
   data,
   sortKey,
@@ -39,9 +39,8 @@ export function Table<T = Record<string, unknown>>({
   onSort,
   onRowClick,
   rowClassName,
-}: TableProps<T>) {
+}: ResourceTableProps<T>) {
   function renderSortIcon(_key: string, isActive: boolean) {
-    // Only show icon if this column is actively sorted
     if (!isActive || !sortDirection) {
       return null;
     }
@@ -133,3 +132,6 @@ export function Table<T = Record<string, unknown>>({
     </div>
   );
 }
+
+export type { ResourceTableColumn as TableColumn };
+export { ResourceTable as Table };

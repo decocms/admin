@@ -6,7 +6,7 @@ import {
 import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Preview from "../agent/preview";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { InternalResourceListWithIntegration } from "./internal-resource-list.tsx";
 import { useRouteParams } from "../canvas/route-params-provider.tsx";
 

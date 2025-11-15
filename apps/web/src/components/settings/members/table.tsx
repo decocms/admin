@@ -28,7 +28,10 @@ import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { UserAvatar } from "../../common/avatar/user.tsx";
 import { InviteTeamMembersDialog } from "../../common/invite-team-members-dialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   ActivityStatusCell,
   UserInfo,

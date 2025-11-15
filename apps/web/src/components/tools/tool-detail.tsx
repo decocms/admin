@@ -25,7 +25,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { JsonViewer } from "../chat/json-viewer.tsx";
 import { DetailSection } from "../common/detail-section.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import {
   CodeAction,
   SaveDiscardActions,

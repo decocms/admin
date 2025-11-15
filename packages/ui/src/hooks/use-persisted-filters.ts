@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { Filter } from "../components/resources-v2/filter-bar.tsx";
+
+import type { Filter } from "@deco/ui/components/filter-bar.tsx";
 
 export function usePersistedFilters(
   key: string,
 ): [Filter[], (filters: Filter[]) => void] {
   const storageKey = `deco-filters-${key}`;
 
-  // Initialize from localStorage
   const [filters, setFilters] = useState<Filter[]>(() => {
     try {
       const stored = globalThis.localStorage?.getItem(storageKey);
@@ -19,7 +19,6 @@ export function usePersistedFilters(
     return [];
   });
 
-  // Save to localStorage when filters change
   const setFiltersWithStorage = (newFilters: Filter[]) => {
     setFilters(newFilters);
     try {

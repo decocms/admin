@@ -960,7 +960,13 @@ function ResourcesV2ListTab({
                     const result = await callTool(integration.connection, {
                       name: "DECO_RESOURCE_DOCUMENT_CREATE",
                       arguments: {
-                        data: AI_APP_PRD_TEMPLATE,
+                        data: {
+                          name: "AI App PRD",
+                          description:
+                            "A template for designing AI applications with Tools, Agents, Workflows, and Views",
+                          content: AI_APP_PRD_TEMPLATE,
+                          tags: ["template", "prd", "ai"],
+                        },
                       },
                     });
 

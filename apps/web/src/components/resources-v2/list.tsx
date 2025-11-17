@@ -780,6 +780,66 @@ function ResourcesV2ListTab({
     return tabs;
   }, [tabs]);
 
+  // Handler for creating a blank document
+  const createBlankDocument = async () => {
+    if (!integration) return;
+    try {
+      setMutating(true);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const data = {
+        name: `Untitled-${timestamp}`,
+        description: "",
+        content: "",
+      };
+
+      const result = await callTool(integration.connection, {
+        name: "DECO_RESOURCE_DOCUMENT_CREATE",
+        arguments: { data },
+      });
+
+      const uri =
+        (result as { uri?: string })?.uri ||
+        (result as { data?: { uri?: string } })?.data?.uri ||
+        (
+          result as {
+            structuredContent?: { uri?: string };
+          }
+        )?.structuredContent?.uri ||
+        (
+          result as {
+            content?: Array<{ text?: string }>;
+          }
+        )?.content?.[0]?.text;
+
+      if (!uri) {
+        console.error("Create result:", result);
+        throw new Error("No URI returned from create operation");
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: KEYS.RESOURCES_LIST(locator, integrationId!, resourceName!),
+      });
+
+      // Open the newly created resource in a fresh canvas tab
+      const newTab = createTab({
+        type: "detail",
+        resourceUri: uri,
+        title: data.name || "Untitled",
+        icon: integration?.icon,
+      });
+      if (!newTab) {
+        console.warn(
+          "[ResourcesV2List] Failed to open new document tab after creation",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to create document:", error);
+      toast.error("Failed to create document. Please try again.");
+      setMutating(false);
+    }
+  };
+
   // Create CTA button - use custom if provided
   // If customCtaButton is explicitly null, don't show any CTA button
   const ctaButton =
@@ -790,70 +850,7 @@ function ResourcesV2ListTab({
         // Split button for documents with dropdown options
         <div className="w-full md:w-auto flex items-stretch rounded-xl overflow-hidden">
           <Button
-            onClick={async () => {
-              if (!integration) return;
-              try {
-                setMutating(true);
-
-                const timestamp = new Date()
-                  .toISOString()
-                  .replace(/[:.]/g, "-");
-                const data = {
-                  name: `Untitled-${timestamp}`,
-                  description: "",
-                  content: "",
-                };
-
-                const result = await callTool(integration.connection, {
-                  name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                  arguments: { data },
-                });
-
-                const uri =
-                  (result as { uri?: string })?.uri ||
-                  (result as { data?: { uri?: string } })?.data?.uri ||
-                  (
-                    result as {
-                      structuredContent?: { uri?: string };
-                    }
-                  )?.structuredContent?.uri ||
-                  (
-                    result as {
-                      content?: Array<{ text?: string }>;
-                    }
-                  )?.content?.[0]?.text;
-
-                if (!uri) {
-                  console.error("Create result:", result);
-                  throw new Error("No URI returned from create operation");
-                }
-
-                queryClient.invalidateQueries({
-                  queryKey: KEYS.RESOURCES_LIST(
-                    locator,
-                    integrationId!,
-                    resourceName!,
-                  ),
-                });
-
-                // Open the newly created resource in a fresh canvas tab
-                const newTab = createTab({
-                  type: "detail",
-                  resourceUri: uri,
-                  title: data.name || "Untitled",
-                  icon: integration?.icon,
-                });
-                if (!newTab) {
-                  console.warn(
-                    "[ResourcesV2List] Failed to open new document tab after creation",
-                  );
-                }
-              } catch (error) {
-                console.error("Failed to create document:", error);
-                toast.error("Failed to create document. Please try again.");
-                setMutating(false);
-              }
-            }}
+            onClick={createBlankDocument}
             variant="default"
             size="sm"
             className="flex-1 rounded-none rounded-l-xl"
@@ -882,73 +879,10 @@ function ResourcesV2ListTab({
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuItem
                 className="cursor-pointer"
-                onSelect={async () => {
-                  if (!integration) return;
-                  try {
-                    setMutating(true);
-
-                    const timestamp = new Date()
-                      .toISOString()
-                      .replace(/[:.]/g, "-");
-                    const data = {
-                      name: `Untitled-${timestamp}`,
-                      description: "",
-                      content: "",
-                    };
-
-                    const result = await callTool(integration.connection, {
-                      name: "DECO_RESOURCE_DOCUMENT_CREATE",
-                      arguments: { data },
-                    });
-
-                    const uri =
-                      (result as { uri?: string })?.uri ||
-                      (result as { data?: { uri?: string } })?.data?.uri ||
-                      (
-                        result as {
-                          structuredContent?: { uri?: string };
-                        }
-                      )?.structuredContent?.uri ||
-                      (
-                        result as {
-                          content?: Array<{ text?: string }>;
-                        }
-                      )?.content?.[0]?.text;
-
-                    if (!uri) {
-                      console.error("Create result:", result);
-                      throw new Error("No URI returned from create operation");
-                    }
-
-                    queryClient.invalidateQueries({
-                      queryKey: KEYS.RESOURCES_LIST(
-                        locator,
-                        integrationId!,
-                        resourceName!,
-                      ),
-                    });
-
-                    // Open the newly created resource in a fresh canvas tab
-                    const newTab = createTab({
-                      type: "detail",
-                      resourceUri: uri,
-                      title: data.name || "Untitled",
-                      icon: integration?.icon,
-                    });
-                    if (!newTab) {
-                      console.warn(
-                        "[ResourcesV2List] Failed to open new document tab after template creation",
-                      );
-                    }
-                  } catch (error) {
-                    console.error("Failed to create document:", error);
-                    toast.error("Failed to create document. Please try again.");
-                    setMutating(false);
-                  }
-                }}
+                onSelect={createBlankDocument}
               >
-                <Icon name="description" className="w-4 h-4 mr-2" />
-                From template
+                <Icon name="insert_drive_file" className="w-4 h-4 mr-2" />
+                Blank document
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"

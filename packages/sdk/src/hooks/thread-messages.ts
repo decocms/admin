@@ -10,7 +10,10 @@ import {
 } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { del, get, set } from "idb-keyval";
-import { WELL_KNOWN_AGENTS } from "../constants.ts";
+import {
+  isWellKnownDecopilotAgent,
+  WELL_KNOWN_DECOPILOT_AGENTS,
+} from "../types/well-known-agents.ts";
 import { getThreadMessages as getBackendThreadMessages } from "../crud/thread.ts";
 import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
@@ -18,6 +21,10 @@ import { useSDK } from "./store.tsx";
 // IndexedDB storage constants
 const MESSAGES_PREFIX = "decopilot:messages:";
 const THREAD_META_PREFIX = "decopilot:thread-meta:";
+
+// Module-level cache for stable initial messages that persists across Suspense remounts
+// Key: `${locator}:${threadId}`, Value: messages array
+const initialMessagesCache = new Map<string, UIMessage[]>();
 
 // Thread metadata interface
 export interface ThreadMetadata {
@@ -53,8 +60,8 @@ interface UseThreadMessagesOptions {
 
 /**
  * Hook that fetches thread messages from:
- * - Backend API when agentId is not "decopilot" or when agentId is not provided
- * - IndexedDB when agentId is "decopilot"
+ * - Backend API when agentId is not a well-known decopilot agent or when agentId is not provided
+ * - IndexedDB when agentId is a well-known decopilot agent (design, code, explore, or legacy decopilotAgent)
  */
 export function useThreadMessages(
   threadId: string,
@@ -62,6 +69,7 @@ export function useThreadMessages(
   options?: UseThreadMessagesOptions,
 ) {
   const { locator } = useSDK();
+  const queryClient = useQueryClient();
 
   // Handle backward compatibility: if second param is options object, treat as old API
   let agentId: string | undefined;
@@ -77,14 +85,37 @@ export function useThreadMessages(
   }
 
   const { shouldFetch = true } = finalOptions;
-  const isDecopilot = agentId === WELL_KNOWN_AGENTS.decopilotAgent.id;
+  const isDecopilot = isWellKnownDecopilotAgent(agentId);
 
   // Use different query keys for backend vs IndexedDB to avoid conflicts
   const queryKey = isDecopilot
     ? ["decopilot-messages", locator, threadId]
     : KEYS.THREAD_MESSAGES(locator, threadId);
 
-  return useSuspenseQuery({
+  // Cache key for stable initial messages
+  const cacheKey = threadId ? `${locator}:${threadId}` : "";
+
+  // Populate React Query cache with our cached data BEFORE calling useSuspenseQuery
+  // This prevents Suspense from triggering if we have cached data
+  // Run synchronously before the query so React Query has data and won't suspend
+  const cachedInitial = cacheKey ? initialMessagesCache.get(cacheKey) : null;
+  const existingQueryData = queryClient.getQueryData<{ messages: UIMessage[] }>(
+    queryKey,
+  );
+
+  if (cachedInitial && cachedInitial.length > 0 && isDecopilot) {
+    // Check if React Query cache is empty or has no data
+    if (!existingQueryData || existingQueryData.messages.length === 0) {
+      // Populate React Query cache with our cached data to prevent Suspense
+      queryClient.setQueryData(queryKey, { messages: cachedInitial });
+    }
+  }
+
+  // If we have cached data, use it to prevent unnecessary refetches
+  const hasCachedData =
+    cachedInitial && cachedInitial.length > 0 && isDecopilot;
+
+  const query = useSuspenseQuery({
     queryKey,
     queryFn: async () => {
       if (!shouldFetch || !threadId) {
@@ -112,10 +143,36 @@ export function useThreadMessages(
         return await getBackendThreadMessages(locator, threadId, {});
       }
     },
-    staleTime: 0, // Always check for fresh data
-    refetchOnMount: true,
+    staleTime: hasCachedData ? Infinity : 0, // If we have cached data, don't refetch immediately
+    refetchOnMount: !hasCachedData, // Don't refetch if we have cached data
     refetchOnWindowFocus: !isDecopilot, // Don't refetch IndexedDB on window focus
   });
+
+  // Provide stable initialMessages that persist across Suspense remounts
+  // This prevents ChatProvider from remounting during refetches
+  const currentMessages = query.data?.messages ?? [];
+
+  // Update cache when we get messages, but return stable cached value to prevent remounts
+  if (cacheKey) {
+    if (cachedInitial && cachedInitial.length > 0) {
+      // Update cache if current has more messages (new messages were added)
+      if (currentMessages.length > cachedInitial.length) {
+        initialMessagesCache.set(cacheKey, [...currentMessages]);
+      }
+    } else if (currentMessages.length > 0) {
+      // No cache yet - store current messages
+      initialMessagesCache.set(cacheKey, [...currentMessages]);
+    }
+  }
+
+  const finalInitialMessages =
+    cachedInitial && cachedInitial.length > 0 ? cachedInitial : currentMessages;
+
+  // Return query with stable initialMessages property
+  return {
+    ...query,
+    initialMessages: finalInitialMessages,
+  };
 }
 
 // ============================================================================
@@ -179,7 +236,10 @@ export function useAppendThreadMessage() {
         // Update thread metadata
         const updatedMeta: ThreadMetadata = {
           threadId,
-          agentId: metadata?.agentId || existingMeta?.agentId || "decopilot",
+          agentId:
+            metadata?.agentId ||
+            existingMeta?.agentId ||
+            WELL_KNOWN_DECOPILOT_AGENTS.explore.id,
           route: metadata?.route || existingMeta?.route || "",
           createdAt: existingMeta?.createdAt || now,
           updatedAt: now,
@@ -200,8 +260,8 @@ export function useAppendThreadMessage() {
       }
     },
     onSuccess: (_, { threadId, messages, namespace }) => {
-      // Update the cache for decopilot messages
-      // This matches the query key used in useThreadMessages for decopilot agent
+      // Update the cache for well-known decopilot agent messages
+      // This matches the query key pattern used in useThreadMessages for well-known decopilot agents
       const queryKey = ["decopilot-messages", namespace || locator, threadId];
 
       queryClient.setQueryData(
@@ -268,7 +328,10 @@ export function useSaveThreadMessages() {
 
         const updatedMeta: ThreadMetadata = {
           threadId,
-          agentId: metadata?.agentId || existingMeta?.agentId || "decopilot",
+          agentId:
+            metadata?.agentId ||
+            existingMeta?.agentId ||
+            WELL_KNOWN_DECOPILOT_AGENTS.explore.id,
           route: metadata?.route || existingMeta?.route || "",
           createdAt: existingMeta?.createdAt || now,
           updatedAt: now,

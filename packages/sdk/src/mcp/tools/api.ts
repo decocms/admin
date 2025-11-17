@@ -130,7 +130,7 @@ export async function validateToolFrameworkSyntax(
       if (!integration) {
         return {
           valid: false,
-          error: `Dependency validation failed: Integration '${dependency.integrationId}' not found. Use READ_MCP to check if the integration exists.`,
+          error: `Dependency validation failed: Integration '${dependency.integrationId}' not found. Use DECO_RESOURCE_MCP_READ to check if the integration exists.`,
         };
       }
 
@@ -143,7 +143,7 @@ export async function validateToolFrameworkSyntax(
         if (!tool) {
           return {
             valid: false,
-            error: `Dependency validation failed: Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use READ_MCP to see available tools for this integration.`,
+            error: `Dependency validation failed: Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use DECO_RESOURCE_MCP_READ to see available tools for this integration.`,
           };
         }
       }

@@ -1,4 +1,4 @@
-import { Locator, SDKProvider, WELL_KNOWN_AGENTS } from "@deco/sdk";
+import { Locator, SDKProvider, WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -176,7 +176,7 @@ export const ToggleDecopilotButton = () => {
     <Button size="sm" variant="default" onClick={toggle}>
       <AgentAvatar
         className="rounded-sm border-none"
-        url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
+        url={WELL_KNOWN_DECOPILOT_AGENTS.explore.avatar}
         fallback={
           <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
         }

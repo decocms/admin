@@ -288,7 +288,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="w-full mx-auto relative flex flex-col">
+    <div className="w-full mx-auto relative pb-3 flex flex-col">
       {/* Error Banner */}
       {runtimeError && (
         <ErrorBanner
@@ -383,7 +383,7 @@ export function ChatInput({
 
             {/* Bottom Actions Row */}
             <div className="flex items-center justify-between px-2.5 pb-2.5">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <DropdownMenu
                   modal={false}
                   open={isDropdownOpen}

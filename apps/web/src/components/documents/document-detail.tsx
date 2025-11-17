@@ -3,6 +3,7 @@ import {
   useDocumentByUriV2,
   useSDK,
   useUpdateDocument,
+  WELL_KNOWN_DECOPILOT_AGENTS,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -25,6 +26,12 @@ import {
 } from "../common/resource-detail-header.tsx";
 import { TabActionButton } from "../canvas/tab-action-button.tsx";
 import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
+import { parseResourceUri, useThread } from "../decopilot/thread-provider.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { useAgentStore } from "../../stores/mode-store.ts";
+import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
+import { useChatStore } from "../../stores/chat-store.ts";
+import type { UIMessage } from "@ai-sdk/react";
 
 // Document type inferred from the Zod schema
 export type DocumentDefinition = z.infer<typeof DocumentDefinitionSchema>;
@@ -267,6 +274,51 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
     refetch();
   }, [isFetching, refetch]);
 
+  const { setAgentId } = useAgentStore();
+  const { setOpen: setDecopilotOpen } = useDecopilotOpen();
+  const { activeThreadId, createThread } = useThread();
+  const sendMessage = useChatStore((state) => state.sendMessage);
+
+  const handleBuild = useCallback(() => {
+    // Extract resourceId from resourceUri
+    // Format: rsc://integrationId/resourceName/resourceId
+    const parsed = parseResourceUri(resourceUri);
+    const resourceId = parsed.resourceId || resourceUri;
+
+    // Switch to builder agent ("code") in the main decopilot chat
+    setAgentId("code");
+
+    // Open decopilot chat if not already open
+    setDecopilotOpen(true);
+
+    // Ensure thread exists
+    if (!activeThreadId) {
+      createThread();
+    }
+
+    // Send message using chat.sendMessage from the store
+    if (!sendMessage) return;
+
+    const message: UIMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      parts: [
+        {
+          type: "text",
+          text: `please implement what's inside this document ${resourceId}`,
+        },
+      ],
+    };
+    sendMessage(message);
+  }, [
+    resourceUri,
+    setAgentId,
+    setDecopilotOpen,
+    activeThreadId,
+    createThread,
+    sendMessage,
+  ]);
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
@@ -311,6 +363,22 @@ export function DocumentDetail({ resourceUri }: DocumentDetailProps) {
           }
           hasCode={true}
         />
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          className="h-6 px-2 gap-1.5"
+          onClick={handleBuild}
+          title="Build with Builder Agent"
+        >
+          <AgentAvatar
+            url={WELL_KNOWN_DECOPILOT_AGENTS.code.avatar}
+            size="2xs"
+            className="rounded-sm"
+            fallback={WELL_KNOWN_DECOPILOT_AGENTS.code.name}
+          />
+          <span className="text-xs">Build</span>
+        </Button>
         <SaveDiscardActions
           hasChanges={hasChanges}
           onSave={handleSave}

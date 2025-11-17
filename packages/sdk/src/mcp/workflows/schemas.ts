@@ -1,4 +1,5 @@
 import z from "zod";
+import { ToolDependencySchema } from "../tools/schemas.ts";
 
 export const RetriesSchema = z.object({
   limit: z
@@ -47,26 +48,10 @@ export const CodeStepDefinitionSchema = z.object({
       "ES module code that exports a default async function: (input: typeof inputSchema, ctx: { env: Record<string, any> }) => Promise<typeof outputSchema>. The input parameter contains the resolved input with all @ references replaced with actual values.",
     ),
   dependencies: z
-    .array(
-      z.object({
-        integrationId: z
-          .string()
-          .min(1)
-          .describe(
-            "<IMPORTANT>The integration ID (format: i:<uuid> or a:<uuid>) that this step depends on.</IMPORTANT>",
-          ),
-        toolNames: z
-          .array(z.string().min(1))
-          .min(1)
-          .optional()
-          .describe(
-            "<IMPORTANT>List of tool names from this integration that will be used by this code step. This is mandatory if the step uses tools.</IMPORTANT>",
-          ),
-      }),
-    )
+    .array(ToolDependencySchema)
     .optional()
     .describe(
-      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the step to execute successfully. Tools are accessible via ctx.env['{INTEGRATION_ID}']['{TOOL_NAME}'](). Use INTEGRATIONS_LIST to find available integration IDs and their tools.",
+      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the step to execute successfully. Tools are accessible via ctx.env['{INTEGRATION_ID}']['{TOOL_NAME}'](). Use READ_MCP to find available integration IDs and their tools.",
     ),
 });
 

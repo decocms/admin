@@ -171,55 +171,20 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
           );
 
           if (!integration) {
-            const availableIntegrations = integrations.map(
-              (item: { id: string; name: string; description?: string }) => ({
-                id: item.id,
-                name: item.name,
-                description: item.description || "No description available",
-              }),
-            );
-
             throw new Error(
-              `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
+              `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found. Use READ_MCP to check if the integration exists.`,
             );
           }
 
-          /**
-           * TODO: @gimenes
-           * In the future, the agent will be able to fetch tools on demand, so we don't need to
-           * throw the avialable tools here, shrinking the number of tokens used by llms.
-           */
-          const availableTools =
-            integration.tools?.map(
-              (t: {
-                name: string;
-                description?: string;
-                inputSchema?: Record<string, unknown>;
-                outputSchema?: Record<string, unknown>;
-              }) => ({
-                name: t.name,
-                description: t.description || "No description available",
-                inputSchema: t.inputSchema || {},
-                outputSchema: t.outputSchema || {},
-              }),
-            ) ?? [];
-
-          const toolsToValidate = dependency.toolNames ?? [];
-
-          if (toolsToValidate.length === 0) {
-            throw new Error(
-              `Code step '${codeDef.name}': Dependency validation failed. You need to provide at least one tool name for the integration ${dependency.integrationId}. If you don't want to use any tools from this integration, remove it from the dependencies array. Available tools: ${JSON.stringify(availableTools, null, 2)}`,
-            );
-          }
-
-          for (const toolName of toolsToValidate) {
-            const tool = availableTools.find(
+          // Validate each tool name exists in the integration
+          for (const toolName of dependency.toolNames) {
+            const tool = integration.tools?.find(
               (t: { name: string }) => t.name === toolName,
             );
 
             if (!tool) {
               throw new Error(
-                `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}).\n\nAvailable tools in this integration:\n${JSON.stringify(availableTools, null, 2)}`,
+                `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use READ_MCP to see available tools for this integration.`,
               );
             }
           }

@@ -1,6 +1,27 @@
 import { z } from "zod";
 
 /**
+ * Shared Tool Dependency Schema
+ *
+ * This schema defines the structure for tool dependencies that can be used
+ * by both tools and workflow code steps.
+ */
+export const ToolDependencySchema = z.object({
+  integrationId: z
+    .string()
+    .min(1)
+    .describe(
+      "The integration ID (format: i:<uuid> or a:<uuid>) that this depends on",
+    ),
+  toolNames: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe(
+      "List of tool names from this integration that will be used.",
+    ),
+});
+
+/**
  * Tool Definition Schema
  *
  * This schema defines the structure for tools using Resources 2.0
@@ -23,22 +44,7 @@ export const ToolDefinitionSchema = z.object({
       "Inline ES module code with default export function. The code will be saved to /src/functions/{name}.ts",
     ),
   dependencies: z
-    .array(
-      z.object({
-        integrationId: z
-          .string()
-          .min(1)
-          .describe(
-            "The integration ID (format: i:<uuid>) that this tool depends on",
-          ),
-        toolNames: z
-          .array(z.string().min(1))
-          .min(1)
-          .describe(
-            "List of tool names from this integration that will be used by this tool.",
-          ),
-      }),
-    )
+    .array(ToolDependencySchema)
     .optional()
     .describe(
       "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the tool to execute successfully. Use READ_MCP to find available integration IDs and their tools.",

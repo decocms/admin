@@ -134,17 +134,15 @@ export async function validateToolFrameworkSyntax(
         };
       }
 
-      // If toolNames is undefined, all tools from the integration are available (backward compatibility)
-      const toolsToValidate = dependency.toolNames ?? [];
-
-      if (toolsToValidate.length === 0) {
+      // toolNames is required by schema, but validate for defensive programming
+      if (dependency.toolNames.length === 0) {
         return {
           valid: false,
-          error: `Dependency validation failed: You need to provide at least one tool name for the integration ${dependency.integrationId}. If you don't want to use any tools from this integration, remove it from the dependencies array. Use READ_MCP to see available tools for this integration.`,
+          error: `Dependency validation failed: You must provide at least one tool name for the integration ${dependency.integrationId}. Use READ_MCP to see available tools for this integration.`,
         };
       }
 
-      for (const toolName of toolsToValidate) {
+      for (const toolName of dependency.toolNames) {
         const tool = integration.tools?.find(
           (t: { name: string }) => t.name === toolName,
         );

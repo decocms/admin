@@ -34,15 +34,14 @@ export const ToolDefinitionSchema = z.object({
         toolNames: z
           .array(z.string().min(1))
           .min(1)
-          .optional()
           .describe(
-            "List of tool names from this integration that will be used by this tool. If undefined, all tools from the integration are available (backwards compatibility).",
+            "List of tool names from this integration that will be used by this tool. Must contain at least one tool name.",
           ),
       }),
     )
     .optional()
     .describe(
-      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the tool to execute successfully. Use INTEGRATIONS_LIST to find available integration IDs and their tools.",
+      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the tool to execute successfully. Use READ_MCP to find available integration IDs and their tools.",
     ),
 });
 

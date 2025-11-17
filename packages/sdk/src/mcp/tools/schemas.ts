@@ -16,9 +16,7 @@ export const ToolDependencySchema = z.object({
   toolNames: z
     .array(z.string().min(1))
     .min(1)
-    .describe(
-      "List of tool names from this integration that will be used.",
-    ),
+    .describe("List of tool names from this integration that will be used."),
 });
 
 /**

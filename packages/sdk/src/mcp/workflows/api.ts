@@ -55,7 +55,10 @@ import type {
   InstanceGetResponse as CFInstanceGetResponse,
   InstanceListResponse as CFInstanceListResponse,
 } from "cloudflare/resources/workflows/instances/instances";
-import { ToolDefinitionSchema, ToolDependencySchema } from "../tools/schemas.ts";
+import {
+  ToolDefinitionSchema,
+  ToolDependencySchema,
+} from "../tools/schemas.ts";
 
 /**
  * Metadata stored in workflow instance params.context
@@ -462,9 +465,7 @@ export function createWorkflowBindingImpl({
                 inputSchema: z.object({}).passthrough().optional(),
                 outputSchema: z.object({}).passthrough().optional(),
                 execute: z.string().optional(),
-                dependencies: z
-                  .array(ToolDependencySchema)
-                  .optional(),
+                dependencies: z.array(ToolDependencySchema).optional(),
               })
               .optional()
               .describe(

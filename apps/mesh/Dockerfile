@@ -9,26 +9,48 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Install dependencies (production only)
 FROM base AS deps
+# Copy root workspace files
 COPY package.json bun.lockb* ./
+COPY apps/mesh/package.json ./apps/mesh/
+COPY packages/ui/package.json ./packages/ui/
+
+# Install all dependencies (workspace aware)
 RUN bun install --frozen-lockfile --production
 
 # Build stage
 FROM base AS builder
+# Copy root workspace files
 COPY package.json bun.lockb* ./
+COPY apps/mesh/package.json ./apps/mesh/
+COPY packages/ui/package.json ./packages/ui/
+
+# Install all dependencies including dev dependencies
 RUN bun install --frozen-lockfile
-COPY . .
+
+# Copy source code for both workspaces
+COPY packages/ui ./packages/ui
+COPY apps/mesh ./apps/mesh
 
 # Build the frontend static assets
+WORKDIR /app/apps/mesh
 RUN bun run build:client
 
 # Production stage
 FROM base AS runner
 WORKDIR /app
 
-# Copy application code and built assets from builder
-COPY --from=builder /app .
+# Copy root workspace configuration
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lockb* ./
+
+# Copy the packages/ui workspace (needed at runtime for imports)
+COPY --from=builder /app/packages/ui ./packages/ui
+
+# Copy the built mesh application
+COPY --from=builder /app/apps/mesh ./apps/mesh
+
 # Overwrite with production-only node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -54,8 +76,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
 
+# Set working directory to mesh app
+WORKDIR /app/apps/mesh
+
 # Run database migrations on startup and start the application
-# Added debug logging to check directory structure and permissions
 CMD ["sh", "-c", "\
   echo '=== Debug Info ===' && \
   echo 'Current user:' && id && \

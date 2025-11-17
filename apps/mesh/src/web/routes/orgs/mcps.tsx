@@ -373,9 +373,6 @@ export default function OrgConnections() {
             >
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(event) => event.stopPropagation()}>
-              Test Connection
-            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={(event) => {

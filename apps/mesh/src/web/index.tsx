@@ -78,7 +78,7 @@ const orgMcpsRoute = createRoute({
 
 const mcpInspectorRoute = createRoute({
   getParentRoute: () => shellLayout,
-  path: "/$org/connections/$connectionId/inspector",
+  path: "/$org/mcps/$connectionId/inspector",
   component: lazyRouteComponent(
     () => import("./routes/orgs/mcp-inspector.tsx"),
   ),

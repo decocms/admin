@@ -358,7 +358,7 @@ export default function OrgConnections() {
               onClick={(event) => {
                 event.stopPropagation();
                 navigate({
-                  to: `/${org}/connections/${connection.id}/inspector`,
+                  to: `/${org}/mcps/${connection.id}/inspector`,
                 });
               }}
             >
@@ -613,7 +613,7 @@ export default function OrgConnections() {
                     className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer"
                     onClick={() =>
                       navigate({
-                        to: `/${org}/connections/${connection.id}/inspector`,
+                        to: `/${org}/mcps/${connection.id}/inspector`,
                       })
                     }
                   >
@@ -649,7 +649,7 @@ export default function OrgConnections() {
                             onClick={(event) => {
                               event.stopPropagation();
                               navigate({
-                                to: `/${org}/connections/${connection.id}/inspector`,
+                                to: `/${org}/mcps/${connection.id}/inspector`,
                               });
                             }}
                           >
@@ -705,7 +705,7 @@ export default function OrgConnections() {
                 onSort={handleSort}
                 onRowClick={(connection) =>
                   navigate({
-                    to: `/${org}/connections/${connection.id}/inspector`,
+                    to: `/${org}/mcps/${connection.id}/inspector`,
                   })
                 }
               />

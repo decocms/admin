@@ -89,7 +89,7 @@ export const asEnv = (
     workspace?: string;
     dependencies?: Array<{
       integrationId: string;
-      toolNames: string[];
+      toolNames?: string[];
     }>;
   } = {},
 ) => {

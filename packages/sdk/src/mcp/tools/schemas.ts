@@ -35,7 +35,7 @@ export const ToolDefinitionSchema = z.object({
           .array(z.string().min(1))
           .min(1)
           .describe(
-            "List of tool names from this integration that will be used by this tool. Must contain at least one tool name.",
+            "List of tool names from this integration that will be used by this tool.",
           ),
       }),
     )

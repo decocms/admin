@@ -134,14 +134,7 @@ export async function validateToolFrameworkSyntax(
         };
       }
 
-      // toolNames is required by schema, but validate for defensive programming
-      if (dependency.toolNames.length === 0) {
-        return {
-          valid: false,
-          error: `Dependency validation failed: You must provide at least one tool name for the integration ${dependency.integrationId}. Use READ_MCP to see available tools for this integration.`,
-        };
-      }
-
+      // Validate each tool name exists in the integration
       for (const toolName of dependency.toolNames) {
         const tool = integration.tools?.find(
           (t: { name: string }) => t.name === toolName,

@@ -11,27 +11,19 @@ RUN apt-get update && apt-get install -y \
 
 # Install dependencies (production only)
 FROM base AS deps
-# Copy root workspace files
-COPY package.json bun.lockb* ./
-COPY apps/mesh/package.json ./apps/mesh/
-COPY packages/ui/package.json ./packages/ui/
+# Copy everything needed for workspace resolution
+COPY . .
 
 # Install all dependencies (workspace aware)
 RUN bun install --frozen-lockfile --production
 
 # Build stage
 FROM base AS builder
-# Copy root workspace files
-COPY package.json bun.lockb* ./
-COPY apps/mesh/package.json ./apps/mesh/
-COPY packages/ui/package.json ./packages/ui/
+# Copy everything
+COPY . .
 
 # Install all dependencies including dev dependencies
 RUN bun install --frozen-lockfile
-
-# Copy source code for both workspaces
-COPY packages/ui ./packages/ui
-COPY apps/mesh ./apps/mesh
 
 # Build the frontend static assets
 WORKDIR /app/apps/mesh
@@ -41,15 +33,8 @@ RUN bun run build:client
 FROM base AS runner
 WORKDIR /app
 
-# Copy root workspace configuration
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/bun.lockb* ./
-
-# Copy the packages/ui workspace (needed at runtime for imports)
-COPY --from=builder /app/packages/ui ./packages/ui
-
-# Copy the built mesh application
-COPY --from=builder /app/apps/mesh ./apps/mesh
+# Copy the entire built workspace from builder
+COPY --from=builder /app ./
 
 # Overwrite with production-only node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules

@@ -65,7 +65,7 @@ function getStatusBadgeVariant(status: string) {
   }
 }
 
-export default function OrgConnections() {
+export default function OrgMcps() {
   const { locator, org } = useProjectContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

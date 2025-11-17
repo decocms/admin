@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+.github
+
+# Dependencies (will be installed fresh)
+node_modules
+**/node_modules
+
+# Build outputs (except mesh dist which we need)
+apps/web/dist
+apps/api/dist
+packages/*/dist
+
+# Development files
+.vscode
+.cursor
+.idea
+*.log
+*.swp
+*.swo
+*~
+
+# Test files
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+**/test
+**/tests
+**/__tests__
+coverage
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Environment files
+.env.local
+.env.*.local
+.env.development
+.env.test
+
+# Misc
+.DS_Store
+*.pem
+.turbo
+.next
+.cache
+

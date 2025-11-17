@@ -1,7 +1,10 @@
 import type { Member, ThreadUsage, ThreadUsageItem } from "@deco/sdk";
 import { useMemo, useState } from "react";
 import { UserAvatar } from "../../common/avatar/user.tsx";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { color } from "./util.ts";
 
 export function UsersTable({

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useLocation } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useHideLegacyFeatures } from "../../hooks/use-hide-legacy-features.ts";
-import type { TabItem } from "../resources-v2/resource-header.tsx";
+import type { ResourceHeaderTab } from "@deco/ui/components/resource-header.tsx";
 
 export type WorkflowTab = "workflows" | "runs" | "runs-legacy" | "triggers";
 
@@ -22,8 +22,8 @@ export function useWorkflowTabs() {
   }, [location.pathname]);
 
   // Build tabs array - Workflow Runs is now always enabled
-  const tabs = useMemo((): TabItem[] => {
-    const allTabs: TabItem[] = [
+  const tabs = useMemo((): ResourceHeaderTab[] => {
+    const allTabs: ResourceHeaderTab[] = [
       {
         id: "workflows",
         label: "Workflows",

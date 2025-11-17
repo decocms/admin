@@ -1,4 +1,4 @@
-import type { TableColumn } from "../common/table/index.tsx";
+import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
 import {
   AgentInfo,
   TimeAgoCell,

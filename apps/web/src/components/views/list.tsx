@@ -15,10 +15,13 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { usePinnedTabs } from "../../hooks/use-pinned-tabs.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { Table, TableColumn } from "../common/table/index.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { useThread } from "../decopilot/thread-provider.tsx";
-import { ResourceHeader } from "../resources-v2/resource-header.tsx";
+import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector";
 
 export interface ViewWithStatus {

@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router";
 import { z } from "zod";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
 import {
   RefreshAction,

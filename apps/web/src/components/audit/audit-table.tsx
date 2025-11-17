@@ -1,4 +1,7 @@
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   AgentInfo,
   DateTimeCell,

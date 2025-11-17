@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import type { Agent, AgentUsage, AgentUsageItem, ThreadUsage } from "@deco/sdk";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { color } from "./util.ts";
 import { Dialog } from "@deco/ui/components/dialog.tsx";

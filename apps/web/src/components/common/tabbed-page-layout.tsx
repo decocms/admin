@@ -4,7 +4,7 @@ import { Suspense, useMemo, type ComponentType } from "react";
 import { useLocation } from "react-router";
 import { useSearchControls } from "../../hooks/use-search-controls.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { ResourceHeader } from "../resources-v2/resource-header.tsx";
+import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
 
 export interface TabConfig {
   id: string;

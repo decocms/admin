@@ -7,7 +7,10 @@ import {
 } from "@deco/sdk";
 import type { ContractState } from "@deco/sdk/mcp";
 import { MicroDollar } from "@deco/sdk/mcp/wallet";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   Dialog,
   DialogContent,

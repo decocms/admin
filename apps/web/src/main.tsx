@@ -16,7 +16,7 @@ import {
   useLocation,
   useRouteError,
 } from "react-router";
-import { EmptyState } from "./components/common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
 import { OrgsLayout } from "./components/layout/org.tsx";
 import { queryClient } from "@deco/sdk";

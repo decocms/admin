@@ -7,7 +7,7 @@ import {
 } from "@deco/ui/components/alert.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { AuditListContent } from "../audit/list.tsx";
-import { ResourceHeader } from "../resources-v2/resource-header.tsx";
+import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 function ActivityErrorFallback() {

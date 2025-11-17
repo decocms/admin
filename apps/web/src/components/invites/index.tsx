@@ -13,8 +13,11 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { Table, type TableColumn } from "../common/table/index.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { TopbarLayout } from "../layout/home.tsx";
 

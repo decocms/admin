@@ -15,7 +15,7 @@ import {
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
 import { Suspense, useMemo } from "react";
-import { EmptyState } from "../common/empty-state.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { UserInfo } from "../common/table/table-cells.tsx";
 import { getStatusBadgeVariant } from "./utils.ts";
 import { DetailSection } from "../common/detail-section.tsx";

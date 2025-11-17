@@ -240,14 +240,17 @@ export const runTool = createToolManagementTool({
     try {
       const runtimeId = c.locator?.value ?? "default";
 
-      // Syntax validation: validate JavaScript/TypeScript code structure and export
-      const syntaxValidation = await validateToolSyntax(tool, runtimeId);
+      // Run both syntax validations in parallel
+      const [syntaxValidation, frameworkSyntaxValidation] = await Promise.all([
+        validateToolSyntax(tool, runtimeId),
+        validateToolFrameworkSyntax(tool, c),
+      ]);
+
+      // Check syntax validation results
       if (!syntaxValidation.valid) {
         return { error: syntaxValidation.error };
       }
 
-      // Syntax validation: validate framework syntax (dependencies, integrations and tools)
-      const frameworkSyntaxValidation = await validateToolFrameworkSyntax(tool, c);
       if (!frameworkSyntaxValidation.valid) {
         return { error: frameworkSyntaxValidation.error };
       }
@@ -306,14 +309,17 @@ export const ToolResourceV2 = DeconfigResourceV2.define({
   validate: async (tool, context, _deconfig) => {
     const runtimeId = context.locator?.value ?? "default";
 
-    // Syntax validation: validate JavaScript/TypeScript code structure and export
-    const syntaxValidation = await validateToolSyntax(tool, runtimeId);
+    // Run both syntax validations in parallel
+    const [syntaxValidation, frameworkSyntaxValidation] = await Promise.all([
+      validateToolSyntax(tool, runtimeId),
+      validateToolFrameworkSyntax(tool, context),
+    ]);
+
+    // Check syntax validation results
     if (!syntaxValidation.valid) {
       throw new Error(syntaxValidation.error);
     }
 
-    // Syntax validation: validate framework syntax (dependencies, integrations and tools)
-    const frameworkSyntaxValidation = await validateToolFrameworkSyntax(tool, context);
     if (!frameworkSyntaxValidation.valid) {
       throw new Error(frameworkSyntaxValidation.error);
     }

@@ -120,10 +120,13 @@ const createToolManagementTool = createToolGroup("Tools", {
 /**
  * Creates tool binding implementation that accepts a resource reader
  * Returns only the core tool execution functionality
+ *
+ * This tool is equivalent to calling DECO_RESOURCE_TOOL_CREATE + calling the tool with the input.
+ * It creates and executes a tool in a single operation.
  */
 export const runTool = createToolManagementTool({
   name: "DECO_TOOL_RUN_TOOL",
-  description: "Invoke the tool passed as input",
+  description: TOOL_CREATE_PROMPT,
   inputSchema: z.object({
     tool: ToolDefinitionSchema,
     input: z.object({}).passthrough().describe("The input of the code"),

@@ -27,7 +27,12 @@ import {
   TOOL_UPDATE_PROMPT,
 } from "./prompts.ts";
 import { ToolDefinitionSchema } from "./schemas.ts";
-import { asEnv, evalCodeAndReturnDefaultHandle, validate } from "./utils.ts";
+import {
+  asEnv,
+  evalCodeAndReturnDefaultHandle,
+  validate,
+  validateExecuteCode,
+} from "./utils.ts";
 
 /**
  * Execute tool code without validation
@@ -72,6 +77,89 @@ export async function executeTool(
   } catch (error) {
     return { error: inspect(error), logs: guestConsole.logs };
   }
+}
+
+/**
+ * Validate tool JavaScript/TypeScript syntax (code structure and export)
+ */
+export async function validateToolSyntax(
+  tool: z.infer<typeof ToolDefinitionSchema>,
+  runtimeId: string = "default",
+): Promise<{ valid: boolean; error?: string }> {
+  const validation = await validateExecuteCode(
+    tool.execute,
+    runtimeId,
+    tool.name,
+  );
+
+  if (!validation.success) {
+    return {
+      valid: false,
+      error: `JavaScript syntax validation failed: ${validation.error}`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate tool framework syntax (dependencies, integrations and tools)
+ */
+export async function validateToolFrameworkSyntax(
+  tool: z.infer<typeof ToolDefinitionSchema>,
+  context: AppContext,
+): Promise<{ valid: boolean; error?: string }> {
+  // Validate dependencies if provided
+  if (tool.dependencies && tool.dependencies.length > 0) {
+    // Create an MCPClientStub to call INTEGRATIONS_LIST
+    const client = createMCPToolsStub({
+      tools: PROJECT_TOOLS,
+      context,
+    });
+
+    const result = await client.INTEGRATIONS_LIST({});
+    const integrations = result.items;
+
+    for (const dependency of tool.dependencies) {
+      // Check if integration exists
+      const integration = integrations.find(
+        (item: { id: string; name: string; description?: string }) =>
+          item.id === dependency.integrationId,
+      );
+
+      if (!integration) {
+        return {
+          valid: false,
+          error: `Dependency validation failed: Integration '${dependency.integrationId}' not found. Use READ_MCP to check if the integration exists.`,
+        };
+      }
+
+      // If toolNames is undefined, all tools from the integration are available (backward compatibility)
+      const toolsToValidate = dependency.toolNames ?? [];
+
+      if (toolsToValidate.length === 0) {
+        return {
+          valid: false,
+          error: `Dependency validation failed: You need to provide at least one tool name for the integration ${dependency.integrationId}. If you don't want to use any tools from this integration, remove it from the dependencies array. Use READ_MCP to see available tools for this integration.`,
+        };
+      }
+
+      for (const toolName of toolsToValidate) {
+        const tool = integration.tools?.find(
+          (t: { name: string }) => t.name === toolName,
+        );
+
+        if (!tool) {
+          return {
+            valid: false,
+            error: `Dependency validation failed: Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use READ_MCP to see available tools for this integration.`,
+          };
+        }
+      }
+    }
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -150,6 +238,21 @@ export const runTool = createToolManagementTool({
   }),
   handler: async ({ tool, input, authorization }, c) => {
     try {
+      const runtimeId = c.locator?.value ?? "default";
+
+      // Syntax validation: validate JavaScript/TypeScript code structure and export
+      const syntaxValidation = await validateToolSyntax(tool, runtimeId);
+      if (!syntaxValidation.valid) {
+        return { error: syntaxValidation.error };
+      }
+
+      // Syntax validation: validate framework syntax (dependencies, integrations and tools)
+      const frameworkSyntaxValidation = await validateToolFrameworkSyntax(tool, c);
+      if (!frameworkSyntaxValidation.valid) {
+        return { error: frameworkSyntaxValidation.error };
+      }
+
+      // Execute tool with input/output validation
       return await executeToolWithValidation(tool, input, c, authorization);
     } catch (error) {
       return { error: inspect(error) };
@@ -201,79 +304,18 @@ export const ToolResourceV2 = DeconfigResourceV2.define({
     },
   },
   validate: async (tool, context, _deconfig) => {
-    // Validate dependencies if provided
-    if (tool.dependencies && tool.dependencies.length > 0) {
-      // Create an MCPClientStub to call INTEGRATIONS_LIST
-      const client = createMCPToolsStub({
-        tools: PROJECT_TOOLS,
-        context,
-      });
+    const runtimeId = context.locator?.value ?? "default";
 
-      const result = await client.INTEGRATIONS_LIST({});
-      const integrations = result.items;
+    // Syntax validation: validate JavaScript/TypeScript code structure and export
+    const syntaxValidation = await validateToolSyntax(tool, runtimeId);
+    if (!syntaxValidation.valid) {
+      throw new Error(syntaxValidation.error);
+    }
 
-      for (const dependency of tool.dependencies) {
-        // Check if integration exists
-        const integration = integrations.find(
-          (item: { id: string; name: string; description?: string }) =>
-            item.id === dependency.integrationId,
-        );
-
-        if (!integration) {
-          const availableIntegrations = integrations.map(
-            (item: { id: string; name: string; description?: string }) => ({
-              id: item.id,
-              name: item.name,
-              description: item.description || "No description available",
-            }),
-          );
-
-          throw new Error(
-            `Dependency validation failed: Integration '${dependency.integrationId}' not found.\n\nAvailable integrations:\n${JSON.stringify(availableIntegrations, null, 2)}`,
-          );
-        }
-
-        /**
-         * TODO: @gimenes
-         * In the future, the agent will be able to fetch tools on demand, so we don't need to
-         * throw the avialable tools here, shrinking the number of tokens used by llms.
-         */
-        const availableTools =
-          integration.tools?.map(
-            (t: {
-              name: string;
-              description?: string;
-              inputSchema?: Record<string, unknown>;
-              outputSchema?: Record<string, unknown>;
-            }) => ({
-              name: t.name,
-              description: t.description || "No description available",
-              inputSchema: t.inputSchema || {},
-              outputSchema: t.outputSchema || {},
-            }),
-          ) ?? [];
-
-        // If toolNames is undefined, all tools from the integration are available (backward compatibility)
-        const toolsToValidate = dependency.toolNames ?? [];
-
-        if (toolsToValidate.length === 0) {
-          throw new Error(
-            `Dependency validation failed: You need to provide at least one tool name for the integration ${dependency.integrationId}. If you don't want to use any tools from this integration, remove it from the dependencies array. Available tools: ${JSON.stringify(availableTools, null, 2)}`,
-          );
-        }
-
-        for (const toolName of toolsToValidate) {
-          const tool = availableTools.find(
-            (t: { name: string }) => t.name === toolName,
-          );
-
-          if (!tool) {
-            throw new Error(
-              `Dependency validation failed: Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}).\n\nAvailable tools in this integration:\n${JSON.stringify(availableTools, null, 2)}`,
-            );
-          }
-        }
-      }
+    // Syntax validation: validate framework syntax (dependencies, integrations and tools)
+    const frameworkSyntaxValidation = await validateToolFrameworkSyntax(tool, context);
+    if (!frameworkSyntaxValidation.valid) {
+      throw new Error(frameworkSyntaxValidation.error);
     }
   },
 });

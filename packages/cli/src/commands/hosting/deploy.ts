@@ -56,9 +56,22 @@ async function getAuthorMetadata(): Promise<{
   }
 }
 
+async function isRepositoryPublic(remoteUrl: string): Promise<boolean> {
+  try {
+    const { execSync } = await import("child_process");
+    execSync(`git ls-remote ${remoteUrl}`, {
+      stdio: ["pipe", "pipe", "ignore"],
+      timeout: 5000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function getRepositoryInfo(
   workingDir: string,
-): Promise<{ remote_link?: string; local?: boolean } | null> {
+): Promise<{ remote_link?: string; private?: boolean; local?: boolean } | null> {
   try {
     const { execSync } = await import("child_process");
 
@@ -89,9 +102,13 @@ async function getRepositoryInfo(
       // No remote configured
     }
 
-    // If has remote, only return remote_link (implies local: false)
+    // If has remote, check if it's public or private
     if (remoteUrl) {
-      return { remote_link: remoteUrl };
+      const isPublic = await isRepositoryPublic(remoteUrl);
+      return {
+        remote_link: remoteUrl,
+        ...(isPublic === false && { private: true }),
+      };
     }
 
     // If no remote, mark as local-only

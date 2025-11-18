@@ -47,7 +47,8 @@ async function getAuthorMetadata(): Promise<{
 
     const user = data.user;
     return {
-      name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
+      name:
+        user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
       email: user.email || "unknown@example.com",
       image: user.user_metadata?.avatar_url,
     };
@@ -71,7 +72,11 @@ async function isRepositoryPublic(remoteUrl: string): Promise<boolean> {
 
 async function getRepositoryInfo(
   workingDir: string,
-): Promise<{ remote_link?: string; private?: boolean; local?: boolean } | null> {
+): Promise<{
+  remote_link?: string;
+  private?: boolean;
+  local?: boolean;
+} | null> {
   try {
     const { execSync } = await import("child_process");
 

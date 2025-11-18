@@ -6,6 +6,8 @@ import { join, posix, relative } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClientStub } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
+import { readSession } from "../../lib/session.js";
+import { createClient } from "../../lib/supabase.js";
 import {
   isFilePath,
   parseEnvFile,
@@ -16,6 +18,39 @@ import {
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
     return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function getAuthorMetadata(): Promise<{
+  author: string;
+  email: string;
+  image?: string;
+} | null> {
+  try {
+    const session = await readSession();
+    if (!session || !session.access_token || !session.refresh_token) {
+      return null;
+    }
+
+    const { client: supabase } = createClient();
+    await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      return null;
+    }
+
+    const user = data.user;
+    return {
+      author: user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
+      email: user.email || "unknown@example.com",
+      image: user.user_metadata?.avatar_url,
+    };
   } catch {
     return null;
   }
@@ -61,6 +96,12 @@ export type FileLike = {
   path: string;
   content: string;
   asset?: boolean;
+};
+
+export type AuthorMetadata = {
+  author: string;
+  email: string;
+  image?: string;
 };
 
 interface Options {
@@ -246,7 +287,10 @@ export const deploy = async ({
     envVarsStatus += ` + ${envVarsFromCLI} from CLI${sourcesInfo} (${envVarsTotal} total)`;
   }
 
-  const manifest = {
+  // 6. Get author metadata
+  const authorMetadata = await getAuthorMetadata();
+
+  const manifest: Record<string, unknown> = {
     appSlug,
     files,
     envVars,
@@ -257,11 +301,22 @@ export const deploy = async ({
     promote,
   };
 
+  if (authorMetadata) {
+    manifest.metadata = {
+      author: authorMetadata.author,
+      email: authorMetadata.email,
+      ...(authorMetadata.image && { image: authorMetadata.image }),
+    };
+  }
+
   console.log("🚚 Deployment summary:");
   console.log(`  App: ${appSlug}`);
   console.log(`  Files: ${files.length}`);
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
+  if (authorMetadata) {
+    console.log(`  Author: ${authorMetadata.author} <${authorMetadata.email}>`);
+  }
   if (promote) {
     console.log(`  Promote mode: true (deployment will replace production)`);
   }

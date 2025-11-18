@@ -128,8 +128,8 @@ export default function OrgSettings() {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-6 space-y-6">
-      <div className="space-y-1">
+    <div className="container max-w-3xl mx-auto py-8 space-y-8">
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Organization Settings</h1>
         <p className="text-muted-foreground">
           Configure how Decopilot selects and calls language models for this
@@ -145,7 +145,7 @@ export default function OrgSettings() {
             connections that satisfy the binding schema are shown.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8">
           {connectionsError ? (
             <p className="text-sm text-destructive">
               {connectionsErrorValue instanceof Error
@@ -158,8 +158,10 @@ export default function OrgSettings() {
               <Skeleton className="h-10 w-full max-w-sm" />
             </div>
           ) : connections.length === 0 ? (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-              <p>No connections with a MODELS binding were found.</p>
+            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground space-y-3">
+              <p className="leading-relaxed">
+                No connections with a MODELS binding were found.
+              </p>
               <Button
                 variant="outline"
                 className="mt-3"
@@ -169,7 +171,7 @@ export default function OrgSettings() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="models-binding">MCP connection</Label>
               <Select
                 value={selectedConnectionId ?? "__none__"}
@@ -192,7 +194,7 @@ export default function OrgSettings() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3 pt-1">
             <Button
               onClick={() =>
                 organizationId &&

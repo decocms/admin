@@ -1,9 +1,9 @@
 import { z } from "zod";
 import jsonSchema from "zod-to-json-schema";
 
-const ModelsBinding = z.object({
+const ModelsBinding: z.ZodTypeAny = z.object({
   MODELS_LIST: z.object({
-    input: z.object({}),
+    input: z.object({}).passthrough(),
     output: z.object({
       models: z.array(z.object({
         id: z.string(),
@@ -20,13 +20,14 @@ const ModelsBinding = z.object({
     }),
   }),
   GET_STREAM_ENDPOINT: z.object({
-    input: z.object({}),
+    input: z.object({}).passthrough(),
     output: z.object({
       url: z.url(),
-    }),
+    }).partial(),
   }),
 });
 
+// @ts-expect-error zod-to-json-schema types are not yet aligned with zod v4
 export const jsonschema = jsonSchema(ModelsBinding);
 
 export const MODELS_BINDING_SCHEMA = {
@@ -41,11 +42,10 @@ export const MODELS_BINDING_SCHEMA = {
         input: {
           type: "object",
           properties: {},
-          additionalProperties: false,
+          additionalProperties: true,
         },
         output: {
           type: "object",
-          required: ["models"],
           properties: {
             models: {
               type: "array",
@@ -83,11 +83,10 @@ export const MODELS_BINDING_SCHEMA = {
         input: {
           type: "object",
           properties: {},
-          additionalProperties: false,
+          additionalProperties: true,
         },
         output: {
           type: "object",
-          required: ["url"],
           properties: {
             url: { type: "string", format: "uri" },
           },
@@ -97,5 +96,5 @@ export const MODELS_BINDING_SCHEMA = {
       additionalProperties: false,
     },
   },
-  additionalProperties: false,
+  additionalProperties: true,
 } as const;

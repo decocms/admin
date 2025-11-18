@@ -12,6 +12,18 @@ import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { MODELS_BINDING_SCHEMA } from "../../core/bindings";
 import type { MCPConnection, ToolDefinition } from "../../storage/types";
+import { appendFile } from "fs/promises";
+
+async function logConnectionDebug(message: string) {
+  try {
+    await appendFile(
+      "./connection-tools.log",
+      `[${new Date().toISOString()}] ${message}\n`,
+    );
+  } catch {
+    // ignore logging errors
+  }
+}
 
 const ajv = new Ajv({ strict: false, allErrors: false });
 const BUILTIN_BINDINGS: Record<string, object> = {
@@ -70,23 +82,36 @@ async function fetchToolsFromMCP(
 ): Promise<ToolDefinition[] | null> {
   let client: Client | null = null;
   try {
+    await logConnectionDebug(
+      `Fetching tools for connection ${connection.id} (${connection.name})`,
+    );
     client = await createConnectionClient(connection);
     const result = await client.listTools();
 
     if (!result.tools || result.tools.length === 0) {
+      await logConnectionDebug(
+        `No tools returned for connection ${connection.id}`,
+      );
       return null;
     }
 
-    return result.tools.map((tool) => ({
+    const tools = result.tools.map((tool) => ({
       name: tool.name,
       description: tool.description ?? undefined,
       inputSchema: tool.inputSchema ?? {},
-      outputSchema: undefined,
+      outputSchema: tool.outputSchema ?? undefined,
     }));
+    await logConnectionDebug(
+      `Fetched ${tools.length} tools for connection ${connection.id}`,
+    );
+    return tools;
   } catch (error) {
     console.error(
       `Failed to fetch tools from connection ${connection.id}:`,
       error,
+    );
+    await logConnectionDebug(
+      `Error fetching tools for connection ${connection.id}: ${(error as Error).message}`,
     );
     return null;
   } finally {
@@ -127,6 +152,16 @@ export const CONNECTION_LIST = defineTool({
       | string
       | undefined);
     let validator: ValidateFunction<Record<string, unknown>> | undefined;
+    const schemaProperties =
+      schema &&
+      typeof schema === "object" &&
+      "properties" in (schema as Record<string, unknown>)
+        ? ((schema as { properties?: Record<string, unknown> }).properties ??
+          null)
+        : null;
+    const schemaPropertyKeys = schemaProperties
+      ? Object.keys(schemaProperties)
+      : null;
 
     if (schema) {
       try {
@@ -160,6 +195,9 @@ export const CONNECTION_LIST = defineTool({
           fetchResults.map(async ({ connection, tools }) => {
             if (tools && tools.length > 0) {
               await ctx.storage.connections.update(connection.id, { tools });
+              await logConnectionDebug(
+                `Stored ${tools.length} tools for connection ${connection.id}`,
+              );
             }
           }),
         );
@@ -185,11 +223,35 @@ export const CONNECTION_LIST = defineTool({
             ]),
           );
 
-          console.log("Tool map:", toolMap);
+          const bindingToolMap =
+            schemaPropertyKeys === null
+              ? toolMap
+              : Object.fromEntries(
+                  schemaPropertyKeys
+                    .filter((name) => name in toolMap)
+                    .map((name) => [name, toolMap[name]]),
+                );
 
-          return validator?.(toolMap) ?? true;
+          const isValid = validator?.(bindingToolMap) ?? true;
+          if (!isValid) {
+            logConnectionDebug(
+              `Connection ${connection.id} failed binding validation: ${JSON.stringify(validator?.errors ?? [])}`,
+            ).catch(() => {});
+          } else if (schemaPropertyKeys !== null) {
+            logConnectionDebug(
+              `Connection ${connection.id} satisfied binding schema with required tools: ${schemaPropertyKeys.join(", ")}`,
+            ).catch(() => {});
+          }
+
+          return isValid;
         })
       : connections;
+
+    if (schema) {
+      logConnectionDebug(
+        `CONNECTION_LIST returning ${filteredConnections.length} connection(s) for binding ${typeof input.binding === "string" ? input.binding : "custom schema"}`,
+      ).catch(() => {});
+    }
 
     return {
       connections: filteredConnections.map((c) => ({

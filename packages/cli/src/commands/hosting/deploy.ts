@@ -24,7 +24,7 @@ function tryParseJson(text: string): Record<string, unknown> | null {
 }
 
 async function getAuthorMetadata(): Promise<{
-  author: string;
+  name: string;
   email: string;
   image?: string;
 } | null> {
@@ -47,7 +47,7 @@ async function getAuthorMetadata(): Promise<{
 
     const user = data.user;
     return {
-      author: user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
+      name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
       email: user.email || "unknown@example.com",
       image: user.user_metadata?.avatar_url,
     };
@@ -117,7 +117,7 @@ export type FileLike = {
 };
 
 export type AuthorMetadata = {
-  author: string;
+  name: string;
   email: string;
   image?: string;
 };
@@ -323,14 +323,21 @@ export const deploy = async ({
   };
 
   if (authorMetadata || repositoryUrl) {
-    manifest.metadata = {
-      ...(authorMetadata && {
-        author: authorMetadata.author,
+    const metadata: Record<string, unknown> = {};
+
+    if (authorMetadata) {
+      metadata.author = {
+        name: authorMetadata.name,
         email: authorMetadata.email,
         ...(authorMetadata.image && { image: authorMetadata.image }),
-      }),
-      ...(repositoryUrl && { repository: repositoryUrl }),
-    };
+      };
+    }
+
+    if (repositoryUrl) {
+      metadata.repository = repositoryUrl;
+    }
+
+    manifest.metadata = metadata;
   }
 
   console.log("🚚 Deployment summary:");
@@ -339,7 +346,7 @@ export const deploy = async ({
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
   if (authorMetadata) {
-    console.log(`  Author: ${authorMetadata.author} <${authorMetadata.email}>`);
+    console.log(`  Author: ${authorMetadata.name} <${authorMetadata.email}>`);
   }
   if (repositoryUrl) {
     console.log(`  Repository: ${repositoryUrl}`);

@@ -939,7 +939,7 @@ export const createIntegration = createIntegrationManagementTool({
           // Format as integration ID (with i: prefix)
           const integrationId = formatId("i", integrationUuid);
           const customAppName = integrationId;
-          const customScopeName = "custom";
+          const customScopeName = crypto.randomUUID();
 
           // Ensure custom scope exists
           let scopeId: string;

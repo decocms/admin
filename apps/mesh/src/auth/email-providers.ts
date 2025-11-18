@@ -23,15 +23,15 @@ interface SendGridConfig {
 // Discriminated union for email provider config
 export type EmailProviderConfig =
   | {
-      id: string;
-      provider: "resend";
-      config: ResendConfig;
-    }
+    id: string;
+    provider: "resend";
+    config: ResendConfig;
+  }
   | {
-      id: string;
-      provider: "sendgrid";
-      config: SendGridConfig;
-    };
+    id: string;
+    provider: "sendgrid";
+    config: SendGridConfig;
+  };
 
 export interface SendEmailParams {
   to: string;
@@ -94,6 +94,7 @@ export function createEmailSender(
     throw new Error(`Unknown email provider: ${providerConfig.provider}`);
   }
   // Type assertion is safe here because we're using discriminated union
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return factory(providerConfig as any);
 }
 

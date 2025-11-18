@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -29,25 +28,21 @@ import {
   useUpdateOrganizationSettings,
 } from "@/web/hooks/use-organization-settings";
 
-interface OrganizationSettingsResponse {
-  organizationId: string;
-  modelsBindingConnectionId: string | null;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-}
-
 export default function OrgSettings() {
   const navigate = useNavigate();
   const { locator, org } = useProjectContext();
 
   const {
-    data: organizations,
-    isLoading: organizationsLoading,
-    isError: organizationsError,
+    data: organizationsData,
+    error: organizationsError,
+    isPending: organizationsPending,
   } = authClient.useListOrganizations();
 
+  const organizations = organizationsData ?? [];
+  const organizationsLoading = organizationsPending && organizations.length === 0;
+
   const currentOrganization = useMemo(() => {
-    return organizations?.find((organization) => organization.slug === org);
+    return organizations.find((organization) => organization.slug === org);
   }, [organizations, org]);
 
   const organizationId = currentOrganization?.id;
@@ -128,7 +123,7 @@ export default function OrgSettings() {
   }
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 space-y-8">
+    <div className="container mx-auto max-w-3xl space-y-8 py-8">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Organization Settings</h1>
         <p className="text-muted-foreground">
@@ -137,15 +132,15 @@ export default function OrgSettings() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="shadow-sm">
+        <CardHeader className="space-y-2 pb-0 pt-6">
           <CardTitle>Models Provider</CardTitle>
           <CardDescription>
             Choose the MCP connection that exposes the MODELS binding. Only
             connections that satisfy the binding schema are shown.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 px-6 pb-6">
           {connectionsError ? (
             <p className="text-sm text-destructive">
               {connectionsErrorValue instanceof Error
@@ -158,7 +153,7 @@ export default function OrgSettings() {
               <Skeleton className="h-10 w-full max-w-sm" />
             </div>
           ) : connections.length === 0 ? (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground space-y-3">
+            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground space-y-4">
               <p className="leading-relaxed">
                 No connections with a MODELS binding were found.
               </p>
@@ -171,7 +166,7 @@ export default function OrgSettings() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Label htmlFor="models-binding">MCP connection</Label>
               <Select
                 value={selectedConnectionId ?? "__none__"}
@@ -194,7 +189,7 @@ export default function OrgSettings() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 pt-1">
+          <div className="mt-6 flex flex-wrap gap-3">
             <Button
               onClick={() =>
                 organizationId &&

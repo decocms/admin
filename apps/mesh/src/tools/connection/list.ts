@@ -6,9 +6,12 @@
 
 import Ajv, { type ValidateFunction } from "ajv";
 import { z } from "zod/v3";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { MODELS_BINDING_SCHEMA } from "../../core/bindings";
+import type { MCPConnection, ToolDefinition } from "../../storage/types";
 
 const ajv = new Ajv({ strict: false, allErrors: false });
 const BUILTIN_BINDINGS: Record<string, object> = {
@@ -29,6 +32,68 @@ function resolveBindingSchema(
   }
 
   return binding;
+}
+
+async function createConnectionClient(connection: MCPConnection) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (connection.connectionToken) {
+    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  }
+
+  if (connection.connectionHeaders) {
+    Object.assign(headers, connection.connectionHeaders);
+  }
+
+  const transport = new StreamableHTTPClientTransport(
+    new URL(connection.connectionUrl),
+    {
+      requestInit: {
+        headers,
+      },
+    },
+  );
+
+  const client = new Client({
+    name: "mcp-mesh-connection-list",
+    version: "1.0.0",
+  });
+
+  await client.connect(transport);
+  return client;
+}
+
+async function fetchToolsFromMCP(
+  connection: MCPConnection,
+): Promise<ToolDefinition[] | null> {
+  let client: Client | null = null;
+  try {
+    client = await createConnectionClient(connection);
+    const result = await client.listTools();
+
+    if (!result.tools || result.tools.length === 0) {
+      return null;
+    }
+
+    return result.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description ?? undefined,
+      inputSchema: tool.inputSchema ?? {},
+      outputSchema: undefined,
+    }));
+  } catch (error) {
+    console.error(
+      `Failed to fetch tools from connection ${connection.id}:`,
+      error,
+    );
+    return null;
+  } finally {
+    if (client?.close) {
+      await client.close();
+    }
+  }
 }
 
 export const CONNECTION_LIST = defineTool({
@@ -73,7 +138,36 @@ export const CONNECTION_LIST = defineTool({
       }
     }
 
-    const connections = await ctx.storage.connections.list(organization.id);
+    let connections = await ctx.storage.connections.list(organization.id);
+
+    // If a validator is present, check which connections need tools fetched
+    if (validator) {
+      const connectionsNeedingTools = connections.filter(
+        (conn) => !conn.tools || conn.tools.length === 0,
+      );
+
+      // Fetch tools for all connections in parallel
+      if (connectionsNeedingTools.length > 0) {
+        const fetchResults = await Promise.all(
+          connectionsNeedingTools.map(async (connection) => {
+            const tools = await fetchToolsFromMCP(connection);
+            return { connection, tools };
+          }),
+        );
+
+        // Update connections with fetched tools
+        await Promise.all(
+          fetchResults.map(async ({ connection, tools }) => {
+            if (tools && tools.length > 0) {
+              await ctx.storage.connections.update(connection.id, { tools });
+            }
+          }),
+        );
+
+        // Refresh connections list after updates
+        connections = await ctx.storage.connections.list(organization.id);
+      }
+    }
 
     const filteredConnections = validator
       ? connections.filter((connection) => {
@@ -90,6 +184,8 @@ export const CONNECTION_LIST = defineTool({
               },
             ]),
           );
+
+          console.log("Tool map:", toolMap);
 
           return validator?.(toolMap) ?? true;
         })

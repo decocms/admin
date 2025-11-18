@@ -82,6 +82,7 @@ export interface RequestMetadata {
 import { BetterAuthInstance } from "@/auth";
 import type { AuditLogStorage } from "../storage/audit-log";
 import type { ConnectionStorage } from "../storage/connection";
+import type { OrganizationSettingsStorage } from "../storage/organization-settings";
 
 // Better Auth instance type - flexible for testing
 // In production, this is the actual Better Auth instance
@@ -99,6 +100,7 @@ import type { ConnectionStorage } from "../storage/connection";
 export interface MeshStorage {
   connections: ConnectionStorage;
   auditLogs: AuditLogStorage;
+  organizationSettings: OrganizationSettingsStorage;
 }
 
 // ============================================================================

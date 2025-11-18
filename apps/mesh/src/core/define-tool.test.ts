@@ -33,6 +33,10 @@ const createMockContext = (): MeshContext => ({
       log: vi.fn().mockResolvedValue(undefined),
       query: vi.fn().mockResolvedValue([]),
     } as Partial<AuditLogStorage> as AuditLogStorage,
+    organizationSettings: {
+      get: vi.fn(),
+      upsert: vi.fn(),
+    } as never,
   },
   vault: null as never,
   authInstance: null as never,

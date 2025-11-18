@@ -1,0 +1,41 @@
+import { z } from "zod/v3";
+import { defineTool } from "../../core/define-tool";
+import { requireAuth } from "../../core/mesh-context";
+
+export const ORGANIZATION_SETTINGS_GET = defineTool({
+  name: "ORGANIZATION_SETTINGS_GET",
+  description: "Get organization-level settings including configured MODELS binding",
+
+  inputSchema: z.object({
+    organizationId: z.string(),
+  }),
+
+  outputSchema: z.object({
+    organizationId: z.string(),
+    modelsBindingConnectionId: z.string().nullable(),
+    createdAt: z.union([z.date(), z.string()]).optional(),
+    updatedAt: z.union([z.date(), z.string()]).optional(),
+  }),
+
+  handler: async (input, ctx) => {
+    requireAuth(ctx);
+    await ctx.access.check();
+
+    if (ctx.organization && ctx.organization.id !== input.organizationId) {
+      throw new Error("Cannot access settings for a different organization");
+    }
+
+    const settings = await ctx.storage.organizationSettings.get(
+      input.organizationId,
+    );
+
+    if (!settings) {
+      return {
+        organizationId: input.organizationId,
+        modelsBindingConnectionId: null,
+      };
+    }
+
+    return settings;
+  },
+});

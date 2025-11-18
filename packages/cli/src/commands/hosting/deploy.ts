@@ -56,19 +56,43 @@ async function getAuthorMetadata(): Promise<{
   }
 }
 
-async function getRepositoryRemoteUrl(workingDir: string): Promise<string | null> {
+async function getRepositoryInfo(
+  workingDir: string,
+): Promise<{ remote_link?: string; local: boolean } | null> {
   try {
     const { execSync } = await import("child_process");
-    const remoteUrl = execSync("git config --get remote.origin.url", {
-      cwd: workingDir,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "ignore"],
-    }).trim();
 
-    if (remoteUrl && remoteUrl.length > 0) {
-      return remoteUrl;
+    // Check if it's a git repository
+    try {
+      execSync("git rev-parse --git-dir", {
+        cwd: workingDir,
+        stdio: ["pipe", "pipe", "ignore"],
+      });
+    } catch {
+      // Not a git repository
+      return null;
     }
-    return null;
+
+    // Try to get remote URL
+    let remoteUrl: string | null = null;
+    try {
+      const url = execSync("git config --get remote.origin.url", {
+        cwd: workingDir,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "ignore"],
+      }).trim();
+
+      if (url && url.length > 0) {
+        remoteUrl = url;
+      }
+    } catch {
+      // No remote configured
+    }
+
+    return {
+      ...(remoteUrl && { remote_link: remoteUrl }),
+      local: true,
+    };
   } catch {
     return null;
   }
@@ -308,8 +332,8 @@ export const deploy = async ({
   // 6. Get author metadata
   const authorMetadata = await getAuthorMetadata();
 
-  // 7. Get repository remote URL
-  const repositoryUrl = await getRepositoryRemoteUrl(cwd);
+  // 7. Get repository info
+  const repositoryInfo = await getRepositoryInfo(cwd);
 
   const manifest: Record<string, unknown> = {
     appSlug,
@@ -322,7 +346,7 @@ export const deploy = async ({
     promote,
   };
 
-  if (authorMetadata || repositoryUrl) {
+  if (authorMetadata || repositoryInfo) {
     const metadata: Record<string, unknown> = {};
 
     if (authorMetadata) {
@@ -333,8 +357,8 @@ export const deploy = async ({
       };
     }
 
-    if (repositoryUrl) {
-      metadata.repository = repositoryUrl;
+    if (repositoryInfo) {
+      metadata.repository = repositoryInfo;
     }
 
     manifest.metadata = metadata;
@@ -348,8 +372,11 @@ export const deploy = async ({
   if (authorMetadata) {
     console.log(`  Author: ${authorMetadata.name} <${authorMetadata.email}>`);
   }
-  if (repositoryUrl) {
-    console.log(`  Repository: ${repositoryUrl}`);
+  if (repositoryInfo) {
+    const repoStatus = repositoryInfo.remote_link
+      ? `${repositoryInfo.remote_link} (local)`
+      : "Local repository";
+    console.log(`  Repository: ${repoStatus}`);
   }
   if (promote) {
     console.log(`  Promote mode: true (deployment will replace production)`);

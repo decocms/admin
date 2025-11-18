@@ -107,7 +107,7 @@ async function getRepositoryInfo(
       const isPublic = await isRepositoryPublic(remoteUrl);
       return {
         remote_link: remoteUrl,
-        ...(isPublic === false && { private: true }),
+        private: !isPublic,
       };
     }
 

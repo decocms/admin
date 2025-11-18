@@ -56,6 +56,24 @@ async function getAuthorMetadata(): Promise<{
   }
 }
 
+async function getRepositoryRemoteUrl(workingDir: string): Promise<string | null> {
+  try {
+    const { execSync } = await import("child_process");
+    const remoteUrl = execSync("git config --get remote.origin.url", {
+      cwd: workingDir,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    }).trim();
+
+    if (remoteUrl && remoteUrl.length > 0) {
+      return remoteUrl;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizePath(path: string): string {
   // Convert Windows backslashes to Unix forward slashes
   return posix.normalize(path.replace(/\\/g, "/"));
@@ -290,6 +308,9 @@ export const deploy = async ({
   // 6. Get author metadata
   const authorMetadata = await getAuthorMetadata();
 
+  // 7. Get repository remote URL
+  const repositoryUrl = await getRepositoryRemoteUrl(cwd);
+
   const manifest: Record<string, unknown> = {
     appSlug,
     files,
@@ -301,11 +322,14 @@ export const deploy = async ({
     promote,
   };
 
-  if (authorMetadata) {
+  if (authorMetadata || repositoryUrl) {
     manifest.metadata = {
-      author: authorMetadata.author,
-      email: authorMetadata.email,
-      ...(authorMetadata.image && { image: authorMetadata.image }),
+      ...(authorMetadata && {
+        author: authorMetadata.author,
+        email: authorMetadata.email,
+        ...(authorMetadata.image && { image: authorMetadata.image }),
+      }),
+      ...(repositoryUrl && { repository: repositoryUrl }),
     };
   }
 
@@ -316,6 +340,9 @@ export const deploy = async ({
   console.log(`  ${wranglerConfigStatus}`);
   if (authorMetadata) {
     console.log(`  Author: ${authorMetadata.author} <${authorMetadata.email}>`);
+  }
+  if (repositoryUrl) {
+    console.log(`  Repository: ${repositoryUrl}`);
   }
   if (promote) {
     console.log(`  Promote mode: true (deployment will replace production)`);

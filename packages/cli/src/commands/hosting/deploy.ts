@@ -58,7 +58,7 @@ async function getAuthorMetadata(): Promise<{
 
 async function getRepositoryInfo(
   workingDir: string,
-): Promise<{ remote_link?: string; local: boolean } | null> {
+): Promise<{ remote_link?: string; local?: boolean } | null> {
   try {
     const { execSync } = await import("child_process");
 
@@ -89,10 +89,13 @@ async function getRepositoryInfo(
       // No remote configured
     }
 
-    return {
-      ...(remoteUrl && { remote_link: remoteUrl }),
-      local: true,
-    };
+    // If has remote, only return remote_link (implies local: false)
+    if (remoteUrl) {
+      return { remote_link: remoteUrl };
+    }
+
+    // If no remote, mark as local-only
+    return { local: true };
   } catch {
     return null;
   }

@@ -64,6 +64,7 @@ import { genEnv } from "./commands/gen/gen.js";
 import { upgradeCommand } from "./commands/update/upgrade.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
+import { addRegistryCommand } from "./commands/add/add-registry.js";
 import {
   autocompleteIntegrations,
   callToolCommand,
@@ -373,9 +374,9 @@ const create = new Command("create")
     }
   });
 
-// Add command implementation
-const add = new Command("add")
-  .description("Add integrations to the current project.")
+// Add installed integrations command implementation
+const addInstalled = new Command("installed")
+  .description("Add installed integrations to the current project.")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
     try {
@@ -386,6 +387,68 @@ const add = new Command("add")
     } catch (error) {
       console.error(
         "❌ Failed to add integrations:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Add from registry command implementation
+const addRegistry = new Command("registry")
+  .description("Add apps from the registry to the current project.")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      await addRegistryCommand({
+        workspace: options.workspace,
+        local: getLocal(),
+      });
+    } catch (error) {
+      console.error(
+        "❌ Failed to add registry apps:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Add command parent - defaults to registry search
+const add = new Command("add")
+  .description("Add integrations from the registry to the current project.")
+  .argument("[app-name]", "Registry app name (e.g., @deco/pinecone-assistant)")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .option("--no-gen", "Skip generating types after adding")
+  .addCommand(addInstalled)
+  .addCommand(addRegistry)
+  .action(async (appName, options) => {
+    // If app name provided, add from registry directly
+    if (appName) {
+      try {
+        await addRegistryCommand({
+          workspace: options.workspace,
+          local: getLocal(),
+          appName,
+          skipGen: !options.gen,
+        });
+      } catch (error) {
+        console.error(
+          "❌ Failed to add registry app:",
+          error instanceof Error ? error.message : String(error),
+        );
+        process.exit(1);
+      }
+      return;
+    }
+
+    // Default behavior: search and add from registry interactively
+    try {
+      await addRegistryCommand({
+        workspace: options.workspace,
+        local: getLocal(),
+      });
+    } catch (error) {
+      console.error(
+        "❌ Failed to add registry apps:",
         error instanceof Error ? error.message : String(error),
       );
       process.exit(1);

@@ -29,6 +29,13 @@ async function getProjectSidebarItems({
       onClick: () =>
         navigate({ to: "/$org/members", params: { org: org ?? "" } }),
     },
+    {
+      key: "settings",
+      label: "Settings",
+      icon: "settings",
+      onClick: () =>
+        navigate({ to: "/$org/settings", params: { org: org ?? "" } }),
+    },
   ];
 
   const navigationItems: NavigationSidebarItem[] = isOrgAdminProject

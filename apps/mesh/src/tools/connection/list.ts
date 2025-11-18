@@ -4,16 +4,39 @@
  * List all connections in the organization
  */
 
+import Ajv, { type ValidateFunction } from "ajv";
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
+import { MODELS_BINDING_SCHEMA } from "../../core/bindings";
+
+const ajv = new Ajv({ strict: false, allErrors: false });
+const BUILTIN_BINDINGS: Record<string, object> = {
+  MODELS: MODELS_BINDING_SCHEMA,
+};
+
+function resolveBindingSchema(
+  binding?: Record<string, unknown> | string,
+): object | null {
+  if (!binding) return null;
+
+  if (typeof binding === "string") {
+    const schema = BUILTIN_BINDINGS[binding.toUpperCase()];
+    if (!schema) {
+      throw new Error(`Unknown binding schema: ${binding}`);
+    }
+    return schema;
+  }
+
+  return binding;
+}
 
 export const CONNECTION_LIST = defineTool({
   name: "CONNECTION_LIST",
   description: "List all connections in the organization",
 
   inputSchema: z.object({
-    // No scope parameter needed - all connections are org-scoped
+    binding: z.union([z.object({}).passthrough(), z.string()]).optional(),
   }),
 
   outputSchema: z.object({
@@ -30,19 +53,50 @@ export const CONNECTION_LIST = defineTool({
     ),
   }),
 
-  handler: async (_input, ctx) => {
-    // Check authorization
+  handler: async (input, ctx) => {
     await ctx.access.check();
 
-    // Require organization context
     const organization = requireOrganization(ctx);
+    const schema = resolveBindingSchema(input.binding as
+      | Record<string, unknown>
+      | string
+      | undefined);
+    let validator: ValidateFunction<Record<string, unknown>> | undefined;
 
-    // List connections for this organization
+    if (schema) {
+      try {
+        validator = ajv.compile<Record<string, unknown>>(schema);
+      } catch (error) {
+        throw new Error(
+          `Invalid binding schema provided: ${(error as Error).message}`,
+        );
+      }
+    }
+
     const connections = await ctx.storage.connections.list(organization.id);
 
-    // Map to output format
+    const filteredConnections = validator
+      ? connections.filter((connection) => {
+          if (!connection.tools || connection.tools.length === 0) {
+            return false;
+          }
+
+          const toolMap = Object.fromEntries(
+            connection.tools.map((tool) => [
+              tool.name,
+              {
+                input: tool.inputSchema ?? {},
+                output: tool.outputSchema ?? {},
+              },
+            ]),
+          );
+
+          return validator?.(toolMap) ?? true;
+        })
+      : connections;
+
     return {
-      connections: connections.map((c) => ({
+      connections: filteredConnections.map((c) => ({
         id: c.id,
         name: c.name,
         description: c.description,

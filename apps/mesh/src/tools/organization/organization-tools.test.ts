@@ -100,6 +100,10 @@ const createMockContext = (
   storage: {
     connections: null as never,
     auditLogs: null as never,
+    organizationSettings: {
+      get: vi.fn(),
+      upsert: vi.fn(),
+    } as never,
   },
   vault: null as never,
   authInstance: authInstance as unknown as BetterAuthInstance,

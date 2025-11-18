@@ -243,6 +243,7 @@ describe("createMeshContextFactory", () => {
 
       expect(meshCtx.storage.connections).toBeDefined();
       expect(meshCtx.storage.auditLogs).toBeDefined();
+      expect(meshCtx.storage.organizationSettings).toBeDefined();
     });
   });
 

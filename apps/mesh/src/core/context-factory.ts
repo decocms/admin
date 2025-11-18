@@ -14,6 +14,7 @@ import type { Context } from "hono";
 import type { Kysely } from "kysely";
 import { ConnectionStorage } from "../storage/connection";
 import { AuditLogStorage } from "../storage/audit-log";
+import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
 import type { MeshContext, BetterAuthInstance } from "./mesh-context";
@@ -266,6 +267,7 @@ export function createMeshContextFactory(
   const storage = {
     connections: new ConnectionStorage(config.db, vault),
     auditLogs: new AuditLogStorage(config.db),
+    organizationSettings: new OrganizationSettingsStorage(config.db),
     // Note: Organizations, teams, members, roles managed by Better Auth organization plugin
     // Note: Policies handled by Better Auth permissions directly
     // Note: API keys (tokens) managed by Better Auth API Key plugin

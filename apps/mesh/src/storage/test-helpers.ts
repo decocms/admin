@@ -49,6 +49,15 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn("updatedAt", "text", (col) => col.notNull())
     .execute();
 
+  await db.schema
+    .createTable("organization_settings")
+    .ifNotExists()
+    .addColumn("organizationId", "text", (col) => col.primaryKey())
+    .addColumn("modelsBindingConnectionId", "text")
+    .addColumn("createdAt", "text", (col) => col.notNull())
+    .addColumn("updatedAt", "text", (col) => col.notNull())
+    .execute();
+
   // API Keys table
   await db.schema
     .createTable("api_keys")
@@ -86,6 +95,7 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
  */
 export async function dropTestSchema(db: Kysely<Database>): Promise<void> {
   await db.schema.dropTable("audit_logs").ifExists().execute();
+  await db.schema.dropTable("organization_settings").ifExists().execute();
   await db.schema.dropTable("connections").ifExists().execute();
   await db.schema.dropTable("api_keys").ifExists().execute();
   await db.schema.dropTable("users").ifExists().execute();

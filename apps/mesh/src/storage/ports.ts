@@ -5,7 +5,7 @@
  * Following the Ports & Adapters (Hexagonal Architecture) pattern.
  */
 
-import type { MCPConnection, OAuthConfig } from "./types";
+import type { MCPConnection, OAuthConfig, OrganizationSettings } from "./types";
 
 // ============================================================================
 // Connection Storage Port
@@ -52,4 +52,16 @@ export interface ConnectionStoragePort {
   update(id: string, data: UpdateConnectionData): Promise<MCPConnection>;
   delete(id: string): Promise<void>;
   testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }>;
+}
+
+// ============================================================================
+// Organization Settings Storage Port
+// ============================================================================
+
+export interface OrganizationSettingsStoragePort {
+  get(organizationId: string): Promise<OrganizationSettings | null>;
+  upsert(
+    organizationId: string,
+    data: { modelsBindingConnectionId: string | null },
+  ): Promise<OrganizationSettings>;
 }

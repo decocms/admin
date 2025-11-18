@@ -20,6 +20,7 @@ import { PrometheusSerializer } from "@opentelemetry/exporter-prometheus";
 import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 import authRoutes from "./routes/auth";
+import modelsRoutes from "./routes/models";
 import { serveStatic } from "hono/bun";
 
 // Define Hono variables type
@@ -109,7 +110,7 @@ app.get("/api/tools/management", (c) => {
   });
 });
 
-// Mount custom auth routes at /api/auth
+// Mount custom auth routes at /api/auth before Better Auth catch-all
 app.route("/api/auth/custom", authRoutes);
 
 // Mount Better Auth handler for ALL /api/auth/* routes
@@ -225,6 +226,8 @@ app.use("*", async (c, next) => {
 // Routes
 // ============================================================================
 
+app.route("/api", modelsRoutes);
+
 app.use("/mcp/:connectionId?", async (c, next) => {
   const meshContext = c.var.meshContext;
   const connectionId = c.req.param("connectionId") ?? "self";
@@ -280,10 +283,13 @@ app.notFound((c) => {
   );
 });
 
-if (process.env.NODE_ENV === "development") {
+const isDevelopment = process.env.NODE_ENV === "development";
+const isTest = process.env.NODE_ENV === "test";
+
+if (isDevelopment) {
   const { devServerProxy } = await import("./utils/dev-server-proxy");
   app.use("*", (c) => devServerProxy(c));
-} else {
+} else if (!isTest) {
   // --- Production static serving ---
   app.use("/assets/*", serveStatic({ root: "./dist" })); // serve Vite assets
   app.get("*", serveStatic({ path: "./dist/index.html" })); // SPA fallback

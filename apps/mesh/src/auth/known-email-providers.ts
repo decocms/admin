@@ -57,7 +57,9 @@ export class SendGrid implements EmailProvider {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to send email via SendGrid: ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Failed to send email via SendGrid: ${response.statusText} - ${errorText}`,
+      );
     }
   }
 }

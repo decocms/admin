@@ -7,16 +7,31 @@
  * - Other email-based features
  */
 
-import { Resend } from "./known-email-providers";
+import { Resend, SendGrid } from "./known-email-providers";
 
-export interface EmailProviderConfig {
-  id: string;
-  provider: "resend";
-  config: {
-    apiKey: string;
-    fromEmail: string;
-  };
+// Provider-specific config types
+interface ResendConfig {
+  apiKey: string;
+  fromEmail: string;
 }
+
+interface SendGridConfig {
+  apiKey: string;
+  fromEmail: string;
+}
+
+// Discriminated union for email provider config
+export type EmailProviderConfig =
+  | {
+      id: string;
+      provider: "resend";
+      config: ResendConfig;
+    }
+  | {
+      id: string;
+      provider: "sendgrid";
+      config: SendGridConfig;
+    };
 
 export interface SendEmailParams {
   to: string;
@@ -24,26 +39,62 @@ export interface SendEmailParams {
   html: string;
 }
 
+// Provider factory function type
+type ProviderFactory<T extends EmailProviderConfig> = (
+  providerConfig: T,
+) => (params: SendEmailParams) => Promise<void>;
+
+// Strongly typed provider factories
+const createResendSender: ProviderFactory<
+  Extract<EmailProviderConfig, { provider: "resend" }>
+> = (providerConfig) => {
+  const resend = new Resend(providerConfig.config.apiKey);
+  return async ({ to, subject, html }: SendEmailParams) => {
+    await resend.sendEmail({
+      to,
+      from: providerConfig.config.fromEmail,
+      subject,
+      html,
+    });
+  };
+};
+
+const createSendGridSender: ProviderFactory<
+  Extract<EmailProviderConfig, { provider: "sendgrid" }>
+> = (providerConfig) => {
+  const sendGrid = new SendGrid(providerConfig.config.apiKey);
+  return async ({ to, subject, html }: SendEmailParams) => {
+    await sendGrid.sendEmail({
+      to,
+      from: providerConfig.config.fromEmail,
+      subject,
+      html,
+    });
+  };
+};
+
+// Strongly typed provider map
+const providers: {
+  [K in EmailProviderConfig["provider"]]: ProviderFactory<
+    Extract<EmailProviderConfig, { provider: K }>
+  >;
+} = {
+  resend: createResendSender,
+  sendgrid: createSendGridSender,
+};
+
 /**
  * Get an email sender function from a provider config
  */
 export function createEmailSender(
   providerConfig: EmailProviderConfig,
 ): (params: SendEmailParams) => Promise<void> {
-  if (providerConfig.provider === "resend") {
-    const resend = new Resend(providerConfig.config.apiKey);
-
-    return async ({ to, subject, html }: SendEmailParams) => {
-      await resend.sendEmail({
-        to,
-        from: providerConfig.config.fromEmail,
-        subject,
-        html,
-      });
-    };
+  const factory = providers[providerConfig.provider];
+  if (!factory) {
+    throw new Error(`Unknown email provider: ${providerConfig.provider}`);
   }
-
-  throw new Error(`Unknown email provider: ${providerConfig.provider}`);
+  // Type assertion is safe here because we're using discriminated union
+  return factory(providerConfig as any);
 }
 
 /**

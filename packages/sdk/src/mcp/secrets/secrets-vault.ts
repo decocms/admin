@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
-import { AppContext } from "../context";
+import type { AppContext } from "../context";
 import { relations } from "../relations";
 import { projectSecrets, projectSecretsAuditLog } from "../schema";
 import { getProjectIdFromContext } from "../projects/util";

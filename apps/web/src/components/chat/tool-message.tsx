@@ -26,8 +26,17 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ToolUIPart } from "ai";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useCopy } from "../../hooks/use-copy.ts";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import {
   truncateHash,
   useGetVersions,
@@ -932,7 +941,29 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
       {/* Custom UI for special tools (like SECRETS_PROMPT_USER) */}
       {!resourceUri && needsCustomUI && toolName === "SECRETS_PROMPT_USER" && (
         <div className="mt-2">
-          <SecretsPromptUI part={part} />
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 text-sm text-destructive">
+                Failed to load secrets prompt
+              </div>
+            }
+          >
+            <Suspense
+              fallback={
+                <div className="p-4 border border-border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon
+                      name="progress_activity"
+                      className="size-4 animate-spin"
+                    />
+                    Loading...
+                  </div>
+                </div>
+              }
+            >
+              <SecretsPromptUI part={part} />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       )}
 
@@ -1179,7 +1210,31 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
   }
 
   if (toolName === "SECRETS_PROMPT_USER") {
-    return <SecretsPromptUI part={part} />;
+    return (
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 text-sm text-destructive">
+            Failed to load secrets prompt
+          </div>
+        }
+      >
+        <Suspense
+          fallback={
+            <div className="p-4 border border-border rounded-lg bg-background">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon
+                  name="progress_activity"
+                  className="size-4 animate-spin"
+                />
+                Loading...
+              </div>
+            </div>
+          }
+        >
+          <SecretsPromptUI part={part} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   // For other tools, only show output when available

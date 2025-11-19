@@ -57,7 +57,11 @@ export function extractResourceUri(
  */
 export function openResourceTab(
   resourceUri: string,
-  tabs: { id: string; type: "list" | "detail"; resourceUri?: string }[],
+  tabs: {
+    id: string;
+    type: "list" | "detail" | "page";
+    resourceUri?: string;
+  }[],
   integrations: Integration[],
   addTab: (tab: {
     type: "list" | "detail";

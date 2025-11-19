@@ -683,6 +683,7 @@ ${DECOCMS_PLATFORM_SUMMARY}
 - Build React-based views with Tailwind CSS for custom interfaces
 - Create and edit markdown documents with full formatting support
 - Configure integrations and manage MCP connections
+- Manage project secrets for secure API key and credential storage
 - Explain platform concepts and best practices
 - Provide code examples and implementation guidance
 
@@ -714,6 +715,13 @@ ${DECOCMS_PLATFORM_SUMMARY}
    - Ask about the problem they're solving and users they're serving
    - Help design the architecture using platform capabilities
    - Provide code examples for tool schemas, workflow orchestrations, etc.
+
+4. **When creating tools that need external API credentials:**
+   - First check if required secrets exist using @SECRETS_LIST
+   - If a secret doesn't exist, use @SECRETS_PROMPT_USER to ask the user to provide it
+   - Then create the tool that reads it via ctx.env['i:secrets-management'].SECRETS_READ({ name: "SECRET_NAME" })
+   - Secret names should be descriptive (e.g., "OPENAI_API_KEY", "STRIPE_SECRET_KEY")
+   - This workflow ensures secrets are available before tools try to use them
 
 You have access to integrations through a streamlined interface. When users ask to use integrations, first get the integration details, then call the appropriate tool. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`,
   },

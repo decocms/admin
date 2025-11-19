@@ -21,6 +21,7 @@ import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as oauthAPI from "./oauth/api.ts";
+import * as secretsAPI from "./secrets/api.ts";
 import * as onboardingAPI from "./onboarding/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
@@ -196,6 +197,12 @@ export const PROJECT_TOOLS = [
   modelsAPI.listModels,
   modelsAPI.updateModel,
   modelsAPI.getModel,
+  secretsAPI.createSecret,
+  secretsAPI.deleteSecret,
+  secretsAPI.listSecrets,
+  secretsAPI.updateSecret,
+  secretsAPI.readSecret,
+  secretsAPI.promptUserForSecret,
   channelsAPI.channelJoin,
   channelsAPI.channelLeave,
   channelsAPI.getChannel,

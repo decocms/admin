@@ -569,6 +569,28 @@ function WorkspaceViews() {
       )}
       {pinnedTabs.map((tab, index) => renderPinnedTab(tab, index))}
 
+      {/* Secrets button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            addTab({
+              type: "page",
+              resourceUri: `settings://secrets`,
+              title: "Secrets",
+              icon: "key",
+            });
+            trackEvent("sidebar_navigation_click", {
+              item: "Secrets",
+            });
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon name="key" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Secrets</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
       {/* SECTION 3: RECENT THREADS */}
       <SidebarSeparator className="my-2 -ml-1" />
       <SidebarMenuItem>

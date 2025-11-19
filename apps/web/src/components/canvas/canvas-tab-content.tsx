@@ -32,6 +32,7 @@ const ThreadConversation = lazy(() =>
     default: m.ThreadConversation,
   })),
 );
+const Secrets = lazy(() => import("../settings/secrets.tsx"));
 
 interface CanvasTabContentProps {
   tab: CanvasTab;
@@ -258,6 +259,18 @@ function TriggerDetailWrapper({ triggerId }: { triggerId: string }) {
   );
 }
 
+function SettingsPageWrapper({ settingsPage }: { settingsPage: string }) {
+  if (settingsPage === "secrets") {
+    return <Secrets />;
+  }
+
+  return (
+    <div className="flex items-center justify-center h-full text-muted-foreground">
+      Unknown settings page: {settingsPage}
+    </div>
+  );
+}
+
 export function CanvasTabContent({ tab }: CanvasTabContentProps) {
   // Parse resourceUri to determine view type and data
   const parsed = useMemo(
@@ -328,6 +341,9 @@ export function CanvasTabContent({ tab }: CanvasTabContentProps) {
       ) : /* Trigger detail page */
       parsed.protocol === "trigger" ? (
         <TriggerDetailWrapper triggerId={parsed.triggerId!} />
+      ) : /* Settings pages */
+      parsed.protocol === "settings" ? (
+        <SettingsPageWrapper settingsPage={parsed.settingsPage!} />
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Invalid tab configuration: {parsed.protocol}

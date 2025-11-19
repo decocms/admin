@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
@@ -488,6 +489,7 @@ export function AgenticChatProvider({
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
+  const { preferences } = useUserPreferences();
 
   // Reactive mutation for appending messages
   const appendMessagesMutation = useAppendThreadMessage();
@@ -888,13 +890,19 @@ export function AgenticChatProvider({
 
       const metadata: MessageMetadata = {
         // Agent configuration
-        model: agent.model,
+        // Use user's selected model from preferences ONLY if model selector is shown in UI,
+        // otherwise use the agent's configured model (important for actor agents)
+        model: mergedUiOptions.showModelSelector
+          ? preferences.defaultModel || agent.model
+          : agent.model,
         instructions: agent.instructions,
         tools: { ...agent.tools_set, ...toolsFromContextItems },
         maxSteps: agent.max_steps,
         temperature: agent.temperature !== null ? agent.temperature : undefined,
         lastMessages: agent.memory?.last_messages,
         maxTokens: agent.max_tokens !== null ? agent.max_tokens : undefined,
+        // Use OpenRouter preference: if useOpenRouter is true, bypassOpenRouter should be false
+        bypassOpenRouter: !preferences.useOpenRouter,
 
         // Context messages (additional context not persisted to thread)
         context: context,
@@ -912,6 +920,9 @@ export function AgenticChatProvider({
     },
     [
       mergedUiOptions.readOnly,
+      mergedUiOptions.showModelSelector,
+      preferences.defaultModel,
+      preferences.useOpenRouter,
       agent.model,
       agent.instructions,
       agent.tools_set,

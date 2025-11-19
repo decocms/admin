@@ -89,6 +89,7 @@ export const providers: Record<string, Provider> = {
     tokenLimit: {
       default: 200_000,
       "gemini-2.5-pro-preview-03-25": 1_000_000,
+      "gemini-3-pro-preview": 1_048_576,
     } satisfies Partial<
       Record<ModelsOf<GoogleGenerativeAIProvider> | "default", number>
     >,
@@ -98,6 +99,7 @@ export const providers: Record<string, Provider> = {
     envVarName: "OPENAI_API_KEY",
     tokenLimit: {
       default: 200_000,
+      "gpt-5.1-codex": 400_000,
       "gpt-4.1-nano": 1_047_576,
       "gpt-4.1-mini": 1_047_576,
       "gpt-4.1": 1_047_576,

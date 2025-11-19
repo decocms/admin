@@ -743,11 +743,6 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   // Check if the nested tool needs custom UI rendering
   const needsCustomUI = useMemo(() => {
     if (toolName === "SECRETS_PROMPT_USER" && hasOutput) {
-      console.log("[CallToolUI] Detected SECRETS_PROMPT_USER with output:", {
-        toolName,
-        hasOutput,
-        output: part.output,
-      });
       return true;
     }
     return false;
@@ -1027,7 +1022,6 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
 }
 
 function SecretsPromptUI({ part }: { part: ToolUIPart }) {
-  console.log("[SecretsPromptUI] part:", part);
   const [value, setValue] = useState("");
   const [isAdded, setIsAdded] = useState(false);
   const createSecret = useCreateSecret();
@@ -1046,12 +1040,6 @@ function SecretsPromptUI({ part }: { part: ToolUIPart }) {
 
   const secretName = result.name || "";
   const description = result.description || "";
-
-  console.log("[SecretsPromptUI] Parsed:", {
-    secretName,
-    description,
-    outputData,
-  });
 
   // Check if secret already exists
   const existingSecret = useMemo(

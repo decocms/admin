@@ -59,6 +59,12 @@ async function authorizeConnectionTool(
   connectionId: string,
   toolName: string,
 ) {
+  // Session-based users inherit organization-level access. Authorization
+  // enforcement is only needed when acting via API keys which carry scoped permissions.
+  if (!ctx.auth.apiKey) {
+    return;
+  }
+
   const accessControl = new AccessControl(
     ctx.authInstance,
     ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
@@ -74,14 +80,15 @@ async function authorizeConnectionTool(
 function buildConnectionHeaders(connection: MCPConnection) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(connection.connectionHeaders ?? {}),
   };
 
   if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
-  }
-
-  if (connection.connectionHeaders) {
-    Object.assign(headers, connection.connectionHeaders);
+    if (headers.Authorization) {
+      headers["x-deco-proxy-token"] = connection.connectionToken;
+    } else {
+      headers.Authorization = `Bearer ${connection.connectionToken}`;
+    }
   }
 
   return headers;

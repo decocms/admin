@@ -133,7 +133,7 @@ export function DecoChatSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="sm:max-w-lg w-full p-0 gap-0"
+        className="sm:max-w-lg w-full p-0 gap-0 flex h-full flex-col"
         aria-description="Deco chat assistant"
       >
         <SheetHeader className="px-5 pb-4 pt-6">
@@ -175,7 +175,7 @@ export function DecoChatSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-4">
+        <div className="flex flex-1 min-h-0 flex-col gap-4">
           <div className="px-5 text-xs text-muted-foreground">
             {modelsQuery.isLoading && (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -197,7 +197,7 @@ export function DecoChatSheet({
             )}
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5">
+          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-5">
             <div className="flex flex-col gap-4 pr-4">
               {isEmpty ? (
                 <div className="rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
@@ -387,6 +387,13 @@ function useDecoChat({
   const sendMessage = useCallback(async () => {
     const prompt = input.trim();
     if (!prompt || !selectedModelId) {
+      if (!prompt) {
+        console.warn("[deco-chat] Skipping send: empty prompt");
+      } else if (!selectedModelId) {
+        console.warn("[deco-chat] Skipping send: no selected model", {
+          modelsCount: models.length,
+        });
+      }
       return;
     }
 
@@ -674,6 +681,11 @@ function extractTextFromPayload(payload: string): string | null {
       return json.data.output_text.join("");
     }
 
+    const contentFromArray = extractTextFromContentArray(
+      json.delta?.content ?? json.content,
+    );
+    if (contentFromArray) return contentFromArray;
+
     if (typeof json.content === "string") {
       return json.content;
     }
@@ -682,5 +694,28 @@ function extractTextFromPayload(payload: string): string | null {
   }
 
   return null;
+}
+
+function extractTextFromContentArray(
+  content: unknown,
+): string | null {
+  if (!Array.isArray(content)) return null;
+  const text = content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+      if (
+        typeof part === "object" &&
+        part !== null &&
+        "text" in part &&
+        typeof part.text === "string"
+      ) {
+        return part.text;
+      }
+      return "";
+    })
+    .join("");
+  return text.length > 0 ? text : null;
 }
 

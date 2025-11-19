@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { MeshContext } from "../../core/mesh-context";
@@ -114,6 +115,69 @@ async function createConnectionClient(connection: MCPConnection) {
   return { client, headers };
 }
 
+function createProxyStream(
+  source: ReadableStream<Uint8Array>,
+  meta: { org: string; connectionId: string },
+) {
+  const decoder = new TextDecoder();
+  let loggedPreview = false;
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      const reader = source.getReader();
+
+      function push() {
+        reader
+          .read()
+          .then(({ done, value }) => {
+            if (done) {
+              controller.close();
+              return;
+            }
+
+            if (value) {
+              controller.enqueue(value);
+
+              if (!loggedPreview) {
+                loggedPreview = true;
+                const preview = decoder.decode(value, { stream: false }).slice(
+                  0,
+                  500,
+                );
+                console.info(
+                  "[models:stream] Upstream preview",
+                  JSON.stringify({
+                    org: meta.org,
+                    connectionId: meta.connectionId,
+                    preview,
+                  }),
+                );
+              }
+            }
+
+            push();
+          })
+          .catch((error) => {
+            console.error(
+              "[models:stream] Proxy stream read failed",
+              JSON.stringify({
+                org: meta.org,
+                connectionId: meta.connectionId,
+                error: error instanceof Error ? error.message : String(error),
+              }),
+            );
+            controller.error(error);
+          });
+      }
+
+      push();
+    },
+    cancel(reason) {
+      source.cancel?.(reason).catch(() => {});
+    },
+  });
+}
+
 function extractJsonContent(result: unknown): unknown {
   if (!result || typeof result !== "object") {
     return result;
@@ -160,6 +224,14 @@ app.get("/:org/models/list", async (c) => {
 
     await authorizeConnectionTool(ctx, connection.id, "MODELS_LIST");
 
+    console.info(
+      "[models:list] Calling MODELS_LIST",
+      JSON.stringify({
+        org: orgSlug,
+        connectionId: connection.id,
+      }),
+    );
+
     const { client } = await createConnectionClient(connection);
     try {
       const result = await client.callTool({
@@ -168,12 +240,30 @@ app.get("/:org/models/list", async (c) => {
       });
 
       const data = extractJsonContent(result) as { models?: unknown } | undefined;
+
+      console.info(
+        "[models:list] Received response",
+        JSON.stringify({
+          org: orgSlug,
+          connectionId: connection.id,
+          models: Array.isArray(data?.models) ? data?.models.length : 0,
+          firstModel: Array.isArray(data?.models) ? data.models[0]?.id : null,
+        }),
+      );
+
       return c.json({ models: data?.models ?? [] });
     } finally {
       await client.close?.();
     }
   } catch (error) {
     const err = error as Error;
+    console.error(
+      "[models:list] Failed",
+      JSON.stringify({
+        org: orgSlug,
+        error: err.message,
+      }),
+    );
     return c.json({ error: err.message }, 400);
   }
 });
@@ -205,12 +295,29 @@ app.get("/:org/models/stream-endpoint", async (c) => {
         throw new Error("MODELS binding did not return a stream URL");
       }
 
+      console.info(
+        "[models:stream-endpoint] Resolved endpoint",
+        JSON.stringify({
+          org: orgSlug,
+          connectionId: connection.id,
+          url: data.url,
+          connectionStatus: connection.status,
+        }),
+      );
+
       return c.json({ url: data.url });
     } finally {
       await client.close?.();
     }
   } catch (error) {
     const err = error as Error;
+    console.error(
+      "[models:stream-endpoint] Failed",
+      JSON.stringify({
+        org: orgSlug,
+        error: err.message,
+      }),
+    );
     return c.json({ error: err.message }, 400);
   }
 });
@@ -245,7 +352,28 @@ app.post("/:org/models/stream", async (c) => {
         throw new Error("MODELS binding did not provide a streaming endpoint");
       }
 
+      const payloadSummary = {
+        model: payload?.model,
+        stream: payload?.stream,
+        messages: Array.isArray(payload?.messages) ? payload.messages.length : 0,
+      };
+
+      console.info(
+        "[models:stream] Proxying request",
+        JSON.stringify({
+          org: orgSlug,
+          connectionId: connection.id,
+          url: endpointData.url,
+          payload: payloadSummary,
+          headers: {
+            hasAuthorization: Boolean(headers.Authorization),
+            forwardedKeys: Object.keys(headers),
+          },
+        }),
+      );
+
       const streamHeaders = new Headers(headers);
+      streamHeaders.delete("x-deco-proxy-token");
       streamHeaders.set("Content-Type", "application/json");
       streamHeaders.set("Accept", "text/event-stream");
 
@@ -256,21 +384,66 @@ app.post("/:org/models/stream", async (c) => {
         signal: c.req.raw.signal,
       });
 
+      console.info(
+        "[models:stream] Upstream response",
+        JSON.stringify({
+          org: orgSlug,
+          connectionId: connection.id,
+          status: upstreamResponse.status,
+          statusText: upstreamResponse.statusText,
+          contentType: upstreamResponse.headers.get("content-type"),
+          hasBody: Boolean(upstreamResponse.body),
+        }),
+      );
+
       if (!upstreamResponse.ok && upstreamResponse.status !== 206) {
         const text = await upstreamResponse.text();
+
+        console.error(
+          "[models:stream] Upstream error",
+          JSON.stringify({
+            org: orgSlug,
+            connectionId: connection.id,
+            status: upstreamResponse.status,
+            detail: text.slice(0, 500),
+          }),
+        );
+
+        const status = upstreamResponse.status as ContentfulStatusCode;
         return c.json(
           {
             error: "Streaming request failed",
             detail: text,
           },
-          upstreamResponse.status,
+          status,
         );
       }
 
       const responseHeaders = new Headers(upstreamResponse.headers);
       responseHeaders.set("Cache-Control", "no-cache");
+      responseHeaders.delete("content-encoding");
+      responseHeaders.delete("Content-Encoding");
+      responseHeaders.delete("content-length");
+      responseHeaders.delete("Content-Length");
+      responseHeaders.delete("transfer-encoding");
+      responseHeaders.delete("Transfer-Encoding");
 
-      return new Response(upstreamResponse.body, {
+      const upstreamBody = upstreamResponse.body;
+
+      if (!upstreamBody) {
+        return new Response(null, {
+          status: upstreamResponse.status,
+          statusText: upstreamResponse.statusText,
+          headers: responseHeaders,
+        });
+      }
+
+      const proxiedStream = createProxyStream(upstreamBody, {
+        org: orgSlug,
+        connectionId: connection.id,
+      });
+
+      return new Response(proxiedStream, {
         status: upstreamResponse.status,
         statusText: upstreamResponse.statusText,
         headers: responseHeaders,
@@ -280,6 +453,22 @@ app.post("/:org/models/stream", async (c) => {
     }
   } catch (error) {
     const err = error as Error;
+    if (err.name === "AbortError") {
+      console.warn(
+        "[models:stream] Aborted",
+        JSON.stringify({
+          org: orgSlug,
+        }),
+      );
+      return c.json({ error: "Streaming request aborted" }, 400);
+    }
+    console.error(
+      "[models:stream] Failed",
+      JSON.stringify({
+        org: orgSlug,
+        error: err.message,
+      }),
+    );
     return c.json({ error: err.message }, 400);
   }
 });

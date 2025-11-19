@@ -1,4 +1,4 @@
-import { useIntegrations } from "@deco/sdk";
+import { useCreateSecret, useIntegrations, useSecrets } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +10,8 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
 import {
   Collapsible,
   CollapsibleContent,
@@ -49,6 +51,7 @@ import {
   HostingAppToolLike,
 } from "./tools/hosting-app-deploy.tsx";
 import { Preview } from "./tools/render-preview.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 // Map ToolUIPart state to ToolLike state for custom UI components
 const mapToToolLikeState = (
@@ -78,6 +81,7 @@ const CUSTOM_UI_TOOLS = new Set([
   "GENERATE_IMAGE",
   "READ_MCP",
   "CALL_TOOL",
+  "SECRETS_PROMPT_USER",
 ]);
 
 // Helper to extract toolName from ToolUIPart (handles both static and dynamic tools)
@@ -736,6 +740,19 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   const hasOutput = part.state === "output-available";
   const hasError = part.state === "output-error";
 
+  // Check if the nested tool needs custom UI rendering
+  const needsCustomUI = useMemo(() => {
+    if (toolName === "SECRETS_PROMPT_USER" && hasOutput) {
+      console.log("[CallToolUI] Detected SECRETS_PROMPT_USER with output:", {
+        toolName,
+        hasOutput,
+        output: part.output,
+      });
+      return true;
+    }
+    return false;
+  }, [toolName, hasOutput, part.output]);
+
   const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
     toolName || "",
     part,
@@ -917,8 +934,15 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
         </div>
       </div>
 
-      {/* Expandable input/output section when no resourceUri */}
-      {!resourceUri && isExpanded && (
+      {/* Custom UI for special tools (like SECRETS_PROMPT_USER) */}
+      {!resourceUri && needsCustomUI && toolName === "SECRETS_PROMPT_USER" && (
+        <div className="mt-2">
+          <SecretsPromptUI part={part} />
+        </div>
+      )}
+
+      {/* Expandable input/output section when no resourceUri and no custom UI */}
+      {!resourceUri && !needsCustomUI && isExpanded && (
         <div
           ref={contentRef}
           className="text-left mt-2 space-y-3 w-full min-w-0"
@@ -1002,6 +1026,143 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
   );
 }
 
+function SecretsPromptUI({ part }: { part: ToolUIPart }) {
+  console.log("[SecretsPromptUI] part:", part);
+  const [value, setValue] = useState("");
+  const [isAdded, setIsAdded] = useState(false);
+  const createSecret = useCreateSecret();
+  const { data: secrets = [] } = useSecrets();
+
+  // Extract from structuredContent (when called via CALL_TOOL)
+  const outputData =
+    (part.output as Record<string, unknown>)?.structuredContent ??
+    part.output ??
+    {};
+  const result = outputData as {
+    name?: string;
+    description?: string;
+    action?: string;
+  };
+
+  const secretName = result.name || "";
+  const description = result.description || "";
+
+  console.log("[SecretsPromptUI] Parsed:", {
+    secretName,
+    description,
+    outputData,
+  });
+
+  // Check if secret already exists
+  const existingSecret = useMemo(
+    () => secrets.find((s) => s.name === secretName),
+    [secrets, secretName],
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secretName || !value) return;
+
+    try {
+      await createSecret.mutateAsync({
+        name: secretName,
+        value,
+        description: description || undefined,
+      });
+      toast.success(`Secret "${secretName}" created successfully`);
+      setIsAdded(true);
+      setValue("");
+    } catch (error) {
+      toast.error(
+        `Failed to create secret: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  };
+
+  // If secret was just added
+  if (isAdded) {
+    return (
+      <div className="p-4 border border-border rounded-lg bg-green-500/5 border-green-500/20">
+        <div className="flex items-center gap-2 text-sm">
+          <Icon name="check_circle" className="size-5 text-green-500" />
+          <div>
+            <div className="font-medium text-green-700 dark:text-green-400">
+              Secret Added
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {secretName} is now available for use
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If secret already exists
+  if (existingSecret) {
+    return (
+      <div className="p-4 border border-border rounded-lg bg-blue-500/5 border-blue-500/20">
+        <div className="flex items-center gap-2 text-sm">
+          <Icon name="info" className="size-5 text-blue-500" />
+          <div>
+            <div className="font-medium text-blue-700 dark:text-blue-400">
+              Secret Already Exists
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {secretName} is already configured in your project
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Prompt to add secret
+  return (
+    <div className="p-4 border border-border rounded-lg bg-background space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+          <Icon name="key" className="size-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm mb-1">
+            Secret Required: {secretName}
+          </div>
+          {description && (
+            <div className="text-xs text-muted-foreground mb-3">
+              {description}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="secret-value" className="text-xs">
+                Secret Value
+              </Label>
+              <Input
+                id="secret-value"
+                type="password"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Enter secret value..."
+                className="h-9"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={createSecret.isPending || !value}
+              size="sm"
+              className="w-full"
+            >
+              {createSecret.isPending ? "Adding..." : "Add Secret"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CustomToolUI({ part }: { part: ToolUIPart }) {
   const result = (part.output ?? {}) as Record<string, unknown>;
   const toolName = useToolName(part);
@@ -1027,6 +1188,10 @@ function CustomToolUI({ part }: { part: ToolUIPart }) {
 
   if (toolName === "CALL_TOOL") {
     return <CallToolUI part={part} />;
+  }
+
+  if (toolName === "SECRETS_PROMPT_USER") {
+    return <SecretsPromptUI part={part} />;
   }
 
   // For other tools, only show output when available

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useLocalStorage } from "./use-local-storage.ts";
 
-export type PinnedTabType = "list" | "detail";
+export type PinnedTabType = "list" | "detail" | "page";
 
 export interface PinnedTab {
   id: string;

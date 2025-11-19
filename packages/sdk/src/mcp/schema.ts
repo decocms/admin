@@ -756,3 +756,76 @@ export const channels = pgTable(
     ),
   ],
 );
+
+/**
+ * create table public.project_secrets (
+ *  id uuid primary key default gen_random_uuid(),
+ *  name text not null,
+ *  value_encrypted text not null,
+ *  description text,
+ *  project_id uuid not null,
+ *  created_at timestamptz not null default now(),
+ *  updated_at timestamptz not null default now(),
+ *  constraint project_secrets_project_id_fkey foreign key (project_id) references deco_chat_projects (id) on delete cascade,
+ *  constraint project_secrets_name_project_id_unique unique (name, project_id)
+ * ) TABLESPACE pg_default;
+ */
+
+export const projectSecrets = pgTable(
+  "project_secrets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    value_encrypted: text("value_encrypted").notNull(),
+    description: text("description"),
+    project_id: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    created_at: timestamp("created_at", { mode: "string" })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { mode: "string" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("project_secrets_name_project_id_unique").on(
+      table.name,
+      table.project_id,
+    ),
+  ],
+);
+
+/**
+ * create table public.project_secrets_audit_log (
+ *  id uuid primary key default gen_random_uuid(),
+ *  secret_id uuid,
+ *  secret_name text not null,
+ *  project_id uuid not null,
+ *  accessed_by uuid,
+ *  accessed_at timestamptz not null default now(),
+ *  access_type text not null,
+ *  tool_name text,
+ *  agent_id uuid,
+ *  constraint project_secrets_audit_log_secret_id_fkey foreign key (secret_id) references project_secrets (id) on delete set null,
+ *  constraint project_secrets_audit_log_project_id_fkey foreign key (project_id) references deco_chat_projects (id) on delete cascade
+ * ) TABLESPACE pg_default;
+ */
+
+export const projectSecretsAuditLog = pgTable("project_secrets_audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  secret_id: uuid("secret_id").references(() => projectSecrets.id, {
+    onDelete: "set null",
+  }),
+  secret_name: text("secret_name").notNull(),
+  project_id: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  accessed_by: uuid("accessed_by"),
+  accessed_at: timestamp("accessed_at", { mode: "string" })
+    .notNull()
+    .defaultNow(),
+  access_type: text("access_type").notNull(),
+  tool_name: text("tool_name"),
+  agent_id: uuid("agent_id"),
+});

@@ -172,6 +172,10 @@ const Models = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/models.tsx")),
 );
 
+const Secrets = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/secrets.tsx")),
+);
+
 const Billing = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/billing.tsx")),
 );
@@ -407,6 +411,11 @@ const router = createBrowserRouter([
             path: "apps/success",
             Component: OAuthSuccess,
             handle: { title: "Connecting..." },
+          },
+          {
+            path: "settings/secrets",
+            Component: Secrets,
+            handle: { title: "Secrets" },
           },
           { path: "*", Component: ProjectHome, handle: { title: "Home" } },
         ],

@@ -178,6 +178,7 @@ export interface Vars extends PrincipalExecutionContext {
   >(
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>>;
+  executionCtx?: ExecutionContext;
 }
 
 export type EnvVars = z.infer<typeof envSchema>;

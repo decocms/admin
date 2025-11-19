@@ -26,7 +26,7 @@ export interface ThreadContextValue {
  */
 export interface CanvasTab {
   id: string;
-  type: "list" | "detail";
+  type: "list" | "detail" | "page";
   resourceUri: string; // Required: uniquely identifies the tab
   title: string;
   icon?: string;
@@ -121,6 +121,7 @@ export function parseResourceUri(resourceUri: string): {
   viewId?: string;
   workflowName?: string;
   runId?: string;
+  settingsPage?: string;
 } {
   try {
     // Check for native views
@@ -183,6 +184,15 @@ export function parseResourceUri(resourceUri: string): {
         protocol: "agent",
         agentId: agentMatch[1],
         threadId: agentMatch[2],
+      };
+    }
+
+    // Check for settings pages
+    const settingsMatch = resourceUri.match(/^settings:\/\/(.+)$/);
+    if (settingsMatch) {
+      return {
+        protocol: "settings",
+        settingsPage: settingsMatch[1],
       };
     }
 

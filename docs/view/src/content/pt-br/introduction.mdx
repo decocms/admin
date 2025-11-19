@@ -1,69 +1,134 @@
 ---
 title: Introdução
-description: Aprenda sobre o deco - a base open-source para construir software nativo de IA
+description: Conheça o deco CMS - o Sistema de Gerenciamento de Contexto para software nativo de IA
 icon: Rocket
 ---
 
 ![deco](https://assets.decocache.com/mcp/9a3facd8-1199-4635-becc-bdc3f5ee7ab1/deco-banner-capy.png)
 
-**Deco é uma base open-source para construir software nativo de IA.**
+## O que é deco CMS?
 
-Crie servidores MCP que expõem ferramentas e fluxos de trabalho para agentes de IA, com interfaces web customizadas opcionais, tudo implantado na rede global edge da Cloudflare.
+**Deco CMS** é um Sistema de Gerenciamento de Contexto open-source, o MCP Mesh para IA. Ele permite que equipes construam, implantem e gerenciem aplicações nativas de IA através de colaboração única entre usuários de negócios e desenvolvedores.
 
-## Para quem é?
+> Pense em **Lovable + n8n + LangGraph**, rodando no Cloudflare com um único comando de deploy.  
+> IA full-stack, pronta para produção.
 
-- **Vibecoders** prototipando ideias
-- **Engenheiros agênticos** implantando sistemas de produção escaláveis, seguros e sustentáveis
+## Proposta de Valor
 
-## Por que Deco?
+deco CMS conecta protótipos de IA a sistemas de produção:
 
-Nosso objetivo é simples: capacitar equipes com IA Generativa, dando aos construtores as ferramentas para criar aplicações de IA que escalam além da demonstração inicial e chegam a milhares de usuários, de forma segura e econômica.
+- **Para AI Builders:** Interface de construção em linguagem natural para usuários de negócios criarem e implantarem apps de IA sem código
+- **Para Context Engineers:** SDK TypeScript open-source para desenvolvedores estenderem, personalizarem e hospedarem em sua própria infraestrutura
+- **Colaboração Fluida:** Ambos os perfis trabalham juntos na mesma plataforma com contexto compartilhado
 
-## Capacidades principais
+## Arquitetura em Resumo
 
-- **Runtime Open-source** – Facilmente componha ferramentas, fluxos de trabalho e visualizações dentro de uma única base de código
-- **MCP Mesh (Protocolo de Contexto do Modelo)** – Integre com segurança modelos, fontes de dados e APIs, com observabilidade e controle de custos
-- **Stack TypeScript Unificado** – Combine lógica de backend e frontends React/Tailwind customizados perfeitamente usando RPC tipado
-- **Infraestrutura Global e Modular** – Construído na Cloudflare para implantações de baixa latência e infinitamente escaláveis. Auto-hospede com sua Chave de API da Cloudflare
-- **Workspace Visual** – Construa agentes, conecte ferramentas, gerencie permissões e orquestre tudo construído em código
+deco CMS é construído sobre duas camadas fundamentais:
 
-## Conceitos Principais
+### 1. MCP Mesh (O Kernel)
 
-Antes de mergulhar, vamos definir rapidamente alguns conceitos fundamentais:
+A espinha dorsal que gerencia contexto, conexões e observabilidade para cada agente no seu sistema.
 
-### Ferramentas
-Funções que podem ser chamadas por agentes, fluxos de trabalho, visualizações e outras ferramentas para executar ações como chamadas de API, consultas de banco de dados ou computações.
+- **Componha e proteja MCPs** em toda a sua organização
+- **Conecte e proxie MCPs externos** com tokens seguros
+- **Exponha Virtual MCPs governados** ("AI Apps") para qualquer cliente MCP
+- **Aplique auth/RBAC/audit/FinOps** em cada camada
+- **Obtenha observabilidade completa** em toda a stack
+
+### 2. AI App Framework (Virtual MCPs no Mesh)
+
+Construa software web nativo de IA que chama tools:
+
+- **Full-stack**: Do banco de dados à UI com React 19 + Tailwind v4
+- **Generative Admin**: _deco chat_ ajuda você a escrever PRDs e implementar
+- **Admin, workflows e views customizadas** governadas pelo Mesh
+
+## Blocos de Construção Principais
+
+### Tools
+
+Funções que executam ações como chamadas de API, consultas ao banco de dados ou computações.
 
 ```typescript
-const createCepSearchTool = (env: Env) =>
-  createTool({
-    id: "CEP_SEARCH",
-    description: "Pesquisar códigos postais brasileiros",
-    inputSchema: z.object({ cep: z.string() }),
-    outputSchema: z.object({ city: z.string(), state: z.string() }),
-    execute: async ({ inputData }) => {
-      // Implementação da ferramenta
-    },
-  });
+createTool({
+  id: "CEP_SEARCH",
+  description: "Buscar CEPs brasileiros",
+  inputSchema: z.object({ cep: z.string() }),
+  outputSchema: z.object({ city: z.string(), state: z.string() }),
+  execute: async ({ context }) => { /* ... */ },
+});
 ```
 
-### Fluxos de Trabalho
-Sequências determinísticas que orquestram múltiplas etapas, que frequentemente são ferramentas, para criar automações.
+### Agents
+
+Assistentes de IA que entendem linguagem natural e chamam tools. Customizáveis com:
+- Seleção de modelo (GPT-4, Claude, etc.)
+- System prompts
+- Acesso a tools
+- Contexto de recursos
+
+### Workflows
+
+Sequências determinísticas de tools para automação. Diferente de agents que decidem, workflows seguem passos predefinidos.
 
 ```typescript
-const createCustomerWorkflow = (env: Env) =>
-  createWorkflow({ id: "REGISTER_CUSTOMER" })
-    .then(validateInput)
-    .then(saveToDatabase) 
-    .then(sendWelcomeEmail)
-    .commit();
+createWorkflow({ id: "REGISTER_CUSTOMER" })
+  .then(validateInput)
+  .then(saveToDatabase) 
+  .then(sendWelcomeEmail)
+  .commit();
 ```
 
-### MCP (Protocolo de Contexto do Modelo)
-O padrão que conecta modelos de IA às suas ferramentas. Seu Cloudflare Worker serve como um servidor MCP que agentes podem descobrir e usar.
+### Views
 
-### Agentes
-Assistentes de IA configurados com acesso às suas ferramentas. Eles entendem linguagem natural e decidem quando chamar ferramentas específicas para ajudar usuários.
+Interfaces React customizadas para seus tools e workflows. Construídas com React 19 + Tailwind v4.
 
-### Visualizações
-Frontends React opcionais que fornecem interfaces customizadas para suas ferramentas e fluxos de trabalho.
+### Documents
+
+Conteúdo Markdown (PRDs, guias, notas) anexável a agents / qualquer thread para contexto.
+
+### Resources
+
+Tudo no deco CMS é um resource: tools, agents, workflows, views e documents. Resources são:
+- Tipados com schemas Zod
+- Armazenados no deconfig (versionamento tipo-git)
+- Referenciáveis usando menções `@` em threads e system prompts de agents
+
+### Database
+
+SQLite integrado com Drizzle ORM para persistência de dados.
+
+### MCP Mesh
+
+Camada de agregação de contexto que unifica integrações, tools e políticas:
+- Proxy MCP externo
+- Armazenamento seguro de credenciais
+- Roteamento RBAC e políticas
+- Rastreamento OpenTelemetry
+- Tracking de custos
+
+## Para quem é o deco CMS?
+
+**AI Builders:** Product managers, equipes de ops, analistas de negócios construindo apps sem código
+
+**Context Engineers:** Desenvolvedores estendendo com TypeScript, auto-hospedando, construindo integrações customizadas
+
+## Por que deco CMS?
+
+Equipes de IA estão presas entre protótipos low-code e caos de produção. Backends em n8n ou LangGraph. Frontends em Lovable ou React. Deploys separados. Auth inconsistente. Custos em espiral.
+
+**deco CMS unifica tudo:**
+
+- 🧠 **MCP-nativo**, Componha servidores com policy, auth e observabilidade integrados
+- ⚙️ **TypeScript full-stack**, Agents, workflows, UIs em um repo
+- 🌍 **Deploy em qualquer lugar**, Cloudflare Workers, AWS ou runtimes locais
+- 🔐 **Governança integrada**, RBAC, audit trails, caps de gastos
+- 🔭 **Observabilidade unificada**, Rastreie UI → agents → models
+- 🧩 **Aberto & modular**, Instale da deco store ou construa o seu próprio
+
+---
+
+Pronto para construir seu primeiro AI app? Escolha seu caminho:
+
+- **[Para AI Builders](/pt-br/getting-started/ai-builders)** - Construa sem código
+- **[Para Context Engineers](/pt-br/getting-started/context-engineers)** - Desenvolva com TypeScript

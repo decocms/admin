@@ -58,25 +58,54 @@ function buildTree(docs: any[]): TreeNode[] {
 
       // For files only - custom ordering
       if (a.type === "file" && b.type === "file") {
-        // Force introduction to be first regardless of filename
+        // Force introduction to be first
         if (a.name.includes("introduction")) return -1;
         if (b.name.includes("introduction")) return 1;
 
-        // Then getting-started
-        if (a.name.includes("getting-started")) return -1;
-        if (b.name.includes("getting-started")) return 1;
+        // Get parent folder to determine which order to use
+        const parentPath = a.path[a.path.length - 2];
 
-        // Then project-structure
-        if (a.name.includes("project-structure")) return -1;
-        if (b.name.includes("project-structure")) return 1;
+        // Custom order for no-code-guides files
+        if (parentPath === "no-code-guides") {
+          const noCodeOrder = ["creating-tools.mdx", "creating-agents.mdx"];
+          const aIndex = noCodeOrder.indexOf(a.name);
+          const bIndex = noCodeOrder.indexOf(b.name);
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+        }
 
-        // Then cli-reference
-        if (a.name.includes("cli-reference")) return -1;
-        if (b.name.includes("cli-reference")) return 1;
+        // Custom order for full-code-guides files
+        if (parentPath === "full-code-guides") {
+          const fullCodeOrder = [
+            "project-structure.mdx",
+            "building-tools.mdx",
+            "building-views.mdx",
+            "resources.mdx",
+            "deployment.mdx",
+          ];
+          const aIndex = fullCodeOrder.indexOf(a.name);
+          const bIndex = fullCodeOrder.indexOf(b.name);
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+        }
+      }
 
-        // Then bounties (last)
-        if (a.name.includes("bounties")) return -1;
-        if (b.name.includes("bounties")) return 1;
+      // For folders - custom ordering
+      if (a.type === "folder" && b.type === "folder") {
+        // getting-started before everything else
+        if (a.name === "getting-started") return -1;
+        if (b.name === "getting-started") return 1;
+        // no-code-guides before full-code-guides
+        if (a.name === "no-code-guides") return -1;
+        if (b.name === "no-code-guides") return 1;
+        if (a.name === "full-code-guides") return -1;
+        if (b.name === "full-code-guides") return 1;
       }
 
       // Default alphabetical

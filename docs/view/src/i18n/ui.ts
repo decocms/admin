@@ -8,8 +8,9 @@ export const defaultLang = "en";
 export const ui = {
   en: {
     "head.title": "Deco - Docs",
-    "sidebar.section.reference": "Reference",
-    "sidebar.section.guides": "Guides",
+    "sidebar.section.getting-started": "Getting Started",
+    "sidebar.section.no-code-guides": "No-Code Guides",
+    "sidebar.section.full-code-guides": "Full-Code Guides",
     "hero.title": "Build AI Agents That Connect Everything",
     "hero.subtitle":
       "Create powerful AI agents that seamlessly integrate with your favorite tools and services. From Google Drive to Notion, build the future of automation.",
@@ -21,8 +22,9 @@ export const ui = {
   },
   "pt-br": {
     "head.title": "Deco - Documentação",
-    "sidebar.section.reference": "Referência",
-    "sidebar.section.guides": "Guias",
+    "sidebar.section.getting-started": "Primeiros Passos",
+    "sidebar.section.no-code-guides": "Guias No-Code",
+    "sidebar.section.full-code-guides": "Guias Full-Code",
     "hero.title": "Construa Agentes de IA Que Conectam Tudo",
     "hero.subtitle":
       "Crie agentes de IA poderosos que se integram perfeitamente com suas ferramentas e serviços favoritos. Do Google Drive ao Notion, construa o futuro da automação.",

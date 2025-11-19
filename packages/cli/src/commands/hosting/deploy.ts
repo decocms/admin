@@ -6,6 +6,8 @@ import { join, posix, relative } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClientStub } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
+import { readSession } from "../../lib/session.js";
+import { createClient } from "../../lib/supabase.js";
 import {
   isFilePath,
   parseEnvFile,
@@ -16,6 +18,104 @@ import {
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
     return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function getAuthorMetadata(): Promise<{
+  name: string;
+  email: string;
+  image?: string;
+} | null> {
+  try {
+    const session = await readSession();
+    if (!session || !session.access_token || !session.refresh_token) {
+      return null;
+    }
+
+    const { client: supabase } = createClient();
+    await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      return null;
+    }
+
+    const user = data.user;
+    return {
+      name:
+        user.user_metadata?.full_name || user.email?.split("@")[0] || "Unknown",
+      email: user.email || "unknown@example.com",
+      image: user.user_metadata?.avatar_url,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function isRepositoryPublic(remoteUrl: string): Promise<boolean> {
+  try {
+    const { execSync } = await import("child_process");
+    execSync(`git ls-remote ${remoteUrl}`, {
+      stdio: ["pipe", "pipe", "ignore"],
+      timeout: 5000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function getRepositoryInfo(workingDir: string): Promise<{
+  remote_link?: string;
+  private?: boolean;
+  local?: boolean;
+} | null> {
+  try {
+    const { execSync } = await import("child_process");
+
+    // Check if it's a git repository
+    try {
+      execSync("git rev-parse --git-dir", {
+        cwd: workingDir,
+        stdio: ["pipe", "pipe", "ignore"],
+      });
+    } catch {
+      // Not a git repository
+      return null;
+    }
+
+    // Try to get remote URL
+    let remoteUrl: string | null = null;
+    try {
+      const url = execSync("git config --get remote.origin.url", {
+        cwd: workingDir,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "ignore"],
+      }).trim();
+
+      if (url && url.length > 0) {
+        remoteUrl = url;
+      }
+    } catch {
+      // No remote configured
+    }
+
+    // If has remote, check if it's public or private
+    if (remoteUrl) {
+      const isPublic = await isRepositoryPublic(remoteUrl);
+      return {
+        remote_link: remoteUrl,
+        private: !isPublic,
+      };
+    }
+
+    // If no remote, mark as local-only
+    return { local: true };
   } catch {
     return null;
   }
@@ -61,6 +161,12 @@ export type FileLike = {
   path: string;
   content: string;
   asset?: boolean;
+};
+
+export type AuthorMetadata = {
+  name: string;
+  email: string;
+  image?: string;
 };
 
 interface Options {
@@ -246,7 +352,13 @@ export const deploy = async ({
     envVarsStatus += ` + ${envVarsFromCLI} from CLI${sourcesInfo} (${envVarsTotal} total)`;
   }
 
-  const manifest = {
+  // 6. Get author metadata
+  const authorMetadata = await getAuthorMetadata();
+
+  // 7. Get repository info
+  const repositoryInfo = await getRepositoryInfo(cwd);
+
+  const manifest: Record<string, unknown> = {
     appSlug,
     files,
     envVars,
@@ -257,11 +369,38 @@ export const deploy = async ({
     promote,
   };
 
+  if (authorMetadata || repositoryInfo) {
+    const metadata: Record<string, unknown> = {};
+
+    if (authorMetadata) {
+      metadata.author = {
+        name: authorMetadata.name,
+        email: authorMetadata.email,
+        ...(authorMetadata.image && { image: authorMetadata.image }),
+      };
+    }
+
+    if (repositoryInfo) {
+      metadata.repository = repositoryInfo;
+    }
+
+    manifest.metadata = metadata;
+  }
+
   console.log("🚚 Deployment summary:");
   console.log(`  App: ${appSlug}`);
   console.log(`  Files: ${files.length}`);
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
+  if (authorMetadata) {
+    console.log(`  Author: ${authorMetadata.name} <${authorMetadata.email}>`);
+  }
+  if (repositoryInfo) {
+    const repoStatus = repositoryInfo.remote_link
+      ? `${repositoryInfo.remote_link} (local)`
+      : "Local repository";
+    console.log(`  Repository: ${repoStatus}`);
+  }
   if (promote) {
     console.log(`  Promote mode: true (deployment will replace production)`);
   }

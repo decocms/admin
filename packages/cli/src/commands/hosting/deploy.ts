@@ -70,9 +70,7 @@ async function isRepositoryPublic(remoteUrl: string): Promise<boolean> {
   }
 }
 
-async function getRepositoryInfo(
-  workingDir: string,
-): Promise<{
+async function getRepositoryInfo(workingDir: string): Promise<{
   remote_link?: string;
   private?: boolean;
   local?: boolean;

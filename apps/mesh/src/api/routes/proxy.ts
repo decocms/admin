@@ -60,6 +60,10 @@ function withConnectionAuthorization(
   connectionId: string,
 ): CallToolMiddleware {
   return async (request, next) => {
+    if (!ctx.auth.apiKey) {
+      return await next();
+    }
+
     try {
       const toolName = request.params.name;
 
@@ -109,6 +113,13 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   const connection = await ctx.storage.connections.findById(connectionId);
   if (!connection) {
     throw new Error("Connection not found");
+  }
+
+  if (
+    ctx.organization &&
+    connection.organizationId !== ctx.organization.id
+  ) {
+    throw new Error("Connection does not belong to the active organization");
   }
 
   if (connection.status !== "active") {

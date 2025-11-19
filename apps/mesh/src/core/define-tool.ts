@@ -120,8 +120,9 @@ export function defineTool<
         },
         async (span) => {
           try {
-            // Set tool name in context for authorization checks
+            // Set tool name for audit logging and access control
             ctx.toolName = definition.name;
+            ctx.access.setToolName?.(definition.name);
 
             // MCP protocol already validated input against JSON Schema
             // We trust the validation and execute the handler directly

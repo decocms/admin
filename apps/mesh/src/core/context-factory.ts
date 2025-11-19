@@ -219,19 +219,36 @@ async function authenticateRequest(
     });
 
     if (session) {
+      let organization: OrganizationContext | undefined;
+
+      if (session.session.activeOrganizationId) {
+        const orgData = await auth.api
+          .getFullOrganization({
+            headers: c.req.raw.headers,
+          })
+          .catch(() => null);
+
+        if (orgData) {
+          organization = {
+            id: orgData.id,
+            slug: orgData.slug,
+            name: orgData.name,
+          };
+        } else {
+          organization = {
+            id: session.session.activeOrganizationId,
+            slug: "",
+            name: "",
+          };
+        }
+      }
+
       return {
         user: { id: session.user.id, email: session.user.email },
         permissions: {
           self: ["*"],
         },
-        // TODO: Use some better auth method to read the full org data
-        organization: session.session.activeOrganizationId
-          ? {
-              id: session.session.activeOrganizationId,
-              slug: "",
-              name: "",
-            }
-          : undefined,
+        organization,
       };
     }
   } catch (error) {

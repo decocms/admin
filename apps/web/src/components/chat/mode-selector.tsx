@@ -13,7 +13,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 const AGENT_DESCRIPTIONS: Record<AgentId, string> = {
   design: "Design documents for implementation planning",
   code: "Creates and modifies tools, workflows and views",
-  explore: "Explore the system and it's capabilities",
+  explore: "Explore the system and its capabilities",
 };
 
 export function ModeSelector() {

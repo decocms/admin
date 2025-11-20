@@ -124,9 +124,12 @@ export const searchMcps = createMcpManagementTool({
     );
 
     // Search marketplace
-    const registry = await listRegistryApps.handler({
-      search: query,
-    }, c);
+    const registry = await listRegistryApps.handler(
+      {
+        search: query,
+      },
+      c,
+    );
 
     const registryList = registry.apps
       .map((app) => {

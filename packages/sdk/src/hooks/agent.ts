@@ -18,6 +18,10 @@ import {
 } from "../crud/agent.ts";
 import { InternalServerError } from "../errors.ts";
 import type { Agent } from "../models/agent.ts";
+import {
+  isWellKnownDecopilotAgent,
+  WELL_KNOWN_DECOPILOT_AGENTS,
+} from "../types/well-known-agents.ts";
 import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
@@ -107,13 +111,49 @@ export const useRemoveAgent = () => {
 export const useAgentData = (id: string) => {
   const { locator } = useSDK();
 
+  // For well-known decopilot agents, construct the agent object locally
+  // instead of fetching from the backend
+  const isWellKnown = isWellKnownDecopilotAgent(id);
+  const wellKnownAgentData = useMemo<Agent | null>(() => {
+    if (!isWellKnown) return null;
+
+    // Handle legacy "decopilotAgent" by mapping to "explore"
+    const effectiveAgentId = id === "decopilotAgent" ? "explore" : id;
+    const wellKnownAgent =
+      WELL_KNOWN_DECOPILOT_AGENTS[
+        effectiveAgentId as keyof typeof WELL_KNOWN_DECOPILOT_AGENTS
+      ];
+    if (!wellKnownAgent) return null;
+
+    return {
+      id: wellKnownAgent.id,
+      name: wellKnownAgent.name,
+      avatar: wellKnownAgent.avatar,
+      description: "Ask, search or create anything.",
+      model: DEFAULT_MODEL.id,
+      visibility: "PUBLIC" as const,
+      tools_set: {}, // Tools are filtered server-side based on agentId
+      views: [],
+      instructions: "",
+      max_steps: 30, // Same as old decopilotAgent
+      max_tokens: 64000, // Same as old decopilotAgent
+      memory: { last_messages: 8 }, // Same as old decopilotAgent
+    };
+  }, [id, isWellKnown]);
+
   const data = useSuspenseQuery({
     queryKey: KEYS.AGENT(locator, id),
-    queryFn: ({ signal }) => loadAgent(locator, id, signal),
+    queryFn: ({ signal }) => {
+      // Return well-known agent data immediately without network call
+      if (wellKnownAgentData) {
+        return Promise.resolve(wellKnownAgentData);
+      }
+      return loadAgent(locator, id, signal);
+    },
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: isWellKnown ? Infinity : 5 * 60 * 1000, // Never stale for well-known agents
+    gcTime: isWellKnown ? Infinity : 10 * 60 * 1000, // Never garbage collect well-known agents
   });
 
   return data;

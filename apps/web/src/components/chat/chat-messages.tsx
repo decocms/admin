@@ -8,6 +8,7 @@ import { EmptyState } from "./empty-state.tsx";
 
 interface ChatMessagesProps {
   className?: string;
+  centered?: boolean;
 }
 
 function Dots() {
@@ -29,7 +30,10 @@ function Dots() {
   );
 }
 
-export function ChatMessages({ className }: ChatMessagesProps = {}) {
+export function ChatMessages({
+  className,
+  centered = false,
+}: ChatMessagesProps = {}) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const {
     chat: { messages, status },
@@ -38,14 +42,20 @@ export function ChatMessages({ className }: ChatMessagesProps = {}) {
   return (
     <div className={cn("w-full min-w-0 max-w-full overflow-hidden", className)}>
       {messages.length === 0 ? (
-        <EmptyState />
+        !centered && <EmptyState />
       ) : (
-        <div className="flex flex-col gap-6 min-w-0 max-w-2xl mx-auto w-full">
+        <div
+          className={cn(
+            "flex flex-col min-w-0 py-8 w-full",
+            centered ? "max-w-2xl mx-auto" : "max-w-2xl mx-auto",
+          )}
+        >
           {messages.map((message, index) => (
             <ChatMessage
               key={message.id}
               message={message}
               isLastMessage={messages.length === index + 1}
+              centered={centered}
             />
           ))}
           <ChatError />

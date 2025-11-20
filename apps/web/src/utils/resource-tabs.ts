@@ -9,7 +9,7 @@ import { isResourceUpdateOrCreateTool } from "../stores/resource-version-history
 export function extractResourceUri(
   toolName: string | undefined,
   input: unknown,
-  output?: { structuredContent?: { data?: unknown; uri?: string } },
+  output?: { uri?: string; data?: unknown },
 ): string | null {
   if (!toolName) return null;
 
@@ -36,16 +36,16 @@ export function extractResourceUri(
     }
 
     // For CREATE operations, check output
-    if (!resourceUri && output?.structuredContent?.uri) {
-      resourceUri = output.structuredContent.uri;
+    if (!resourceUri && output?.uri) {
+      resourceUri = output.uri;
     }
   } else if (isResourceUpdateOrCreateTool(toolName)) {
     // Handle direct resource tool calls
     resourceUri = extractResourceUriFromInput(input);
 
     // For CREATE operations, check output if no URI in input
-    if (!resourceUri && output?.structuredContent?.uri) {
-      resourceUri = output.structuredContent.uri;
+    if (!resourceUri && output?.uri) {
+      resourceUri = output.uri;
     }
   }
 

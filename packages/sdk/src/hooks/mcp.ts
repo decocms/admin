@@ -146,9 +146,26 @@ export const useIntegrations = ({
   const { locator } = useSDK();
   const client = useQueryClient();
 
-  const data = useSuspenseQuery({
-    queryKey: KEYS.INTEGRATION(locator),
+  const queryKey = KEYS.INTEGRATION(locator);
 
+  // Check if we have cached data BEFORE calling useSuspenseQuery
+  // This prevents Suspense from triggering if we have cached data
+  const cachedData = client.getQueryData<Integration[]>(queryKey);
+  const hasCachedData = cachedData && cachedData.length > 0;
+
+  // Ensure React Query cache is populated before Suspense can trigger
+  // This is a safeguard - React Query should already have the data, but we ensure it's set
+  if (hasCachedData) {
+    // Ensure the cache is set (it should already be, but this is a safeguard)
+    const queryState = client.getQueryState(queryKey);
+    if (!queryState || queryState.status !== "success") {
+      // Cache exists but query state is not success - ensure it's set
+      client.setQueryData(queryKey, cachedData);
+    }
+  }
+
+  const data = useSuspenseQuery({
+    queryKey,
     queryFn: async ({ signal }) => {
       if (shouldFetch === false) {
         return [];
@@ -169,6 +186,8 @@ export const useIntegrations = ({
 
       return processedItems;
     },
+    staleTime: hasCachedData ? Infinity : 0, // If we have cached data, don't refetch
+    refetchOnMount: !hasCachedData, // Don't refetch if we have cached data
   });
 
   return data;

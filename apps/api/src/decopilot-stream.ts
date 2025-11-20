@@ -35,7 +35,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { honoCtxToAppCtx } from "./api.ts";
-import { WELL_KNOWN_AGENTS } from "./well_known_agents/index.ts";
+import { WELL_KNOWN_DECOPILOT_AGENTS as WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
 import { filterToolsForAgent } from "./tool-filter.ts";
 import type { AppEnv } from "./utils/context.ts";
@@ -193,13 +193,13 @@ function wrapProjectTools(
 function wrapMcpTools(
   ctx: ReturnType<typeof honoCtxToAppCtx>,
   integration: Integration,
-  toolMappings: Array<{ toolName: string; wrapperName: string }>,
+  toolMappings: Array<{ toolName: string; wrapperName?: string }>,
 ) {
   if (!integration.tools || integration.tools.length === 0) {
     throw new Error(`Integration ${integration.id} has no tools`);
   }
 
-  return toolMappings.map(({ toolName, wrapperName }) => {
+  return toolMappings.map(({ toolName, wrapperName = toolName }) => {
     // Find the specific tool from integration.tools array
     const mcpTool = integration.tools!.find((t) => t.name === toolName);
     if (!mcpTool) {
@@ -207,7 +207,9 @@ function wrapMcpTools(
         .tools!.map((t) => t.name)
         .slice(0, 10);
       throw new Error(
-        `Tool ${toolName} not found in ${integration.id}. Available: ${availableToolNames.join(", ")}...`,
+        `Tool ${toolName} not found in ${integration.id}. Available: ${availableToolNames.join(
+          ", ",
+        )}...`,
       );
     }
 
@@ -318,11 +320,13 @@ const createDecopilotTools = async (
     workflowsIntegrationId,
     viewsIntegrationId,
     documentsIntegrationId,
+    secretsIntegrationId,
   ] = [
     formatIntegrationId(WellKnownMcpGroups.Tools),
     formatIntegrationId(WellKnownMcpGroups.Workflows),
     formatIntegrationId(WellKnownMcpGroups.Views),
     formatIntegrationId(WellKnownMcpGroups.Documents),
+    formatIntegrationId(WellKnownMcpGroups.Secrets),
   ];
 
   // Find integrations
@@ -333,6 +337,7 @@ const createDecopilotTools = async (
     workflowsIntegrationId,
     viewsIntegrationId,
     documentsIntegrationId,
+    secretsIntegrationId,
   ]);
 
   for (const integration of integrations) {
@@ -347,11 +352,13 @@ const createDecopilotTools = async (
     workflowsIntegration,
     viewsIntegration,
     documentsIntegration,
+    secretsIntegration,
   ] = [
     toolsIntegrationId,
     workflowsIntegrationId,
     viewsIntegrationId,
     documentsIntegrationId,
+    secretsIntegrationId,
   ].map((id) => {
     const i = integrationMap.get(id);
     if (!i) {
@@ -368,7 +375,7 @@ const createDecopilotTools = async (
 
   // Code Execution Tool
   const [executeCodeTool] = wrapMcpTools(ctx, toolsIntegration, [
-    { toolName: "DECO_TOOL_RUN_TOOL", wrapperName: "DECO_TOOL_RUN_TOOL" },
+    { toolName: "DECO_TOOL_RUN_TOOL" },
   ]);
 
   // Project MCP Tools - TOOL_* (from i:tools-management)
@@ -379,26 +386,11 @@ const createDecopilotTools = async (
     toolDeleteTool,
     toolSearchTool,
   ] = wrapMcpTools(ctx, toolsIntegration, [
-    {
-      toolName: "DECO_RESOURCE_TOOL_CREATE",
-      wrapperName: "DECO_RESOURCE_TOOL_CREATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_TOOL_READ",
-      wrapperName: "DECO_RESOURCE_TOOL_READ",
-    },
-    {
-      toolName: "DECO_RESOURCE_TOOL_UPDATE",
-      wrapperName: "DECO_RESOURCE_TOOL_UPDATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_TOOL_DELETE",
-      wrapperName: "DECO_RESOURCE_TOOL_DELETE",
-    },
-    {
-      toolName: "DECO_RESOURCE_TOOL_SEARCH",
-      wrapperName: "DECO_RESOURCE_TOOL_SEARCH",
-    },
+    { toolName: "DECO_RESOURCE_TOOL_CREATE" },
+    { toolName: "DECO_RESOURCE_TOOL_READ" },
+    { toolName: "DECO_RESOURCE_TOOL_UPDATE" },
+    { toolName: "DECO_RESOURCE_TOOL_DELETE" },
+    { toolName: "DECO_RESOURCE_TOOL_SEARCH" },
   ]);
 
   // Project MCP Tools - WORKFLOW_* (from i:workflows-management)
@@ -409,26 +401,11 @@ const createDecopilotTools = async (
     workflowDeleteTool,
     workflowSearchTool,
   ] = wrapMcpTools(ctx, workflowsIntegration, [
-    {
-      toolName: "DECO_RESOURCE_WORKFLOW_CREATE",
-      wrapperName: "DECO_RESOURCE_WORKFLOW_CREATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_WORKFLOW_READ",
-      wrapperName: "DECO_RESOURCE_WORKFLOW_READ",
-    },
-    {
-      toolName: "DECO_RESOURCE_WORKFLOW_UPDATE",
-      wrapperName: "DECO_RESOURCE_WORKFLOW_UPDATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_WORKFLOW_DELETE",
-      wrapperName: "DECO_RESOURCE_WORKFLOW_DELETE",
-    },
-    {
-      toolName: "DECO_RESOURCE_WORKFLOW_SEARCH",
-      wrapperName: "DECO_RESOURCE_WORKFLOW_SEARCH",
-    },
+    { toolName: "DECO_RESOURCE_WORKFLOW_CREATE" },
+    { toolName: "DECO_RESOURCE_WORKFLOW_READ" },
+    { toolName: "DECO_RESOURCE_WORKFLOW_UPDATE" },
+    { toolName: "DECO_RESOURCE_WORKFLOW_DELETE" },
+    { toolName: "DECO_RESOURCE_WORKFLOW_SEARCH" },
   ]);
 
   // Project MCP Tools - VIEW_* (from i:views-management)
@@ -439,26 +416,11 @@ const createDecopilotTools = async (
     viewDeleteTool,
     viewSearchTool,
   ] = wrapMcpTools(ctx, viewsIntegration, [
-    {
-      toolName: "DECO_RESOURCE_VIEW_CREATE",
-      wrapperName: "DECO_RESOURCE_VIEW_CREATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_VIEW_READ",
-      wrapperName: "DECO_RESOURCE_VIEW_READ",
-    },
-    {
-      toolName: "DECO_RESOURCE_VIEW_UPDATE",
-      wrapperName: "DECO_RESOURCE_VIEW_UPDATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_VIEW_DELETE",
-      wrapperName: "DECO_RESOURCE_VIEW_DELETE",
-    },
-    {
-      toolName: "DECO_RESOURCE_VIEW_SEARCH",
-      wrapperName: "DECO_RESOURCE_VIEW_SEARCH",
-    },
+    { toolName: "DECO_RESOURCE_VIEW_CREATE" },
+    { toolName: "DECO_RESOURCE_VIEW_READ" },
+    { toolName: "DECO_RESOURCE_VIEW_UPDATE" },
+    { toolName: "DECO_RESOURCE_VIEW_DELETE" },
+    { toolName: "DECO_RESOURCE_VIEW_SEARCH" },
   ]);
 
   // Project MCP Tools - DOCUMENT_* (from i:documents-management)
@@ -468,22 +430,15 @@ const createDecopilotTools = async (
     documentUpdateTool,
     documentSearchTool,
   ] = wrapMcpTools(ctx, documentsIntegration, [
-    {
-      toolName: "DECO_RESOURCE_DOCUMENT_CREATE",
-      wrapperName: "DECO_RESOURCE_DOCUMENT_CREATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_DOCUMENT_READ",
-      wrapperName: "DECO_RESOURCE_DOCUMENT_READ",
-    },
-    {
-      toolName: "DECO_RESOURCE_DOCUMENT_UPDATE",
-      wrapperName: "DECO_RESOURCE_DOCUMENT_UPDATE",
-    },
-    {
-      toolName: "DECO_RESOURCE_DOCUMENT_SEARCH",
-      wrapperName: "DECO_RESOURCE_DOCUMENT_SEARCH",
-    },
+    { toolName: "DECO_RESOURCE_DOCUMENT_CREATE" },
+    { toolName: "DECO_RESOURCE_DOCUMENT_READ" },
+    { toolName: "DECO_RESOURCE_DOCUMENT_UPDATE" },
+    { toolName: "DECO_RESOURCE_DOCUMENT_SEARCH" },
+  ]);
+
+  // Secrets Management Tools (from i:secrets-management)
+  const [secretsPromptUserTool] = wrapMcpTools(ctx, secretsIntegration, [
+    { toolName: "SECRETS_PROMPT_USER" },
   ]);
 
   return {
@@ -520,6 +475,9 @@ const createDecopilotTools = async (
     DECO_RESOURCE_DOCUMENT_READ: documentReadTool,
     DECO_RESOURCE_DOCUMENT_UPDATE: documentUpdateTool,
     DECO_RESOURCE_DOCUMENT_SEARCH: documentSearchTool,
+
+    // Secrets Management Tools
+    SECRETS_PROMPT_USER: secretsPromptUserTool,
   };
 };
 
@@ -565,7 +523,9 @@ const formatAvailableIntegrations = (items: Integration[]) =>
   items
     .map(
       (i) =>
-        `- ${i.name ?? "Untitled"} (${i.id}): ${i.description || "No description"}`,
+        `- ${i.name ?? "Untitled"} (${i.id}): ${
+          i.description || "No description"
+        }`,
     )
     .join("\n");
 
@@ -591,7 +551,9 @@ const formatAvailableTools = (
   const keys = ["name", "inputSchema", "outputSchema", "description"] as const;
   const availableTools = Array.from(toolsByIntegration.entries()).map(
     ([id, tools]) =>
-      `For MCP with id ${id}:\n${keys.join(",")}\n${tools.map((t) => keys.map((k) => JSON.stringify(t[k])).join(",")).join("\n")}`,
+      `For MCP with id ${id}:\n${keys.join(",")}\n${tools
+        .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
+        .join("\n")}`,
   );
 
   return availableTools.join("\n\n");

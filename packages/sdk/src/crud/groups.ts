@@ -31,7 +31,7 @@ export const WellKnownMcpGroups = {
   Self: "self",
   Theme: "theme-management",
   Time: "time",
-  "MCP Management": "mcp-management",
+  MCPManagement: "mcp-management",
 } as const;
 
 type Groups = typeof WellKnownMcpGroups;

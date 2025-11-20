@@ -261,13 +261,25 @@ function ToolCallDetail({
     };
 
     checkScroll();
-    const resizeObserver = new ResizeObserver(checkScroll);
-    resizeObserver.observe(contentRef.current);
-    contentRef.current.addEventListener("scroll", checkScroll);
+
+    // Guard ResizeObserver usage
+    let resizeObserver: ResizeObserver | undefined;
+    if (
+      typeof window !== "undefined" &&
+      typeof window.ResizeObserver !== "undefined"
+    ) {
+      resizeObserver = new ResizeObserver(checkScroll);
+      resizeObserver.observe(contentRef.current);
+    }
+
+    const currentRef = contentRef.current;
+    currentRef.addEventListener("scroll", checkScroll);
 
     return () => {
-      resizeObserver.disconnect();
-      contentRef.current?.removeEventListener("scroll", checkScroll);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      currentRef?.removeEventListener("scroll", checkScroll);
     };
   }, [isExpanded, children]);
 
@@ -290,6 +302,18 @@ function ToolCallDetail({
     });
   }, [onHeaderClick]);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        if (e.key === " ") {
+          e.preventDefault();
+        }
+        handleClick();
+      }
+    },
+    [handleClick],
+  );
+
   const iconElement = renderIcon(icon);
   const showChevron = isHovered || isExpanded;
   const chevronIcon = isExpanded ? "expand_more" : "chevron_right";
@@ -304,6 +328,7 @@ function ToolCallDetail({
         role="button"
         tabIndex={0}
         onClick={handleClick}
+        onKeyDown={handleKeyDown}
         className={cn(
           "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground py-1 px-1.5 h-10",
         )}
@@ -466,17 +491,18 @@ function ResourceToolCustomUI({
 }) {
   const hasOutput = part.state === "output-available";
 
-  if (!hasOutput) {
-    return null;
-  }
-
   // Extract resource name from URI (last part after the last slash)
+  // Must be called unconditionally before any early returns (React hooks rules)
   const resourceName = useMemo(() => {
     const parts = resourceUri.split("/");
     const lastPart = parts[parts.length - 1];
     // Remove file extension if present and format
     return lastPart.replace(/\.(ts|tsx|js|jsx)$/, "").replace(/_/g, " ");
   }, [resourceUri]);
+
+  if (!hasOutput) {
+    return null;
+  }
 
   return (
     <div className="px-2 py-2">

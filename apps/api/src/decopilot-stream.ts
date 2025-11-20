@@ -79,7 +79,7 @@ const DecopilotStreamRequestSchema = z.object({
     .positive()
     .optional()
     .transform((val) =>
-      Math.min(val ?? DEFAULT_MEMORY.last_messages, Infinity),
+      Math.min(val ?? DEFAULT_MEMORY.last_messages, Infinity)
     ),
 
   system: z.string().optional(),
@@ -101,8 +101,8 @@ function getModel(
   ctx: ReturnType<typeof honoCtxToAppCtx>,
 ): LanguageModel {
   // Find model in WELL_KNOWN_MODELS or use default
-  const model =
-    WELL_KNOWN_MODELS.find((m) => m.id === modelId) || DEFAULT_MODEL;
+  const model = WELL_KNOWN_MODELS.find((m) => m.id === modelId) ||
+    DEFAULT_MODEL;
 
   // Parse provider and model name from "provider:model" format
   const [providerName, ...modelParts] = model.model.split(":");
@@ -153,41 +153,6 @@ function getModel(
 }
 
 /**
- * Helper to wrap tools from PROJECT_TOOLS (platform tools with direct handlers)
- */
-function wrapProjectTools(
-  ctx: ReturnType<typeof honoCtxToAppCtx>,
-  toolNames: string[],
-) {
-  return toolNames.map((toolName) => {
-    const toolSource = PROJECT_TOOLS.find((t) => t.name === toolName);
-    if (!toolSource) {
-      throw new Error(`Tool ${toolName} not found in PROJECT_TOOLS`);
-    }
-
-    // Unwrap lazy schemas if needed
-    const inputSchema =
-      toolSource.inputSchema instanceof z.ZodLazy
-        ? toolSource.inputSchema._def.getter()
-        : toolSource.inputSchema;
-    const outputSchema = toolSource.outputSchema
-      ? toolSource.outputSchema instanceof z.ZodLazy
-        ? toolSource.outputSchema._def.getter()
-        : toolSource.outputSchema
-      : z.any();
-
-    return tool({
-      description: toolSource.description,
-      inputSchema,
-      outputSchema,
-      execute: async (args: unknown) => {
-        return await State.run(ctx, () => toolSource.handler(args as never));
-      },
-    });
-  });
-}
-
-/**
  * Helper to wrap multiple tools from an MCP integration
  */
 function wrapMcpTools(
@@ -207,9 +172,11 @@ function wrapMcpTools(
         .tools!.map((t) => t.name)
         .slice(0, 10);
       throw new Error(
-        `Tool ${toolName} not found in ${integration.id}. Available: ${availableToolNames.join(
-          ", ",
-        )}...`,
+        `Tool ${toolName} not found in ${integration.id}. Available: ${
+          availableToolNames.join(
+            ", ",
+          )
+        }...`,
       );
     }
 
@@ -266,10 +233,9 @@ function wrapMcpTools(
               const result = await client.callTool(
                 {
                   name: toolName,
-                  arguments:
-                    typeof input === "object" && input !== null
-                      ? (input as Record<string, unknown>)
-                      : {},
+                  arguments: typeof input === "object" && input !== null
+                    ? (input as Record<string, unknown>)
+                    : {},
                 },
                 // @ts-expect-error - Zod version conflict between packages
                 CallToolResultSchema,
@@ -308,7 +274,7 @@ function wrapMcpTools(
 
 /**
  * Create all decopilot tools as wrappers around MCP tools
- * Tools come from either PROJECT_TOOLS (for platform tools) or MCP integrations (for resource tools)
+ * Tools come from MCP integrations (resource management, code execution, etc.)
  */
 const createDecopilotTools = async (
   ctx: ReturnType<typeof honoCtxToAppCtx>,
@@ -316,12 +282,14 @@ const createDecopilotTools = async (
 ) => {
   // Get integration IDs for MCP integrations
   const [
+    mcpIntegrationId,
     toolsIntegrationId,
     workflowsIntegrationId,
     viewsIntegrationId,
     documentsIntegrationId,
     secretsIntegrationId,
   ] = [
+    formatIntegrationId(WellKnownMcpGroups.MCPManagement),
     formatIntegrationId(WellKnownMcpGroups.Tools),
     formatIntegrationId(WellKnownMcpGroups.Workflows),
     formatIntegrationId(WellKnownMcpGroups.Views),
@@ -333,6 +301,7 @@ const createDecopilotTools = async (
   const integrationMap = new Map<string, Integration>();
 
   const integrationIdsSet = new Set([
+    mcpIntegrationId,
     toolsIntegrationId,
     workflowsIntegrationId,
     viewsIntegrationId,
@@ -348,12 +317,14 @@ const createDecopilotTools = async (
   }
 
   const [
+    mcpIntegration,
     toolsIntegration,
     workflowsIntegration,
     viewsIntegration,
     documentsIntegration,
     secretsIntegration,
   ] = [
+    mcpIntegrationId,
     toolsIntegrationId,
     workflowsIntegrationId,
     viewsIntegrationId,
@@ -367,11 +338,15 @@ const createDecopilotTools = async (
     return i;
   });
 
-  // MCP Management Tools (from PROJECT_TOOLS)
-  const [readMcpTool, discoverMcpToolsTool] = wrapProjectTools(ctx, [
-    "DECO_RESOURCE_MCP_READ",
-    "DECO_RESOURCE_MCP_STORE_SEARCH",
-  ]);
+  // MCP Management Tools
+  const [readMcpTool, discoverMcpToolsTool] = wrapMcpTools(
+    ctx,
+    mcpIntegration,
+    [
+      { toolName: "DECO_RESOURCE_MCP_READ" },
+      { toolName: "DECO_RESOURCE_MCP_STORE_SEARCH" },
+    ],
+  );
 
   // Code Execution Tool
   const [executeCodeTool] = wrapMcpTools(ctx, toolsIntegration, [
@@ -512,8 +487,9 @@ const listIntegrations = async (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
   if (!listIntegrationsTool) {
     throw new Error("INTEGRATIONS_LIST tool not found");
   }
-  const { items } = await State.run(ctx, () =>
-    listIntegrationsTool.handler({}),
+  const { items } = await State.run(
+    ctx,
+    () => listIntegrationsTool.handler({}),
   );
 
   return items.filter((i) => !INTEGRATIONS_DENY_LIST.has(i.id));
@@ -551,15 +527,18 @@ const formatAvailableTools = (
   const keys = ["name", "inputSchema", "outputSchema", "description"] as const;
   const availableTools = Array.from(toolsByIntegration.entries()).map(
     ([id, tools]) =>
-      `For MCP with id ${id}:\n${keys.join(",")}\n${tools
-        .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
-        .join("\n")}`,
+      `For MCP with id ${id}:\n${keys.join(",")}\n${
+        tools
+          .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
+          .join("\n")
+      }`,
   );
 
   return availableTools.join("\n\n");
 };
 
-const PLATFORM_DESCRIPTION = `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
+const PLATFORM_DESCRIPTION =
+  `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
 
 **Building Blocks:**
 - **Tools:** Basic logic blocks with typed inputs/outputs. Can call other tools. Naming: RESOURCE_ACTION (TOOL_CREATE, DOCUMENT_READ).
@@ -610,8 +589,9 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   });
 
   // Parse and validate request body
-  const { success, data, error } =
-    DecopilotStreamRequestSchema.safeParse(rawBody);
+  const { success, data, error } = DecopilotStreamRequestSchema.safeParse(
+    rawBody,
+  );
 
   if (!success) {
     throw new UserInputError(
@@ -640,8 +620,9 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   // Fetch integrations list and check wallet balance in parallel
   const [integrations, hasBalance] = await Promise.all([
     tracer.startActiveSpan("list-integrations", () => listIntegrations(ctx)),
-    tracer.startActiveSpan("check-wallet-balance", () =>
-      wallet.canProceed(ctx.workspace?.value as Workspace),
+    tracer.startActiveSpan(
+      "check-wallet-balance",
+      () => wallet.canProceed(ctx.workspace?.value as Workspace),
     ),
   ]);
 

@@ -26,8 +26,8 @@ const virtualInstallableIntegrations = () => {
   }>;
 };
 
-const createMcpManagementTool = createToolGroup("MCP Management", {
-  name: "MCP Management",
+const createMcpManagementTool = createToolGroup("MCPManagement", {
+  name: "MCPManagement",
   description: "Manage MCP integrations and discover new ones.",
   icon: "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
 });

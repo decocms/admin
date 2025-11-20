@@ -8,13 +8,14 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import type { UIMessage } from "ai";
+import { type UIMessage } from "ai";
 import { del, get, set } from "idb-keyval";
+import { getThreadMessages as getBackendThreadMessages } from "../crud/thread.ts";
+import { type ProjectLocator } from "../locator.ts";
 import {
   isWellKnownDecopilotAgent,
   WELL_KNOWN_DECOPILOT_AGENTS,
 } from "../types/well-known-agents.ts";
-import { getThreadMessages as getBackendThreadMessages } from "../crud/thread.ts";
 import { KEYS } from "./react-query-keys.ts";
 import { useSDK } from "./store.tsx";
 
@@ -99,7 +100,7 @@ export function useThreadMessages(
   // Use different query keys for backend vs IndexedDB to avoid conflicts
   const queryKey = isDecopilot
     ? ["decopilot-messages", effectiveLocator, threadId]
-    : KEYS.THREAD_MESSAGES(effectiveLocator, threadId);
+    : KEYS.THREAD_MESSAGES(effectiveLocator as ProjectLocator, threadId);
 
   // Cache key for stable initial messages - must match queryKey pattern
   const cacheKey = threadId ? `${effectiveLocator}:${threadId}` : "";
@@ -134,7 +135,9 @@ export function useThreadMessages(
       if (isDecopilot) {
         // Fetch from IndexedDB for decopilot
         try {
-          const key = `${MESSAGES_PREFIX}${effectiveLocator ? `${effectiveLocator}:` : ""}${threadId}`;
+          const key = `${MESSAGES_PREFIX}${
+            effectiveLocator ? `${effectiveLocator}:` : ""
+          }${threadId}`;
           const messages = await get<UIMessage[]>(key);
 
           if (!messages) {
@@ -149,7 +152,11 @@ export function useThreadMessages(
         }
       } else {
         // Fetch from backend API for other agents
-        return await getBackendThreadMessages(effectiveLocator, threadId, {});
+        return await getBackendThreadMessages(
+          effectiveLocator as ProjectLocator,
+          threadId,
+          {},
+        );
       }
     },
     staleTime: hasCachedData ? Infinity : 0, // If we have cached data, don't refetch immediately

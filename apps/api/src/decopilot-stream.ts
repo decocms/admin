@@ -79,7 +79,7 @@ const DecopilotStreamRequestSchema = z.object({
     .positive()
     .optional()
     .transform((val) =>
-      Math.min(val ?? DEFAULT_MEMORY.last_messages, Infinity)
+      Math.min(val ?? DEFAULT_MEMORY.last_messages, Infinity),
     ),
 
   system: z.string().optional(),
@@ -101,8 +101,8 @@ function getModel(
   ctx: ReturnType<typeof honoCtxToAppCtx>,
 ): LanguageModel {
   // Find model in WELL_KNOWN_MODELS or use default
-  const model = WELL_KNOWN_MODELS.find((m) => m.id === modelId) ||
-    DEFAULT_MODEL;
+  const model =
+    WELL_KNOWN_MODELS.find((m) => m.id === modelId) || DEFAULT_MODEL;
 
   // Parse provider and model name from "provider:model" format
   const [providerName, ...modelParts] = model.model.split(":");
@@ -172,11 +172,9 @@ function wrapMcpTools(
         .tools!.map((t) => t.name)
         .slice(0, 10);
       throw new Error(
-        `Tool ${toolName} not found in ${integration.id}. Available: ${
-          availableToolNames.join(
-            ", ",
-          )
-        }...`,
+        `Tool ${toolName} not found in ${integration.id}. Available: ${availableToolNames.join(
+          ", ",
+        )}...`,
       );
     }
 
@@ -233,9 +231,10 @@ function wrapMcpTools(
               const result = await client.callTool(
                 {
                   name: toolName,
-                  arguments: typeof input === "object" && input !== null
-                    ? (input as Record<string, unknown>)
-                    : {},
+                  arguments:
+                    typeof input === "object" && input !== null
+                      ? (input as Record<string, unknown>)
+                      : {},
                 },
                 // @ts-expect-error - Zod version conflict between packages
                 CallToolResultSchema,
@@ -487,9 +486,8 @@ const listIntegrations = async (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
   if (!listIntegrationsTool) {
     throw new Error("INTEGRATIONS_LIST tool not found");
   }
-  const { items } = await State.run(
-    ctx,
-    () => listIntegrationsTool.handler({}),
+  const { items } = await State.run(ctx, () =>
+    listIntegrationsTool.handler({}),
   );
 
   return items.filter((i) => !INTEGRATIONS_DENY_LIST.has(i.id));
@@ -527,18 +525,15 @@ const formatAvailableTools = (
   const keys = ["name", "inputSchema", "outputSchema", "description"] as const;
   const availableTools = Array.from(toolsByIntegration.entries()).map(
     ([id, tools]) =>
-      `For MCP with id ${id}:\n${keys.join(",")}\n${
-        tools
-          .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
-          .join("\n")
-      }`,
+      `For MCP with id ${id}:\n${keys.join(",")}\n${tools
+        .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
+        .join("\n")}`,
   );
 
   return availableTools.join("\n\n");
 };
 
-const PLATFORM_DESCRIPTION =
-  `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
+const PLATFORM_DESCRIPTION = `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
 
 **Building Blocks:**
 - **Tools:** Basic logic blocks with typed inputs/outputs. Can call other tools. Naming: RESOURCE_ACTION (TOOL_CREATE, DOCUMENT_READ).
@@ -589,9 +584,8 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   });
 
   // Parse and validate request body
-  const { success, data, error } = DecopilotStreamRequestSchema.safeParse(
-    rawBody,
-  );
+  const { success, data, error } =
+    DecopilotStreamRequestSchema.safeParse(rawBody);
 
   if (!success) {
     throw new UserInputError(
@@ -620,9 +614,8 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
   // Fetch integrations list and check wallet balance in parallel
   const [integrations, hasBalance] = await Promise.all([
     tracer.startActiveSpan("list-integrations", () => listIntegrations(ctx)),
-    tracer.startActiveSpan(
-      "check-wallet-balance",
-      () => wallet.canProceed(ctx.workspace?.value as Workspace),
+    tracer.startActiveSpan("check-wallet-balance", () =>
+      wallet.canProceed(ctx.workspace?.value as Workspace),
     ),
   ]);
 

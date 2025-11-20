@@ -65,7 +65,7 @@ export const readMcp = createMcpManagementTool({
     assertHasLocator(c);
 
     // Use the existing getIntegration tool directly
-    return await getIntegration.handler({ id }, c);
+    return await getIntegration.handler({ id });
   },
 });
 
@@ -116,7 +116,7 @@ export const searchMcps = createMcpManagementTool({
     await assertWorkspaceResourceAccess(c);
 
     // Get installed integrations
-    const installedResult = await listIntegrations.handler({}, c);
+    const installedResult = await listIntegrations.handler({});
     const installedIntegrations = installedResult.items || [];
 
     const installedIds = new Set(
@@ -124,12 +124,9 @@ export const searchMcps = createMcpManagementTool({
     );
 
     // Search marketplace
-    const registry = await listRegistryApps.handler(
-      {
-        search: query,
-      },
-      c,
-    );
+    const registry = await listRegistryApps.handler({
+      search: query,
+    });
 
     const registryList = registry.apps
       .map((app) => {

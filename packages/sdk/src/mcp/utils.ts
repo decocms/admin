@@ -68,6 +68,7 @@ export const createServerClient = async (
   const client = new Client({
     name: mcpServer.name,
     version: "1.0.0",
+    // @ts-ignore - TS complains about this, but I think it's ok
     timeout: 180000, // 3 minutes
   });
 

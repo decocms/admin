@@ -2,7 +2,7 @@ import {
   findPinnedView,
   Integration,
   useConnectionViews,
-  WELL_KNOWN_AGENTS,
+  WELL_KNOWN_DECOPILOT_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -53,7 +53,7 @@ function ThreadListItem({
   isActive: boolean;
 }) {
   const { switchToThread, hideThread } = useThread();
-  const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
+  const decopilotAgentId = WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
   const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
 
   return (

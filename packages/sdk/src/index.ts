@@ -2,6 +2,7 @@ export * from "./broadcast.ts";
 export * from "./constants.ts";
 export * from "./locator.ts";
 export * from "./plan.ts";
+export * from "./types/well-known-agents.ts";
 
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";

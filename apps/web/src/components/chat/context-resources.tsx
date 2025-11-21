@@ -1,7 +1,6 @@
 import {
   applyDisplayNameToIntegration,
   formatFileSize,
-  isWellKnownDecopilotAgent,
   useAgents,
   useIntegrations,
   type Integration,
@@ -26,7 +25,6 @@ import { COMPUTED_RULE_IDS } from "../../constants/context-rules.ts";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import type { UploadedFile } from "../../hooks/use-file-upload.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { useAgenticChat } from "./provider.tsx";
 import { useThread } from "../decopilot/thread-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import type {
@@ -211,8 +209,6 @@ export function ContextResources({
 }: ContextResourcesProps) {
   // Read context from ThreadProvider instead of contextItems
   const { contextItems, removeContextItem, updateContextItem } = useThread();
-  const { metadata } = useAgenticChat();
-  const isWellKnownAgent = isWellKnownDecopilotAgent(metadata.agentId);
 
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
@@ -373,8 +369,8 @@ export function ContextResources({
     <div className="w-full mx-auto relative">
       <div className="flex justify-between items-end gap-2 overflow-visible">
         <div className="flex flex-wrap gap-1.5 overflow-visible">
-          {/* Display Rules - only for well-known agents */}
-          {isWellKnownAgent && ruleItems.length > 0 && (
+          {/* Display Rules */}
+          {ruleItems.length > 0 && (
             <RulesDisplay
               rules={ruleItems}
               onRemove={handleRemoveAllRules}

@@ -2,7 +2,7 @@ import {
   useAgents,
   useDocuments,
   useIntegrations,
-  WELL_KNOWN_DECOPILOT_AGENTS,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import {
@@ -64,7 +64,7 @@ function ThreadTitleFetcher({
   threadId: string;
   onTitleLoaded: (threadId: string, title: string) => void;
 }) {
-  const decopilotAgentId = WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
+  const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
   const title = useThreadTitle(threadId, decopilotAgentId, "New chat");
 
   useEffect(() => {

@@ -45,7 +45,7 @@ export const ToolDefinitionSchema = z.object({
     .array(ToolDependencySchema)
     .optional()
     .describe(
-      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the tool to execute successfully. Use DECO_RESOURCE_MCP_READ to find available integration IDs and their tools.",
+      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the tool to execute successfully. Use READ_MCP to find available integration IDs and their tools.",
     ),
 });
 

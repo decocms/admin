@@ -1,31 +1,38 @@
-import { useThreadMessages } from "@deco/sdk";
+import { useThreadMessages, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
 import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useThread } from "./thread-provider.tsx";
-import { ModeSelector } from "../chat/mode-selector.tsx";
-import { useAgenticChat } from "../chat/provider.tsx";
 
 export const NO_DROP_TARGET = "no-drop-target";
 
 interface DecopilotChatWrapperProps {
   hasTabs: boolean;
+  agent: typeof WELL_KNOWN_AGENTS.decopilotAgent;
   setOpen: (open: boolean) => void;
 }
 
-function DecopilotChatWrapper({ hasTabs, setOpen }: DecopilotChatWrapperProps) {
+function DecopilotChatWrapper({
+  hasTabs,
+  agent,
+  setOpen,
+}: DecopilotChatWrapperProps) {
+  const showHeader = hasTabs;
   const { copyThreadTabs } = useThread();
-  const { chat } = useAgenticChat();
-  const hasMessages = chat.messages.length > 0;
-  const showHeader = hasTabs || (hasMessages && !hasTabs);
-  const showCloseButton = hasTabs;
 
   return (
     <div className="flex flex-col h-full w-full transform-[translateZ(0)]">
       {showHeader && (
         <div className="flex h-10 items-center justify-between border-b border-border px-2 flex-none">
-          <ModeSelector />
+          <div className="flex items-center gap-2">
+            <img
+              src={agent.avatar}
+              alt={agent.name}
+              className="size-5 rounded"
+            />
+            <span className="text-sm font-medium">{agent.name}</span>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -37,21 +44,19 @@ function DecopilotChatWrapper({ hasTabs, setOpen }: DecopilotChatWrapperProps) {
             >
               <Icon name="add" size={16} />
             </button>
-            {showCloseButton && (
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
-                title="Close chat"
-              >
-                <Icon name="close" size={16} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+              title="Close chat"
+            >
+              <Icon name="close" size={16} />
+            </button>
           </div>
         </div>
       )}
       <div className="flex-1 min-h-0">
-        <MainChat className="h-full" hasTabs={hasTabs} />
+        <MainChat className="h-full" hasTabs={hasTabs} agent={agent} />
       </div>
     </div>
   );
@@ -89,6 +94,9 @@ function DecopilotChatContent() {
   const { getThread, getAllThreads, activeThreadId, tabs } = useThread();
   const { setOpen } = useDecopilotOpen();
 
+  // Always use decopilot agent
+  const agent = WELL_KNOWN_AGENTS.decopilotAgent;
+
   // Just read the thread - don't create during render
   const currentThread = activeThreadId ? getThread(activeThreadId) : null;
   const allThreads = getAllThreads();
@@ -100,9 +108,16 @@ function DecopilotChatContent() {
   if (!currentThread) {
     return (
       <div className="flex h-full w-full flex-col">
-        {/* Header with agent selector */}
+        {/* Header with agent name */}
         <div className="flex h-10 items-center justify-between border-b border-border px-2">
-          <ModeSelector />
+          <div className="flex items-center gap-2">
+            <img
+              src={agent.avatar}
+              alt={agent.name}
+              className="size-5 rounded"
+            />
+            <span className="text-sm font-medium">{agent.name}</span>
+          </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -133,7 +148,11 @@ function DecopilotChatContent() {
     <div className="h-full w-full">
       {/* Single chat instance for current route - provider is now at ProjectLayout level */}
       <Suspense fallback={<MainChatSkeleton />}>
-        <DecopilotChatWrapper hasTabs={hasTabs} setOpen={setOpen} />
+        <DecopilotChatWrapper
+          hasTabs={hasTabs}
+          agent={agent}
+          setOpen={setOpen}
+        />
       </Suspense>
     </div>
   );

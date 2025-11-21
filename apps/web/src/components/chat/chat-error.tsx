@@ -48,7 +48,7 @@ export function ChatError() {
 
   if (insufficientFunds) {
     return (
-      <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 px-4">
+      <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
         <div className="flex w-full justify-between p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
           <div className="flex items-center gap-4">
             <Icon name="info" />
@@ -79,7 +79,7 @@ export function ChatError() {
   }
 
   return (
-    <div className="animate-in slide-in-from-bottom duration-300 flex items-center px-4 gap-2">
+    <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
       <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
         <Icon name="info" size={20} />
         <div className="flex flex-col">

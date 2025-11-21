@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { useProjects, WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
+import { useProjects, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { useThread } from "../components/decopilot/thread-provider.tsx";
 import { useThreadTitle } from "../components/decopilot/index.tsx";
 import { useDocumentMetadata } from "./use-document-metadata.ts";
@@ -23,7 +23,7 @@ export function useProjectDocumentTitle() {
 
   const threadTitle = useThreadTitle(
     activeThreadId ?? undefined,
-    WELL_KNOWN_DECOPILOT_AGENTS.explore.id,
+    WELL_KNOWN_AGENTS.decopilotAgent.id,
     "New chat",
   );
 

@@ -274,11 +274,6 @@ export const MemoizedMarkdown = ({
   const { text: content = "" } = part;
   const blocks = useMemo(() => marked.lexer(content), [content]);
 
-  // Return null if no content to avoid rendering "0" when blocks array is empty
-  if (!content.trim() || blocks.length === 0) {
-    return null;
-  }
-
   return blocks.map((block, index) => {
     if (block.type === "code") {
       return (

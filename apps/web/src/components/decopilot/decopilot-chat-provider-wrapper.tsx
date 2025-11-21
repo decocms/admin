@@ -1,19 +1,11 @@
-import {
-  DEFAULT_MODEL,
-  isWellKnownDecopilotAgent,
-  type Agent,
-  useSDK,
-  useThreadMessages,
-  WELL_KNOWN_DECOPILOT_AGENTS,
-} from "@deco/sdk";
+import { useSDK, useThreadMessages, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { useMemo, type ReactNode } from "react";
-import { useAgentStore } from "../../stores/mode-store.ts";
 import {
   AgenticChatProvider,
   createDecopilotTransport,
 } from "../chat/provider.tsx";
-import { useDecopilotThread } from "./thread-context.tsx";
 import { useThread } from "./thread-provider.tsx";
+import { useDecopilotThread } from "./thread-context.tsx";
 
 interface DecopilotChatProviderWrapperProps {
   children: ReactNode;
@@ -27,49 +19,22 @@ export function DecopilotChatProviderWrapper({
   const { locator } = useSDK();
   const { getThread, activeThreadId } = useThread();
   const { threadState, clearThreadState } = useDecopilotThread();
-  const { agentId: storeAgentId } = useAgentStore();
 
-  // Use agentId from store, fallback to explore agent if not a well-known agent
-  const agentId = isWellKnownDecopilotAgent(storeAgentId)
-    ? storeAgentId
-    : WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
-
-  // Construct Agent object from well-known agent config (no need to fetch from DB)
-  const agent = useMemo<Agent | null>(() => {
-    // Handle legacy "decopilotAgent" by mapping to "explore"
-    const effectiveAgentId =
-      (agentId as string) === "decopilotAgent" ? "explore" : agentId;
-    const wellKnownAgent =
-      WELL_KNOWN_DECOPILOT_AGENTS[
-        effectiveAgentId as keyof typeof WELL_KNOWN_DECOPILOT_AGENTS
-      ];
-    if (!wellKnownAgent) return null;
-
-    return {
-      id: wellKnownAgent.id,
-      name: wellKnownAgent.name,
-      avatar: wellKnownAgent.avatar,
-      description: "Ask, search or create anything.",
-      model: DEFAULT_MODEL.id,
-      visibility: "PUBLIC" as const,
-      tools_set: {}, // Tools are filtered server-side based on agentId
-      views: [],
-      instructions: "",
-      max_steps: 30, // Same as old decopilotAgent
-      max_tokens: 64000, // Same as old decopilotAgent
-      memory: { last_messages: 8 }, // Same as old decopilotAgent
-    };
-  }, [agentId]);
+  // Always use decopilot agent
+  const agentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
+  const agent = WELL_KNOWN_AGENTS.decopilotAgent;
 
   // Get the current thread
   const currentThread = activeThreadId ? getThread(activeThreadId) : null;
 
-  // Fetch thread messages - hook now provides stable initialMessages
-  const { initialMessages } = useThreadMessages(
+  // Fetch thread messages
+  const { data: threadData } = useThreadMessages(
     currentThread?.id || "",
     agentId,
     { shouldFetch: !!currentThread?.id },
   );
+
+  const threadMessages = threadData?.messages ?? [];
 
   // Create decopilot transport
   const transport = useMemo(
@@ -80,9 +45,9 @@ export function DecopilotChatProviderWrapper({
     [currentThread, agentId, locator],
   );
 
-  // If no thread exists or agent not available, render children without the provider
+  // If no thread exists, render children without the provider
   // Components that need chat context will need to handle this gracefully
-  if (!currentThread || !transport || !agent) {
+  if (!currentThread || !transport) {
     return <>{children}</>;
   }
 
@@ -93,7 +58,7 @@ export function DecopilotChatProviderWrapper({
       threadId={currentThread.id}
       agent={agent}
       transport={transport}
-      initialMessages={initialMessages}
+      initialMessages={threadMessages}
       initialInput={threadState.initialMessage || undefined}
       autoSend={threadState.autoSend}
       onAutoSendComplete={clearThreadState}

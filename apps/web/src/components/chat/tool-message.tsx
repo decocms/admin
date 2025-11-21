@@ -1,9 +1,4 @@
-import {
-  useCreateSecret,
-  useIntegrations,
-  useSecrets,
-  type Integration,
-} from "@deco/sdk";
+import { useCreateSecret, useIntegrations, useSecrets } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +34,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { useCopy } from "../../hooks/use-copy.ts";
 import { ErrorBoundary } from "../../error-boundary.tsx";
@@ -48,18 +42,17 @@ import {
   useGetVersions,
   useRevertToVersion,
 } from "../../stores/resource-version-history/index.ts";
-import { extractResourceUriFromInput } from "../../stores/resource-version-history/utils.ts";
-import {
-  extractResourceUri,
-  openResourceTab,
-} from "../../utils/resource-tabs.ts";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import {
   extractToolName,
   getStatusStyles,
   parseToolName,
   resolveFullIntegrationId,
 } from "../../utils/tool-namespace.ts";
-import { useThread } from "../decopilot/thread-provider.tsx";
+import {
+  extractResourceUri,
+  openResourceTab,
+} from "../../utils/resource-tabs.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { JsonViewer } from "./json-viewer.tsx";
 import {
@@ -95,8 +88,7 @@ const CUSTOM_UI_TOOLS = new Set([
   "HOSTING_APP_DEPLOY",
   "RENDER",
   "GENERATE_IMAGE",
-  "DECO_RESOURCE_MCP_READ",
-  "DECO_RESOURCE_MCP_STORE_SEARCH",
+  "READ_MCP",
   "CALL_TOOL",
   "SECRETS_PROMPT_USER",
 ]);
@@ -134,406 +126,16 @@ function useIsCustomUITool(part: ToolUIPart): boolean {
   return useMemo(() => isCustomUITool(toolName), [toolName]);
 }
 
-// Helper to check if tool has output (including errors)
-function hasToolOutput(state: ToolUIPart["state"]): boolean {
-  return state === "output-available" || state === "output-error";
-}
-
-// Helper to get status text from tool state
-function getStatusText(state: ToolUIPart["state"]): string {
-  switch (state) {
-    case "input-streaming":
-      return "Generating input...";
-    case "input-available":
-      return "Executing...";
-    case "output-available":
-      return "Done";
-    case "output-error":
-      return "Error";
-    default:
-      return "Unknown";
-  }
-}
-
-// Helper to check if tool is loading
-function isToolLoading(state: ToolUIPart["state"]): boolean {
-  return state === "input-streaming" || state === "input-available";
-}
-
-// Helper to find integration by ID
-function useIntegrationById(
-  integrationId: string | null | undefined,
-): Integration | null {
-  const { data: integrations = [] } = useIntegrations();
-  return useMemo(() => {
-    if (!integrationId) return null;
-    return integrations.find((i) => i.id === integrationId) ?? null;
-  }, [integrationId, integrations]);
-}
-
-// Helper to create integration icon component
-function createIntegrationIcon(
-  integration: Integration | null,
-  fallbackIcon: string = "folder",
-): string | ReactNode {
-  if (!integration) return fallbackIcon;
-  return (
-    <div className="w-5 flex items-center justify-center shrink-0">
-      <IntegrationIcon
-        icon={integration.icon}
-        name={integration.name}
-        size="xs"
-        className="shrink-0"
-      />
-    </div>
-  );
-}
-
-// Helper to render icon element (string or ReactNode)
-function renderIcon(icon: string | ReactNode | undefined): ReactNode {
-  if (!icon) return null;
-  return typeof icon === "string" ? (
-    <div className="w-5 flex items-center justify-center shrink-0">
-      <Icon name={icon} size={16} />
-    </div>
-  ) : (
-    icon
-  );
-}
-
-// Reusable accordion component for tool calls with custom UI and debug view switcher
-interface ToolCallDetailProps {
-  part: ToolUIPart;
-  icon?: string | ReactNode;
-  title: string | ReactNode;
-  children?: ReactNode;
-  statusBadge?: ReactNode;
-  defaultShowCustomView?: boolean;
-  defaultExpanded?: boolean;
-  headerActions?: ReactNode;
-  onHeaderClick?: () => void;
-  showDebugToggle?: boolean; // Whether to show the debug toggle icon
-}
-
-function ToolCallDetail({
+const ToolStatus = memo(function ToolStatus({
   part,
-  icon,
-  title,
-  children,
-  statusBadge,
-  defaultShowCustomView = true,
-  defaultExpanded = false,
-  headerActions,
-  onHeaderClick,
-  showDebugToggle,
-}: ToolCallDetailProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [showCustomView, setShowCustomView] = useState(defaultShowCustomView);
-  const [isHovered, setIsHovered] = useState(false);
-  const [showGradient, setShowGradient] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const statusText = getStatusText(part.state);
-  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
-  const isLoading = isToolLoading(part.state);
-  const hasOutput = hasToolOutput(part.state);
-
-  // Only show debug toggle if there's custom UI content to toggle
-  // If showDebugToggle is explicitly set (true/false), use that
-  // Otherwise, only show if children exist
-  const hasCustomUI = children !== null && children !== undefined;
-  const shouldShowDebugToggle =
-    showDebugToggle !== undefined ? showDebugToggle : hasCustomUI;
-
-  // Check if scrolling is needed for gradient
-  useEffect(() => {
-    if (!isExpanded || !contentRef.current) {
-      setShowGradient(false);
-      return;
-    }
-
-    const checkScroll = () => {
-      if (contentRef.current) {
-        setShowGradient(
-          contentRef.current.scrollHeight > contentRef.current.clientHeight,
-        );
-      }
-    };
-
-    checkScroll();
-
-    // Guard ResizeObserver usage
-    let resizeObserver: ResizeObserver | undefined;
-    if (
-      typeof window !== "undefined" &&
-      typeof window.ResizeObserver !== "undefined"
-    ) {
-      resizeObserver = new ResizeObserver(checkScroll);
-      resizeObserver.observe(contentRef.current);
-    }
-
-    const currentRef = contentRef.current;
-    currentRef.addEventListener("scroll", checkScroll);
-
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      currentRef?.removeEventListener("scroll", checkScroll);
-    };
-  }, [isExpanded, children]);
-
-  const handleClick = useCallback(() => {
-    if (onHeaderClick) {
-      onHeaderClick();
-      return;
-    }
-    setIsExpanded((prev) => {
-      const newState = !prev;
-      setTimeout(() => {
-        if (newState && contentRef.current) {
-          contentRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-      }, 100);
-      return newState;
-    });
-  }, [onHeaderClick]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        if (e.key === " ") {
-          e.preventDefault();
-        }
-        handleClick();
-      }
-    },
-    [handleClick],
-  );
-
-  const iconElement = renderIcon(icon);
-  const showChevron = isHovered || isExpanded;
-  const chevronIcon = isExpanded ? "expand_more" : "chevron_right";
-
-  return (
-    <div
-      className="flex flex-col relative hover:bg-accent/50 rounded-lg overflow-hidden max-w-4xl"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground py-1 px-1.5 h-10",
-        )}
-      >
-        {showChevron ? (
-          <div className="w-5 flex items-center justify-center shrink-0">
-            <Icon name={chevronIcon} size={16} />
-          </div>
-        ) : (
-          iconElement
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div
-                className={cn(
-                  "font-medium truncate",
-                  isLoading && "text-shimmer",
-                )}
-              >
-                {title}
-              </div>
-              {!(hasOutput && showCustomView && statusBadge) && (
-                <div
-                  className={cn(
-                    "text-xs opacity-70 shrink-0",
-                    statusConfig.className,
-                  )}
-                >
-                  {statusText}
-                </div>
-              )}
-            </div>
-            <div className="ml-auto flex items-center gap-1">
-              {hasOutput && showCustomView && statusBadge && (
-                <div className="text-xs text-muted-foreground/70">
-                  {statusBadge}
-                </div>
-              )}
-              {headerActions}
-              {!onHeaderClick && shouldShowDebugToggle && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowCustomView((prev) => !prev);
-                        }}
-                      >
-                        <Icon
-                          name="code"
-                          className={cn(
-                            "text-muted-foreground",
-                            showCustomView && "text-foreground",
-                          )}
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <span>
-                        {showCustomView ? "Show debug view" : "Show custom UI"}
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {!onHeaderClick && (
-        <div className="relative">
-          <div
-            ref={contentRef}
-            className={cn(
-              "text-left w-full min-w-0 transition-all duration-200 ease-in-out",
-              isExpanded
-                ? "max-h-[400px] opacity-100 overflow-y-auto"
-                : "max-h-0 m-0 opacity-0 overflow-hidden",
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {hasCustomUI && showCustomView ? (
-              children
-            ) : (
-              <ToolDebugView part={part} />
-            )}
-          </div>
-          {showGradient && (
-            <div className="absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-background to-transparent pointer-events-none z-10" />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Reusable component for displaying raw input/output/error (debug mode)
-// Always renders raw JSON format, never custom UI
-function ToolDebugView({ part }: { part: ToolUIPart }) {
-  const { state, input, output, errorText } = part;
-  const hasOutput = hasToolOutput(state);
-  const hasError = state === "output-error";
-
-  return (
-    <div className="text-left space-y-3 w-full min-w-0 h-full p-2 max-h-[400px] overflow-y-auto">
-      {/* Input Section */}
-      {input !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_downward" className="size-3" />
-            Input
-          </div>
-          <JsonViewer data={input} defaultView="tree" maxHeight="100%" />
-        </div>
-      )}
-
-      {/* Output Section - Always show if output exists, even on error */}
-      {hasOutput && output !== undefined && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-            <Icon name="arrow_upward" className="size-3" />
-            Output
-          </div>
-          <JsonViewer data={output} defaultView="tree" maxHeight="100%" />
-        </div>
-      )}
-
-      {/* Error Section - Additional info, not a replacement for output */}
-      {hasError && errorText && (
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
-            <Icon name="error_outline" className="size-3" />
-            Error Message
-          </div>
-          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
-            {errorText}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Resource Tool Custom UI - simple card showing resource name, URI, and open button
-function ResourceToolCustomUI({
-  part,
-  resourceUri,
-  onOpenResource,
+  isSingle,
 }: {
   part: ToolUIPart;
-  resourceUri: string;
-  onOpenResource: () => void;
+  isSingle: boolean;
 }) {
-  const hasOutput = part.state === "output-available";
-
-  // Extract resource name from URI (last part after the last slash)
-  // Must be called unconditionally before any early returns (React hooks rules)
-  const resourceName = useMemo(() => {
-    const parts = resourceUri.split("/");
-    const lastPart = parts[parts.length - 1];
-    // Remove file extension if present and format
-    return lastPart.replace(/\.(ts|tsx|js|jsx)$/, "").replace(/_/g, " ");
-  }, [resourceUri]);
-
-  if (!hasOutput) {
-    return null;
-  }
-
-  return (
-    <div className="px-2 py-2">
-      <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
-        <div className="flex-1 min-w-0 mr-3">
-          <div className="text-sm font-medium text-foreground truncate">
-            {resourceName}
-          </div>
-          <div className="text-xs text-muted-foreground truncate mt-0.5">
-            {resourceUri}
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenResource();
-          }}
-          className="h-8 gap-1.5 shrink-0"
-        >
-          <Icon name="open_in_new" size={14} />
-          Open
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-const ToolStatus = memo(function ToolStatus({ part }: { part: ToolUIPart }) {
-  const { input } = part;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { state, input, output, errorText } = part;
 
   // Get raw tool name to parse integration ID
   const rawToolName = useMemo(() => {
@@ -548,76 +150,6 @@ const ToolStatus = memo(function ToolStatus({ part }: { part: ToolUIPart }) {
 
   const toolName = useToolName(part);
   const { data: integrations = [] } = useIntegrations();
-
-  // Check if this is a DECO_RESOURCE_* tool
-  const isResourceTool = useMemo(() => {
-    if (!rawToolName) return false;
-    return /^DECO_RESOURCE_.*_(CREATE|READ|UPDATE|DELETE|SEARCH)$/.test(
-      extractToolName(rawToolName),
-    );
-  }, [rawToolName]);
-
-  // Extract resource URI for DECO_RESOURCE_* tools
-  const resourceUri = useMemo(() => {
-    if (!isResourceTool) return null;
-
-    const toolInput = part.input;
-    const isCreateOperation = /^DECO_RESOURCE_.*_CREATE$/.test(
-      extractToolName(rawToolName || ""),
-    );
-
-    // For CREATE operations, URI is in output
-    if (isCreateOperation && part.state === "output-available") {
-      const output = part.output as
-        | { structuredContent?: { uri?: string; data?: unknown } }
-        | { uri?: string; data?: unknown }
-        | undefined;
-      // Check for structuredContent first
-      if (output && typeof output === "object") {
-        const withStructuredContent = output as {
-          structuredContent?: { uri?: string; data?: unknown };
-        };
-        if (
-          "structuredContent" in withStructuredContent &&
-          withStructuredContent.structuredContent
-        ) {
-          return withStructuredContent.structuredContent.uri || null;
-        }
-        // Fall back to direct uri property
-        if ("uri" in output && typeof output.uri === "string") {
-          return output.uri;
-        }
-      }
-    }
-
-    // For other operations (READ, UPDATE, DELETE, SEARCH), URI is in input
-    if (!isCreateOperation && toolInput) {
-      // Use extractResourceUri for UPDATE/CREATE (handles both), otherwise extract from input directly
-      const uri = extractResourceUri(toolName, toolInput, undefined);
-      if (uri) return uri;
-      // Fallback to direct extraction for READ, DELETE, SEARCH
-      return extractResourceUriFromInput(toolInput);
-    }
-
-    return null;
-  }, [
-    isResourceTool,
-    toolName,
-    rawToolName,
-    part.input,
-    part.state,
-    part.output,
-  ]);
-
-  // Canvas tabs management for resource tools
-  const { tabs, addTab, setActiveTab } = useThread();
-
-  // Handle opening resource in tab
-  const handleResourceClick = useCallback(() => {
-    if (resourceUri) {
-      openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
-    }
-  }, [resourceUri, tabs, integrations, addTab, setActiveTab]);
 
   // Parse integration ID from namespaced tool name
   const truncatedIntegrationId = useMemo(() => {
@@ -639,6 +171,10 @@ const ToolStatus = memo(function ToolStatus({ part }: { part: ToolUIPart }) {
     return integrations.find((i) => i.id === integrationId) ?? null;
   }, [integrationId, integrations]);
 
+  const isLoading = state === "input-streaming" || state === "input-available";
+  const hasOutput = state === "output-available";
+  const hasError = state === "output-error";
+
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Version history integration
@@ -658,57 +194,166 @@ const ToolStatus = memo(function ToolStatus({ part }: { part: ToolUIPart }) {
     uri,
   );
 
-  const customIcon = createIntegrationIcon(integration, "build");
+  const statusText = useMemo(() => {
+    switch (state) {
+      case "input-streaming":
+        return "Generating input...";
+      case "input-available":
+        return "Running the tool...";
+      case "output-available":
+        return "Done";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [state]);
 
-  const headerActions = (
-    <>
-      {canRevert && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmOpen(true);
-                }}
-              >
-                <Icon name="undo" className="text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span>Revert to {revertLabel}</span>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-    </>
-  );
+  const statusConfig = useMemo(() => getStatusStyles(state), [state]);
 
-  // Custom UI for resource tools
-  const customUI =
-    isResourceTool && resourceUri ? (
-      <ResourceToolCustomUI
-        part={part}
-        resourceUri={resourceUri}
-        onOpenResource={handleResourceClick}
-      />
-    ) : undefined;
+  const onClick = useCallback(() => {
+    setIsExpanded((prev) => {
+      const newState = !prev;
+
+      setTimeout(() => {
+        if (newState && contentRef.current) {
+          contentRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+
+      return newState;
+    });
+  }, []);
 
   return (
-    <>
-      <ToolCallDetail
-        part={part}
-        icon={customIcon}
-        title={toolName}
-        headerActions={headerActions}
-        defaultShowCustomView={true}
-      >
-        {customUI}
-      </ToolCallDetail>
+    <div
+      className={cn(
+        "flex flex-col relative",
+        isSingle && "p-2.5 hover:bg-accent/25 rounded-2xl",
+      )}
+      onClick={undefined}
+    >
+      <div className="flex items-start gap-2">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onClick}
+          className={cn(
+            "w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
+            !isSingle && "hover:bg-accent rounded-lg p-2",
+          )}
+        >
+          {integration ? (
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              size="sm"
+              className="shrink-0"
+            />
+          ) : (
+            <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div
+                  className={cn(
+                    "font-medium truncate",
+                    isLoading && "text-shimmer",
+                  )}
+                >
+                  {toolName}
+                </div>
+                <div
+                  className={cn(
+                    "text-xs opacity-70 shrink-0",
+                    statusConfig.className,
+                  )}
+                >
+                  {statusText}
+                </div>
+              </div>
+              <div className="ml-auto flex items-center gap-1">
+                {canRevert && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          <Icon name="undo" className="text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>Revert to {revertLabel}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <Icon
+                  className={cn("text-sm", isExpanded && "rotate-90")}
+                  name="chevron_right"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 space-y-3 w-full min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Input Section */}
+          {input !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_downward" className="size-3" />
+                Input
+              </div>
+              <JsonViewer data={input} defaultView="tree" maxHeight="300px" />
+            </div>
+          )}
+
+          {/* Output Section */}
+          {hasOutput && output !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_upward" className="size-3" />
+                Output
+              </div>
+              <JsonViewer data={output} defaultView="tree" maxHeight="300px" />
+            </div>
+          )}
+
+          {/* Error Section */}
+          {hasError && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+                <Icon name="error_outline" className="size-3" />
+                Error
+              </div>
+              {errorText && (
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+                  {errorText}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Confirmation dialog */}
       {canRevert && (
@@ -737,7 +382,7 @@ const ToolStatus = memo(function ToolStatus({ part }: { part: ToolUIPart }) {
           </AlertDialogContent>
         </AlertDialog>
       )}
-    </>
+    </div>
   );
 });
 
@@ -752,7 +397,7 @@ function ImagePrompt({
 
   if (!isCollapsible || prompt.length <= 60) {
     return (
-      <p className="text-sm text-muted-foreground/80 leading-relaxed wrap-break-word whitespace-pre-wrap">
+      <p className="text-sm text-muted-foreground/80 leading-relaxed break-words whitespace-pre-wrap">
         {prompt}
       </p>
     );
@@ -769,20 +414,20 @@ function ImagePrompt({
             size="sm"
             className="h-auto p-0 text-sm text-muted-foreground/80 hover:text-muted-foreground font-normal justify-start w-full text-left"
           >
-            <span className="leading-relaxed wrap-break-word flex-1 min-w-0">
+            <span className="leading-relaxed break-words flex-1 min-w-0">
               {truncatedPrompt}
             </span>
             <Icon
               name="chevron_right"
               className={cn(
-                "ml-2 h-3 w-3 shrink-0 transition-transform",
+                "ml-2 h-3 w-3 flex-shrink-0 transition-transform",
                 isOpen && "rotate-90",
               )}
             />
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted wrap-break-word whitespace-pre-wrap">
+          <div className="text-sm text-muted-foreground/80 leading-relaxed pl-4 border-l-2 border-muted break-words whitespace-pre-wrap">
             {prompt}
           </div>
         </CollapsibleContent>
@@ -795,44 +440,41 @@ function GeneratingStatus() {
   return <span className="font-medium text-shimmer">Generating image...</span>;
 }
 
-// Helper to extract image from tool output
-function extractImageFromOutput(output: unknown): string | null {
-  if (
-    output &&
-    typeof output === "object" &&
-    "structuredContent" in output &&
-    output.structuredContent &&
-    typeof output.structuredContent === "object" &&
-    "image" in output.structuredContent &&
-    typeof output.structuredContent.image === "string"
-  ) {
-    return output.structuredContent.image;
-  }
-  return null;
-}
-
 function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
+  const state = part.state;
   const prompt =
     typeof part.input === "object" && part.input && "prompt" in part.input
-      ? (part.input.prompt as string | null)
+      ? part.input.prompt
       : null;
-  const image = extractImageFromOutput(part.output);
-  const isGenerating = isToolLoading(part.state);
-  const isGenerated = part.state === "output-available" && image;
-  const hasError = part.state === "output-error";
 
-  if (!prompt) {
+  if (!prompt || typeof prompt !== "string") {
     return (
-      <ToolCallDetail part={part} icon="image" title="Generate Image">
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
         <p className="text-muted-foreground">Missing image prompt</p>
-      </ToolCallDetail>
+      </div>
     );
   }
 
-  let customUI: ReactNode;
+  // Extract image URL from output.structuredContent.image
+  const image =
+    part.output &&
+    typeof part.output === "object" &&
+    "structuredContent" in part.output &&
+    part.output.structuredContent &&
+    typeof part.output.structuredContent === "object" &&
+    "image" in part.output.structuredContent &&
+    typeof part.output.structuredContent.image === "string"
+      ? part.output.structuredContent.image
+      : null;
+
+  const isGenerating =
+    state === "input-streaming" || state === "input-available";
+  const isGenerated = state === "output-available" && image;
+  const hasError = state === "output-error";
+
   if (hasError) {
-    customUI = (
-      <div className="space-y-3">
+    return (
+      <div className="space-y-3 p-4 border border-destructive/20 rounded-lg bg-destructive/5 w-full max-w-full overflow-hidden">
         <div className="flex items-center gap-2 text-destructive">
           <Icon name="close" className="h-4 w-4" />
           <span className="font-medium">Failed to generate image</span>
@@ -840,16 +482,20 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
         <ImagePrompt prompt={prompt} />
       </div>
     );
-  } else if (isGenerating) {
-    customUI = (
-      <div className="space-y-3">
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/20 w-full max-w-full overflow-hidden">
         <GeneratingStatus />
         <ImagePrompt prompt={prompt} />
       </div>
     );
-  } else if (isGenerated) {
-    customUI = (
-      <div className="space-y-3">
+  }
+
+  if (isGenerated) {
+    return (
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
         <ImagePrompt prompt={prompt} />
         <div className="rounded-lg overflow-hidden border border-border">
           <img
@@ -860,120 +506,173 @@ function GenerateImageToolUI({ part }: { part: ToolUIPart }) {
         </div>
       </div>
     );
-  } else {
-    customUI = (
-      <div className="space-y-3">
-        <p className="text-muted-foreground">No image generated</p>
-        <ImagePrompt prompt={prompt} />
-      </div>
-    );
   }
 
   return (
-    <ToolCallDetail part={part} icon="image" title="Generate Image">
-      {customUI}
-    </ToolCallDetail>
+    <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/10 w-full max-w-full overflow-hidden">
+      <p className="text-muted-foreground">No image generated</p>
+      <ImagePrompt prompt={prompt} />
+    </div>
   );
 }
 
-// Custom UI component for DECO_RESOURCE_MCP_STORE_SEARCH tool
-function SearchMcpsToolUI({ part }: { part: ToolUIPart }) {
-  const input = part.input as { query?: string } | undefined;
-  const output = part.output as
-    | {
-        integrations?: Array<
-          Integration & { friendlyName?: string; isInstalled?: boolean }
-        >;
-      }
-    | undefined;
-  const searchResults = output?.integrations || [];
-  const installedCount = searchResults.filter((i) => i.isInstalled).length;
-  const totalCount = searchResults.length;
-  const hasOutput = hasToolOutput(part.state);
+// Custom UI component for READ_MCP tool
+function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
+  const { data: integrations = [] } = useIntegrations();
+  const input = part.input as { id?: string } | undefined;
+  const integrationId = input?.id;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const title = (
-    <>
-      Search MCPs
-      {input?.query && (
-        <span className="text-muted-foreground/70 ml-1">"{input.query}"</span>
-      )}
-    </>
-  );
+  const integration = useMemo(() => {
+    if (!integrationId) return null;
+    return integrations.find((i) => i.id === integrationId) ?? null;
+  }, [integrationId, integrations]);
 
-  const statusBadge =
-    hasOutput && totalCount > 0
-      ? `${totalCount} found (${installedCount} installed)`
-      : undefined;
+  const statusText = useMemo(() => {
+    switch (part.state) {
+      case "input-streaming":
+        return "Generating input...";
+      case "input-available":
+        return "Reading...";
+      case "output-available":
+        return "Done";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [part.state]);
 
-  const customUI =
-    hasOutput && searchResults.length > 0 ? (
-      <div className="flex flex-col relative">
-        <div className="relative px-1.5 flex">
-          <div className="w-5 flex items-center justify-center shrink-0">
-            <div className="w-0.5 h-full bg-border" />
-          </div>
-          <div className="flex-1 pl-4 min-w-0">
-            <div className="flex flex-col gap-3 py-2 pb-8">
-              {searchResults.map((integration) => (
-                <div
-                  key={integration.id}
-                  className="flex items-center gap-4 w-full min-w-0 overflow-hidden"
-                >
-                  <div className="flex items-center gap-2 shrink-0">
-                    <IntegrationIcon
-                      icon={integration.icon}
-                      name={integration.friendlyName ?? integration.name}
-                      size="xs"
-                      className="shrink-0"
-                    />
-                    <div className="text-xs font-normal text-foreground truncate">
-                      {integration.friendlyName ?? integration.name}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 text-xs text-muted-foreground/75 truncate">
-                    {integration.description || ""}
-                  </div>
-                  {integration.isInstalled && (
-                    <div className="bg-primary text-primary-foreground text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0">
-                      Installed
-                    </div>
-                  )}
-                </div>
-              ))}
+  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
+  const isLoading =
+    part.state === "input-streaming" || part.state === "input-available";
+  const hasOutput = part.state === "output-available";
+  const hasError = part.state === "output-error";
+
+  const handleClick = useCallback(() => {
+    setIsExpanded((prev) => {
+      const newState = !prev;
+      setTimeout(() => {
+        if (newState && contentRef.current) {
+          contentRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+      return newState;
+    });
+  }, []);
+
+  return (
+    <div className="flex flex-col relative p-2.5 hover:bg-accent/25 rounded-2xl max-w-4xl">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        className={cn(
+          "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground",
+        )}
+      >
+        {integration ? (
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            size="sm"
+            className="shrink-0"
+          />
+        ) : (
+          <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className={cn(
+                  "font-medium truncate",
+                  isLoading && "text-shimmer",
+                )}
+              >
+                {integration?.name || "Integration"}
+              </div>
+              <div
+                className={cn(
+                  "text-xs opacity-70 shrink-0",
+                  statusConfig.className,
+                )}
+              >
+                {statusText}
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              <Icon
+                className={cn("text-sm", isExpanded && "rotate-90")}
+                name="chevron_right"
+              />
             </div>
           </div>
+          {integration?.description && (
+            <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+              {integration.description}
+            </div>
+          )}
         </div>
       </div>
-    ) : null;
 
-  return (
-    <ToolCallDetail
-      part={part}
-      icon="search"
-      title={title}
-      statusBadge={statusBadge}
-    >
-      {customUI}
-    </ToolCallDetail>
-  );
-}
+      {isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 space-y-3 w-full min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Input Section */}
+          {part.input !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_downward" className="size-3" />
+                Input
+              </div>
+              <JsonViewer
+                data={part.input}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
 
-// Custom UI component for DECO_RESOURCE_MCP_READ tool
-function ReadMCPToolUI({ part }: { part: ToolUIPart }) {
-  const input = part.input as { id?: string } | undefined;
-  const integration = useIntegrationById(input?.id);
+          {/* Output Section */}
+          {hasOutput && part.output !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_upward" className="size-3" />
+                Output
+              </div>
+              <JsonViewer
+                data={part.output}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
 
-  const title = integration?.name || "Integration";
-  const customIcon = createIntegrationIcon(integration);
-
-  return (
-    <ToolCallDetail
-      part={part}
-      icon={customIcon}
-      title={title}
-      defaultShowCustomView={false}
-      showDebugToggle={false}
-    />
+          {/* Error Section */}
+          {hasError && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+                <Icon name="error_outline" className="size-3" />
+                Error
+              </div>
+              {part.errorText && (
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+                  {part.errorText}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -989,8 +688,11 @@ function useCallToolInfo(part: ToolUIPart) {
       }
     | undefined;
 
-  const toolName = input?.params?.name ?? null;
-  const integrationId = input?.id ?? null;
+  const toolName = useMemo(
+    () => input?.params?.name ?? null,
+    [input?.params?.name],
+  );
+  const integrationId = useMemo(() => input?.id ?? null, [input?.id]);
 
   const uri = useMemo(() => {
     const args = input?.params?.arguments;
@@ -1008,12 +710,52 @@ function useCallToolInfo(part: ToolUIPart) {
 
 // Custom UI component for CALL_TOOL tool
 function CallToolUI({ part }: { part: ToolUIPart }) {
+  const { data: integrations = [] } = useIntegrations();
   const { toolName: rawToolName, integrationId, uri } = useCallToolInfo(part);
   const toolName = rawToolName ?? undefined;
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const { data: integrations = [] } = useIntegrations();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const integration = useIntegrationById(integrationId);
+  const integration = useMemo(() => {
+    if (!integrationId) return null;
+    return integrations.find((i) => i.id === integrationId) ?? null;
+  }, [integrationId, integrations]);
+
+  const toolDescription = useMemo(() => {
+    if (!integration?.tools || !toolName) return null;
+    const tool = integration.tools.find((t) => t.name === toolName);
+    return tool?.description || null;
+  }, [integration?.tools, toolName]);
+
+  const statusText = useMemo(() => {
+    switch (part.state) {
+      case "input-streaming":
+        return "Generating input...";
+      case "input-available":
+        return "Executing...";
+      case "output-available":
+        return "Done";
+      case "output-error":
+        return "Error";
+      default:
+        return "Unknown";
+    }
+  }, [part.state]);
+
+  const statusConfig = useMemo(() => getStatusStyles(part.state), [part.state]);
+  const isLoading =
+    part.state === "input-streaming" || part.state === "input-available";
+  const hasOutput = part.state === "output-available";
+  const hasError = part.state === "output-error";
+
+  // Check if the nested tool needs custom UI rendering
+  const needsCustomUI = useMemo(() => {
+    if (toolName === "SECRETS_PROMPT_USER" && hasOutput) {
+      return true;
+    }
+    return false;
+  }, [toolName, hasOutput, part.output]);
 
   const { canRevert, revertLabel, onConfirmRevert } = useVersionRevertControls(
     toolName || "",
@@ -1048,18 +790,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
       | undefined;
     const toolOutput =
       part.state === "output-available"
-        ? (() => {
-            const output = part.output as
-              | { structuredContent?: { uri?: string; data?: unknown } }
-              | undefined;
-            if (output?.structuredContent) {
-              return {
-                uri: output.structuredContent.uri,
-                data: output.structuredContent.data,
-              };
-            }
-            return output as { uri?: string; data?: unknown } | undefined;
-          })()
+        ? (part.output as { structuredContent?: { uri?: string } } | undefined)
         : undefined;
 
     return extractResourceUri("CALL_TOOL", toolInput, toolOutput);
@@ -1077,11 +808,25 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     }
   }, [resourceUri, part.state, tabs, integrations, addTab, setActiveTab]);
 
-  // Handle opening resource in tab
-  const handleResourceClick = useCallback(() => {
+  // Handle opening resource in tab or toggling expansion
+  const handleClick = useCallback(() => {
     if (resourceUri) {
       // Open in tab if resource URI exists (using shared utility)
       openResourceTab(resourceUri, tabs, integrations, addTab, setActiveTab);
+    } else {
+      // Toggle expansion if no resource URI
+      setIsExpanded((prev) => {
+        const newState = !prev;
+        setTimeout(() => {
+          if (newState && contentRef.current) {
+            contentRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }, 100);
+        return newState;
+      });
     }
   }, [resourceUri, tabs, integrations, addTab, setActiveTab]);
 
@@ -1112,70 +857,169 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
     </TooltipProvider>
   ) : null;
 
-  const headerActions = (
-    <>
-      {resourceUri && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleResourceClick();
-                }}
-              >
-                <Icon name="open_in_full" className="text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span>Open resource</span>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      {canRevert && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmOpen(true);
-                }}
-              >
-                <Icon name="undo" className="text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span>Revert to {revertLabel}</span>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      {copyButton}
-    </>
-  );
-
-  const customIcon = createIntegrationIcon(integration, "build");
-
   return (
-    <>
-      <ToolCallDetail
-        part={part}
-        icon={customIcon}
-        title={toolName}
-        headerActions={headerActions}
-        defaultShowCustomView={false}
-        showDebugToggle={false}
-      />
+    <div className="flex flex-col relative p-2.5 hover:bg-accent/25 rounded-2xl max-w-4xl">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        className={cn(
+          "w-full flex items-center gap-2 text-sm text-muted-foreground transition-colors cursor-pointer hover:text-foreground",
+        )}
+      >
+        {integration ? (
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            size="sm"
+            className="shrink-0"
+          />
+        ) : (
+          <div className="size-5 rounded-full bg-muted/30 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className={cn(
+                  "font-medium truncate",
+                  isLoading && "text-shimmer",
+                )}
+              >
+                {toolName}
+              </div>
+              <div
+                className={cn(
+                  "text-xs opacity-70 shrink-0",
+                  statusConfig.className,
+                )}
+              >
+                {statusText}
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              {canRevert && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        <Icon name="undo" className="text-muted-foreground" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span>Revert to {revertLabel}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {copyButton}
+              {!resourceUri && (
+                <Icon
+                  className={cn("text-sm", isExpanded && "rotate-90")}
+                  name="chevron_right"
+                />
+              )}
+            </div>
+          </div>
+          {toolDescription && (
+            <div className="text-xs text-muted-foreground/70 truncate mt-0.5">
+              {toolDescription}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Custom UI for special tools (like SECRETS_PROMPT_USER) */}
+      {!resourceUri && needsCustomUI && toolName === "SECRETS_PROMPT_USER" && (
+        <div className="mt-2">
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 text-sm text-destructive">
+                Failed to load secrets prompt
+              </div>
+            }
+          >
+            <Suspense
+              fallback={
+                <div className="p-4 border border-border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Icon
+                      name="progress_activity"
+                      className="size-4 animate-spin"
+                    />
+                    Loading...
+                  </div>
+                </div>
+              }
+            >
+              <SecretsPromptUI part={part} />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      )}
+
+      {/* Expandable input/output section when no resourceUri and no custom UI */}
+      {!resourceUri && !needsCustomUI && isExpanded && (
+        <div
+          ref={contentRef}
+          className="text-left mt-2 space-y-3 w-full min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Input Section */}
+          {part.input !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_downward" className="size-3" />
+                Input
+              </div>
+              <JsonViewer
+                data={part.input}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
+
+          {/* Output Section */}
+          {hasOutput && part.output !== undefined && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                <Icon name="arrow_upward" className="size-3" />
+                Output
+              </div>
+              <JsonViewer
+                data={part.output}
+                defaultView="tree"
+                maxHeight="300px"
+              />
+            </div>
+          )}
+
+          {/* Error Section */}
+          {hasError && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-destructive px-1 flex items-center gap-2">
+                <Icon name="error_outline" className="size-3" />
+                Error
+              </div>
+              {part.errorText && (
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-sm text-destructive">
+                  {part.errorText}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Confirmation dialog for revert */}
       {canRevert && (
@@ -1204,44 +1048,7 @@ function CallToolUI({ part }: { part: ToolUIPart }) {
           </AlertDialogContent>
         </AlertDialog>
       )}
-    </>
-  );
-}
-
-// Render Preview Tool UI
-function RenderPreviewToolUI({ part }: { part: ToolUIPart }) {
-  const result = (part.output ?? {}) as Record<string, unknown>;
-  const hasOutput = part.state === "output-available" && part.output;
-
-  const customUI = hasOutput ? (
-    <Preview
-      content={result.content as "url" | "html"}
-      title={result.title as string}
-    />
-  ) : null;
-
-  return (
-    <ToolCallDetail part={part} icon="preview" title="Preview">
-      {customUI}
-    </ToolCallDetail>
-  );
-}
-
-// Hosting App Deploy Tool UI
-function HostingAppDeployToolUI({ part }: { part: ToolUIPart }) {
-  const toolName = useToolName(part);
-  const toolLike: HostingAppToolLike = {
-    toolCallId: part.toolCallId,
-    toolName: toolName,
-    state: mapToToolLikeState(part.state),
-    args: part.input as HostingAppToolLike["args"],
-    result: part.output,
-  };
-
-  return (
-    <ToolCallDetail part={part} icon="rocket_launch" title="Deploy App">
-      <HostingAppDeploy tool={toolLike} />
-    </ToolCallDetail>
+    </div>
   );
 }
 
@@ -1294,7 +1101,7 @@ function SecretsPromptUI({ part }: { part: ToolUIPart }) {
   // If secret was just added
   if (isAdded) {
     return (
-      <div className="p-4 border rounded-lg bg-green-500/5 border-green-500/20">
+      <div className="p-4 border border-border rounded-lg bg-green-500/5 border-green-500/20">
         <div className="flex items-center gap-2 text-sm">
           <Icon name="check_circle" className="size-5 text-green-500" />
           <div>
@@ -1313,7 +1120,7 @@ function SecretsPromptUI({ part }: { part: ToolUIPart }) {
   // If secret already exists
   if (existingSecret) {
     return (
-      <div className="p-4 border rounded-lg bg-blue-500/5 border-blue-500/20">
+      <div className="p-4 border border-border rounded-lg bg-blue-500/5 border-blue-500/20">
         <div className="flex items-center gap-2 text-sm">
           <Icon name="info" className="size-5 text-blue-500" />
           <div>
@@ -1375,10 +1182,35 @@ function SecretsPromptUI({ part }: { part: ToolUIPart }) {
   );
 }
 
-// Secrets Prompt User Tool UI
-function SecretsPromptUserToolUI({ part }: { part: ToolUIPart }) {
-  return (
-    <ToolCallDetail part={part} icon="key" title="Add Secret">
+function CustomToolUI({ part }: { part: ToolUIPart }) {
+  const result = (part.output ?? {}) as Record<string, unknown>;
+  const toolName = useToolName(part);
+
+  // Handle tools that need custom UI for all states (including loading)
+  if (toolName === "HOSTING_APP_DEPLOY") {
+    const toolLike: HostingAppToolLike = {
+      toolCallId: part.toolCallId,
+      toolName: toolName,
+      state: mapToToolLikeState(part.state),
+      args: part.input as HostingAppToolLike["args"],
+    };
+    return <HostingAppDeploy tool={toolLike} />;
+  }
+
+  if (toolName === "GENERATE_IMAGE") {
+    return <GenerateImageToolUI part={part} />;
+  }
+
+  if (toolName === "READ_MCP") {
+    return <ReadMCPToolUI part={part} />;
+  }
+
+  if (toolName === "CALL_TOOL") {
+    return <CallToolUI part={part} />;
+  }
+
+  if (toolName === "SECRETS_PROMPT_USER") {
+    return (
       <ErrorBoundary
         fallback={
           <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5 text-sm text-destructive">
@@ -1402,43 +1234,25 @@ function SecretsPromptUserToolUI({ part }: { part: ToolUIPart }) {
           <SecretsPromptUI part={part} />
         </Suspense>
       </ErrorBoundary>
-    </ToolCallDetail>
-  );
-}
-
-function CustomToolUI({ part }: { part: ToolUIPart }) {
-  const toolName = useToolName(part);
-
-  // Handle tools that need custom UI for all states (including loading)
-  if (toolName === "HOSTING_APP_DEPLOY") {
-    return <HostingAppDeployToolUI part={part} />;
+    );
   }
 
-  if (toolName === "GENERATE_IMAGE") {
-    return <GenerateImageToolUI part={part} />;
-  }
+  // For other tools, only show output when available
+  if (part.state !== "output-available" || !part.output) return null;
 
-  if (toolName === "DECO_RESOURCE_MCP_READ") {
-    return <ReadMCPToolUI part={part} />;
+  switch (toolName) {
+    case "RENDER": {
+      return (
+        <Preview
+          content={result.content as "url" | "html"}
+          title={result.title as string}
+        />
+      );
+    }
+    default: {
+      return null;
+    }
   }
-
-  if (toolName === "DECO_RESOURCE_MCP_STORE_SEARCH") {
-    return <SearchMcpsToolUI part={part} />;
-  }
-
-  if (toolName === "CALL_TOOL") {
-    return <CallToolUI part={part} />;
-  }
-
-  if (toolName === "RENDER") {
-    return <RenderPreviewToolUI part={part} />;
-  }
-
-  if (toolName === "SECRETS_PROMPT_USER") {
-    return <SecretsPromptUserToolUI part={part} />;
-  }
-
-  return null;
 }
 
 export const ToolMessage = memo(function ToolMessage({
@@ -1448,7 +1262,13 @@ export const ToolMessage = memo(function ToolMessage({
 
   return (
     <div className="w-full space-y-4">
-      {isCustomUI ? <CustomToolUI part={part} /> : <ToolStatus part={part} />}
+      {isCustomUI ? (
+        <CustomToolUI part={part} />
+      ) : (
+        <div className="flex flex-col gap-2 w-full border border-border rounded-2xl">
+          <ToolStatus part={part} isSingle={true} />
+        </div>
+      )}
     </div>
   );
 });

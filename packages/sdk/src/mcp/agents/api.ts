@@ -268,12 +268,12 @@ export const getAgent = createTool({
   },
 });
 
-const CreateAgentInputSchema = AgentSchema.partial();
+const CreateAgentInputSchema = AgentSchema.partial().omit({ id: true });
 
 export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  inputSchema: CreateAgentInputSchema.omit({ id: true }),
+  inputSchema: CreateAgentInputSchema,
   outputSchema: AgentSchema,
   handler: async (agent, c) => {
     await assertWorkspaceResourceAccess(c);

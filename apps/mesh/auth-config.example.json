@@ -24,6 +24,14 @@
         "apiKey": "your-resend-api-key",
         "fromEmail": "noreply@yourdomain.com"
       }
+    },
+    {
+      "id": "sendgrid-primary",
+      "provider": "sendgrid",
+      "config": {
+        "apiKey": "your-sendgrid-api-key",
+        "fromEmail": "noreply@yourdomain.com"
+      }
     }
   ],
   "inviteEmailProviderId": "resend-primary",

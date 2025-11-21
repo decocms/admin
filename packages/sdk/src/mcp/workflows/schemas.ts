@@ -51,7 +51,7 @@ export const CodeStepDefinitionSchema = z.object({
     .array(ToolDependencySchema)
     .optional()
     .describe(
-      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the step to execute successfully. Tools are accessible via ctx.env['{INTEGRATION_ID}']['{TOOL_NAME}'](). Use DECO_RESOURCE_MCP_READ to find available integration IDs and their tools.",
+      "List of integration dependencies with specific tools. These integrations and their tools must be installed and available for the step to execute successfully. Tools are accessible via ctx.env['{INTEGRATION_ID}']['{TOOL_NAME}'](). Use READ_MCP to find available integration IDs and their tools.",
     ),
 });
 

@@ -185,8 +185,6 @@ export interface StreamOptions extends GenerateOptions {
    * Useful for providing temporary context like rules or instructions that shouldn't be part of the conversation history.
    */
   context?: UIMessage[];
-  /** Current agent ID for decopilot */
-  agentId?: "design" | "code" | "explore";
 }
 
 /**

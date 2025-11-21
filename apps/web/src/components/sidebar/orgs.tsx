@@ -1,4 +1,4 @@
-import { WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
+import { WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -35,7 +35,7 @@ function ThreadListItem({
   isActive: boolean;
 }) {
   const { switchToThread, hideThread } = useThread();
-  const decopilotAgentId = WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
+  const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
   const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
 
   return (

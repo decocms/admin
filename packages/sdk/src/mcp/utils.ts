@@ -68,6 +68,7 @@ export const createServerClient = async (
   const client = new Client({
     name: mcpServer.name,
     version: "1.0.0",
+    timeout: 180000, // 3 minutes
   });
 
   await client.connect(transport);

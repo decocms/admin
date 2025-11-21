@@ -42,6 +42,7 @@ import {
 import { IntegrationBindingForm } from "../integration-oauth.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
+import { InstallAppDialog } from "./install-app-dialog.tsx";
 import {
   Marketplace,
   type MarketplaceIntegration,
@@ -618,6 +619,91 @@ export function DependencyStep({
   );
 }
 
+interface InstallAppDialogWrapperProps extends HandleInstallUI {
+  integration: MarketplaceIntegration | null;
+  setIntegration: (integration: MarketplaceIntegration | null) => void;
+}
+
+export function InstallAppDialogWrapper({
+  integration,
+  setIntegration,
+  onConfirm,
+}: InstallAppDialogWrapperProps) {
+  const { install, isLoading } = useIntegrationInstall();
+  const buildWorkspaceLink = useWorkspaceLink();
+
+  const handleInstall = async (formData: Record<string, unknown>) => {
+    if (!integration) return;
+
+    const returnUrl = new URL(
+      buildWorkspaceLink("/apps/success"),
+      globalThis.location.origin,
+    );
+
+    try {
+      const result = await install(
+        {
+          appId: integration.id,
+          appName: integration.name,
+          provider: integration.provider,
+          returnUrl: returnUrl.href,
+        },
+        formData,
+      );
+
+      if (typeof result.integration?.id !== "string") {
+        console.error(
+          "Installed integration is not a string",
+          result.integration,
+        );
+        return;
+      }
+
+      trackEvent("integration_install", {
+        success: true,
+        data: integration,
+      });
+
+      // Handle OAuth redirect or completion
+      if (result.redirectUrl) {
+        onConfirm({
+          connection: result.integration,
+          authorizeOauthUrl: result.redirectUrl,
+        });
+      } else if (result.stateSchema) {
+        onConfirm({
+          connection: result.integration,
+          authorizeOauthUrl: null,
+        });
+      } else {
+        onConfirm({
+          connection: result.integration,
+          authorizeOauthUrl: null,
+        });
+      }
+
+      setIntegration(null);
+    } catch (error) {
+      trackEvent("integration_install", {
+        success: false,
+        data: integration,
+        error,
+      });
+      console.error("Installation failed:", error);
+    }
+  };
+
+  return (
+    <InstallAppDialog
+      integration={integration}
+      onClose={() => setIntegration(null)}
+      onConfirm={onConfirm}
+      isLoading={isLoading}
+      onInstall={handleInstall}
+    />
+  );
+}
+
 function AddConnectionDialogContent({
   title = "Add integration",
   filter,
@@ -807,7 +893,7 @@ function AddConnectionDialogContent({
       <OauthModalContextProvider.Provider
         value={{ onOpenOauthModal: setOauthCompletionDialog }}
       >
-        <ConfirmMarketplaceInstallDialog
+        <InstallAppDialogWrapper
           integration={installingIntegration}
           setIntegration={setInstallingIntegration}
           onConfirm={({ connection, authorizeOauthUrl }) => {

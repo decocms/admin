@@ -14,8 +14,8 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import {
   ForbiddenError,
-  NotFoundError,
   InternalServerError,
+  NotFoundError,
 } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
 import { agents, organizations, projects, userActivity } from "../schema.ts";
@@ -268,7 +268,7 @@ export const getAgent = createTool({
   },
 });
 
-const CreateAgentInputSchema = AgentSchema.partial();
+const CreateAgentInputSchema = AgentSchema.partial().omit({ id: true });
 
 export const createAgent = createTool({
   name: "AGENTS_CREATE",
@@ -284,6 +284,7 @@ export const createAgent = createTool({
       .insert(agents)
       .values({
         ...NEW_AGENT_TEMPLATE,
+        id: crypto.randomUUID(),
         ...agent,
         workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,

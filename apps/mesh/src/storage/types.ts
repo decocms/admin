@@ -93,6 +93,24 @@ export interface Organization {
   createdAt: Date | string;
 }
 
+export interface OrganizationSettingsTable {
+  organizationId: string;
+  modelsBindingConnectionId: ColumnType<
+    string | null,
+    string | null,
+    string | null
+  >;
+  createdAt: ColumnType<Date, Date | string, never>;
+  updatedAt: ColumnType<Date, Date | string, Date | string>;
+}
+
+export interface OrganizationSettings {
+  organizationId: string;
+  modelsBindingConnectionId: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 /**
  * MCP Connection table definition
  */
@@ -378,6 +396,7 @@ export interface Database {
   // Core tables (all within organization scope)
   users: UserTable; // System users
   connections: MCPConnectionTable; // MCP connections (organization-scoped)
+  organization_settings: OrganizationSettingsTable; // Organization-level configuration
   api_keys: ApiKeyTable; // Better Auth API keys
   audit_logs: AuditLogTable; // Audit trail
 

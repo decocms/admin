@@ -9,6 +9,8 @@ export { ORGANIZATION_LIST } from "./list";
 export { ORGANIZATION_GET } from "./get";
 export { ORGANIZATION_UPDATE } from "./update";
 export { ORGANIZATION_DELETE } from "./delete";
+export { ORGANIZATION_SETTINGS_GET } from "./settings-get";
+export { ORGANIZATION_SETTINGS_UPDATE } from "./settings-update";
 
 // Member management
 export { ORGANIZATION_MEMBER_ADD } from "./member-add";

@@ -203,8 +203,11 @@ export class AccessControl implements Disposable {
 
     // Check permissions object
     for (const [key, actions] of Object.entries(this.permissions)) {
-      // If checking specific connection, skip others
-      if (this.connectionId && key !== this.connectionId) {
+      const isGlobalScope = key === "self";
+      const matchesConnection =
+        !this.connectionId || key === this.connectionId || isGlobalScope;
+
+      if (!matchesConnection) {
         continue;
       }
 

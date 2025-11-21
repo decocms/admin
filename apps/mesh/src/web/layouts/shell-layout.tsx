@@ -8,6 +8,7 @@ import {
 import { SidebarToggleButton } from "@deco/ui/components/sidebar-toggle-button.tsx";
 import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { MeshUserMenu } from "@/web/components/user-menu";
+import { DecoChatControl } from "@/web/features/deco-chat";
 import { authClient } from "@/web/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState, Suspense } from "react";
@@ -20,9 +21,11 @@ import { Locator } from "../lib/locator";
 function Topbar({
   showSidebarToggle = false,
   showOrgSwitcher = false,
+  showDecoChat = false,
 }: {
   showSidebarToggle?: boolean;
   showOrgSwitcher?: boolean;
+  showDecoChat?: boolean;
 }) {
   return (
     <AppTopbar>
@@ -34,7 +37,8 @@ function Topbar({
           </Suspense>
         )}
       </AppTopbar.Left>
-      <AppTopbar.Right>
+      <AppTopbar.Right className="gap-3">
+        {showDecoChat && <DecoChatControl />}
         <MeshUserMenu />
       </AppTopbar.Right>
     </AppTopbar>
@@ -80,7 +84,7 @@ export default function ShellLayout() {
           <ProjectContextProvider locator={Locator.adminProject(org)}>
             <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
               <div className="flex flex-col h-screen">
-                <Topbar showSidebarToggle showOrgSwitcher />
+                <Topbar showSidebarToggle showOrgSwitcher showDecoChat />
                 <SidebarLayout
                   className="flex-1 bg-sidebar"
                   style={

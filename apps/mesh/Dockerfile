@@ -9,26 +9,33 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Install dependencies (production only)
 FROM base AS deps
-COPY package.json bun.lockb* ./
+# Copy everything needed for workspace resolution
+COPY . .
+
+# Install all dependencies (workspace aware)
 RUN bun install --frozen-lockfile --production
 
 # Build stage
 FROM base AS builder
-COPY package.json bun.lockb* ./
-RUN bun install --frozen-lockfile
+# Copy everything
 COPY . .
 
+# Install all dependencies including dev dependencies
+RUN bun install --frozen-lockfile
+
 # Build the frontend static assets
+WORKDIR /app/apps/mesh
 RUN bun run build:client
 
 # Production stage
 FROM base AS runner
 WORKDIR /app
 
-# Copy application code and built assets from builder
-COPY --from=builder /app .
+# Copy the entire built workspace from builder
+COPY --from=builder /app ./
+
 # Overwrite with production-only node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -54,8 +61,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
 
+# Set working directory to mesh app
+WORKDIR /app/apps/mesh
+
 # Run database migrations on startup and start the application
-# Added debug logging to check directory structure and permissions
 CMD ["sh", "-c", "\
   echo '=== Debug Info ===' && \
   echo 'Current user:' && id && \

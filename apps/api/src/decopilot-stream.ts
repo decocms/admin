@@ -85,7 +85,10 @@ const DecopilotStreamRequestSchema = z.object({
   system: z.string().optional(),
   tools: z.record(z.array(z.string())).optional(), // Integration ID -> Tool names mapping
   threadId: z.string().optional(), // Thread ID for attribution and tracking
-  agentId: z.enum(["design", "code", "explore"]).optional().default("explore"), // Agent ID, defaults to explore
+  agentId: z
+    .enum(["design", "code", "explore", "decopilot"])
+    .optional()
+    .default("explore"), // Agent ID, defaults to explore
 });
 
 export type DecopilotStreamRequest = z.infer<
@@ -415,6 +418,31 @@ const createDecopilotTools = async (
     { toolName: "SECRETS_PROMPT_USER" },
   ]);
 
+  // Generic tool for calling any MCP tool (for decopilot agent)
+  const integrationsCallToolTool = PROJECT_TOOLS.find(
+    (t) => t.name === "INTEGRATIONS_CALL_TOOL",
+  );
+
+  if (!integrationsCallToolTool) {
+    throw new Error("INTEGRATIONS_CALL_TOOL tool not found");
+  }
+
+  const callToolGenericTool = tool({
+    ...integrationsCallToolTool,
+    name: "CALL_TOOL",
+    // @ts-expect-error - Tool type compatibility issue with AI SDK
+    execute: (input) =>
+      State.run(ctx, async () => {
+        const { isError, content, ...rest } =
+          await integrationsCallToolTool.handler(input);
+
+        // Prefer content over structuredContent because this will be fed directly to the LLM.
+        return Array.isArray(content) && content.length > 0
+          ? { isError, content }
+          : { isError, ...rest }; // this ...rest is important for non-compliant tools
+      }),
+  });
+
   return {
     // External MCP Tools
     DECO_RESOURCE_MCP_READ: readMcpTool,
@@ -452,6 +480,9 @@ const createDecopilotTools = async (
 
     // Secrets Management Tools
     SECRETS_PROMPT_USER: secretsPromptUserTool,
+
+    // Generic MCP tool for calling any tool (for decopilot agent)
+    CALL_TOOL: callToolGenericTool,
   };
 };
 

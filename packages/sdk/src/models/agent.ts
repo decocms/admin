@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
+import type { AgentId } from "../types/well-known-agents.ts";
 import { MCPConnectionSchema } from "./mcp.ts";
 
 const wellKnownModelIds = [
@@ -186,7 +187,7 @@ export interface StreamOptions extends GenerateOptions {
    */
   context?: UIMessage[];
   /** Current agent ID for decopilot */
-  agentId?: "design" | "code" | "explore";
+  agentId?: AgentId;
 }
 
 /**

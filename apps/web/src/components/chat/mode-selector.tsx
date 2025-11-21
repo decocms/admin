@@ -14,6 +14,7 @@ const AGENT_DESCRIPTIONS: Record<AgentId, string> = {
   design: "Design documents for implementation planning",
   code: "Creates and modifies tools, workflows and views",
   explore: "Explore the system and its capabilities",
+  decopilot: "General purpose assistant for the platform",
 };
 
 export function ModeSelector() {

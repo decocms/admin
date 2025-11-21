@@ -25,6 +25,7 @@ const AGENT_DESCRIPTIONS: Record<AgentId, string> = {
   design: "Design documents for implementation planning",
   code: "Creates and modifies tools, workflows and views",
   explore: "Explore the system and it's capabilities",
+  decopilot: "General purpose assistant for the platform",
 };
 
 export type WellKnownAgents =

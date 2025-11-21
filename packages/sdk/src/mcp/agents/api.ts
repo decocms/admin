@@ -14,8 +14,8 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import {
   ForbiddenError,
-  NotFoundError,
   InternalServerError,
+  NotFoundError,
 } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
 import { agents, organizations, projects, userActivity } from "../schema.ts";
@@ -25,7 +25,8 @@ import { filterByWorkspaceOrLocator } from "../ownership.ts";
 const createTool = createToolGroup("Agent", {
   name: "Agent Management",
   description: "Manage your agents",
-  icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
+  icon:
+    "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
 
 export const getAgentsByIds = async (ids: string[], c: AppContext) => {
@@ -58,7 +59,7 @@ export const getAgentsByIds = async (ids: string[], c: AppContext) => {
         views: true,
         visibility: true,
         access: true,
-      }).parse(item),
+      }).parse(item)
     );
   }
 
@@ -133,10 +134,9 @@ export const listAgents = createTool({
       .where(filter)
       .orderBy(desc(agents.created_at));
 
-    const roles =
-      c.workspace.root === "users" || typeof c.user?.id !== "string"
-        ? []
-        : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
+    const roles = c.workspace.root === "users" || typeof c.user?.id !== "string"
+      ? []
+      : await c.policy.getUserRoles(c.user.id as string, c.workspace.slug);
     const userRoles: string[] = roles?.map((role) => role.name);
 
     const filteredAgents = data.filter(
@@ -178,10 +178,9 @@ export const listAgents = createTool({
             if (!value) return acc;
             if (acc[value]) return acc;
 
-            const createdAt =
-              row.createdAt instanceof Date
-                ? row.createdAt.toISOString()
-                : (row.createdAt ?? undefined);
+            const createdAt = row.createdAt instanceof Date
+              ? row.createdAt.toISOString()
+              : (row.createdAt ?? undefined);
 
             if (!createdAt) return acc;
 
@@ -242,16 +241,16 @@ export const getAgent = createTool({
         .catch(() => false),
       id in WELL_KNOWN_AGENTS
         ? Promise.resolve(
-            WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-          )
+          WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+        )
         : c.drizzle
-            .select(AGENT_FIELDS_SELECT)
-            .from(agents)
-            .leftJoin(projects, eq(agents.project_id, projects.id))
-            .leftJoin(organizations, eq(projects.org_id, organizations.id))
-            .where(and(filter, eq(agents.id, id)))
-            .limit(1)
-            .then((r) => r[0]),
+          .select(AGENT_FIELDS_SELECT)
+          .from(agents)
+          .leftJoin(projects, eq(agents.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+          .where(and(filter, eq(agents.id, id)))
+          .limit(1)
+          .then((r) => r[0]),
     ]);
 
     if (!data) {
@@ -273,7 +272,7 @@ const CreateAgentInputSchema = AgentSchema.partial();
 export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  inputSchema: CreateAgentInputSchema,
+  inputSchema: CreateAgentInputSchema.omit({ id: true }),
   outputSchema: AgentSchema,
   handler: async (agent, c) => {
     await assertWorkspaceResourceAccess(c);
@@ -284,6 +283,7 @@ export const createAgent = createTool({
       .insert(agents)
       .values({
         ...NEW_AGENT_TEMPLATE,
+        id: crypto.randomUUID(),
         ...agent,
         workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
@@ -298,7 +298,8 @@ export const createAgentSetupTool = createToolGroup("AgentSetup", {
   name: "Agent Setup",
   description:
     "Configure agent identity, update settings, and list available integrations.",
-  icon: "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
+  icon:
+    "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
 });
 
 const UpdateAgentInputSchema = z.object({

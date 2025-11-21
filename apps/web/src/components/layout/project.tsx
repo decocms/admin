@@ -176,13 +176,13 @@ export const ToggleDecopilotButton = () => {
     <Button size="sm" variant="default" onClick={toggle}>
       <AgentAvatar
         className="rounded-sm border-none"
-        url={WELL_KNOWN_DECOPILOT_AGENTS.explore.avatar}
+        url={WELL_KNOWN_DECOPILOT_AGENTS.code.avatar}
         fallback={
           <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
         }
         size="2xs"
       />
-      deco chat
+      chat
     </Button>
   );
 };

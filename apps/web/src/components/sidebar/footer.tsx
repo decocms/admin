@@ -439,7 +439,8 @@ export function SidebarFooter({ className }: { className?: string }) {
     <SidebarFooterShell className={className}>
       <Suspense fallback={<SidebarFooterShell.Skeleton />}>
         <ErrorBoundary fallback={null}>
-          <TeamPlanAndBalance />
+          <div></div>
+          {/* <TeamPlanAndBalance /> */}
         </ErrorBoundary>
       </Suspense>
     </SidebarFooterShell>

@@ -88,7 +88,7 @@ const getMCPServerTools = async (
     const mtools: Record<string, Tool> = Object.fromEntries(
       tools.map((tool: (typeof tools)[number]) => {
         const slug = slugify(tool.name);
-        
+
         const inputSchema = patchedJsonSchema(tool.inputSchema);
         const outputSchema = patchedJsonSchema(
           tool.outputSchema ?? {

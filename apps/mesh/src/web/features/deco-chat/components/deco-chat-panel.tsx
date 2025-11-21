@@ -14,13 +14,12 @@ import {
 } from "@deco/ui/providers/chat-threads-provider.tsx";
 import type { ThreadManagerState } from "@deco/ui/types/chat-threads.ts";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
-import { DecoChatHeader } from "@deco/ui/components/deco-chat-header.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
+import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import {
@@ -31,6 +30,10 @@ import {
 interface ModelsResponse {
   models: ModelInfo[];
 }
+
+// Capybara avatar URL from decopilotAgent
+const CAPYBARA_AVATAR_URL =
+  "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
 function DecoChatPanelInner() {
   const { locator } = useProjectContext();
@@ -309,40 +312,54 @@ function DecoChatPanelInner() {
     setIsLoading(false);
   }, []);
 
+  // Show skeleton while loading models
+  if (modelsQuery.isLoading) {
+    return <DecoChatSkeleton />;
+  }
+
   return (
     <ModelsBindingProvider value={modelsBindingValue}>
       <DecoChatAside className="h-full">
         <DecoChatAside.Header>
-          <DecoChatHeader
-            avatar="/img/logo-tiny.svg"
-            name="deco chat"
-            subtitle={connection ? `Powered by ${connection.name}` : undefined}
-            actions={
-              !isEmpty && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearConversation}
-                  className="size-6 rounded-full"
-                  title="Clear conversation"
-                >
-                  <Icon name="refresh" size={16} />
-                </Button>
-              )
-            }
-            onClose={() => setOpen(false)}
-          />
+          <div className="flex items-center gap-2">
+            <img
+              src={CAPYBARA_AVATAR_URL}
+              alt="deco chat"
+              className="size-5 rounded"
+            />
+            <span className="text-sm font-medium">deco chat</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {!isEmpty && (
+              <button
+                type="button"
+                onClick={clearConversation}
+                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+                title="Clear conversation"
+              >
+                <Icon
+                  name="refresh"
+                  size={16}
+                  className="text-muted-foreground group-hover:text-foreground transition-colors"
+                />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+              title="Close chat"
+            >
+              <Icon
+                name="close"
+                size={16}
+                className="text-muted-foreground group-hover:text-foreground transition-colors"
+              />
+            </button>
+          </div>
         </DecoChatAside.Header>
 
         <DecoChatAside.Content>
-          {modelsQuery.isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground p-4 text-xs">
-              <span className="size-2 animate-pulse rounded-full bg-muted-foreground" />
-              Loading models...
-            </div>
-          )}
-
           {modelsQuery.error && (
             <div className="p-4">
               <Alert variant="destructive">

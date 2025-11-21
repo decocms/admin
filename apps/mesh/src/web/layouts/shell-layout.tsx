@@ -1,5 +1,7 @@
 import { Outlet, useParams } from "@tanstack/react-router";
 import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import {
   SidebarInset,
   SidebarLayout,
@@ -11,7 +13,6 @@ import {
   ResizablePanelGroup,
 } from "@deco/ui/components/resizable.tsx";
 import { SidebarToggleButton } from "@deco/ui/components/sidebar-toggle-button.tsx";
-import { DecoChatToggleButton } from "@deco/ui/components/deco-chat-toggle-button.tsx";
 import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { MeshUserMenu } from "@/web/components/user-menu";
 import { authClient } from "@/web/lib/auth-client";
@@ -24,6 +25,10 @@ import { ProjectContextProvider } from "../providers/project-context-provider";
 import { Locator } from "../lib/locator";
 import { useDecoChatOpen } from "../features/deco-chat/hooks/use-deco-chat-open";
 import { DecoChatPanel } from "../features/deco-chat/components/deco-chat-panel";
+
+// Capybara avatar URL from decopilotAgent
+const CAPYBARA_AVATAR_URL =
+  "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
 function Topbar({
   showSidebarToggle = false,
@@ -48,14 +53,15 @@ function Topbar({
       </AppTopbar.Left>
       <AppTopbar.Right className="gap-3">
         {showDecoChat && onToggleChat && (
-          <DecoChatToggleButton
-            onClick={onToggleChat}
-            avatar={
-              <span className="inline-flex size-5 items-center justify-center rounded-lg bg-lime-400 text-lime-950 shadow-sm">
-                <span className="text-xs">🤖</span>
-              </span>
-            }
-          />
+          <Button size="sm" variant="default" onClick={onToggleChat}>
+            <Avatar
+              url={CAPYBARA_AVATAR_URL}
+              fallback="DC"
+              size="2xs"
+              className="rounded-sm"
+            />
+            deco chat
+          </Button>
         )}
         <MeshUserMenu />
       </AppTopbar.Right>

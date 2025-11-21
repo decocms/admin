@@ -2,7 +2,7 @@ import {
   findPinnedView,
   Integration,
   useConnectionViews,
-  WELL_KNOWN_AGENTS,
+  WELL_KNOWN_DECOPILOT_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -53,7 +53,7 @@ function ThreadListItem({
   isActive: boolean;
 }) {
   const { switchToThread, hideThread } = useThread();
-  const decopilotAgentId = WELL_KNOWN_AGENTS.decopilotAgent.id;
+  const decopilotAgentId = WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
   const threadTitle = useThreadTitle(thread.id, decopilotAgentId, "New chat");
 
   return (
@@ -568,6 +568,28 @@ function WorkspaceViews() {
         </SidebarMenuItem>
       )}
       {pinnedTabs.map((tab, index) => renderPinnedTab(tab, index))}
+
+      {/* Secrets button */}
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={() => {
+            addTab({
+              type: "page",
+              resourceUri: `settings://secrets`,
+              title: "Secrets",
+              icon: "key",
+            });
+            trackEvent("sidebar_navigation_click", {
+              item: "Secrets",
+            });
+            isMobile && toggleSidebar();
+          }}
+        >
+          <Icon name="key" size={20} className="text-muted-foreground/75" />
+          <span className="truncate">Secrets</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
 
       {/* SECTION 3: RECENT THREADS */}
       <SidebarSeparator className="my-2 -ml-1" />

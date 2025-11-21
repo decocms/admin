@@ -71,6 +71,20 @@ export default async function(input, ctx) {
 - To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
 - Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
 - Remember to add \`{ integrationId: 'i:http' }\` to dependencies
+
+**Accessing Secrets in Tool Code:**
+- Read project secrets using the secrets-management integration: \`ctx.env['i:secrets-management'].SECRETS_READ({ name: "SECRET_NAME" })\`
+- Example: \`const result = await ctx.env['i:secrets-management'].SECRETS_READ({ name: "STRIPE_API_KEY" }); const apiKey = result.value;\`
+- Secrets are encrypted and scoped to the current project
+- Must add \`{ integrationId: 'i:secrets-management' }\` to the tool's dependencies array
+- Secret names should be descriptive (e.g., "STRIPE_API_KEY", "OPENAI_API_KEY")
+
+**When Creating Tools That Need Secrets:**
+- Before writing tool code, check if required secrets exist using \`SECRETS_LIST\` from the secrets-management integration
+- If a required secret doesn't exist, use \`SECRETS_PROMPT_USER\` to ask the user to provide it
+- \`SECRETS_PROMPT_USER\` is a conversational tool (you call it directly, not from within tool code)
+- After the user provides the secret, proceed to create the tool that reads it via \`SECRETS_READ\`
+- This ensures secrets are available before tools try to use them
 `;
 
 export const TOOL_UPDATE_PROMPT = `Update a tool's metadata, schemas, or execution code.
@@ -108,7 +122,21 @@ export default async function(input, ctx) {
 - \`fetch\` is NOT available in this environment
 - To make HTTP requests, use the \`i:http\` integration with the \`HTTP_FETCH\` tool
 - Example: \`await ctx.env['i:http'].HTTP_FETCH({ url: '...', method: 'GET' })\`
-- Remember to add \`{ integrationId: 'i:http' }\` to dependencies`;
+- Remember to add \`{ integrationId: 'i:http' }\` to dependencies
+
+**Accessing Secrets in Tool Code:**
+- Read project secrets using the secrets-management integration: \`ctx.env['i:secrets-management'].SECRETS_READ({ name: "SECRET_NAME" })\`
+- Example: \`const result = await ctx.env['i:secrets-management'].SECRETS_READ({ name: "STRIPE_API_KEY" }); const apiKey = result.value;\`
+- Secrets are encrypted and scoped to the current project
+- Must add \`{ integrationId: 'i:secrets-management' }\` to the tool's dependencies array
+- Secret names should be descriptive (e.g., "STRIPE_API_KEY", "OPENAI_API_KEY")
+
+**When Creating Tools That Need Secrets:**
+- Before writing tool code, check if required secrets exist using \`SECRETS_LIST\` from the secrets-management integration
+- If a required secret doesn't exist, use \`SECRETS_PROMPT_USER\` to ask the user to provide it
+- \`SECRETS_PROMPT_USER\` is a conversational tool (you call it directly, not from within tool code)
+- After the user provides the secret, proceed to create the tool that reads it via \`SECRETS_READ\`
+- This ensures secrets are available before tools try to use them`;
 
 export const TOOL_DELETE_PROMPT = `Delete a tool from the code environment.
 

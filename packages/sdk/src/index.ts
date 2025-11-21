@@ -2,6 +2,7 @@ export * from "./broadcast.ts";
 export * from "./constants.ts";
 export * from "./locator.ts";
 export * from "./plan.ts";
+export * from "./types/well-known-agents.ts";
 
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";
@@ -32,6 +33,7 @@ export * from "./hooks/knowledge.ts";
 export * from "./hooks/mcp.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/models.ts";
+export * from "./hooks/secrets.ts";
 export * from "./hooks/onboarding.ts";
 export * from "./hooks/prompts.ts";
 export * from "./hooks/registry.ts";

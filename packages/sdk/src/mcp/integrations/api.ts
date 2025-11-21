@@ -838,19 +838,6 @@ export const getIntegration = createIntegrationManagementTool({
 
     const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
 
-    // Handle self integration - don't return tools
-    if (id === formatId("i", WellKnownMcpGroups.Self)) {
-      const selfIntegration = virtualIntegrations.find(
-        (i) => i.id === formatId("i", WellKnownMcpGroups.Self),
-      );
-      if (selfIntegration) {
-        return {
-          ...IntegrationSchema.parse(selfIntegration),
-          tools: null, // Don't return tools for self integration
-        };
-      }
-    }
-
     if (virtualIntegrations.some((i) => i.id === id)) {
       const baseIntegration = IntegrationSchema.parse({
         ...virtualIntegrations.find((i) => i.id === id),
@@ -952,7 +939,7 @@ export const createIntegration = createIntegrationManagementTool({
           // Format as integration ID (with i: prefix)
           const integrationId = formatId("i", integrationUuid);
           const customAppName = integrationId;
-          const customScopeName = "custom";
+          const customScopeName = crypto.randomUUID();
 
           // Ensure custom scope exists
           let scopeId: string;

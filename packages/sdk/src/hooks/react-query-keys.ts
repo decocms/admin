@@ -102,6 +102,11 @@ export const KEYS = {
     options?.excludeAuto || false,
   ],
   MODEL: (locator: ProjectLocator, id: string) => [locator, "model", id],
+  SECRETS: (locator: ProjectLocator, options?: Record<string, unknown>) => [
+    locator,
+    "secrets",
+    options || {},
+  ],
   TRIGGERS: (locator: ProjectLocator, agentId = "") => [
     locator,
     "triggers",

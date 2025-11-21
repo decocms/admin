@@ -18,22 +18,28 @@ import { AccordionGroup } from "./AccordionGroup";
 import Callout from "./Callout.astro";
 import Card from "./Card.astro";
 import { Properties } from "./Properties";
+import { ui } from "../../i18n/ui";
 
 const { doc } = Astro.props;
 const { Content } = await render(doc);
 
 // Extract breadcrumb from the path
 const pathParts = doc.id.split("/").slice(1);
+const locale = doc.id.split("/")[0] as keyof typeof ui;
+const translations = ui[locale] || ui.en;
+
+// Get translated breadcrumb if available
 const breadcrumb =
   pathParts.length > 1
-    ? pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1)
+    ? translations[
+        `sidebar.section.${pathParts[0]}` as keyof typeof translations
+      ] || pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1)
     : undefined;
 
 // Generate markdown path for viewing raw file
 const markdownPath = `/src/content/${doc.id}.mdx`;
 
 // Get navigation links
-const locale = doc.id.split("/")[0];
 const navigationLinks = await getNavigationLinks(doc.id, locale);
 
 // Components mapping for custom markdown rendering

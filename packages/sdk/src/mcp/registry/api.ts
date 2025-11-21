@@ -81,6 +81,7 @@ const Filters = {
           OR: [
             { name: { ilike: `%${query}%` } },
             { description: { ilike: `%${query}%` } },
+            { friendly_name: { ilike: `%${query}%` } },
           ],
         }
       : {};

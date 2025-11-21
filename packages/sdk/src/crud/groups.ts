@@ -19,6 +19,7 @@ export const WellKnownMcpGroups = {
   Prompt: "prompt-management",
   Registry: "registry-management",
   Sandbox: "code-sandbox",
+  Secrets: "secrets-management",
   Team: "team-management",
   Thread: "thread-management",
   Triggers: "triggers-management",
@@ -30,6 +31,7 @@ export const WellKnownMcpGroups = {
   Self: "self",
   Theme: "theme-management",
   Time: "time",
+  MCPManagement: "mcp-management",
 } as const;
 
 type Groups = typeof WellKnownMcpGroups;
@@ -57,6 +59,7 @@ export const WellKnownAppNames = {
   "prompt-management": "prompts",
   "registry-management": "registry",
   "code-sandbox": "code-sandbox",
+  "secrets-management": "secrets",
   "team-management": "teams",
   "thread-management": "threads",
   "triggers-management": "triggers",

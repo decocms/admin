@@ -2,6 +2,7 @@ import {
   KEYS,
   NotFoundError,
   WELL_KNOWN_AGENTS,
+  WELL_KNOWN_DECOPILOT_AGENTS,
   useAgentData,
   useAgentRoot,
   useFile,
@@ -34,6 +35,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Suspense,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -312,26 +314,17 @@ function DecochatChat({
   clearThreadState: () => void;
 }) {
   const { locator } = useSDK();
-  const { data: decopilotAgent } = useAgentData(
-    WELL_KNOWN_AGENTS.decopilotAgent.id,
-  );
+  const exploreAgentId = WELL_KNOWN_DECOPILOT_AGENTS.explore.id;
+  const { data: decopilotAgent } = useAgentData(exploreAgentId);
   const { data: { messages: decochatThreadMessages } = { messages: [] } } =
-    useThreadMessages(
-      effectiveDecochatThreadId,
-      WELL_KNOWN_AGENTS.decopilotAgent.id,
-      {
-        shouldFetch: true,
-      },
-    );
+    useThreadMessages(effectiveDecochatThreadId, exploreAgentId, {
+      shouldFetch: true,
+    });
 
   const transport = useMemo(
     () =>
-      createLegacyTransport(
-        effectiveDecochatThreadId,
-        WELL_KNOWN_AGENTS.decopilotAgent.id,
-        locator,
-      ),
-    [effectiveDecochatThreadId, locator],
+      createLegacyTransport(effectiveDecochatThreadId, exploreAgentId, locator),
+    [effectiveDecochatThreadId, exploreAgentId, locator],
   );
 
   if (!decopilotAgent) return null;
@@ -339,7 +332,7 @@ function DecochatChat({
   return (
     <AgenticChatProvider
       key={effectiveDecochatThreadId}
-      agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
+      agentId={exploreAgentId}
       threadId={effectiveDecochatThreadId}
       agent={decopilotAgent}
       transport={transport}
@@ -388,7 +381,7 @@ function ChatWithProvider({ agentId }: { agentId: string; threadId: string }) {
 
   // Determine which agent and threadId to use based on mode
   const chatAgentId =
-    chatMode === "decochat" ? WELL_KNOWN_AGENTS.decopilotAgent.id : agentId;
+    chatMode === "decochat" ? WELL_KNOWN_DECOPILOT_AGENTS.explore.id : agentId;
 
   if (!chatAgentId) return null;
 
@@ -536,6 +529,27 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     [threadId, agentId, agentRoot],
   );
 
+  // Check for stored initial message in sessionStorage
+  const [initialInput, setInitialInput] = useState<string | undefined>(() => {
+    const storedMessage = sessionStorage.getItem(
+      `agent_initial_message_${agentId}_${threadId}`,
+    );
+    if (storedMessage) {
+      // Clean up immediately
+      sessionStorage.removeItem(`agent_initial_message_${agentId}_${threadId}`);
+      return storedMessage;
+    }
+    return undefined;
+  });
+
+  const [autoSend, setAutoSend] = useState(!!initialInput);
+
+  // Clear autoSend after sending
+  const handleAutoSendComplete = useCallback(() => {
+    setAutoSend(false);
+    setInitialInput(undefined);
+  }, []);
+
   return (
     <PreviewContext.Provider
       value={{ showPreview, togglePreview, isMobile, chatMode, setChatMode }}
@@ -546,6 +560,9 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         agent={agent}
         transport={transport}
         initialMessages={threadMessages}
+        initialInput={initialInput}
+        autoSend={autoSend}
+        onAutoSendComplete={handleAutoSendComplete}
         onSave={handleSaveAgent}
         uiOptions={{
           showEditAgent: false,

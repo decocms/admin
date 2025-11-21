@@ -10,7 +10,8 @@
     "./lib/*": "./src/lib/*",
     "./styles/*": "./src/styles/*",
     "./assets/*": "./src/assets/*",
-    "./providers/*": "./src/providers/*"
+    "./providers/*": "./src/providers/*",
+    "./types/*": "./src/types/*"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

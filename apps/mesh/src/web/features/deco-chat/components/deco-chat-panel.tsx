@@ -8,6 +8,11 @@ import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import {
+  ChatThreadsProvider,
+  useChatThreads,
+} from "@deco/ui/providers/chat-threads-provider.tsx";
+import type { ThreadManagerState } from "@deco/ui/types/chat-threads.ts";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatHeader } from "@deco/ui/components/deco-chat-header.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
@@ -27,16 +32,29 @@ interface ModelsResponse {
   models: ModelInfo[];
 }
 
-export function DecoChatPanel() {
+function DecoChatPanelInner() {
   const { locator } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
   const { setOpen } = useDecoChatOpen();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<
-    Array<{ role: string; content: string; id: string; timestamp: string }>
-  >([]);
+
+  // Use thread management from ChatThreadsProvider
+  const { messages, addMessage, updateMessage, clearMessages } =
+    useChatThreads();
+
+  // Convert thread messages to the format expected by DecoChatMessages
+  const chatMessages = useMemo(
+    () =>
+      messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp,
+      })),
+    [messages],
+  );
 
   const settingsQuery = useOrganizationSettings(organization?.id);
 
@@ -140,8 +158,8 @@ export function DecoChatPanel() {
 
   const clearConversation = useCallback(() => {
     setInput("");
-    setChatMessages([]);
-  }, []);
+    clearMessages();
+  }, [clearMessages]);
 
   // Initialize with first model
   useEffect(() => {
@@ -181,14 +199,12 @@ export function DecoChatPanel() {
         return;
       }
 
-      const userMessage = {
+      // Add user message to thread
+      addMessage({
         role: "user",
         content: input,
-        id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-      };
-
-      setChatMessages((prev) => [...prev, userMessage]);
+      });
+      const userInput = input;
       setInput("");
       setIsLoading(true);
 
@@ -200,10 +216,13 @@ export function DecoChatPanel() {
           },
           credentials: "include",
           body: JSON.stringify({
-            messages: [...chatMessages, userMessage].map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
+            messages: [
+              ...chatMessages.map((msg) => ({
+                role: msg.role,
+                content: msg.content,
+              })),
+              { role: "user", content: userInput },
+            ],
             model: selectedModelId,
             stream: true,
           }),
@@ -220,18 +239,12 @@ export function DecoChatPanel() {
 
         const decoder = new TextDecoder();
         let assistantMessage = "";
-        const assistantId = crypto.randomUUID();
 
         // Add empty assistant message that we'll update
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "",
-            id: assistantId,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
+        const assistantId = addMessage({
+          role: "assistant",
+          content: "",
+        });
 
         while (true) {
           const { done, value } = await reader.read();
@@ -261,13 +274,7 @@ export function DecoChatPanel() {
                     }
                   }
 
-                  setChatMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantId
-                        ? { ...msg, content: assistantMessage }
-                        : msg,
-                    ),
-                  );
+                  updateMessage(assistantId, { content: assistantMessage });
                 }
               } catch {
                 // Ignore parse errors for non-JSON lines
@@ -280,9 +287,22 @@ export function DecoChatPanel() {
       } catch (error) {
         console.error("[deco-chat] Send error:", error);
         setIsLoading(false);
+        addMessage({
+          role: "assistant",
+          content: `Error: ${(error as Error).message}`,
+        });
       }
     },
-    [input, selectedModelId, isLoading, orgSlug, chatMessages],
+    [
+      input,
+      selectedModelId,
+      isLoading,
+      orgSlug,
+      chatMessages,
+      addMessage,
+      updateMessage,
+      messages,
+    ],
   );
 
   const handleStop = useCallback(() => {
@@ -381,5 +401,46 @@ export function DecoChatPanel() {
         </DecoChatAside.Footer>
       </DecoChatAside>
     </ModelsBindingProvider>
+  );
+}
+
+// Wrapper with ChatThreadsProvider
+export function DecoChatPanel() {
+  const { organization } = useCurrentOrganization();
+  const orgSlug = organization?.slug || "";
+
+  // Thread state persistence per organization
+  const [threadState, setThreadState] = useLocalStorage<ThreadManagerState>(
+    `mesh:chat-threads:${orgSlug}`,
+    (existing) => {
+      if (!existing) {
+        const defaultThreadId = crypto.randomUUID();
+        return {
+          threads: {
+            [defaultThreadId]: {
+              id: defaultThreadId,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              tabs: [],
+              activeTabId: null,
+              contextItems: [],
+              messages: [],
+            },
+          },
+          activeThreadId: defaultThreadId,
+        };
+      }
+      return existing;
+    },
+  );
+
+  return (
+    <ChatThreadsProvider
+      storageKey={`mesh:chat-threads:${orgSlug}`}
+      value={threadState}
+      onChange={setThreadState}
+    >
+      <DecoChatPanelInner />
+    </ChatThreadsProvider>
   );
 }

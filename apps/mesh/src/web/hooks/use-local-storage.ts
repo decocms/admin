@@ -42,7 +42,7 @@ function initializeFromStorage<T>(
 export function useLocalStorage<T>(
   key: string,
   initializer: T | ((existing: T | undefined) => T),
-): [T, (value: T) => void] {
+): [T, (value: T | ((prev: T) => T)) => void] {
   const queryClientInstance = useQueryClient();
   const queryKey = ["localStorage", key] as const;
 
@@ -70,8 +70,19 @@ export function useLocalStorage<T>(
 
   // Setter that updates localStorage via mutation
   const setLocalStorageValue = useCallback(
-    (newValue: T) => mutation.mutate(newValue),
-    [mutation],
+    (updater: T | ((prev: T) => T)) => {
+      const current = queryClientInstance.getQueryData<T>(queryKey);
+      // If for some reason current is undefined (shouldn't happen due to initialData),
+      // we fall back to initializer logic or just throw/ignore.
+      // Assuming initialData guarantees T.
+      const next =
+        typeof updater === "function"
+          ? (updater as (prev: T) => T)(current as T)
+          : updater;
+
+      mutation.mutate(next);
+    },
+    [mutation, queryClientInstance, queryKey],
   );
 
   // Return the value from query (guaranteed to be T due to initialData)

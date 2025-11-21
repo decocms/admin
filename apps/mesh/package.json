@@ -15,7 +15,7 @@
   "dependencies": {
     "@better-auth/sso": "^1.3.34",
     "@daveyplate/better-auth-ui": "^3.2.7",
-    "@deco/ui": "1.0.0",
+    "@deco/ui": "workspace:*",
     "@hono/zod-validator": "^0.7.4",
     "@hookform/resolvers": "^5.2.2",
     "@modelcontextprotocol/sdk": "^1.20.2",

@@ -15,23 +15,24 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import {
   admin as adminPlugin,
   apiKey,
+  defaultStatements,
+  magicLink,
   mcp,
   openAPI,
   organization,
-  magicLink,
   OrganizationOptions,
 } from "better-auth/plugins";
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
-import { createSSOConfig, SSOConfig } from "./sso";
-import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 import {
   createEmailSender,
   EmailProviderConfig,
   findEmailProvider,
 } from "./email-providers";
+import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
+import { createSSOConfig, SSOConfig } from "./sso";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -70,16 +71,29 @@ export function getDatabaseUrl(): string {
   return databaseUrl;
 }
 
-const statement = {} as const;
+const allTools = Object.values(getToolsByCategory())
+  .map((tool) => tool.map((t) => t.name))
+  .flat();
+const statement = { ...defaultStatements, self: ["*", ...allTools] };
 
 const ac = createAccessControl(statement);
 
 const user = ac.newRole({
   self: ["*"],
+  invitation: ["create", "cancel"],
+  organization: ["update", "delete"],
+  member: ["create", "update", "delete"],
+  team: ["create", "update", "delete"],
+  ac: ["create", "read", "update", "delete"],
 }) as Role;
 
 const admin = ac.newRole({
   self: ["*"],
+  invitation: ["create", "cancel"],
+  organization: ["update", "delete"],
+  member: ["create", "update", "delete"],
+  team: ["create", "update", "delete"],
+  ac: ["create", "read", "update", "delete"],
 }) as Role;
 
 const scopes = Object.values(getToolsByCategory())

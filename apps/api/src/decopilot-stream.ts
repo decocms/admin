@@ -1,26 +1,18 @@
 import { AgentWallet, getProviderOptions, providers } from "@deco/ai";
 import {
-  CallToolResultSchema,
   DEFAULT_MAX_STEPS,
   DEFAULT_MAX_TOKENS,
   DEFAULT_MEMORY,
   DEFAULT_MODEL,
-  formatIntegrationId,
   Integration,
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
   WELL_KNOWN_MODELS,
-  WellKnownMcpGroups,
 } from "@deco/sdk";
 import { PaymentRequiredError, UserInputError } from "@deco/sdk/errors";
 import { PROJECT_TOOLS } from "@deco/sdk/mcp";
 import { createWalletClient } from "@deco/sdk/mcp/wallet";
 import type { Workspace } from "@deco/sdk/path";
-import { createServerClient } from "@decocms/runtime/mcp-client";
-import {
-  isApiDecoChatMCPConnection,
-  patchApiDecoChatTokenHTTPConnection,
-} from "@deco/ai/mcp";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { trace } from "@opentelemetry/api";
 import type { LanguageModel, LanguageModelUsage } from "ai";
@@ -33,11 +25,7 @@ import {
 } from "ai";
 import type { Context } from "hono";
 import { z } from "zod";
-import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { honoCtxToAppCtx } from "./api.ts";
-import { WELL_KNOWN_DECOPILOT_AGENTS as WELL_KNOWN_AGENTS } from "@deco/sdk";
-import { WELL_KNOWN_DECOPILOT_AGENTS } from "@deco/sdk";
-import { filterToolsForAgent } from "./tool-filter.ts";
 import type { AppEnv } from "./utils/context.ts";
 import { State } from "./utils/context.ts";
 
@@ -85,7 +73,6 @@ const DecopilotStreamRequestSchema = z.object({
   system: z.string().optional(),
   tools: z.record(z.array(z.string())).optional(), // Integration ID -> Tool names mapping
   threadId: z.string().optional(), // Thread ID for attribution and tracking
-  agentId: z.enum(["design", "code", "explore"]).optional().default("explore"), // Agent ID, defaults to explore
 });
 
 export type DecopilotStreamRequest = z.infer<
@@ -153,305 +140,47 @@ function getModel(
 }
 
 /**
- * Helper to wrap multiple tools from an MCP integration
+ * Create tools for decopilot agent
+ * Only two tools: integrations_get and integrations_call_tool
  */
-function wrapMcpTools(
-  ctx: ReturnType<typeof honoCtxToAppCtx>,
-  integration: Integration,
-  toolMappings: Array<{ toolName: string; wrapperName?: string }>,
-) {
-  if (!integration.tools || integration.tools.length === 0) {
-    throw new Error(`Integration ${integration.id} has no tools`);
-  }
-
-  return toolMappings.map(({ toolName, wrapperName = toolName }) => {
-    // Find the specific tool from integration.tools array
-    const mcpTool = integration.tools!.find((t) => t.name === toolName);
-    if (!mcpTool) {
-      const availableToolNames = integration
-        .tools!.map((t) => t.name)
-        .slice(0, 10);
-      throw new Error(
-        `Tool ${toolName} not found in ${integration.id}. Available: ${availableToolNames.join(
-          ", ",
-        )}...`,
-      );
-    }
-
-    // Convert JSON Schema to Zod for inputSchema and outputSchema
-    let inputSchema: z.ZodTypeAny;
-    let outputSchema: z.ZodTypeAny;
-
-    try {
-      inputSchema = mcpTool.inputSchema
-        ? convertJsonSchemaToZod(mcpTool.inputSchema)
-        : z.object({}).passthrough();
-    } catch {
-      inputSchema = z.object({}).passthrough();
-    }
-
-    try {
-      outputSchema = mcpTool.outputSchema
-        ? convertJsonSchemaToZod(mcpTool.outputSchema)
-        : z.object({}).passthrough();
-    } catch {
-      outputSchema = z.object({}).passthrough();
-    }
-
-    // Use AI SDK's tool() function which handles Zod to JSON Schema conversion
-    return tool({
-      description: mcpTool.description || `Tool: ${wrapperName}`,
-      inputSchema,
-      outputSchema,
-      execute: async (input: unknown) => {
-        return await State.run(ctx, async () => {
-          try {
-            // Patch connection with cookie for API-based integrations
-            let patchedConnection = integration.connection;
-            if (isApiDecoChatMCPConnection(integration.connection)) {
-              const cookie = ctx.cookie;
-              patchedConnection = patchApiDecoChatTokenHTTPConnection(
-                integration.connection,
-                cookie,
-              );
-            }
-
-            // Create MCP client from integration connection
-            const client = await createServerClient({
-              name: "decopilot-client",
-              connection: patchedConnection,
-            });
-
-            if (!client) {
-              throw new Error("Failed to create MCP client");
-            }
-
-            try {
-              // Call the tool directly via MCP client
-              const result = await client.callTool(
-                {
-                  name: toolName,
-                  arguments:
-                    typeof input === "object" && input !== null
-                      ? (input as Record<string, unknown>)
-                      : {},
-                },
-                // @ts-expect-error - Zod version conflict between packages
-                CallToolResultSchema,
-                { timeout: 300000 },
-              );
-
-              // Extract structured content or content from result
-              if (result.structuredContent) {
-                return result.structuredContent;
-              }
-              if (result.content && Array.isArray(result.content)) {
-                return result.content;
-              }
-              return result;
-            } finally {
-              // Always close the client to avoid leaks
-              await client.close();
-            }
-          } catch (error) {
-            console.error(
-              `[DECOPILOT] MCP tool ${wrapperName} execution error`,
-              {
-                error: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined,
-                integrationId: integration.id,
-                toolName,
-              },
-            );
-            throw error;
-          }
-        });
-      },
-    });
-  });
-}
-
-/**
- * Create all decopilot tools as wrappers around MCP tools
- * Tools come from MCP integrations (resource management, code execution, etc.)
- */
-const createDecopilotTools = async (
-  ctx: ReturnType<typeof honoCtxToAppCtx>,
-  integrations: Integration[],
-) => {
-  // Get integration IDs for MCP integrations
-  const [
-    mcpIntegrationId,
-    toolsIntegrationId,
-    workflowsIntegrationId,
-    viewsIntegrationId,
-    documentsIntegrationId,
-    secretsIntegrationId,
-  ] = [
-    formatIntegrationId(WellKnownMcpGroups.MCPManagement),
-    formatIntegrationId(WellKnownMcpGroups.Tools),
-    formatIntegrationId(WellKnownMcpGroups.Workflows),
-    formatIntegrationId(WellKnownMcpGroups.Views),
-    formatIntegrationId(WellKnownMcpGroups.Documents),
-    formatIntegrationId(WellKnownMcpGroups.Secrets),
-  ];
-
-  // Find integrations
-  const integrationMap = new Map<string, Integration>();
-
-  const integrationIdsSet = new Set([
-    mcpIntegrationId,
-    toolsIntegrationId,
-    workflowsIntegrationId,
-    viewsIntegrationId,
-    documentsIntegrationId,
-    secretsIntegrationId,
-  ]);
-
-  for (const integration of integrations) {
-    if (!integrationIdsSet.has(integration.id)) {
-      continue;
-    }
-    integrationMap.set(integration.id, integration);
-  }
-
-  const [
-    mcpIntegration,
-    toolsIntegration,
-    workflowsIntegration,
-    viewsIntegration,
-    documentsIntegration,
-    secretsIntegration,
-  ] = [
-    mcpIntegrationId,
-    toolsIntegrationId,
-    workflowsIntegrationId,
-    viewsIntegrationId,
-    documentsIntegrationId,
-    secretsIntegrationId,
-  ].map((id) => {
-    const i = integrationMap.get(id);
-    if (!i) {
-      throw new Error(`Integration ${id} not found`);
-    }
-    return i;
-  });
-
-  // MCP Management Tools
-  const [readMcpTool, discoverMcpToolsTool] = wrapMcpTools(
-    ctx,
-    mcpIntegration,
-    [
-      { toolName: "DECO_RESOURCE_MCP_READ" },
-      { toolName: "DECO_RESOURCE_MCP_STORE_SEARCH" },
-    ],
+const createDecopilotTools = (ctx: ReturnType<typeof honoCtxToAppCtx>) => {
+  // Find the actual tool definitions from PROJECT_TOOLS
+  const integrationsGetTool = PROJECT_TOOLS.find(
+    (t) => t.name === "INTEGRATIONS_GET",
+  );
+  const integrationsCallToolTool = PROJECT_TOOLS.find(
+    (t) => t.name === "INTEGRATIONS_CALL_TOOL",
   );
 
-  // Code Execution Tool
-  const [executeCodeTool] = wrapMcpTools(ctx, toolsIntegration, [
-    { toolName: "DECO_TOOL_RUN_TOOL" },
-  ]);
-
-  // Project MCP Tools - TOOL_* (from i:tools-management)
-  const [
-    toolCreateTool,
-    toolReadTool,
-    toolUpdateTool,
-    toolDeleteTool,
-    toolSearchTool,
-  ] = wrapMcpTools(ctx, toolsIntegration, [
-    { toolName: "DECO_RESOURCE_TOOL_CREATE" },
-    { toolName: "DECO_RESOURCE_TOOL_READ" },
-    { toolName: "DECO_RESOURCE_TOOL_UPDATE" },
-    { toolName: "DECO_RESOURCE_TOOL_DELETE" },
-    { toolName: "DECO_RESOURCE_TOOL_SEARCH" },
-  ]);
-
-  // Project MCP Tools - WORKFLOW_* (from i:workflows-management)
-  const [
-    workflowCreateTool,
-    workflowReadTool,
-    workflowUpdateTool,
-    workflowDeleteTool,
-    workflowSearchTool,
-  ] = wrapMcpTools(ctx, workflowsIntegration, [
-    { toolName: "DECO_RESOURCE_WORKFLOW_CREATE" },
-    { toolName: "DECO_RESOURCE_WORKFLOW_READ" },
-    { toolName: "DECO_RESOURCE_WORKFLOW_UPDATE" },
-    { toolName: "DECO_RESOURCE_WORKFLOW_DELETE" },
-    { toolName: "DECO_RESOURCE_WORKFLOW_SEARCH" },
-  ]);
-
-  // Project MCP Tools - VIEW_* (from i:views-management)
-  const [
-    viewCreateTool,
-    viewReadTool,
-    viewUpdateTool,
-    viewDeleteTool,
-    viewSearchTool,
-  ] = wrapMcpTools(ctx, viewsIntegration, [
-    { toolName: "DECO_RESOURCE_VIEW_CREATE" },
-    { toolName: "DECO_RESOURCE_VIEW_READ" },
-    { toolName: "DECO_RESOURCE_VIEW_UPDATE" },
-    { toolName: "DECO_RESOURCE_VIEW_DELETE" },
-    { toolName: "DECO_RESOURCE_VIEW_SEARCH" },
-  ]);
-
-  // Project MCP Tools - DOCUMENT_* (from i:documents-management)
-  const [
-    documentCreateTool,
-    documentReadTool,
-    documentUpdateTool,
-    documentSearchTool,
-  ] = wrapMcpTools(ctx, documentsIntegration, [
-    { toolName: "DECO_RESOURCE_DOCUMENT_CREATE" },
-    { toolName: "DECO_RESOURCE_DOCUMENT_READ" },
-    { toolName: "DECO_RESOURCE_DOCUMENT_UPDATE" },
-    { toolName: "DECO_RESOURCE_DOCUMENT_SEARCH" },
-  ]);
-
-  // Secrets Management Tools (from i:secrets-management)
-  const [secretsPromptUserTool] = wrapMcpTools(ctx, secretsIntegration, [
-    { toolName: "SECRETS_PROMPT_USER" },
-  ]);
+  if (!integrationsGetTool || !integrationsCallToolTool) {
+    throw new Error("Required integration tools not found");
+  }
 
   return {
-    // External MCP Tools
-    DECO_RESOURCE_MCP_READ: readMcpTool,
-    DECO_RESOURCE_MCP_STORE_SEARCH: discoverMcpToolsTool,
+    READ_MCP: tool({
+      ...integrationsGetTool,
+      name: "READ_MCP",
+      execute: (input) =>
+        State.run(ctx, async () => {
+          const { id, name, tools } = await integrationsGetTool.handler(input);
+          return { id, name, tools };
+        }),
+    }),
+    CALL_TOOL: tool({
+      ...integrationsCallToolTool,
+      name: "CALL_TOOL",
+      // @ts-expect-error - Tool type compatibility issue with AI SDK
+      execute: (input) =>
+        State.run(ctx, async () => {
+          const { isError, content, ...rest } =
+            await integrationsCallToolTool.handler(input);
 
-    // Code Execution
-    DECO_TOOL_RUN_TOOL: executeCodeTool,
-
-    // Project MCP Tools - TOOL_*
-    DECO_RESOURCE_TOOL_CREATE: toolCreateTool,
-    DECO_RESOURCE_TOOL_READ: toolReadTool,
-    DECO_RESOURCE_TOOL_UPDATE: toolUpdateTool,
-    DECO_RESOURCE_TOOL_DELETE: toolDeleteTool,
-    DECO_RESOURCE_TOOL_SEARCH: toolSearchTool,
-
-    // Project MCP Tools - WORKFLOW_*
-    DECO_RESOURCE_WORKFLOW_CREATE: workflowCreateTool,
-    DECO_RESOURCE_WORKFLOW_READ: workflowReadTool,
-    DECO_RESOURCE_WORKFLOW_UPDATE: workflowUpdateTool,
-    DECO_RESOURCE_WORKFLOW_DELETE: workflowDeleteTool,
-    DECO_RESOURCE_WORKFLOW_SEARCH: workflowSearchTool,
-
-    // Project MCP Tools - VIEW_*
-    DECO_RESOURCE_VIEW_CREATE: viewCreateTool,
-    DECO_RESOURCE_VIEW_READ: viewReadTool,
-    DECO_RESOURCE_VIEW_UPDATE: viewUpdateTool,
-    DECO_RESOURCE_VIEW_DELETE: viewDeleteTool,
-    DECO_RESOURCE_VIEW_SEARCH: viewSearchTool,
-
-    // Project MCP Tools - DOCUMENT_*
-    DECO_RESOURCE_DOCUMENT_CREATE: documentCreateTool,
-    DECO_RESOURCE_DOCUMENT_READ: documentReadTool,
-    DECO_RESOURCE_DOCUMENT_UPDATE: documentUpdateTool,
-    DECO_RESOURCE_DOCUMENT_SEARCH: documentSearchTool,
-
-    // Secrets Management Tools
-    SECRETS_PROMPT_USER: secretsPromptUserTool,
+          // Prefer content over structuredContent because this will be feed directly to the LLM.
+          return Array.isArray(content) && content.length > 0
+            ? { isError, content }
+            : { isError, ...rest }; // this ...rest is important for non compliant tools
+        }),
+    }),
   };
 };
 
@@ -478,6 +207,7 @@ const INTEGRATIONS_DENY_LIST = new Set([
   "i:deconfig-management",
   "i:wallet-management",
   "i:channel-management",
+  "i:integration-management",
   "i:registry-management",
   "DECO_UTILS",
 ]);
@@ -497,9 +227,7 @@ const formatAvailableIntegrations = (items: Integration[]) =>
   items
     .map(
       (i) =>
-        `- ${i.name ?? "Untitled"} (${i.id}): ${
-          i.description || "No description"
-        }`,
+        `- ${i.name ?? "Untitled"} (${i.id}): ${i.description || "No description"}`,
     )
     .join("\n");
 
@@ -525,43 +253,91 @@ const formatAvailableTools = (
   const keys = ["name", "inputSchema", "outputSchema", "description"] as const;
   const availableTools = Array.from(toolsByIntegration.entries()).map(
     ([id, tools]) =>
-      `For MCP with id ${id}:\n${keys.join(",")}\n${tools
-        .map((t) => keys.map((k) => JSON.stringify(t[k])).join(","))
-        .join("\n")}`,
+      `For integration with id ${id}:\n${keys.join(",")}\n${tools.map((t) => keys.map((k) => JSON.stringify(t[k])).join(",")).join("\n")}`,
   );
 
   return availableTools.join("\n\n");
 };
 
-const PLATFORM_DESCRIPTION = `You are running on deco, a platform for building AI applications using the Model Context Protocol (MCP).
+const DECOCMS_PLATFORM_SUMMARY = `
+decocms.com is an open-source platform for building and deploying production-ready AI applications. It provides developers with a complete infrastructure to rapidly create, manage, and scale AI-native internal software using the Model Context Protocol (MCP).
 
-**Building Blocks:**
-- **Tools:** Basic logic blocks with typed inputs/outputs. Can call other tools. Naming: RESOURCE_ACTION (TOOL_CREATE, DOCUMENT_READ).
-- **Workflows:** Tools run step by step in the background.
-- **Views:** Display tool outputs/inputs in a rich format for the user.
-- **Documents:** Markdown storage to document the system, design docs, PRDs, searchable.
-- **MCPs:** Tool creation and pack layer protocol. Marketplace integrations exposing tools. Installed MCPs' tools are available.
+**Core Platform Capabilities:**
 
-**Relationships:** Tools → Workflows (orchestrate) → Views (UI). Documents store planning. MCPs provide pre-built capabilities.`;
+**1. Tools:** Atomic capabilities exposed via MCP integrations. Tools are reusable functions that call external APIs, databases, or AI models. Each tool has typed input/output schemas using Zod validation, making them composable across agents and workflows. Tools follow the pattern RESOURCE_ACTION (e.g., AGENTS_CREATE, DOCUMENTS_UPDATE) and are organized into tool groups by functionality.
 
-// Format nested [title, content] arrays into readable text
+**2. Agents:** AI-powered assistants that combine a language model, specialized instructions (system prompt), and a curated toolset. Agents solve focused problems through conversational experiences. Each agent has configurable parameters including max steps, max tokens, memory settings, and visibility (workspace/public). Agents can invoke tools dynamically during conversations to accomplish complex tasks.
 
-type FormattableLeaf = [string, string | null];
-type FormattableNode = FormattableLeaf | [string, FormattableNode[]];
+**3. Workflows:** Orchestrated processes that combine tools, code steps, and conditional logic into automated sequences. Workflows use the Mastra framework with operators like .then(), .parallel(), .branch(), and .dountil(). They follow an alternating pattern: Input → Code → Tool Call → Code → Tool Call → Output. Code steps transform data between tool calls, and workflows can sleep, wait, and manage complex state.
 
-const format = (node: FormattableNode): string | null => {
-  const [title, content] = node;
+**4. Views:** Custom React-based UI components that render in isolated iframes. Views provide tailored interfaces, dashboards, and interactive experiences. They use React 19, Tailwind CSS v4, and a global callTool() function to invoke any workspace tool. Views support custom import maps and are sandboxed for security.
 
-  if (typeof content === "string") {
-    return `${title}\n\n${content}`;
-  }
+**5. Documents:** Markdown-based content storage with full editing capabilities. Documents support standard markdown syntax (headers, lists, code blocks, tables) and are searchable by name, description, content, and tags. They're ideal for documentation, notes, guides, and collaborative content.
 
-  if (!content) {
-    return null;
-  }
+**6. Databases:** Resources 2.0 system providing typed, versioned data models stored in DECONFIG (a git-like filesystem on Cloudflare Durable Objects). Supports full CRUD operations with schema validation, enabling admin tables and forms.
 
-  return `${title}\n\n${content.map(format).filter(Boolean).join("\n\n")}`;
-};
+**7. Apps & Marketplace:** Pre-built MCP integrations installable with one click. Apps expose tools that appear in the admin menu and can be used by agents, workflows, and views. The marketplace provides curated integrations for popular services.
+
+**Architecture:** Built on Cloudflare Workers for global, low-latency deployment. Uses TypeScript throughout with React 19 + Vite frontend, Tailwind CSS v4 design system, and typed RPC between client and server. Authorization follows policy-based access control with role-based permissions (Owner, Admin, Member). Data flows through React Query with optimistic updates.
+
+**Development Workflow:** Developers vibecode their apps across tools, agents, workflows, and views. The platform auto-generates a beautiful admin interface with navigation, permissions, and deployment hooks. Local development via 'deco dev', type generation via 'deco gen', deployment to edge via 'deco deploy'.
+
+**Key Benefits:** Open-source and self-hostable, full ownership of code and data, bring your own AI models and keys, unified TypeScript stack, visual workspace management, secure multi-tenancy, cost control and observability, rapid prototyping to production scale.
+`;
+
+const SYSTEM_PROMPT = `You are an intelligent assistant for decocms.com, an open-source platform for building production-ready AI applications.
+
+${DECOCMS_PLATFORM_SUMMARY}
+
+**Your Capabilities:**
+- Search and navigate workspace resources (agents, documents, views, workflows, tools)
+- Create and manage agents with specialized instructions and toolsets
+- Design and compose workflows using tools and orchestration patterns
+- Build React-based views with Tailwind CSS for custom interfaces
+- Create and edit markdown documents with full formatting support
+- Configure integrations and manage MCP connections
+- Manage project secrets for secure API key and credential storage
+- Explain platform concepts and best practices
+- Provide code examples and implementation guidance
+
+**How You Help Users:**
+- Answer questions about the platform's capabilities
+- Guide users through creating agents, workflows, views, and tools
+- Help troubleshoot issues and debug implementations
+- Recommend architecture patterns for their use cases
+- Explain authorization, security, and deployment processes
+- Assist with TypeScript, React, Zod schemas, and Mastra workflows
+
+**Important Working Patterns:**
+
+1. **When helping with documents (especially PRDs, guides, or documentation):**
+   - ALWAYS read the document first using @DECO_RESOURCE_DOCUMENT_READ or @DECO_RESOURCE_DOCUMENT_SEARCH
+   - Understand the current content and structure before suggesting changes
+   - If it's a PRD template, help fill in each section based on platform capabilities
+   - Maintain the existing format and structure while improving content
+   - Suggest specific, actionable content based on platform patterns
+
+2. **When users reference "this document" or "help me with this PRD":**
+   - Immediately use @DECO_RESOURCE_DOCUMENT_SEARCH to find relevant documents
+   - Read the document content to understand context
+   - Ask clarifying questions based on what's already written
+   - Build upon their existing work rather than starting from scratch
+
+3. **For AI App PRDs specifically:**
+   - Understand they're planning Tools, Agents, Workflows, Views, and Databases
+   - Ask about the problem they're solving and users they're serving
+   - Help design the architecture using platform capabilities
+   - Provide code examples for tool schemas, workflow orchestrations, etc.
+   - Recommend authorization patterns and best practices
+
+4. **When creating tools that need external API credentials:**
+   - First check if required secrets exist using @SECRETS_LIST
+   - If a secret doesn't exist, use @SECRETS_PROMPT_USER to ask the user to provide it
+   - Then create the tool that reads it via ctx.env['i:secrets-management'].SECRETS_READ({ name: "SECRET_NAME" })
+   - Secret names should be descriptive (e.g., "OPENAI_API_KEY", "STRIPE_SECRET_KEY")
+   - This workflow ensures secrets are available before tools try to use them
+
+You have access to all workspace tools and can perform actions directly. When users ask to create or modify resources, use the available tools proactively. **Always read documents before helping edit them - this ensures you maintain their structure and build upon their existing work.**`;
 
 /**
  * Decopilot streaming endpoint handler
@@ -604,7 +380,6 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     context,
     tools,
     threadId,
-    agentId,
   } = data;
 
   // Convert UIMessages to CoreMessages using AI SDK helper
@@ -624,48 +399,17 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
     throw new PaymentRequiredError("Insufficient funds");
   }
 
-  // Get agent-specific system prompt from well-known agents
-  const agentConfig = WELL_KNOWN_AGENTS[agentId];
-  const agentPrompt = agentConfig?.systemPrompt ?? "";
-  const agentName = WELL_KNOWN_DECOPILOT_AGENTS[agentId]?.name ?? "Assistant";
-
-  // Create all decopilot tools (wrappers around MCP tools)
-  const allDecopilotTools = await createDecopilotTools(ctx, integrations);
-
-  // Filter tools based on agent
-  const decopilotTools = filterToolsForAgent(allDecopilotTools, agentId);
-
-  // Build structured system prompt with clear sections
-  const systemPromptParts: FormattableNode[] = [
-    [`You are ${agentName}`, agentPrompt || null],
-    ["Platform Context", PLATFORM_DESCRIPTION || null],
-    ["User Context", system || null],
-    [
-      "Installed MCPs in Workspace",
-      [
-        [
-          "Note",
-          "All tools from these MCPs are available for use. The MCPs listed below are installed in your workspace.",
-        ],
-        ["MCPs", formatAvailableIntegrations(integrations) || null],
-      ],
-    ],
-    [
-      "User-Added Tools",
-      [
-        [
-          "Note",
-          "These are tools manually added by the user. All tools from the installed MCPs above are also available.",
-        ],
-        ["Tools", formatAvailableTools(integrations, tools) || null],
-      ],
-    ],
-  ];
-
-  const systemPrompt = systemPromptParts
-    .map(format)
+  const systemPrompt = [
+    system, // User-provided instructions (if any)
+    SYSTEM_PROMPT,
+    `Available integrations:\n${formatAvailableIntegrations(integrations)}`,
+    `Available tools:\n${formatAvailableTools(integrations, tools)}`,
+  ]
     .filter(Boolean)
     .join("\n\n");
+
+  // Create two tools (integrations_get and integrations_call_tool)
+  const decopilotTools = createDecopilotTools(ctx);
 
   // Get model instance, handling OpenRouter if enabled
   const llm = getModel(model.id, model.useOpenRouter, ctx);
@@ -729,11 +473,5 @@ export async function handleDecopilotStream(c: Context<AppEnv>) {
 
   c.executionCtx.waitUntil(onFinish.promise);
 
-  return stream.toUIMessageStreamResponse({
-    // Add agentId and createdAt to each assistant message's metadata
-    messageMetadata: () => ({
-      agentId,
-      createdAt: new Date().toISOString(),
-    }),
-  });
+  return stream.toUIMessageStreamResponse();
 }

@@ -9,7 +9,6 @@ import {
   KEYS,
   Locator,
   useAppendThreadMessage,
-  useIntegrations,
   useSDK,
   WELL_KNOWN_AGENTS,
   type Agent,
@@ -47,10 +46,7 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { useUser } from "../../hooks/use-user.ts";
 import { notifyResourceUpdate } from "../../lib/broadcast-channels.ts";
-import { useAgentStore } from "../../stores/mode-store.ts";
-import { useChatStore } from "../../stores/chat-store.ts";
 import { useAddVersion } from "../../stores/resource-version-history/index.ts";
 import { createResourceVersionHistoryStore } from "../../stores/resource-version-history/store.ts";
 import type { VersionHistoryActions } from "../../stores/resource-version-history/types.ts";
@@ -62,10 +58,6 @@ import {
   isResourceUpdateOrCreateTool,
   isResourceUpdateTool,
 } from "../../stores/resource-version-history/utils.ts";
-import {
-  extractResourceUri,
-  openResourceTab,
-} from "../../utils/resource-tabs.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "../chat/utils/preview.ts";
 import { useThread } from "../decopilot/thread-provider.tsx";
 
@@ -203,7 +195,7 @@ interface NormalizedToolPart {
   state?: string;
   toolName?: string;
   args?: Record<string, unknown>;
-  output?: { uri?: string; data?: unknown };
+  output?: { structuredContent?: { data?: unknown; uri?: string } };
   toolCallId?: string;
 }
 
@@ -225,7 +217,7 @@ function normalizeToolPart(part: unknown): NormalizedToolPart {
     | undefined;
   const toolCallId = (part as { toolCallId?: string })?.toolCallId;
   const output = (part as { output?: unknown })?.output as
-    | { uri?: string; data?: unknown }
+    | { structuredContent?: { data?: unknown; uri?: string } }
     | undefined;
 
   const isCallTool = typeStr === "tool-CALL_TOOL";
@@ -255,13 +247,9 @@ function handleReadCheckpointFromPart(
   if (!isResourceReadTool(info.toolName)) return;
 
   const uri = info.args ? extractResourceUriFromInput(info.args) : null;
-  const structuredContent = (
-    info.output as
-      | { structuredContent?: { uri?: string; data?: unknown } }
-      | undefined
-  )?.structuredContent;
-  const readData = structuredContent?.data ?? info.output?.data;
-  const fallbackUri = structuredContent?.uri ?? info.output?.uri;
+  const sc = info.output?.structuredContent;
+  const readData = sc?.data;
+  const fallbackUri = sc?.uri;
   const finalUri = uri ?? fallbackUri ?? null;
 
   if (!finalUri || readData === undefined) return;
@@ -449,7 +437,6 @@ export function createDecopilotTransport(
           context: metadata?.context,
           tools: metadata?.tools,
           threadId: threadId ?? agentId,
-          agentId: metadata?.agentId,
         },
       };
     },
@@ -498,18 +485,11 @@ export function AgenticChatProvider({
   children,
 }: PropsWithChildren<AgenticChatProviderProps>) {
   const { pathname } = useLocation();
-  const {
-    contextItems: threadContextItems,
-    tabs,
-    addTab,
-    setActiveTab,
-  } = useThread();
-  const { data: integrations = [] } = useIntegrations();
+  const { contextItems: threadContextItems } = useThread();
   const triggerToolCallListeners = useTriggerToolCallListeners();
   const queryClient = useQueryClient();
   const { locator } = useSDK();
   const { preferences } = useUserPreferences();
-  const user = useUser();
 
   // Reactive mutation for appending messages
   const appendMessagesMutation = useAppendThreadMessage();
@@ -524,12 +504,9 @@ export function AgenticChatProvider({
 
   const { finishReason, isLoading, input, runtimeErrorEntries } = state;
 
-  const setIsLoading = useCallback(
-    (value: boolean) => {
-      dispatch({ type: "SET_IS_LOADING", isLoading: value });
-    },
-    [threadId, agentId],
-  );
+  const setIsLoading = useCallback((value: boolean) => {
+    dispatch({ type: "SET_IS_LOADING", isLoading: value });
+  }, []);
 
   const setFinishReason = useCallback(
     (value: LanguageModelV2FinishReason | null) => {
@@ -658,37 +635,21 @@ export function AgenticChatProvider({
       }
 
       // Only set finish reason if it's one we care about displaying
-      setFinishReason(
-        finishReason === "length" || finishReason === "tool-calls"
-          ? finishReason
-          : null,
-      );
+      if (finishReason === "length" || finishReason === "tool-calls") {
+        setFinishReason(finishReason);
+      } else {
+        setFinishReason(null);
+      }
 
       // Save messages to IndexedDB for persistence (reactive mutation)
       if (result?.messages) {
         const initialLength = initialMessages?.length ?? 0;
         const newMessages = result.messages.slice(initialLength);
 
-        // Add agentId to assistant messages and userId to user messages
-        const messagesWithMetadata = newMessages.map((msg) => {
-          if (msg.role === "assistant") {
-            const existingMetadata =
-              msg.metadata && typeof msg.metadata === "object"
-                ? msg.metadata
-                : {};
-            return {
-              ...msg,
-              metadata: { ...existingMetadata, agentId },
-            };
-          }
-          // User messages already have userId in metadata when sent
-          return msg;
-        });
-
-        if (messagesWithMetadata.length > 0) {
+        if (newMessages.length > 0) {
           appendMessagesMutation.mutate({
             threadId,
-            messages: messagesWithMetadata,
+            messages: newMessages,
             metadata: { agentId, route: pathname },
             namespace: locator,
           });
@@ -762,31 +723,11 @@ export function AgenticChatProvider({
           if (info.state !== "output-available" || !info.toolName) continue;
           handleReadCheckpointFromPart(info, toolDeps);
           handleUpdateOrCreateFromPart(info, toolDeps);
-
-          // Auto-open resource tabs for resource operations
-          const isResourceTool =
-            isResourceUpdateOrCreateTool(info.toolName) ||
-            isResourceReadTool(info.toolName);
-          if (isResourceTool) {
-            const resourceUri = extractResourceUri(
-              info.toolName,
-              info.args,
-              info.output,
-            );
-            if (resourceUri) {
-              openResourceTab(
-                resourceUri,
-                tabs,
-                integrations,
-                addTab,
-                setActiveTab,
-              );
-            }
-          }
         }
       }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Chat error:", error);
       setIsLoading(false);
       setFinishReason(null);
     },
@@ -836,16 +777,15 @@ export function AgenticChatProvider({
   const hasUnsavedChanges = form.formState.isDirty;
 
   // Don't block navigation for well-known agents (they create new agents on save)
-  const isWellKnownAgent = agentId in WELL_KNOWN_AGENTS;
+  const isWellKnownAgent = Boolean(
+    WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
+  );
   const shouldBlockNavigation = hasUnsavedChanges && !isWellKnownAgent;
   const blocked = useBlocker(shouldBlockNavigation);
 
   // Wrap sendMessage to enrich request metadata with all configuration
   const wrappedSendMessage = useCallback(
     (message?: UIMessage) => {
-      // Get current agent ID from agent store
-      const currentAgentId = useAgentStore.getState().agentId;
-
       // Early return if readOnly
       if (mergedUiOptions.readOnly) {
         return Promise.resolve();
@@ -948,9 +888,6 @@ export function AgenticChatProvider({
         }
       }
 
-      // Get current user ID for user messages
-      const userId = user?.id;
-
       const metadata: MessageMetadata = {
         // Agent configuration
         // Use user's selected model from preferences ONLY if model selector is shown in UI,
@@ -961,46 +898,25 @@ export function AgenticChatProvider({
         instructions: agent.instructions,
         tools: { ...agent.tools_set, ...toolsFromContextItems },
         maxSteps: agent.max_steps,
-        temperature: agent.temperature ?? undefined,
+        temperature: agent.temperature !== null ? agent.temperature : undefined,
         lastMessages: agent.memory?.last_messages,
         maxTokens: agent.max_tokens !== null ? agent.max_tokens : undefined,
         // Use OpenRouter preference: if useOpenRouter is true, bypassOpenRouter should be false
         bypassOpenRouter: !preferences.useOpenRouter,
 
         // Context messages (additional context not persisted to thread)
-        context,
-        agentId: currentAgentId,
-      };
-
-      // Add userId and createdAt to user message metadata
-      const existingMetadata =
-        message.metadata && typeof message.metadata === "object"
-          ? message.metadata
-          : {};
-      const messageWithMetadata: UIMessage = {
-        ...message,
-        metadata: {
-          ...existingMetadata,
-          userId,
-          createdAt:
-            (existingMetadata as { createdAt?: string })?.createdAt ??
-            new Date().toISOString(),
-        },
+        context: context,
       };
 
       // Dispatch messages to track them
       dispatchMessages({
-        messages: [messageWithMetadata],
-        threadId,
-        agentId: currentAgentId,
+        messages: [message],
+        threadId: threadId,
+        agentId: agentId,
       });
 
       // Send message with metadata in options
-      const sendPromise =
-        chat.sendMessage?.(messageWithMetadata, { metadata }) ??
-        Promise.resolve();
-
-      return sendPromise;
+      return chat.sendMessage?.(message, { metadata }) ?? Promise.resolve();
     },
     [
       mergedUiOptions.readOnly,
@@ -1021,7 +937,6 @@ export function AgenticChatProvider({
       pathname,
       setIsLoading,
       threadContextItems,
-      user,
     ],
   );
 
@@ -1190,14 +1105,6 @@ export function AgenticChatProvider({
     form.reset();
     blocked.proceed?.();
   }
-
-  // Register sendMessage in global store so it can be accessed from outside the provider
-  useEffect(() => {
-    useChatStore.getState().setSendMessage(wrappedSendMessage);
-    return () => {
-      useChatStore.getState().setSendMessage(null);
-    };
-  }, [wrappedSendMessage]);
 
   return (
     <>

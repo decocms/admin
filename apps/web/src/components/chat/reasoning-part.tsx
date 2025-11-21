@@ -18,7 +18,6 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
   const isPartStreaming = state === "streaming";
   const [isExpanded, setIsExpanded] = useState(false);
   const [wasManuallyExpanded, setWasManuallyExpanded] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   // Handle automatic expansion/collapse based on streaming states
   useEffect(() => {
@@ -36,36 +35,20 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
     setWasManuallyExpanded(!isExpanded);
   };
 
-  const showChevron = isHovered || isExpanded;
-  const chevronIcon = isExpanded ? "expand_more" : "chevron_right";
-
   return (
-    <div
-      className="flex flex-col hover:bg-accent/25 rounded-2xl max-w-4xl"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className="flex flex-col">
       <button
         type="button"
         onClick={handleToggle}
-        className="flex items-center gap-2 py-1 px-1.5 transition-colors cursor-pointer text-sm text-muted-foreground hover:text-foreground h-10"
+        className="flex items-center gap-2 py-2 transition-colors cursor-pointer"
       >
-        {showChevron ? (
-          <div className="w-5 flex items-center justify-center shrink-0">
-            <Icon name={chevronIcon} size={16} />
-          </div>
-        ) : (
-          <div className="w-5 flex items-center justify-center shrink-0">
-            <Icon
-              name="psychology"
-              size={16}
-              className={cn(
-                "text-muted-foreground transition-opacity",
-                isPartStreaming && "animate-pulse",
-              )}
-            />
-          </div>
-        )}
+        <Icon
+          name="psychology"
+          className={cn(
+            "text-muted-foreground transition-opacity",
+            isPartStreaming && "animate-pulse",
+          )}
+        />
         <span
           className={cn(
             "text-sm font-medium text-muted-foreground",
@@ -74,6 +57,13 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
         >
           Agent thinking
         </span>
+        <Icon
+          name="expand_more"
+          className={cn(
+            "text-muted-foreground transition-transform duration-200",
+            isExpanded ? "rotate-180" : "",
+          )}
+        />
       </button>
       <div
         className={cn(
@@ -85,29 +75,23 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
             : "max-h-0 opacity-0 overflow-hidden",
         )}
       >
-        <div className="relative px-1.5 flex">
-          <div className="w-5 flex items-center justify-center shrink-0">
-            <div className="w-0.5 h-full bg-border" />
+        <div
+          className={cn(
+            "border-l-2 pl-4 overflow-y-auto",
+            isPartStreaming ? "max-h-[400px]" : "max-h-[200px]",
+          )}
+        >
+          <div className={cn("text-muted-foreground markdown-sm pb-2")}>
+            <MemoizedMarkdown
+              key={index}
+              messageId={`${messageId}-${index}-reasoning`}
+              part={
+                "details" in part && Array.isArray(part.details)
+                  ? part.details[0]
+                  : { type: "text", text: part.text }
+              }
+            />
           </div>
-          <div
-            className={cn(
-              "flex-1 pl-4 overflow-y-auto relative",
-              isPartStreaming ? "max-h-[400px]" : "max-h-[200px]",
-            )}
-          >
-            <div className={cn("text-muted-foreground markdown-sm pb-2")}>
-              <MemoizedMarkdown
-                key={index}
-                messageId={`${messageId}-${index}-reasoning`}
-                part={
-                  "details" in part && Array.isArray(part.details)
-                    ? part.details[0]
-                    : { type: "text", text: part.text }
-                }
-              />
-            </div>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-background to-transparent pointer-events-none" />
         </div>
       </div>
     </div>

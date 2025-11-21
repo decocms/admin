@@ -175,7 +175,7 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
 
           if (!integration) {
             throw new Error(
-              `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found. Use DECO_RESOURCE_MCP_READ to check if the integration exists.`,
+              `Code step '${codeDef.name}': Dependency validation failed. Integration '${dependency.integrationId}' not found. Use READ_MCP to check if the integration exists.`,
             );
           }
 
@@ -187,7 +187,7 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
 
             if (!tool) {
               throw new Error(
-                `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use DECO_RESOURCE_MCP_READ to see available tools for this integration.`,
+                `Code step '${codeDef.name}': Dependency validation failed. Tool '${toolName}' not found in integration '${integration.name}' (${dependency.integrationId}). Use READ_MCP to see available tools for this integration.`,
               );
             }
           }

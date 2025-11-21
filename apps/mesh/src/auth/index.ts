@@ -92,6 +92,11 @@ const admin = ac.newRole({
   ...adminAc.statements,
 }) as Role;
 
+const owner = ac.newRole({
+  self: ["*"],
+  ...adminAc.statements,
+}) as Role;
+
 const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))
   .flat();
@@ -141,6 +146,7 @@ const plugins = [
   // https://www.better-auth.com/docs/plugins/organization
   organization({
     ac,
+    creatorRole: "owner",
     allowUserToCreateOrganization: true, // Users can create organizations by default
     dynamicAccessControl: {
       enabled: true,
@@ -149,6 +155,7 @@ const plugins = [
     roles: {
       user,
       admin,
+      owner,
     },
     sendInvitationEmail,
   }),
@@ -186,7 +193,7 @@ const plugins = [
   // https://www.better-auth.com/docs/plugins/admin
   adminPlugin({
     defaultRole: "user",
-    adminRoles: ["admin"],
+    adminRoles: ["admin", "owner"],
   }),
 
   // OpenAPI plugin for API documentation

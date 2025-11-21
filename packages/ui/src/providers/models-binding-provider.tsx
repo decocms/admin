@@ -7,6 +7,10 @@ export interface ModelInfo {
   logo?: string | null;
   description?: string | null;
   capabilities?: string[];
+  contextWindow?: number | null;
+  inputCost?: number | null;
+  outputCost?: number | null;
+  outputLimit?: number | null;
 }
 
 export interface MCPConnection {

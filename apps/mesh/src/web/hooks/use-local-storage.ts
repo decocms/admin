@@ -1,28 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
-function getInitialValue<T>(
+function safeParse<T>(value: string): T | undefined {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Initialize value from localStorage using the initializer
+ * Handles reading, applying initializer, and saving back if needed
+ */
+function initializeFromStorage<T>(
   key: string,
   initializer: T | ((existing: T | undefined) => T),
-) {
-  if (typeof window === "undefined") {
-    return typeof initializer === "function"
-      ? (initializer as (existing: T | undefined) => T)(undefined)
-      : initializer;
-  }
+): T {
+  const item = localStorage.getItem(key);
+  const existing = item ? safeParse<T>(item) : undefined;
 
-  const stored = window.localStorage.getItem(key);
-  const existing = stored ? (JSON.parse(stored) as T) : undefined;
-
+  // Call initializer (value or function)
   const next =
     typeof initializer === "function"
-      ? (initializer as (current: T | undefined) => T)(existing)
+      ? (initializer as (existing: T | undefined) => T)(existing)
       : (existing ?? initializer);
 
+  // If the initializer changed the value (migration or default), save it back
   if (existing === undefined || next !== existing) {
     try {
-      window.localStorage.setItem(key, JSON.stringify(next));
+      const stringified = JSON.stringify(next);
+      localStorage.setItem(key, stringified);
     } catch {
-      // ignore write errors during initialization
+      // Ignore errors during migration or initial save
     }
   }
 
@@ -32,40 +42,38 @@ function getInitialValue<T>(
 export function useLocalStorage<T>(
   key: string,
   initializer: T | ((existing: T | undefined) => T),
-) {
-  const [value, setValue] = useState<T>(() =>
-    getInitialValue(key, initializer),
-  );
+): [T, (value: T) => void] {
+  const queryClientInstance = useQueryClient();
+  const queryKey = ["localStorage", key] as const;
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const handler = (event: StorageEvent) => {
-      if (event.key !== key) return;
-      try {
-        const parsed = event.newValue
-          ? (JSON.parse(event.newValue) as T)
-          : null;
-        if (parsed !== null) {
-          setValue(parsed);
-        }
-      } catch {
-        // ignore parse errors
-      }
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, [key]);
+  // Use TanStack Query to read from localStorage
+  const { data: value } = useQuery({
+    queryKey,
+    queryFn: () => initializeFromStorage(key, initializer),
+    initialData: () => initializeFromStorage(key, initializer),
+    staleTime: Infinity, // localStorage doesn't change unless we update it
+    gcTime: Infinity, // Keep in cache indefinitely
+  });
 
-  const updateValue = useCallback(
-    (next: T) => {
-      setValue(next);
-      if (typeof window === "undefined") return;
-      window.localStorage.setItem(key, JSON.stringify(next));
+  // Mutation to write to localStorage
+  const mutation = useMutation({
+    mutationFn: async (newValue: T) => {
+      const stringified = JSON.stringify(newValue);
+      localStorage.setItem(key, stringified);
+      return newValue;
     },
-    [key],
+    onSuccess: (newValue) => {
+      // Update the query cache optimistically
+      queryClientInstance.setQueryData(queryKey, newValue);
+    },
+  });
+
+  // Setter that updates localStorage via mutation
+  const setLocalStorageValue = useCallback(
+    (newValue: T) => mutation.mutate(newValue),
+    [mutation],
   );
 
-  return [value, updateValue] as const;
+  // Return the value from query (guaranteed to be T due to initialData)
+  return [value as T, setLocalStorageValue];
 }

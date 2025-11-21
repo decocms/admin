@@ -7,19 +7,21 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatHeader } from "@deco/ui/components/deco-chat-header.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
-import { DecoChatInput } from "@deco/ui/components/deco-chat-input.tsx";
-import {
-  DecoChatModelSelector,
-  type ModelInfo,
-} from "@deco/ui/components/deco-chat-model-selector.tsx";
+import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
+import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import {
+  ModelsBindingProvider,
+  type ModelInfo,
+} from "@deco/ui/providers/models-binding-provider.tsx";
 
 interface ModelsResponse {
   models: ModelInfo[];
@@ -30,6 +32,11 @@ export function DecoChatPanel() {
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
   const { setOpen } = useDecoChatOpen();
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{ role: string; content: string; id: string; timestamp: string }>
+  >([]);
 
   const settingsQuery = useOrganizationSettings(organization?.id);
 
@@ -79,13 +86,57 @@ export function DecoChatPanel() {
     },
   });
 
-  const models = modelsQuery.data?.models ?? [];
-  const [selectedModelId, setSelectedModelId] = useState<string>();
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<
-    Array<{ role: string; content: string; id: string }>
-  >([]);
+  // Transform models: add logos, convert costs, filter capabilities
+  const models = useMemo(() => {
+    if (!modelsQuery.data?.models) return [];
+
+    // Provider logo mapping
+    const providerLogos: Record<string, string> = {
+      anthropic:
+        "https://api.dicebear.com/7.x/initials/svg?seed=Anthropic&backgroundColor=D97706",
+      openai:
+        "https://api.dicebear.com/7.x/initials/svg?seed=OpenAI&backgroundColor=10B981",
+      google:
+        "https://api.dicebear.com/7.x/initials/svg?seed=Google&backgroundColor=3B82F6",
+      "x-ai":
+        "https://api.dicebear.com/7.x/initials/svg?seed=xAI&backgroundColor=8B5CF6",
+    };
+
+    // Known visual capabilities to show
+    const knownCapabilities = new Set([
+      "reasoning",
+      "image-upload",
+      "file-upload",
+      "web-search",
+    ]);
+
+    return modelsQuery.data.models.map((model) => {
+      // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
+      const provider = model.id.split("/")[0] || "";
+      const logo = model.logo || providerLogos[provider] || null;
+
+      // Filter capabilities to only show known visual ones
+      const capabilities =
+        model.capabilities?.filter((cap) => knownCapabilities.has(cap)) || [];
+
+      // Convert costs from per-token to per-1M-tokens (multiply by 1,000,000)
+      const inputCost = model.inputCost ? model.inputCost * 1_000_000 : null;
+      const outputCost = model.outputCost ? model.outputCost * 1_000_000 : null;
+
+      return {
+        ...model,
+        logo,
+        capabilities,
+        inputCost,
+        outputCost,
+      };
+    });
+  }, [modelsQuery.data]);
+
+  // Persist selected model per organization in localStorage
+  const [selectedModelId, setSelectedModelId] = useLocalStorage<
+    string | undefined
+  >(`mesh:chat:selectedModel:${orgSlug}`, (existing) => existing);
 
   const clearConversation = useCallback(() => {
     setInput("");
@@ -100,9 +151,27 @@ export function DecoChatPanel() {
         setSelectedModelId(firstModel.model);
       }
     }
-  }, [models, selectedModelId]);
+  }, [models, selectedModelId, setSelectedModelId]);
 
   const isEmpty = chatMessages.length === 0;
+
+  // ModelsBindingProvider value
+  const modelsBindingValue = useMemo(
+    () => ({
+      models,
+      selectedModel: selectedModelId,
+      setSelectedModel: setSelectedModelId,
+      isLoading: modelsQuery.isLoading,
+      error: modelsQuery.error as Error | undefined,
+    }),
+    [
+      models,
+      selectedModelId,
+      modelsQuery.isLoading,
+      modelsQuery.error,
+      setSelectedModelId,
+    ],
+  );
 
   const handleSendMessage = useCallback(
     async (e?: React.FormEvent) => {
@@ -116,6 +185,7 @@ export function DecoChatPanel() {
         role: "user",
         content: input,
         id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
       };
 
       setChatMessages((prev) => [...prev, userMessage]);
@@ -155,7 +225,12 @@ export function DecoChatPanel() {
         // Add empty assistant message that we'll update
         setChatMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "", id: assistantId },
+          {
+            role: "assistant",
+            content: "",
+            id: assistantId,
+            timestamp: new Date().toISOString(),
+          },
         ]);
 
         while (true) {
@@ -194,7 +269,7 @@ export function DecoChatPanel() {
                     ),
                   );
                 }
-              } catch (e) {
+              } catch {
                 // Ignore parse errors for non-JSON lines
               }
             }
@@ -215,91 +290,81 @@ export function DecoChatPanel() {
   }, []);
 
   return (
-    <DecoChatAside className="h-full">
-      <DecoChatAside.Header>
-        <DecoChatHeader
-          avatar="/img/logo-tiny.svg"
-          name="deco chat"
-          subtitle={connection ? `Powered by ${connection.name}` : undefined}
-          actions={
-            !isEmpty && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={clearConversation}
-                className="size-6 rounded-full"
-                title="Clear conversation"
-              >
-                <Icon name="refresh" size={16} />
-              </Button>
-            )
-          }
-          onClose={() => setOpen(false)}
-        />
-      </DecoChatAside.Header>
-
-      <DecoChatAside.Content>
-        {modelsQuery.isLoading && (
-          <div className="flex items-center gap-2 text-muted-foreground p-4 text-xs">
-            <span className="size-2 animate-pulse rounded-full bg-muted-foreground" />
-            Loading models...
-          </div>
-        )}
-
-        {modelsQuery.error && (
-          <div className="p-4">
-            <Alert variant="destructive">
-              <AlertDescription>
-                {(modelsQuery.error as Error).message}
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        {!modelsQuery.isLoading && models.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">
-            The configured Models Provider isn't returning any models. Review it
-            under Settings → Models Provider; no extra setup is required inside
-            this chat.
-          </div>
-        )}
-
-        {isEmpty ? (
-          <DecoChatEmptyState
-            title="Ask deco chat"
-            description="Ask anything about configuring model providers or using MCP Mesh. The assistant uses the Models Provider configured in Settings for this organization."
+    <ModelsBindingProvider value={modelsBindingValue}>
+      <DecoChatAside className="h-full">
+        <DecoChatAside.Header>
+          <DecoChatHeader
             avatar="/img/logo-tiny.svg"
+            name="deco chat"
+            subtitle={connection ? `Powered by ${connection.name}` : undefined}
+            actions={
+              !isEmpty && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearConversation}
+                  className="size-6 rounded-full"
+                  title="Clear conversation"
+                >
+                  <Icon name="refresh" size={16} />
+                </Button>
+              )
+            }
+            onClose={() => setOpen(false)}
           />
-        ) : (
-          <DecoChatMessages>
-            {chatMessages.map((message, index) => (
-              <DecoChatMessage
-                key={message.id}
-                role={message.role as "user" | "assistant" | "system"}
-                content={message.content}
-                isStreaming={isLoading && index === chatMessages.length - 1}
-              />
-            ))}
-          </DecoChatMessages>
-        )}
-      </DecoChatAside.Content>
+        </DecoChatAside.Header>
 
-      <DecoChatAside.Footer>
-        <div className="space-y-3">
-          {selectedModelId && models.length > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Model:</span>
-              <DecoChatModelSelector
-                models={models}
-                selectedModel={selectedModelId}
-                onModelChange={setSelectedModelId}
-                isLoading={modelsQuery.isLoading}
-              />
+        <DecoChatAside.Content>
+          {modelsQuery.isLoading && (
+            <div className="flex items-center gap-2 text-muted-foreground p-4 text-xs">
+              <span className="size-2 animate-pulse rounded-full bg-muted-foreground" />
+              Loading models...
             </div>
           )}
 
-          <DecoChatInput
+          {modelsQuery.error && (
+            <div className="p-4">
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {(modelsQuery.error as Error).message}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {!modelsQuery.isLoading && models.length === 0 && (
+            <div className="p-4 text-xs text-muted-foreground">
+              The configured Models Provider isn't returning any models. Review
+              it under Settings → Models Provider; no extra setup is required
+              inside this chat.
+            </div>
+          )}
+
+          {isEmpty ? (
+            <DecoChatEmptyState
+              title="Ask deco chat"
+              description="Ask anything about configuring model providers or using MCP Mesh. The assistant uses the Models Provider configured in Settings for this organization."
+              avatar="/img/logo-tiny.svg"
+            />
+          ) : (
+            <DecoChatMessages>
+              {chatMessages.map((message, index) => (
+                <DecoChatMessage
+                  key={message.id}
+                  id={message.id}
+                  role={message.role as "user" | "assistant" | "system"}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                  isStreaming={isLoading && index === chatMessages.length - 1}
+                />
+              ))}
+            </DecoChatMessages>
+          )}
+        </DecoChatAside.Content>
+
+        <DecoChatAside.Footer>
+          <DecoChatInputV2
             value={input}
             onChange={setInput}
             onSubmit={handleSendMessage}
@@ -309,11 +374,12 @@ export function DecoChatPanel() {
             placeholder={
               models.length === 0
                 ? "Configure a Models Provider in Settings to start chatting"
-                : "Ask deco chat for help..."
+                : "Ask anything or @ for context"
             }
+            rightActions={<DecoChatModelSelectorRich />}
           />
-        </div>
-      </DecoChatAside.Footer>
-    </DecoChatAside>
+        </DecoChatAside.Footer>
+      </DecoChatAside>
+    </ModelsBindingProvider>
   );
 }

@@ -10,11 +10,11 @@ const ModelsBinding: z.ZodTypeAny = z.object({
           id: z.string(),
           model: z.string(),
           name: z.string(),
-          logo: z.string().nullable(),
-          capabilities: z.array(z.string()),
+          logo: z.string().nullable(), // URL to provider logo (e.g., Anthropic, OpenAI, Google)
+          capabilities: z.array(z.string()), // Visual capabilities: "reasoning", "image-upload", "file-upload", "web-search"
           contextWindow: z.number().nullable(),
-          inputCost: z.number().nullable(),
-          outputCost: z.number().nullable(),
+          inputCost: z.number().nullable(), // Cost per token (e.g., 0.000003 = $3.00 per 1M tokens)
+          outputCost: z.number().nullable(), // Cost per token (e.g., 0.000015 = $15.00 per 1M tokens)
           outputLimit: z.number().nullable(),
           description: z.string().nullable(),
         }),

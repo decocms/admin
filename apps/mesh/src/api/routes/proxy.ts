@@ -115,10 +115,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     throw new Error("Connection not found");
   }
 
-  if (
-    ctx.organization &&
-    connection.organizationId !== ctx.organization.id
-  ) {
+  if (ctx.organization && connection.organizationId !== ctx.organization.id) {
     throw new Error("Connection does not belong to the active organization");
   }
 

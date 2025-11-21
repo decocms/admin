@@ -22,4 +22,3 @@ export function DecoChatButton({ disabled, onClick }: DecoChatButtonProps) {
     </Button>
   );
 }
-

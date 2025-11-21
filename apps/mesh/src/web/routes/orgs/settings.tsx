@@ -39,7 +39,8 @@ export default function OrgSettings() {
   } = authClient.useListOrganizations();
 
   const organizations = organizationsData ?? [];
-  const organizationsLoading = organizationsPending && organizations.length === 0;
+  const organizationsLoading =
+    organizationsPending && organizations.length === 0;
 
   const currentOrganization = useMemo(() => {
     return organizations.find((organization) => organization.slug === org);
@@ -71,8 +72,9 @@ export default function OrgSettings() {
 
   const connections = connectionsData?.connections ?? [];
 
-  const [selectedConnectionId, setSelectedConnectionId] =
-    useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (settings) {
@@ -212,10 +214,7 @@ export default function OrgSettings() {
               variant="outline"
               onClick={() => setSelectedConnectionId(initialConnectionId)}
               disabled={
-                !hasChanges ||
-                isSaving ||
-                settingsLoading ||
-                connectionsLoading
+                !hasChanges || isSaving || settingsLoading || connectionsLoading
               }
             >
               Reset

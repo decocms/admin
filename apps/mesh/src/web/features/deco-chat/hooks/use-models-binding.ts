@@ -10,8 +10,11 @@ import { authClient } from "@/web/lib/auth-client";
 
 export function useModelsBindingState() {
   const { locator } = useProjectContext();
-  const { organization, isLoading: orgLoading, error: orgError } =
-    useCurrentOrganization();
+  const {
+    organization,
+    isLoading: orgLoading,
+    error: orgError,
+  } = useCurrentOrganization();
   const organizationId = organization?.id;
 
   const settingsQuery = useOrganizationSettings(organizationId);
@@ -80,8 +83,7 @@ export function useModelsBindingState() {
     settingsQuery.isLoading ||
     connectionsQuery.isLoading ||
     (!isOrgActive && Boolean(organization?.slug));
-  const error =
-    orgError ?? settingsQuery.error ?? connectionsQuery.error;
+  const error = orgError ?? settingsQuery.error ?? connectionsQuery.error;
 
   return {
     organization,
@@ -92,4 +94,3 @@ export function useModelsBindingState() {
     error,
   };
 }
-

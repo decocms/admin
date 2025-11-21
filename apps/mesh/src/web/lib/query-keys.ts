@@ -24,6 +24,9 @@ export const KEYS = {
   organizationSettings: (organizationId: string) =>
     ["organization-settings", organizationId] as const,
 
+  // Models list (scoped by organization)
+  modelsList: (orgSlug: string) => ["models-list", orgSlug] as const,
+
   // Sidebar items (scoped by project)
   sidebarItems: (locator: ProjectLocator) =>
     [locator, "sidebar-items"] as const,

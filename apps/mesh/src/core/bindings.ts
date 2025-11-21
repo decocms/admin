@@ -5,25 +5,29 @@ const ModelsBinding: z.ZodTypeAny = z.object({
   MODELS_LIST: z.object({
     input: z.object({}).passthrough(),
     output: z.object({
-      models: z.array(z.object({
-        id: z.string(),
-        model: z.string(),
-        name: z.string(),
-        logo: z.string().nullable(),
-        capabilities: z.array(z.string()),
-        contextWindow: z.number().nullable(),
-        inputCost: z.number().nullable(),
-        outputCost: z.number().nullable(),
-        outputLimit: z.number().nullable(),
-        description: z.string().nullable(),
-      })),
+      models: z.array(
+        z.object({
+          id: z.string(),
+          model: z.string(),
+          name: z.string(),
+          logo: z.string().nullable(),
+          capabilities: z.array(z.string()),
+          contextWindow: z.number().nullable(),
+          inputCost: z.number().nullable(),
+          outputCost: z.number().nullable(),
+          outputLimit: z.number().nullable(),
+          description: z.string().nullable(),
+        }),
+      ),
     }),
   }),
   GET_STREAM_ENDPOINT: z.object({
     input: z.object({}).passthrough(),
-    output: z.object({
-      url: z.url(),
-    }).partial(),
+    output: z
+      .object({
+        url: z.url(),
+      })
+      .partial(),
   }),
 });
 

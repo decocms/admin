@@ -4,7 +4,8 @@ import { requireAuth } from "../../core/mesh-context";
 
 export const ORGANIZATION_SETTINGS_GET = defineTool({
   name: "ORGANIZATION_SETTINGS_GET",
-  description: "Get organization-level settings including configured MODELS binding",
+  description:
+    "Get organization-level settings including configured MODELS binding",
 
   inputSchema: z.object({
     organizationId: z.string(),

@@ -147,10 +147,9 @@ export const CONNECTION_LIST = defineTool({
     await ctx.access.check();
 
     const organization = requireOrganization(ctx);
-    const schema = resolveBindingSchema(input.binding as
-      | Record<string, unknown>
-      | string
-      | undefined);
+    const schema = resolveBindingSchema(
+      input.binding as Record<string, unknown> | string | undefined,
+    );
     let validator: ValidateFunction<Record<string, unknown>> | undefined;
     const schemaProperties =
       schema &&

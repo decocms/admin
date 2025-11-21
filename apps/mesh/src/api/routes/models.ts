@@ -43,7 +43,9 @@ async function getBindingConnection(
   }
 
   if (connection.organizationId !== organizationId) {
-    throw new Error("Configured MODELS binding does not belong to organization");
+    throw new Error(
+      "Configured MODELS binding does not belong to organization",
+    );
   }
 
   if (connection.status !== "active") {
@@ -140,10 +142,9 @@ function createProxyStream(
 
               if (!loggedPreview) {
                 loggedPreview = true;
-                const preview = decoder.decode(value, { stream: false }).slice(
-                  0,
-                  500,
-                );
+                const preview = decoder
+                  .decode(value, { stream: false })
+                  .slice(0, 500);
                 console.info(
                   "[models:stream] Upstream preview",
                   JSON.stringify({
@@ -239,7 +240,9 @@ app.get("/:org/models/list", async (c) => {
         arguments: {},
       });
 
-      const data = extractJsonContent(result) as { models?: unknown } | undefined;
+      const data = extractJsonContent(result) as
+        | { models?: unknown }
+        | undefined;
 
       console.info(
         "[models:list] Received response",
@@ -355,7 +358,9 @@ app.post("/:org/models/stream", async (c) => {
       const payloadSummary = {
         model: payload?.model,
         stream: payload?.stream,
-        messages: Array.isArray(payload?.messages) ? payload.messages.length : 0,
+        messages: Array.isArray(payload?.messages)
+          ? payload.messages.length
+          : 0,
       };
 
       console.info(

@@ -33,7 +33,9 @@ export function useLocalStorage<T>(
   key: string,
   initializer: T | ((existing: T | undefined) => T),
 ) {
-  const [value, setValue] = useState<T>(() => getInitialValue(key, initializer));
+  const [value, setValue] = useState<T>(() =>
+    getInitialValue(key, initializer),
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -42,7 +44,9 @@ export function useLocalStorage<T>(
     const handler = (event: StorageEvent) => {
       if (event.key !== key) return;
       try {
-        const parsed = event.newValue ? (JSON.parse(event.newValue) as T) : null;
+        const parsed = event.newValue
+          ? (JSON.parse(event.newValue) as T)
+          : null;
         if (parsed !== null) {
           setValue(parsed);
         }
@@ -65,4 +69,3 @@ export function useLocalStorage<T>(
 
   return [value, updateValue] as const;
 }
-

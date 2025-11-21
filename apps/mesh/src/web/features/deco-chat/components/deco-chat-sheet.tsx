@@ -21,6 +21,7 @@ import {
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { MCPConnection } from "@/storage/types";
+import { KEYS } from "@/web/lib/query-keys";
 
 interface DecoChatSheetProps {
   open: boolean;
@@ -74,7 +75,7 @@ export function DecoChatSheet({
   connection,
 }: DecoChatSheetProps) {
   const modelsQuery = useQuery({
-    queryKey: ["models-list", orgSlug],
+    queryKey: KEYS.modelsList(orgSlug),
     enabled: open,
     staleTime: 30_000,
     queryFn: async () => {
@@ -299,10 +300,7 @@ function MessageBubble({
   const isUser = message.role === "user";
   return (
     <div
-      className={cn(
-        "flex w-full",
-        isUser ? "justify-end" : "justify-start",
-      )}
+      className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}
     >
       <div
         className={cn(
@@ -500,11 +498,7 @@ function usePersistentMessages(orgSlug: string) {
   }, [messages, storageKey, hasHydrated]);
 
   const setMessages = useCallback(
-    (
-      updater:
-        | ChatMessage[]
-        | ((prev: ChatMessage[]) => ChatMessage[]),
-    ) => {
+    (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
       setMessagesState((prev) =>
         typeof updater === "function" ? updater(prev) : updater,
       );
@@ -614,8 +608,7 @@ function parseSSEChunk(chunk: string): string | "DONE" | null {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const dataLine =
-    lines.find((line) => line.startsWith("data:")) ?? trimmed;
+  const dataLine = lines.find((line) => line.startsWith("data:")) ?? trimmed;
 
   const payload = dataLine.startsWith("data:")
     ? dataLine.slice(5).trim()
@@ -646,7 +639,7 @@ function extractTextFromPayload(payload: string): string | null {
         if (Array.isArray(delta.content)) {
           return delta.content
             .map((part: { text?: string } | string) =>
-              typeof part === "string" ? part : part.text ?? "",
+              typeof part === "string" ? part : (part.text ?? ""),
             )
             .join("");
         }
@@ -696,9 +689,7 @@ function extractTextFromPayload(payload: string): string | null {
   return null;
 }
 
-function extractTextFromContentArray(
-  content: unknown,
-): string | null {
+function extractTextFromContentArray(content: unknown): string | null {
   if (!Array.isArray(content)) return null;
   const text = content
     .map((part) => {
@@ -718,4 +709,3 @@ function extractTextFromContentArray(
     .join("");
   return text.length > 0 ? text : null;
 }
-

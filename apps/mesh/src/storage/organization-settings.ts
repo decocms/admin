@@ -1,8 +1,5 @@
 import type { Kysely } from "kysely";
-import type {
-  Database,
-  OrganizationSettings,
-} from "./types";
+import type { Database, OrganizationSettings } from "./types";
 import type { OrganizationSettingsStoragePort } from "./ports";
 
 export class OrganizationSettingsStorage

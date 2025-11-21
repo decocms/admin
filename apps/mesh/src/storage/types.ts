@@ -95,7 +95,11 @@ export interface Organization {
 
 export interface OrganizationSettingsTable {
   organizationId: string;
-  modelsBindingConnectionId: ColumnType<string | null, string | null, string | null>;
+  modelsBindingConnectionId: ColumnType<
+    string | null,
+    string | null,
+    string | null
+  >;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }

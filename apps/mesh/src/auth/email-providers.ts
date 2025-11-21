@@ -23,15 +23,15 @@ interface SendGridConfig {
 // Discriminated union for email provider config
 export type EmailProviderConfig =
   | {
-    id: string;
-    provider: "resend";
-    config: ResendConfig;
-  }
+      id: string;
+      provider: "resend";
+      config: ResendConfig;
+    }
   | {
-    id: string;
-    provider: "sendgrid";
-    config: SendGridConfig;
-  };
+      id: string;
+      provider: "sendgrid";
+      config: SendGridConfig;
+    };
 
 export interface SendEmailParams {
   to: string;

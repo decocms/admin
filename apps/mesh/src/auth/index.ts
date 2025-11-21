@@ -15,13 +15,17 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import {
   admin as adminPlugin,
   apiKey,
-  defaultStatements,
   magicLink,
   mcp,
   openAPI,
   organization,
   OrganizationOptions,
 } from "better-auth/plugins";
+import {
+  adminAc,
+  defaultStatements,
+} from "better-auth/plugins/organization/access";
+
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
@@ -80,20 +84,12 @@ const ac = createAccessControl(statement);
 
 const user = ac.newRole({
   self: ["*"],
-  invitation: ["create", "cancel"],
-  organization: ["update", "delete"],
-  member: ["create", "update", "delete"],
-  team: ["create", "update", "delete"],
-  ac: ["create", "read", "update", "delete"],
+  ...adminAc.statements,
 }) as Role;
 
 const admin = ac.newRole({
   self: ["*"],
-  invitation: ["create", "cancel"],
-  organization: ["update", "delete"],
-  member: ["create", "update", "delete"],
-  team: ["create", "update", "delete"],
-  ac: ["create", "read", "update", "delete"],
+  ...adminAc.statements,
 }) as Role;
 
 const scopes = Object.values(getToolsByCategory())

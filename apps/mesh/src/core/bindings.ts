@@ -31,7 +31,6 @@ const ModelsBinding: z.ZodTypeAny = z.object({
   }),
 });
 
-// @ts-expect-error zod-to-json-schema types are not yet aligned with zod v4
 export const jsonschema = jsonSchema(ModelsBinding);
 
 export const MODELS_BINDING_SCHEMA = {

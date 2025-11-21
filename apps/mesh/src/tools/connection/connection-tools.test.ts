@@ -46,7 +46,10 @@ describe("Connection Tools", () => {
         auditLogs: null as never,
         organizationSettings: {
           get: async () => null,
-          upsert: async (_orgId, data) => ({
+          upsert: async (
+            _orgId: string,
+            data: { modelsBindingConnectionId?: string },
+          ) => ({
             organizationId: _orgId,
             modelsBindingConnectionId: data.modelsBindingConnectionId,
             createdAt: new Date().toISOString(),
@@ -204,7 +207,7 @@ describe("Connection Tools", () => {
       const result = await CONNECTION_LIST.execute({ binding: "MODELS" }, ctx);
 
       expect(result.connections).toHaveLength(1);
-      expect(result.connections[0].id).toBe(matchingConnectionId);
+      expect(result.connections[0]?.id).toBe(matchingConnectionId);
     });
   });
 

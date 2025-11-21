@@ -1,6 +1,6 @@
-import { defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
-export default defineConfig({
+const config: Options = {
   entry: {
     index: "src/index.ts",
     proxy: "src/proxy.ts",
@@ -53,4 +53,6 @@ export default defineConfig({
       },
     },
   ],
-});
+};
+
+export default defineConfig(config);

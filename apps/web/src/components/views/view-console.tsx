@@ -1,7 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
   Tabs,
@@ -17,7 +16,10 @@ import {
   useContext,
   useEffect,
 } from "react";
+import { toast } from "sonner";
 import { useAgenticChat } from "../chat/provider.tsx";
+import { CustomEvents } from "../../utils/custom-events.ts";
+import { formatLogEntry } from "../../utils/format-time.ts";
 
 export interface ConsoleLog {
   id: string;
@@ -35,12 +37,14 @@ interface ConsoleContextValue {
   logs: ConsoleLog[];
   errorCount: number;
   warningCount: number;
+  clearLogs: () => void;
 }
 
 const ConsoleContext = createContext<ConsoleContextValue>({
   logs: [],
   errorCount: 0,
   warningCount: 0,
+  clearLogs: () => {},
 });
 
 export function useConsoleState() {
@@ -136,7 +140,7 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
   );
 
   // Set up message listener on mount
-  useMemo(() => {
+  useEffect(() => {
     window.addEventListener("message", handleConsoleMessage);
     return () => window.removeEventListener("message", handleConsoleMessage);
   }, [handleConsoleMessage]);
@@ -173,8 +177,14 @@ export function ViewConsoleProvider({ children }: ViewConsoleProviderProps) {
   const errorCount = logs.filter((log) => log.type === "error").length;
   const warningCount = logs.filter((log) => log.type === "warn").length;
 
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
+
   return (
-    <ConsoleContext.Provider value={{ logs, errorCount, warningCount }}>
+    <ConsoleContext.Provider
+      value={{ logs, errorCount, warningCount, clearLogs }}
+    >
       {children}
     </ConsoleContext.Provider>
   );
@@ -186,7 +196,7 @@ interface ViewConsoleProps {
 }
 
 export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
-  const { logs, errorCount } = useConsoleState();
+  const { logs, errorCount, clearLogs } = useConsoleState();
   const { clearError } = useAgenticChat();
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState("console");
@@ -195,8 +205,23 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   const [showInfo, setShowInfo] = useState(true);
 
   const handleClear = useCallback(() => {
+    clearLogs();
     clearError();
-  }, [clearError]);
+  }, [clearLogs, clearError]);
+
+  const handleSendLogs = useCallback(() => {
+    if (logs.length === 0) {
+      toast.info("No console logs to send");
+      return;
+    }
+
+    // Format logs as text
+    const logText = logs.map((log) => formatLogEntry(log)).join("\n\n");
+
+    // Add logs to chat context
+    CustomEvents.addLogs({ logs: logText });
+    toast.success("Console logs added to chat");
+  }, [logs]);
 
   const formatTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
@@ -317,7 +342,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
             />
             <div className="flex items-center gap-2 ml-auto">
               <Button
-                variant={showErrors ? "default" : "ghost"}
+                variant={showErrors ? "outline" : "ghost"}
                 size="sm"
                 onClick={() => setShowErrors(!showErrors)}
                 className="h-7 px-2 text-xs"
@@ -326,7 +351,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                 Errors
               </Button>
               <Button
-                variant={showWarnings ? "default" : "ghost"}
+                variant={showWarnings ? "outline" : "ghost"}
                 size="sm"
                 onClick={() => setShowWarnings(!showWarnings)}
                 className="h-7 px-2 text-xs"
@@ -335,7 +360,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                 Warnings
               </Button>
               <Button
-                variant={showInfo ? "default" : "ghost"}
+                variant={showInfo ? "outline" : "ghost"}
                 size="sm"
                 onClick={() => setShowInfo(!showInfo)}
                 className="h-7 px-2 text-xs"
@@ -344,6 +369,15 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                 Info
               </Button>
               <div className="h-4 w-px bg-border" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSendLogs}
+                className="h-7 w-7"
+                title="Send console logs to chat"
+              >
+                <Icon name="description" size={14} />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -366,8 +400,8 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
           </div>
 
           {/* Console Output */}
-          <ScrollArea className="flex-1">
-            <div className="font-mono text-xs">
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className="font-mono text-xs pb-4">
               {filteredLogs.length === 0 ? (
                 <div className="p-4 text-muted-foreground italic">
                   No messages
@@ -389,7 +423,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div
-                        className={`break-words text-xs ${
+                        className={`wrap-break-word text-xs ${
                           log.type === "error"
                             ? "text-destructive"
                             : log.type === "warn"
@@ -421,7 +455,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
 
         <TabsContent

@@ -71,7 +71,7 @@ import {
   useRemoveConnection,
 } from "./remove-connection.tsx";
 import {
-  ConfirmMarketplaceInstallDialog,
+  InstallAppDialogWrapper,
   OauthModalContextProvider,
   OauthModalState,
   useUIInstallIntegration,
@@ -498,7 +498,7 @@ function ConfigureConnectionInstanceForm({
           <OauthModalContextProvider.Provider
             value={{ onOpenOauthModal: setOauthCompletionDialog }}
           >
-            <ConfirmMarketplaceInstallDialog
+            <InstallAppDialogWrapper
               integration={installingIntegration}
               setIntegration={setInstallingIntegration}
               onConfirm={({ authorizeOauthUrl, connection }) => {

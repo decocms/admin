@@ -28,7 +28,7 @@ import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import type { MarketplaceIntegration } from "../../integrations/marketplace";
 import {
-  ConfirmMarketplaceInstallDialog,
+  InstallAppDialogWrapper,
   useOauthModalContext,
   useUIInstallIntegration,
 } from "../../integrations/select-connection-dialog.tsx";
@@ -269,7 +269,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
       />
 
       {installingIntegration && (
-        <ConfirmMarketplaceInstallDialog
+        <InstallAppDialogWrapper
           integration={installingIntegration}
           setIntegration={setInstallingIntegration}
           onConfirm={handleIntegrationInstalled}

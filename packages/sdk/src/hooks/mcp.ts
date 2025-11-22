@@ -203,7 +203,7 @@ export const useMarketplaceIntegrations = () => {
   });
 };
 
-const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
+export const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "github",
   "googlesheets",
   "googlegmail",

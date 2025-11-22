@@ -1,6 +1,6 @@
 import type { Statement } from "@deco/sdk/auth";
 import type { AppScope } from "@deco/sdk/hooks";
-import type { JSONSchema7 } from "json-schema";
+import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
 
 // Default policies required for all integrations
 export const DEFAULT_INTEGRATION_POLICIES: Statement[] = [];
@@ -10,24 +10,36 @@ export const parseAppScope = (scope: string) => {
   return { bindingName, toolName };
 };
 
+/**
+ * Extracts the app name (e.g., "@scope/app") from a schema definition that represents a binding/dependency.
+ * Used when you already have the property schema (e.g., from schema.properties[propName]).
+ */
+export const getAppNameFromSchemaDefinition = (
+  schemaDefinition: JSONSchema7Definition,
+): string | null => {
+  if (
+    typeof schemaDefinition === "object" &&
+    schemaDefinition.properties?.__type
+  ) {
+    const typeProperty = schemaDefinition.properties.__type;
+    if (typeof typeProperty === "object" && "const" in typeProperty) {
+      return typeProperty.const as string;
+    }
+  }
+  return null;
+};
+
+/**
+ * Extracts the app name from a schema by looking up a binding property by name.
+ * Used when you have the full schema and need to look up a specific binding.
+ */
 export const getAppNameFromSchema = (
   schema: JSONSchema7,
   bindingName: string,
-) => {
+): string | undefined => {
   const binding = schema.properties?.[bindingName];
-  if (
-    typeof binding === "object" &&
-    binding !== null &&
-    "properties" in binding
-  ) {
-    const typeProperty = binding.properties?.__type;
-    if (
-      typeof typeProperty === "object" &&
-      typeProperty !== null &&
-      "const" in typeProperty
-    ) {
-      return typeProperty.const as string;
-    }
+  if (binding) {
+    return getAppNameFromSchemaDefinition(binding) ?? undefined;
   }
   return undefined;
 };

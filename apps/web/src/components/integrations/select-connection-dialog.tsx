@@ -690,6 +690,7 @@ export function InstallAppDialogWrapper({
         error,
       });
       console.error("Installation failed:", error);
+      throw error;
     }
   };
 
@@ -697,7 +698,6 @@ export function InstallAppDialogWrapper({
     <InstallAppDialog
       integration={integration}
       onClose={() => setIntegration(null)}
-      onConfirm={onConfirm}
       isLoading={isLoading}
       onInstall={handleInstall}
     />

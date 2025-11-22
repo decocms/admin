@@ -1,4 +1,9 @@
-import { type Integration, useProjects, useFile } from "@deco/sdk";
+import {
+  type Integration,
+  useProjects,
+  useFile,
+  useIntegrations,
+} from "@deco/sdk";
 import { WELL_KNOWN_DECO_OAUTH_INTEGRATIONS } from "@deco/sdk/hooks";
 import { type MarketplaceIntegration } from "./marketplace.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -41,10 +46,6 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 interface InstallAppDialogProps {
   integration: MarketplaceIntegration | null;
   onClose: () => void;
-  onConfirm: (data: {
-    authorizeOauthUrl: string | null;
-    connection: Integration;
-  }) => void;
   isLoading?: boolean;
   onInstall: (formData: Record<string, unknown>) => Promise<void>;
 }
@@ -52,7 +53,6 @@ interface InstallAppDialogProps {
 export function InstallAppDialog({
   integration,
   onClose,
-  onConfirm: _onConfirm,
   isLoading = false,
   onInstall,
 }: InstallAppDialogProps) {
@@ -62,6 +62,7 @@ export function InstallAppDialog({
     isLoading: depsLoading,
     schema,
   } = useRecursiveDependencies(integration?.name);
+  const { refetch: refetchIntegrations } = useIntegrations();
 
   const { org, project: projectParam } = useParams();
   const projects = useProjects({ org: org ?? "" });
@@ -242,6 +243,20 @@ export function InstallAppDialog({
         {},
       );
 
+      // If integration was created successfully, update form and refresh dependencies
+      if (result.integration?.id) {
+        form.setValue(dependency.name, {
+          __type: dependency.appName,
+          value: result.integration.id,
+        });
+        // Clear error if this was a required dependency
+        if (dependency.isRequired) {
+          form.clearErrors(dependency.name);
+        }
+        // Trigger refetch to update available accounts
+        await refetchIntegrations();
+      }
+
       if (result.redirectUrl) {
         const popup = globalThis.open(result.redirectUrl, "_blank");
         if (!popup || popup.closed || typeof popup.closed === "undefined") {
@@ -274,6 +289,51 @@ export function InstallAppDialog({
   const handleSubmit = async (data: Record<string, unknown>) => {
     // Clear previous errors
     setError(null);
+
+    // Validate required dependencies have selected accounts
+    const missingDependencies: ResolvedDependency[] = [];
+    for (const dep of dependencies) {
+      if (dep.isRequired) {
+        const value = form.getValues(dep.name) as { __type?: string; value?: string } | undefined;
+        if (!value || !value.value) {
+          missingDependencies.push(dep);
+          // Set error on this specific field
+          form.setError(dep.name, {
+            type: "manual",
+            message: `${dep.friendlyName ?? dep.appName} is required`,
+          });
+        }
+      }
+    }
+
+    if (missingDependencies.length > 0) {
+      const depNames = missingDependencies
+        .map((d) => d.friendlyName ?? d.appName)
+        .join(", ");
+      setError(
+        `Please select an account for the following required ${missingDependencies.length === 1 ? "dependency" : "dependencies"}: ${depNames}`,
+      );
+      
+      // Scroll to the first missing dependency
+      const firstMissing = missingDependencies[0];
+      if (firstMissing) {
+        // Expand the dependency if it has permissions
+        if (firstMissing.permissions.length > 0) {
+          setExpandedDep(firstMissing.name);
+        }
+        
+        // Scroll to dependency section
+        setTimeout(() => {
+          const depElement = scrollContainerRef.current?.querySelector(
+            `[data-dependency="${firstMissing.name}"]`,
+          );
+          if (depElement) {
+            depElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 100);
+      }
+      return;
+    }
 
     // Validate form before submitting
     const isValid = await form.trigger();
@@ -508,15 +568,17 @@ function DependencyItem({
 }: DependencyItemProps) {
   const hasPermissions = dependency.permissions.length > 0;
   const hasAccounts = dependency.availableAccounts.length > 0;
+  const error = form.formState.errors[dependency.name];
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" data-dependency={dependency.name}>
       {/* Main row */}
       <div
         onClick={() => hasPermissions && onToggle()}
         className={cn(
           "bg-background rounded-xl px-2 py-1 flex gap-3 items-center transition-colors",
           hasPermissions && "hover:bg-accent/50 cursor-pointer",
+          error && "ring-1 ring-destructive",
         )}
       >
         {/* Chevron - only show if has permissions */}
@@ -565,6 +627,10 @@ function DependencyItem({
                   __type: dependency.appName,
                   value,
                 });
+                // Clear error if this was a required dependency
+                if (dependency.isRequired) {
+                  form.clearErrors(dependency.name);
+                }
               }}
             >
               <SelectTrigger
@@ -681,6 +747,16 @@ function DependencyItem({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="mt-1 px-2 flex items-start gap-1.5">
+          <Icon name="error" size={14} className="text-destructive shrink-0 mt-0.5" />
+          <p className="text-xs text-destructive">
+            {error.message?.toString() ?? "This field is required"}
+          </p>
         </div>
       )}
     </div>

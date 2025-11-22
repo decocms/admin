@@ -1,12 +1,20 @@
-import { getRegistryApp, type Integration } from "@deco/sdk";
+import {
+  getRegistryApp,
+  getMarketplaceAppSchema,
+  type Integration,
+} from "@deco/sdk";
 import {
   useIntegrations,
   useMarketplaceAppSchema,
   usePermissionDescriptions,
+  useSDK,
 } from "@deco/sdk/hooks";
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getAllScopes } from "../utils/scopes.ts";
+import {
+  getAllScopes,
+  getAppNameFromSchemaDefinition,
+} from "../utils/scopes.ts";
 
 export interface ContractClause {
   id: string;
@@ -38,26 +46,16 @@ const isDependency = (property: JSONSchema7Definition): boolean => {
   );
 };
 
-const getAppNameFromSchema = (schema: JSONSchema7Definition): string | null => {
-  if (typeof schema === "object" && schema.properties?.__type) {
-    const typeProperty = schema.properties.__type;
-    if (typeof typeProperty === "object" && "const" in typeProperty) {
-      return typeProperty.const as string;
-    }
-  }
-  return null;
-};
-
 /**
  * Hook to recursively resolve all dependencies of an app
  */
 export function useRecursiveDependencies(appName?: string) {
+  const { locator } = useSDK();
   const { data: installedIntegrations } = useIntegrations();
   const { data: appSchema, isLoading: appSchemaLoading } =
     useMarketplaceAppSchema(appName);
   const [dependencies, setDependencies] = useState<ResolvedDependency[]>([]);
   const [isResolving, setIsResolving] = useState(false);
-  const resolvedAppsRef = useRef<Set<string>>(new Set());
 
   // Get all scopes for permissions
   const integrationSchema = appSchema?.schema as JSONSchema7 | undefined;
@@ -73,17 +71,11 @@ export function useRecursiveDependencies(appName?: string) {
   useEffect(() => {
     if (!appName) {
       setDependencies([]);
-      resolvedAppsRef.current.clear();
       return;
     }
 
     if (!integrationSchema || appSchemaLoading || permissionsLoading) {
       setDependencies([]);
-      return;
-    }
-
-    // Skip if we've already resolved this app
-    if (resolvedAppsRef.current.has(appName)) {
       return;
     }
 
@@ -105,20 +97,45 @@ export function useRecursiveDependencies(appName?: string) {
           const properties = schema.properties;
           if (!properties) return;
 
+          // Collect all dependency app names first
+          const depAppNamesMap = new Map<string, { propName: string; propSchema: JSONSchema7 }>();
+          
           for (const [propName, propSchema] of Object.entries(properties)) {
             if (!isDependency(propSchema)) continue;
 
-            const depAppName = getAppNameFromSchema(propSchema);
+            const depAppName = getAppNameFromSchemaDefinition(propSchema);
             if (!depAppName) continue;
 
             // Skip if already processed
             if (visited.has(depAppName)) continue;
             visited.add(depAppName);
 
-            try {
-              // Fetch registry app for this dependency
-              const depApp = await getRegistryApp({ name: depAppName });
+            depAppNamesMap.set(depAppName, { propName, propSchema: propSchema as JSONSchema7 });
+          }
 
+          // Fetch all registry apps in parallel
+          const depAppNames = Array.from(depAppNamesMap.keys());
+          const depAppsResults = await Promise.allSettled(
+            depAppNames.map(appName => getRegistryApp({ name: appName }))
+          );
+
+          // Process results
+          for (let i = 0; i < depAppNames.length; i++) {
+            const depAppName = depAppNames[i];
+            const result = depAppsResults[i];
+            
+            if (result.status === 'rejected') {
+              console.error(`Failed to resolve dependency ${depAppName}:`, result.reason);
+              continue;
+            }
+            
+            const depApp = result.value;
+            const depInfo = depAppNamesMap.get(depAppName);
+            if (!depInfo) continue;
+
+            const { propName, propSchema } = depInfo;
+
+            try {
               // Check if it's a contract
               const isContract = !!depApp.metadata?.contract;
               const contractClauses = isContract
@@ -146,7 +163,7 @@ export function useRecursiveDependencies(appName?: string) {
               resolved.push({
                 name: propName,
                 appName: depAppName,
-                schema: propSchema as JSONSchema7,
+                schema: propSchema,
                 permissions: depPermissions,
                 isContract,
                 contractClauses,
@@ -156,9 +173,27 @@ export function useRecursiveDependencies(appName?: string) {
                 friendlyName: depApp.friendlyName,
                 description: depApp.description,
               });
+
+              // Recursively resolve nested dependencies
+              try {
+                const depAppSchemaData = await getMarketplaceAppSchema(
+                  locator,
+                  depAppName,
+                );
+                if (depAppSchemaData?.schema) {
+                  const depSchema = depAppSchemaData.schema as JSONSchema7;
+                  await resolveRecursive(depSchema, depAppName, depth + 1);
+                }
+              } catch (nestedError) {
+                console.error(
+                  `Failed to resolve nested dependencies for ${depAppName}:`,
+                  nestedError,
+                );
+                // Continue with other dependencies
+              }
             } catch (error) {
               console.error(
-                `Failed to resolve dependency ${depAppName}:`,
+                `Failed to process dependency ${depAppName}:`,
                 error,
               );
               // Continue with other dependencies
@@ -168,24 +203,23 @@ export function useRecursiveDependencies(appName?: string) {
 
         await resolveRecursive(integrationSchema, appName);
         setDependencies(resolved);
-        resolvedAppsRef.current.add(appName);
       } catch (error) {
         console.error("Failed to resolve dependencies:", error);
         setDependencies([]);
-        resolvedAppsRef.current.add(appName); // Mark as resolved even on error to prevent infinite retries
       } finally {
         setIsResolving(false);
       }
     };
 
     resolveDependencies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     appName,
     integrationSchema,
     appSchemaLoading,
     installedIntegrations,
     permissionsLoading,
+    allPermissions,
+    locator,
   ]);
 
   return {

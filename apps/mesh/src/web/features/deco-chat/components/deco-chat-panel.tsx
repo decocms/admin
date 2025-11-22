@@ -1,59 +1,124 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { MCPConnection } from "@/storage/types";
-import { fetcher } from "@/tools/client";
+import { createConnectionToolCaller, fetcher } from "@/tools/client";
+import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
 import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
-import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
-import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
-import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
-import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { useChat } from "@ai-sdk/react";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
-import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
-import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
-import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
+import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
+import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
+import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
+import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import {
-  ModelsBindingProvider,
-  type ModelInfo,
-} from "@deco/ui/providers/models-binding-provider.tsx";
+import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
+import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provider.tsx";
+import { useQuery } from "@tanstack/react-query";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+
+// Model type matching ModelSchema from @decocms/bindings
+interface Model {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  updated_by?: string;
+  logo: string | null;
+  description: string | null;
+  capabilities: string[];
+  limits: {
+    contextWindow: number;
+    maxOutputTokens: number;
+  } | null;
+  costs: {
+    input: number;
+    output: number;
+  } | null;
+  provider:
+    | "openai"
+    | "anthropic"
+    | "google"
+    | "xai"
+    | "deepseek"
+    | "openai-compatible"
+    | null;
+  endpoint: {
+    url: string;
+    method: string;
+    contentType: string;
+    stream: boolean;
+  } | null;
+}
 
 interface ModelsResponse {
-  models: ModelInfo[];
+  models: Model[];
 }
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
+// Create transport for models stream API (stable across model changes)
+function createModelsTransport(
+  orgSlug: string,
+): DefaultChatTransport<UIMessage> {
+  return new DefaultChatTransport({
+    api: `/api/${orgSlug}/models/stream`,
+    credentials: "include",
+    prepareSendMessagesRequest: ({
+      messages,
+      requestMetadata,
+    }: {
+      messages: UIMessage[];
+      requestMetadata?: unknown;
+    }) => {
+      // oxlint-disable-next-line no-explicit-any
+      const metadata = requestMetadata as any;
+
+      return {
+        body: {
+          messages,
+          model: metadata?.model,
+          provider: metadata?.provider,
+          endpoint: metadata?.endpoint,
+          stream: true,
+        },
+      };
+    },
+  });
+}
+
 function DecoChatPanelInner() {
   const { locator } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
   const { setOpen } = useDecoChatOpen();
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   // Use thread management from ChatThreadsProvider
-  const { messages, addMessage, updateMessage, copyThreadTabs } =
-    useChatThreads();
+  const {
+    messages: threadMessages,
+    addMessage,
+    copyThreadTabs,
+  } = useChatThreads();
 
-  // Convert thread messages to the format expected by DecoChatMessages
-  const chatMessages = useMemo(
-    () =>
-      messages.map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-      })),
-    [messages],
+  // Thread messages are already in UIMessage format
+  const initialMessages = useMemo<UIMessage[]>(
+    () => threadMessages,
+    [threadMessages],
   );
+
+  // Local state for input (similar to provider.tsx)
+  const [input, setInput] = useState("");
+
+  // Sentinel ref for auto-scrolling to bottom
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const settingsQuery = useOrganizationSettings(organization?.id);
 
@@ -89,17 +154,16 @@ function DecoChatPanelInner() {
     enabled: Boolean(orgSlug) && Boolean(connection),
     staleTime: 30_000,
     queryFn: async () => {
-      const response = await fetch(`/api/${orgSlug}/models/list`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(
-          detail || "Failed to fetch models for the configured provider.",
-        );
+      if (!connection) {
+        throw new Error("No connection available");
       }
 
-      return (await response.json()) as ModelsResponse;
+      const callTool = createConnectionToolCaller(connection.id);
+      const result = await callTool("DECO_COLLECTION_MODELS_LIST", {});
+
+      return {
+        models: result?.items ?? [],
+      } as ModelsResponse;
     },
   });
 
@@ -127,25 +191,37 @@ function DecoChatPanelInner() {
       "web-search",
     ]);
 
-    return modelsQuery.data.models.map((model) => {
+    return modelsQuery.data.models.map((model: Model) => {
       // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
       const provider = model.id.split("/")[0] || "";
       const logo = model.logo || providerLogos[provider] || null;
 
       // Filter capabilities to only show known visual ones
-      const capabilities =
-        model.capabilities?.filter((cap) => knownCapabilities.has(cap)) || [];
+      const capabilities = model.capabilities.filter((cap) =>
+        knownCapabilities.has(cap),
+      );
 
       // Convert costs from per-token to per-1M-tokens (multiply by 1,000,000)
-      const inputCost = model.inputCost ? model.inputCost * 1_000_000 : null;
-      const outputCost = model.outputCost ? model.outputCost * 1_000_000 : null;
+      const inputCost = model.costs?.input
+        ? model.costs.input * 1_000_000
+        : null;
+      const outputCost = model.costs?.output
+        ? model.costs.output * 1_000_000
+        : null;
 
       return {
-        ...model,
+        id: model.id,
+        model: model.title,
+        name: model.title,
         logo,
+        description: model.description,
         capabilities,
         inputCost,
         outputCost,
+        contextWindow: model.limits?.contextWindow ?? null,
+        outputLimit: model.limits?.maxOutputTokens ?? null,
+        provider: model.provider, // Include provider type
+        endpoint: model.endpoint, // Include endpoint for completions API
       };
     });
   }, [modelsQuery.data]);
@@ -160,12 +236,68 @@ function DecoChatPanelInner() {
     if (models.length > 0 && !selectedModelId) {
       const firstModel = models[0];
       if (firstModel) {
-        setSelectedModelId(firstModel.model);
+        setSelectedModelId(firstModel.id);
       }
     }
   }, [models, selectedModelId, setSelectedModelId]);
 
-  const isEmpty = chatMessages.length === 0;
+  // Get selected model info
+  const selectedModel = useMemo(
+    () => models.find((m) => m.id === selectedModelId),
+    [models, selectedModelId],
+  );
+
+  // Create transport (stable, doesn't depend on selected model)
+  const transport = useMemo(() => createModelsTransport(orgSlug), [orgSlug]);
+
+  // Use AI SDK's useChat hook
+  const chat = useChat({
+    id: `mesh-chat-${orgSlug}`,
+    messages: initialMessages,
+    transport: transport ?? undefined,
+    onFinish: (result) => {
+      // Save new messages to thread provider (similar to provider.tsx)
+      if (result?.messages) {
+        const initialLength = initialMessages?.length ?? 0;
+        const newMessages = result.messages.slice(initialLength);
+
+        if (newMessages.length > 0) {
+          newMessages.forEach((msg: UIMessage) => {
+            // Skip non-chat roles (data messages)
+            if (
+              msg.role !== "user" &&
+              msg.role !== "assistant" &&
+              msg.role !== "system"
+            ) {
+              return;
+            }
+
+            // Add UIMessage directly to thread (without id, it will be generated)
+            const { id, ...messageWithoutId } = msg;
+            addMessage(messageWithoutId);
+          });
+        }
+      }
+    },
+    onError: (error: Error) => {
+      console.error("[deco-chat] Chat error:", error);
+    },
+  });
+
+  // Derive loading state from chat status
+  const isLoading = chat.status === "submitted" || chat.status === "streaming";
+
+  const isEmpty = chat.messages.length === 0;
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (sentinelRef.current && chat.messages.length > 0) {
+      sentinelRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+  }, [chat.messages]);
 
   // ModelsBindingProvider value
   const modelsBindingValue = useMemo(
@@ -185,123 +317,51 @@ function DecoChatPanelInner() {
     ],
   );
 
+  // Wrapped send message - enriches request with metadata (similar to provider.tsx)
+  const wrappedSendMessage = useCallback(
+    async (message: UIMessage) => {
+      if (!selectedModelId || !selectedModel?.endpoint) {
+        console.error("No model or endpoint configured");
+        return;
+      }
+
+      // Prepare metadata with current model configuration
+      const metadata = {
+        model: selectedModelId,
+        provider: selectedModel.provider,
+        endpoint: selectedModel.endpoint,
+      };
+
+      return await chat.sendMessage(message, { metadata });
+    },
+    [chat, selectedModelId, selectedModel],
+  );
+
   const handleSendMessage = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
 
-      if (!input.trim() || !selectedModelId || isLoading) {
+      if (!input?.trim() || isLoading) {
         return;
       }
 
-      // Add user message to thread
-      addMessage({
+      // Create and send message with metadata
+      const userMessage: UIMessage = {
+        id: crypto.randomUUID(),
         role: "user",
-        content: input,
-      });
-      const userInput = input;
+        parts: [{ type: "text", text: input }],
+      };
+
       setInput("");
-      setIsLoading(true);
-
-      try {
-        const response = await fetch(`/api/${orgSlug}/models/stream`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            messages: [
-              ...chatMessages.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-              })),
-              { role: "user", content: userInput },
-            ],
-            model: selectedModelId,
-            stream: true,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("No response body");
-        }
-
-        const decoder = new TextDecoder();
-        let assistantMessage = "";
-
-        // Add empty assistant message that we'll update
-        const assistantId = addMessage({
-          role: "assistant",
-          content: "",
-        });
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const dataStr = line.slice(6).trim();
-
-              try {
-                const data = JSON.parse(dataStr);
-
-                // Handle AI SDK SSE format: message.delta with content array
-                if (
-                  data.type === "message.delta" &&
-                  Array.isArray(data.content)
-                ) {
-                  for (const contentItem of data.content) {
-                    if (
-                      contentItem.type === "output_text" &&
-                      contentItem.text
-                    ) {
-                      assistantMessage += contentItem.text;
-                    }
-                  }
-
-                  updateMessage(assistantId, { content: assistantMessage });
-                }
-              } catch {
-                // Ignore parse errors for non-JSON lines
-              }
-            }
-          }
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error("[deco-chat] Send error:", error);
-        setIsLoading(false);
-        addMessage({
-          role: "assistant",
-          content: `Error: ${(error as Error).message}`,
-        });
-      }
+      // Use the wrapped send message function
+      await wrappedSendMessage(userMessage);
     },
-    [
-      input,
-      selectedModelId,
-      isLoading,
-      orgSlug,
-      chatMessages,
-      addMessage,
-      updateMessage,
-      messages,
-    ],
+    [input, isLoading, selectedModelId, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
-    setIsLoading(false);
-  }, []);
+    chat.stop?.();
+  }, [chat]);
 
   // Show skeleton while loading models
   if (modelsQuery.isLoading) {
@@ -380,16 +440,16 @@ function DecoChatPanelInner() {
             />
           ) : (
             <DecoChatMessages>
-              {chatMessages.map((message, index) => (
+              {chat.messages.map((message: UIMessage, index: number) => (
                 <DecoChatMessage
                   key={message.id}
-                  id={message.id}
-                  role={message.role as "user" | "assistant" | "system"}
-                  content={message.content}
-                  timestamp={message.timestamp}
-                  isStreaming={isLoading && index === chatMessages.length - 1}
+                  message={message}
+                  timestamp={new Date().toISOString()}
+                  isStreaming={isLoading && index === chat.messages.length - 1}
                 />
               ))}
+              {/* Sentinel element for smooth scrolling to bottom */}
+              <div ref={sentinelRef} className="h-0" />
             </DecoChatMessages>
           )}
         </DecoChatAside.Content>

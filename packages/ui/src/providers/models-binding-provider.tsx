@@ -11,6 +11,13 @@ export interface ModelInfo {
   inputCost?: number | null;
   outputCost?: number | null;
   outputLimit?: number | null;
+  provider?: "openai" | "anthropic" | "google" | "xai" | "deepseek" | "openai-compatible" | null;
+  endpoint?: {
+    url: string;
+    method?: string;
+    contentType?: string;
+    stream?: boolean;
+  } | null;
 }
 
 export interface MCPConnection {

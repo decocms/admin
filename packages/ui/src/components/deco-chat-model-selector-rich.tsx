@@ -315,7 +315,7 @@ export function DecoChatModelSelectorRich({
   const [hoveredModel, setHoveredModel] = useState<ModelInfo | null>(null);
   const [showInfoMobile, setShowInfoMobile] = useState(false);
 
-  const currentModel = models.find((m) => m.model === selectedModel);
+  const currentModel = models.find((m) => m.id === selectedModel);
 
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
@@ -370,16 +370,16 @@ export function DecoChatModelSelectorRich({
             {models.map((m) => (
               <div
                 key={m.id}
-                onClick={() => handleModelChange(m.model)}
+                onClick={() => handleModelChange(m.id)}
                 className={cn(
                   "rounded-xl mb-1",
-                  m.model === selectedModel && "bg-accent",
+                  m.id === selectedModel && "bg-accent",
                 )}
               >
                 <ModelItemContent
                   model={m}
                   onHover={setHoveredModel}
-                  isSelected={m.model === selectedModel}
+                  isSelected={m.id === selectedModel}
                   hasExpandedInfo={showInfoMobile}
                 />
                 {/* Mobile info panel - shows inside model item when toggled */}

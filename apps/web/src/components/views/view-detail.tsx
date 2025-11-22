@@ -22,7 +22,6 @@ import { useParams } from "react-router";
 import { toast } from "sonner";
 import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { CustomEvents } from "../../utils/custom-events.ts";
-import { formatLogEntry } from "../../utils/format-time.ts";
 import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
@@ -83,38 +82,6 @@ function ConsoleToggleButton({
           className="absolute bottom-1 right-0.5 size-2 flex items-center justify-center p-0 text-[10px] rounded-full outline-2 outline-sidebar outline-solid bg-yellow-500"
         ></Badge>
       )}
-    </Button>
-  );
-}
-
-function SendLogsButton() {
-  const consoleState = useConsoleState();
-  const { logs } = consoleState ?? { logs: [] };
-
-  const handleSendLogs = useCallback(() => {
-    if (logs.length === 0) {
-      toast.info("No console logs to send");
-      return;
-    }
-
-    // Format logs as text
-    const logText = logs.map((log) => formatLogEntry(log)).join("\n\n");
-
-    // Add logs to chat context
-    CustomEvents.addLogs({ logs: logText });
-    toast.success("Console logs added to chat");
-  }, [logs]);
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="xs"
-      onClick={handleSendLogs}
-      className="size-6 p-0"
-      title="Send Console Logs to Chat"
-    >
-      <Icon name="description" className="text-muted-foreground" />
     </Button>
   );
 }
@@ -496,7 +463,6 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
               discardLabel="Reset"
             />
           )}
-          <SendLogsButton />
           <SendScreenshotButton iframeRef={iframeRef} />
           <ConsoleToggleButton
             isOpen={isConsoleOpen}

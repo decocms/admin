@@ -1,9 +1,4 @@
-import {
-  type Integration,
-  useProjects,
-  useFile,
-  useIntegrations,
-} from "@deco/sdk";
+import { useProjects, useFile, useIntegrations } from "@deco/sdk";
 import { WELL_KNOWN_DECO_OAUTH_INTEGRATIONS } from "@deco/sdk/hooks";
 import { type MarketplaceIntegration } from "./marketplace.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -294,7 +289,9 @@ export function InstallAppDialog({
     const missingDependencies: ResolvedDependency[] = [];
     for (const dep of dependencies) {
       if (dep.isRequired) {
-        const value = form.getValues(dep.name) as { __type?: string; value?: string } | undefined;
+        const value = form.getValues(dep.name) as
+          | { __type?: string; value?: string }
+          | undefined;
         if (!value || !value.value) {
           missingDependencies.push(dep);
           // Set error on this specific field
@@ -313,7 +310,7 @@ export function InstallAppDialog({
       setError(
         `Please select an account for the following required ${missingDependencies.length === 1 ? "dependency" : "dependencies"}: ${depNames}`,
       );
-      
+
       // Scroll to the first missing dependency
       const firstMissing = missingDependencies[0];
       if (firstMissing) {
@@ -321,7 +318,7 @@ export function InstallAppDialog({
         if (firstMissing.permissions.length > 0) {
           setExpandedDep(firstMissing.name);
         }
-        
+
         // Scroll to dependency section
         setTimeout(() => {
           const depElement = scrollContainerRef.current?.querySelector(
@@ -753,7 +750,11 @@ function DependencyItem({
       {/* Error message */}
       {error && (
         <div className="mt-1 px-2 flex items-start gap-1.5">
-          <Icon name="error" size={14} className="text-destructive shrink-0 mt-0.5" />
+          <Icon
+            name="error"
+            size={14}
+            className="text-destructive shrink-0 mt-0.5"
+          />
           <p className="text-xs text-destructive">
             {error.message?.toString() ?? "This field is required"}
           </p>

@@ -10,7 +10,7 @@ import {
   useSDK,
 } from "@deco/sdk/hooks";
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getAllScopes,
   getAppNameFromSchemaDefinition,
@@ -98,8 +98,11 @@ export function useRecursiveDependencies(appName?: string) {
           if (!properties) return;
 
           // Collect all dependency app names first
-          const depAppNamesMap = new Map<string, { propName: string; propSchema: JSONSchema7 }>();
-          
+          const depAppNamesMap = new Map<
+            string,
+            { propName: string; propSchema: JSONSchema7 }
+          >();
+
           for (const [propName, propSchema] of Object.entries(properties)) {
             if (!isDependency(propSchema)) continue;
 
@@ -110,25 +113,31 @@ export function useRecursiveDependencies(appName?: string) {
             if (visited.has(depAppName)) continue;
             visited.add(depAppName);
 
-            depAppNamesMap.set(depAppName, { propName, propSchema: propSchema as JSONSchema7 });
+            depAppNamesMap.set(depAppName, {
+              propName,
+              propSchema: propSchema as JSONSchema7,
+            });
           }
 
           // Fetch all registry apps in parallel
           const depAppNames = Array.from(depAppNamesMap.keys());
           const depAppsResults = await Promise.allSettled(
-            depAppNames.map(appName => getRegistryApp({ name: appName }))
+            depAppNames.map((appName) => getRegistryApp({ name: appName })),
           );
 
           // Process results
           for (let i = 0; i < depAppNames.length; i++) {
             const depAppName = depAppNames[i];
             const result = depAppsResults[i];
-            
-            if (result.status === 'rejected') {
-              console.error(`Failed to resolve dependency ${depAppName}:`, result.reason);
+
+            if (result.status === "rejected") {
+              console.error(
+                `Failed to resolve dependency ${depAppName}:`,
+                result.reason,
+              );
               continue;
             }
-            
+
             const depApp = result.value;
             const depInfo = depAppNamesMap.get(depAppName);
             if (!depInfo) continue;

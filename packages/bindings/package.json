@@ -1,0 +1,51 @@
+{
+  "name": "@decocms/bindings",
+  "version": "0.1.6",
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "json-schema-diff": "^1.0.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.4"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./models": {
+      "source": "./src/well-known/models.ts",
+      "types": "./dist/well-known/models.d.ts",
+      "default": "./dist/well-known/models.js"
+    },
+    "./collections": {
+      "source": "./src/well-known/collections.ts",
+      "types": "./dist/well-known/collections.d.ts",
+      "default": "./dist/well-known/collections.js"
+    }
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
+

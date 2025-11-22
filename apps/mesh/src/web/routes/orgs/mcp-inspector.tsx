@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { fetcher } from "@/tools/client";
+import { fetcher, createConnectionToolCaller } from "@/tools/client";
 import { useMcp, type Tool, type Resource, type Prompt } from "use-mcp/react";
 import {
   Card,
@@ -318,7 +318,7 @@ export default function McpInspector() {
   const StatusIcon = statusBadge.icon;
 
   const handleInvokeTool = async () => {
-    if (!selectedTool || mcp.state !== "ready") return;
+    if (!selectedTool || !connectionId) return;
 
     setIsInvokingTool(true);
     setToolError(null);
@@ -326,7 +326,8 @@ export default function McpInspector() {
 
     try {
       const args = JSON.parse(toolArgs);
-      const result = await mcp.callTool(selectedTool.name, args);
+      const callTool = createConnectionToolCaller(connectionId as string);
+      const result = await callTool(selectedTool.name, args);
       setToolResult(result);
     } catch (error) {
       setToolError(error instanceof Error ? error.message : String(error));

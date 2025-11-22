@@ -4,24 +4,34 @@ import { MemoizedMarkdown } from "./chat/chat-markdown.tsx";
 import { Button } from "./button.tsx";
 import { Icon } from "./icon.tsx";
 import { useCopy } from "../hooks/use-copy.ts";
+import type { UIMessage } from "ai";
 
 export interface DecoChatMessageProps {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
+  message: UIMessage;
   isStreaming?: boolean;
   className?: string;
   timestamp?: string;
 }
 
 export const DecoChatMessage = memo(function DecoChatMessage({
-  id,
-  role,
-  content,
+  message,
   isStreaming,
   className,
   timestamp,
 }: DecoChatMessageProps) {
+  const { id, role } = message;
+  
+  // Extract content from either content field or parts array
+  const content = useMemo(() => {
+    if ("content" in message && typeof message.content === "string") {
+      return message.content;
+    }
+    return (
+      message.parts
+        ?.map((p: { type: string; text?: string }) => (p.type === "text" ? p.text : ""))
+        .join("") ?? ""
+    );
+  }, [message]);
   const { handleCopy } = useCopy();
   const isUser = role === "user";
 

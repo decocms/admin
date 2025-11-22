@@ -1,11 +1,137 @@
-import { Hono } from "hono";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createXai } from "@ai-sdk/xai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { convertToModelMessages, pruneMessages, streamText, tool } from "ai";
+import { Hono } from "hono";
+import { z } from "zod/v3";
 import type { MeshContext } from "../../core/mesh-context";
-import { OrganizationTools } from "../../tools";
 import type { MCPConnection } from "../../storage/types";
-import { AccessControl } from "../../core/access-control";
+import { ConnectionTools, OrganizationTools } from "../../tools";
+
+// Default values
+const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_MEMORY = 50; // last N messages to keep
+
+// System prompt for AI assistant with MCP connections
+const SYSTEM_PROMPT =
+  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+
+**Your Capabilities:**
+- Access to various MCP integrations and their tools
+- Ability to discover what tools are available on each connection
+- Execute tools from connected services to help users accomplish tasks
+
+**How to Work with Connections:**
+1. You have access to a list of available connections (each with an id, name, and description)
+2. To see what tools a connection provides, use READ_MCP_TOOLS with the connection id
+3. To execute a tool from a connection, use CALL_MCP_TOOL with the connectionId, toolName, and required arguments
+
+**Important Guidelines:**
+- Always check what tools are available before attempting to use them
+- Read tool schemas carefully to understand required inputs
+- Handle errors gracefully and explain issues to users
+- Be proactive in discovering and using the right tools for the task
+
+You are here to help users accomplish their goals by intelligently using the available MCP connections and tools.`;
+
+type ConnectionSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+// Helper to create MCP client for a connection
+async function createConnectionClient(connection: MCPConnection) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (connection.connectionToken) {
+    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  }
+
+  if (connection.connectionHeaders) {
+    Object.assign(headers, connection.connectionHeaders);
+  }
+
+  const transport = new StreamableHTTPClientTransport(
+    new URL(connection.connectionUrl),
+    {
+      requestInit: {
+        headers,
+      },
+    },
+  );
+
+  const client = new Client({
+    name: "mcp-mesh-models-stream",
+    version: "1.0.0",
+  });
+
+  await client.connect(transport);
+  return client;
+}
+
+// List all active connections for the organization (id, name, description only)
+async function listConnections(
+  ctx: MeshContext,
+  organizationId: string,
+): Promise<ConnectionSummary[]> {
+  const connections = await ctx.storage.connections.list(organizationId);
+
+  return connections
+    .filter((conn) => conn.status === "active")
+    .map((conn) => ({
+      id: conn.id,
+      name: conn.name,
+      description: conn.description,
+    }));
+}
+
+// Format connections for system prompt
+function formatAvailableConnections(connections: ConnectionSummary[]): string {
+  if (connections.length === 0) {
+    return "No connections available.";
+  }
+
+  return connections
+    .map(
+      (conn) =>
+        `- ${conn.name} (${conn.id}): ${conn.description || "No description"}`,
+    )
+    .join("\n");
+}
+
+const StreamRequestSchema = z.object({
+  messages: z.any(), // Complex type from frontend, keeping as any
+  model: z.string().optional(),
+  stream: z.boolean().optional(),
+  temperature: z.number().optional(),
+  maxOutputTokens: z.number().optional(),
+  maxWindowSize: z.number().optional(),
+  endpoint: z.object({
+    url: z.string(),
+    method: z.string().optional(),
+    contentType: z.string().optional(),
+    stream: z.boolean().optional(),
+  }),
+  provider: z.enum([
+    "openai",
+    "anthropic",
+    "google",
+    "xai",
+    "deepseek",
+    "openrouter",
+    "openai-compatible",
+  ]).optional(),
+});
+
+export type StreamRequest = z.infer<typeof StreamRequestSchema>;
 
 const app = new Hono<{ Variables: { meshContext: MeshContext } }>();
 
@@ -57,29 +183,6 @@ async function getBindingConnection(
   return connection;
 }
 
-async function authorizeConnectionTool(
-  ctx: MeshContext,
-  connectionId: string,
-  toolName: string,
-) {
-  // Session-based users inherit organization-level access. Authorization
-  // enforcement is only needed when acting via API keys which carry scoped permissions.
-  if (!ctx.auth.apiKey) {
-    return;
-  }
-
-  const accessControl = new AccessControl(
-    ctx.authInstance,
-    ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
-    toolName,
-    ctx.auth.apiKey?.permissions,
-    ctx.auth.user?.role,
-    connectionId,
-  );
-
-  await accessControl.check(toolName);
-}
-
 function buildConnectionHeaders(connection: MCPConnection) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -97,233 +200,113 @@ function buildConnectionHeaders(connection: MCPConnection) {
   return headers;
 }
 
-async function createConnectionClient(connection: MCPConnection) {
-  const headers = buildConnectionHeaders(connection);
-  const transport = new StreamableHTTPClientTransport(
-    new URL(connection.connectionUrl),
-    {
-      requestInit: {
-        headers,
-      },
-    },
-  );
-
-  const client = new Client({
-    name: "mcp-mesh-models",
-    version: "1.0.0",
-  });
-
-  await client.connect(transport);
-  return { client, headers };
-}
-
-function createProxyStream(
-  source: ReadableStream<Uint8Array>,
-  meta: { org: string; connectionId: string },
+function createProvider(
+  provider: string | undefined,
+  baseURL: string,
+  headers: Record<string, string>,
 ) {
-  const decoder = new TextDecoder();
-  let loggedPreview = false;
-
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      const reader = source.getReader();
-
-      function push() {
-        reader
-          .read()
-          .then(({ done, value }) => {
-            if (done) {
-              controller.close();
-              return;
-            }
-
-            if (value) {
-              controller.enqueue(value);
-
-              if (!loggedPreview) {
-                loggedPreview = true;
-                const preview = decoder
-                  .decode(value, { stream: false })
-                  .slice(0, 500);
-                console.info(
-                  "[models:stream] Upstream preview",
-                  JSON.stringify({
-                    org: meta.org,
-                    connectionId: meta.connectionId,
-                    preview,
-                  }),
-                );
-              }
-            }
-
-            push();
-          })
-          .catch((error) => {
-            console.error(
-              "[models:stream] Proxy stream read failed",
-              JSON.stringify({
-                org: meta.org,
-                connectionId: meta.connectionId,
-                error: error instanceof Error ? error.message : String(error),
-              }),
-            );
-            controller.error(error);
-          });
-      }
-
-      push();
-    },
-    cancel(reason) {
-      source.cancel?.(reason).catch(() => {});
-    },
-  });
+  switch (provider) {
+    case "anthropic":
+      return createAnthropic({ baseURL, apiKey: "", headers });
+    case "google":
+      return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
+    case "deepseek":
+      return createDeepSeek({ baseURL, apiKey: "", headers });
+    case "xai":
+      return createXai({ baseURL, apiKey: "", headers });
+    case "openrouter":
+      return createOpenRouter({
+        baseURL,
+        apiKey: "",
+        headers,
+        compatibility: "strict",
+      });
+    default:
+      // Default to OpenAI-compatible provider (covers OpenAI, etc.)
+      return createOpenAI({ baseURL, headers });
+  }
 }
 
-function extractJsonContent(result: unknown): unknown {
-  if (!result || typeof result !== "object") {
-    return result;
-  }
+// Create AI SDK tools for connection management
+function createConnectionTools(ctx: MeshContext) {
+  return {
+    READ_MCP_TOOLS: tool({
+      description:
+        "Get detailed information about a specific MCP connection, including all available tools with their schemas",
+      inputSchema: z.object({
+        id: z.string().describe("The connection ID"),
+      }),
+      execute: ({ id }) => ConnectionTools.CONNECTION_GET.execute({ id }, ctx),
+    }),
 
-  const maybeResult = result as {
-    content?: Array<{ type: string; text?: string; data?: unknown }>;
-    data?: unknown;
-  };
+    CALL_MCP_TOOL: tool({
+      description:
+        "Call a tool from a specific MCP connection. Use READ_MCP_TOOLS first to see available tools and their schemas.",
+      inputSchema: z.object({
+        connectionId: z.string().describe(
+          "The connection ID to call the tool on",
+        ),
+        toolName: z.string().describe("The name of the tool to call"),
+        arguments: z.record(z.string(), z.any()).describe(
+          "Arguments to pass to the tool",
+        ),
+      }),
+      execute: async ({ connectionId, toolName, arguments: args }) => {
+        // Get connection using existing tool
+        const connection = await ctx.storage.connections.findById(
+          connectionId,
+        );
 
-  if (Array.isArray(maybeResult.content)) {
-    for (const item of maybeResult.content) {
-      if (item?.type === "json" && item.data !== undefined) {
-        return item.data;
-      }
-      if (item?.type === "text" && item.text) {
-        try {
-          return JSON.parse(item.text);
-        } catch {
-          // ignore parse error and continue
+        if (!connection) {
+          throw new Error(`Connection not found: ${connectionId}`);
         }
-      }
-    }
-  }
 
-  if (maybeResult.data !== undefined) {
-    return maybeResult.data;
-  }
+        if (
+          !ctx.organization ||
+          connection.organizationId !== ctx.organization.id
+        ) {
+          throw new Error(
+            "Connection does not belong to the current organization",
+          );
+        }
 
-  return result;
+        if (connection.status !== "active") {
+          throw new Error(`Connection is ${connection.status}, not active`);
+        }
+
+        // Create MCP client and call tool (reusing helper)
+        let client: Client | null = null;
+        try {
+          client = await createConnectionClient(connection);
+          const result = await client.callTool(
+            { name: toolName, arguments: args },
+          );
+
+          return {
+            isError: result.isError || false,
+            content: result.content,
+          };
+        } catch (e) {
+          return {
+            isError: true,
+            content: [{
+              type: "text",
+              text: e instanceof Error ? e.message : "Unknown error",
+            }],
+          };
+        } finally {
+          try {
+            if (client && typeof client.close === "function") {
+              await client.close();
+            }
+          } catch {
+            // Ignore close errors
+          }
+        }
+      },
+    }),
+  };
 }
-
-app.get("/:org/models/list", async (c) => {
-  const ctx = c.get("meshContext");
-  const orgSlug = c.req.param("org");
-
-  try {
-    const organization = ensureOrganization(ctx, orgSlug);
-    const connection = await getBindingConnection(ctx, organization.id);
-
-    if (!connection) {
-      return c.json({ models: [] });
-    }
-
-    await authorizeConnectionTool(ctx, connection.id, "MODELS_LIST");
-
-    console.info(
-      "[models:list] Calling MODELS_LIST",
-      JSON.stringify({
-        org: orgSlug,
-        connectionId: connection.id,
-      }),
-    );
-
-    const { client } = await createConnectionClient(connection);
-    try {
-      const result = await client.callTool({
-        name: "MODELS_LIST",
-        arguments: {},
-      });
-
-      const data = extractJsonContent(result) as
-        | { models?: unknown }
-        | undefined;
-
-      console.info(
-        "[models:list] Received response",
-        JSON.stringify({
-          org: orgSlug,
-          connectionId: connection.id,
-          models: Array.isArray(data?.models) ? data?.models.length : 0,
-          firstModel: Array.isArray(data?.models) ? data.models[0]?.id : null,
-        }),
-      );
-
-      return c.json({ models: data?.models ?? [] });
-    } finally {
-      await client.close?.();
-    }
-  } catch (error) {
-    const err = error as Error;
-    console.error(
-      "[models:list] Failed",
-      JSON.stringify({
-        org: orgSlug,
-        error: err.message,
-      }),
-    );
-    return c.json({ error: err.message }, 400);
-  }
-});
-
-app.get("/:org/models/stream-endpoint", async (c) => {
-  const ctx = c.get("meshContext");
-  const orgSlug = c.req.param("org");
-
-  try {
-    const organization = ensureOrganization(ctx, orgSlug);
-    const connection = await getBindingConnection(ctx, organization.id);
-
-    if (!connection) {
-      return c.json({ url: null });
-    }
-
-    await authorizeConnectionTool(ctx, connection.id, "GET_STREAM_ENDPOINT");
-
-    const { client } = await createConnectionClient(connection);
-    try {
-      const result = await client.callTool({
-        name: "GET_STREAM_ENDPOINT",
-        arguments: {},
-      });
-
-      const data = extractJsonContent(result) as { url?: string } | undefined;
-
-      if (!data?.url) {
-        throw new Error("MODELS binding did not return a stream URL");
-      }
-
-      console.info(
-        "[models:stream-endpoint] Resolved endpoint",
-        JSON.stringify({
-          org: orgSlug,
-          connectionId: connection.id,
-          url: data.url,
-          connectionStatus: connection.status,
-        }),
-      );
-
-      return c.json({ url: data.url });
-    } finally {
-      await client.close?.();
-    }
-  } catch (error) {
-    const err = error as Error;
-    console.error(
-      "[models:stream-endpoint] Failed",
-      JSON.stringify({
-        org: orgSlug,
-        error: err.message,
-      }),
-    );
-    return c.json({ error: err.message }, 400);
-  }
-});
 
 app.post("/:org/models/stream", async (c) => {
   const ctx = c.get("meshContext");
@@ -331,131 +314,107 @@ app.post("/:org/models/stream", async (c) => {
 
   try {
     const organization = ensureOrganization(ctx, orgSlug);
-    const payload = await c.req.json();
-    const connection = await getBindingConnection(ctx, organization.id);
+    const [rawPayload, connection, connections] = await Promise.all([
+      c.req.json(),
+      getBindingConnection(ctx, organization.id),
+      listConnections(ctx, organization.id),
+    ]);
 
     if (!connection) {
       return c.json({ error: "MODELS binding not configured" }, 404);
     }
 
-    await authorizeConnectionTool(ctx, connection.id, "GET_STREAM_ENDPOINT");
-
-    const { client, headers } = await createConnectionClient(connection);
-    try {
-      const endpointResult = await client.callTool({
-        name: "GET_STREAM_ENDPOINT",
-        arguments: {},
-      });
-
-      const endpointData = extractJsonContent(endpointResult) as
-        | { url?: string }
-        | undefined;
-
-      if (!endpointData?.url) {
-        throw new Error("MODELS binding did not provide a streaming endpoint");
-      }
-
-      const payloadSummary = {
-        model: payload?.model,
-        stream: payload?.stream,
-        messages: Array.isArray(payload?.messages)
-          ? payload.messages.length
-          : 0,
-      };
-
-      console.info(
-        "[models:stream] Proxying request",
-        JSON.stringify({
-          org: orgSlug,
-          connectionId: connection.id,
-          url: endpointData.url,
-          payload: payloadSummary,
-          headers: {
-            hasAuthorization: Boolean(headers.Authorization),
-            forwardedKeys: Object.keys(headers),
-          },
-        }),
+    // Validate request using Zod schema
+    const parseResult = StreamRequestSchema.safeParse(rawPayload);
+    if (!parseResult.success) {
+      return c.json(
+        {
+          error: "Invalid request body",
+          details: parseResult.error.issues,
+        },
+        400,
       );
+    }
 
-      const streamHeaders = new Headers(headers);
-      streamHeaders.delete("x-deco-proxy-token");
-      streamHeaders.set("Content-Type", "application/json");
-      streamHeaders.set("Accept", "text/event-stream");
+    const payload = parseResult.data;
 
-      const upstreamResponse = await fetch(endpointData.url, {
-        method: "POST",
-        headers: streamHeaders,
-        body: JSON.stringify(payload),
-        signal: c.req.raw.signal,
-      });
+    const {
+      model,
+      messages,
+      endpoint,
+      provider: modelProvider,
+      temperature,
+      maxOutputTokens = DEFAULT_MAX_TOKENS,
+      maxWindowSize = DEFAULT_MEMORY,
+    } = payload;
 
-      console.info(
-        "[models:stream] Upstream response",
-        JSON.stringify({
-          org: orgSlug,
-          connectionId: connection.id,
-          status: upstreamResponse.status,
-          statusText: upstreamResponse.statusText,
-          contentType: upstreamResponse.headers.get("content-type"),
-          hasBody: Boolean(upstreamResponse.body),
-        }),
-      );
+    const headers = buildConnectionHeaders(connection);
 
-      if (!upstreamResponse.ok && upstreamResponse.status !== 206) {
-        const text = await upstreamResponse.text();
-
-        console.error(
-          "[models:stream] Upstream error",
-          JSON.stringify({
-            org: orgSlug,
-            connectionId: connection.id,
-            status: upstreamResponse.status,
-            detail: text.slice(0, 500),
-          }),
-        );
-
-        const status = upstreamResponse.status as ContentfulStatusCode;
-        return c.json(
-          {
-            error: "Streaming request failed",
-            detail: text,
-          },
-          status,
-        );
-      }
-
-      const responseHeaders = new Headers(upstreamResponse.headers);
-      responseHeaders.set("Cache-Control", "no-cache");
-      responseHeaders.delete("content-encoding");
-      responseHeaders.delete("Content-Encoding");
-      responseHeaders.delete("content-length");
-      responseHeaders.delete("Content-Length");
-      responseHeaders.delete("transfer-encoding");
-      responseHeaders.delete("Transfer-Encoding");
-
-      const upstreamBody = upstreamResponse.body;
-
-      if (!upstreamBody) {
-        return new Response(null, {
-          status: upstreamResponse.status,
-          statusText: upstreamResponse.statusText,
-          headers: responseHeaders,
-        });
-      }
-
-      const proxiedStream = createProxyStream(upstreamBody, {
+    console.info(
+      "[models:stream] Starting stream",
+      JSON.stringify({
         org: orgSlug,
         connectionId: connection.id,
-      });
+        model,
+        provider: modelProvider,
+        endpointUrl: endpoint.url,
+        messagesCount: messages.length,
+        maxOutputTokens,
+        maxWindowSize,
+        connectionsCount: connections.length,
+      }),
+    );
 
-      return new Response(proxiedStream, {
-        status: upstreamResponse.status,
-        statusText: upstreamResponse.statusText,
-        headers: responseHeaders,
-      });
-    } finally {
-      await client.close?.();
-    }
+    // Convert UIMessages to CoreMessages using AI SDK helper
+    const modelMessages = convertToModelMessages(messages);
+
+    // Prune messages to reduce context size
+    const prunedMessages = pruneMessages({
+      messages: modelMessages,
+      reasoning: "before-last-message",
+      emptyMessages: "remove",
+      toolCalls: "none",
+    }).slice(-maxWindowSize);
+
+    // Create provider based on the requested provider
+    const provider = createProvider(modelProvider, endpoint.url, headers);
+
+    // Build system prompt with available connections
+    const systemPrompt = [
+      SYSTEM_PROMPT,
+      `\nAvailable MCP Connections:\n${
+        formatAvailableConnections(connections)
+      }`,
+    ].join("\n");
+
+    // Create connection tools with MeshContext
+    const connectionTools = createConnectionTools(ctx);
+
+    // Use streamText from AI SDK with pruned messages and parameters
+    const result = streamText({
+      model: provider(model || "default"),
+      messages: prunedMessages,
+      system: systemPrompt,
+      tools: connectionTools,
+      temperature,
+      maxOutputTokens,
+      abortSignal: c.req.raw.signal,
+      onError: (error) => {
+        console.error("[models:stream] Error", error);
+      },
+      onFinish: (result) => {
+        console.log("[models:stream] Finish", result);
+      },
+      onAbort: (error) => {
+        console.error("[models:stream] Abort", error);
+      },
+      onChunk: (chunk) => {
+        console.log("[models:stream] Chunk", chunk);
+      },
+    });
+
+    // Return the stream using toTextStreamResponse
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     const err = error as Error;
     if (err.name === "AbortError") {
@@ -465,16 +424,17 @@ app.post("/:org/models/stream", async (c) => {
           org: orgSlug,
         }),
       );
-      return c.json({ error: "Streaming request aborted" }, 400);
+      return c.json({ error: "Request aborted" }, 400);
     }
     console.error(
       "[models:stream] Failed",
       JSON.stringify({
         org: orgSlug,
         error: err.message,
+        stack: err.stack,
       }),
     );
-    return c.json({ error: err.message }, 400);
+    return c.json({ error: err.message }, 500);
   }
 });
 

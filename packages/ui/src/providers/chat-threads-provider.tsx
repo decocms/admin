@@ -1,3 +1,4 @@
+import type { UIMessage } from "ai";
 import {
   createContext,
   useCallback,
@@ -10,7 +11,6 @@ import type {
   ContextItem,
   ThreadData,
   ThreadManagerState,
-  ChatMessage,
 } from "../types/chat-threads.ts";
 
 export interface ChatThreadsContextValue {
@@ -41,9 +41,9 @@ export interface ChatThreadsContextValue {
   setContextItems: (items: ContextItem[]) => void;
 
   // Messages management
-  messages: ChatMessage[];
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => string;
-  updateMessage: (id: string, updates: Partial<ChatMessage>) => void;
+  messages: UIMessage[];
+  addMessage: (message: Omit<UIMessage, "id">) => string;
+  updateMessage: (id: string, updates: Partial<UIMessage>) => void;
   clearMessages: () => void;
 }
 
@@ -252,11 +252,10 @@ export function ChatThreadsProvider({
 
   // Messages management
   const addMessage = useCallback(
-    (message: Omit<ChatMessage, "id" | "timestamp">): string => {
-      const newMessage: ChatMessage = {
+    (message: Omit<UIMessage, "id">): string => {
+      const newMessage: UIMessage = {
         ...message,
         id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
       };
 
       updateThreadState((prev) => {
@@ -284,7 +283,7 @@ export function ChatThreadsProvider({
   );
 
   const updateMessage = useCallback(
-    (id: string, updates: Partial<ChatMessage>) => {
+    (id: string, updates: Partial<UIMessage>) => {
       updateThreadState((prev) => {
         const thread = prev.threads[activeThreadId];
         if (!thread) {

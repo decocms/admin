@@ -3,6 +3,8 @@
  * Extracted from apps/web ThreadProvider for reusability across apps
  */
 
+import type { UIMessage } from "ai";
+
 export type ContextItemType = "rule" | "file" | "toolset" | "resource";
 
 export interface BaseContextItem {
@@ -57,16 +59,6 @@ export interface CanvasTab {
 }
 
 /**
- * Chat message - simplified version for thread history
- */
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: string;
-}
-
-/**
  * Thread data - stores ID, timestamps, visibility, tabs, context items, and messages
  */
 export interface ThreadData {
@@ -77,7 +69,7 @@ export interface ThreadData {
   tabs: CanvasTab[];
   activeTabId: string | null;
   contextItems?: ContextItem[]; // Only serializable items (rules, toolsets)
-  messages?: ChatMessage[]; // Chat history for this thread
+  messages?: UIMessage[]; // Chat history for this thread (using AI SDK format)
 }
 
 /**

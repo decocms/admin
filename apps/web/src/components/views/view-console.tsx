@@ -232,16 +232,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
   }, []);
 
   const handleCopyLogs = useCallback(() => {
-    const logText = logs
-      .map((log) => {
-        const time = formatTime(log.timestamp);
-        const source = log.source
-          ? ` [${log.source}:${log.line}:${log.column}]`
-          : "";
-        const stack = log.stack ? `\n${log.stack}` : "";
-        return `[${time}] ${log.type.toUpperCase()}: ${log.message}${source}${stack}`;
-      })
-      .join("\n\n");
+    const logText = logs.map((log) => formatLogEntry(log)).join("\n\n");
 
     navigator.clipboard
       .writeText(logText)
@@ -252,7 +243,7 @@ export function ViewConsole({ isOpen, onClose }: ViewConsoleProps) {
       .catch((err) => {
         console.error("Failed to copy logs:", err);
       });
-  }, [logs, formatTime]);
+  }, [logs]);
 
   // Filter logs
   const filteredLogs = logs.filter((log) => {

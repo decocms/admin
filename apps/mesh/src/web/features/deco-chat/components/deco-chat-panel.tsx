@@ -7,12 +7,8 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
-import {
-  ChatThreadsProvider,
-  useChatThreads,
-} from "@deco/ui/providers/chat-threads-provider.tsx";
-import type { ThreadManagerState } from "@deco/ui/types/chat-threads.ts";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
@@ -44,7 +40,7 @@ function DecoChatPanelInner() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Use thread management from ChatThreadsProvider
-  const { messages, addMessage, updateMessage, clearMessages } =
+  const { messages, addMessage, updateMessage, copyThreadTabs } =
     useChatThreads();
 
   // Convert thread messages to the format expected by DecoChatMessages
@@ -158,11 +154,6 @@ function DecoChatPanelInner() {
   const [selectedModelId, setSelectedModelId] = useLocalStorage<
     string | undefined
   >(`mesh:chat:selectedModel:${orgSlug}`, (existing) => existing);
-
-  const clearConversation = useCallback(() => {
-    setInput("");
-    clearMessages();
-  }, [clearMessages]);
 
   // Initialize with first model
   useEffect(() => {
@@ -333,12 +324,15 @@ function DecoChatPanelInner() {
             {!isEmpty && (
               <button
                 type="button"
-                onClick={clearConversation}
-                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
-                title="Clear conversation"
+                onClick={() => {
+                  // Create new thread (copies tabs from current)
+                  copyThreadTabs();
+                }}
+                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+                title="New chat"
               >
                 <Icon
-                  name="refresh"
+                  name="add"
                   size={16}
                   className="text-muted-foreground group-hover:text-foreground transition-colors"
                 />
@@ -421,43 +415,7 @@ function DecoChatPanelInner() {
   );
 }
 
-// Wrapper with ChatThreadsProvider
+// Export the inner panel without the provider wrapper
 export function DecoChatPanel() {
-  const { organization } = useCurrentOrganization();
-  const orgSlug = organization?.slug || "";
-
-  // Thread state persistence per organization
-  const [threadState, setThreadState] = useLocalStorage<ThreadManagerState>(
-    `mesh:chat-threads:${orgSlug}`,
-    (existing) => {
-      if (!existing) {
-        const defaultThreadId = crypto.randomUUID();
-        return {
-          threads: {
-            [defaultThreadId]: {
-              id: defaultThreadId,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              tabs: [],
-              activeTabId: null,
-              contextItems: [],
-              messages: [],
-            },
-          },
-          activeThreadId: defaultThreadId,
-        };
-      }
-      return existing;
-    },
-  );
-
-  return (
-    <ChatThreadsProvider
-      storageKey={`mesh:chat-threads:${orgSlug}`}
-      value={threadState}
-      onChange={setThreadState}
-    >
-      <DecoChatPanelInner />
-    </ChatThreadsProvider>
-  );
+  return <DecoChatPanelInner />;
 }

@@ -107,6 +107,7 @@ function createSDK(
 
   // Global SDK functions
   // @ts-ignore - This function will be stringified and run in the iframe context
+  // @ts-ignore - This function will be stringified and run in the iframe context
   window.callTool = async function (params: {
     integrationId: string;
     toolName: string;
@@ -190,6 +191,63 @@ function createSDK(
       console.error("Tool call error:", error);
       throw error;
     }
+  };
+
+  // @ts-ignore - This function will be stringified and run in the iframe context
+  window.navigate = function (url: string) {
+    if (!url || typeof url !== "string") {
+      throw new Error("navigate Error: url is required and must be a string.");
+    }
+
+    window.top?.postMessage(
+      {
+        type: "NAVIGATE",
+        payload: { url },
+      },
+      trustedOrigin,
+    );
+  };
+
+  // @ts-ignore - This function will be stringified and run in the iframe context
+  window.fetchView = async function (uri: string) {
+    if (!uri || typeof uri !== "string") {
+      throw new Error("fetchView Error: uri is required and must be a string.");
+    }
+
+    return new Promise((resolve, reject) => {
+      const requestId = Math.random().toString(36).substring(7);
+      
+      const handleResponse = (event: MessageEvent) => {
+        if (
+          event.data &&
+          event.data.type === "FETCH_VIEW_RESPONSE" &&
+          event.data.payload.requestId === requestId
+        ) {
+          window.removeEventListener("message", handleResponse);
+          if (event.data.payload.error) {
+            reject(new Error(event.data.payload.error));
+          } else {
+            resolve(event.data.payload.html);
+          }
+        }
+      };
+
+      window.addEventListener("message", handleResponse);
+
+      window.top?.postMessage(
+        {
+          type: "FETCH_VIEW",
+          payload: { uri, requestId },
+        },
+        trustedOrigin,
+      );
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        window.removeEventListener("message", handleResponse);
+        reject(new Error("fetchView timeout"));
+      }, 10000);
+    });
   };
 
   // Safe stringify helper that handles circular references

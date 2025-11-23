@@ -87,6 +87,9 @@ export function InternalResourceListWithIntegration({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [selectedViewType, setSelectedViewType] = useState<
+    "blank" | "grid" | "list"
+  >("blank");
 
   async function runSearch(term: string) {
     setLoading(true);
@@ -167,9 +170,10 @@ export function InternalResourceListWithIntegration({
     }
   }
 
-  function openCreateDialog() {
+  function openCreateDialog(type: "blank" | "grid" | "list" = "blank") {
     if (!caps.hasCreate) return;
     setCreateError(null); // Clear any previous errors
+    setSelectedViewType(type);
     setIsCreateDialogOpen(true);
   }
 
@@ -333,10 +337,29 @@ export function InternalResourceListWithIntegration({
             </Tooltip>
           </TooltipProvider>
           {caps.hasCreate && (
-            <Button onClick={openCreateDialog} variant="default">
-              <Icon name="add" />
-              Create
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default">
+                  <Icon name="add" />
+                  New view
+                  <Icon name="expand_more" className="ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openCreateDialog("blank")}>
+                  <Icon name="article" className="mr-2" />
+                  Blank View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openCreateDialog("grid")}>
+                  <Icon name="grid_view" className="mr-2" />
+                  Grid View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openCreateDialog("list")}>
+                  <Icon name="list" className="mr-2" />
+                  List View
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       }
@@ -564,6 +587,7 @@ export function InternalResourceListWithIntegration({
         isLoading={isCreating}
         error={createError}
         onClearError={() => setCreateError(null)}
+        initialViewType={selectedViewType}
       />
     </div>
   );

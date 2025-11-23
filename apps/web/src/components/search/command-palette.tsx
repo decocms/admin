@@ -2,8 +2,12 @@ import {
   useAgents,
   useDocuments,
   useIntegrations,
+  useIntegrationViews,
+  useIntegration,
+  callTool,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import {
   CommandDialog,
@@ -36,7 +40,7 @@ interface SearchResult {
   description?: string;
   icon?: string;
   avatar?: string;
-  type: "action" | "agent" | "app" | "document" | "thread";
+  type: "action" | "agent" | "app" | "document" | "thread" | "view";
   href?: string;
   threadId?: string;
   shortcut?: string;
@@ -47,7 +51,7 @@ interface SearchResult {
   };
 }
 
-type SearchCategory = "action" | "agent" | "app" | "document" | "thread";
+type SearchCategory = "action" | "agent" | "app" | "document" | "thread" | "view";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -84,6 +88,7 @@ export function CommandPalette({
   const [activeFilter, setActiveFilter] = useState<SearchCategory | null>(
     initialFilter || null,
   );
+  const [pickerMode, setPickerMode] = useState(false);
   const [threadTitles, setThreadTitles] = useState<Record<string, string>>({});
   const deferredSearch = useDeferredValue(search);
   const navigate = useNavigate();
@@ -93,6 +98,27 @@ export function CommandPalette({
   const { data: agents = [] } = useAgents();
   const { data: integrations = [] } = useIntegrations();
   const { data: documents = [] } = useDocuments();
+  const { data: views = [] } = useIntegrationViews({});
+
+  // Fetch user-created views
+  const viewsManagementIntegration = useIntegration("i:views-management").data;
+  const { data: userViews = [] } = useQuery({
+    queryKey: ["user-views", viewsManagementIntegration?.id],
+    enabled: !!viewsManagementIntegration,
+    queryFn: async () => {
+      if (!viewsManagementIntegration?.connection) return [];
+      try {
+        const result = await callTool(viewsManagementIntegration.connection, {
+          name: "DECO_RESOURCE_VIEW_SEARCH",
+          arguments: { pageSize: 100 }
+        });
+        return (result as any)?.structuredContent?.items || [];
+      } catch (e) {
+        console.error("Failed to fetch user views", e);
+        return [];
+      }
+    }
+  });
   const { getAllThreads, switchToThread } = useThread();
 
   const allThreads = useMemo(() => getAllThreads(), [getAllThreads]);
@@ -112,13 +138,13 @@ export function CommandPalette({
     // Add agents
     for (const agent of agents) {
       results.push({
-        id: `agent-${agent.id}`,
+        id: `agent - ${agent.id} `,
         title: agent.name,
         description: agent.description,
         icon: "robot_2",
         avatar: agent.avatar,
         type: "agent",
-        href: `/agent/${agent.id}/${crypto.randomUUID()}`,
+        href: `/ agent / ${agent.id}/${crypto.randomUUID()}`,
       });
     }
 
@@ -169,8 +195,43 @@ export function CommandPalette({
       });
     }
 
+    // Add user views
+    for (const view of userViews) {
+      const viewName = view.data?.name || view.name;
+      if (!viewName) continue;
+
+      results.push({
+        id: `user-view-${view.uri}`,
+        title: viewName,
+        description: view.data?.description || "User View",
+        icon: "dashboard",
+        type: "view",
+        href: `view://i:views-management/${viewName}`,
+        integration: {
+          id: "i:views-management",
+          name: "Views Management",
+        }
+      });
+    }
+
+    // Add views
+    for (const view of views) {
+      results.push({
+        id: `view-${view.integration.id}-${view.name}`,
+        title: view.title || view.name || "Untitled View",
+        description: (view as any).description || "View",
+        icon: view.icon || "article",
+        type: "view",
+        href: `view://${view.integration.id}/${view.name}`,
+        integration: {
+          id: view.integration.id,
+          name: view.integration.name, // Assuming integration object has name
+        }
+      });
+    }
+
     return results;
-  }, [agents, integrations, documents, allThreads, threadTitles]);
+  }, [agents, integrations, documents, allThreads, threadTitles, views, userViews]);
 
   // Filter results based on search and active filter
   const filteredResults = useMemo(() => {
@@ -199,6 +260,7 @@ export function CommandPalette({
       app: [],
       document: [],
       thread: [],
+      view: [],
     };
 
     for (const result of filteredResults) {
@@ -207,7 +269,10 @@ export function CommandPalette({
       } else if (result.type === "thread") {
         // Show all threads when searching
         groups.thread.push(result);
-      } else if (groups[result.type].length < 3) {
+      } else if (
+        activeFilter === result.type ||
+        groups[result.type].length < 3
+      ) {
         groups[result.type].push(result);
       }
     }
@@ -224,6 +289,17 @@ export function CommandPalette({
       type: result.type,
       title: result.title,
     });
+
+    if (pickerMode) {
+      const event = new CustomEvent("view-picked", {
+        detail: { uri: result.href },
+      });
+      window.dispatchEvent(event);
+      onOpenChange(false);
+      setSearch("");
+      setPickerMode(false);
+      return;
+    }
 
     if (result.type === "thread" && result.threadId) {
       switchToThread(result.threadId);
@@ -259,6 +335,15 @@ export function CommandPalette({
           icon: result.integration.icon,
         });
       }
+    } else if (result.type === "view") {
+      if (result.href) {
+        addTab({
+          type: "detail",
+          resourceUri: `rsc://i:views-management/view/${encodeURIComponent(result.href)}`,
+          title: result.title,
+          icon: result.icon,
+        });
+      }
     } else if (result.href) {
       // Fallback to navigation for other types
       if (result.href.startsWith("/")) {
@@ -287,12 +372,26 @@ export function CommandPalette({
     }
   }, [open, initialSearch, initialFilter]);
 
+  // Listen for open-view-picker event
+  useEffect(() => {
+    const handleOpenViewPicker = () => {
+      setPickerMode(true);
+      setActiveFilter("view");
+      setSearch("");
+      onOpenChange(true);
+    };
+
+    window.addEventListener("open-view-picker", handleOpenViewPicker);
+    return () => window.removeEventListener("open-view-picker", handleOpenViewPicker);
+  }, [onOpenChange]);
+
   const typeLabels = {
     action: "Actions",
     agent: "Agents",
     app: "Apps",
     document: "Documents",
     thread: "Threads",
+    view: "Views",
   };
 
   return (
@@ -321,7 +420,7 @@ export function CommandPalette({
 
         {/* Filter Tags */}
         <div className="px-3 py-2 border-b border-border flex items-center gap-2 flex-wrap">
-          {(["agent", "app", "document", "thread"] as SearchCategory[]).map(
+          {(["agent", "app", "document", "thread", "view"] as SearchCategory[]).map(
             (category) => {
               const isActive = activeFilter === category;
               return (
@@ -416,6 +515,14 @@ export function CommandPalette({
                         {result.type === "thread" && (
                           <Icon
                             name="chat_bubble"
+                            size={20}
+                            className="text-muted-foreground shrink-0"
+                          />
+                        )}
+
+                        {result.type === "view" && (
+                          <Icon
+                            name={result.icon || "article"}
                             size={20}
                             className="text-muted-foreground shrink-0"
                           />

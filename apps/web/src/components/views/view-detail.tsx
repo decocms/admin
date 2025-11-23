@@ -27,6 +27,7 @@ import { prepareIframeForScreenshot } from "../../utils/oklch-to-hex.ts";
 import { generateViewHTML } from "../../utils/view-template.ts";
 import { PreviewIframe } from "../agent/preview.tsx";
 import { useAgenticChat, type RuntimeErrorEntry } from "../chat/provider.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import {
   CodeAction,
@@ -236,6 +237,7 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;
   const { appendError, clearError } = useAgenticChat();
+  const { createTab } = useThread();
   const [isCodeViewerOpen, setIsCodeViewerOpen] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string | undefined>(undefined);
 
@@ -351,6 +353,93 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
         return;
       }
 
+      // Handle NAVIGATE messages
+      if (event.data.type === "NAVIGATE") {
+        const { url } = event.data.payload;
+        if (url) {
+          // Check if it's a view URI
+          if (url.startsWith("view://") || url.startsWith("legacy-view://")) {
+            createTab({
+              type: "detail",
+              resourceUri: url,
+              title: "Loading...", // Title will be updated when view loads
+            });
+          } else {
+            // External URL
+            window.open(url, "_blank");
+          }
+        }
+      }
+
+      // Handle FETCH_VIEW messages
+      if (event.data.type === "FETCH_VIEW") {
+        const { uri, requestId } = event.data.payload;
+
+        (async () => {
+          try {
+            if (!org || !project) {
+              throw new Error("Organization or project not found in context");
+            }
+
+            // Fetch the view data
+            const response = await fetch(
+              `${DECO_CMS_API_URL}/${org}/${project}/views/${encodeURIComponent(uri)}`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`Failed to fetch view: ${response.statusText}`);
+            }
+
+            const resource = (await response.json()) as any;
+            const view = resource.data || resource;
+
+            if (!view || !view.code) {
+              throw new Error("View not found or has no code");
+            }
+
+            const html = generateViewHTML(
+              view.code,
+              DECO_CMS_API_URL,
+              org,
+              project,
+              window.location.origin,
+              view.importmap,
+              theme?.variables as Record<string, string> | undefined
+            );
+
+            iframeRef.current?.contentWindow?.postMessage(
+              {
+                type: "FETCH_VIEW_RESPONSE",
+                payload: {
+                  requestId,
+                  html,
+                },
+              },
+              "*"
+            );
+
+          } catch (error) {
+            console.error("FETCH_VIEW error:", error);
+            iframeRef.current?.contentWindow?.postMessage(
+              {
+                type: "FETCH_VIEW_RESPONSE",
+                payload: {
+                  requestId,
+                  error: error instanceof Error ? error.message : "Unknown error",
+                },
+              },
+              "*"
+            );
+          }
+        })();
+      }
+
       // Handle Runtime Error messages
       if (event.data.type === "RUNTIME_ERROR") {
         const errorData = event.data.payload as RuntimeErrorEntry;
@@ -380,11 +469,103 @@ export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
           effectiveView?.name,
         );
       }
+
+      // Handle OPEN_VIEW_PICKER messages
+      if (event.data.type === "OPEN_VIEW_PICKER") {
+        window.dispatchEvent(new CustomEvent("open-view-picker"));
+      }
     }
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [resourceUri, effectiveView?.name, trustedOrigins]);
+
+
+
+  const addUriToView = useCallback((uri: string) => {
+    if (!uri || !effectiveView) return;
+
+    // Simple regex to find views prop default value: views = [...]
+    const viewsRegex = /views\s*=\s*\[([\s\S]*?)\]/;
+    const match = currentCode.match(viewsRegex);
+
+    if (match) {
+      const currentViewsContent = match[1];
+      // Check if already exists
+      if (
+        currentViewsContent.includes(`"${uri}"`) ||
+        currentViewsContent.includes(`'${uri}'`)
+      ) {
+        toast.info("View already added");
+        return;
+      }
+
+      const separator = currentViewsContent.trim() ? ", " : "";
+      const newViewsContent = `${currentViewsContent}${separator}"${uri}"`;
+      const newCode = currentCode.replace(
+        viewsRegex,
+        `views = [${newViewsContent}]`,
+      );
+
+      // Update the view
+      updateViewMutation
+        .mutateAsync({
+          uri: resourceUri,
+          params: {
+            name: effectiveView.name,
+            description: effectiveView.description,
+            code: newCode,
+            inputSchema: effectiveView.inputSchema,
+            importmap: effectiveView.importmap,
+            icon: effectiveView.icon,
+            tags: effectiveView.tags,
+          },
+        })
+        .then(() => {
+          toast.success(`Added view: ${uri}`);
+        })
+        .catch((err) => {
+          console.error("Failed to add view:", err);
+          toast.error("Failed to add view");
+        });
+    } else {
+      toast.error("Could not find 'views' array in code to update.");
+    }
+  }, [currentCode, effectiveView, resourceUri, updateViewMutation]);
+
+  // Listen for ADD_VIEW_URI messages (separate effect to handle code updates)
+  useEffect(() => {
+    function handleAddViewMessage(event: MessageEvent) {
+      // Validate origin
+      const isTrustedOrigin =
+        trustedOrigins.has(event.origin) ||
+        (typeof window !== "undefined" &&
+          event.origin === window.location.origin);
+
+      if (!isTrustedOrigin || !event.data || event.data.type !== "ADD_VIEW_URI") {
+        return;
+      }
+
+      const { uri } = event.data.payload;
+      addUriToView(uri);
+    }
+
+    window.addEventListener("message", handleAddViewMessage);
+    return () => window.removeEventListener("message", handleAddViewMessage);
+  }, [trustedOrigins, addUriToView]);
+
+  // Listen for view-picked event
+  useEffect(() => {
+    const handleViewPicked = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { uri } = customEvent.detail;
+      if (uri) {
+        addUriToView(uri);
+      }
+    };
+    window.addEventListener("view-picked", handleViewPicked);
+    return () => window.removeEventListener("view-picked", handleViewPicked);
+  }, [addUriToView]);
 
   // Clear errors when view changes
   useEffect(() => {

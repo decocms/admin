@@ -89,45 +89,4 @@ export function formatToolName(
  * Parse a namespaced tool name back into its components
  * @param namespacedName - The namespaced tool name (e.g., "i_workspace__TOOL_NAME" or "3ddd52b5-7ef9-40af-abc__TOOL_NAME")
  * @returns Object with integrationId and toolName, or null if format doesn't match
- *
- * IMPORTANT: This returns the TRUNCATED integration ID as it appears in the tool name.
- * For long UUIDs, this will be a shortened version (16-24 chars depending on tool name length).
- * Use resolveFullIntegrationId() to recover the full integration ID from available integrations.
  */
-function parseToolName(
-  namespacedName: string,
-): { integrationId: string; toolName: string } | null {
-  // Check if the name contains the double underscore separator
-  const separatorIndex = namespacedName.lastIndexOf(NAMESPACE_SEPARATOR);
-
-  if (separatorIndex === -1) {
-    // Not a namespaced name, return null for backward compatibility
-    return null;
-  }
-
-  const sanitizedIntegrationId = namespacedName.substring(0, separatorIndex);
-  const toolName = namespacedName.substring(
-    separatorIndex + NAMESPACE_SEPARATOR.length,
-  );
-
-  // Validate that we have both parts
-  if (!sanitizedIntegrationId || !toolName) {
-    return null;
-  }
-
-  // Restore colons in integration ID
-  // Integration IDs always follow pattern [ia]:[rest] (e.g., "i:workspace-management" or "a:uuid")
-  // Only replace the first underscore after the type prefix (i or a) with a colon
-  let integrationId = sanitizedIntegrationId.replace(/^([ia])_/, "$1:");
-
-  // If the normalized integration ID doesn't have a prefix, prepend "i:" (most common case)
-  // This handles cases where normalizeMCPId stripped the prefix before storing in toolsets
-  if (!integrationId.startsWith("i:") && !integrationId.startsWith("a:")) {
-    integrationId = `i:${integrationId}`;
-  }
-
-  return {
-    integrationId,
-    toolName,
-  };
-}

@@ -18,7 +18,6 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useCurrentTeam } from "../../sidebar/team-selector.tsx";
-import { useGroupedApp } from "../apps.ts";
 
 // V2 Views UI with add/remove functionality
 export function ViewsV2UI({ integration }: { integration: Integration }) {
@@ -235,47 +234,6 @@ export function ViewsV2UI({ integration }: { integration: Integration }) {
 }
 
 // Legacy Views (v1) moved here
-function ViewBindingDetector({ integration }: { integration: Integration }) {
-  const [isViewBinding, setIsViewBinding] = useState<boolean | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-
-  const checkViewBinding = async () => {
-    if (!integration) return;
-    setIsChecking(true);
-    try {
-      const toolsData = await listTools(integration.connection);
-      const isViewBindingResult = Binding(
-        WellKnownBindings.View,
-      ).isImplementedBy(toolsData.tools);
-      setIsViewBinding(isViewBindingResult);
-    } catch (error) {
-      console.error("Error checking view binding:", error);
-      setIsViewBinding(false);
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  useEffect(() => {
-    checkViewBinding();
-  }, [integration?.id]);
-
-  if (!integration || isChecking) {
-    return (
-      <div className="w-full flex flex-col items-center gap-4">
-        <div className="w-full flex items-center justify-center p-4">
-          <Skeleton className="h-4 w-32" />
-        </div>
-      </div>
-    );
-  }
-
-  if (isViewBinding === null || isViewBinding === false) {
-    return null;
-  }
-
-  return <ViewsList integration={integration} />;
-}
 
 function ViewsList({ integration }: { integration: Integration }) {
   const currentTeam = useCurrentTeam();
@@ -454,26 +412,4 @@ function ViewsList({ integration }: { integration: Integration }) {
       </div>
     </div>
   );
-}
-
-function ViewBindingSection({
-  data,
-  selectedConnectionId,
-}: {
-  data: ReturnType<typeof useGroupedApp>;
-  selectedConnectionId?: string;
-}) {
-  const selectedIntegration = useMemo(() => {
-    return (
-      data.instances?.find((i) => i.id === selectedConnectionId) ??
-      data.instances?.[0] ??
-      null
-    );
-  }, [data.instances, selectedConnectionId]);
-
-  if (!selectedIntegration) {
-    return null;
-  }
-
-  return <ViewBindingDetector integration={selectedIntegration} />;
 }

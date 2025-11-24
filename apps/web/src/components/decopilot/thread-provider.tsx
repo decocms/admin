@@ -994,10 +994,6 @@ export function buildAppUri(appKey: string): string {
   return `app://${appKey}`;
 }
 
-function buildAgentsListUri(): string {
-  return "agents://list";
-}
-
 export function buildAgentUri(agentId: string, threadId: string): string {
   return `agent://${agentId}/${threadId}`;
 }

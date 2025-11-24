@@ -1,10 +1,4 @@
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useRef,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useRef, useState } from "react";
 import { ProfileSettings } from "./settings/profile.tsx";
 
 // Context for profile modal
@@ -16,14 +10,6 @@ interface ProfileModalContextType {
 const ProfileModalContext = createContext<ProfileModalContextType | undefined>(
   undefined,
 );
-
-function useProfileModalContext() {
-  const ctx = useContext(ProfileModalContext);
-  if (!ctx) {
-    throw new Error("useProfileModal must be used within ProfileModalContext");
-  }
-  return ctx;
-}
 
 export function useProfileModal() {
   const [profileOpen, setProfileOpen] = useState(false);

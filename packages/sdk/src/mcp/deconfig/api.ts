@@ -886,12 +886,6 @@ export const DECONFIG_TOOLS = [
  * @param input - The string to slugify
  * @returns The slugified string
  */
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-") // Replace spaces and underscores with dashes
-    .replace(/[^a-z0-9-]/g, ""); // Remove all non-alphanumeric except leading/trailing dashes
-}
 
 export { Blobs } from "./blobs.ts";
 export { Branch } from "./branch.ts";

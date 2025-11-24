@@ -90,9 +90,6 @@ export const agentKnowledgeBasePath = (agentId: string) =>
 const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
   `${agentKnowledgeBasePath(agentId)}/${path}`;
 
-const useAgentKnowledgeRootPath = (agentId: string) =>
-  useMemo(() => agentKnowledgeBasePath(agentId), [agentId]);
-
 export interface UploadFile {
   file: File;
   fileUrl?: string;

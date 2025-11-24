@@ -430,26 +430,3 @@ export function AuditListContent({
     </div>
   );
 }
-
-function AuditListErrorFallback() {
-  return (
-    <div className="flex justify-center items-center h-64">
-      <Alert variant="destructive" className="max-w-xl">
-        <AlertTitle>Error loading activity</AlertTitle>
-        <AlertDescription>
-          Something went wrong while loading the activity data.
-        </AlertDescription>
-      </Alert>
-    </div>
-  );
-}
-
-function AuditList() {
-  return (
-    <div className="h-full w-full text-foreground overflow-x-auto p-4 flex flex-col gap-2">
-      <ErrorBoundary fallback={<AuditListErrorFallback />}>
-        <AuditListContent />
-      </ErrorBoundary>
-    </div>
-  );
-}

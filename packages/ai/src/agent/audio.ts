@@ -1,17 +1,8 @@
 import {
-  UIMessage,
   experimental_transcribe as transcribe,
   experimental_generateSpeech as generateSpeech,
 } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { Buffer } from "node:buffer";
-import type { AudioMessage } from "../types.ts";
-
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
-
-function isAudioMessage(message: UIMessage): message is AudioMessage {
-  return "audioBase64" in message && typeof message.audioBase64 === "string";
-}
 
 const DEFAULT_TEXT_TO_SPEECH_MODEL = "tts-1";
 const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";

@@ -39,7 +39,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";

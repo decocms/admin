@@ -34,60 +34,6 @@ interface ConnectIntegrationModalProps {
   onClose: () => void;
 }
 
-function SetupIntegrationModal({
-  open,
-  integration,
-  createdIntegrationId,
-  loading,
-  onConnect,
-  onEdit,
-  onClose,
-}: ConnectIntegrationModalProps) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Connect to {integration?.friendlyName ?? integration?.name}
-          </DialogTitle>
-          <DialogDescription>
-            <div className="mt-4">
-              <div className="grid grid-cols-[80px_1fr] items-start gap-4">
-                <IntegrationIcon
-                  icon={integration?.icon}
-                  name={integration?.friendlyName ?? integration?.name}
-                />
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    {integration?.description}
-                  </div>
-                  {createdIntegrationId && (
-                    <div className="font-bold mt-4">
-                      The integration has been installed successfully. Click the
-                      button below to configure it.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          {loading ? (
-            <Button disabled={loading}>Connecting...</Button>
-          ) : createdIntegrationId ? (
-            <div className="flex gap-3">
-              <Button onClick={onEdit}>Configure</Button>
-            </div>
-          ) : (
-            <Button onClick={onConnect}>Connect</Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function VerifiedBadge() {
   return (
     <div className="relative w-4 h-4">

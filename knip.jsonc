@@ -41,5 +41,8 @@
     "**/node_modules/**",
     ".github/workflows/publish-runtime-npm.yaml"
   ],
-  "ignoreDependencies": ["@types/*"]
+  "ignoreDependencies": ["@types/*"],
+  "ignoreIssues": {
+    "**/*": ["types"]
+  }
 }

@@ -30,6 +30,7 @@ export * from "./hooks/audit.ts";
 export * from "./hooks/fs.ts";
 export * from "./hooks/knowledge.ts";
 export * from "./hooks/mcp.ts";
+export * from "./hooks/registry-spec.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/models.ts";
 export * from "./hooks/secrets.ts";
@@ -96,6 +97,10 @@ export {
   ViewDefinitionSchema,
   type ViewDefinition,
 } from "./mcp/views/schemas.ts";
+
+export * from "./mcp/registry-spec/schema.ts";
+export * from "./mcp/registry-spec/adapter.ts";
+export * from "./mcp/registry-spec/compat.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

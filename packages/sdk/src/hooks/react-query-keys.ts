@@ -342,6 +342,19 @@ export const KEYS = {
     appName,
     "schema",
   ],
+
+  // MCP Registry Spec - Marketplace
+  MCP_REGISTRY_MARKETPLACE: () => ["mcp-registry", "marketplace"],
+  MCP_REGISTRY_SEARCH: (query: string) => ["mcp-registry", "search", query],
+  MCP_REGISTRY_SERVER: (id: string) => ["mcp-registry", "server", id],
+  MCP_REGISTRY_BY_BINDING: (binding: string) => [
+    "mcp-registry",
+    "binding",
+    binding,
+  ],
+  MCP_REGISTRY_BY_TAG: (tag: string) => ["mcp-registry", "tag", tag],
+  MCP_REGISTRY_VERIFIED: () => ["mcp-registry", "verified"],
+  MCP_REGISTRY_FEATURED: () => ["mcp-registry", "featured"],
   TOOLS_SIMPLE: () => ["tools"],
   MCP_TOOLS: (connection: MCPConnection, ignoreCache?: boolean) => {
     const identifier =

@@ -1,4 +1,9 @@
-import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
+import {
+  type MCPRegistryServer,
+  useMCPRegistryMarketplace,
+  type MarketplaceIntegrationCompat,
+  toDeskCompatibleMarketplaceIntegration,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
@@ -18,11 +23,8 @@ import {
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
 
-export interface MarketplaceIntegration extends Integration {
-  provider: string;
-  friendlyName?: string;
-  verified?: boolean | null;
-}
+// Export for compatibility with existing code
+export type MarketplaceIntegration = MarketplaceIntegrationCompat;
 
 interface ConnectIntegrationModalProps {
   open: boolean;
@@ -48,14 +50,14 @@ export function SetupIntegrationModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Connect to {integration?.friendlyName ?? integration?.name}
+            Connect to {integration?.name}
           </DialogTitle>
           <DialogDescription>
             <div className="mt-4">
               <div className="grid grid-cols-[80px_1fr] items-start gap-4">
                 <IntegrationIcon
                   icon={integration?.icon}
-                  name={integration?.friendlyName ?? integration?.name}
+                  name={integration?.name}
                 />
                 <div>
                   <div className="text-sm text-muted-foreground">
@@ -110,40 +112,56 @@ export function VerifiedBadge() {
 }
 
 function CardsView({
-  integrations,
+  servers,
   onRowClick,
 }: {
-  integrations: MarketplaceIntegration[];
-  onRowClick: (integration: MarketplaceIntegration) => void;
+  servers: MarketplaceIntegration[];
+  onRowClick: (server: MarketplaceIntegration) => void;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-      {integrations.map((integration) => {
+      {servers.map((server) => {
         const showVerifiedBadge =
-          integration.id !== NEW_CUSTOM_CONNECTION.id && integration.verified;
+          server.id !== NEW_CUSTOM_CONNECTION.id && server.verified;
         return (
           <Card
-            key={integration.id}
+            key={server.id}
             className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
-            onClick={() => onRowClick(integration)}
+            onClick={() => onRowClick(server)}
           >
             <CardContent className="p-4">
               <div className="grid grid-cols-[min-content_1fr] gap-4">
                 <IntegrationIcon
-                  icon={integration.icon}
-                  name={integration.friendlyName ?? integration.name}
+                  icon={server.icon}
+                  name={server.friendlyName || server.name}
                   className="h-10 w-10"
                 />
                 <div className="grid grid-cols-1 gap-1">
                   <div className="flex items-start gap-1">
                     <div className="text-sm font-semibold truncate">
-                      {integration.friendlyName ?? integration.name}
+                      {server.friendlyName || server.name}
                     </div>
                     {showVerifiedBadge && <VerifiedBadge />}
                   </div>
                   <div className="text-sm text-muted-foreground line-clamp-3">
-                    {integration.description}
+                    {server.description}
                   </div>
+                  {/* Mostrar tags se disponível */}
+                  {server.tags && server.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {server.tags
+                        .filter((tag) => tag !== "verified" && tag !== "deco")
+                        .slice(0, 2)
+                        .map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-xs bg-secondary px-2 py-0.5 rounded"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -159,8 +177,12 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   name: "Create custom integration",
   description: "Create a new integration with any MCP server",
   icon: "",
+  author: { name: "deco" },
+  verified: true,
+  capabilities: [],
+  tags: ["custom"],
   provider: "deco",
-  connection: { type: "HTTP", url: "" },
+  friendlyName: "Create custom integration",
 };
 
 export function Marketplace({
@@ -169,41 +191,48 @@ export function Marketplace({
   emptyState,
 }: {
   filter: string;
-  onClick: (integration: MarketplaceIntegration) => void;
+  onClick: (server: MarketplaceIntegration) => void;
   emptyState?: React.ReactNode;
 }) {
-  const { data: marketplace } = useMarketplaceIntegrations();
+  const { data: marketplace } = useMCPRegistryMarketplace();
 
-  const filteredIntegrations = useMemo(() => {
+  const filteredServers = useMemo(() => {
     const searchTerm = filter.toLowerCase();
-    const integrations = [
+    // Converter para formato compatível com código antigo
+    const compatServers: MarketplaceIntegration[] = [
       NEW_CUSTOM_CONNECTION,
-      ...(marketplace?.integrations ?? []),
+      ...(marketplace?.servers?.map(toDeskCompatibleMarketplaceIntegration) ??
+        []),
     ];
 
     return filter
-      ? integrations.filter(
-          (integration: MarketplaceIntegration) =>
-            integration.name.toLowerCase().includes(searchTerm) ||
-            (integration.description?.toLowerCase() ?? "").includes(
+      ? compatServers.filter(
+          (server: MarketplaceIntegration) =>
+            server.name.toLowerCase().includes(searchTerm) ||
+            (server.description?.toLowerCase() ?? "").includes(
               searchTerm,
             ) ||
-            integration.provider.toLowerCase().includes(searchTerm) ||
-            (integration.friendlyName?.toLowerCase() ?? "").includes(
+            (server.provider?.toLowerCase() ?? "").includes(
               searchTerm,
+            ) ||
+            (server.friendlyName?.toLowerCase() ?? "").includes(
+              searchTerm,
+            ) ||
+            server.tags?.some((tag) =>
+              tag.toLowerCase().includes(searchTerm),
             ),
         )
-      : integrations;
+      : compatServers;
   }, [marketplace, filter]);
 
-  if (filteredIntegrations.length === 0 && emptyState) {
+  if (filteredServers.length === 0 && emptyState) {
     return emptyState;
   }
 
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="flex-1 min-h-0 overflow-x-auto">
-        <CardsView integrations={filteredIntegrations} onRowClick={onClick} />
+        <CardsView servers={filteredServers} onRowClick={onClick} />
       </div>
     </div>
   );

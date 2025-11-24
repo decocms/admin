@@ -33,7 +33,7 @@ import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
 import { useCopy } from "../../hooks/use-copy.ts";
 
-export const useCurrentTeamRoles = () => {
+const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
   const { data: team } = useTeam(slug);
   const teamId = team?.id;

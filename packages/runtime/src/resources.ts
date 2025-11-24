@@ -40,7 +40,7 @@ function extractExtension(value: string): string | undefined {
 }
 
 // Base Resource Schema (enhanced)
-export const ResourceSchema = z.object({
+const ResourceSchema = z.object({
   name: z.string(),
   title: z.string().optional(),
   description: z.string().optional(),
@@ -147,7 +147,7 @@ export const ResourcesListOutputSchema = z.object({
 });
 
 // Export Types
-export type Resource = z.infer<typeof ResourceSchema>;
+export type Resource = z.infer<typeof ResourceCreateOutputSchema>;
 export type ResourcesReadInput = z.infer<typeof ResourcesReadInputSchema>;
 export type ResourcesReadOutput = z.infer<typeof ResourcesReadOutputSchema>;
 export type ResourcesSearchInput = z.infer<typeof ResourceSearchInputSchema>;

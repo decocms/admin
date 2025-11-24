@@ -231,5 +231,3 @@ export function AgentsResourceList({
     </>
   );
 }
-
-export default AgentsResourceList;

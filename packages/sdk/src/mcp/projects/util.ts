@@ -44,7 +44,7 @@ export async function getOrgIdFromContext(
   return org?.id ?? null;
 }
 
-export function buildWorkspaceOrProjectIdConditions({
+function buildWorkspaceOrProjectIdConditions({
   workspace,
   projectId,
 }: {

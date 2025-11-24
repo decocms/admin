@@ -7,7 +7,7 @@ import { getInviteEmailTemplate } from "./invite-email-template.ts";
 
 // Email sending functionality
 
-export function sanitizeTeamName(name: string): string {
+function sanitizeTeamName(name: string): string {
   return name.replace(/[<>&'"]/g, "");
 }
 
@@ -18,7 +18,7 @@ export interface EmailBodyProps {
   roles: Array<string>;
 }
 
-export function generateEmailBody({
+function generateEmailBody({
   inviteId,
   teamName,
   inviter,

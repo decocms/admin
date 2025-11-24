@@ -6,7 +6,7 @@ import {
 } from "../constants.ts";
 import { onUserChange } from "./use-user.ts";
 
-export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY ?? "", {
+const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY ?? "", {
   api_host: POSTHOG_ORIGIN,
   person_profiles: "always",
   capture_pageview: false,

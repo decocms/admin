@@ -21,23 +21,11 @@
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",
     "@openrouter/ai-sdk-provider": "^1.2.0",
-    "@supabase/ssr": "0.6.1",
-    "@supabase/supabase-js": "2.49.4",
     "ai": "^5.0.61",
-    "cloudflare": "^4.5.0",
     "croner": "^9.0.0",
-    "eventsource-parser": "^3.0.0",
     "hono": "^4.7.9",
-    "json-schema-to-zod": "^2.6.1",
-    "nanoid": "^5.1.4",
-    "secure-json-parse": "^4.0.0",
-    "unpdf": "^1.0.5",
-    "uuid": "^11.1.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.4"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250319.0"
   },
   "exports": {
     ".": "./src/index.ts",

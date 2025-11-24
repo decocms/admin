@@ -13,15 +13,23 @@
         "ajv"
       ]
     },
+    "apps/outbound": {
+      "ignoreDependencies": ["cloudflare"]
+    },
     "packages/runtime": {
-      "ignoreFiles": [
-        // Used on CI, not detected by knip atm
-        "scripts/generate-json-schema.ts"
-      ]
+      "entry": ["scripts/generate-json-schema.ts"],
+      "ignoreDependencies": ["cloudflare"]
+    },
+    "packages/ui": {
+      "ignore": ["src/styles/global.css"]
     },
     "packages/sdk": {
       // TODO: Check if we really need this observability folder
-      "ignore": ["src/observability/**/*"]
+      "ignore": ["src/observability/**/*"],
+      "ignoreDependencies": ["@microlabs/otel-cf-workers"]
+    },
+    "apps/mesh": {
+      "entry": ["src/web/index.tsx", "migrations/**/*.ts", "scripts/**/*.ts"]
     }
   },
   "ignore": [
@@ -30,7 +38,11 @@
     "**/*.test.tsx",
     "**/test/**",
     "**/dist/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    ".github/workflows/publish-runtime-npm.yaml"
   ],
-  "ignoreDependencies": ["@types/*"]
+  "ignoreDependencies": ["@types/*"],
+  "ignoreIssues": {
+    "**/*": ["types"]
+  }
 }

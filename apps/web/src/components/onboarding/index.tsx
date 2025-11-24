@@ -815,7 +815,7 @@ function SelectOrg() {
  *
  * Main entry point for /new route
  */
-export function OnboardingPage() {
+function OnboardingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const teams = useOrganizations({});

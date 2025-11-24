@@ -104,7 +104,7 @@ export type RoleFormData = z.infer<typeof RoleFormDataSchema>;
 export type ToolPermission = z.infer<typeof ToolPermissionSchema>;
 type ToolsMap = z.infer<typeof ToolsSchema>;
 
-export const sanitizeTeamName = (name: string): string => {
+const sanitizeTeamName = (name: string): string => {
   if (!name) return "";
   const nameWithoutAccents = removeNameAccents(name);
   return nameWithoutAccents
@@ -113,7 +113,7 @@ export const sanitizeTeamName = (name: string): string => {
     .replace(/[^\w\s\-.+@]/g, "");
 };
 
-export const getAvatarFromTheme = (
+const getAvatarFromTheme = (
   theme: Json,
   createSignedUrl: (path: string) => Promise<string>,
 ): Promise<string | undefined> => {
@@ -132,11 +132,11 @@ export const getAvatarFromTheme = (
   return Promise.resolve(undefined);
 };
 
-export const removeNameAccents = (name: string): string => {
+const removeNameAccents = (name: string): string => {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
-export const buildSignedUrlCreator = ({
+const buildSignedUrlCreator = ({
   c,
   existingBucketName,
 }: {

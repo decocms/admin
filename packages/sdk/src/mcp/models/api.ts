@@ -50,7 +50,7 @@ const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
   };
 };
 
-export const createModelSchema = z.object({
+const createModelSchema = z.object({
   name: z.string(),
   model: z.string(),
   apiKey: z.string().optional(),
@@ -114,7 +114,7 @@ export const createModel = createTool({
   },
 });
 
-export const updateModelSchema = z.object({
+const updateModelSchema = z.object({
   id: z.string(),
   data: z.object({
     name: z.string().optional(),
@@ -199,7 +199,7 @@ export const updateModel = createTool({
   },
 });
 
-export const deleteModelSchema = z.object({
+const deleteModelSchema = z.object({
   id: z.string(),
 });
 
@@ -226,14 +226,14 @@ export const deleteModel = createTool({
   },
 });
 
-export const listModelsSchema = z.object({
+const listModelsSchema = z.object({
   excludeDisabled: z.boolean().optional(),
   excludeAuto: z.boolean().optional(),
 });
 
 export type ListModelsInput = z.infer<typeof listModelsSchema>;
 
-export const listModelsForWorkspace = async ({
+const listModelsForWorkspace = async ({
   c,
   options,
 }: {
@@ -305,7 +305,7 @@ export const listModels = createTool({
   },
 });
 
-export const getModelSchema = z.object({
+const getModelSchema = z.object({
   id: z.string(),
 });
 

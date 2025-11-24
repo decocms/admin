@@ -2,7 +2,7 @@
  * Check if a string is a valid URL or data URI
  * Uses URL.canParse() when available, falls back to regex for broader compatibility
  */
-export function isUrlLike(path?: string): boolean {
+function isUrlLike(path?: string): boolean {
   if (!path) return false;
 
   // Handle data URIs

@@ -47,7 +47,7 @@ const ensureBucketCorsConfiguration = async (
   });
 };
 
-export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
+const ensureBucketExists = async (c: AppContext, bucketName: string) => {
   const { cf } = c;
   const env = getEnv(c);
 

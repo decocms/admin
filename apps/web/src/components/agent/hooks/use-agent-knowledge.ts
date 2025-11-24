@@ -49,7 +49,7 @@ export const useAgentKnowledgeIntegration = ({
   };
 };
 
-export const useCreateAgentKnowledgeIntegration = ({
+const useCreateAgentKnowledgeIntegration = ({
   setIntegrationTools,
   agent,
 }: UseAgentKnowledgeIntegrationProps) => {
@@ -89,9 +89,6 @@ export const agentKnowledgeBasePath = (agentId: string) =>
 
 const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
   `${agentKnowledgeBasePath(agentId)}/${path}`;
-
-export const useAgentKnowledgeRootPath = (agentId: string) =>
-  useMemo(() => agentKnowledgeBasePath(agentId), [agentId]);
 
 export interface UploadFile {
   file: File;

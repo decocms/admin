@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node dev.mjs",
-    "stripe:test": "stripe fixtures testing/stripe/fixtures/workspace-wallet-deposit.json"
+    "dev": "node dev.mjs"
   },
   "dependencies": {
     "@ai-sdk/ui-utils": "^1.2.11",
@@ -29,8 +28,7 @@
     "zod-from-json-schema": "^0.0.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250620.0",
-    "supabase": "^2.22.12"
+    "@cloudflare/workers-types": "^4.20250620.0"
   },
   "engines": {
     "node": ">=24.0.0"

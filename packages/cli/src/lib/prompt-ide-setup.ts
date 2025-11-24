@@ -135,28 +135,7 @@ export async function writeIDEConfig(configs: IDEConfig[]): Promise<void> {
   console.log(`✅ IDE configuration written to: ${targetDir}`);
 }
 
-export const hasMCPPreferences = async (workspace: string, app: string) => {
-  const [appUUID, currentVersion] = await Promise.all([
-    getAppUUID(workspace, app),
-    getMCPConfigVersion(),
-  ]);
-
-  // Use a simple file-based storage instead of localStorage for Node.js
-  const prefsPath = join(process.cwd(), ".deco", "preferences.json");
-
-  try {
-    const prefs = JSON.parse(await fs.readFile(prefsPath, "utf-8")) as Record<
-      string,
-      string
-    >;
-    const storedVersion = prefs[`mcp-install-version-${appUUID}`];
-    return storedVersion === currentVersion;
-  } catch {
-    return false;
-  }
-};
-
-export const setMCPPreferences = async (workspace: string, app: string) => {
+const setMCPPreferences = async (workspace: string, app: string) => {
   const [appUUID, currentVersion] = await Promise.all([
     getAppUUID(workspace, app),
     getMCPConfigVersion(),

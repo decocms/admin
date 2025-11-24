@@ -42,7 +42,7 @@ function slugify(name: string) {
   return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 }
 
-export function format(content: string): Promise<string> {
+function format(content: string): Promise<string> {
   try {
     return prettier.format(content, {
       parser: "babel-ts",

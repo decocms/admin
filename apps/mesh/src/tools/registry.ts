@@ -76,10 +76,3 @@ export function getToolsByCategory() {
 
   return grouped;
 }
-
-/**
- * Get tool metadata by name
- */
-export function getToolMetadata(name: string): ToolMetadata | undefined {
-  return MANAGEMENT_TOOLS.find((t) => t.name === name);
-}

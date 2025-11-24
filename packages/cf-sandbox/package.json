@@ -10,8 +10,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@jitl/quickjs-ng-wasmfile-release-asyncify": "^0.31.0",
-    "@jitl/quickjs-wasmfile-release-asyncify": "^0.31.0",
     "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
     "quickjs-emscripten-core": "^0.31.0"
   },

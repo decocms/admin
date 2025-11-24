@@ -9,7 +9,7 @@ export const isRequired = <T>(value: T): value is NonNullable<T> => {
  * @param assertion - The assertion function
  * @returns The property value if it is a specific type
  */
-export const prop = <T>(
+const prop = <T>(
   val: unknown,
   key: string,
   assertion: (val: unknown) => val is T,
@@ -46,16 +46,3 @@ export const strProp = <T>(val: T, key: string) => {
 export const arrayProp = <Elements = string>(val: unknown, key: string) => {
   return prop(val, key, (val): val is Elements[] => Array.isArray(val));
 };
-
-/**
- * Get the stack trace
- * @returns The stack trace
- */
-export function getStack() {
-  const obj: { stack?: string } = {};
-  if ("captureStackTrace" in Error) {
-    // Avoid getStack itself in the stack trace
-    Error.captureStackTrace(obj, getStack);
-  }
-  return obj.stack;
-}

@@ -10,16 +10,3 @@ export const formatFilename = (filename: string) => {
     "untitled"
   );
 };
-
-/**
- * Formats a resource name from SCREAMING_SNAKE_CASE to Title Case
- * @example formatResourceName("WORKFLOW_RUN") // "Workflow Run"
- * @example formatResourceName("DOCUMENT") // "Document"
- */
-export function formatResourceName(resourceName: string): string {
-  return resourceName
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}

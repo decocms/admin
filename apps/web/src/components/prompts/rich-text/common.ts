@@ -1,4 +1,4 @@
-export const OLD_MENTION_REGEX = /(?:<|&lt;)(\w+):([\w-]+)(?:>|&gt;)/g;
+const OLD_MENTION_REGEX = /(?:<|&lt;)(\w+):([\w-]+)(?:>|&gt;)/g;
 
 export function mentionToTag(mention: string, removeNewLines = false) {
   const result = mention.replaceAll(OLD_MENTION_REGEX, (match, type, id) => {

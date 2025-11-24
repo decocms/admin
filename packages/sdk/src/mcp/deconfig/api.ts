@@ -39,7 +39,7 @@ type DeconfigContext = WithTool<AppContext> & {
 };
 
 // Types from branch.ts - simplified for MCP usage
-export const BranchId = {
+const BranchId = {
   build(name: string, projectId: string) {
     return `${projectId}-${name}`;
   },
@@ -62,7 +62,7 @@ const projectFor = (c: AppContext): string => {
 };
 
 // Well-known file path to mark that a project has been migrated
-export const WELL_KNOWN_MIGRATED_MARKER = "/.deco/migrated.json";
+const WELL_KNOWN_MIGRATED_MARKER = "/.deco/migrated.json";
 
 // Helper function to get branch RPC (using branchName directly for performance)
 export const branchRpcFor = async (
@@ -120,7 +120,7 @@ const createDeconfigTool = createToolFactory<DeconfigContext>(
 // BRANCH CRUD OPERATIONS
 // =============================================================================
 
-export const createBranch = createDeconfigTool({
+const createBranch = createDeconfigTool({
   name: "CREATE_BRANCH",
   description:
     "Create a DECONFIG branch. If sourceBranch is provided, creates a branch from that branch (O(1) operation). Otherwise creates an empty branch.",
@@ -184,7 +184,7 @@ export const createBranch = createDeconfigTool({
   },
 });
 
-export const listBranches = createDeconfigTool({
+const listBranches = createDeconfigTool({
   name: "LIST_BRANCHES",
   description: "List all branches in the current workspace",
   inputSchema: z.lazy(() =>
@@ -231,7 +231,7 @@ export const listBranches = createDeconfigTool({
   },
 });
 
-export const deleteBranch = createDeconfigTool({
+const deleteBranch = createDeconfigTool({
   name: "DELETE_BRANCH",
   description:
     "Delete a branch and all its files. This operation cannot be undone.",
@@ -280,7 +280,7 @@ export const deleteBranch = createDeconfigTool({
   },
 });
 
-export const mergeBranch = createDeconfigTool({
+const mergeBranch = createDeconfigTool({
   name: "MERGE_BRANCH",
   description:
     "Merge another branch into the current one with configurable strategy",
@@ -345,7 +345,7 @@ export const mergeBranch = createDeconfigTool({
   },
 });
 
-export const diffBranch = createDeconfigTool({
+const diffBranch = createDeconfigTool({
   name: "DIFF_BRANCH",
   description: "Compare two branches and get the differences",
   inputSchema: z.lazy(() =>
@@ -407,7 +407,7 @@ const withPathPrefix = (c: DeconfigContext, path: string) => {
   return normalized;
 };
 
-export const putFile = createDeconfigTool({
+const putFile = createDeconfigTool({
   name: "PUT_FILE",
   description:
     "Put a file in a DECONFIG branch (create or update) with optional conflict detection",
@@ -497,7 +497,7 @@ export const putFile = createDeconfigTool({
   },
 });
 export const WELL_KNOWN_PUBLIC_PATHS = ["/.deco"];
-export const readFile = createDeconfigTool({
+const readFile = createDeconfigTool({
   name: "READ_FILE",
   description: "Read a file from a DECONFIG branch",
   inputSchema: z.lazy(() =>
@@ -610,7 +610,7 @@ export const readFile = createDeconfigTool({
   },
 });
 
-export const deleteFile = createDeconfigTool({
+const deleteFile = createDeconfigTool({
   name: "DELETE_FILE",
   description: "Delete a file from a DECONFIG branch",
   inputSchema: z.lazy(() =>
@@ -651,7 +651,7 @@ const listFilesOutputSchema = z.object({
   count: z.number(),
 });
 
-export const listFiles = createDeconfigTool({
+const listFiles = createDeconfigTool({
   name: "LIST_FILES",
   description:
     "List files in a DECONFIG branch with optional prefix filtering and content inclusion",
@@ -809,7 +809,7 @@ async function migrateProject(c: DeconfigContext) {
   };
 }
 
-export const migrateProjectTool = createDeconfigTool({
+const migrateProjectTool = createDeconfigTool({
   name: "MIGRATE_PROJECT",
   description:
     "Migrate all files from the main branch of the current workspace project to the locator project's main branch",
@@ -886,12 +886,6 @@ export const DECONFIG_TOOLS = [
  * @param input - The string to slugify
  * @returns The slugified string
  */
-export function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-") // Replace spaces and underscores with dashes
-    .replace(/[^a-z0-9-]/g, ""); // Remove all non-alphanumeric except leading/trailing dashes
-}
 
 export { Blobs } from "./blobs.ts";
 export { Branch } from "./branch.ts";

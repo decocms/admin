@@ -59,7 +59,7 @@ export const CronTriggerCallToolSchema = CronBaseTriggerSchema.extend({
   callTool: CallToolSchema,
 });
 
-export const CronTriggerSchema = z.union([
+const CronTriggerSchema = z.union([
   CronTriggerPromptAgentSchema,
   CronTriggerCallToolSchema,
 ]);
@@ -91,7 +91,7 @@ export const WebhookTriggerCallToolSchema = WebhookBaseTriggerSchema.extend({
   callTool: CallToolSchema,
 });
 
-export const WebhookTriggerSchema = z.union([
+const WebhookTriggerSchema = z.union([
   WebhookTriggerAgentSchema,
   WebhookTriggerCallToolSchema,
 ]);
@@ -249,5 +249,5 @@ export type CronTriggerCallTool = z.infer<typeof CronTriggerCallToolSchema>;
  */
 export type WebhookTriggerAgent = z.infer<typeof WebhookTriggerAgentSchema>;
 
-export type WebhookTrigger = z.infer<typeof WebhookTriggerSchema>;
-export type CronTrigger = z.infer<typeof CronTriggerSchema>;
+export type WebhookTrigger = z.infer<typeof CreateWebhookTriggerInputSchema>;
+export type CronTrigger = z.infer<typeof CreateCronTriggerInputSchema>;

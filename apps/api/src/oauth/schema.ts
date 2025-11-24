@@ -1,4 +1,4 @@
-export const OAUTH_TABLES = {
+const OAUTH_TABLES = {
   clients: `
     CREATE TABLE IF NOT EXISTS oauth_clients (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),

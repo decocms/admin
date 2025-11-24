@@ -61,7 +61,7 @@ const labelsByUsageType = {
   },
 } as const;
 
-export function Usage() {
+function Usage() {
   const [usageType, setUsageType] = useState<UsageType>("agent");
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [selectedContractId, setSelectedContractId] = useState<string | null>(

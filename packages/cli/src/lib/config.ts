@@ -22,7 +22,7 @@ function md5Hash(input: string): string {
   return hash.digest("hex");
 }
 
-export const CONFIG_FILE = "wrangler.toml";
+const CONFIG_FILE = "wrangler.toml";
 
 const requiredErrorForProp = (prop: string) =>
   `Property ${prop} is required. Please provide an inline value using --${prop} or configure it using 'deco configure'.`;

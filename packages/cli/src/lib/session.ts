@@ -19,7 +19,7 @@ let token: string;
 export function setToken(t: string): void {
   token = t;
 }
-export function getToken(): string {
+function getToken(): string {
   return token;
 }
 
@@ -144,21 +144,4 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   const cookies = setCookie.map((cookie) => cookie.split(";")[0]).join("; ");
 
   return { cookie: cookies };
-}
-
-export async function getSessionToken(): Promise<string> {
-  const session = await readSession();
-
-  if (!session) {
-    throw new Error("Session not found. Please login again.");
-  }
-
-  // Extract tokens from session
-  const { access_token, refresh_token } = session;
-
-  if (!access_token || !refresh_token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
-  return access_token;
 }

@@ -7,7 +7,7 @@ export interface MicrosoftSSOConfig {
   scopes: string[];
 }
 
-export const createMicrosoftSSO = (config: MicrosoftSSOConfig) => {
+const createMicrosoftSSO = (config: MicrosoftSSOConfig) => {
   return {
     defaultSSO: [
       {

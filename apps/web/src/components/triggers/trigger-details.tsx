@@ -18,7 +18,7 @@ export interface Props {
   onBack?: () => void;
 }
 
-export function TriggerDetails({ id: _triggerId, onBack }: Props) {
+function TriggerDetails({ id: _triggerId, onBack }: Props) {
   // Check for params from RouteParamsProvider (for tab rendering)
   // Fall back to URL params (for direct navigation)
   const routeParams = useRouteParams();

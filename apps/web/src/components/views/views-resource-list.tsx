@@ -16,7 +16,7 @@ import {
   getViewsColumns,
   getViewRowActions,
 } from "./views-list-adapters.tsx";
-import type { ViewWithStatus } from "./list.tsx";
+import type { ViewWithStatus } from "./toggle-pin.tsx";
 
 /**
  * Views resource list component that renders the ResourcesV2List
@@ -138,5 +138,3 @@ export function ViewsResourceList({
     />
   );
 }
-
-export default ViewsResourceList;

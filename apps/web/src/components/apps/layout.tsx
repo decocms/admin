@@ -5,7 +5,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { SplitScreenLayout } from "../login/layout.tsx";
 import { DecoQueryClientProvider } from "@deco/sdk";
 
-export const OAuthSearchParamsSchema = z.object({
+const OAuthSearchParamsSchema = z.object({
   client_id: z.string(),
   redirect_uri: z.string(),
   state: z.string().optional(),

@@ -3,7 +3,7 @@ import { DocumentDetail } from "../documents/document-detail.tsx";
 import { ToolDetail } from "../tools/tool-detail.tsx";
 import { WorkflowDisplay } from "../workflow-builder/workflow-display-canvas.tsx";
 import { WorkflowRunDetail } from "../workflows/workflow-run-detail.tsx";
-import { ViewDetail } from "../views/view-detail.tsx";
+import ViewDetail from "../views/view-detail.tsx";
 
 /**
  * Registry of well-known view components mapped by integrationId:resourceName keys.

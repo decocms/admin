@@ -4,8 +4,6 @@
  */
 export {
   addIntegrationUpdateListener,
-  addResourceUpdateListener,
-  notifyIntegrationUpdate,
   notifyResourceUpdate,
   type IntegrationMessage,
   type ResourceMessage,

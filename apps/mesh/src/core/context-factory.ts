@@ -39,26 +39,6 @@ export interface MeshContextConfig {
 // Errors
 // ============================================================================
 
-/**
- * Unauthorized error
- */
-export class UnauthorizedError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "UnauthorizedError";
-  }
-}
-
-/**
- * Not found error
- */
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
 // ============================================================================
 // Types
 // ============================================================================

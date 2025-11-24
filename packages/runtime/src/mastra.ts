@@ -10,15 +10,16 @@ import {
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import {
-  createStep as mastraCreateStep,
   createWorkflow,
+  createStep as mastraCreateStep,
   type DefaultEngineType,
   type ExecuteFunction,
   type Step as MastraStep,
 } from "@mastra/core/workflows";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ViewsListOutputSchema } from "./views.ts";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import type { DefaultEnv } from "./index.ts";
 import {
   ResourceCreateInputSchema,
   ResourceCreateOutputSchema,
@@ -32,9 +33,8 @@ import {
   ResourceUpdateInputSchema,
   ResourceUpdateOutputSchema,
 } from "./resources.ts";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import type { DefaultEnv } from "./index.ts";
 import { createStateValidationTool, State } from "./state.ts";
+import { ViewsListOutputSchema } from "./views.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
@@ -819,7 +819,7 @@ export const createMCPServer = <
               ? (tool.inputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
           outputSchema: isStreamableTool(tool)
-            ? undefined
+            ? z.object({ bytes: z.record(z.string(), z.number()) }).shape
             : tool.outputSchema &&
                 typeof tool.outputSchema === "object" &&
                 "shape" in tool.outputSchema

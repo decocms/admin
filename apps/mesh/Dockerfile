@@ -59,10 +59,24 @@ RUN bun run build:client
 FROM base AS runner
 WORKDIR /app
 
-# Copy the entire built workspace from builder
-COPY --from=builder --chown=bunuser:bunapp /app ./
+# Copy only what's needed for production (minimal approach)
+# Root workspace files
+COPY --from=deps --chown=bunuser:bunapp /app/package.json ./
+COPY --from=builder --chown=bunuser:bunapp /app/.npmrc ./
 
-# Overwrite with production-only node_modules from deps stage
+# Mesh app (runtime files only)
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
+
+# UI package (workspace dependency)
+COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
+
+# Production node_modules
 COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
 
 # Create data directory with correct ownership

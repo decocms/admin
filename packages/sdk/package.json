@@ -32,7 +32,7 @@
     "@tanstack/react-query": "^5.80.6",
     "@xyflow/react": "^12.8.6",
     "@zenfs/core": "^2.0.0",
-    "ai": "^5.0.61",
+    "ai": "^5.0.101",
     "cloudflare": "^4.5.0",
     "drizzle-orm": "1.0.0-beta.1-ac4ce44",
     "idb-keyval": "^6.2.1",

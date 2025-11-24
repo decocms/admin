@@ -7,7 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createConnectionToolCaller } from "@/tools/client";
-import { KEYS } from "@/lib/query-keys";
+import { KEYS } from "@/web/lib/query-keys";
 
 /**
  * Discovered collection information

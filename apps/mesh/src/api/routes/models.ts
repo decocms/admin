@@ -224,7 +224,7 @@ function createProvider(
       });
     default:
       // Default to OpenAI-compatible provider (covers OpenAI, etc.)
-      return createOpenAI({ baseURL, headers });
+      return createOpenAI({ baseURL, headers, apiKey: "" });
   }
 }
 

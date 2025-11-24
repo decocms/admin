@@ -219,7 +219,7 @@ export interface CollectionBindingOptions {
  * by accepting a custom entity schema and collection name. The bindings provide:
  * - DECO_COLLECTION_{NAME}_LIST - Query/search entities with filtering and sorting (required)
  * - DECO_COLLECTION_{NAME}_GET - Get a single entity by ID (required)
- * - DECO_COLLECTION_{NAME}_INSERT - Create a new entity (optional, excluded if readOnly=true)
+ * - DECO_COLLECTION_{NAME}_CREATE - Create a new entity (optional, excluded if readOnly=true)
  * - DECO_COLLECTION_{NAME}_UPDATE - Update an existing entity (optional, excluded if readOnly=true)
  * - DECO_COLLECTION_{NAME}_DELETE - Delete an entity (optional, excluded if readOnly=true)
  *
@@ -274,7 +274,7 @@ export function createCollectionBindings<
   if (!readOnly) {
     bindings.push(
       {
-        name: `DECO_COLLECTION_${upperName}_INSERT` as const,
+        name: `DECO_COLLECTION_${upperName}_CREATE` as const,
         inputSchema: createCollectionInsertInputSchema(entitySchema),
         outputSchema: createCollectionInsertOutputSchema(entitySchema),
         opt: true,

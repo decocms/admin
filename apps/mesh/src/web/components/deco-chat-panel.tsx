@@ -96,7 +96,7 @@ function createModelsTransport(
   });
 }
 
-function DecoChatPanelInner() {
+export function DecoChatPanel() {
   const { locator } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
@@ -474,9 +474,4 @@ function DecoChatPanelInner() {
       </DecoChatAside>
     </ModelsBindingProvider>
   );
-}
-
-// Export the inner panel without the provider wrapper
-export function DecoChatPanel() {
-  return <DecoChatPanelInner />;
 }

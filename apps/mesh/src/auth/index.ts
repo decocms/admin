@@ -126,7 +126,7 @@ if (
 
     sendInvitationEmail = async (data) => {
       const inviterName = data.inviter.user?.name || data.inviter.user?.email;
-      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?token=${data.invitation.id}`;
+      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?invitationId=${data.invitation.id}`;
 
       await sendEmail({
         to: data.email,

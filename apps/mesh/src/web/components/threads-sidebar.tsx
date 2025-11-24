@@ -6,7 +6,7 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
 import { Suspense } from "react";
-import { useDecoChatOpen } from "../features/deco-chat/hooks/use-deco-chat-open";
+import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
 
 /**
  * Individual thread item with title

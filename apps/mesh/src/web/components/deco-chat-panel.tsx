@@ -20,7 +20,7 @@ import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provide
 import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 
 // Model type matching ModelSchema from @decocms/bindings

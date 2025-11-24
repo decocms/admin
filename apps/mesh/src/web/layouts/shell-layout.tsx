@@ -18,14 +18,14 @@ import { MeshUserMenu } from "@/web/components/user-menu";
 import { authClient } from "@/web/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState, Suspense } from "react";
-import { SplashScreen } from "../components/splash-screen";
-import { MeshSidebar } from "../components/mesh-sidebar";
-import { MeshOrgSwitcher } from "../components/org-switcher";
-import { ProjectContextProvider } from "../providers/project-context-provider";
-import { Locator } from "../lib/locator";
-import { useDecoChatOpen } from "../features/deco-chat/hooks/use-deco-chat-open";
-import { DecoChatPanel } from "../features/deco-chat/components/deco-chat-panel";
-import { LocalStorageChatThreadsProvider } from "../providers/localstorage-chat-threads-provider";
+import { SplashScreen } from "@/web/components/splash-screen";
+import { MeshSidebar } from "@/web/components/mesh-sidebar";
+import { MeshOrgSwitcher } from "@/web/components/org-switcher";
+import { ProjectContextProvider } from "@/web/providers/project-context-provider";
+import { Locator } from "@/web/lib/locator";
+import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
+import { DecoChatPanel } from "@/web/components/deco-chat-panel";
+import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -163,7 +163,7 @@ export default function ShellLayout() {
           </ProjectContextProvider>
         ) : (
           <div className="min-h-screen bg-background">
-            <Topbar onToggleChat={toggleChat} />
+            <Topbar />
             <div className="pt-12">
               <Outlet />
             </div>

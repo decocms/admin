@@ -1,13 +1,6 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { Suspense } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 
 export interface IntegrationIconProps {
   icon?: string;

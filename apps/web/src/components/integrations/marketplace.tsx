@@ -1,14 +1,5 @@
 import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Tooltip,
@@ -22,16 +13,6 @@ export interface MarketplaceIntegration extends Integration {
   provider: string;
   friendlyName?: string;
   verified?: boolean | null;
-}
-
-interface ConnectIntegrationModalProps {
-  open: boolean;
-  integration: MarketplaceIntegration | null;
-  createdIntegrationId: string | null;
-  loading: boolean;
-  onConnect: () => void;
-  onEdit: () => void;
-  onClose: () => void;
 }
 
 export function VerifiedBadge() {

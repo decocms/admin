@@ -28,7 +28,6 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
-import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useThread, buildThreadUri } from "../decopilot/thread-provider.tsx";
 import { AuditFilters } from "./audit-filters.tsx";
 import { AuditTable } from "./audit-table.tsx";

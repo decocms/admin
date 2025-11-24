@@ -38,7 +38,7 @@ import {
   CommandPalette,
   useCommandPalette,
 } from "../search/command-palette.tsx";
-import { TogglePin } from "../views/list.tsx";
+import { TogglePin } from "../views/toggle-pin.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { useCurrentTeam } from "./team-selector.tsx";
 

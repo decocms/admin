@@ -18,7 +18,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tooltip,
@@ -28,14 +33,9 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router";
-import { useThread } from "../decopilot/thread-provider.tsx";
-import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import { useSearchParams } from "react-router";
 import { ListPageHeader } from "../common/list-page-header.tsx";
-import {
-  Table,
-  type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+import { useThread } from "../decopilot/thread-provider.tsx";
 import { ResourceCreateDialog } from "./resource-create-dialog.tsx";
 
 export function InternalResourceListWithIntegration({

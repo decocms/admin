@@ -51,7 +51,6 @@ const ChatThreadsContext = createContext<ChatThreadsContextValue | null>(null);
 
 export interface ChatThreadsProviderProps {
   children: ReactNode;
-  storageKey: string; // e.g., "mesh:chat-threads:{orgSlug}"
   value: ThreadManagerState;
   onChange: (
     state:

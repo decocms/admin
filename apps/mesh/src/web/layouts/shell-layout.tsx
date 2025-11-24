@@ -25,10 +25,7 @@ import { ProjectContextProvider } from "../providers/project-context-provider";
 import { Locator } from "../lib/locator";
 import { useDecoChatOpen } from "../features/deco-chat/hooks/use-deco-chat-open";
 import { DecoChatPanel } from "../features/deco-chat/components/deco-chat-panel";
-import { ChatThreadsProvider } from "@deco/ui/providers/chat-threads-provider.tsx";
-import type { ThreadManagerState } from "@deco/ui/types/chat-threads.ts";
-import { useLocalStorage } from "../hooks/use-local-storage";
-import { useCurrentOrganization } from "../hooks/use-current-organization";
+import { LocalStorageChatThreadsProvider } from "../providers/localstorage-chat-threads-provider";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -107,46 +104,6 @@ function OrgContextSetter({
   return <>{children}</>;
 }
 
-function ChatThreadsWrapper({ children }: { children: React.ReactNode }) {
-  const { organization } = useCurrentOrganization();
-  const orgSlug = organization?.slug || "";
-
-  // Thread state persistence per organization
-  const [threadState, setThreadState] = useLocalStorage<ThreadManagerState>(
-    `mesh:chat-threads:${orgSlug}`,
-    (existing) => {
-      if (!existing) {
-        const defaultThreadId = crypto.randomUUID();
-        return {
-          threads: {
-            [defaultThreadId]: {
-              id: defaultThreadId,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              tabs: [],
-              activeTabId: null,
-              contextItems: [],
-              messages: [],
-            },
-          },
-          activeThreadId: defaultThreadId,
-        };
-      }
-      return existing;
-    },
-  );
-
-  return (
-    <ChatThreadsProvider
-      storageKey={`mesh:chat-threads:${orgSlug}`}
-      value={threadState}
-      onChange={setThreadState}
-    >
-      {children}
-    </ChatThreadsProvider>
-  );
-}
-
 export default function ShellLayout() {
   const { org } = useParams({ strict: false });
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -159,7 +116,7 @@ export default function ShellLayout() {
         {hasOrg ? (
           // Should use "project ?? org-admin" when projects are introduced
           <ProjectContextProvider locator={Locator.adminProject(org)}>
-            <ChatThreadsWrapper>
+            <LocalStorageChatThreadsProvider>
               <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <div className="flex flex-col h-screen">
                   <Topbar
@@ -202,7 +159,7 @@ export default function ShellLayout() {
                   </SidebarLayout>
                 </div>
               </SidebarProvider>
-            </ChatThreadsWrapper>
+            </LocalStorageChatThreadsProvider>
           </ProjectContextProvider>
         ) : (
           <div className="min-h-screen bg-background">

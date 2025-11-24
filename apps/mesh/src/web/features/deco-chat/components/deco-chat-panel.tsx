@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 
 // Model type matching ModelSchema from @decocms/bindings
 interface Model {
@@ -229,7 +230,7 @@ function DecoChatPanelInner() {
   // Persist selected model per organization in localStorage
   const [selectedModelId, setSelectedModelId] = useLocalStorage<
     string | undefined
-  >(`mesh:chat:selectedModel:${orgSlug}`, (existing) => existing);
+  >(LOCALSTORAGE_KEYS.chatSelectedModel(locator), (existing) => existing);
 
   // Initialize with first model
   useEffect(() => {

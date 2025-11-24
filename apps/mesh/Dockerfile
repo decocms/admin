@@ -62,10 +62,7 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/m
 # UI package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
 
-# Copy node_modules from builder first
-COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
-
-# Prune dev dependencies to reduce image size
+# Run production install (don't copy node_modules from builder to avoid double layers)
 USER bunuser
 RUN bun install --frozen-lockfile --production
 

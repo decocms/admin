@@ -30,4 +30,8 @@ export const KEYS = {
   // Sidebar items (scoped by project)
   sidebarItems: (locator: ProjectLocator) =>
     [locator, "sidebar-items"] as const,
+
+  // Collections (scoped by connection)
+  connectionCollections: (connectionId: string) =>
+    [connectionId, "collections", "discovery"] as const,
 } as const;

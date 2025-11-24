@@ -273,7 +273,7 @@ function DecoChatPanelInner() {
             }
 
             // Add UIMessage directly to thread (without id, it will be generated)
-            const { id, ...messageWithoutId } = msg;
+            const { id: _id, ...messageWithoutId } = msg;
             addMessage(messageWithoutId);
           });
         }

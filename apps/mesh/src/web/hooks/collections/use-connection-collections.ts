@@ -7,6 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createConnectionToolCaller } from "@/tools/client";
+import { KEYS } from "@/lib/query-keys";
 
 /**
  * Discovered collection information
@@ -20,24 +21,6 @@ export interface DiscoveredCollection {
     update: boolean;
     delete: boolean;
     batch: boolean;
-  };
-}
-
-/**
- * Parse collection name from tool name
- * Example: "DECO_COLLECTION_MODELS_LIST" -> { collection: "MODELS", operation: "LIST" }
- */
-function parseCollectionTool(
-  toolName: string,
-): { collection: string; operation: string } | null {
-  const match = toolName.match(
-    /^DECO_COLLECTION_([A-Z_]+)_(LIST|GET|CREATE|UPDATE|DELETE|BATCH)$/,
-  );
-  if (!match) return null;
-
-  return {
-    collection: match[1],
-    operation: match[2],
   };
 }
 
@@ -73,7 +56,7 @@ export function useConnectionCollections(options: {
   const { connectionId, enabled = true } = options;
 
   return useQuery({
-    queryKey: [connectionId, "collections", "discovery"],
+    queryKey: KEYS.connectionCollections(connectionId),
     enabled: enabled && Boolean(connectionId),
     staleTime: 60_000, // Cache for 1 minute
     queryFn: async () => {

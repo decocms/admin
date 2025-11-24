@@ -20,6 +20,7 @@ import { diffSchemas } from "json-schema-diff";
 export interface ToolBinder<
   TName extends string | RegExp = string,
   // biome-ignore lint/suspicious/noExplicitAny: Generic type parameter
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
 > {
@@ -63,13 +64,16 @@ export type Binder<
  */
 export interface ToolWithSchemas {
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inputSchema?: ZodType<any> | Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   outputSchema?: ZodType<any> | Record<string, unknown>;
 }
 
 /**
  * Converts a schema to JSON Schema format if it's a Zod schema
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeSchema(schema: any): Record<string, unknown> | undefined {
   if (!schema) return undefined;
 

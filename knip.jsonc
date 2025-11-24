@@ -21,11 +21,7 @@
       "ignore": ["src/observability/**/*"]
     },
     "apps/mesh": {
-      "entry": [
-        "src/web/index.tsx",
-        "migrations/**/*.ts",
-        "scripts/**/*.ts"
-      ]
+      "entry": ["src/web/index.tsx", "migrations/**/*.ts", "scripts/**/*.ts"]
     }
   },
   "ignore": [

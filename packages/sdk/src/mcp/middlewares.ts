@@ -47,6 +47,11 @@ export type CallToolMiddleware = RequestMiddleware<
   z.infer<typeof CallToolResultSchema>
 >;
 
+export type CallStreamableToolMiddleware = RequestMiddleware<
+  z.infer<typeof CallToolRequestSchema>,
+  Response
+>;
+
 const safeGetContext = () => {
   try {
     return State.getStore();
@@ -123,8 +128,14 @@ interface AuthContext {
   integrationId: string;
 }
 
-export const withMCPAuthorization =
-  (ctx: AppContext, { integrationId }: AuthContext): CallToolMiddleware =>
+const createAuthorizationMiddleware =
+  <TResponse>(
+    ctx: AppContext,
+    { integrationId }: AuthContext,
+    errorHandler: (
+      errorResult: z.infer<typeof CallToolResultSchema>,
+    ) => TResponse,
+  ): RequestMiddleware<z.infer<typeof CallToolRequestSchema>, TResponse> =>
   async (req, next) => {
     try {
       await assertWorkspaceResourceAccess(
@@ -136,11 +147,23 @@ export const withMCPAuthorization =
       console.error(
         `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.locator?.value}`,
       );
-      return {
+      return errorHandler({
         isError: true,
         content: [{ type: "text", text: serializeError(error) }],
-      };
+      });
     }
 
     return await next!();
   };
+
+export const streamableWithMCPAuthorization = (
+  ctx: AppContext,
+  authContext: AuthContext,
+): CallStreamableToolMiddleware =>
+  createAuthorizationMiddleware(ctx, authContext, Response.json);
+
+export const withMCPAuthorization = (
+  ctx: AppContext,
+  authContext: AuthContext,
+): CallToolMiddleware =>
+  createAuthorizationMiddleware(ctx, authContext, (error) => error);

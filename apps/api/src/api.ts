@@ -14,6 +14,7 @@ import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
+  CallStreamableToolMiddleware,
   CallToolMiddleware,
   compose,
   CONTRACTS_TOOLS,
@@ -47,6 +48,7 @@ import {
   ReadOutput,
   runTool,
   SearchOutput,
+  streamableWithMCPAuthorization,
   toBindingsContext,
   Tool,
   type ToolLike,
@@ -362,6 +364,7 @@ interface ProxyOptions {
   middlewares?: Partial<{
     listTools: ListToolsMiddleware[];
     callTool: CallToolMiddleware[];
+    callStreamableTool?: CallStreamableToolMiddleware[];
   }>;
 }
 
@@ -371,6 +374,14 @@ const proxy = (
   { middlewares, tools, headers, tokenEmitter }: ProxyOptions = {},
 ) => {
   const createMcpClient = () => {
+    const requestHeaders = async (options?: EmitTokenOptions) => {
+      return {
+        ...headers,
+        ...(tokenEmitter && options
+          ? { [PROXY_TOKEN_HEADER]: await tokenEmitter(options) }
+          : {}),
+      };
+    };
     const client = async (options?: EmitTokenOptions) => {
       return createServerClient(
         {
@@ -378,12 +389,7 @@ const proxy = (
           name: "proxy",
         },
         undefined,
-        {
-          ...headers,
-          ...(tokenEmitter && options
-            ? { [PROXY_TOKEN_HEADER]: await tokenEmitter(options) }
-            : {}),
-        },
+        await requestHeaders(options),
       );
     };
 
@@ -406,10 +412,28 @@ const proxy = (
       }) as ReturnType<CallToolMiddleware>;
     });
 
-    return { listTools, callTool };
+    const callStreamableTool = compose(
+      ...(middlewares?.callStreamableTool ?? []),
+      async (req) => {
+        if (mcpConnection.type !== "HTTP") {
+          throw new Error("HTTP connection required");
+        }
+        return fetch(mcpConnection.url + `/call-tool/${req.params.name}`, {
+          method: "POST",
+          body: JSON.stringify(req.params.arguments),
+          headers: await requestHeaders(),
+        });
+      },
+    );
+
+    return {
+      listTools,
+      callTool,
+      callStreamableTool,
+    };
   };
 
-  const fetch = async (req: Request) => {
+  const fetchMcp = async (req: Request) => {
     const { callTool, listTools } = await createMcpClient();
     const mcpServer = new McpServer(
       { name: "deco-chat-server", version: "1.0.0" },
@@ -430,7 +454,15 @@ const proxy = (
   };
 
   return {
-    fetch,
+    fetch: fetchMcp,
+    callStreamableTool: async (
+      ...args: Parameters<
+        Awaited<ReturnType<typeof createMcpClient>>["callStreamableTool"]
+      >
+    ) => {
+      const { callStreamableTool } = await createMcpClient();
+      return callStreamableTool(...args);
+    },
     callTool: async (
       ...args: Parameters<
         Awaited<ReturnType<typeof createMcpClient>>["callTool"]
@@ -514,6 +546,9 @@ const createMcpServerProxyForIntegration = async (
       : undefined,
     middlewares: {
       callTool: [withMCPAuthorization(ctx, { integrationId: integration.id })],
+      callStreamableTool: [
+        streamableWithMCPAuthorization(ctx, { integrationId: integration.id }),
+      ],
     },
   });
 
@@ -1096,6 +1131,22 @@ app.post("/:org/:project/:branch/:integrationId/mcp", async (c) => {
 
   return mcpServerProxy.fetch(c.req.raw);
 });
+
+// this endpoint differs from the others in that it allows for a tool to be called directly
+app.post("/:org/:project/:integrationId/mcp/call-tool/:toolName", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+  const toolArgs = await c.req.json();
+  const toolName = c.req.param("toolName");
+
+  return await mcpServerProxy.callStreamableTool({
+    method: "tools/call" as const,
+    params: {
+      name: toolName,
+      arguments: toolArgs,
+    },
+  });
+});
+
 app.post(
   "/:org/:project/:branch/:integrationId/mcp/tool/:toolName",
   async (c) => {

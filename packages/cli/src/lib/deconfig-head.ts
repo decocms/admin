@@ -97,13 +97,3 @@ export async function writeDeconfigHead(
     throw error;
   }
 }
-
-/**
- * Check if a deconfig HEAD file exists
- * @param cwd - The current working directory (defaults to process.cwd())
- * @returns True if the HEAD file exists, false otherwise
- */
-function hasDeconfigHead(cwd?: string): boolean {
-  const headPath = getDeconfigHeadPath(cwd);
-  return existsSync(headPath);
-}

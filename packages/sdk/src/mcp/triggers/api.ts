@@ -158,7 +158,7 @@ export const listTriggers = createTool({
  * TODO(@viktormarinho): Revisit the trigger/webhook creation
  * to stop using workspace and go for project locator instead
  */
-export const upsertTrigger = createTool({
+const upsertTrigger = createTool({
   name: "TRIGGERS_UPSERT",
   description: "Create or update a trigger",
   inputSchema: z.lazy(() =>

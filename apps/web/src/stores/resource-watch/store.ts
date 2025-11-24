@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { useShallow } from "zustand/react/shallow";
 
 // Maximum number of events to keep in memory per connection
 const MAX_EVENTS = 100;

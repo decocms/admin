@@ -12,7 +12,6 @@ import {
   DeleteInputSchema,
   DeleteOutputSchema,
   ReadInputSchema,
-  ResourceUriSchema,
   SearchInputSchema,
   type CreateInput,
   type CreateOutput,

@@ -201,14 +201,6 @@ export const WorkflowResourceV2 = DeconfigResourceV2.define({
 export type WorkflowDataV2 = z.infer<typeof WorkflowDefinitionSchema>;
 export type WorkflowResourceV2Type = typeof WorkflowResourceV2;
 
-// Helper function to create a workflow resource instance
-function createWorkflowResourceV2(
-  deconfig: DeconfigClient,
-  integrationId: string,
-) {
-  return WorkflowResourceV2.client(deconfig, integrationId);
-}
-
 // Helper function to create a workflow resource implementation
 export function createWorkflowResourceV2Implementation(
   deconfig: DeconfigClient,

@@ -46,16 +46,3 @@ export const strProp = <T>(val: T, key: string) => {
 export const arrayProp = <Elements = string>(val: unknown, key: string) => {
   return prop(val, key, (val): val is Elements[] => Array.isArray(val));
 };
-
-/**
- * Get the stack trace
- * @returns The stack trace
- */
-function getStack() {
-  const obj: { stack?: string } = {};
-  if ("captureStackTrace" in Error) {
-    // Avoid getStack itself in the stack trace
-    Error.captureStackTrace(obj, getStack);
-  }
-  return obj.stack;
-}

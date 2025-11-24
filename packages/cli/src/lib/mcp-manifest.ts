@@ -3,15 +3,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  type Manifest,
-  parseManifest,
-  createManifest,
-  type ManifestProject,
-  type ManifestAuthor,
-  type ManifestResources,
-  type ManifestDependencies,
-} from "./manifest-schema.js";
+import { type Manifest, parseManifest } from "./manifest-schema.js";
 
 const MANIFEST_FILENAME = "deco.mcp.json";
 
@@ -51,18 +43,6 @@ export async function manifestExists(dirPath: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/**
- * Build a manifest from components
- */
-function buildManifest(
-  project: ManifestProject,
-  author: ManifestAuthor,
-  resources: ManifestResources,
-  dependencies: ManifestDependencies,
-): Manifest {
-  return createManifest(project, author, resources, dependencies);
 }
 
 /**
@@ -125,11 +105,4 @@ export async function extractDependenciesFromTools(
   }
 
   return Array.from(integrationIds).sort();
-}
-
-/**
- * Get the manifest filename
- */
-function getManifestFilename(): string {
-  return MANIFEST_FILENAME;
 }

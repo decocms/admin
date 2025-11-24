@@ -1,11 +1,7 @@
 import { useSDK } from "@deco/sdk";
 import { useCallback } from "react";
-import type { VersionEntry, VersionHistoryStore } from "./types.ts";
-import {
-  createResourceVersionHistoryStore,
-  useVersionHistoryActions,
-  useVersions,
-} from "./store.ts";
+import type { VersionEntry } from "./types.ts";
+import { useVersionHistoryActions, useVersions } from "./store.ts";
 
 export function useAddVersion() {
   const actions = useVersionHistoryActions();

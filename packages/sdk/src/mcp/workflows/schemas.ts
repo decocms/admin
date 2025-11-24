@@ -1,7 +1,7 @@
 import z from "zod";
 import { ToolDependencySchema } from "../tools/schemas.ts";
 
-export const RetriesSchema = z.object({
+const RetriesSchema = z.object({
   limit: z
     .number()
     .int()

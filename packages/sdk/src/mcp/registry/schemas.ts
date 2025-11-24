@@ -12,7 +12,7 @@ export const RegistryScopeSchema = z.lazy(() =>
   }),
 );
 
-export const RegistryToolSchema = z.lazy(() =>
+const RegistryToolSchema = z.lazy(() =>
   z.object({
     id: z.string(),
     name: z.string(),

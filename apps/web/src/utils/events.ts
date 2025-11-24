@@ -36,11 +36,6 @@ function onEvent<K extends keyof EventMap>(
   return () => globalThis.removeEventListener(name, wrapped as EventListener);
 }
 
-// Generic helper to dispatch a typed event
-function dispatchEvent<K extends keyof EventMap>(name: K, detail: EventMap[K]) {
-  globalThis.dispatchEvent(new CustomEvent(name, { detail }));
-}
-
 // Specific helpers for better DX
 export function onResourceLoading(
   listener: (event: CustomEvent<ResourceLoadingDetail>) => void,

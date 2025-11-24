@@ -1698,15 +1698,3 @@ export function ResourcesV2List({
     </ResourceRouteProvider>
   );
 }
-
-/** Component to connect route params to the component */
-function ResourcesV2ListPage() {
-  const { integrationId, resourceName } = useParams();
-
-  return (
-    <ResourcesV2List
-      integrationId={integrationId}
-      resourceName={resourceName}
-    />
-  );
-}

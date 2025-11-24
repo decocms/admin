@@ -982,26 +982,8 @@ export function useThreadOptional(): ThreadProviderValue | null {
 }
 
 // Helper functions for building URIs
-function getTabIntegrationId(tab: { resourceUri: string }): string | undefined {
-  const parsed = parseResourceUri(tab.resourceUri);
-  return parsed.integrationId;
-}
-
-function getTabResourceName(tab: { resourceUri: string }): string | undefined {
-  const parsed = parseResourceUri(tab.resourceUri);
-  return parsed.resourceName;
-}
-
-function buildResourceUri(integrationId: string, resourceName: string): string {
-  return `rsc://${integrationId}/${resourceName}`;
-}
-
 export function buildNativeUri(viewName: string): string {
   return `native://${viewName}`;
-}
-
-function buildViewUri(integrationId: string, viewName: string): string {
-  return `view://${integrationId}/${viewName}`;
 }
 
 export function buildAppsListUri(): string {

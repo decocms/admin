@@ -19,7 +19,7 @@ const getPlanFromDb = async (c: AppContext, planId: string) => {
   return data;
 };
 
-export const getPersonalWorkspacePlan = async (
+const getPersonalWorkspacePlan = async (
   c: AppContext,
 ): Promise<PlanWithTeamMetadata> => {
   const data = await getPlanFromDb(c, WELL_KNOWN_PLANS.FREE);
@@ -30,9 +30,7 @@ export const getPersonalWorkspacePlan = async (
   };
 };
 
-export const getTeamPlan = async (
-  c: AppContext,
-): Promise<PlanWithTeamMetadata> => {
+const getTeamPlan = async (c: AppContext): Promise<PlanWithTeamMetadata> => {
   assertHasWorkspace(c);
   const slug = c.workspace.slug;
   const team = await getTeamBySlug(slug, c.db);

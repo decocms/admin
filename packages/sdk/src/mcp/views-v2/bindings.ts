@@ -31,7 +31,7 @@ import { ViewRenderOutputSchema } from "./schemas.ts";
  * Views are treated as Resources 2.0 resources, so they follow the same patterns
  * as other resource types like workflows and tools.
  */
-export const VIEW_V2_RESOURCE_BINDINGS = createResourceV2Bindings(
+const VIEW_V2_RESOURCE_BINDINGS = createResourceV2Bindings(
   "view",
   ViewDataSchema,
 );
@@ -43,7 +43,7 @@ export const VIEW_V2_RESOURCE_BINDINGS = createResourceV2Bindings(
  * All view render operations follow the pattern: `deco_view_render_{viewName}`
  * and return a URL with optional prompt and tools for LLM agents.
  */
-export const VIEW_RENDER_BINDING_SCHEMA = z.object({
+const VIEW_RENDER_BINDING_SCHEMA = z.object({
   name: z
     .string()
     .regex(
@@ -64,7 +64,7 @@ export const VIEW_RENDER_BINDING_SCHEMA = z.object({
  * This schema combines both the resource CRUD operations and render operations
  * to provide a complete Views 2.0 binding definition.
  */
-export const VIEW_V2_BINDING_SCHEMA = [
+const VIEW_V2_BINDING_SCHEMA = [
   ...VIEW_V2_RESOURCE_BINDINGS,
   // Note: Render operations are added dynamically by createViewBindingsFor()
   // This ensures type safety and proper integration with the helper functions

@@ -12,11 +12,6 @@ const DECO_CMS_WEB_URL = LOCAL_DEBUGGER
 export const DECO_CMS_API_PROD = "https://api.decocms.com";
 export const DECO_CMS_API_LOCAL = "http://localhost:3001";
 
-const DECO_CMS_API_URL = LOCAL_DEBUGGER
-  ? DECO_CMS_API_LOCAL
-  : DECO_CMS_API_PROD;
-
 export const AUTH_PORT_CLI = 3457;
-const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 
 export const DECO_CMS_LOGIN_URL = new URL("/login?cli", DECO_CMS_WEB_URL).href;

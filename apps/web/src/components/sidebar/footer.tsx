@@ -184,28 +184,6 @@ function UserPreferencesModal({
   );
 }
 
-function LoggedUserSidebarTrigger({
-  user,
-}: {
-  user: { avatar?: string; name?: string; email?: string };
-}) {
-  const userAvatarURL = user?.avatar ?? undefined;
-  const userName = user?.name || user?.email;
-
-  return (
-    <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
-      <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-      <span className="text-sm grow">{userName}</span>
-
-      <Suspense fallback={null}>
-        <div className="size-3 flex items-center">
-          <NotificationDot className="justify-end" />
-        </div>
-      </Suspense>
-    </SidebarMenuButton>
-  );
-}
-
 export function LoggedUserAvatarTrigger({
   user,
 }: {

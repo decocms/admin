@@ -1,5 +1,4 @@
 import { FormProvider, useForm, UseFormReturn } from "react-hook-form";
-import { Separator } from "@deco/ui/components/separator.tsx";
 import type { JSONSchema7 } from "json-schema";
 import JsonSchemaForm from "./json-schema/index.tsx";
 import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
@@ -17,43 +16,6 @@ interface Permission {
 interface IntegrationPermissionsProps {
   integrationName: string;
   permissions?: Permission[];
-}
-
-function IntegrationPermissions({
-  integrationName: _integrationName,
-  permissions,
-}: IntegrationPermissionsProps) {
-  if (!permissions || permissions.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-32 text-muted-foreground">
-        <div className="text-center">
-          <Icon
-            name="check_circle"
-            size={48}
-            className="mx-auto mb-2 text-success"
-          />
-          <p>No special permissions required</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="divide-y">
-      {permissions.map((permission, index) => (
-        <div key={index} className="p-4 flex items-center gap-3">
-          <div className="flex-1 flex flex-col gap-2">
-            <div className="text-sm font-medium">{permission.description}</div>
-            <div className="text-xs text-muted-foreground">
-              {permission.scope}
-            </div>
-          </div>
-
-          <Icon name="check_circle" className="flex-shrink-0 text-success" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 interface IntegrationBindingFormProps {
@@ -83,12 +45,6 @@ export function IntegrationBindingForm({
       />
     </FormProvider>
   );
-}
-
-interface IntegrationOauthProps extends IntegrationBindingFormProps {
-  permissions: Permission[];
-  integrationName: string;
-  contract?: ContractState;
 }
 
 function ContractClauses({ contract }: { contract: ContractState }) {

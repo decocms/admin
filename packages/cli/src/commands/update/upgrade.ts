@@ -102,52 +102,6 @@ const upgrade = (packageName: string): Promise<void> => {
   });
 };
 
-async function checkForUpdates(): Promise<void> {
-  // Skip if we've already checked in this session or if running update command
-  if (process.env.DECO_CLI_UPDATE_CHECKED || process.argv.includes("update")) {
-    return;
-  }
-  process.env.DECO_CLI_UPDATE_CHECKED = "true";
-
-  try {
-    const packageJson = await getPackageJson();
-    const currentVersion = packageJson.version;
-    const latestVersion = await getLatestVersion(packageJson.name);
-
-    if (semver.gt(latestVersion, currentVersion)) {
-      console.log();
-      console.log(
-        chalk.green(
-          `A new version of deco is available: ${chalk.bold(
-            `v${latestVersion}`,
-          )}`,
-        ),
-      );
-      console.log(chalk.yellow(`You are on version: v${currentVersion}`));
-      console.log();
-
-      const { upgradeConfirm } = await inquirer.prompt([
-        {
-          type: "confirm",
-          name: "upgradeConfirm",
-          message: "Do you want to upgrade?",
-          default: true,
-        },
-      ]);
-
-      if (upgradeConfirm) {
-        await upgrade(packageJson.name);
-      }
-    }
-  } catch (error) {
-    // We can ignore this error since it's not critical.
-    // Only log in debug mode
-    if (process.env.DEBUG) {
-      console.debug("Update check failed:", error);
-    }
-  }
-}
-
 export async function upgradeCommand(): Promise<void> {
   try {
     const packageJson = await getPackageJson();

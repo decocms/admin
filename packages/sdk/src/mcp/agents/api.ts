@@ -28,52 +28,6 @@ const createTool = createToolGroup("Agent", {
   icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
 
-const getAgentsByIds = async (ids: string[], c: AppContext) => {
-  assertHasWorkspace(c);
-
-  if (ids.length === 0) return [];
-
-  const dbIds = ids.filter((id) => !(id in WELL_KNOWN_AGENTS));
-
-  let dbAgents: Omit<
-    z.infer<typeof AgentSchema>,
-    "instructions" | "memory" | "views" | "visibility" | "access"
-  >[] = [];
-  if (dbIds.length > 0) {
-    const data = await c.drizzle
-      .select({
-        id: agents.id,
-        name: agents.name,
-        description: agents.description,
-        tools_set: agents.tools_set,
-        avatar: agents.avatar,
-      })
-      .from(agents)
-      .where(inArray(agents.id, dbIds));
-
-    dbAgents = data.map((item) =>
-      AgentSchema.omit({
-        instructions: true,
-        memory: true,
-        views: true,
-        visibility: true,
-        access: true,
-      }).parse(item),
-    );
-  }
-
-  return ids
-    .map((id) => {
-      if (id in WELL_KNOWN_AGENTS) {
-        return AgentSchema.parse(
-          WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-        );
-      }
-      return dbAgents.find((agent) => agent.id === id);
-    })
-    .filter((a): a is z.infer<typeof AgentSchema> => !!a);
-};
-
 export const IMPORTANT_ROLES = ["owner", "admin"];
 
 const AGENT_FIELDS_SELECT = {
@@ -295,7 +249,7 @@ export const createAgent = createTool({
   },
 });
 
-export const createAgentSetupTool = createToolGroup("AgentSetup", {
+const createAgentSetupTool = createToolGroup("AgentSetup", {
   name: "Agent Setup",
   description:
     "Configure agent identity, update settings, and list available integrations.",

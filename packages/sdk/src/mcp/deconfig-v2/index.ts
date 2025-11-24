@@ -137,7 +137,7 @@ export const DeconfigResourceV2 = {
   },
 };
 
-export const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
+const deconfigResourceV2 = <TDataSchema extends BaseResourceDataSchema>(
   options: DeconfigResourceV2Options<TDataSchema>,
 ) => {
   const {

@@ -1299,7 +1299,7 @@ function addDefaultCustomDomain(wranglerConfig: WranglerConfig) {
 /**
  * Promote a specific deployment to an existing custom domain route pattern
  */
-export async function promoteDeployment(
+async function promoteDeployment(
   c: AppContext,
   {
     deploymentId,

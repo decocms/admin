@@ -14,32 +14,6 @@ RUN addgroup --system --gid 1001 bunapp && \
     adduser --system --uid 1001 bunuser && \
     chown -R bunuser:bunapp /app
 
-# Install dependencies (production only)
-FROM base AS deps
-WORKDIR /app
-USER bunuser
-
-# Copy everything needed for workspace resolution
-COPY --chown=bunuser:bunapp . .
-
-# Remove unnecessary workspaces (like your original approach)
-USER root
-RUN rm -rf bun.lockb \
-    /app/apps/api \
-    /app/apps/web \
-    /app/apps/outbound \
-    /app/packages/ai \
-    /app/packages/runtime \
-    /app/packages/sdk \
-    /app/packages/bindings \
-    /app/packages/cf-sandbox \
-    /app/packages/cli \
-    /app/packages/create-deco
-
-# Install production dependencies (no frozen lockfile since we modified workspace)
-USER bunuser
-RUN bun install --production
-
 # Build stage
 FROM base AS builder
 WORKDIR /app
@@ -61,8 +35,20 @@ WORKDIR /app
 
 # Copy only what's needed for production (minimal approach)
 # Root workspace files
-COPY --from=deps --chown=bunuser:bunapp /app/package.json ./
+COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
 COPY --from=builder --chown=bunuser:bunapp /app/.npmrc ./
+COPY --from=builder --chown=bunuser:bunapp /app/bun.lockb ./
+
+# Copy ALL workspace package.json files for lockfile resolution
+COPY --from=builder --chown=bunuser:bunapp /app/apps/api/package.json ./apps/api/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/outbound/package.json ./apps/outbound/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/web/package.json ./apps/web/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/ai/package.json ./packages/ai/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/cf-sandbox/package.json ./packages/cf-sandbox/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/cli/package.json ./packages/cli/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/create-deco/package.json ./packages/create-deco/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/runtime/package.json ./packages/runtime/
+COPY --from=builder --chown=bunuser:bunapp /app/packages/sdk/package.json ./packages/sdk/
 
 # Mesh app (runtime files only)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
@@ -76,10 +62,15 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/m
 # UI package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
 
-# Production node_modules
-COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+# Copy node_modules from builder first
+COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
+
+# Prune dev dependencies to reduce image size
+USER bunuser
+RUN bun install --frozen-lockfile --production
 
 # Create data directory with correct ownership
+USER root
 RUN mkdir -p /app/data && \
     chown bunuser:bunapp /app/data
 

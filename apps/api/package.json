@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node dev.mjs",
-    "stripe:test": "stripe fixtures testing/stripe/fixtures/workspace-wallet-deposit.json"
+    "dev": "node dev.mjs"
   },
   "dependencies": {
     "@ai-sdk/ui-utils": "^1.2.11",

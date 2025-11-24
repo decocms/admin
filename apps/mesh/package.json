@@ -24,7 +24,6 @@
     "@daveyplate/better-auth-ui": "^3.2.7",
     "@deco/ui": "workspace:*",
     "@decocms/bindings": "workspace:*",
-    "@hono/zod-validator": "^0.7.4",
     "@hookform/resolvers": "^5.2.2",
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@opentelemetry/api": "^1.9.0",

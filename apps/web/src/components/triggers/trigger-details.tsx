@@ -114,7 +114,7 @@ function TriggerIcon({ type }: { type: Trigger["type"] }) {
   );
 }
 
-export function TriggerDetailsSkeleton() {
+function TriggerDetailsSkeleton() {
   return (
     <div className="mx-2 space-y-6 max-w-full py-8">
       <Skeleton className="w-32 h-8 mb-2" />

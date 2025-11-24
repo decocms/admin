@@ -7,6 +7,7 @@ import {
   useUpdateModel,
   WELL_KNOWN_MODELS,
 } from "@deco/sdk";
+import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -32,6 +33,10 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import {
+  Table,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import {
   Select,
@@ -43,41 +48,10 @@ import {
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Avatar } from "@deco/ui/components/avatar.tsx";
-import {
-  Table,
-  type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
-
-interface ModelLogoProps {
-  logo: string;
-  name: string;
-}
-
-export function ModelLogo({ logo, name }: ModelLogoProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
-      )}
-    >
-      <Avatar
-        shape="square"
-        url={logo}
-        fallback={name}
-        objectFit="contain"
-        size="base"
-      />
-    </div>
-  );
-}
 
 const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
 

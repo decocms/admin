@@ -89,14 +89,3 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn("requestMetadata", "text")
     .execute();
 }
-
-/**
- * Drop all test tables
- */
-export async function dropTestSchema(db: Kysely<Database>): Promise<void> {
-  await db.schema.dropTable("audit_logs").ifExists().execute();
-  await db.schema.dropTable("organization_settings").ifExists().execute();
-  await db.schema.dropTable("connections").ifExists().execute();
-  await db.schema.dropTable("api_keys").ifExists().execute();
-  await db.schema.dropTable("users").ifExists().execute();
-}

@@ -60,17 +60,17 @@ export const AppKeys = {
   },
 };
 
-export const WELL_KNOWN_DECO_CMS_APP_KEY = AppKeys.build({
+const WELL_KNOWN_DECO_CMS_APP_KEY = AppKeys.build({
   appId: "admin.decocms.com",
   provider: "deco",
 });
 
-export const WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY = AppKeys.build({
+const WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY = AppKeys.build({
   appId: "knowledge-bases",
   provider: "deco",
 });
 
-export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
+const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
   [WELL_KNOWN_DECO_CMS_APP_KEY]: {
     id: WELL_KNOWN_DECO_CMS_APP_KEY,
     name: "Deco CMS",
@@ -97,7 +97,7 @@ export function isWellKnownApp(appKey: string): boolean {
 }
 
 // Native apps that are always available
-export const NATIVE_APPS: GroupedApp[] = [
+const NATIVE_APPS: GroupedApp[] = [
   {
     id: "native:::documents",
     name: "Documents",

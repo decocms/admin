@@ -17,7 +17,7 @@ const formatDate = (date: Date): string => {
   });
 };
 
-export const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
+const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);

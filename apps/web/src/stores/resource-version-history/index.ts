@@ -7,15 +7,6 @@ import {
   useVersions,
 } from "./store.ts";
 
-export function useResourceVersionHistory(): Pick<
-  VersionHistoryStore,
-  "history" | "actions"
-> {
-  const history = createResourceVersionHistoryStore((s) => s.history);
-  const actions = createResourceVersionHistoryStore((s) => s.actions);
-  return { history, actions };
-}
-
 export function useAddVersion() {
   const actions = useVersionHistoryActions();
   return actions.addVersion;

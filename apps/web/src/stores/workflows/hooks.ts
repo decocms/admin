@@ -19,10 +19,6 @@ export function useIsDirty() {
   return useWorkflowStore((state) => state.isDirty, Object.is);
 }
 
-export function useWorkflowStepCount() {
-  return useWorkflowStore((state) => state.workflow.steps.length, Object.is);
-}
-
 // Selectors that create new references - use shallow comparison
 export function useWorkflowStepNames() {
   return useWorkflowStore(
@@ -31,24 +27,12 @@ export function useWorkflowStepNames() {
   );
 }
 
-export function useWorkflowSteps() {
-  return useWorkflowStore((state) => state.workflow.steps);
-}
-
 export function useWorkflow() {
   return useWorkflowStore((state) => state.workflow);
 }
 
 export function useWorkflowStepOutputs() {
   return useWorkflowStore((state) => state.stepOutputs);
-}
-
-export function usePendingServerUpdate() {
-  return useWorkflowStore((state) => state.pendingServerUpdate);
-}
-
-export function useLastServerVersion() {
-  return useWorkflowStore((state) => state.lastServerVersion);
 }
 
 // Computed selectors with memoization
@@ -79,10 +63,6 @@ export function useWorkflowFirstStepInput() {
   });
 }
 
-export function useWorkflowStepOutput(stepName: string) {
-  return useWorkflowStore((state) => state.stepOutputs[stepName]);
-}
-
 export function useWorkflowStepDefinition(stepName: string) {
   return useWorkflowStore(
     (state) =>
@@ -105,10 +85,6 @@ export function useStepTools(stepName: string) {
 
 export function useWorkflowUri() {
   return useWorkflowStore((state) => state.workflowUri, Object.is);
-}
-
-export function useWorkflowStepExecution(stepName: string) {
-  return useWorkflowStore((state) => state.stepExecutions[stepName]);
 }
 
 // Memoized complex selector
@@ -239,10 +215,6 @@ export function useHasFirstStepInput() {
 }
 
 // UI state selectors
-export function useExecuteEditorStepName() {
-  return useWorkflowStore((state) => state.executeEditorStepName, Object.is);
-}
-
 export function useIsExecuteEditorOpen(stepName: string) {
   return useWorkflowStore(
     (state) => state.executeEditorStepName === stepName,
@@ -252,17 +224,6 @@ export function useIsExecuteEditorOpen(stepName: string) {
 
 export function useExecuteDraft(stepName: string) {
   return useWorkflowStore((state) => state.executeDrafts[stepName], Object.is);
-}
-
-export function useHasExecuteDraft(stepName: string) {
-  return useWorkflowStore(
-    (state) => stepName in state.executeDrafts,
-    Object.is,
-  );
-}
-
-export function useDirtySteps() {
-  return useWorkflowStore((state) => Object.keys(state.executeDrafts), shallow);
 }
 
 // All actions grouped in one hook (actions are stable, but return object needs shallow)
@@ -299,10 +260,6 @@ export function useWorkflowActions() {
     }),
     shallow,
   );
-}
-
-export function useGetWorkflowToSave() {
-  return useWorkflowStore((state) => state.getWorkflowToSave, Object.is);
 }
 
 export function useHandleSaveSuccess() {

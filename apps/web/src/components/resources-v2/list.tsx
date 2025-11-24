@@ -1700,7 +1700,7 @@ export function ResourcesV2List({
 }
 
 /** Component to connect route params to the component */
-export default function ResourcesV2ListPage() {
+function ResourcesV2ListPage() {
   const { integrationId, resourceName } = useParams();
 
   return (

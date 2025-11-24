@@ -1,7 +1,7 @@
 /* oxlint-disable no-explicit-any */
 import z, { type ZodObject } from "zod";
 
-export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
+function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
   if (!value?.type) {
     return z.object({});
   }

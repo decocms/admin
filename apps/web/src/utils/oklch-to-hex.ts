@@ -2,7 +2,7 @@
  * Convert OKLCH color to hex for html2canvas compatibility
  * OKLCH: L (0-1), C (chroma, 0-0.4), H (hue, 0-360)
  */
-export function oklchToHex(l: number, c: number, h: number, alpha = 1): string {
+function oklchToHex(l: number, c: number, h: number, alpha = 1): string {
   // Convert OKLCH to linear RGB
   const a = c * Math.cos((h * Math.PI) / 180);
   const b = c * Math.sin((h * Math.PI) / 180);
@@ -45,7 +45,7 @@ export function oklchToHex(l: number, c: number, h: number, alpha = 1): string {
 /**
  * Convert all oklch() color functions in a string to hex format
  */
-export function convertOklchToHex(cssValue: string): string {
+function convertOklchToHex(cssValue: string): string {
   return cssValue.replace(
     /oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/g,
     (match, l, c, h, a) => {

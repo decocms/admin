@@ -13,11 +13,11 @@ interface ProfileModalContextType {
   closeProfileModal: () => void;
 }
 
-export const ProfileModalContext = createContext<
-  ProfileModalContextType | undefined
->(undefined);
+const ProfileModalContext = createContext<ProfileModalContextType | undefined>(
+  undefined,
+);
 
-export function useProfileModalContext() {
+function useProfileModalContext() {
   const ctx = useContext(ProfileModalContext);
   if (!ctx) {
     throw new Error("useProfileModal must be used within ProfileModalContext");

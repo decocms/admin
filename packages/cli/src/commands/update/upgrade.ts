@@ -102,7 +102,7 @@ export const upgrade = (packageName: string): Promise<void> => {
   });
 };
 
-export async function checkForUpdates(): Promise<void> {
+async function checkForUpdates(): Promise<void> {
   // Skip if we've already checked in this session or if running update command
   if (process.env.DECO_CLI_UPDATE_CHECKED || process.argv.includes("update")) {
     return;

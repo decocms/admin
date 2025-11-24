@@ -247,7 +247,7 @@ export function getTriggerRowActions(
 /**
  * Render workflow run card
  */
-export function renderWorkflowRunCard(
+function renderWorkflowRunCard(
   item: Record<string, unknown>,
   onClick: (item: Record<string, unknown>) => void,
 ): ReactNode {

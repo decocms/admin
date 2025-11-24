@@ -266,7 +266,7 @@ function SwitchTeam({
   );
 }
 
-export function TeamSelector() {
+function TeamSelector() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { id: teamId, label, avatarUrl } = useCurrentTeam();

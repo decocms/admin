@@ -184,7 +184,7 @@ function UserPreferencesModal({
   );
 }
 
-export function LoggedUserSidebarTrigger({
+function LoggedUserSidebarTrigger({
   user,
 }: {
   user: { avatar?: string; name?: string; email?: string };

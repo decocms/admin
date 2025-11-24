@@ -19,7 +19,7 @@ let token: string;
 export function setToken(t: string): void {
   token = t;
 }
-export function getToken(): string {
+function getToken(): string {
   return token;
 }
 
@@ -146,7 +146,7 @@ export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   return { cookie: cookies };
 }
 
-export async function getSessionToken(): Promise<string> {
+async function getSessionToken(): Promise<string> {
   const session = await readSession();
 
   if (!session) {

@@ -9,7 +9,7 @@ import type { AudioMessage } from "../types.ts";
 
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 
-export function isAudioMessage(message: UIMessage): message is AudioMessage {
+function isAudioMessage(message: UIMessage): message is AudioMessage {
   return "audioBase64" in message && typeof message.audioBase64 === "string";
 }
 
@@ -19,7 +19,7 @@ export function isAudioMessage(message: UIMessage): message is AudioMessage {
  * @param apiKey - OpenAI API key for transcription
  * @returns The transcription text or null if no audio
  */
-export async function transcribeAudioMessage(
+async function transcribeAudioMessage(
   message: UIMessage,
   apiKey: string,
 ): Promise<string | null> {
@@ -39,7 +39,7 @@ export async function transcribeAudioMessage(
  * @param apiKey - OpenAI API key for transcription
  * @returns The transcription of the audio stream
  */
-export async function transcribeBase64Audio({
+async function transcribeBase64Audio({
   audio,
   apiKey,
 }: {
@@ -71,7 +71,7 @@ const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";
  * @param options - Optional voice and speed settings
  * @returns The generated audio as Uint8Array
  */
-export async function generateSpeechFromText({
+async function generateSpeechFromText({
   text,
   apiKey,
   options = {},

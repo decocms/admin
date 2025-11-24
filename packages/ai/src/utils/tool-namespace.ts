@@ -94,7 +94,7 @@ export function formatToolName(
  * For long UUIDs, this will be a shortened version (16-24 chars depending on tool name length).
  * Use resolveFullIntegrationId() to recover the full integration ID from available integrations.
  */
-export function parseToolName(
+function parseToolName(
   namespacedName: string,
 ): { integrationId: string; toolName: string } | null {
   // Check if the name contains the double underscore separator
@@ -137,7 +137,7 @@ export function parseToolName(
  * @param namespacedName - The namespaced tool name
  * @returns The tool name without the namespace, or the original string if not namespaced
  */
-export function extractToolName(namespacedName: string): string {
+function extractToolName(namespacedName: string): string {
   const parsed = parseToolName(namespacedName);
   return parsed?.toolName ?? namespacedName;
 }
@@ -159,7 +159,7 @@ export function extractToolName(namespacedName: string): string {
  * )
  * // Returns: "3ddd52b5-7ef9-40af-abc6-af8da79722ba"
  */
-export function resolveFullIntegrationId(
+function resolveFullIntegrationId(
   truncatedId: string,
   availableIntegrationIds: string[],
 ): string {

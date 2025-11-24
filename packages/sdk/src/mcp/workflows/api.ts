@@ -202,7 +202,7 @@ export type WorkflowDataV2 = z.infer<typeof WorkflowDefinitionSchema>;
 export type WorkflowResourceV2Type = typeof WorkflowResourceV2;
 
 // Helper function to create a workflow resource instance
-export function createWorkflowResourceV2(
+function createWorkflowResourceV2(
   deconfig: DeconfigClient,
   integrationId: string,
 ) {

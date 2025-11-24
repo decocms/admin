@@ -14,7 +14,7 @@ export const ALLOWANCES = [
   "payment",
 ].join("; ");
 
-export const WELL_KNOWN_EMAIL_DOMAINS = new Set([
+const WELL_KNOWN_EMAIL_DOMAINS = new Set([
   "gmail.com",
   "yahoo.com",
   "hotmail.com",

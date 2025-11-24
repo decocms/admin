@@ -18,7 +18,7 @@ const HEAD_FILE = "head";
  * @param cwd - The current working directory (defaults to process.cwd())
  * @returns The full path to the .deconfig/head file
  */
-export function getDeconfigHeadPath(cwd?: string): string {
+function getDeconfigHeadPath(cwd?: string): string {
   const targetCwd = cwd || process.cwd();
   return join(targetCwd, DECONFIG_DIR, HEAD_FILE);
 }
@@ -28,7 +28,7 @@ export function getDeconfigHeadPath(cwd?: string): string {
  * @param cwd - The current working directory (defaults to process.cwd())
  * @returns The full path to the .deconfig directory
  */
-export function getDeconfigDir(cwd?: string): string {
+function getDeconfigDir(cwd?: string): string {
   const targetCwd = cwd || process.cwd();
   return join(targetCwd, DECONFIG_DIR);
 }
@@ -103,7 +103,7 @@ export async function writeDeconfigHead(
  * @param cwd - The current working directory (defaults to process.cwd())
  * @returns True if the HEAD file exists, false otherwise
  */
-export function hasDeconfigHead(cwd?: string): boolean {
+function hasDeconfigHead(cwd?: string): boolean {
   const headPath = getDeconfigHeadPath(cwd);
   return existsSync(headPath);
 }

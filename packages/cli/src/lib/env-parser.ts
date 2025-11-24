@@ -27,7 +27,7 @@ export function parseKeyValueEnvVar(input: string): {
 /**
  * Parse env file content in .env format (KEY=VALUE per line)
  */
-export function parseEnvFileContent(content: string): Record<string, string> {
+function parseEnvFileContent(content: string): Record<string, string> {
   return content.split("\n").reduce(
     (acc, line) => {
       const trimmed = line.trim();
@@ -49,7 +49,7 @@ export function parseEnvFileContent(content: string): Record<string, string> {
 /**
  * Parse JSON object to env vars (converts all values to strings)
  */
-export function parseJsonEnvVars(jsonObj: unknown): Record<string, string> {
+function parseJsonEnvVars(jsonObj: unknown): Record<string, string> {
   if (typeof jsonObj !== "object" || jsonObj === null) {
     throw new Error("Invalid JSON: expected object");
   }

@@ -91,38 +91,6 @@ interface IntegrationOauthProps extends IntegrationBindingFormProps {
   contract?: ContractState;
 }
 
-function IntegrationOauth({
-  permissions,
-  integrationName,
-  contract,
-  schema,
-  formRef,
-}: IntegrationOauthProps) {
-  return (
-    <div className="space-y-6 py-4">
-      {/* Permissions Section */}
-      {permissions.length > 0 && (
-        <IntegrationPermissions
-          integrationName={integrationName}
-          permissions={permissions}
-        />
-      )}
-
-      {contract && contract.clauses.length > 0 && (
-        <>
-          <Separator />
-          <ContractClauses contract={contract} />
-        </>
-      )}
-
-      <Separator />
-
-      {/* Configuration Form */}
-      <IntegrationBindingForm schema={schema} formRef={formRef} />
-    </div>
-  );
-}
-
 function ContractClauses({ contract }: { contract: ContractState }) {
   return (
     <div className="space-y-4">

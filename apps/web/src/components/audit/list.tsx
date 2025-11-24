@@ -454,4 +454,3 @@ function AuditList() {
   );
 }
 
-export default AuditList;

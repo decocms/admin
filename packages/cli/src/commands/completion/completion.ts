@@ -12,9 +12,7 @@ interface CompletionOptions {
 /**
  * Generate completions for the call-tool command
  */
-export async function generateCompletions(
-  options: CompletionOptions,
-): Promise<void> {
+async function generateCompletions(options: CompletionOptions): Promise<void> {
   const { current, previous, line } = options;
 
   try {

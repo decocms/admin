@@ -94,7 +94,7 @@ export function AgentTriggers() {
   );
 }
 
-export function ListTriggersLoading() {
+function ListTriggersLoading() {
   return (
     <div className="grid grid-cols-1 gap-4 mx-2">
       {Array.from({ length: 3 }).map((_, index) => (
@@ -104,7 +104,7 @@ export function ListTriggersLoading() {
   );
 }
 
-export function ListTriggersEmpty() {
+function ListTriggersEmpty() {
   const {
     metadata: { agentId },
   } = useAgenticChat();

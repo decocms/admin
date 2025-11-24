@@ -169,7 +169,7 @@ function ProjectLayoutContent() {
   );
 }
 
-export const ToggleDecopilotButton = () => {
+const ToggleDecopilotButton = () => {
   const { toggle } = useDecopilotOpen();
 
   return (

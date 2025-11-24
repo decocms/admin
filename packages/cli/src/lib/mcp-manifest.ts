@@ -56,7 +56,7 @@ export async function manifestExists(dirPath: string): Promise<boolean> {
 /**
  * Build a manifest from components
  */
-export function buildManifest(
+function buildManifest(
   project: ManifestProject,
   author: ManifestAuthor,
   resources: ManifestResources,
@@ -130,6 +130,6 @@ export async function extractDependenciesFromTools(
 /**
  * Get the manifest filename
  */
-export function getManifestFilename(): string {
+function getManifestFilename(): string {
   return MANIFEST_FILENAME;
 }

@@ -393,9 +393,7 @@ function chatStateReducer(
   }
 }
 
-export const AgenticChatContext = createContext<AgenticChatContextValue | null>(
-  null,
-);
+const AgenticChatContext = createContext<AgenticChatContextValue | null>(null);
 
 // Standalone dispatcher functions removed - use the useAgenticChat hook instead
 

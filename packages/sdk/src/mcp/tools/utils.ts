@@ -1,5 +1,4 @@
 import {
-  callFunction,
   createSandboxRuntime,
   inspect,
   installConsole,
@@ -8,11 +7,8 @@ import {
 import { proxyConnectionForId } from "@decocms/runtime";
 import { Validator } from "jsonschema";
 import { MCPConnection } from "../../models/mcp.ts";
-import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub } from "../context.ts";
-import { slugify } from "../deconfig/api.ts";
 import { ProjectTools } from "../index.ts";
-import { CodeStepDefinition } from "../workflows/api.ts";
 
 // Cache for compiled validators
 const validatorCache = new Map<string, Validator>();

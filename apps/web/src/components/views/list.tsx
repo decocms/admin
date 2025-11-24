@@ -196,7 +196,7 @@ export function TogglePin({ view }: { view: ViewWithStatus }) {
   );
 }
 
-export function PinToSidebar({ view }: { view: ViewWithStatus }) {
+function PinToSidebar({ view }: { view: ViewWithStatus }) {
   const { org, project } = useParams();
   const projectKey = org && project ? `${org}/${project}` : undefined;
   const { togglePin, isPinned } = usePinnedTabs(projectKey);
@@ -446,4 +446,3 @@ function ViewsList({
   );
 }
 
-export default ViewsList;

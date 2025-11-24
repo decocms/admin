@@ -73,7 +73,7 @@ export function formatStatus(status: string): string {
 /**
  * Sort workflow runs by various criteria
  */
-export function sortWorkflowRuns(
+function sortWorkflowRuns(
   runs: WorkflowRun[],
   sortKey: string,
   direction: "asc" | "desc",
@@ -123,7 +123,7 @@ export function sortWorkflowRuns(
 /**
  * Sort unique workflows by various criteria
  */
-export function sortWorkflows(
+function sortWorkflows(
   workflows: Workflow[],
   sortKey: string,
   direction: "asc" | "desc",

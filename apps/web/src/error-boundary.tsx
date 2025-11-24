@@ -21,7 +21,7 @@ const Context = createContext<{ state: State; reset: () => void }>({
   reset: () => {},
 });
 
-export const useError = () => use(Context);
+// Removed: useError was unused
 
 const catchAll = (_error: Error) => true;
 

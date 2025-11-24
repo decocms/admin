@@ -4,7 +4,6 @@ import type { AIAgent, Env } from "../agent.ts";
 import { createHandoffToolsFor } from "../agents/handoff.ts";
 import { createTool } from "../utils/create-tool.ts";
 import { INNATE_TOOLS } from "./constants.ts";
-export { INNATE_TOOLS } from "./constants.ts";
 
 export const getToolsForInnateIntegration = (
   integration: Integration,

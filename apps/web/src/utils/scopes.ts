@@ -3,17 +3,14 @@ import type { AppScope } from "@deco/sdk/hooks";
 import type { JSONSchema7 } from "json-schema";
 
 // Default policies required for all integrations
-export const DEFAULT_INTEGRATION_POLICIES: Statement[] = [];
+const DEFAULT_INTEGRATION_POLICIES: Statement[] = [];
 
-export const parseAppScope = (scope: string) => {
+const parseAppScope = (scope: string) => {
   const [bindingName, toolName] = scope.split("::");
   return { bindingName, toolName };
 };
 
-export const getAppNameFromSchema = (
-  schema: JSONSchema7,
-  bindingName: string,
-) => {
+const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
   const binding = schema.properties?.[bindingName];
   if (
     typeof binding === "object" &&
@@ -37,7 +34,7 @@ export interface BindingObject {
   value: string;
 }
 
-export const getBindingObject = (
+const getBindingObject = (
   formData: Record<string, unknown>,
   prop: string,
 ): BindingObject | undefined => {

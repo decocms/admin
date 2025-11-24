@@ -26,7 +26,6 @@ const generateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
   ]);
 };
 
-const stringifyJWK = (jwk: JsonWebKey): string => btoa(JSON.stringify(jwk));
 const parseJWK = (jwk: string): JsonWebKey => JSON.parse(atob(jwk));
 const importJWK = (jwk: JsonWebKey, usages?: string[]): Promise<CryptoKey> =>
   crypto.subtle.importKey(
@@ -53,13 +52,6 @@ const getOrGenerateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
 // Generate an RSA key pair
 let keys: null | Promise<[JsonWebKey, JsonWebKey]> = null;
 
-const setFromString = (publicKey: string, privateKey: string) => {
-  if (!publicKey || !privateKey) {
-    return;
-  }
-  keys ??= Promise.resolve([parseJWK(publicKey), parseJWK(privateKey)]);
-};
-
 const getKeyPair = async () => {
   keys ??= getOrGenerateKeyPair();
   return await keys;
@@ -80,13 +72,6 @@ async function createJWT<
   }
 
   return await jwt.sign(secret);
-}
-
-async function verifyJWT<
-  TClaims extends Record<string, unknown> = Record<string, unknown>,
->(token: string, secret: string): Promise<JwtPayloadWithClaims<TClaims>> {
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-  return payload as JwtPayloadWithClaims<TClaims>;
 }
 
 const DECO_CHAT_ISSUER = "https://api.decocms.com";

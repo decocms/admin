@@ -5,7 +5,7 @@ import { MainChat, MainChatSkeleton } from "../agent/chat.tsx";
 import { useDecopilotOpen } from "../layout/decopilot-layout.tsx";
 import { useThread } from "./thread-provider.tsx";
 
-export const NO_DROP_TARGET = "no-drop-target";
+const NO_DROP_TARGET = "no-drop-target";
 
 interface DecopilotChatWrapperProps {
   hasTabs: boolean;

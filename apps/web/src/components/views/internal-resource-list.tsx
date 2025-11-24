@@ -38,7 +38,7 @@ import {
 } from "@deco/ui/components/resource-table.tsx";
 import { ResourceCreateDialog } from "./resource-create-dialog.tsx";
 
-export function InternalResourceList({ name }: { name: string }) {
+function InternalResourceList({ name }: { name: string }) {
   const { integrationId } = useParams();
   if (!integrationId) return null;
   return (

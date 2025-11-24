@@ -19,7 +19,7 @@ export function Protect({
   return children;
 }
 
-export function PlanBadge() {
+function PlanBadge() {
   const plan = usePlan();
   const seatCount = plan.user_seats - plan.remainingSeats;
   const seatLimit = plan.user_seats;

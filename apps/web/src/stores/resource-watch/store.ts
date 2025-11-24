@@ -133,30 +133,3 @@ export function useConnectionLastCtime(resourceUri: string) {
     (s) => s.connections.get(resourceUri)?.lastCtime ?? null,
   );
 }
-
-export function useConnectionStatus(resourceUri: string) {
-  return createResourceWatchStore(
-    useShallow((s) => {
-      const conn = s.connections.get(resourceUri);
-      return {
-        isConnected: conn?.isConnected ?? false,
-        error: conn?.error ?? null,
-        eventCount: conn?.events.length ?? 0,
-      };
-    }),
-  );
-}
-
-// ✅ Allow access outside React for special cases
-export function getConnection(resourceUri: string): WatchConnection {
-  const conn = createResourceWatchStore.getState().connections.get(resourceUri);
-  return (
-    conn || {
-      resourceUri,
-      isConnected: false,
-      events: [],
-      lastCtime: null,
-      error: null,
-    }
-  );
-}

@@ -209,7 +209,7 @@ export async function* walk(
  * Collect all walk entries into an array
  * Convenience function for when you need all entries at once
  */
-export async function walkArray(
+async function walkArray(
   root: string,
   options: WalkOptions = {},
 ): Promise<WalkEntry[]> {

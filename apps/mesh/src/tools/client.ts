@@ -69,3 +69,43 @@ export const fetcher = new Proxy({} as MeshClient, {
     };
   },
 }) as MeshClient;
+
+/**
+ * Create a tool caller for a specific connection
+ * Routes through mesh backend at /mcp/:connectionId
+ */
+export function createConnectionToolCaller(connectionId: string) {
+  return async (toolName: string, args: Record<string, unknown>) => {
+    const response = await fetch(`/mcp/${connectionId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: args,
+        },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const json = await parseSSEResponseAsJson(response);
+
+    if (json.result?.isError) {
+      throw new Error(
+        json.result.content?.[0]?.text || "Tool call failed"
+      );
+    }
+
+    return json.result?.structuredContent || json.result;
+  };
+}

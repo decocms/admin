@@ -4,15 +4,15 @@
  * List all connections in the organization
  */
 
-import Ajv, { type ValidateFunction } from "ajv";
-import { z } from "zod/v3";
+import { type Binder, createBindingChecker } from "@decocms/bindings";
+import { MODELS_BINDING } from "@decocms/bindings/models";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { appendFile } from "fs/promises";
+import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
-import { MODELS_BINDING_SCHEMA } from "../../core/bindings";
 import type { MCPConnection, ToolDefinition } from "../../storage/types";
-import { appendFile } from "fs/promises";
 
 async function logConnectionDebug(message: string) {
   try {
@@ -25,26 +25,9 @@ async function logConnectionDebug(message: string) {
   }
 }
 
-const ajv = new Ajv({ strict: false, allErrors: false });
-const BUILTIN_BINDINGS: Record<string, object> = {
-  MODELS: MODELS_BINDING_SCHEMA,
+const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
+  MODELS: MODELS_BINDING,
 };
-
-function resolveBindingSchema(
-  binding?: Record<string, unknown> | string,
-): object | null {
-  if (!binding) return null;
-
-  if (typeof binding === "string") {
-    const schema = BUILTIN_BINDINGS[binding.toUpperCase()];
-    if (!schema) {
-      throw new Error(`Unknown binding schema: ${binding}`);
-    }
-    return schema;
-  }
-
-  return binding;
-}
 
 async function createConnectionClient(connection: MCPConnection) {
   const headers: Record<string, string> = {
@@ -85,8 +68,19 @@ async function fetchToolsFromMCP(
     await logConnectionDebug(
       `Fetching tools for connection ${connection.id} (${connection.name})`,
     );
-    client = await createConnectionClient(connection);
-    const result = await client.listTools();
+
+    // Add timeout to prevent hanging connections
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Connection timeout")), 3000);
+    });
+
+    const fetchPromise = async () => {
+      const c = await createConnectionClient(connection);
+      client = c;
+      return await c.listTools();
+    };
+
+    const result = await Promise.race([fetchPromise(), timeoutPromise]);
 
     if (!result.tools || result.tools.length === 0) {
       await logConnectionDebug(
@@ -111,12 +105,19 @@ async function fetchToolsFromMCP(
       error,
     );
     await logConnectionDebug(
-      `Error fetching tools for connection ${connection.id}: ${(error as Error).message}`,
+      `Error fetching tools for connection ${connection.id}: ${
+        (error as Error).message
+      }`,
     );
     return null;
   } finally {
-    if (client?.close) {
-      await client.close();
+    try {
+      const c = client as Client | null;
+      if (c && typeof c.close === "function") {
+        await c.close();
+      }
+    } catch {
+      // Ignore close errors
     }
   }
 }
@@ -147,35 +148,30 @@ export const CONNECTION_LIST = defineTool({
     await ctx.access.check();
 
     const organization = requireOrganization(ctx);
-    const schema = resolveBindingSchema(
-      input.binding as Record<string, unknown> | string | undefined,
-    );
-    let validator: ValidateFunction<Record<string, unknown>> | undefined;
-    const schemaProperties =
-      schema &&
-      typeof schema === "object" &&
-      "properties" in (schema as Record<string, unknown>)
-        ? ((schema as { properties?: Record<string, unknown> }).properties ??
-          null)
-        : null;
-    const schemaPropertyKeys = schemaProperties
-      ? Object.keys(schemaProperties)
-      : null;
 
-    if (schema) {
-      try {
-        validator = ajv.compile<Record<string, unknown>>(schema);
-      } catch (error) {
-        throw new Error(
-          `Invalid binding schema provided: ${(error as Error).message}`,
-        );
-      }
-    }
+    // Determine which binding to use: well-known binding (string) or provided JSON schema (object)
+    const bindingDefinition: Binder | undefined = input.binding
+      ? typeof input.binding === "string"
+        ? (() => {
+          const wellKnownBinding =
+            BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
+          if (!wellKnownBinding) {
+            throw new Error(`Unknown binding: ${input.binding}`);
+          }
+          return wellKnownBinding;
+        })()
+        : (input.binding as unknown as Binder)
+      : undefined;
+
+    // Create binding checker from the binding definition
+    const bindingChecker = bindingDefinition
+      ? createBindingChecker(bindingDefinition)
+      : undefined;
 
     let connections = await ctx.storage.connections.list(organization.id);
 
-    // If a validator is present, check which connections need tools fetched
-    if (validator) {
+    // If a binding filter is specified, fetch tools for connections that need them
+    if (bindingChecker) {
       const connectionsNeedingTools = connections.filter(
         (conn) => !conn.tools || conn.tools.length === 0,
       );
@@ -206,49 +202,45 @@ export const CONNECTION_LIST = defineTool({
       }
     }
 
-    const filteredConnections = validator
-      ? connections.filter((connection) => {
+    // Filter connections by binding if specified
+    const filteredConnections = bindingChecker
+      ? await Promise.all(
+        connections.map(async (connection) => {
           if (!connection.tools || connection.tools.length === 0) {
-            return false;
+            return null;
           }
 
-          const toolMap = Object.fromEntries(
-            connection.tools.map((tool) => [
-              tool.name,
-              {
-                input: tool.inputSchema ?? {},
-                output: tool.outputSchema ?? {},
-              },
-            ]),
+          const isValid = await bindingChecker.isImplementedBy(
+            connection.tools.map((t) => ({
+              name: t.name,
+              inputSchema: t.inputSchema as Record<string, unknown>,
+              outputSchema: t.outputSchema as
+                | Record<string, unknown>
+                | undefined,
+            })),
           );
 
-          const bindingToolMap =
-            schemaPropertyKeys === null
-              ? toolMap
-              : Object.fromEntries(
-                  schemaPropertyKeys
-                    .filter((name) => name in toolMap)
-                    .map((name) => [name, toolMap[name]]),
-                );
-
-          const isValid = validator?.(bindingToolMap) ?? true;
           if (!isValid) {
             logConnectionDebug(
-              `Connection ${connection.id} failed binding validation: ${JSON.stringify(validator?.errors ?? [])}`,
+              `Connection ${connection.id} does not implement binding`,
             ).catch(() => {});
-          } else if (schemaPropertyKeys !== null) {
-            logConnectionDebug(
-              `Connection ${connection.id} satisfied binding schema with required tools: ${schemaPropertyKeys.join(", ")}`,
-            ).catch(() => {});
+            return null;
           }
 
-          return isValid;
-        })
+          logConnectionDebug(
+            `Connection ${connection.id} implements binding with tools: ${
+              connection.tools.map((t) => t.name).join(", ")
+            }`,
+          ).catch(() => {});
+
+          return connection;
+        }),
+      ).then((results) => results.filter((c): c is MCPConnection => c !== null))
       : connections;
 
-    if (schema) {
+    if (bindingChecker) {
       logConnectionDebug(
-        `CONNECTION_LIST returning ${filteredConnections.length} connection(s) for binding ${typeof input.binding === "string" ? input.binding : "custom schema"}`,
+        `CONNECTION_LIST returning ${filteredConnections.length} connection(s) for binding ${input.binding}`,
       ).catch(() => {});
     }
 

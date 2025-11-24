@@ -14,7 +14,7 @@ FROM base AS deps
 # Copy everything needed for workspace resolution
 COPY . .
 
-RUN rm -rf /app/apps/api /app/apps/web /app/apps/outbound /app/packages/ai /app/packages/runtime /app/packages/sdk /app/packages/bindings /app/packages/cf-sandbox /app/packages/cli /app/packages/create-deco
+RUN rm -rf bun.lockb /app/apps/api /app/apps/web /app/apps/outbound /app/packages/ai /app/packages/runtime /app/packages/sdk /app/packages/bindings /app/packages/cf-sandbox /app/packages/cli /app/packages/create-deco
 
 # Install all dependencies (workspace aware)
 RUN bun install --frozen-lockfile --production

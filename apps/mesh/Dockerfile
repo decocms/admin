@@ -43,6 +43,8 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
 
 # UI package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui

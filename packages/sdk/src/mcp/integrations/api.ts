@@ -121,25 +121,25 @@ const formatId = (type: "i" | "a", uuid: string) =>
 
 const agentAsIntegrationFor =
   (c: AppContext, token?: string) =>
-  (agent: Agent): Integration => {
-    assertHasLocator(c);
-    const locator = c.locator.value;
+    (agent: Agent): Integration => {
+      assertHasLocator(c);
+      const locator = c.locator.value;
 
-    return {
-      id: formatId("a", agent.id),
-      icon: agent.avatar,
-      name: agent.name,
-      description: agent.description,
-      connection: {
-        type: "HTTP",
-        url: new URL(
-          `/${locator}/agents/${agent.id}/mcp`,
-          DECO_CMS_API(c, false),
-        ).href,
-        token,
-      },
+      return {
+        id: formatId("a", agent.id),
+        icon: agent.avatar,
+        name: agent.name,
+        description: agent.description,
+        connection: {
+          type: "HTTP",
+          url: new URL(
+            `/${locator}/agents/${agent.id}/mcp`,
+            DECO_CMS_API(c, false),
+          ).href,
+          token,
+        },
+      };
     };
-  };
 
 const createIntegrationManagementTool = createToolGroup("Integration", {
   name: "Integration Management",
@@ -327,9 +327,8 @@ const projectUrlFromLocator = (c: AppContext) => {
   const locator = c.locator.value;
   const base = DECO_CMS_API(c, false);
 
-  const projectPath = `/${
-    locator.startsWith("/") ? locator.slice(1) : locator
-  }`;
+  const projectPath = `/${locator.startsWith("/") ? locator.slice(1) : locator
+    }`;
   return { url: new URL(`${projectPath}/mcp`, base), projectPath };
 };
 
@@ -640,17 +639,17 @@ export const listIntegrations = createIntegrationManagementTool({
 
         const tools = isVirtual
           ? await listToolsAndSortByName(
-              { connection, appName, ignoreCache: false },
-              c,
-            )
-              .then((r) => r?.tools ?? null)
-              .catch(() => {
-                console.error(
-                  "Error listing tools for virtual integration",
-                  connection,
-                );
-                return null;
-              })
+            { connection, appName, ignoreCache: false },
+            c,
+          )
+            .then((r) => r?.tools ?? null)
+            .catch(() => {
+              console.error(
+                "Error listing tools for virtual integration",
+                connection,
+              );
+              return null;
+            })
           : dbRecord
             ? extractToolsFromRegistry(dbRecord)
             : null;
@@ -741,116 +740,117 @@ export const getIntegration = createIntegrationManagementTool({
       return { ...baseIntegration, tools: null }; // Innate integrations don't have tools for now
     }
 
-    const selectPromise =
-      type === "i"
-        ? c.drizzle
-            .select({
-              id: integrations.id,
-              name: integrations.name,
-              description: integrations.description,
-              icon: integrations.icon,
-              connection: integrations.connection,
-              created_at: integrations.created_at,
-              workspace: integrations.workspace,
-              access: integrations.access,
-              access_id: integrations.access_id,
-              project_id: projects.id,
-              org_id: organizations.id,
-              // Registry app fields
-              registry_app_name: registryApps.name,
-              registry_scope_name: registryScopes.scope_name,
-              // Tool fields
-              tool_id: registryTools.id,
-              tool_name: registryTools.name,
-              tool_description: registryTools.description,
-              tool_input_schema: registryTools.input_schema,
-              tool_output_schema: registryTools.output_schema,
-            })
-            .from(integrations)
-            .leftJoin(projects, eq(integrations.project_id, projects.id))
-            .leftJoin(organizations, eq(projects.org_id, organizations.id))
-            .leftJoin(registryApps, eq(integrations.app_id, registryApps.id))
-            .leftJoin(
-              registryScopes,
-              eq(registryApps.scope_id, registryScopes.id),
-            )
-            .leftJoin(registryTools, eq(registryApps.id, registryTools.app_id))
-            .where(
-              and(
-                eq(integrations.id, uuid),
-                filterByWorkspaceOrLocator({
-                  table: integrations,
-                  ctx: c,
-                }),
-              ),
-            )
-            .then((rows) => {
-              if (!rows.length) {
-                return null;
-              }
-
-              // Group tools by integration
-              const baseRow = rows[0];
-              const tools = rows
-                .filter((row) => row.tool_id) // Only include rows with tools
-                .map((row) => ({
-                  name: row.tool_name!,
-                  description: row.tool_description,
-                  input_schema: row.tool_input_schema,
-                  output_schema: row.tool_output_schema,
-                }));
-
-              return {
-                ...baseRow,
-                deco_chat_apps_registry: baseRow.registry_app_name
-                  ? {
-                      name: baseRow.registry_app_name,
-                      deco_chat_registry_scopes: baseRow.registry_scope_name
-                        ? {
-                            scope_name: baseRow.registry_scope_name,
-                          }
-                        : null,
-                      deco_chat_apps_registry_tools:
-                        tools.length > 0 ? tools : null,
-                    }
-                  : null,
-              };
-            })
-        : c.drizzle
-            .select({
-              ...getTableColumns(agents),
-              org_id: organizations.id,
-            })
-            .from(agents)
-            .leftJoin(projects, eq(agents.project_id, projects.id))
-            .leftJoin(organizations, eq(projects.org_id, organizations.id))
-            .where(
-              and(
-                filterByWorkspaceOrLocator({
-                  table: agents,
-                  ctx: c,
-                }),
-                eq(agents.id, uuid),
-              ),
-            )
-            .limit(1)
-            .then((r) => r[0]);
-
     const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
+    const formattedId = formatId(type, uuid);
 
-    if (virtualIntegrations.some((i) => i.id === id)) {
+    if (virtualIntegrations.some((i) => i.id === formattedId)) {
       const baseIntegration = IntegrationSchema.parse({
-        ...virtualIntegrations.find((i) => i.id === id),
-        id: formatId(type, id),
+        ...virtualIntegrations.find((i) => i.id === formattedId),
+        id: formattedId,
       });
       return {
         ...baseIntegration,
         tools: await listToolsAndSortByName(
           { connection: baseIntegration.connection, ignoreCache: false },
           c,
-        ).then((r) => r?.tools as z.infer<typeof IntegrationSchema>["tools"]),
+        ).then((r) => r?.tools ?? null),
       };
     }
+
+    const selectPromise =
+      type === "i"
+        ? c.drizzle
+          .select({
+            id: integrations.id,
+            name: integrations.name,
+            description: integrations.description,
+            icon: integrations.icon,
+            connection: integrations.connection,
+            created_at: integrations.created_at,
+            workspace: integrations.workspace,
+            access: integrations.access,
+            access_id: integrations.access_id,
+            project_id: projects.id,
+            org_id: organizations.id,
+            // Registry app fields
+            registry_app_name: registryApps.name,
+            registry_scope_name: registryScopes.scope_name,
+            // Tool fields
+            tool_id: registryTools.id,
+            tool_name: registryTools.name,
+            tool_description: registryTools.description,
+            tool_input_schema: registryTools.input_schema,
+            tool_output_schema: registryTools.output_schema,
+          })
+          .from(integrations)
+          .leftJoin(projects, eq(integrations.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+          .leftJoin(registryApps, eq(integrations.app_id, registryApps.id))
+          .leftJoin(
+            registryScopes,
+            eq(registryApps.scope_id, registryScopes.id),
+          )
+          .leftJoin(registryTools, eq(registryApps.id, registryTools.app_id))
+          .where(
+            and(
+              eq(integrations.id, uuid),
+              filterByWorkspaceOrLocator({
+                table: integrations,
+                ctx: c,
+              }),
+            ),
+          )
+          .then((rows) => {
+            if (!rows.length) {
+              return null;
+            }
+
+            // Group tools by integration
+            const baseRow = rows[0];
+            const tools = rows
+              .filter((row) => row.tool_id) // Only include rows with tools
+              .map((row) => ({
+                name: row.tool_name!,
+                description: row.tool_description,
+                input_schema: row.tool_input_schema,
+                output_schema: row.tool_output_schema,
+              }));
+
+            return {
+              ...baseRow,
+              deco_chat_apps_registry: baseRow.registry_app_name
+                ? {
+                  name: baseRow.registry_app_name,
+                  deco_chat_registry_scopes: baseRow.registry_scope_name
+                    ? {
+                      scope_name: baseRow.registry_scope_name,
+                    }
+                    : null,
+                  deco_chat_apps_registry_tools:
+                    tools.length > 0 ? tools : null,
+                }
+                : null,
+            };
+          })
+        : c.drizzle
+          .select({
+            ...getTableColumns(agents),
+            org_id: organizations.id,
+          })
+          .from(agents)
+          .leftJoin(projects, eq(agents.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+          .where(
+            and(
+              filterByWorkspaceOrLocator({
+                table: agents,
+                ctx: c,
+              }),
+              eq(agents.id, uuid),
+            ),
+          )
+          .limit(1)
+          .then((r) => r[0]);
 
     const data = await selectPromise;
 
@@ -1027,23 +1027,23 @@ export const createIntegration = createIntegrationManagementTool({
 
       const existingIntegration = payload.id
         ? await tx
-            .select({
-              id: integrations.id,
-            })
-            .from(integrations)
-            .leftJoin(projects, eq(integrations.project_id, projects.id))
-            .leftJoin(organizations, eq(projects.org_id, organizations.id))
-            .where(
-              and(
-                filterByWorkspaceOrLocator({
-                  table: integrations,
-                  ctx: c,
-                }),
-                eq(integrations.id, payload.id),
-              ),
-            )
-            .limit(1)
-            .then((r) => r[0])
+          .select({
+            id: integrations.id,
+          })
+          .from(integrations)
+          .leftJoin(projects, eq(integrations.project_id, projects.id))
+          .leftJoin(organizations, eq(projects.org_id, organizations.id))
+          .where(
+            and(
+              filterByWorkspaceOrLocator({
+                table: integrations,
+                ctx: c,
+              }),
+              eq(integrations.id, payload.id),
+            ),
+          )
+          .limit(1)
+          .then((r) => r[0])
         : null;
 
       if (existingIntegration) {
@@ -1193,16 +1193,16 @@ export const deleteIntegration = createIntegrationManagementTool({
     // Build where clause conditionally based on whether projectId exists
     const whereConditions = projectId
       ? and(
-          eq(integrations.id, uuid),
-          or(
-            eq(integrations.workspace, c.workspace.value),
-            eq(integrations.project_id, projectId),
-          ),
-        )
-      : and(
-          eq(integrations.id, uuid),
+        eq(integrations.id, uuid),
+        or(
           eq(integrations.workspace, c.workspace.value),
-        );
+          eq(integrations.project_id, projectId),
+        ),
+      )
+      : and(
+        eq(integrations.id, uuid),
+        eq(integrations.workspace, c.workspace.value),
+      );
 
     await c.drizzle.delete(integrations).where(whereConditions);
 
@@ -1396,16 +1396,16 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
       },
     })) as
       | {
-          structuredContent:
-            | { redirectUrl: string }
-            | {
-                stateSchema: unknown;
-                scopes?: string[];
-              };
-        }
-      | {
-          error: string;
+        structuredContent:
+        | { redirectUrl: string }
+        | {
+          stateSchema: unknown;
+          scopes?: string[];
         };
+      }
+      | {
+        error: string;
+      };
     if (oauth && "error" in oauth) {
       if (oauth.error === NO_TOOL_FOUND_ERR) {
         return {
@@ -1460,13 +1460,13 @@ export const DECO_GET_APP_SCHEMA = createIntegrationManagementTool({
       },
     })) as
       | {
-          structuredContent:
-            | { redirectUrl: string }
-            | {
-                stateSchema: unknown;
-                scopes?: string[];
-              };
-        }
+        structuredContent:
+        | { redirectUrl: string }
+        | {
+          stateSchema: unknown;
+          scopes?: string[];
+        };
+      }
       | { error: string };
 
     if ("error" in result) {

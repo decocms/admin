@@ -1,0 +1,33 @@
+{
+    "name": "site-binding-renderer",
+    "version": "0.1.0",
+    "description": "A runtime-agnostic renderer for the SITE binding protocol",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "bun run build:lib && bun run build:examples",
+        "build:lib": "bun build ./src/index.ts --outdir ./dist --external zod && tsc --emitDeclarationOnly",
+        "build:examples": "bun build ./examples/client-only/app.ts --outfile ./examples/client-only/app.js",
+        "serve:client": "bun run build:examples && bunx serve examples/client-only",
+        "serve:server": "cd examples/hono-ssr && bun run server.ts",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "mcp",
+        "site",
+        "binding",
+        "renderer"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@hono/node-server": "^1.19.6",
+        "hono": "^4.10.6",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.3",
+        "@types/node": "^20.11.0"
+    }
+}

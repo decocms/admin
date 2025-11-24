@@ -445,4 +445,3 @@ function ViewsList({
     </div>
   );
 }
-

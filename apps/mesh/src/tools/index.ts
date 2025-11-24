@@ -27,5 +27,4 @@ export const ALL_TOOLS = [
   ConnectionTools.CONNECTION_TEST,
 ] as const;
 
-
 export type MCPMeshTools = typeof ALL_TOOLS;

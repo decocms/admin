@@ -51,7 +51,7 @@ export const arrayProp = <Elements = string>(val: unknown, key: string) => {
  * Get the stack trace
  * @returns The stack trace
  */
-export function getStack() {
+function getStack() {
   const obj: { stack?: string } = {};
   if ("captureStackTrace" in Error) {
     // Avoid getStack itself in the stack trace

@@ -26,7 +26,7 @@ const slugify = (name: string) => {
   return name.replace(/[./]/g, "-").replace(/[^a-zA-Z0-9_-]/g, "");
 };
 
-export function dereferenceSchema(
+function dereferenceSchema(
   schema: JSONSchema7 | undefined,
   definitions: { [key: string]: JSONSchema7 },
   visited = new Set<string>(),

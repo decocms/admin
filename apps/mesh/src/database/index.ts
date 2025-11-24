@@ -115,28 +115,6 @@ export async function closeDatabase(
 }
 
 /**
- * Get database dialect name
- */
-export function getDatabaseDialect(database: Kysely<DatabaseSchema>): string {
-  // Access internal executor to get dialect (using unknown for type safety)
-  const db = database as unknown as {
-    getExecutor?: () => {
-      adapter?: {
-        connectionProvider?: {
-          constructor?: {
-            name?: string;
-          };
-        };
-      };
-    };
-  };
-  return (
-    db.getExecutor?.()?.adapter?.connectionProvider?.constructor?.name ||
-    "unknown"
-  );
-}
-
-/**
  * Default database instance (singleton)
  * Lazy-initialized to avoid errors during module import
  * Call this function to get the database instance
@@ -149,12 +127,3 @@ export function getDb(): Kysely<DatabaseSchema> {
   }
   return dbInstance;
 }
-
-/**
- * Export db for compatibility (lazy-initialized)
- */
-export const db = new Proxy({} as Kysely<DatabaseSchema>, {
-  get(_, prop) {
-    return getDb()[prop as keyof Kysely<DatabaseSchema>];
-  },
-});

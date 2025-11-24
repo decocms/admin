@@ -46,7 +46,6 @@
     "ajv-errors": "^3.0.0",
     "ajv-formats": "^3.0.1",
     "bidc": "^0.0.3",
-    "class-variance-authority": "^0.7.1",
     "cronstrue": "^2.59.0",
     "date-fns": "^4.1.0",
     "gsap": "^3.12.7",

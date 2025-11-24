@@ -27,21 +27,13 @@ type EventMap = {
 };
 
 // Generic helper to add a typed listener
-export function onEvent<K extends keyof EventMap>(
+function onEvent<K extends keyof EventMap>(
   name: K,
   listener: (event: CustomEvent<EventMap[K]>) => void,
 ): () => void {
   const wrapped = listener as EventListener;
   globalThis.addEventListener(name, wrapped as EventListener);
   return () => globalThis.removeEventListener(name, wrapped as EventListener);
-}
-
-// Generic helper to dispatch a typed event
-export function dispatchEvent<K extends keyof EventMap>(
-  name: K,
-  detail: EventMap[K],
-) {
-  globalThis.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
 // Specific helpers for better DX
@@ -61,26 +53,4 @@ export function onResourceError(
   listener: (event: CustomEvent<ResourceErrorDetail>) => void,
 ) {
   return onEvent("deco:resource-error", listener);
-}
-
-export function dispatchResourceLoading(detail: ResourceLoadingDetail) {
-  dispatchEvent("deco:resource-loading", detail);
-}
-
-export function dispatchResourceLoaded(detail: ResourceLoadedDetail) {
-  dispatchEvent("deco:resource-loaded", detail);
-}
-
-export function dispatchResourceError(detail: ResourceErrorDetail) {
-  dispatchEvent("deco:resource-error", detail);
-}
-
-export function onRulesUpdated(
-  listener: (event: CustomEvent<{ rules: string[] }>) => void,
-) {
-  return onEvent("deco:rules-updated", listener);
-}
-
-export function dispatchRulesUpdated(detail: { rules: string[] }) {
-  dispatchEvent("deco:rules-updated", detail);
 }

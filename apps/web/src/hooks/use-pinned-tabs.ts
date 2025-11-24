@@ -33,7 +33,7 @@ function resolveStorageKey(projectKey?: string) {
  * These provide quick access to the core resource types.
  * Users can unpin these if they prefer a different setup.
  */
-export const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [
+const DEFAULT_PINNED_TABS: Omit<PinnedTab, "id" | "pinnedAt">[] = [
   {
     resourceUri: "native://documents",
     title: "Documents",

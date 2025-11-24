@@ -1,8 +1,6 @@
 import type { TriggerOutput } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import type { ReactNode } from "react";
 import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
@@ -243,48 +241,3 @@ export function getTriggerRowActions(
 /**
  * Render trigger card - removed, using default ResourcesV2List card instead
  */
-
-/**
- * Render workflow run card
- */
-export function renderWorkflowRunCard(
-  item: Record<string, unknown>,
-  onClick: (item: Record<string, unknown>) => void,
-): ReactNode {
-  const run = item as unknown as WorkflowRun;
-
-  return (
-    <Card
-      key={run.runId}
-      className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-      onClick={() => onClick(item)}
-    >
-      <CardContent className="p-0">
-        <div className="grid grid-cols-[1fr_min-content] gap-4 items-start p-4">
-          <div className="flex flex-col gap-2 min-w-0">
-            <div className="text-sm font-semibold truncate">
-              {formatToolName(run.workflowName)}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Icon name="schedule" size={12} />
-              <span>{run.runId}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={getStatusBadgeVariant(run.status)}
-                className="text-xs"
-              >
-                {formatStatus(run.status)}
-              </Badge>
-            </div>
-          </div>
-        </div>
-        <div className="px-4 py-3 border-t border-border">
-          <span className="text-xs text-muted-foreground">
-            Started: {new Date(run.createdAt).toLocaleString()}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

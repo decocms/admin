@@ -685,5 +685,3 @@ function ConnectionChannels({
     </div>
   );
 }
-
-export default Channels;

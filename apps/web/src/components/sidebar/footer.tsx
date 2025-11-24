@@ -27,7 +27,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { UserMenu } from "@deco/ui/components/user-menu.tsx";
 import { SidebarFooterShell } from "@deco/ui/components/sidebar-footer-shell.tsx";
-import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
@@ -47,20 +46,6 @@ import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 import { useOrgLink } from "../../hooks/use-navigate-workspace.ts";
 import { PlanIcons } from "../../utils/plan-icons.tsx";
-
-/** Wrapped component to be suspended */
-function NotificationDot({ className }: { className?: string }) {
-  const { data: invites = [] } = useInvites();
-
-  if (!invites.length) return null;
-
-  return (
-    <span className={cn("relative flex size-2", className)}>
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
-      <span className="relative inline-flex size-2 rounded-full bg-destructive" />
-    </span>
-  );
-}
 
 /** Wrapped component to be suspended */
 function InvitesCount() {
@@ -181,28 +166,6 @@ function UserPreferencesModal({
         </Form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-export function LoggedUserSidebarTrigger({
-  user,
-}: {
-  user: { avatar?: string; name?: string; email?: string };
-}) {
-  const userAvatarURL = user?.avatar ?? undefined;
-  const userName = user?.name || user?.email;
-
-  return (
-    <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
-      <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
-      <span className="text-sm grow">{userName}</span>
-
-      <Suspense fallback={null}>
-        <div className="size-3 flex items-center">
-          <NotificationDot className="justify-end" />
-        </div>
-      </Suspense>
-    </SidebarMenuButton>
   );
 }
 

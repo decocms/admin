@@ -495,5 +495,3 @@ export async function tail(
     console.error("Error processing tail events:", error);
   }
 }
-
-export default { tail };

@@ -1,6 +1,5 @@
 import type { JSONSchema7 } from "json-schema";
 import type { SchemaType } from "../index.tsx";
-import { generateDefaultValues } from "./generate-default-values.ts";
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 // Format property name for display
@@ -9,23 +8,6 @@ export function formatPropertyName(name: string): string {
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (str: string) => str.toUpperCase())
     .trim();
-}
-
-// Initialize form with smart anyOf schema selection based on existing data
-export function initializeFormWithSchema<T extends Record<string, SchemaType>>(
-  schema: JSONSchema7,
-  existingData?: Partial<T>,
-): T {
-  // If we have existing data, use it to better select anyOf schemas
-  if (existingData && Object.keys(existingData).length > 0) {
-    return generateDefaultValues(
-      schema,
-      existingData as Record<string, SchemaType>,
-    ) as T;
-  }
-
-  // Fall back to basic default generation
-  return generateDefaultValues(schema) as T;
 }
 
 /**
@@ -184,7 +166,7 @@ export function doesChildFieldMatchSchema(
 /**
  * Find a schema from anyOf based on child field structure
  */
-export function findSchemaByChildFields<
+function findSchemaByChildFields<
   T extends FieldValues = Record<string, unknown>,
 >(
   name: string,
@@ -228,7 +210,7 @@ export function findSchemaByChildFields<
  * Find a schema from anyOf based on parent-child relationships
  * Implementation of the _checkParentChildRelationship function from Form.tsx
  */
-export function findSchemaByParentRelationship<
+function findSchemaByParentRelationship<
   T extends FieldValues = Record<string, unknown>,
 >(
   name: string,

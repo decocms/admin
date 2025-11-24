@@ -80,20 +80,3 @@ export class CredentialVault {
     return randomBytes(KEY_LENGTH).toString("base64");
   }
 }
-
-/**
- * Create CredentialVault from environment or generate new key
- */
-export function createVault(): CredentialVault {
-  let encryptionKey = process.env.ENCRYPTION_KEY;
-
-  if (!encryptionKey) {
-    console.warn(
-      "ENCRYPTION_KEY not set! Generating random key. " +
-        "This means encrypted data will be unrecoverable after restart.",
-    );
-    encryptionKey = CredentialVault.generateKey();
-  }
-
-  return new CredentialVault(encryptionKey);
-}

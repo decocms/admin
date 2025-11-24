@@ -27,3 +27,39 @@ export class Resend implements EmailProvider {
     }
   }
 }
+
+export class SendGrid implements EmailProvider {
+  constructor(private readonly apiKey: string) {}
+
+  async sendEmail({ to, from, subject, html }: SendEmailParams): Promise<void> {
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        personalizations: [
+          {
+            to: [{ email: to }],
+          },
+        ],
+        from: { email: from },
+        subject,
+        content: [
+          {
+            type: "text/html",
+            value: html,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to send email via SendGrid: ${response.statusText} - ${errorText}`,
+      );
+    }
+  }
+}

@@ -126,47 +126,6 @@ export function createViewImplementation(options: ViewImplementationOptions) {
 }
 
 /**
- * Helper function to create a resource-centric URL for Views 2.0
- *
- * @param resourceType - The type of resource (e.g., "workflow", "tool")
- * @param viewName - The name of the view (e.g., "detail", "list")
- * @param integrationId - The integration ID
- * @param params - Additional URL parameters
- * @returns Resource-centric URL string
- *
- */
-export function createResourceCentricUrl(
-  resourceType: string,
-  viewName: string,
-  integrationId: string,
-  params: Record<string, string> = {},
-): string {
-  const searchParams = new URLSearchParams({
-    view: viewName,
-    integrationId,
-    ...params,
-  });
-
-  return `internal://resources/${resourceType}?${searchParams.toString()}`;
-}
-
-/**
- * Helper function to create a list view URL for Views 2.0
- *
- * @param resourceType - The type of resource (e.g., "workflow", "tool")
- * @param integrationId - The integration ID
- * @param params - Additional URL parameters
- * @returns List view URL string
- */
-export function createListViewUrl(
-  resourceType: string,
-  integrationId: string,
-  params: Record<string, string> = {},
-): string {
-  return createResourceCentricUrl(resourceType, "list", integrationId, params);
-}
-
-/**
  * Helper function to create a detail view URL for Views 2.0
  *
  * @param resourceType - The type of resource (e.g., "workflow", "tool")

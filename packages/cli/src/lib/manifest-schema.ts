@@ -1,15 +1,4 @@
 export {
-  manifestProjectSchema,
-  manifestAuthorSchema,
-  manifestResourcesSchema,
-  manifestDependenciesSchema,
-  manifestSchema,
-  type ManifestProject,
-  type ManifestAuthor,
-  type ManifestResources,
-  type ManifestDependencies,
   type Manifest,
-  createManifest,
   parseManifest,
-  isValidManifest,
 } from "@deco/sdk/mcp/projects/manifest";

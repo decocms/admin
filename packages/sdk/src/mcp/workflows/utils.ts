@@ -18,7 +18,7 @@ export interface InstanceStatus {
  * Converts an InstanceStatus to InstanceGetResponse format with minimal fields
  * This allows us to have a single code path for handling both basic and detailed status
  */
-export function normalizeWorkflowStatus(
+function normalizeWorkflowStatus(
   instanceStatus: InstanceStatus,
 ): InstanceGetResponse {
   return {
@@ -84,7 +84,7 @@ const normalizeStepName = (name: string) => {
 /**
  * Extracts step results from workflow steps and returns parsed outputs
  */
-export function extractStepResults(
+function extractStepResults(
   steps: InstanceGetResponse["steps"],
 ): Record<string, unknown> {
   const stepResults: Record<string, unknown> = {};

@@ -286,17 +286,14 @@ async function rewardFreeCreditsIfNeeded(
   }
 }
 
-export const organizationWalletWorkspace = (
+const organizationWalletWorkspace = (
   locator: ProjectLocator,
   userId?: unknown,
 ) => {
   return Locator.adaptToRootSlug(locator, userId ? String(userId) : undefined);
 };
 
-export const organizationWalletId = (
-  locator: ProjectLocator,
-  userId?: unknown,
-) => {
+const organizationWalletId = (locator: ProjectLocator, userId?: unknown) => {
   const workspace = organizationWalletWorkspace(locator, userId);
   return WellKnownWallets.build(
     ...WellKnownWallets.workspace.genCredits(workspace),

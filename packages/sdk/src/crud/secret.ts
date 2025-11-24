@@ -2,8 +2,6 @@ import { MCPClient } from "../fetcher.ts";
 import type {
   CreateSecretInput,
   ListSecretsInput,
-  PromptUserForSecretInput,
-  ReadSecretInput,
   UpdateSecretInput,
 } from "../mcp/secrets/api.ts";
 import { ProjectLocator } from "../locator.ts";
@@ -25,13 +23,6 @@ export const listSecrets = (
     .SECRETS_LIST(options, init)
     .then((res) => res.items as Secret[]);
 
-export const readSecret = (
-  locator: ProjectLocator,
-  name: string,
-  init?: RequestInit,
-) =>
-  MCPClient.forLocator(locator).SECRETS_READ({ name } as ReadSecretInput, init);
-
 export const createSecret = (
   locator: ProjectLocator,
   input: CreateSecretInput,
@@ -52,9 +43,3 @@ export const deleteSecret = (
   MCPClient.forLocator(locator).SECRETS_DELETE({ id }, init) as Promise<{
     success: boolean;
   }>;
-
-export const promptUserForSecret = (
-  locator: ProjectLocator,
-  input: PromptUserForSecretInput,
-  init?: RequestInit,
-) => MCPClient.forLocator(locator).SECRETS_PROMPT_USER(input, init);

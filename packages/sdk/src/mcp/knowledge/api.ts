@@ -30,7 +30,7 @@ export interface KnowledgeBaseContext extends AppContext {
 }
 
 // Legacy schema for backward compatibility during migration
-export const KnowledgeFileMetadataSchema = z
+const KnowledgeFileMetadataSchema = z
   .object({
     agentId: z.string().optional(),
   })

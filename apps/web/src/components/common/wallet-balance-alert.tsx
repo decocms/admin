@@ -10,7 +10,7 @@ interface WalletBalanceAlertProps {
   balanceLabel?: string;
 }
 
-export function WalletBalanceAlertLayout({
+function WalletBalanceAlertLayout({
   balance,
   isLoading = false,
   title = "This app may use your wallet",

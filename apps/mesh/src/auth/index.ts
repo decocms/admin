@@ -15,23 +15,28 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import {
   admin as adminPlugin,
   apiKey,
+  magicLink,
   mcp,
   openAPI,
   organization,
-  magicLink,
   OrganizationOptions,
 } from "better-auth/plugins";
+import {
+  adminAc,
+  defaultStatements,
+} from "better-auth/plugins/organization/access";
+
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import path from "path";
-import { createSSOConfig, SSOConfig } from "./sso";
-import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 import {
   createEmailSender,
   EmailProviderConfig,
   findEmailProvider,
 } from "./email-providers";
+import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
+import { createSSOConfig, SSOConfig } from "./sso";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -70,16 +75,26 @@ export function getDatabaseUrl(): string {
   return databaseUrl;
 }
 
-const statement = {} as const;
+const allTools = Object.values(getToolsByCategory())
+  .map((tool) => tool.map((t) => t.name))
+  .flat();
+const statement = { ...defaultStatements, self: ["*", ...allTools] };
 
 const ac = createAccessControl(statement);
 
 const user = ac.newRole({
   self: ["*"],
+  ...adminAc.statements,
 }) as Role;
 
 const admin = ac.newRole({
   self: ["*"],
+  ...adminAc.statements,
+}) as Role;
+
+const owner = ac.newRole({
+  self: ["*"],
+  ...adminAc.statements,
 }) as Role;
 
 const scopes = Object.values(getToolsByCategory())
@@ -111,7 +126,7 @@ if (
 
     sendInvitationEmail = async (data) => {
       const inviterName = data.inviter.user?.name || data.inviter.user?.email;
-      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?token=${data.invitation.id}`;
+      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?invitationId=${data.invitation.id}`;
 
       await sendEmail({
         to: data.email,
@@ -131,6 +146,7 @@ const plugins = [
   // https://www.better-auth.com/docs/plugins/organization
   organization({
     ac,
+    creatorRole: "owner",
     allowUserToCreateOrganization: true, // Users can create organizations by default
     dynamicAccessControl: {
       enabled: true,
@@ -139,6 +155,7 @@ const plugins = [
     roles: {
       user,
       admin,
+      owner,
     },
     sendInvitationEmail,
   }),
@@ -176,7 +193,7 @@ const plugins = [
   // https://www.better-auth.com/docs/plugins/admin
   adminPlugin({
     defaultRole: "user",
-    adminRoles: ["admin"],
+    adminRoles: ["admin", "owner"],
   }),
 
   // OpenAPI plugin for API documentation
@@ -226,49 +243,3 @@ export type BetterAuthInstance = typeof auth;
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Helper to create API key
- */
-export async function createApiKey(params: {
-  userId: string;
-  name: string;
-  permissions: Record<string, string[]>;
-  expiresIn?: number;
-}) {
-  return await auth.api.createApiKey({
-    body: {
-      userId: params.userId,
-      name: params.name,
-      permissions: params.permissions,
-      expiresIn: params.expiresIn,
-    },
-  });
-}
-
-/**
- * Helper to verify API key
- */
-export async function verifyApiKey(key: string) {
-  return await auth.api.verifyApiKey({
-    body: { key },
-  });
-}
-
-/**
- * Helper to check user permission
- * Note: Either provide `permission` (to check) OR `permissions` (from API key), not both
- */
-export async function checkPermission(params: {
-  userId: string;
-  role?: "user" | "admin";
-  permission: Record<string, string[]>;
-}) {
-  return await auth.api.userHasPermission({
-    body: {
-      userId: params.userId,
-      role: params.role,
-      permission: params.permission,
-    },
-  });
-}

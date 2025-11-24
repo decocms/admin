@@ -164,7 +164,7 @@ const StartWorkflowButton = memo(function StartWorkflowButton() {
  * Interactive workflow canvas that shows a form for workflow input
  * and displays the run results below
  */
-export const Canvas = memo(function Canvas() {
+const Canvas = memo(function Canvas() {
   const resourceUri = useWorkflowUri();
   const workflowName = useWorkflowName();
   const workflowDescription = useWorkflowDescription();

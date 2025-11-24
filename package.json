@@ -37,6 +37,7 @@
     "supabase": "^2.48.3",
     "typescript": "^5.9.3",
     "vitest": "3.2.4",
+    "react": "^19.2.0",
     "wrangler": "4.45.0"
   },
   "engines": {

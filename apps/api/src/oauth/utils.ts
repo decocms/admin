@@ -10,19 +10,6 @@ export function generateRandomToken(length = 32): string {
 }
 
 /**
- * Hash a PKCE code verifier using SHA-256 and return base64url encoded string
- */
-export async function hashPKCE(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-
-  // Convert to base64url
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-/**
  * Validate that a redirect URI is in the list of registered URIs
  */
 export function validateRedirectUri(
@@ -70,20 +57,4 @@ export function encodeOAuthState(data: {
   clientState?: string;
 }): string {
   return btoa(JSON.stringify(data));
-}
-
-/**
- * Decode workspace context from state parameter
- */
-export function decodeOAuthState(state: string): {
-  org: string;
-  project: string;
-  integrationId: string;
-  clientState?: string;
-} | null {
-  try {
-    return JSON.parse(atob(state));
-  } catch {
-    return null;
-  }
 }

@@ -7,10 +7,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import type { Integration, MCPConnection } from "../models/mcp.ts";
 
-export const createTransport = (
-  connection: MCPConnection,
-  signal?: AbortSignal,
-) => {
+const createTransport = (connection: MCPConnection, signal?: AbortSignal) => {
   if (connection.type === "Websocket") {
     return new WebSocketClientTransport(new URL(connection.url));
   }
@@ -68,7 +65,6 @@ export const createServerClient = async (
   const client = new Client({
     name: mcpServer.name,
     version: "1.0.0",
-    timeout: 180000, // 3 minutes
   });
 
   await client.connect(transport);

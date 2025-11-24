@@ -9,5 +9,3 @@ export function ToolsResourceList() {
     <ResourcesV2List integrationId="i:tools-management" resourceName="tool" />
   );
 }
-
-export default ToolsResourceList;

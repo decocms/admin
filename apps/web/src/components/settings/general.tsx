@@ -115,7 +115,7 @@ function DeleteTeamDialog({
 const AVATAR_UPLOAD_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
 const TEAM_AVATAR_PATH = "team-avatars";
 
-export function GeneralSettings() {
+function GeneralSettings() {
   const {
     label: currentTeamName,
     slug: currentTeamSlug,

@@ -1,5 +1,4 @@
 import {
-  callFunction,
   createSandboxRuntime,
   inspect,
   installConsole,
@@ -8,15 +7,8 @@ import {
 import { proxyConnectionForId } from "@decocms/runtime";
 import { Validator } from "jsonschema";
 import { MCPConnection } from "../../models/mcp.ts";
-import { WorkflowState } from "../../workflows/workflow-runner.ts";
 import { MCPClientStub } from "../context.ts";
-import { slugify } from "../deconfig/api.ts";
 import { ProjectTools } from "../index.ts";
-import { CodeStepDefinition } from "../workflows/api.ts";
-
-// Utility functions for consistent naming
-export const toolNameSlugify = (txt: string) => slugify(txt).toUpperCase();
-export const fileNameSlugify = (txt: string) => slugify(txt).toLowerCase();
 
 // Cache for compiled validators
 const validatorCache = new Map<string, Validator>();
@@ -173,27 +165,6 @@ export const asEnv = (
   return env;
 };
 
-// Helper function to process execute code (inline only)
-export async function processExecuteCode(
-  execute: string,
-  filePath: string,
-  client: MCPClientStub<ProjectTools>,
-  branch?: string,
-): Promise<{ functionCode: string }> {
-  // Save inline code to a file
-  const functionCode = execute;
-
-  await client.PUT_FILE({
-    branch,
-    path: filePath,
-    content: functionCode,
-  });
-
-  return {
-    functionCode,
-  };
-}
-
 // Helper function to validate execute code
 export async function validateExecuteCode(
   functionCode: string,
@@ -221,64 +192,4 @@ export async function validateExecuteCode(
       error: `Validation error for ${name}: ${inspect(error)}`,
     };
   }
-}
-
-/**
- * Run code in a workflow step context
- */
-export async function runCode(
-  workflowInput: unknown,
-  state: WorkflowState,
-  step: CodeStepDefinition,
-  client: MCPClientStub<ProjectTools>,
-  runtimeId: string = "default",
-): Promise<Rpc.Serializable<unknown>> {
-  // Load and execute the code step function
-  using stepEvaluation = await evalCodeAndReturnDefaultHandle(
-    step.execute,
-    runtimeId,
-  );
-  const {
-    ctx: stepCtx,
-    defaultHandle: stepDefaultHandle,
-    guestConsole: stepConsole,
-  } = stepEvaluation;
-
-  // Create step context with WellKnownOptions
-  const stepContext = {
-    sleep: async (name: string, duration: number) => {
-      await state.sleep(name, duration);
-    },
-    sleepUntil: async (name: string, date: Date | number) => {
-      await state.sleepUntil(name, date);
-    },
-    readWorkflowInput() {
-      return workflowInput;
-    },
-    readStepResult(stepName: string) {
-      if (!state.steps[stepName]) {
-        throw new Error(`Step '${stepName}' has not been executed yet`);
-      }
-      return state.steps[stepName];
-    },
-    env: asEnv(client, { dependencies: step.dependencies }),
-  };
-
-  // Call the function
-  const stepCallHandle = await callFunction(
-    stepCtx,
-    stepDefaultHandle,
-    undefined,
-    stepContext,
-    {},
-  );
-
-  const result = stepCtx.dump(stepCtx.unwrapResult(stepCallHandle));
-
-  // Log any console output from the step execution
-  if (stepConsole.logs.length > 0) {
-    console.log(`Code step '${step.name}' logs:`, stepConsole.logs);
-  }
-
-  return result as Rpc.Serializable<unknown>;
 }

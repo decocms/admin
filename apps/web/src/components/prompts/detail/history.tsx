@@ -122,7 +122,7 @@ export default function HistoryTab() {
   );
 }
 
-export function HistoryCard({
+function HistoryCard({
   version,
   user,
   idx,

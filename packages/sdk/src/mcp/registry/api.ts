@@ -16,7 +16,6 @@ import {
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
 import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
 
-export { AppName };
 export type { RegistryApp } from "./schemas.ts";
 
 const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;

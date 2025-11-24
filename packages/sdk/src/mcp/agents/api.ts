@@ -14,8 +14,8 @@ import {
 import { type AppContext, createToolGroup } from "../context.ts";
 import {
   ForbiddenError,
-  NotFoundError,
   InternalServerError,
+  NotFoundError,
 } from "../index.ts";
 import { getProjectIdFromContext } from "../projects/util.ts";
 import { agents, organizations, projects, userActivity } from "../schema.ts";
@@ -27,52 +27,6 @@ const createTool = createToolGroup("Agent", {
   description: "Manage your agents",
   icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
-
-export const getAgentsByIds = async (ids: string[], c: AppContext) => {
-  assertHasWorkspace(c);
-
-  if (ids.length === 0) return [];
-
-  const dbIds = ids.filter((id) => !(id in WELL_KNOWN_AGENTS));
-
-  let dbAgents: Omit<
-    z.infer<typeof AgentSchema>,
-    "instructions" | "memory" | "views" | "visibility" | "access"
-  >[] = [];
-  if (dbIds.length > 0) {
-    const data = await c.drizzle
-      .select({
-        id: agents.id,
-        name: agents.name,
-        description: agents.description,
-        tools_set: agents.tools_set,
-        avatar: agents.avatar,
-      })
-      .from(agents)
-      .where(inArray(agents.id, dbIds));
-
-    dbAgents = data.map((item) =>
-      AgentSchema.omit({
-        instructions: true,
-        memory: true,
-        views: true,
-        visibility: true,
-        access: true,
-      }).parse(item),
-    );
-  }
-
-  return ids
-    .map((id) => {
-      if (id in WELL_KNOWN_AGENTS) {
-        return AgentSchema.parse(
-          WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-        );
-      }
-      return dbAgents.find((agent) => agent.id === id);
-    })
-    .filter((a): a is z.infer<typeof AgentSchema> => !!a);
-};
 
 export const IMPORTANT_ROLES = ["owner", "admin"];
 
@@ -268,7 +222,7 @@ export const getAgent = createTool({
   },
 });
 
-const CreateAgentInputSchema = AgentSchema.partial();
+const CreateAgentInputSchema = AgentSchema.partial().omit({ id: true });
 
 export const createAgent = createTool({
   name: "AGENTS_CREATE",
@@ -284,6 +238,7 @@ export const createAgent = createTool({
       .insert(agents)
       .values({
         ...NEW_AGENT_TEMPLATE,
+        id: crypto.randomUUID(),
         ...agent,
         workspace: projectId ? null : c.workspace?.value,
         project_id: projectId,
@@ -294,7 +249,7 @@ export const createAgent = createTool({
   },
 });
 
-export const createAgentSetupTool = createToolGroup("AgentSetup", {
+const createAgentSetupTool = createToolGroup("AgentSetup", {
   name: "Agent Setup",
   description:
     "Configure agent identity, update settings, and list available integrations.",

@@ -39,7 +39,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useParams } from "react-router";
 import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
@@ -1696,17 +1695,5 @@ export function ResourcesV2List({
         customEmptyState={customEmptyState}
       />
     </ResourceRouteProvider>
-  );
-}
-
-/** Component to connect route params to the component */
-export default function ResourcesV2ListPage() {
-  const { integrationId, resourceName } = useParams();
-
-  return (
-    <ResourcesV2List
-      integrationId={integrationId}
-      resourceName={resourceName}
-    />
   );
 }

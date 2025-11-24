@@ -1,4 +1,4 @@
-export const Hosts = {
+const Hosts = {
   API: "api.decocms.com",
   WEB_APP: "admin.decocms.com",
   APPS: "deco.page",

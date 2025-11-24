@@ -296,4 +296,3 @@ if (isDevelopment) {
 }
 
 export default app;
-export { app };

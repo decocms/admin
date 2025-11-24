@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import { Locator } from "../../locator.ts";
 
 // Enhanced theme schema with detailed context for AI tools
-export const themeVariablesSchema = z.lazy(() =>
+const themeVariablesSchema = z.lazy(() =>
   z.object({
     "--background": z
       .string()
@@ -181,7 +181,7 @@ export const enhancedThemeSchema = z
   );
 
 // Register the Theme tools under a dedicated group id so they surface as integration id `i:theme-management`
-export const createTool = createToolGroup("Theme", {
+const createTool = createToolGroup("Theme", {
   name: "Theme Management",
   description: "Manage organization-level themes and workspace branding.",
   icon: "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",

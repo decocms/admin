@@ -23,7 +23,7 @@ import {
   userBelongsToTeam,
 } from "./invites-utils.ts";
 
-export const updateActivityLog = async (
+const updateActivityLog = async (
   c: AppContext,
   {
     teamId,

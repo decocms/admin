@@ -12,7 +12,7 @@ import gsap from "gsap";
  */
 const THEME_CACHE_KEY = (locator: string) => `workspace_theme_cache_${locator}`;
 
-export const clearThemeCache = (locator: string) => {
+const clearThemeCache = (locator: string) => {
   localStorage.removeItem(THEME_CACHE_KEY(locator));
 };
 

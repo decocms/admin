@@ -6,7 +6,7 @@ import {
 
 export type Options = Parameters<typeof createServerClient>;
 
-export const getCookieDomain = (hostname: string) =>
+const getCookieDomain = (hostname: string) =>
   hostname.split(".").slice(-2).join(".");
 
 export const getServerClientOptions = ({

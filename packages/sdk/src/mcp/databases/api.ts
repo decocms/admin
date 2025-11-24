@@ -9,8 +9,6 @@ import { createDatabaseTool } from "./tool.ts";
 import { WellKnownMcpGroups } from "../groups.ts";
 import { listViewsSchema } from "../bindings/views.ts";
 
-export { getWorkspaceD1Database } from "./d1.ts";
-
 const Timings = z.object({
   sql_duration_ms: z.number().optional(),
 });
@@ -36,7 +34,7 @@ const QueryResult = z.object({
   success: z.boolean().optional(),
 });
 export type QueryResult = z.infer<typeof QueryResult>;
-export const DatatabasesRunSqlInputSchema = z.object({
+const DatatabasesRunSqlInputSchema = z.object({
   sql: z.string().describe("The SQL query to run"),
   params: z
     .array(z.any())

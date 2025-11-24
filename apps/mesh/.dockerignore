@@ -1,43 +1,71 @@
-# Dependencies
-node_modules
-bun.lockb
-
-# Development files
-*.md
-*.log
-.env.local
-.env.development
-.env.test
+# Build context for mesh app - keep this minimal
 
 # Git
 .git
 .gitignore
+.github
 
-# IDE
+# Dependencies (installed fresh in Docker)
+node_modules
+**/node_modules
+bun.lockb
+.bun
+
+# Build outputs from other apps (we only need mesh)
+apps/api
+apps/web
+apps/outbound
+packages/ai
+packages/runtime
+packages/sdk
+packages/bindings
+packages/cf-sandbox
+packages/cli
+packages/create-deco
+
+# Development files
 .vscode
+.cursor
 .idea
+*.log
 *.swp
 *.swo
+*~
 
-# Testing
-test
-*.test.ts
-*.spec.ts
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+**/test
+**/tests
+**/__tests__
+coverage
 
 # Documentation
 docs
+plans
+tasks
 *.md
-RULES.md
-TESTING-GUIDE.md
-MCP-INSPECTOR-README.md
-IMPLEMENTATION-*.md
-MIGRATION-*.md
-MVP-COMPLETE.md
-PROGRESS.md
-QUICK-START*.md
-OAUTH-*.md
+!README.md
+
+# Environment files
+.env*
+!.env.example
+
+# Database files (except migrations)
+data
+*.db
+*.db-shm
+*.db-wal
+!migrations
 
 # Misc
 .DS_Store
-Thumbs.db
-
+*.pem
+.turbo
+.next
+.cache
+dist
+!apps/mesh/dist

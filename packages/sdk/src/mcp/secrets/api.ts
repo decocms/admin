@@ -33,7 +33,7 @@ const createTool = createToolGroup("Secrets", {
 });
 
 // SECRETS_LIST
-export const listSecretsSchema = z.object({});
+const listSecretsSchema = z.object({});
 
 export type ListSecretsInput = z.infer<typeof listSecretsSchema>;
 
@@ -74,7 +74,7 @@ export const listSecrets = createTool({
 });
 
 // SECRETS_READ
-export const readSecretSchema = z.object({
+const readSecretSchema = z.object({
   name: z.string().describe("The name of the secret to read"),
 });
 
@@ -126,7 +126,7 @@ export const readSecret = createTool({
 });
 
 // SECRETS_CREATE
-export const createSecretSchema = z.object({
+const createSecretSchema = z.object({
   name: z
     .string()
     .regex(
@@ -201,7 +201,7 @@ export const createSecret = createTool({
 });
 
 // SECRETS_UPDATE
-export const updateSecretSchema = z.object({
+const updateSecretSchema = z.object({
   id: z.string().describe("The ID of the secret to update"),
   data: z.object({
     name: z
@@ -308,7 +308,7 @@ export const updateSecret = createTool({
 });
 
 // SECRETS_DELETE
-export const deleteSecretSchema = z.object({
+const deleteSecretSchema = z.object({
   id: z.string().describe("The ID of the secret to delete"),
 });
 
@@ -383,7 +383,7 @@ export const deleteSecret = createTool({
 });
 
 // SECRETS_PROMPT_USER
-export const promptUserForSecretSchema = z.object({
+const promptUserForSecretSchema = z.object({
   name: z
     .string()
     .regex(

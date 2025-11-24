@@ -9,37 +9,53 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-FROM base AS deps
-COPY package.json bun.lockb* ./
-RUN bun install --frozen-lockfile --production
+# Create non-root user early and setup /app ownership
+RUN addgroup --system --gid 1001 bunapp && \
+    adduser --system --uid 1001 bunuser && \
+    chown -R bunuser:bunapp /app
 
 # Build stage
 FROM base AS builder
-COPY package.json bun.lockb* ./
+WORKDIR /app
+USER bunuser
+
+# Copy everything
+COPY --chown=bunuser:bunapp . .
+
+# Install all dependencies (including dev) with frozen lockfile
 RUN bun install --frozen-lockfile
-COPY . .
 
 # Build the frontend static assets
+WORKDIR /app/apps/mesh
 RUN bun run build:client
 
 # Production stage
 FROM base AS runner
 WORKDIR /app
 
-# Copy application code and built assets from builder
-COPY --from=builder /app .
-# Overwrite with production-only node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy only what's needed for production (minimal approach)
+# Root workspace files
+COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 bunapp && \
-    adduser --system --uid 1001 bunuser && \
-    chown -R bunuser:bunapp /app
+# Mesh app (runtime files only)
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
 
-# Create data directory for SQLite database
+# UI package (workspace dependency)
+COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
+
+# Copy working node_modules from builder (includes dev deps, but avoids OOM)
+COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
+
+# Create data directory with correct ownership
+USER root
 RUN mkdir -p /app/data && \
-    chown -R bunuser:bunapp /app/data
+    chown bunuser:bunapp /app/data
 
 USER bunuser
 
@@ -54,8 +70,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
 
+# Set working directory to mesh app
+WORKDIR /app/apps/mesh
+
 # Run database migrations on startup and start the application
-# Added debug logging to check directory structure and permissions
 CMD ["sh", "-c", "\
   echo '=== Debug Info ===' && \
   echo 'Current user:' && id && \

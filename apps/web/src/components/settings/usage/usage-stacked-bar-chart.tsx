@@ -15,7 +15,7 @@ export interface UsageChartData {
   itemCount: number;
 }
 
-export function hourId(transaction: { timestamp: string }): string {
+function hourId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
   const hour = date.getHours();
   const isAM = hour < 12;
@@ -24,7 +24,7 @@ export function hourId(transaction: { timestamp: string }): string {
   return `${hour12}${period}`;
 }
 
-export function dayId(transaction: { timestamp: string }): string {
+function dayId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
   const options = { month: "short", day: "numeric" } as const;
   return date.toLocaleDateString("en-US", options);
@@ -36,7 +36,7 @@ export function dayId(transaction: { timestamp: string }): string {
  * @param {{ timestamp: string }} transaction - The transaction object.
  * @returns {string} The week range string.
  */
-export function weekId(transaction: { timestamp: string }): string {
+function weekId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
 
   // Find the start of the week (Sunday)
@@ -57,7 +57,7 @@ export function weekId(transaction: { timestamp: string }): string {
   return `${startDateString} - ${endDateString}`;
 }
 
-export function allDayHoursKeys(): string[] {
+function allDayHoursKeys(): string[] {
   return Array.from({ length: 24 }, (_, i) =>
     hourId({
       timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString(),
@@ -65,7 +65,7 @@ export function allDayHoursKeys(): string[] {
   );
 }
 
-export function allWeekDaysKeys(): string[] {
+function allWeekDaysKeys(): string[] {
   return Array.from({ length: 7 }, (_, i) =>
     dayId({
       timestamp: new Date(
@@ -75,7 +75,7 @@ export function allWeekDaysKeys(): string[] {
   ).reverse();
 }
 
-export function allMonthWeeksKeys(): string[] {
+function allMonthWeeksKeys(): string[] {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed
@@ -110,7 +110,7 @@ export function allMonthWeeksKeys(): string[] {
   return weekIds;
 }
 
-export function createMap<T extends BaseTransaction>({
+function createMap<T extends BaseTransaction>({
   keys,
   fillWith,
   getKey,

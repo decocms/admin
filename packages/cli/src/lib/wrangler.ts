@@ -37,7 +37,7 @@ export async function getCurrentEnvVars(projectRoot: string): Promise<{
   };
 }
 
-export async function writeEnvVars(
+async function writeEnvVars(
   projectRoot: string,
   envVars: Record<string, string | undefined>,
 ) {
@@ -54,7 +54,7 @@ const getProjectRoot = () => {
   return dirname(configPath);
 };
 
-export async function getEnvVars(projectRoot?: string) {
+async function getEnvVars(projectRoot?: string) {
   if (!projectRoot) {
     projectRoot = getProjectRoot();
   }

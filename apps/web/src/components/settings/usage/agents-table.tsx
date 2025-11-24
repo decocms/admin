@@ -27,7 +27,7 @@ interface AgentUsageMetrics {
   uniqueUsers: number;
 }
 
-export function AgentUsageDetailsDialog({
+function AgentUsageDetailsDialog({
   agent,
   metrics,
   onClose,

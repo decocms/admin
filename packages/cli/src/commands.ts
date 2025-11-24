@@ -1131,7 +1131,7 @@ const projectImport = new Command("import")
   });
 
 // Project parent command
-export const project = new Command("project")
+const project = new Command("project")
   .description("Manage MCP project import/export.")
   .addCommand(projectExport)
   .addCommand(projectImport);

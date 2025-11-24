@@ -8,6 +8,7 @@ import { getRegistryApp } from "../crud/registry.ts";
 export interface PermissionDescription {
   scope: string;
   description: string;
+  app?: string;
 }
 
 export interface AppScope {

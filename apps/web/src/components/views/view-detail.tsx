@@ -198,7 +198,7 @@ function SendScreenshotButton({
  * @param resourceUri - The resource URI of the view to display
  * @param data - Optional data to inject into window.viewData for the view to access
  */
-export function ViewDetail({ resourceUri, data }: ViewDetailProps) {
+function ViewDetail({ resourceUri, data }: ViewDetailProps) {
   const { org, project } = useParams<{ org: string; project: string }>();
   const { data: resource, isLoading } = useViewByUriV2(resourceUri);
   const effectiveView = resource?.data;

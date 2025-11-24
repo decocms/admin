@@ -5,7 +5,7 @@ import api from "./api.ts";
 import apps from "./apps.ts";
 import type { AppEnv } from "./utils/context.ts";
 
-export const APPS_DOMAIN_QS = "app_host";
+const APPS_DOMAIN_QS = "app_host";
 
 export const appsDomainOf = (req: Request, url?: URL) => {
   url ??= new URL(req.url);
@@ -36,7 +36,7 @@ const normalizeHost = (req: Request) => {
   );
 };
 
-export const app = new Hono<AppEnv>({
+const app = new Hono<AppEnv>({
   getPath: (req) =>
     "/" +
     normalizeHost(req) +

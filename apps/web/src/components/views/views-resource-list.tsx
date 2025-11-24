@@ -138,5 +138,3 @@ export function ViewsResourceList({
     />
   );
 }
-
-export default ViewsResourceList;

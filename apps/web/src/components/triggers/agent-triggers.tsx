@@ -7,7 +7,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { useAgenticChat } from "../chat/provider.tsx";
 import { TriggerCard } from "./trigger-card.tsx";
-import { TriggerDetails } from "./trigger-details.tsx";
+import TriggerDetails from "./trigger-details.tsx";
 import { TriggerModal as TriggerModalButton } from "./trigger-dialog.tsx";
 
 export function AgentTriggers() {

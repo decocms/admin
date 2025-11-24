@@ -87,7 +87,7 @@ import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
 
-export const app = new Hono<AppEnv>();
+const app = new Hono<AppEnv>();
 
 const contextToPrincipalExecutionContext = (
   c: Context<AppEnv>,

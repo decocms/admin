@@ -324,5 +324,3 @@ export function WorkflowsResourceList({
     />
   );
 }
-
-export default WorkflowsResourceList;

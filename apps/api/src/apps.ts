@@ -6,9 +6,9 @@ import { withContextMiddleware } from "./middlewares/context.ts";
 import type { AppEnv } from "./utils/context.ts";
 
 export type DispatcherFetch = typeof fetch;
-export const app = new Hono<AppEnv>();
+const app = new Hono<AppEnv>();
 
-export const fetchScript = async (
+const fetchScript = async (
   c: Context<AppEnv>,
   script: string,
   req: Request,

@@ -42,6 +42,7 @@
     ".github/workflows/publish-runtime-npm.yaml"
   ],
   "ignoreDependencies": ["@types/*"],
+  // TODO(@camudo): Remove this config once I fix all unused type exports
   "ignoreIssues": {
     "**/*": ["types"]
   }

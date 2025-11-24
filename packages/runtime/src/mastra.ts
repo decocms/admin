@@ -113,6 +113,29 @@ export function createPrivateTool<
   }
   return createTool(opts);
 }
+
+export interface StreamableTool<TSchemaIn extends z.ZodSchema = z.ZodSchema> {
+  id: string;
+  inputSchema: TSchemaIn;
+  streamable?: true;
+  description?: string;
+  execute: (input: ToolExecutionContext<TSchemaIn>) => Promise<Response>;
+}
+
+export function createStreamableTool<
+  TSchemaIn extends z.ZodSchema = z.ZodSchema,
+>(streamableTool: StreamableTool<TSchemaIn>): StreamableTool<TSchemaIn> {
+  return {
+    ...streamableTool,
+    execute: (input: ToolExecutionContext<TSchemaIn>) => {
+      return streamableTool.execute({
+        ...input,
+        runtimeContext: createRuntimeContext(input.runtimeContext),
+      });
+    },
+  };
+}
+
 export function createTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
@@ -333,7 +356,12 @@ export interface Integration {
   id: string;
   appId: string;
 }
-export type CreatedTool = ReturnType<typeof createTool>;
+export type CreatedTool =
+  | ReturnType<typeof createTool>
+  | ReturnType<typeof createStreamableTool>;
+export function isStreamableTool(tool: CreatedTool): tool is StreamableTool {
+  return tool && "streamable" in tool && tool.streamable === true;
+}
 export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
@@ -782,24 +810,32 @@ export const createMCPServer = <
       server.registerTool(
         tool.id,
         {
+          _meta: {
+            streamable: isStreamableTool(tool),
+          },
           description: tool.description,
           inputSchema:
             tool.inputSchema && "shape" in tool.inputSchema
               ? (tool.inputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
-          outputSchema:
-            tool.outputSchema &&
-            typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
+          outputSchema: isStreamableTool(tool)
+            ? undefined
+            : tool.outputSchema &&
+                typeof tool.outputSchema === "object" &&
+                "shape" in tool.outputSchema
               ? (tool.outputSchema.shape as z.ZodRawShape)
               : z.object({}).shape,
         },
         async (args) => {
-          const result = await tool.execute!({
+          let result = await tool.execute!({
             context: args,
             runId: crypto.randomUUID(),
             runtimeContext: createRuntimeContext(),
           });
+
+          if (isStreamableTool(tool) && result instanceof Response) {
+            result = { bytes: await result.bytes() };
+          }
           return {
             structuredContent: result,
             content: [

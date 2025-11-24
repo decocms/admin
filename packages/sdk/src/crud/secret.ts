@@ -25,7 +25,7 @@ export const listSecrets = (
     .SECRETS_LIST(options, init)
     .then((res) => res.items as Secret[]);
 
-export const readSecret = (
+const readSecret = (
   locator: ProjectLocator,
   name: string,
   init?: RequestInit,
@@ -53,7 +53,7 @@ export const deleteSecret = (
     success: boolean;
   }>;
 
-export const promptUserForSecret = (
+const promptUserForSecret = (
   locator: ProjectLocator,
   input: PromptUserForSecretInput,
   init?: RequestInit,

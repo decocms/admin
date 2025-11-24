@@ -135,7 +135,7 @@ export async function writeIDEConfig(configs: IDEConfig[]): Promise<void> {
   console.log(`✅ IDE configuration written to: ${targetDir}`);
 }
 
-export const hasMCPPreferences = async (workspace: string, app: string) => {
+const hasMCPPreferences = async (workspace: string, app: string) => {
   const [appUUID, currentVersion] = await Promise.all([
     getAppUUID(workspace, app),
     getMCPConfigVersion(),
@@ -156,7 +156,7 @@ export const hasMCPPreferences = async (workspace: string, app: string) => {
   }
 };
 
-export const setMCPPreferences = async (workspace: string, app: string) => {
+const setMCPPreferences = async (workspace: string, app: string) => {
   const [appUUID, currentVersion] = await Promise.all([
     getAppUUID(workspace, app),
     getMCPConfigVersion(),

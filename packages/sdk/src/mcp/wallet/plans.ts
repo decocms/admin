@@ -7,7 +7,7 @@ import {
   getTeamBySlug,
 } from "../members/invites-utils.ts";
 
-export const getPlanFromDb = async (c: AppContext, planId: string) => {
+const getPlanFromDb = async (c: AppContext, planId: string) => {
   const { data, error } = await c.db
     .from("deco_chat_plans")
     .select("*")

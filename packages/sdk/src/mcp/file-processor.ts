@@ -7,8 +7,6 @@ import {
 } from "../utils/knowledge.ts";
 import { z } from "zod";
 
-export { FileExtSchema } from "../utils/knowledge.ts";
-
 export const FileMetadataSchema = z.object({
   fileSize: z.number(),
   chunkCount: z.number(),

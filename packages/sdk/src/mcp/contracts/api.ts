@@ -28,11 +28,11 @@ type ContractContext = WithTool<AppContext> & {
   state: ContractState;
 };
 
-export const ContractSignature = {
+const ContractSignature = {
   generate: (app: string, state: ContractState) => `${app}-${MD5(state)}`,
 };
 
-export const contractSWRCache = new SWRCache<ContractState>("contract-swr", {
+const contractSWRCache = new SWRCache<ContractState>("contract-swr", {
   staleTtlSeconds: WebCache.MAX_SAFE_TTL,
 });
 

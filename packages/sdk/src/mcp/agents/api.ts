@@ -28,7 +28,7 @@ const createTool = createToolGroup("Agent", {
   icon: "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
 });
 
-export const getAgentsByIds = async (ids: string[], c: AppContext) => {
+const getAgentsByIds = async (ids: string[], c: AppContext) => {
   assertHasWorkspace(c);
 
   if (ids.length === 0) return [];

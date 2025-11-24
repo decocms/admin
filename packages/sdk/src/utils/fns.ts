@@ -9,7 +9,7 @@ export const isRequired = <T>(value: T): value is NonNullable<T> => {
  * @param assertion - The assertion function
  * @returns The property value if it is a specific type
  */
-export const prop = <T>(
+const prop = <T>(
   val: unknown,
   key: string,
   assertion: (val: unknown) => val is T,

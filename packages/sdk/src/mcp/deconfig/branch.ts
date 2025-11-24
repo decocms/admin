@@ -9,7 +9,7 @@ interface DeconfigEnv {
 }
 
 const BLOB_DO = "blob-1";
-export const BranchId = {
+const BranchId = {
   build(name: string, projectId: string) {
     return `${projectId}-${name}`;
   },

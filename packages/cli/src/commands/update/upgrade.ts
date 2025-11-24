@@ -62,7 +62,7 @@ const getInstallCommand = (
   }
 };
 
-export const upgrade = (packageName: string): Promise<void> => {
+const upgrade = (packageName: string): Promise<void> => {
   console.log(chalk.yellow("🔄 Upgrading to the latest version..."));
 
   const runtime = detectRuntime();

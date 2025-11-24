@@ -29,8 +29,7 @@
     "zod-from-json-schema": "^0.0.5"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250620.0",
-    "supabase": "^2.22.12"
+    "@cloudflare/workers-types": "^4.20250620.0"
   },
   "engines": {
     "node": ">=24.0.0"

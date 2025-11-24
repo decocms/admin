@@ -14,10 +14,7 @@
       ]
     },
     "packages/runtime": {
-      "ignoreFiles": [
-        // Used on CI, not detected by knip atm
-        "scripts/generate-json-schema.ts"
-      ]
+      "entry": ["scripts/generate-json-schema.ts"]
     },
     "packages/sdk": {
       // TODO: Check if we really need this observability folder

@@ -36,19 +36,6 @@ WORKDIR /app
 # Copy only what's needed for production (minimal approach)
 # Root workspace files
 COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
-COPY --from=builder --chown=bunuser:bunapp /app/.npmrc ./
-COPY --from=builder --chown=bunuser:bunapp /app/bun.lockb ./
-
-# Copy ALL workspace package.json files for lockfile resolution
-COPY --from=builder --chown=bunuser:bunapp /app/apps/api/package.json ./apps/api/
-COPY --from=builder --chown=bunuser:bunapp /app/apps/outbound/package.json ./apps/outbound/
-COPY --from=builder --chown=bunuser:bunapp /app/apps/web/package.json ./apps/web/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/ai/package.json ./packages/ai/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/cf-sandbox/package.json ./packages/cf-sandbox/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/cli/package.json ./packages/cli/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/create-deco/package.json ./packages/create-deco/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/runtime/package.json ./packages/runtime/
-COPY --from=builder --chown=bunuser:bunapp /app/packages/sdk/package.json ./packages/sdk/
 
 # Mesh app (runtime files only)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
@@ -56,15 +43,12 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
 
 # UI package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
 
-# Run production install (don't copy node_modules from builder to avoid double layers)
-USER bunuser
-RUN bun install --frozen-lockfile --production
+# Copy working node_modules from builder (includes dev deps, but avoids OOM)
+COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
 
 # Create data directory with correct ownership
 USER root

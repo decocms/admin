@@ -34,7 +34,7 @@ export function IntegrationIcon({
   );
 }
 
-export function VerifiedIntegrationBadge() {
+function VerifiedIntegrationBadge() {
   return (
     <Tooltip>
       <TooltipTrigger>

@@ -12,7 +12,7 @@ export function formatPropertyName(name: string): string {
 }
 
 // Initialize form with smart anyOf schema selection based on existing data
-export function initializeFormWithSchema<T extends Record<string, SchemaType>>(
+function initializeFormWithSchema<T extends Record<string, SchemaType>>(
   schema: JSONSchema7,
   existingData?: Partial<T>,
 ): T {
@@ -184,7 +184,7 @@ export function doesChildFieldMatchSchema(
 /**
  * Find a schema from anyOf based on child field structure
  */
-export function findSchemaByChildFields<
+function findSchemaByChildFields<
   T extends FieldValues = Record<string, unknown>,
 >(
   name: string,
@@ -228,7 +228,7 @@ export function findSchemaByChildFields<
  * Find a schema from anyOf based on parent-child relationships
  * Implementation of the _checkParentChildRelationship function from Form.tsx
  */
-export function findSchemaByParentRelationship<
+function findSchemaByParentRelationship<
   T extends FieldValues = Record<string, unknown>,
 >(
   name: string,

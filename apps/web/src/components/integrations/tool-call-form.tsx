@@ -25,7 +25,7 @@ export function RawJsonView({ json }: { json: unknown }) {
   return <JsonViewer data={json} />;
 }
 
-export function ToolCallForm({
+function ToolCallForm({
   tool,
   onSubmit,
   onCancel,

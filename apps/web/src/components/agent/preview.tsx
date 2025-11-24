@@ -43,7 +43,7 @@ type ReissueKeyDialogProps = {
   missingScopes: string[];
 };
 
-export function IFrameMessageHandler({ id }: { id: string }) {
+function IFrameMessageHandler({ id }: { id: string }) {
   const [reissueKeyDialogProps, setReissueKeyDialogProps] =
     useState<ReissueKeyDialogProps>({
       open: false,

@@ -47,7 +47,7 @@ export function GridContainer({
   );
 }
 
-export function IntegrationWorkspaceIcon({
+function IntegrationWorkspaceIcon({
   app,
   project,
 }: {

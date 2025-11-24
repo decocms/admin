@@ -34,7 +34,7 @@ interface ConnectIntegrationModalProps {
   onClose: () => void;
 }
 
-export function SetupIntegrationModal({
+function SetupIntegrationModal({
   open,
   integration,
   createdIntegrationId,

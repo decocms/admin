@@ -58,4 +58,3 @@ export function encodeOAuthState(data: {
 }): string {
   return btoa(JSON.stringify(data));
 }
-

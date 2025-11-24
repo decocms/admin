@@ -29,7 +29,7 @@ import { useDecopilotOpen } from "./decopilot-layout.tsx";
 import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
 
-export function BaseRouteLayout({ children }: { children: ReactNode }) {
+function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
   useUser();
   const { org } = useParams();

@@ -39,7 +39,7 @@ import { TopbarLayout } from "./home.tsx";
 import { BreadcrumbOrgSwitcher } from "./org-project-switcher.tsx";
 import { BreadcrumbProjectSwitcher } from "./project-switcher.tsx";
 
-export function BaseRouteLayout({ children }: { children: ReactNode }) {
+function BaseRouteLayout({ children }: { children: ReactNode }) {
   // remove?
   useUser();
   const { org, project } = useParams();

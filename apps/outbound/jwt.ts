@@ -26,13 +26,9 @@ const generateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
   ]);
 };
 
-const stringifyJWK = (jwk: JsonWebKey): string =>
-  btoa(JSON.stringify(jwk));
+const stringifyJWK = (jwk: JsonWebKey): string => btoa(JSON.stringify(jwk));
 const parseJWK = (jwk: string): JsonWebKey => JSON.parse(atob(jwk));
-const importJWK = (
-  jwk: JsonWebKey,
-  usages?: string[],
-): Promise<CryptoKey> =>
+const importJWK = (jwk: JsonWebKey, usages?: string[]): Promise<CryptoKey> =>
   crypto.subtle.importKey(
     // @ts-ignore: deno types are not up to date
     "jwk",

@@ -456,7 +456,7 @@ function ViewsList({ integration }: { integration: Integration }) {
   );
 }
 
-export function ViewBindingSection({
+function ViewBindingSection({
   data,
   selectedConnectionId,
 }: {

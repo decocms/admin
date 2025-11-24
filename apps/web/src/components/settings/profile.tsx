@@ -226,7 +226,7 @@ export function ProfileSettings({
   );
 }
 
-export function PhoneInput({
+function PhoneInput({
   setDialCode,
   setCountry,
   setLocalValue,

@@ -19,7 +19,7 @@ interface IntegrationPermissionsProps {
   permissions?: Permission[];
 }
 
-export function IntegrationPermissions({
+function IntegrationPermissions({
   integrationName: _integrationName,
   permissions,
 }: IntegrationPermissionsProps) {
@@ -91,7 +91,7 @@ interface IntegrationOauthProps extends IntegrationBindingFormProps {
   contract?: ContractState;
 }
 
-export function IntegrationOauth({
+function IntegrationOauth({
   permissions,
   integrationName,
   contract,

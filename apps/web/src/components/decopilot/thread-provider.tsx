@@ -982,24 +982,17 @@ export function useThreadOptional(): ThreadProviderValue | null {
 }
 
 // Helper functions for building URIs
-export function getTabIntegrationId(tab: {
-  resourceUri: string;
-}): string | undefined {
+function getTabIntegrationId(tab: { resourceUri: string }): string | undefined {
   const parsed = parseResourceUri(tab.resourceUri);
   return parsed.integrationId;
 }
 
-export function getTabResourceName(tab: {
-  resourceUri: string;
-}): string | undefined {
+function getTabResourceName(tab: { resourceUri: string }): string | undefined {
   const parsed = parseResourceUri(tab.resourceUri);
   return parsed.resourceName;
 }
 
-export function buildResourceUri(
-  integrationId: string,
-  resourceName: string,
-): string {
+function buildResourceUri(integrationId: string, resourceName: string): string {
   return `rsc://${integrationId}/${resourceName}`;
 }
 
@@ -1007,7 +1000,7 @@ export function buildNativeUri(viewName: string): string {
   return `native://${viewName}`;
 }
 
-export function buildViewUri(integrationId: string, viewName: string): string {
+function buildViewUri(integrationId: string, viewName: string): string {
   return `view://${integrationId}/${viewName}`;
 }
 
@@ -1019,7 +1012,7 @@ export function buildAppUri(appKey: string): string {
   return `app://${appKey}`;
 }
 
-export function buildAgentsListUri(): string {
+function buildAgentsListUri(): string {
   return "agents://list";
 }
 

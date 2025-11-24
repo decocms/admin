@@ -17,9 +17,5 @@ export default defineConfig({
   treeshake: true,
   shims: true,
   // Keep all dependencies as external since this is a library
-  external: [
-    "node:*",
-    "zod",
-  ],
+  external: ["node:*", "zod"],
 });
-

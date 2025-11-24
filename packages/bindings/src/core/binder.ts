@@ -142,9 +142,10 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
     isImplementedBy: async (tools: ToolWithSchemas[]) => {
       for (const binderTool of binderTools) {
         // Find matching tool by name (exact or regex)
-        const pattern = typeof binderTool.name === "string"
-          ? new RegExp(`^${binderTool.name}$`)
-          : binderTool.name;
+        const pattern =
+          typeof binderTool.name === "string"
+            ? new RegExp(`^${binderTool.name}$`)
+            : binderTool.name;
 
         const matchedTool = tools.find((t) => pattern.test(t.name));
 

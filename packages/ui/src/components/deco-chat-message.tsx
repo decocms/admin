@@ -20,7 +20,7 @@ export const DecoChatMessage = memo(function DecoChatMessage({
   timestamp,
 }: DecoChatMessageProps) {
   const { id, role } = message;
-  
+
   // Extract content from either content field or parts array
   const content = useMemo(() => {
     if ("content" in message && typeof message.content === "string") {
@@ -28,7 +28,9 @@ export const DecoChatMessage = memo(function DecoChatMessage({
     }
     return (
       message.parts
-        ?.map((p: { type: string; text?: string }) => (p.type === "text" ? p.text : ""))
+        ?.map((p: { type: string; text?: string }) =>
+          p.type === "text" ? p.text : "",
+        )
         .join("") ?? ""
     );
   }, [message]);

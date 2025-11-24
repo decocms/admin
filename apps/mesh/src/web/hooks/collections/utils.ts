@@ -34,12 +34,7 @@ export function getCollectionListKey(
   const { connectionId, collectionName, queryOptions, additionalKeyParts } =
     options;
 
-  const key: unknown[] = [
-    connectionId,
-    "collection",
-    collectionName,
-    "list",
-  ];
+  const key: unknown[] = [connectionId, "collection", collectionName, "list"];
 
   // Add query options if present (for cache isolation by filters)
   if (queryOptions) {
@@ -111,4 +106,3 @@ export function formatQueryOptions(
 
   return params;
 }
-

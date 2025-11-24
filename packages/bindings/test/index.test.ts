@@ -327,7 +327,10 @@ describe("@decocms/bindings", () => {
         {
           name: "REQUIRED_TOOL",
           // Tool accepts id (required) + optional extra field
-          inputSchema: z.object({ id: z.string(), extra: z.string().optional() }),
+          inputSchema: z.object({
+            id: z.string(),
+            extra: z.string().optional(),
+          }),
           outputSchema: z.object({ success: z.boolean() }),
         },
         {
@@ -352,7 +355,10 @@ describe("@decocms/bindings", () => {
           name: "REQUIRED_TOOL",
           inputSchema: z.object({ id: z.string() }),
           // Tool provides success (required) + extra field
-          outputSchema: z.object({ success: z.boolean(), timestamp: z.number() }),
+          outputSchema: z.object({
+            success: z.boolean(),
+            timestamp: z.number(),
+          }),
         },
         {
           name: "ANOTHER_REQUIRED",
@@ -881,9 +887,9 @@ describe("@decocms/bindings", () => {
         },
       ] as const satisfies Binder;
 
-      type InputType = z.infer<typeof binding[0]["inputSchema"]>;
+      type InputType = z.infer<(typeof binding)[0]["inputSchema"]>;
       type OutputType = z.infer<
-        NonNullable<typeof binding[0]["outputSchema"]>
+        NonNullable<(typeof binding)[0]["outputSchema"]>
       >;
 
       const input: InputType = { id: "test", count: 5 };
@@ -1006,4 +1012,3 @@ describe("@decocms/bindings", () => {
     });
   });
 });
-

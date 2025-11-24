@@ -6,10 +6,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createConnectionToolCaller } from "@/tools/client";
-import type {
-  CollectionItemResponse,
-  UseCollectionItemOptions,
-} from "./types";
+import type { CollectionItemResponse, UseCollectionItemOptions } from "./types";
 import { collectionTools, getCollectionItemKey } from "./utils";
 
 /**
@@ -54,4 +51,3 @@ export function useCollectionItem<T = unknown>(
     select,
   });
 }
-

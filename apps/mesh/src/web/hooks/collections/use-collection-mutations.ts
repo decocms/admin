@@ -62,7 +62,10 @@ export function useCollectionMutations<T = unknown>(
   // Helper to invalidate all collection queries
   const invalidateCollection = () => {
     if (invalidateOnSuccess) {
-      const keyPrefix = getCollectionKeyPrefix({ connectionId, collectionName });
+      const keyPrefix = getCollectionKeyPrefix({
+        connectionId,
+        collectionName,
+      });
       void queryClient.invalidateQueries({ queryKey: keyPrefix });
     }
   };
@@ -125,4 +128,3 @@ export function useCollectionMutations<T = unknown>(
     batchOperation,
   };
 }
-

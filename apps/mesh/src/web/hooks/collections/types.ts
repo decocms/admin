@@ -138,4 +138,3 @@ export interface BatchOperationInput<T = unknown> {
   update?: UpdateItemInput<T>[];
   delete?: DeleteItemInput[];
 }
-

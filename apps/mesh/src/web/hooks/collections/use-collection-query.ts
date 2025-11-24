@@ -88,4 +88,3 @@ export function useCollectionQuery<T = unknown>(
     select,
   });
 }
-

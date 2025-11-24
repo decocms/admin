@@ -153,13 +153,13 @@ export const CONNECTION_LIST = defineTool({
     const bindingDefinition: Binder | undefined = input.binding
       ? typeof input.binding === "string"
         ? (() => {
-          const wellKnownBinding =
-            BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
-          if (!wellKnownBinding) {
-            throw new Error(`Unknown binding: ${input.binding}`);
-          }
-          return wellKnownBinding;
-        })()
+            const wellKnownBinding =
+              BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
+            if (!wellKnownBinding) {
+              throw new Error(`Unknown binding: ${input.binding}`);
+            }
+            return wellKnownBinding;
+          })()
         : (input.binding as unknown as Binder)
       : undefined;
 
@@ -205,37 +205,39 @@ export const CONNECTION_LIST = defineTool({
     // Filter connections by binding if specified
     const filteredConnections = bindingChecker
       ? await Promise.all(
-        connections.map(async (connection) => {
-          if (!connection.tools || connection.tools.length === 0) {
-            return null;
-          }
+          connections.map(async (connection) => {
+            if (!connection.tools || connection.tools.length === 0) {
+              return null;
+            }
 
-          const isValid = await bindingChecker.isImplementedBy(
-            connection.tools.map((t) => ({
-              name: t.name,
-              inputSchema: t.inputSchema as Record<string, unknown>,
-              outputSchema: t.outputSchema as
-                | Record<string, unknown>
-                | undefined,
-            })),
-          );
+            const isValid = await bindingChecker.isImplementedBy(
+              connection.tools.map((t) => ({
+                name: t.name,
+                inputSchema: t.inputSchema as Record<string, unknown>,
+                outputSchema: t.outputSchema as
+                  | Record<string, unknown>
+                  | undefined,
+              })),
+            );
 
-          if (!isValid) {
+            if (!isValid) {
+              logConnectionDebug(
+                `Connection ${connection.id} does not implement binding`,
+              ).catch(() => {});
+              return null;
+            }
+
             logConnectionDebug(
-              `Connection ${connection.id} does not implement binding`,
+              `Connection ${connection.id} implements binding with tools: ${connection.tools
+                .map((t) => t.name)
+                .join(", ")}`,
             ).catch(() => {});
-            return null;
-          }
 
-          logConnectionDebug(
-            `Connection ${connection.id} implements binding with tools: ${
-              connection.tools.map((t) => t.name).join(", ")
-            }`,
-          ).catch(() => {});
-
-          return connection;
-        }),
-      ).then((results) => results.filter((c): c is MCPConnection => c !== null))
+            return connection;
+          }),
+        ).then((results) =>
+          results.filter((c): c is MCPConnection => c !== null),
+        )
       : connections;
 
     if (bindingChecker) {

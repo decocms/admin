@@ -30,7 +30,9 @@ export interface DiscoveredCollection {
 function parseCollectionTool(
   toolName: string,
 ): { collection: string; operation: string } | null {
-  const match = toolName.match(/^DECO_COLLECTION_([A-Z_]+)_(LIST|GET|CREATE|UPDATE|DELETE|BATCH)$/);
+  const match = toolName.match(
+    /^DECO_COLLECTION_([A-Z_]+)_(LIST|GET|CREATE|UPDATE|DELETE|BATCH)$/,
+  );
   if (!match) return null;
 
   return {
@@ -162,8 +164,5 @@ export function useHasCollection(options: {
 
   const discovery = useConnectionCollections({ connectionId, enabled });
 
-  return (
-    discovery.data?.some((c) => c.name === collectionName) ?? false
-  );
+  return discovery.data?.some((c) => c.name === collectionName) ?? false;
 }
-

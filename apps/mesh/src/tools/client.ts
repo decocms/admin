@@ -101,9 +101,7 @@ export function createConnectionToolCaller(connectionId: string) {
     const json = await parseSSEResponseAsJson(response);
 
     if (json.result?.isError) {
-      throw new Error(
-        json.result.content?.[0]?.text || "Tool call failed"
-      );
+      throw new Error(json.result.content?.[0]?.text || "Tool call failed");
     }
 
     return json.result?.structuredContent || json.result;

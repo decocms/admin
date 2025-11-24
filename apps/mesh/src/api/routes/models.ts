@@ -18,8 +18,7 @@ const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const SYSTEM_PROMPT =
-  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -120,15 +119,17 @@ const StreamRequestSchema = z.object({
     contentType: z.string().optional(),
     stream: z.boolean().optional(),
   }),
-  provider: z.enum([
-    "openai",
-    "anthropic",
-    "google",
-    "xai",
-    "deepseek",
-    "openrouter",
-    "openai-compatible",
-  ]).optional(),
+  provider: z
+    .enum([
+      "openai",
+      "anthropic",
+      "google",
+      "xai",
+      "deepseek",
+      "openrouter",
+      "openai-compatible",
+    ])
+    .optional(),
 });
 
 export type StreamRequest = z.infer<typeof StreamRequestSchema>;
@@ -243,19 +244,17 @@ function createConnectionTools(ctx: MeshContext) {
       description:
         "Call a tool from a specific MCP connection. Use READ_MCP_TOOLS first to see available tools and their schemas.",
       inputSchema: z.object({
-        connectionId: z.string().describe(
-          "The connection ID to call the tool on",
-        ),
+        connectionId: z
+          .string()
+          .describe("The connection ID to call the tool on"),
         toolName: z.string().describe("The name of the tool to call"),
-        arguments: z.record(z.string(), z.any()).describe(
-          "Arguments to pass to the tool",
-        ),
+        arguments: z
+          .record(z.string(), z.any())
+          .describe("Arguments to pass to the tool"),
       }),
       execute: async ({ connectionId, toolName, arguments: args }) => {
         // Get connection using existing tool
-        const connection = await ctx.storage.connections.findById(
-          connectionId,
-        );
+        const connection = await ctx.storage.connections.findById(connectionId);
 
         if (!connection) {
           throw new Error(`Connection not found: ${connectionId}`);
@@ -278,9 +277,10 @@ function createConnectionTools(ctx: MeshContext) {
         let client: Client | null = null;
         try {
           client = await createConnectionClient(connection);
-          const result = await client.callTool(
-            { name: toolName, arguments: args },
-          );
+          const result = await client.callTool({
+            name: toolName,
+            arguments: args,
+          });
 
           return {
             isError: result.isError || false,
@@ -289,10 +289,12 @@ function createConnectionTools(ctx: MeshContext) {
         } catch (e) {
           return {
             isError: true,
-            content: [{
-              type: "text",
-              text: e instanceof Error ? e.message : "Unknown error",
-            }],
+            content: [
+              {
+                type: "text",
+                text: e instanceof Error ? e.message : "Unknown error",
+              },
+            ],
           };
         } finally {
           try {
@@ -382,9 +384,9 @@ app.post("/:org/models/stream", async (c) => {
     // Build system prompt with available connections
     const systemPrompt = [
       SYSTEM_PROMPT,
-      `\nAvailable MCP Connections:\n${
-        formatAvailableConnections(connections)
-      }`,
+      `\nAvailable MCP Connections:\n${formatAvailableConnections(
+        connections,
+      )}`,
     ].join("\n");
 
     // Create connection tools with MeshContext

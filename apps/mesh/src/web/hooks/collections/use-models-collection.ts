@@ -167,4 +167,3 @@ export function useModelsCollection(
     query,
   };
 }
-

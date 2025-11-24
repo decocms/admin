@@ -25,31 +25,39 @@ export const ModelSchema = BaseCollectionEntitySchema.extend({
   logo: z.string().nullable(),
   description: z.string().nullable(),
   capabilities: z.array(z.string()),
-  limits: z.object({
-    contextWindow: z.number(),
-    maxOutputTokens: z.number(),
-  }).nullable(),
-  costs: z.object({
-    input: z.number(),
-    output: z.number(),
-  }).nullable(),
+  limits: z
+    .object({
+      contextWindow: z.number(),
+      maxOutputTokens: z.number(),
+    })
+    .nullable(),
+  costs: z
+    .object({
+      input: z.number(),
+      output: z.number(),
+    })
+    .nullable(),
   // Provider information
-  provider: z.enum([
-    "openai",
-    "anthropic",
-    "google",
-    "xai",
-    "deepseek",
-    "openai-compatible",
-    "openrouter",
-  ]).nullable(),
+  provider: z
+    .enum([
+      "openai",
+      "anthropic",
+      "google",
+      "xai",
+      "deepseek",
+      "openai-compatible",
+      "openrouter",
+    ])
+    .nullable(),
   // Streaming endpoint information
-  endpoint: z.object({
-    url: z.string().url(),
-    method: z.string().default("POST"),
-    contentType: z.string().default("application/json"),
-    stream: z.boolean().default(true),
-  }).nullable(),
+  endpoint: z
+    .object({
+      url: z.string().url(),
+      method: z.string().default("POST"),
+      contentType: z.string().default("application/json"),
+      stream: z.boolean().default(true),
+    })
+    .nullable(),
 });
 
 /**

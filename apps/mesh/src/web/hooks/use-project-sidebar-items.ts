@@ -1,9 +1,9 @@
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { NavigationSidebarItem } from "@deco/ui/components/navigation-sidebar.js";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Locator, ProjectLocator } from "../locator";
+import { Locator, ProjectLocator } from "@/web/lib/locator";
 import { useNavigate } from "@tanstack/react-router";
-import { KEYS } from "../query-keys";
+import { KEYS } from "@/web/lib/query-keys";
 
 async function getProjectSidebarItems({
   locator,
@@ -28,6 +28,13 @@ async function getProjectSidebarItems({
       icon: "group",
       onClick: () =>
         navigate({ to: "/$org/members", params: { org: org ?? "" } }),
+    },
+    {
+      key: "settings",
+      label: "Settings",
+      icon: "settings",
+      onClick: () =>
+        navigate({ to: "/$org/settings", params: { org: org ?? "" } }),
     },
   ];
 

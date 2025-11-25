@@ -89,6 +89,7 @@ const getMCPServerTools = async (
       tools.map((tool: (typeof tools)[number]) => {
         const slug = slugify(tool.name);
 
+        // @ts-expect-error - Zod version conflict between packages
         const inputSchema = patchedJsonSchema(tool.inputSchema);
         const outputSchema = patchedJsonSchema(
           tool.outputSchema ?? {

@@ -14,6 +14,7 @@ import type { Context } from "hono";
 import type { Kysely } from "kysely";
 import { ConnectionStorage } from "../storage/connection";
 import { AuditLogStorage } from "../storage/audit-log";
+import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
 import type { MeshContext, BetterAuthInstance } from "./mesh-context";
@@ -198,19 +199,36 @@ async function authenticateRequest(
     });
 
     if (session) {
+      let organization: OrganizationContext | undefined;
+
+      if (session.session.activeOrganizationId) {
+        const orgData = await auth.api
+          .getFullOrganization({
+            headers: c.req.raw.headers,
+          })
+          .catch(() => null);
+
+        if (orgData) {
+          organization = {
+            id: orgData.id,
+            slug: orgData.slug,
+            name: orgData.name,
+          };
+        } else {
+          organization = {
+            id: session.session.activeOrganizationId,
+            slug: "",
+            name: "",
+          };
+        }
+      }
+
       return {
         user: { id: session.user.id, email: session.user.email },
         permissions: {
           self: ["*"],
         },
-        // TODO: Use some better auth method to read the full org data
-        organization: session.session.activeOrganizationId
-          ? {
-              id: session.session.activeOrganizationId,
-              slug: "",
-              name: "",
-            }
-          : undefined,
+        organization,
       };
     }
   } catch (error) {
@@ -246,6 +264,7 @@ export function createMeshContextFactory(
   const storage = {
     connections: new ConnectionStorage(config.db, vault),
     auditLogs: new AuditLogStorage(config.db),
+    organizationSettings: new OrganizationSettingsStorage(config.db),
     // Note: Organizations, teams, members, roles managed by Better Auth organization plugin
     // Note: Policies handled by Better Auth permissions directly
     // Note: API keys (tokens) managed by Better Auth API Key plugin

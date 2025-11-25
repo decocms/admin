@@ -40,9 +40,6 @@
     "react": "^19.2.0",
     "wrangler": "4.45.0"
   },
-  "overrides": {
-    "ai": "^5.0.61"
-  },
   "engines": {
     "node": ">=24.0.0"
   }

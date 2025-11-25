@@ -30,6 +30,8 @@ const TOOL_CATEGORIES: Record<
   ORGANIZATION_GET: { category: "Organizations" },
   ORGANIZATION_UPDATE: { category: "Organizations" },
   ORGANIZATION_DELETE: { category: "Organizations", dangerous: true },
+  ORGANIZATION_SETTINGS_GET: { category: "Organizations" },
+  ORGANIZATION_SETTINGS_UPDATE: { category: "Organizations" },
   ORGANIZATION_MEMBER_ADD: { category: "Organizations" },
   ORGANIZATION_MEMBER_REMOVE: { category: "Organizations", dangerous: true },
   ORGANIZATION_MEMBER_LIST: { category: "Organizations" },

@@ -16,10 +16,22 @@ export const KEYS = {
 
   // Connections (scoped by project)
   connections: (locator: ProjectLocator) => [locator, "connections"] as const,
+  connectionsByBinding: (locator: ProjectLocator, binding: string) =>
+    [locator, "connections", `binding:${binding}`] as const,
   connection: (locator: ProjectLocator, id: string) =>
     [locator, "connection", id] as const,
+
+  organizationSettings: (organizationId: string) =>
+    ["organization-settings", organizationId] as const,
+
+  // Models list (scoped by organization)
+  modelsList: (orgSlug: string) => ["models-list", orgSlug] as const,
 
   // Sidebar items (scoped by project)
   sidebarItems: (locator: ProjectLocator) =>
     [locator, "sidebar-items"] as const,
+
+  // Collections (scoped by connection)
+  connectionCollections: (connectionId: string) =>
+    [connectionId, "collections", "discovery"] as const,
 } as const;

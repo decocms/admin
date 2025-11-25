@@ -17,6 +17,7 @@ import { ConnectionStorage } from "../../storage/connection";
 describe("Connection Tools", () => {
   let db: Kysely<Database>;
   let ctx: MeshContext;
+  let matchingConnectionId: string;
 
   beforeAll(async () => {
     const tempDbPath = `/tmp/test-connection-tools-${Date.now()}.db`;
@@ -43,6 +44,18 @@ describe("Connection Tools", () => {
       storage: {
         connections: new ConnectionStorage(db, vault),
         auditLogs: null as never,
+        organizationSettings: {
+          get: async () => null,
+          upsert: async (
+            _orgId: string,
+            data: { modelsBindingConnectionId?: string },
+          ) => ({
+            organizationId: _orgId,
+            modelsBindingConnectionId: data.modelsBindingConnectionId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }),
+        } as never,
       },
       vault: null as never,
       authInstance: null as never,
@@ -75,6 +88,38 @@ describe("Connection Tools", () => {
         timestamp: new Date(),
       },
     };
+
+    const connectionWithModels = await CONNECTION_CREATE.execute(
+      {
+        name: "Org Connection 1",
+        connection: { type: "HTTP", url: "https://org1.com" },
+      },
+      ctx,
+    );
+    matchingConnectionId = connectionWithModels.id;
+
+    await ctx.storage.connections.update(matchingConnectionId, {
+      tools: [
+        {
+          name: "MODELS_LIST",
+          inputSchema: {},
+          outputSchema: { models: [] },
+        },
+        {
+          name: "GET_STREAM_ENDPOINT",
+          inputSchema: {},
+          outputSchema: { url: "https://example.com/stream" },
+        },
+      ],
+    });
+
+    await CONNECTION_CREATE.execute(
+      {
+        name: "Org Connection 2",
+        connection: { type: "HTTP", url: "https://org2.com" },
+      },
+      ctx,
+    );
   });
 
   afterAll(async () => {
@@ -137,25 +182,6 @@ describe("Connection Tools", () => {
   });
 
   describe("CONNECTION_LIST", () => {
-    beforeAll(async () => {
-      // Create some test connections
-      await CONNECTION_CREATE.execute(
-        {
-          name: "Org Connection 1",
-          connection: { type: "HTTP", url: "https://org1.com" },
-        },
-        ctx,
-      );
-
-      await CONNECTION_CREATE.execute(
-        {
-          name: "Org Connection 2",
-          connection: { type: "HTTP", url: "https://org2.com" },
-        },
-        ctx,
-      );
-    });
-
     it("should list all connections in organization", async () => {
       const result = await CONNECTION_LIST.execute({}, ctx);
 
@@ -175,6 +201,13 @@ describe("Connection Tools", () => {
       expect(conn).toHaveProperty("connectionType");
       expect(conn).toHaveProperty("connectionUrl");
       expect(conn).toHaveProperty("status");
+    });
+
+    it("should filter connections by binding schema", async () => {
+      const result = await CONNECTION_LIST.execute({ binding: "MODELS" }, ctx);
+
+      expect(result.connections).toHaveLength(1);
+      expect(result.connections[0]?.id).toBe(matchingConnectionId);
     });
   });
 

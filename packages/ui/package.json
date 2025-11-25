@@ -9,9 +9,12 @@
     "./hooks/*": "./src/hooks/*",
     "./lib/*": "./src/lib/*",
     "./styles/*": "./src/styles/*",
-    "./assets/*": "./src/assets/*"
+    "./assets/*": "./src/assets/*",
+    "./providers/*": "./src/providers/*",
+    "./types/*": "./src/types/*"
   },
   "dependencies": {
+    "ai": "^5.0.101",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -46,8 +49,13 @@
     "embla-carousel-react": "^8.5.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.487.0",
+    "marked": "^15.0.6",
     "next-themes": "^0.4.6",
     "react": "^19.2.0",
+    "react-markdown": "^9.0.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.55.0",
@@ -63,6 +71,7 @@
   "devDependencies": {
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "tailwindcss": "^4.1.1"
   }
 }

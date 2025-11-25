@@ -70,5 +70,5 @@ export const patchedJsonSchema = (input: Parameters<typeof jsonSchema>[0]) => {
     ...schema,
     jsonSchema: fixJsonSchemaArrayItems(schema.jsonSchema),
     // oxlint-disable-next-line no-explicit-any
-  } as FlexibleSchema<any>;
+  } as unknown as FlexibleSchema<any>;
 };

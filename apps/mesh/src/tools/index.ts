@@ -6,6 +6,7 @@
 
 import * as ConnectionTools from "./connection";
 import * as OrganizationTools from "./organization";
+export { ConnectionTools, OrganizationTools };
 
 // All available tools
 export const ALL_TOOLS = [
@@ -14,6 +15,8 @@ export const ALL_TOOLS = [
   OrganizationTools.ORGANIZATION_GET,
   OrganizationTools.ORGANIZATION_UPDATE,
   OrganizationTools.ORGANIZATION_DELETE,
+  OrganizationTools.ORGANIZATION_SETTINGS_GET,
+  OrganizationTools.ORGANIZATION_SETTINGS_UPDATE,
   OrganizationTools.ORGANIZATION_MEMBER_ADD,
   OrganizationTools.ORGANIZATION_MEMBER_REMOVE,
   OrganizationTools.ORGANIZATION_MEMBER_LIST,

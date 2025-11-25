@@ -1,0 +1,14 @@
+import type { ProjectLocator } from "./locator";
+
+/**
+ * Known localStorage keys for the mesh app.
+ * When adding a new use of useLocalStorage, add the key to this object.
+ * This is used to avoid inline key definitions and to ensure consistency.
+ */
+export const LOCALSTORAGE_KEYS = {
+  decoChatOpen: () => `mesh:decochat:open`,
+  threadManagerState: (locator: ProjectLocator) =>
+    `mesh:thread-manager-state:${locator}`,
+  chatSelectedModel: (locator: ProjectLocator) =>
+    `mesh:chat:selectedModel:${locator}`,
+} as const;

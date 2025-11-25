@@ -1,6 +1,6 @@
-import { defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
-export default defineConfig({
+const config: Options = {
   entry: {
     cli: "src/cli.ts",
     deconfig: "src/deconfig.ts",
@@ -41,4 +41,6 @@ export default defineConfig({
     "ws",
     "zod",
   ],
-});
+};
+
+export default defineConfig(config);

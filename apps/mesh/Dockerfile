@@ -29,8 +29,11 @@ WORKDIR /app
 USER bunuser
 
 # Copy node_modules from deps stage (this layer will be cached when dependencies don't change)
+# Copy root node_modules (includes .bun nested structure)
 COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
-COPY --from=deps --chown=bunuser:bunapp /app/**/node_modules ./
+# Copy app-specific node_modules (includes symlinks to root)
+COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
+COPY --from=deps --chown=bunuser:bunapp /app/packages/bindings/node_modules ./packages/bindings/node_modules
 
 # Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
 COPY --chown=bunuser:bunapp . .
@@ -47,6 +50,7 @@ RUN bun run build:server
 # Production stage
 FROM base AS runner
 WORKDIR /app
+USER bunuser
 
 # Copy only what's needed for production
 
@@ -57,8 +61,18 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
 # copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
-# copy external dependencies (kysely-bun-worker needs to be available at runtime)
+
+# copy ONLY the external dependencies needed at runtime (~6.4MB total)
+# Bun stores packages in a nested .bun structure with version-specific names
+# We need to preserve this structure for the symlinks to work
+# Copy kysely-bun-worker (44KB) - use wildcard to handle version changes
+COPY --from=builder --chown=bunuser:bunapp /app/node_modules/.bun/kysely-bun-worker@* ./node_modules/.bun/
+# Copy kysely (6.3MB) - kysely-bun-worker depends on it
+COPY --from=builder --chown=bunuser:bunapp /app/node_modules/.bun/kysely@* ./node_modules/.bun/
+# copy the symlinks that point to the .bun directory
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/node_modules/kysely-bun-worker ./apps/mesh/node_modules/kysely-bun-worker
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/node_modules/kysely ./apps/mesh/node_modules/kysely
+
 # copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 

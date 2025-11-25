@@ -6,7 +6,7 @@
     "dev": "concurrently \"bun run dev:client\" \"NODE_ENV=development bun --hot run src/index.ts\"",
     "dev:client": "bun --bun vite dev",
     "build:client": "bun --bun vite build",
-    "build:server": "bun build src/index.ts --target bun --minify --production --outfile server.js --external kysely-bun-worker --external bun:sqlite --sourcemap=inline",
+    "build:server": "bun build src/index.ts --target bun --minify --production --outfile server.js --external kysely-bun-worker --external bun:sqlite",
     "build:migrate": "bun build src/database/migrate-entry.ts --target bun --minify --production --outfile migrate.js",
     "start": "bun run server.js",
     "migrate": "bun run scripts/generate_migrations.ts && bun run src/index.ts --migrate-only",

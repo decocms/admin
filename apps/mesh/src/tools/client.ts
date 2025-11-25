@@ -75,7 +75,7 @@ export const fetcher = new Proxy({} as MeshClient, {
  * Routes through mesh backend at /mcp/:connectionId
  */
 export function createConnectionToolCaller(connectionId: string) {
-  return async (toolName: string, args: Record<string, unknown>) => {
+  return async (toolName: string, args: unknown) => {
     const response = await fetch(`/mcp/${connectionId}`, {
       method: "POST",
       body: JSON.stringify({

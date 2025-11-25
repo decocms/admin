@@ -154,8 +154,14 @@ export function useModelsCollection(
 
   // Transform models for UI consumption
   const models = useMemo(() => {
-    if (!query.data?.items) return [];
-    return query.data.items.map(transformModel);
+    if (
+      !query.data ||
+      typeof query.data !== "object" ||
+      !("items" in query.data)
+    )
+      return [];
+    if (!("items" in query.data) || !Array.isArray(query.data.items)) return [];
+    return query.data.items!.map(transformModel);
   }, [query.data]);
 
   return {

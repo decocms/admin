@@ -114,7 +114,7 @@ export function useCollectionMutations<T = unknown>(
     mutationFn: async (input: BatchOperationInput<T>) => {
       const callTool = createConnectionToolCaller(connectionId);
       const toolName = collectionTools.batch(collectionName);
-      return await callTool(toolName, input);
+      return await callTool(toolName, input as Record<string, unknown>);
     },
     onSuccess: () => {
       invalidateCollection();

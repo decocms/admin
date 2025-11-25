@@ -8,23 +8,201 @@
  */
 
 import { existsSync, mkdirSync } from "fs";
-import { Kysely, PostgresDialect, sql } from "kysely";
+import { Kysely, PostgresDialect, sql, type Dialect } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { Pool } from "pg";
 import type { Database as DatabaseSchema } from "../storage/types";
-import { getDatabaseUrl } from "@/auth";
+import path from "path";
+
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
 
 /**
- * Create Kysely database instance with auto-detected dialect
+ * Supported database types
  */
-export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
+export type DatabaseType = "sqlite" | "postgres";
+
+/**
+ * Database configuration interface
+ */
+export interface DatabaseConfig {
+  type: DatabaseType;
+  connectionString: string;
+  options?: {
+    maxConnections?: number; // For PostgreSQL
+    enableWAL?: boolean; // For SQLite
+    busyTimeout?: number; // For SQLite
+  };
+}
+
+/**
+ * Interface for database implementations
+ * Each supported database must implement this interface
+ */
+export interface SupportedDatabase {
+  /**
+   * Database type identifier
+   */
+  readonly type: DatabaseType;
+
+  /**
+   * Create a Kysely dialect for this database
+   */
+  createDialect(config: DatabaseConfig): Dialect;
+
+  /**
+   * Create a full Kysely instance for this database
+   */
+  createInstance(config: DatabaseConfig): Kysely<DatabaseSchema>;
+
+  /**
+   * Post-creation setup (e.g., SQLite pragmas)
+   */
+  postCreateSetup?(db: Kysely<DatabaseSchema>, config: DatabaseConfig): void;
+}
+
+// ============================================================================
+// PostgreSQL Implementation
+// ============================================================================
+
+class PostgresDatabase implements SupportedDatabase {
+  readonly type: DatabaseType = "postgres";
+
+  createDialect(config: DatabaseConfig): Dialect {
+    return new PostgresDialect({
+      pool: new Pool({
+        connectionString: config.connectionString,
+        max: config.options?.maxConnections || 10,
+      }),
+    });
+  }
+
+  createInstance(config: DatabaseConfig): Kysely<DatabaseSchema> {
+    const dialect = this.createDialect(config);
+    return new Kysely<DatabaseSchema>({ dialect });
+  }
+}
+
+// ============================================================================
+// SQLite Implementation
+// ============================================================================
+
+class SqliteDatabase implements SupportedDatabase {
+  readonly type: DatabaseType = "sqlite";
+
+  createDialect(config: DatabaseConfig): Dialect {
+    let dbPath = this.extractPath(config.connectionString);
+
+    // Ensure directory exists for file-based databases
+    dbPath = this.ensureDirectory(dbPath);
+
+    return new BunWorkerDialect({
+      url: dbPath || ":memory:",
+    });
+  }
+
+  createInstance(config: DatabaseConfig): Kysely<DatabaseSchema> {
+    const dialect = this.createDialect(config);
+    const db = new Kysely<DatabaseSchema>({ dialect });
+
+    // Run post-creation setup
+    this.postCreateSetup?.(db, config);
+
+    return db;
+  }
+
+  postCreateSetup(db: Kysely<DatabaseSchema>, config: DatabaseConfig): void {
+    const dbPath = this.extractPath(config.connectionString);
+
+    // Enable WAL mode and busy timeout for non-memory databases
+    if (dbPath !== ":memory:" && config.options?.enableWAL !== false) {
+      sql`PRAGMA journal_mode = WAL;`.execute(db).catch(() => {
+        // Ignore errors - might already be in WAL mode
+      });
+    }
+
+    if (dbPath !== ":memory:") {
+      const timeout = config.options?.busyTimeout || 5000;
+      sql`PRAGMA busy_timeout = ${timeout};`.execute(db).catch(() => {
+        // Ignore errors
+      });
+    }
+  }
+
+  private extractPath(connectionString: string): string {
+    // Handle ":memory:" special case
+    if (connectionString === ":memory:") {
+      return ":memory:";
+    }
+
+    // Parse URL if it has a protocol
+    if (connectionString.includes("://")) {
+      const url = new URL(connectionString);
+      return url.pathname;
+    }
+
+    // Otherwise treat as direct path
+    return connectionString;
+  }
+
+  private ensureDirectory(dbPath: string): string {
+    if (dbPath !== ":memory:" && dbPath !== "/" && dbPath) {
+      const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
+      if (dir && dir !== "/" && !existsSync(dir)) {
+        try {
+          mkdirSync(dir, { recursive: true });
+        } catch {
+          // If directory creation fails, use in-memory database
+          console.warn(
+            `Failed to create directory ${dir}, using in-memory database`,
+          );
+          return ":memory:";
+        }
+      }
+    }
+    return dbPath;
+  }
+}
+
+// ============================================================================
+// Database Registry
+// ============================================================================
+
+const DATABASES: Record<DatabaseType, SupportedDatabase> = {
+  sqlite: new SqliteDatabase(),
+  postgres: new PostgresDatabase(),
+};
+
+// ============================================================================
+// Public API
+// ============================================================================
+
+/**
+ * Get database URL from environment or default
+ */
+export function getDatabaseUrl(): string {
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    `file:${path.join(process.cwd(), "data/mesh.db")}`;
+  return databaseUrl;
+}
+
+/**
+ * Parse database URL and extract configuration
+ */
+export function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
   let url = databaseUrl || "file:./data/mesh.db";
 
   // Handle special case: ":memory:" without protocol
   if (url === ":memory:") {
-    return createSqliteDatabase(":memory:");
+    return {
+      type: "sqlite",
+      connectionString: ":memory:",
+    };
   }
 
+  // Add file:// prefix for absolute paths
   url = url.startsWith("/") ? `file://${url}` : url;
 
   const parsed = new URL(url);
@@ -33,11 +211,17 @@ export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
   switch (protocol) {
     case "postgres":
     case "postgresql":
-      return createPostgresDatabase(url);
+      return {
+        type: "postgres",
+        connectionString: url,
+      };
 
     case "sqlite":
     case "file":
-      return createSqliteDatabase(parsed.pathname);
+      return {
+        type: "sqlite",
+        connectionString: parsed.pathname,
+      };
 
     default:
       throw new Error(
@@ -48,60 +232,29 @@ export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
 }
 
 /**
- * Create PostgreSQL database connection
+ * Get the database implementation for a given type
  */
-function createPostgresDatabase(
-  connectionString: string,
-): Kysely<DatabaseSchema> {
-  const dialect = new PostgresDialect({
-    pool: new Pool({
-      connectionString,
-      max: 10, // Connection pool size
-    }),
-  });
-
-  return new Kysely<DatabaseSchema>({ dialect });
+export function getDatabaseImpl(type: DatabaseType): SupportedDatabase {
+  return DATABASES[type];
 }
 
 /**
- * Create SQLite database connection using BunWorkerDialect
- * This is optimized for Bun's native SQLite implementation
+ * Create a Kysely dialect for the given database URL
+ * This allows you to create a dialect without creating the full Kysely instance
  */
-function createSqliteDatabase(dbPath: string): Kysely<DatabaseSchema> {
-  // Ensure directory exists for file-based databases
-  if (dbPath !== ":memory:" && dbPath !== "/" && dbPath) {
-    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"));
-    if (dir && dir !== "/" && !existsSync(dir)) {
-      try {
-        mkdirSync(dir, { recursive: true });
-      } catch {
-        // If directory creation fails, use in-memory database
-        console.warn(
-          `Failed to create directory ${dir}, using in-memory database`,
-        );
-        dbPath = ":memory:";
-      }
-    }
-  }
+export function getDbDialect(databaseUrl?: string): Dialect {
+  const config = parseDatabaseUrl(databaseUrl);
+  const impl = getDatabaseImpl(config.type);
+  return impl.createDialect(config);
+}
 
-  const dialect = new BunWorkerDialect({
-    url: dbPath || ":memory:",
-  });
-
-  const db = new Kysely<DatabaseSchema>({ dialect });
-
-  // Enable WAL mode and busy timeout for non-memory databases
-  if (dbPath !== ":memory:") {
-    // These pragmas need to be run after the database is created
-    sql`PRAGMA journal_mode = WAL;`.execute(db).catch(() => {
-      // Ignore errors - might already be in WAL mode
-    });
-    sql`PRAGMA busy_timeout = 5000;`.execute(db).catch(() => {
-      // Ignore errors
-    });
-  }
-
-  return db;
+/**
+ * Create Kysely database instance with auto-detected dialect
+ */
+export function createDatabase(databaseUrl?: string): Kysely<DatabaseSchema> {
+  const config = parseDatabaseUrl(databaseUrl);
+  const impl = getDatabaseImpl(config.type);
+  return impl.createInstance(config);
 }
 
 /**

@@ -14,6 +14,10 @@ import { getDb } from "./index";
  * Run all pending migrations
  */
 export async function migrateToLatest(): Promise<void> {
+  // Run Better Auth migrations programmatically
+  await migrateBetterAuth();
+
+  // Run Kysely migrations
   console.log("📊 Getting database instance...");
   const db = getDb();
   console.log("✅ Database instance obtained");
@@ -51,9 +55,6 @@ export async function migrateToLatest(): Promise<void> {
   }
 
   console.log("🎉 All Kysely migrations completed successfully");
-
-  // Run Better Auth migrations programmatically
-  await migrateBetterAuth();
 
   // Close database connection after all migrations
   console.log("🔒 Closing database connection...");

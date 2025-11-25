@@ -42,8 +42,7 @@ RUN bun run build
 # Build the frontend static assets
 WORKDIR /app/apps/mesh
 RUN bun run build:client 
-RUN bun run build:server 
-RUN bun run build:migrate
+RUN bun run build:server
 
 # Production stage
 FROM base AS runner
@@ -54,10 +53,8 @@ WORKDIR /app
 # Mesh app (runtime files only - no node_modules needed!)
 # copy client assets
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-# copy server script
+# copy server script (handles both migrations and serving)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
-# copy migration script
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrate.js ./apps/mesh/migrate.js
 # copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 # copy start script
@@ -81,9 +78,9 @@ ENV DATABASE_URL=file:/app/data/mesh.db
 WORKDIR /app/apps/mesh
 
 # Run database migrations on startup and start the application
-# Both Kysely and Better Auth migrations are bundled in migrate.js
+# Both Kysely and Better Auth migrations are handled by server.js
 CMD ["sh", "-c", "\
   echo '=== Starting migrations ===' && \
-  bun run migrate.js && \
+  bun run server.js --migrate-only && \
   echo '=== Starting application ===' && \
   bun run start"]

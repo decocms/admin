@@ -24,8 +24,7 @@ const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const SYSTEM_PROMPT =
-  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -415,19 +414,19 @@ app.post("/:org/models/stream", async (c) => {
     // Create provider based on the requested provider
     // const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
     const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
-    const provider = createProvider(modelProvider, endpointUrl, headers)(
-      modelId,
-    );
+    const provider = createProvider(
+      modelProvider,
+      endpointUrl,
+      headers,
+    )(modelId);
     // const provider = createPassthroughProvider(endpointUrl, modelId, headers);
 
     // Build system prompt with available connections
     const systemPrompt = [
       SYSTEM_PROMPT,
-      `\nAvailable MCP Connections:\n${
-        formatAvailableConnections(
-          connections,
-        )
-      }`,
+      `\nAvailable MCP Connections:\n${formatAvailableConnections(
+        connections,
+      )}`,
     ].join("\n");
 
     // Create connection tools with MeshContext

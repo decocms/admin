@@ -1,17 +1,16 @@
-# Use Bun official image
-FROM oven/bun:1 AS base
+# Use Bun official image (Alpine-based)
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
 # Install build dependencies for native modules
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     python3 \
     make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+    g++
 
 # Create non-root user early and setup /app ownership
-RUN addgroup --system --gid 1001 bunapp && \
-    adduser --system --uid 1001 bunuser && \
+RUN addgroup -g 1001 -S bunapp && \
+    adduser -u 1001 -S -G bunapp bunuser && \
     chown -R bunuser:bunapp /app
 
 # Build stage
@@ -48,21 +47,14 @@ COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
 # Mesh app (runtime files only)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
-
-# UI package (workspace dependency)
-COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
-
 # Bindings package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
 
-# Copy working node_modules from builder (includes dev deps, but avoids OOM)
-# COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
 
 # Create data directory with correct ownership
 USER root

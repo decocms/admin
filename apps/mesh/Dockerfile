@@ -23,6 +23,25 @@ COPY --chown=bunuser:bunapp bun.lockb .npmrc ./
 # Install all dependencies (including dev) with frozen lockfile
 RUN bun install --frozen-lockfile
 
+# Runtime dependencies stage - prune node_modules to only include kysely-bun-worker and its dependencies
+FROM base AS runtime-deps
+WORKDIR /app
+USER bunuser
+
+# Copy node_modules from deps stage
+COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
+
+# Copy only the prune script (minimal copy for better caching)
+COPY --chown=bunuser:bunapp apps/mesh/scripts/prune-node-modules.ts ./apps/mesh/scripts/prune-node-modules.ts
+
+# Install @vercel/nft for dependency tracing
+RUN bun add -d @vercel/nft
+
+# Prune node_modules to only include kysely-bun-worker and its dependencies
+WORKDIR /app/apps/mesh
+RUN bun run scripts/prune-node-modules.ts
+
 # Build stage
 FROM base AS builder
 WORKDIR /app
@@ -63,9 +82,8 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh
 
 # copy external dependencies needed at runtime
 # kysely-bun-worker requires the node_modules structure to be intact
-# Copy node_modules with all dependencies (~6.4MB for kysely packages + dependencies)
-COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
+# Copy pruned node_modules containing only kysely-bun-worker and its dependencies
+COPY --from=runtime-deps --chown=bunuser:bunapp /app/pruned_node_modules/node_modules ./node_modules
 
 # copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh

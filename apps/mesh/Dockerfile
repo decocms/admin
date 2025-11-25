@@ -25,6 +25,10 @@ COPY --chown=bunuser:bunapp . .
 # Install all dependencies (including dev) with frozen lockfile
 RUN bun install --frozen-lockfile
 
+# Build packages/bindings first (workspace dependency)
+WORKDIR /app/packages/bindings
+RUN bun run build
+
 # Build the frontend static assets
 WORKDIR /app/apps/mesh
 RUN bun run build:client
@@ -48,6 +52,9 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/
 
 # UI package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
+
+# Bindings package (workspace dependency)
+COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
 
 # Copy working node_modules from builder (includes dev deps, but avoids OOM)
 COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules

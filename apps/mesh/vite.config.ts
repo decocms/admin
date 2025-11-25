@@ -7,11 +7,5 @@ export default defineConfig({
   server: {
     port: 4000,
   },
-  plugins: [
-    react(),
-    tailwindcss(),
-    tsconfigPaths({
-      root: ".",
-    }),
-  ],
+  plugins: [react(), tailwindcss(), tsconfigPaths({ root: "." })],
 });

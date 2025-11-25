@@ -7,7 +7,7 @@
     "dev:client": "bun --bun vite dev",
     "build:client": "bun --bun vite build",
     "build:server": "bun build src/index.ts --outfile server.js --target bun --minify --production",
-    "build:migrate": "bun build src/database/migrate.ts --outfile migrate.js --target bun --minify --production",
+    "build:migrate": "bun build src/database/migrate-entry.ts --outfile migrate.js --target bun --minify --production",
     "start": "bun run server.js",
     "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",

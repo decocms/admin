@@ -11,8 +11,19 @@ import { existsSync, mkdirSync } from "fs";
 import { Kysely, PostgresDialect, sql } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { Pool } from "pg";
+import * as path from "path";
 import type { Database as DatabaseSchema } from "../storage/types";
-import { getDatabaseUrl } from "@/auth";
+
+/**
+ * Get database URL from environment or default
+ * Inlined here to avoid circular dependencies with auth/index
+ */
+function getDatabaseUrl(): string {
+  return (
+    process.env.DATABASE_URL ||
+    `file:${path.join(process.cwd(), "data/mesh.db")}`
+  );
+}
 
 /**
  * Create Kysely database instance with auto-detected dialect

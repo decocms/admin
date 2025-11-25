@@ -337,6 +337,10 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         toolCallInput,
       });
 
+      if (result instanceof Response) {
+        return result;
+      }
+
       return new Response(JSON.stringify(result), {
         headers: {
           "Content-Type": "application/json",

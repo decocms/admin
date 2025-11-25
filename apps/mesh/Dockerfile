@@ -33,6 +33,10 @@ RUN bun run build
 WORKDIR /app/apps/mesh
 RUN bun run build:client
 
+# Build the server
+WORKDIR /app/apps/mesh
+RUN bun run build:server
+
 # Production stage
 FROM base AS runner
 WORKDIR /app
@@ -42,6 +46,7 @@ WORKDIR /app
 COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
 
 # Mesh app (runtime files only)
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
@@ -57,7 +62,7 @@ COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
 COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
 
 # Copy working node_modules from builder (includes dev deps, but avoids OOM)
-COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
+# COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
 
 # Create data directory with correct ownership
 USER root

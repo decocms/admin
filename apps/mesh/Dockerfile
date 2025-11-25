@@ -52,10 +52,15 @@ WORKDIR /app
 # Copy only what's needed for production (minimal approach)
 
 # Mesh app (runtime files only - no node_modules needed!)
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrate.js ./apps/mesh/migrate.js
+# copy client assets
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
+# copy server script
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
+# copy migration script
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrate.js ./apps/mesh/migrate.js
+# copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
+# copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 
 # Create data directory with correct ownership

@@ -8,11 +8,11 @@
  */
 
 import { existsSync, mkdirSync } from "fs";
-import { Kysely, PostgresDialect, sql, type Dialect } from "kysely";
+import { type Dialect, Kysely, PostgresDialect, sql } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
 import { Pool } from "pg";
+import * as path from "path";
 import type { Database as DatabaseSchema } from "../storage/types";
-import path from "path";
 
 // ============================================================================
 // Types & Interfaces

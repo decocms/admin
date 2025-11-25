@@ -1,29 +1,60 @@
-# Use Bun official image
-FROM oven/bun:1 AS base
+# syntax=docker/dockerfile:1.7-labs
+
+# Use Bun official image (Alpine-based)
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
 # Create non-root user early and setup /app ownership
-RUN addgroup --system --gid 1001 bunapp && \
-    adduser --system --uid 1001 bunuser && \
+RUN addgroup -g 1001 -S bunapp && \
+    adduser -u 1001 -S -G bunapp bunuser && \
     chown -R bunuser:bunapp /app
+
+# Dependencies stage - install dependencies in separate layer for better caching
+FROM base AS deps
+WORKDIR /app
+USER bunuser
+
+# Copy all package.json files preserving monorepo structure
+COPY --chown=bunuser:bunapp --parents **/package.json ./
+
+# Copy lockfile and npmrc
+COPY --chown=bunuser:bunapp bun.lockb .npmrc ./
+
+# Install all dependencies (including dev) with frozen lockfile
+RUN bun install --frozen-lockfile
+
+# Runtime dependencies stage - prune node_modules to only include kysely-bun-worker and its dependencies
+FROM base AS runtime-deps
+WORKDIR /app
+USER bunuser
+
+# Copy node_modules from deps stage
+COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
+
+# Copy only the prune script (minimal copy for better caching)
+COPY --chown=bunuser:bunapp apps/mesh/scripts/prune-node-modules.ts ./apps/mesh/scripts/prune-node-modules.ts
+
+# Install @vercel/nft for dependency tracing
+RUN bun add -d @vercel/nft
+
+# Prune node_modules to only include kysely-bun-worker and its dependencies
+WORKDIR /app/apps/mesh
+RUN bun run scripts/prune-node-modules.ts
 
 # Build stage
 FROM base AS builder
 WORKDIR /app
 USER bunuser
 
-# Copy everything
-COPY --chown=bunuser:bunapp . .
+# Copy node_modules from deps stage (this layer will be cached when dependencies don't change)
+# Copy root node_modules (includes .bun nested structure)
+COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+# Copy app-specific node_modules (includes symlinks to root)
+COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
 
-# Install all dependencies (including dev) with frozen lockfile
-RUN bun install --frozen-lockfile
+# Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
+COPY --chown=bunuser:bunapp . .
 
 # Build packages/bindings first (workspace dependency)
 WORKDIR /app/packages/bindings
@@ -31,33 +62,31 @@ RUN bun run build
 
 # Build the frontend static assets
 WORKDIR /app/apps/mesh
-RUN bun run build:client
+RUN bun run build:client 
+RUN bun run build:server
 
 # Production stage
 FROM base AS runner
 WORKDIR /app
+USER bunuser
 
-# Copy only what's needed for production (minimal approach)
-# Root workspace files
-COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
+# Copy only what's needed for production
 
-# Mesh app (runtime files only)
+# Mesh app (runtime files + external dependencies)
+# copy client assets
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/src ./apps/mesh/src
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
+# copy server script (handles both migrations and serving)
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
+# copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
 
-# UI package (workspace dependency)
-COPY --from=builder --chown=bunuser:bunapp /app/packages/ui ./packages/ui
+# copy external dependencies needed at runtime
+# kysely-bun-worker requires the node_modules structure to be intact
+# Copy pruned node_modules containing only kysely-bun-worker and its dependencies
+COPY --from=runtime-deps --chown=bunuser:bunapp /app/pruned_node_modules/node_modules ./node_modules
 
-# Bindings package (workspace dependency)
-COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
-
-# Copy working node_modules from builder (includes dev deps, but avoids OOM)
-COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
+# copy start script
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 
 # Create data directory with correct ownership
 USER root
@@ -69,7 +98,6 @@ USER bunuser
 # Expose the port (default Hono port is usually 3000 or 8000)
 EXPOSE 3000
 
-
 # Set environment to production
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/app/data/mesh.db
@@ -78,8 +106,9 @@ ENV DATABASE_URL=file:/app/data/mesh.db
 WORKDIR /app/apps/mesh
 
 # Run database migrations on startup and start the application
+# Both Kysely and Better Auth migrations are handled by server.js
 CMD ["sh", "-c", "\
   echo '=== Starting migrations ===' && \
-  bun run src/database/migrate.ts && \
-  (bun run better-auth:migrate || echo 'Better-auth migration failed, skipping...') && \
+  bun run server.js --migrate-only && \
+  echo '=== Starting application ===' && \
   bun run start"]

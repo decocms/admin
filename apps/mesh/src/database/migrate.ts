@@ -4,28 +4,39 @@
  * Runs Kysely migrations to create/update database schema
  */
 
-import { promises as fs } from "fs";
-import * as path from "path";
-import { Migrator, FileMigrationProvider } from "kysely";
+import { Migrator } from "kysely";
+import * as path from "node:path";
+import migrations from "../../migrations";
+import { migrateBetterAuth } from "../auth/migrate";
 import { getDb } from "./index";
 
 /**
  * Run all pending migrations
  */
 export async function migrateToLatest(): Promise<void> {
+  // Run Better Auth migrations programmatically
+  await migrateBetterAuth();
+
+  // Run Kysely migrations
+  console.log("📊 Getting database instance...");
   const db = getDb();
+  console.log("✅ Database instance obtained");
+
+  console.log("🔧 Creating migrator...");
+
+  // In bundled code, __dirname might not be correct, so we use process.cwd()
+  const migrationsPath = path.join(process.cwd(), "migrations");
+  console.log(`📂 Looking for migrations in: ${migrationsPath}`);
 
   const migrator = new Migrator({
     db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      // Absolute path to migrations folder
-      migrationFolder: path.join(__dirname, "../../migrations"),
-    }),
+    provider: { getMigrations: () => Promise.resolve(migrations) },
   });
+  console.log("✅ Migrator created");
 
+  console.log("▶️  Running migrations...");
   const { error, results } = await migrator.migrateToLatest();
+  console.log("✅ Migrations executed");
 
   results?.forEach((it) => {
     if (it.status === "Success") {
@@ -38,10 +49,18 @@ export async function migrateToLatest(): Promise<void> {
   if (error) {
     console.error("Failed to migrate");
     console.error(error);
+    // Close database connection before throwing
+    await db.destroy().catch(() => {});
     throw error;
   }
 
-  console.log("🎉 All migrations completed successfully");
+  console.log("🎉 All Kysely migrations completed successfully");
+
+  // Close database connection after all migrations
+  console.log("🔒 Closing database connection...");
+  await db.destroy().catch((err) => {
+    console.warn("Warning: Error closing database:", err);
+  });
 }
 
 /**
@@ -52,11 +71,7 @@ export async function migrateDown(): Promise<void> {
 
   const migrator = new Migrator({
     db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      migrationFolder: path.join(__dirname, "../../migrations"),
-    }),
+    provider: { getMigrations: () => Promise.resolve(migrations) },
   });
 
   const { error, results } = await migrator.migrateDown();
@@ -78,7 +93,5 @@ export async function migrateDown(): Promise<void> {
   }
 }
 
-if (import.meta.main) {
-  await migrateToLatest();
-  process.exit(0);
-}
+// Note: This file exports functions for use in other modules.
+// For running migrations directly, use migrate-entry.ts

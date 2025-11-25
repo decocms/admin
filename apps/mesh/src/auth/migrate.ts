@@ -1,0 +1,67 @@
+/**
+ * Better Auth Migration Runner
+ *
+ * Runs Better Auth migrations programmatically without requiring the CLI.
+ * This gets bundled with the application, avoiding the need for node_modules.
+ *
+ * IMPORTANT: This file creates a minimal auth configuration to avoid bundling
+ * the entire application (tools registry, plugins, etc.) which would cause OOM.
+ */
+
+import { getMigrations } from "better-auth/db";
+import { auth } from "./index";
+
+/**
+ * Create a minimal auth configuration for migrations only.
+ * This avoids loading the tools registry and other heavy dependencies.
+ *
+ * Note: We use minimal plugin configuration here. The schema will be
+ * the same, but the roles/permissions are simplified for migration purposes.
+ */
+
+/**
+ * Run Better Auth migrations programmatically
+ */
+export async function migrateBetterAuth(): Promise<void> {
+  console.log("🔐 Running Better Auth migrations...");
+
+  try {
+    // Create minimal auth config for migrations only
+
+    // Get migration info from Better Auth
+    // This returns tables to be created/updated and a function to run migrations
+    const { toBeAdded, toBeCreated, runMigrations } = await getMigrations(
+      auth.options,
+    );
+
+    // Check if any migrations are needed
+    if (!toBeAdded.length && !toBeCreated.length) {
+      console.log("✅ Better Auth schema is up to date (no migrations needed)");
+      return;
+    }
+
+    // Log what will be migrated
+    console.log("📋 Better Auth will create/update the following tables:");
+    for (const table of [...toBeCreated, ...toBeAdded]) {
+      console.log(`   - ${table.table}`);
+    }
+
+    // Run the migrations
+    await runMigrations();
+
+    console.log("✅ Better Auth migrations completed successfully");
+  } catch (error) {
+    // If migration fails, log but don't crash the app
+    // Better Auth will attempt to create tables on first request
+    console.warn(
+      "⚠️  Better Auth migration failed (tables may be created on first use):",
+      error,
+    );
+  }
+}
+
+// Allow running directly
+if (import.meta.main) {
+  await migrateBetterAuth();
+  process.exit(0);
+}

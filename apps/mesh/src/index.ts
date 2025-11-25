@@ -1,26 +1,26 @@
 /**
- * MCP Mesh Server Entry Point
+ * MCP Mesh Entry Point
  *
- * Bun automatically serves the default export if it's a Hono app.
- * Start with: bun run src/index.ts
+ * Routes to either migration or server based on command-line arguments.
+ * - With --migrate-only: runs migrations only
+ * - Without --migrate-only: starts the server
+ *
+ * Usage:
+ *   bun run src/index.ts              # Start server
+ *   bun run src/index.ts --migrate-only  # Run migrations
  */
 
-// Import observability module early to initialize OpenTelemetry SDK
-import "./observability";
-import app from "./api";
+// Make this file a module to allow top-level await
+export {};
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const args = process.argv.slice(2);
+const isMigrateOnly = args.includes("--migrate-only");
 
-// Log startup info
-console.log("✅ MCP Mesh starting...");
-console.log("");
-console.log(`📋 Health check:  http://localhost:${port}/health`);
-console.log(`🔐 Auth endpoints: http://localhost:${port}/api/auth/*`);
-console.log(`🔧 MCP endpoint:   http://localhost:${port}/mcp`);
-console.log("");
-
-Bun.serve({
-  port,
-  fetch: app.fetch,
-  development: true,
-});
+if (isMigrateOnly) {
+  // Run migrations only
+  console.log("🚀 Running migrations...");
+  await import("./migrate");
+} else {
+  // Start the server
+  await import("./serve");
+}

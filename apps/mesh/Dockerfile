@@ -28,11 +28,9 @@ FROM base AS builder
 WORKDIR /app
 USER bunuser
 
-# Copy package.json files first (needed for build scripts)
-COPY --chown=bunuser:bunapp package.json bun.lockb ./
-
 # Copy node_modules from deps stage (this layer will be cached when dependencies don't change)
 COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+COPY --from=deps --chown=bunuser:bunapp /app/**/node_modules ./
 
 # Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
 COPY --chown=bunuser:bunapp . .

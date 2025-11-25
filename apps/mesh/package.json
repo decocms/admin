@@ -8,9 +8,7 @@
     "build:client": "bun --bun vite build",
     "build:server": "bun build src/index.ts --target bun --minify --production --outfile server.js",
     "start": "bun run server.js",
-    "migrate": "bun run src/index.ts --migrate-only",
-    "db:generate": "bun run src/database/generate.ts",
-    "db:migrate": "bun run src/database/migrate.ts",
+    "migrate": "bun run scripts/generate_migrations.ts && bun run src/index.ts --migrate-only",
     "test": "bun test .",
     "better-auth:migrate": "bun node_modules/.bin/cli migrate -y --config src/auth/index.ts"
   },

@@ -2,6 +2,12 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
+import {
+  LanguageModelV2,
+  type LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
+  SharedV2Headers,
+} from "@ai-sdk/provider";
 import { createXai } from "@ai-sdk/xai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -18,7 +24,8 @@ const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const SYSTEM_PROMPT =
+  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -108,7 +115,7 @@ function formatAvailableConnections(connections: ConnectionSummary[]): string {
 
 const StreamRequestSchema = z.object({
   messages: z.any(), // Complex type from frontend, keeping as any
-  model: z.string().optional(),
+  modelId: z.string(),
   stream: z.boolean().optional(),
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
@@ -201,32 +208,74 @@ function buildConnectionHeaders(connection: MCPConnection) {
   return headers;
 }
 
-function createProvider(
-  provider: string | undefined,
+// function createProvider(
+//   provider: string | undefined,
+//   baseURL: string,
+//   headers: Record<string, string>,
+// ) {
+//   switch (provider) {
+//     case "anthropic":
+//       return createAnthropic({ baseURL, apiKey: "", headers });
+//     case "google":
+//       return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
+//     case "deepseek":
+//       return createDeepSeek({ baseURL, apiKey: "", headers });
+//     case "xai":
+//       return createXai({ baseURL, apiKey: "", headers });
+//     case "openrouter":
+//       return createOpenRouter({
+//         baseURL,
+//         apiKey: "",
+//         headers,
+//         compatibility: "strict",
+//       });
+//     default:
+//       // Default to OpenAI-compatible provider (covers OpenAI, etc.)
+//       return createOpenAI({ baseURL, headers });
+//   }
+// }
+
+const createPassthroughProvider = (
   baseURL: string,
+  modelId: string,
   headers: Record<string, string>,
-) {
-  switch (provider) {
-    case "anthropic":
-      return createAnthropic({ baseURL, apiKey: "", headers });
-    case "google":
-      return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
-    case "deepseek":
-      return createDeepSeek({ baseURL, apiKey: "", headers });
-    case "xai":
-      return createXai({ baseURL, apiKey: "", headers });
-    case "openrouter":
-      return createOpenRouter({
-        baseURL,
-        apiKey: "",
+) => {
+  return {
+    provider: "passthrough",
+    specificationVersion: "v2",
+    modelId: "default",
+    supportedUrls: {},
+    doGenerate: async (_options: LanguageModelV2CallOptions) => {
+      throw new Error("Not implemented");
+    },
+    doStream: async (
+      { abortSignal, ...options }: LanguageModelV2CallOptions,
+    ) => {
+      const res = await fetch(baseURL, {
+        signal: abortSignal,
+        method: "POST",
         headers,
-        compatibility: "strict",
+        body: JSON.stringify({ options, modelId }),
       });
-    default:
-      // Default to OpenAI-compatible provider (covers OpenAI, etc.)
-      return createOpenAI({ baseURL, headers, apiKey: "" });
-  }
-}
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch: ${res.statusText}`);
+      }
+
+      const stream = res.body as unknown as ReadableStream<
+        LanguageModelV2StreamPart
+      >;
+      const resHeaders = Object.fromEntries(
+        res.headers.entries(),
+      ) as SharedV2Headers;
+
+      return {
+        stream,
+        response: { headers: resHeaders },
+      };
+    },
+  } satisfies LanguageModelV2;
+};
 
 // Create AI SDK tools for connection management
 function createConnectionTools(ctx: MeshContext) {
@@ -341,7 +390,7 @@ app.post("/:org/models/stream", async (c) => {
     const payload = parseResult.data;
 
     const {
-      model,
+      modelId,
       messages,
       endpoint,
       provider: modelProvider,
@@ -357,7 +406,7 @@ app.post("/:org/models/stream", async (c) => {
       JSON.stringify({
         org: orgSlug,
         connectionId: connection.id,
-        model,
+        modelId,
         provider: modelProvider,
         endpointUrl: endpoint.url,
         messagesCount: messages.length,
@@ -379,14 +428,19 @@ app.post("/:org/models/stream", async (c) => {
     }).slice(-maxWindowSize);
 
     // Create provider based on the requested provider
-    const provider = createProvider(modelProvider, endpoint.url, headers);
+    // const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
+    const endpointUrl = `http://localhost:8787/mcp/call-tool/STREAM_TEXT`;
+    // const provider = createProvider(modelProvider, endpointUrl, headers);
+    const provider = createPassthroughProvider(endpointUrl, modelId, headers);
 
     // Build system prompt with available connections
     const systemPrompt = [
       SYSTEM_PROMPT,
-      `\nAvailable MCP Connections:\n${formatAvailableConnections(
-        connections,
-      )}`,
+      `\nAvailable MCP Connections:\n${
+        formatAvailableConnections(
+          connections,
+        )
+      }`,
     ].join("\n");
 
     // Create connection tools with MeshContext
@@ -394,7 +448,8 @@ app.post("/:org/models/stream", async (c) => {
 
     // Use streamText from AI SDK with pruned messages and parameters
     const result = streamText({
-      model: provider(model || "default"),
+      // model: provider(model || "default"),
+      model: provider,
       messages: prunedMessages,
       system: systemPrompt,
       tools: connectionTools,

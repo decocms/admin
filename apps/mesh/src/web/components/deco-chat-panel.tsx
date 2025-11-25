@@ -86,7 +86,7 @@ function createModelsTransport(
       return {
         body: {
           messages,
-          model: metadata?.model,
+          modelId: metadata?.modelId,
           provider: metadata?.provider,
           endpoint: metadata?.endpoint,
           stream: true,
@@ -328,7 +328,7 @@ export function DecoChatPanel() {
 
       // Prepare metadata with current model configuration
       const metadata = {
-        model: selectedModelId,
+        modelId: selectedModelId,
         provider: selectedModel.provider,
         endpoint: selectedModel.endpoint,
       };

@@ -13,6 +13,7 @@
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/anthropic": "^2.0.45",
     "@ai-sdk/deepseek": "^1.0.29",
     "@ai-sdk/google": "^2.0.40",

@@ -10,7 +10,7 @@
     "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",
     "test": "bun test .",
-    "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
+    "better-auth:migrate": "bun ./node_modules/.bin/cli migrate -y --config src/auth/index.ts"
   },
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",
@@ -66,6 +66,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@better-auth/cli": "1.3.34",
     "concurrently": "^9.2.1",
     "@tailwindcss/vite": "^4.1.17",
     "@types/bun": "^1.3.1",

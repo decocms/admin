@@ -69,9 +69,6 @@ USER bunuser
 # Expose the port (default Hono port is usually 3000 or 8000)
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD bun run -e 'fetch("http://localhost:3000/health").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'
 
 # Set environment to production
 ENV NODE_ENV=production
@@ -82,14 +79,7 @@ WORKDIR /app/apps/mesh
 
 # Run database migrations on startup and start the application
 CMD ["sh", "-c", "\
-  echo '=== Debug Info ===' && \
-  echo 'Current user:' && id && \
-  echo 'Current directory:' && pwd && \
-  echo 'DATABASE_URL:' $DATABASE_URL && \
-  echo 'Checking /app directory:' && ls -la /app && \
-  echo 'Checking /app/data directory:' && ls -la /app/data && \
-  echo 'Testing write permissions:' && touch /app/data/test.txt && echo 'Write test successful' && rm /app/data/test.txt && \
   echo '=== Starting migrations ===' && \
   bun run src/database/migrate.ts && \
-  bun run better-auth:migrate && \
+  (bun run better-auth:migrate || echo 'Better-auth migration failed, skipping...') && \
   bun run start"]

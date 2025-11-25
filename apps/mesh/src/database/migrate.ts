@@ -19,11 +19,11 @@ export async function migrateToLatest(): Promise<void> {
   console.log("✅ Database instance obtained");
 
   console.log("🔧 Creating migrator...");
-  
+
   // In bundled code, __dirname might not be correct, so we use process.cwd()
   const migrationsPath = path.join(process.cwd(), "migrations");
   console.log(`📂 Looking for migrations in: ${migrationsPath}`);
-  
+
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({

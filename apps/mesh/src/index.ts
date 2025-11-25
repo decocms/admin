@@ -14,13 +14,15 @@ const port = parseInt(process.env.PORT || "3000", 10);
 // Log startup info
 console.log("✅ MCP Mesh starting...");
 console.log("");
-console.log(`📋 Health check:  http://localhost:${port}/health`);
-console.log(`🔐 Auth endpoints: http://localhost:${port}/api/auth/*`);
-console.log(`🔧 MCP endpoint:   http://localhost:${port}/mcp`);
+console.log(`📋 Health check:  http://0.0.0.0:${port}/health`);
+console.log(`🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*`);
+console.log(`🔧 MCP endpoint:   http://0.0.0.0:${port}/mcp`);
+console.log(`🌐 Listening on:   0.0.0.0:${port}`);
 console.log("");
 
 Bun.serve({
   port,
+  hostname: "0.0.0.0", // Listen on all network interfaces (required for K8s)
   fetch: app.fetch,
-  development: true,
+  development: process.env.NODE_ENV !== "production",
 });

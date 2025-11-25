@@ -418,10 +418,15 @@ const proxy = (
         if (mcpConnection.type !== "HTTP") {
           throw new Error("HTTP connection required");
         }
+        const extraHeaders = await requestHeaders({ tool: req.params.name });
         return fetch(mcpConnection.url + `/call-tool/${req.params.name}`, {
           method: "POST",
+          redirect: "manual",
           body: JSON.stringify(req.params.arguments),
-          headers: await requestHeaders(),
+          headers: {
+            ...extraHeaders,
+            Authorization: `Bearer ${mcpConnection.token}`,
+          },
         });
       },
     );

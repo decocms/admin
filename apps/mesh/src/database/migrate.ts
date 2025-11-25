@@ -8,6 +8,7 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import { Migrator, FileMigrationProvider } from "kysely";
 import { getDb } from "./index";
+import { migrateBetterAuth } from "../auth/migrate";
 
 /**
  * Run all pending migrations
@@ -41,7 +42,10 @@ export async function migrateToLatest(): Promise<void> {
     throw error;
   }
 
-  console.log("🎉 All migrations completed successfully");
+  console.log("🎉 All Kysely migrations completed successfully");
+
+  // Run Better Auth migrations programmatically
+  await migrateBetterAuth();
 }
 
 /**
@@ -78,6 +82,7 @@ export async function migrateDown(): Promise<void> {
   }
 }
 
+// Run migrations when executed directly
 if (import.meta.main) {
   await migrateToLatest();
   process.exit(0);

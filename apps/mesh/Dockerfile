@@ -32,9 +32,9 @@ RUN bun run build
 WORKDIR /app/apps/mesh
 RUN bun run build:client
 
-# Build the server
+# Build the server and migration script
 WORKDIR /app/apps/mesh
-RUN bun run build:server
+RUN bun run build:server && bun run build:migrate
 
 # Production stage
 FROM base AS runner
@@ -42,12 +42,12 @@ WORKDIR /app
 
 # Copy only what's needed for production (minimal approach)
 
-# Mesh app (runtime files only)
+# Mesh app (runtime files only - no node_modules needed!)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrate.js ./apps/mesh/migrate.js
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
 # Bindings package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
 
@@ -71,8 +71,9 @@ ENV DATABASE_URL=file:/app/data/mesh.db
 WORKDIR /app/apps/mesh
 
 # Run database migrations on startup and start the application
+# Both Kysely and Better Auth migrations are bundled in migrate.js
 CMD ["sh", "-c", "\
   echo '=== Starting migrations ===' && \
-  bun run src/database/migrate.ts && \
-  (bun run better-auth:migrate || echo 'Better-auth migration failed, skipping...') && \
+  bun run migrate.js && \
+  echo '=== Starting application ===' && \
   bun run start"]

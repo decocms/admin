@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7-labs
+
 # Use Bun official image (Alpine-based)
 FROM oven/bun:1-alpine AS base
 WORKDIR /app
@@ -13,16 +15,33 @@ RUN addgroup -g 1001 -S bunapp && \
     adduser -u 1001 -S -G bunapp bunuser && \
     chown -R bunuser:bunapp /app
 
+# Dependencies stage - install dependencies in separate layer for better caching
+FROM base AS deps
+WORKDIR /app
+USER bunuser
+
+# Copy all package.json files preserving monorepo structure
+COPY --chown=bunuser:bunapp --parents **/package.json ./
+
+# Copy lockfile and npmrc
+COPY --chown=bunuser:bunapp bun.lockb .npmrc ./
+
+# Install all dependencies (including dev) with frozen lockfile
+RUN bun install --frozen-lockfile
+
 # Build stage
 FROM base AS builder
 WORKDIR /app
 USER bunuser
 
-# Copy everything
-COPY --chown=bunuser:bunapp . .
+# Copy package.json files first (needed for build scripts)
+COPY --chown=bunuser:bunapp package.json bun.lockb ./
 
-# Install all dependencies (including dev) with frozen lockfile
-RUN bun install --frozen-lockfile
+# Copy node_modules from deps stage (this layer will be cached when dependencies don't change)
+COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
+
+# Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
+COPY --chown=bunuser:bunapp . .
 
 # Build packages/bindings first (workspace dependency)
 WORKDIR /app/packages/bindings

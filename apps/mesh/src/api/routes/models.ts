@@ -2,17 +2,17 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import {
-  LanguageModelV2,
-  type LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
-  SharedV2Headers,
-} from "@ai-sdk/provider";
 import { createXai } from "@ai-sdk/xai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { convertToModelMessages, pruneMessages, streamText, tool } from "ai";
+import {
+  convertToModelMessages,
+  pruneMessages,
+  stepCountIs,
+  streamText,
+  tool,
+} from "ai";
 import { Hono } from "hono";
 import { z } from "zod/v3";
 import type { MeshContext } from "../../core/mesh-context";
@@ -208,74 +208,44 @@ function buildConnectionHeaders(connection: MCPConnection) {
   return headers;
 }
 
-// function createProvider(
-//   provider: string | undefined,
-//   baseURL: string,
-//   headers: Record<string, string>,
-// ) {
-//   switch (provider) {
-//     case "anthropic":
-//       return createAnthropic({ baseURL, apiKey: "", headers });
-//     case "google":
-//       return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
-//     case "deepseek":
-//       return createDeepSeek({ baseURL, apiKey: "", headers });
-//     case "xai":
-//       return createXai({ baseURL, apiKey: "", headers });
-//     case "openrouter":
-//       return createOpenRouter({
-//         baseURL,
-//         apiKey: "",
-//         headers,
-//         compatibility: "strict",
-//       });
-//     default:
-//       // Default to OpenAI-compatible provider (covers OpenAI, etc.)
-//       return createOpenAI({ baseURL, headers });
-//   }
-// }
-
-const createPassthroughProvider = (
+function createProvider(
+  provider: string | undefined,
   baseURL: string,
-  modelId: string,
   headers: Record<string, string>,
-) => {
-  return {
-    provider: "passthrough",
-    specificationVersion: "v2",
-    modelId: "default",
-    supportedUrls: {},
-    doGenerate: async (_options: LanguageModelV2CallOptions) => {
-      throw new Error("Not implemented");
-    },
-    doStream: async (
-      { abortSignal, ...options }: LanguageModelV2CallOptions,
-    ) => {
-      const res = await fetch(baseURL, {
-        signal: abortSignal,
-        method: "POST",
+) {
+  switch (provider) {
+    case "anthropic":
+      return createAnthropic({ baseURL, apiKey: "", headers });
+    case "google":
+      return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
+    case "deepseek":
+      return createDeepSeek({ baseURL, apiKey: "", headers });
+    case "xai":
+      return createXai({ baseURL, apiKey: "", headers });
+    case "openrouter":
+      return createOpenRouter({
+        baseURL,
+        apiKey: "",
         headers,
-        body: JSON.stringify({ options, modelId }),
+        compatibility: "strict",
+        // @ts-expect-error - fetch is somehow wrong.
+        fetch: (input, init) => {
+          const inputStr = input instanceof URL ? input.href : String(input);
+          console.log("inputStr", inputStr);
+          return fetch(inputStr.replace("/chat/completions", ""), {
+            ...init,
+            headers: {
+              ...init?.headers,
+              ...headers,
+            },
+          });
+        },
       });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch: ${res.statusText}`);
-      }
-
-      const stream = res.body as unknown as ReadableStream<
-        LanguageModelV2StreamPart
-      >;
-      const resHeaders = Object.fromEntries(
-        res.headers.entries(),
-      ) as SharedV2Headers;
-
-      return {
-        stream,
-        response: { headers: resHeaders },
-      };
-    },
-  } satisfies LanguageModelV2;
-};
+    default:
+      // Default to OpenAI-compatible provider (covers OpenAI, etc.)
+      return createOpenAI({ baseURL, headers });
+  }
+}
 
 // Create AI SDK tools for connection management
 function createConnectionTools(ctx: MeshContext) {
@@ -286,7 +256,22 @@ function createConnectionTools(ctx: MeshContext) {
       inputSchema: z.object({
         id: z.string().describe("The connection ID"),
       }),
-      execute: ({ id }) => ConnectionTools.CONNECTION_GET.execute({ id }, ctx),
+      execute: async ({ id }) => {
+        try {
+          return await ConnectionTools.CONNECTION_GET.execute({ id }, ctx);
+        } catch (error) {
+          console.error(`Error getting connection ${id}:`, error);
+          return {
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: error instanceof Error ? error.message : "Unknown error",
+              },
+            ],
+          };
+        }
+      },
     }),
 
     CALL_MCP_TOOL: tool({
@@ -429,9 +414,11 @@ app.post("/:org/models/stream", async (c) => {
 
     // Create provider based on the requested provider
     // const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
-    const endpointUrl = `http://localhost:8787/mcp/call-tool/STREAM_TEXT`;
-    // const provider = createProvider(modelProvider, endpointUrl, headers);
-    const provider = createPassthroughProvider(endpointUrl, modelId, headers);
+    const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
+    const provider = createProvider(modelProvider, endpointUrl, headers)(
+      modelId,
+    );
+    // const provider = createPassthroughProvider(endpointUrl, modelId, headers);
 
     // Build system prompt with available connections
     const systemPrompt = [
@@ -456,6 +443,7 @@ app.post("/:org/models/stream", async (c) => {
       temperature,
       maxOutputTokens,
       abortSignal: c.req.raw.signal,
+      stopWhen: stepCountIs(30), // Stop after 5 steps with tool calls
       onError: (error) => {
         console.error("[models:stream] Error", error);
       },

@@ -182,7 +182,8 @@ const DATABASES: Record<DatabaseType, SupportedDatabase> = {
  * Get database URL from environment or default
  */
 export function getDatabaseUrl(): string {
-  const databaseUrl = process.env.DATABASE_URL ||
+  const databaseUrl =
+    process.env.DATABASE_URL ||
     `file:${path.join(process.cwd(), "data/mesh.db")}`;
   return databaseUrl;
 }

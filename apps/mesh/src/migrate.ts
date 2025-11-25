@@ -7,7 +7,7 @@
 
 console.log("🚀 Migration script starting...");
 
-import { migrateToLatest } from "./migrate";
+import { migrateToLatest } from "./database/migrate";
 
 console.log("📦 Imported migrateToLatest function");
 

@@ -7,10 +7,9 @@
     "dev:client": "bun --bun vite dev",
     "build:client": "bun --bun vite build",
     "start": "bun run src/index.ts",
-    "db:generate": "bun run src/database/generate.ts",
     "db:migrate": "bun run src/database/migrate.ts",
     "test": "bun test .",
-    "better-auth:migrate": "bun node_modules/.bin/cli migrate -y --config src/auth/index.ts"
+    "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },
   "dependencies": {
     "@ai-sdk/provider": "^2.0.0",

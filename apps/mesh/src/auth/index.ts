@@ -28,8 +28,6 @@ import {
 
 import { createAccessControl, Role } from "better-auth/plugins/access";
 import { existsSync, readFileSync } from "fs";
-import { BunWorkerDialect } from "kysely-bun-worker";
-import path from "path";
 import {
   createEmailSender,
   EmailProviderConfig,
@@ -37,6 +35,7 @@ import {
 } from "./email-providers";
 import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 import { createSSOConfig, SSOConfig } from "./sso";
+import { getDatabaseUrl, getDbDialect } from "../database";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -60,19 +59,6 @@ function loadAuthConfig(): Partial<BetterAuthOptions> {
   }
 
   return DEFAULT_AUTH_CONFIG;
-}
-
-/**
- * Get database URL from environment or default
- */
-export function getDatabaseUrl(): string {
-  const databaseUrl =
-    process.env.DATABASE_URL ||
-    `file:${path.join(process.cwd(), "data/mesh.db")}`;
-  console.log(
-    `[Auth] Initializing Better Auth with database: ${databaseUrl} at ${process.cwd()}`,
-  );
-  return databaseUrl;
 }
 
 const allTools = Object.values(getToolsByCategory())
@@ -216,6 +202,12 @@ const plugins = [
     : []),
 ];
 
+const databaseUrl = getDatabaseUrl();
+
+// Get dialect without creating the full Kysely instance
+// Better Auth can use the dialect directly
+const database = getDbDialect(databaseUrl);
+
 /**
  * Better Auth instance with MCP, API Key, and Admin plugins
  */
@@ -223,10 +215,8 @@ export const auth = betterAuth({
   // Base URL for OAuth - will be overridden by request context
   baseURL: process.env.BASE_URL || "http://localhost:3000",
 
-  // Better Auth can use BunWorkerDialect directly
-  database: new BunWorkerDialect({
-    url: getDatabaseUrl(),
-  }),
+  // Better Auth can use the dialect directly
+  database,
 
   emailAndPassword: {
     enabled: true,

@@ -61,18 +61,11 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/
 # copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 
-# copy ONLY the external dependencies needed at runtime
-# Copy the entire node_modules structure needed for kysely-bun-worker to work
-# This includes the .bun directory structure and symlinks (~6.4MB total)
+# copy external dependencies needed at runtime
+# kysely-bun-worker requires the node_modules structure to be intact
+# Copy node_modules with all dependencies (~6.4MB for kysely packages + dependencies)
 COPY --from=builder --chown=bunuser:bunapp /app/node_modules ./node_modules
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
-# Remove everything except kysely and kysely-bun-worker to minimize image size
-RUN cd node_modules && \
-    find . -mindepth 1 -maxdepth 1 ! -name '.bun' -exec rm -rf {} + && \
-    cd .bun && \
-    find . -mindepth 1 -maxdepth 1 ! -name 'kysely*' -exec rm -rf {} + && \
-    cd /app/apps/mesh/node_modules && \
-    find . -mindepth 1 -maxdepth 1 ! -name 'kysely*' -exec rm -rf {} +
 
 # copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh

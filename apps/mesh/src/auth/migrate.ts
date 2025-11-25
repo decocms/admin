@@ -3,10 +3,87 @@
  *
  * Runs Better Auth migrations programmatically without requiring the CLI.
  * This gets bundled with the application, avoiding the need for node_modules.
+ *
+ * IMPORTANT: This file creates a minimal auth configuration to avoid bundling
+ * the entire application (tools registry, plugins, etc.) which would cause OOM.
  */
 
 import { getMigrations } from "better-auth/db";
-import { auth } from "./index";
+import { betterAuth } from "better-auth";
+import {
+  admin as adminPlugin,
+  apiKey,
+  mcp,
+  openAPI,
+  organization,
+} from "better-auth/plugins";
+import { createAccessControl } from "better-auth/plugins/access";
+import {
+  adminAc,
+  defaultStatements,
+} from "better-auth/plugins/organization/access";
+import { BunWorkerDialect } from "kysely-bun-worker";
+import path from "path";
+
+/**
+ * Get database URL - inlined here to avoid importing the full auth/index
+ * which would pull in the entire tools registry
+ */
+function getDatabaseUrl(): string {
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    `file:${path.join(process.cwd(), "data/mesh.db")}`;
+  console.log(
+    `[Auth] Initializing Better Auth with database: ${databaseUrl} at ${process.cwd()}`,
+  );
+  return databaseUrl;
+}
+
+/**
+ * Create a minimal auth configuration for migrations only.
+ * This avoids loading the tools registry and other heavy dependencies.
+ *
+ * Note: We use minimal plugin configuration here. The schema will be
+ * the same, but the roles/permissions are simplified for migration purposes.
+ */
+function createMigrationAuthConfig() {
+  // Create minimal access control without loading all tools
+  const ac = createAccessControl(defaultStatements);
+
+  const user = ac.newRole(adminAc.statements);
+  const admin = ac.newRole(adminAc.statements);
+  const owner = ac.newRole(adminAc.statements);
+
+  return betterAuth({
+    baseURL: process.env.BASE_URL || "http://localhost:3000",
+    database: new BunWorkerDialect({
+      url: getDatabaseUrl(),
+    }),
+    emailAndPassword: {
+      enabled: true,
+    },
+    // Include only the plugins needed for schema generation
+    // No need for full configuration, just enough to generate the schema
+    plugins: [
+      organization({
+        ac,
+        creatorRole: "owner",
+        allowUserToCreateOrganization: true,
+        roles: {
+          user,
+          admin,
+          owner,
+        },
+      }),
+      mcp({
+        loginPage: "/auth/sign-in",
+      }),
+      apiKey(),
+      adminPlugin(),
+      openAPI(),
+    ],
+  });
+}
 
 /**
  * Run Better Auth migrations programmatically
@@ -15,10 +92,13 @@ export async function migrateBetterAuth(): Promise<void> {
   console.log("🔐 Running Better Auth migrations...");
 
   try {
+    // Create minimal auth config for migrations only
+    const authConfig = createMigrationAuthConfig();
+
     // Get migration info from Better Auth
     // This returns tables to be created/updated and a function to run migrations
     const { toBeAdded, toBeCreated, runMigrations } = await getMigrations(
-      auth.options,
+      authConfig.options,
     );
 
     // Check if any migrations are needed

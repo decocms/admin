@@ -14,19 +14,30 @@ import { migrateBetterAuth } from "../auth/migrate";
  * Run all pending migrations
  */
 export async function migrateToLatest(): Promise<void> {
+  console.log("📊 Getting database instance...");
   const db = getDb();
+  console.log("✅ Database instance obtained");
 
+  console.log("🔧 Creating migrator...");
+  
+  // In bundled code, __dirname might not be correct, so we use process.cwd()
+  const migrationsPath = path.join(process.cwd(), "migrations");
+  console.log(`📂 Looking for migrations in: ${migrationsPath}`);
+  
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({
       fs,
       path,
-      // Absolute path to migrations folder
-      migrationFolder: path.join(__dirname, "../../migrations"),
+      // Use cwd-relative path since bundled code's __dirname is unreliable
+      migrationFolder: migrationsPath,
     }),
   });
+  console.log("✅ Migrator created");
 
+  console.log("▶️  Running migrations...");
   const { error, results } = await migrator.migrateToLatest();
+  console.log("✅ Migrations executed");
 
   results?.forEach((it) => {
     if (it.status === "Success") {
@@ -39,6 +50,8 @@ export async function migrateToLatest(): Promise<void> {
   if (error) {
     console.error("Failed to migrate");
     console.error(error);
+    // Close database connection before throwing
+    await db.destroy().catch(() => {});
     throw error;
   }
 
@@ -46,6 +59,12 @@ export async function migrateToLatest(): Promise<void> {
 
   // Run Better Auth migrations programmatically
   await migrateBetterAuth();
+
+  // Close database connection after all migrations
+  console.log("🔒 Closing database connection...");
+  await db.destroy().catch((err) => {
+    console.warn("Warning: Error closing database:", err);
+  });
 }
 
 /**
@@ -82,8 +101,5 @@ export async function migrateDown(): Promise<void> {
   }
 }
 
-// Run migrations when executed directly
-if (import.meta.main) {
-  await migrateToLatest();
-  process.exit(0);
-}
+// Note: This file exports functions for use in other modules.
+// For running migrations directly, use migrate-entry.ts

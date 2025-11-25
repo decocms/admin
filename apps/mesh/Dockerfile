@@ -4,12 +4,6 @@
 FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++
-
 # Create non-root user early and setup /app ownership
 RUN addgroup -g 1001 -S bunapp && \
     adduser -u 1001 -S -G bunapp bunuser && \
@@ -49,11 +43,9 @@ RUN bun run build
 
 # Build the frontend static assets
 WORKDIR /app/apps/mesh
-RUN bun run build:client
-
-# Build the server and migration script
-WORKDIR /app/apps/mesh
-RUN bun run build:server && bun run build:migrate
+RUN bun run build:client 
+RUN bun run build:server 
+RUN bun run build:migrate
 
 # Production stage
 FROM base AS runner
@@ -65,11 +57,8 @@ WORKDIR /app
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrate.js ./apps/mesh/migrate.js
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
-# Bindings package (workspace dependency)
-COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
-
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 
 # Create data directory with correct ownership
 USER root
@@ -80,7 +69,6 @@ USER bunuser
 
 # Expose the port (default Hono port is usually 3000 or 8000)
 EXPOSE 3000
-
 
 # Set environment to production
 ENV NODE_ENV=production

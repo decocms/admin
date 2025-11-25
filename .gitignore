@@ -57,3 +57,4 @@ kv-wal
 
 # Build outputs
 apps/mesh/server.js
+apps/mesh/migrate.js

@@ -41,8 +41,6 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy only what's needed for production (minimal approach)
-# Root workspace files
-COPY --from=builder --chown=bunuser:bunapp /app/package.json ./
 
 # Mesh app (runtime files only)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
@@ -50,8 +48,6 @@ COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh/
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/scripts ./apps/mesh/scripts
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/tsconfig.json ./apps/mesh/
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/vite.config.ts ./apps/mesh/
 # Bindings package (workspace dependency)
 COPY --from=builder --chown=bunuser:bunapp /app/packages/bindings ./packages/bindings
 

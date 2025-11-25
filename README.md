@@ -23,7 +23,7 @@
 
 **DecoCMS** is an open‑source Context Management System — the **MCP Mesh** for AI. It centralizes MCP connections, tools, data access, and policies to aggregate organization‑wide context in one secure place. Compose and expose virtual MCPs ("AI Apps") for any client (Claude Desktop, VS Code, custom UIs) with governance, observability, and cost control.
 
-> Think **Lovable + n8n + LangGraph**, running on Cloudflare with a single deploy command.  
+> Think **Lovable + n8n + LangGraph**, running on your AWS/GCP with a single deploy command.  
 > Full-stack AI, production-ready.
 
 ---

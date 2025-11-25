@@ -43,6 +43,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "**/*.test.ts", "**/*.spec.ts"],
+  "include": [
+    "src/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "scripts/generate-migrations.ts"
+  ],
   "exclude": ["node_modules", "dist", "data"]
 }

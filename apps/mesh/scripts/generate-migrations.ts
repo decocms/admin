@@ -6,7 +6,7 @@
  * the migrations folder for all migration files.
  *
  * Usage:
- *   bun run src/generate_migrations.ts
+ *   bun run src/generate-migrations.ts
  */
 
 import { readdir, writeFile } from "node:fs/promises";

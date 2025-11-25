@@ -9,7 +9,7 @@
     "build:server": "bun build src/index.ts --target bun --minify --production --outfile server.js --external kysely-bun-worker --external bun:sqlite",
     "build:migrate": "bun build src/database/migrate-entry.ts --target bun --minify --production --outfile migrate.js",
     "start": "bun run server.js",
-    "migrate": "bun run scripts/generate_migrations.ts && bun run src/index.ts --migrate-only",
+    "migrate": "bun run scripts/generate-migrations.ts && bun run src/index.ts --migrate-only",
     "test": "bun test .",
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },

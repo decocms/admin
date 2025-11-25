@@ -23,4 +23,3 @@ console.log("📦 Imported migrateToLatest function");
     process.exit(1);
   }
 })();
-

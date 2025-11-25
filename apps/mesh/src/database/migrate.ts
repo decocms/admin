@@ -4,9 +4,9 @@
  * Runs Kysely migrations to create/update database schema
  */
 
-import { promises as fs } from "fs";
-import * as path from "path";
-import { Migrator, FileMigrationProvider } from "kysely";
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+import { FileMigrationProvider, Migrator } from "kysely";
 import { getDb } from "./index";
 import { migrateBetterAuth } from "../auth/migrate";
 
@@ -19,11 +19,11 @@ export async function migrateToLatest(): Promise<void> {
   console.log("✅ Database instance obtained");
 
   console.log("🔧 Creating migrator...");
-  
+
   // In bundled code, __dirname might not be correct, so we use process.cwd()
   const migrationsPath = path.join(process.cwd(), "migrations");
   console.log(`📂 Looking for migrations in: ${migrationsPath}`);
-  
+
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({

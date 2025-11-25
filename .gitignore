@@ -54,3 +54,6 @@ kv-wal
 *.db
 *.db-shm
 *.db-wal
+
+# Build outputs
+apps/mesh/server.js

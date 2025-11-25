@@ -48,15 +48,17 @@ RUN bun run build:server
 FROM base AS runner
 WORKDIR /app
 
-# Copy only what's needed for production (minimal approach)
+# Copy only what's needed for production
 
-# Mesh app (runtime files only - no node_modules needed!)
+# Mesh app (runtime files + external dependencies)
 # copy client assets
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
 # copy server script (handles both migrations and serving)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
 # copy migrations
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
+# copy external dependencies (kysely-bun-worker needs to be available at runtime)
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/node_modules/kysely-bun-worker ./apps/mesh/node_modules/kysely-bun-worker
 # copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 

@@ -33,7 +33,6 @@ USER bunuser
 COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
 # Copy app-specific node_modules (includes symlinks to root)
 COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
-COPY --from=deps --chown=bunuser:bunapp /app/packages/bindings/node_modules ./packages/bindings/node_modules
 
 # Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
 COPY --chown=bunuser:bunapp . .

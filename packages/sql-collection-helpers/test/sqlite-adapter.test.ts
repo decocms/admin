@@ -280,7 +280,7 @@ describe("SqliteAdapter", () => {
 describe("SqliteIntrospector", () => {
   it("should introspect database schema", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     // Create a test table
     const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`
@@ -308,7 +308,7 @@ describe("SqliteIntrospector", () => {
 
   it("should detect audit fields", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`
       CREATE TABLE audit_table (
@@ -333,7 +333,7 @@ describe("SqliteIntrospector", () => {
 
   it("should exclude sqlite internal tables", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`CREATE TABLE user_table (id INTEGER PRIMARY KEY)`);
     db.exec(`CREATE TABLE mastra_internal (id INTEGER PRIMARY KEY)`);

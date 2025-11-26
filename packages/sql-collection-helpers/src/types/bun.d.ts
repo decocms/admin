@@ -5,10 +5,11 @@
  */
 
 declare global {
-  const Bun: {
-    version: string;
-  } | undefined;
+  const Bun:
+    | {
+        version: string;
+      }
+    | undefined;
 }
 
 export {};
-

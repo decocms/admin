@@ -20,4 +20,3 @@ declare module "bun:sqlite" {
     close(): void;
   }
 }
-

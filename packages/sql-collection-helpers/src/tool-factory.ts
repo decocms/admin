@@ -108,9 +108,15 @@ function isMutationEnabled(
 /**
  * Get authenticated user ID from context
  */
-function getUserId(context: { runtimeContext?: { get: (key: string) => unknown } }): string | undefined {
+function getUserId(context: {
+  runtimeContext?: { get: (key: string) => unknown };
+}): string | undefined {
   try {
-    const env = context.runtimeContext?.get("env") as { DECO_REQUEST_CONTEXT?: { ensureAuthenticated: () => { id?: string } } } | undefined;
+    const env = context.runtimeContext?.get("env") as
+      | {
+          DECO_REQUEST_CONTEXT?: { ensureAuthenticated: () => { id?: string } };
+        }
+      | undefined;
     if (env?.DECO_REQUEST_CONTEXT) {
       const auth = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
       return auth?.id;
@@ -280,10 +286,7 @@ function createUpdateTool(
 /**
  * Create DELETE tool for a table
  */
-function createDeleteTool(
-  table: TableMetadata,
-  adapter: DatabaseAdapter,
-) {
+function createDeleteTool(table: TableMetadata, adapter: DatabaseAdapter) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_DELETE`;
 
   if (!table.primaryKey) {

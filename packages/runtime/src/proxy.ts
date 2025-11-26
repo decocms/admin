@@ -109,11 +109,15 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           };
         }
 
-        const client = await createServerClient(
+        const { client, callStreamableTool } = await createServerClient(
           { connection: toolConnection },
           undefined,
           extraHeaders,
         );
+
+        if (options?.streamable?.[String(name)]) {
+          return callStreamableTool(String(name), args);
+        }
 
         const { structuredContent, isError, content } = await client.callTool(
           {
@@ -157,7 +161,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const client = await createServerClient({ connection });
+        const { client } = await createServerClient({ connection });
         const { tools } = await client.listTools();
 
         return tools as {

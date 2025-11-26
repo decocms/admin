@@ -75,6 +75,7 @@ class PostgresDatabase implements SupportedDatabase {
         connectionString: config.connectionString,
         max: config.options?.maxConnections || 10,
         ssl: false,
+        },
       }),
     });
   }

@@ -23,6 +23,8 @@ export interface ToolBinder<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
+  TStreamable extends boolean = boolean,
+
 > {
   /** The name of the tool (e.g., "DECO_CHAT_CHANNELS_JOIN") */
   name: TName;
@@ -31,7 +33,7 @@ export interface ToolBinder<
   inputSchema: ZodType<TInput>;
 
   /** Optional Zod schema for validating tool output */
-  outputSchema?: ZodType<TReturn>;
+  outputSchema?: TStreamable extends true ? never : ZodType<TReturn>;
 
   /**
    * Whether this tool is optional in the binding.

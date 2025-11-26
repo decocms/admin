@@ -42,11 +42,15 @@ class Client extends BaseClient {
   }
 }
 
+export interface ServerClient {
+  client: Client;
+  callStreamableTool: (tool: string, args: unknown) => Promise<Response>;
+}
 export const createServerClient = async (
   mcpServer: { connection: MCPConnection; name?: string },
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,
-): Promise<Client> => {
+): Promise<ServerClient> => {
   const transport = createTransport(mcpServer.connection, signal, extraHeaders);
 
   if (!transport) {
@@ -60,7 +64,23 @@ export const createServerClient = async (
 
   await client.connect(transport);
 
-  return client;
+  return {
+    client,
+    callStreamableTool: (tool, args) => {
+      if (mcpServer.connection.type !== "HTTP") {
+        throw new Error("HTTP connection required");
+      }
+      return fetch(mcpServer.connection.url + `/call-tool/${tool}`, {
+        method: "POST",
+        redirect: "manual",
+        body: JSON.stringify(args),
+        headers: {
+          ...extraHeaders,
+          Authorization: `Bearer ${mcpServer.connection.token}`,
+        },
+      });
+    },
+  };
 };
 
 export const createTransport = (

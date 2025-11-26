@@ -61,7 +61,7 @@ const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
 export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
   return swr.cache(
     async () => {
-      const client = await createServerClient(mcpServer, signal).catch(
+      const { client } = await createServerClient(mcpServer, signal).catch(
         console.error,
       );
       if (!client) {
@@ -113,7 +113,7 @@ const getMCPServerTools = async (
                 throw new Error("Failed to create inner client");
               }
               try {
-                const result = await innerClient.callTool(
+                const result = await innerClient.client.callTool(
                   {
                     name: tool.name,
                     arguments: input,

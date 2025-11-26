@@ -20,7 +20,7 @@ COPY --chown=bunuser:bunapp --parents packages/**/package.json ./
 COPY --chown=bunuser:bunapp --parents apps/**/package.json ./
 
 # Install all dependencies (including dev) with frozen lockfile
-RUN bun install 
+RUN bun install --frozen-lockfile
 
 # Build stage - builds packages that will be used later in the build process
 FROM deps AS builder

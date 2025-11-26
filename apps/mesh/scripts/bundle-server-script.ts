@@ -54,7 +54,7 @@ async function pruneNodeModules(): Promise<Set<string>> {
   // Find the migration entry point file
   let migrateEntryPointPath: string;
   try {
-    migrateEntryPointPath = require.resolve(MIGRATE_ENTRY_POINT);
+    migrateEntryPointPath = Bun.resolveSync(MIGRATE_ENTRY_POINT, WORKSPACE_ROOT);
   } catch (error) {
     console.error(`❌ Failed to resolve ${MIGRATE_ENTRY_POINT}:`, error);
     process.exit(1);

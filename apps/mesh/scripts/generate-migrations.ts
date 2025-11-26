@@ -12,6 +12,41 @@
 import { readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+/**
+ * Sanitizes a string to create a valid JavaScript identifier.
+ * - Replaces all non-alphanumeric characters with underscores
+ * - Prefixes with "_" if the result starts with a digit
+ * - Normalizes consecutive underscores to a single underscore
+ * - Trims to a safe length (max 100 characters)
+ */
+function sanitizeIdentifier(name: string): string {
+  // Replace all non-alphanumeric characters with underscores
+  let sanitized = name.replace(/[^a-zA-Z0-9]/g, "_");
+
+  // Normalize consecutive underscores to a single underscore
+  sanitized = sanitized.replace(/_+/g, "_");
+
+  // Remove leading/trailing underscores
+  sanitized = sanitized.replace(/^_+|_+$/g, "");
+
+  // If it starts with a digit, prefix with "_"
+  if (/^\d/.test(sanitized)) {
+    sanitized = `_${sanitized}`;
+  }
+
+  // Trim to a safe length (max 100 characters)
+  if (sanitized.length > 100) {
+    sanitized = sanitized.substring(0, 100);
+  }
+
+  // Ensure it's not empty (fallback to "_migration" if empty)
+  if (!sanitized) {
+    sanitized = "_migration";
+  }
+
+  return sanitized;
+}
+
 async function generateMigrationsIndex() {
   console.log("🔍 Scanning migrations folder...");
 
@@ -30,7 +65,7 @@ async function generateMigrationsIndex() {
   const imports = migrationFiles
     .map((file) => {
       const name = file.replace(".ts", "");
-      const varName = name.replace(/-/g, "");
+      const varName = sanitizeIdentifier(name);
       return `import * as migration${varName} from "./${file}";`;
     })
     .join("\n");
@@ -39,7 +74,7 @@ async function generateMigrationsIndex() {
   const entries = migrationFiles
     .map((file) => {
       const name = file.replace(".ts", "");
-      const varName = name.replace(/-/g, "");
+      const varName = sanitizeIdentifier(name);
       return `  "${name}": migration${varName},`;
     })
     .join("\n");

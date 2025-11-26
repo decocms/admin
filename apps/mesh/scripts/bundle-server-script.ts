@@ -38,10 +38,8 @@ function parseArgs() {
 }
 
 // Find the workspace root (where node_modules is located)
-// Script runs from apps/mesh, so we need to go up to the root
-const WORKSPACE_ROOT = process.cwd().includes("/apps/mesh")
-  ? join(process.cwd(), "../..")
-  : process.cwd();
+// Script is at apps/mesh/scripts, so we need to go up three levels to the repo root
+const WORKSPACE_ROOT = resolve(SCRIPT_DIR, "../../..");
 const NODE_MODULES_DIR = join(WORKSPACE_ROOT, "node_modules");
 
 // Get dist path from args or use default

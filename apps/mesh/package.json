@@ -9,7 +9,7 @@
     "build:server": "bun run scripts/bundle-server-script.ts --dist ./dist-server",
     "db:migrate": "bun run ./dist-server/migrate.js",
     "start": "bun run ./dist-server/server.js",
-    "migrate": "bun run scripts/generate_migrations.ts && bun run src/index.ts --migrate-only",
+    "migrate": "bun run scripts/generate-migrations.ts && bun run src/index.ts --migrate-only",
     "test": "bun test .",
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },

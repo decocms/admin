@@ -31,7 +31,10 @@ export function UsageFilters({
   setClauseId?: (value: string | null) => void;
   availableClauses?: string[];
 }) {
-  const { data: integrations } = useIntegrations();
+  // Only fetch integrations when viewing contract tab (for contract name display)
+  const { data: integrations } = useIntegrations({
+    shouldFetch: usageType === "contract",
+  });
   return (
     <div className="flex justify-between items-center w-full gap-4">
       <Select value={usageType} onValueChange={setUsageType}>

@@ -69,22 +69,38 @@ function Usage() {
   );
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null);
   const agents = useAgentsMergedWithWellKnown();
-  const { data: integrations } = useIntegrations();
+
+  // OPTIMIZATION: Only fetch integrations when viewing contract tab
+  // useIntegrations() triggers listToolsAndSortByName for EACH virtual integration
+  // which causes dozens of INTEGRATIONS_CALL_TOOL requests (3-6s each!)
+  const { data: integrations } = useIntegrations({
+    shouldFetch: usageType === "contract",
+  });
+
+  // Fetch usage data - these are needed for most views
   const agentUsage = useUsagePerAgent({
     range: timeRange,
   });
   const threadUsage = useUsagePerThread({
     range: timeRange,
   });
+
+  // Fetch contracts data - needed for contract view and chart
   const contractsCommits = useContractsCommits({
     range: timeRange,
   });
+
+  // Compute team members based on thread usage
   const teamMembers = useMembersWithUnknownUsers({
     userIdsToEnsureExist: threadUsage.items.map((thread) => thread.generatedBy),
   });
-  const threads = useAuditEvents({
+
+  // ONLY fetch audit events when actually viewing thread tab
+  // This is the most expensive query (100 records) - defer it!
+  const { data: threadsData } = useAuditEvents({
     orderBy: "updatedAt_desc",
     limit: 100,
+    enabled: usageType === "thread",
   });
 
   const availableContracts = useMemo(() => {
@@ -280,7 +296,7 @@ function Usage() {
               agents={agents.data || []}
               threadUsage={threadUsage}
               members={teamMembers}
-              threadHistory={threads.data?.threads || []}
+              threadHistory={threadsData?.threads || []}
             />
           </Suspense>
         )}

@@ -6,8 +6,6 @@
  * manipulating connections.
  */
 
-import type { QueryClient } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
 import { createToolCaller } from "../../tools/client";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import {
@@ -27,12 +25,11 @@ let connectionsCollectionSingleton: ReturnType<
  * Get or create the connections collection singleton.
  * This is at module scope to ensure true singleton behavior.
  */
-function getOrCreateConnectionsCollection(queryClient: QueryClient) {
+function getOrCreateConnectionsCollection() {
   connectionsCollectionSingleton ??=
     createCollectionFromToolCaller<ConnectionEntity>({
       toolCaller: createToolCaller(),
       collectionName: "CONNECTIONS",
-      queryClient,
     });
 
   return connectionsCollectionSingleton;
@@ -47,8 +44,7 @@ function getOrCreateConnectionsCollection(queryClient: QueryClient) {
  * @returns The connections collection with CRUD operations
  */
 export function useConnectionsCollection() {
-  const queryClient = useQueryClient();
-  return getOrCreateConnectionsCollection(queryClient);
+  return getOrCreateConnectionsCollection();
 }
 
 /**
@@ -69,10 +65,7 @@ export type UseConnectionsOptions = UseCollectionListOptions<ConnectionEntity>;
  */
 export function useConnections(options: UseConnectionsOptions = {}) {
   const collection = useConnectionsCollection();
-  const queryResult = useCollectionList(collection, options);
-  // Return the original collection (with handlers) for mutations,
-  // not the live query collection from useLiveQuery which doesn't have handlers
-  return { ...queryResult, collection };
+  return useCollectionList(collection, options);
 }
 
 /**
@@ -83,9 +76,7 @@ export function useConnections(options: UseConnectionsOptions = {}) {
  */
 export function useConnection(connectionId: string | undefined) {
   const collection = useConnectionsCollection();
-  const queryResult = useCollectionItem(collection, connectionId);
-  // Return the original collection (with handlers) for mutations
-  return { ...queryResult, collection };
+  return useCollectionItem(collection, connectionId);
 }
 
 /**

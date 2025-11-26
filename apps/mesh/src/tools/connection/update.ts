@@ -49,34 +49,28 @@ export const DECO_COLLECTION_CONNECTIONS_UPDATE = defineTool({
 
     const { id, data } = input;
 
-    // Prepare update data - transform title to name
-    const updateData: Partial<{
-      name: string;
-      description: string;
-      icon: string;
-      metadata: Record<string, unknown>;
-      connectionType: string;
-      connectionUrl: string;
-      connectionToken: string;
-      connectionHeaders: Record<string, string>;
-    }> = {};
+    // Prepare update data - transform entity schema fields to storage format
+    // Note: Storage layer uses undefined for optional fields, not null
+    const updateData: {
+      name?: string;
+      description?: string;
+      icon?: string;
+      metadata?: Record<string, unknown>;
+      connectionToken?: string;
+      status?: "active" | "inactive" | "error";
+    } = {};
 
-    if (data.title !== undefined) updateData.name = data.title; // Map title to name
+    // Map entity schema fields to storage fields (convert null to undefined)
+    if (data.title !== undefined) updateData.name = data.title;
     if (data.description !== undefined)
-      updateData.description = data.description;
-    if (data.icon !== undefined) updateData.icon = data.icon;
-    if (data.metadata !== undefined) updateData.metadata = data.metadata;
-
-    if (data.connection) {
-      updateData.connectionType = data.connection.type;
-      updateData.connectionUrl = data.connection.url;
-      if (data.connection.token) {
-        updateData.connectionToken = data.connection.token;
-      }
-      if ("headers" in data.connection && data.connection.headers) {
-        updateData.connectionHeaders = data.connection.headers;
-      }
-    }
+      updateData.description = data.description ?? undefined;
+    if (data.icon !== undefined) updateData.icon = data.icon ?? undefined;
+    if (data.metadata !== undefined)
+      updateData.metadata =
+        (data.metadata as Record<string, unknown>) ?? undefined;
+    if (data.connectionToken !== undefined)
+      updateData.connectionToken = data.connectionToken ?? undefined;
+    if (data.status !== undefined) updateData.status = data.status;
 
     // Update connection
     const connection = await ctx.storage.connections.update(id, updateData);

@@ -7,7 +7,10 @@
 
 import {
   type BaseCollectionEntity,
+  type CollectionDeleteOutput,
+  type CollectionInsertOutput,
   type CollectionListOutput,
+  type CollectionUpdateOutput,
 } from "@decocms/bindings/collections";
 import {
   and,
@@ -15,12 +18,21 @@ import {
   createCollection,
   eq,
   like,
+  type OperationType,
   or,
 } from "@tanstack/db";
-import { queryCollectionOptions } from "@tanstack/query-db-collection";
-import type { QueryClient } from "@tanstack/react-query";
 import { useLiveQuery } from "@tanstack/react-db";
 import type { ToolCaller } from "../../tools/client";
+
+/**
+ * Custom event type for sync mutations
+ */
+interface SyncMutationEventDetail<T> {
+  type: OperationType;
+  item: T;
+}
+
+type SyncMutationEvent<T> = CustomEvent<SyncMutationEventDetail<T>>;
 
 /**
  * Collection entity base type that matches the collection binding pattern
@@ -35,8 +47,6 @@ export interface CreateCollectionOptions<T extends CollectionEntity> {
   toolCaller: ToolCaller;
   /** The collection name (e.g., "CONNECTIONS", "MODELS") - used for tool names and query key */
   collectionName: string;
-  /** The query client for TanStack Query integration */
-  queryClient: QueryClient;
   /** Default page size for pagination (default: 100) */
   pageSize?: number;
   /** Transform function for items after fetch (optional) */
@@ -57,7 +67,6 @@ export interface CreateCollectionOptions<T extends CollectionEntity> {
  * const collection = createCollectionFromToolCaller({
  *   toolCaller: createToolCaller(),
  *   collectionName: "CONNECTIONS",
- *   queryClient,
  * });
  *
  * // Insert with optimistic update
@@ -76,17 +85,9 @@ export interface CreateCollectionOptions<T extends CollectionEntity> {
 export function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions<T>,
 ): Collection<T, string> {
-  const {
-    toolCaller,
-    collectionName,
-    queryClient,
-    pageSize = 100,
-    transformItem = (item) => item as T,
-  } = options;
+  const { toolCaller, collectionName, pageSize = 100 } = options;
 
-  const lowerName = collectionName.toLowerCase();
   const upperName = collectionName.toUpperCase();
-  const queryKey = ["collection", lowerName];
   const listToolName = `DECO_COLLECTION_${upperName}_LIST`;
   const createToolName = `DECO_COLLECTION_${upperName}_CREATE`;
   const updateToolName = `DECO_COLLECTION_${upperName}_UPDATE`;
@@ -119,7 +120,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
 
         // Transform and accumulate items
         for (const item of items) {
-          allItems.push(transformItem(item));
+          allItems.push(item as T);
         }
 
         // Check if we've fetched all pages
@@ -141,48 +142,154 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
     return allItems;
   }
 
-  // Create the TanStack DB collection with query collection options and persistence handlers
-  return createCollection<T, string>(
-    queryCollectionOptions({
-      id: lowerName,
-      queryClient,
-      queryKey,
-      getKey: (item: T) => item.id,
+  // EventTarget for centralized sync mutation handling
+  const syncEventTarget = new EventTarget();
 
-      queryFn: fetchAllPages,
+  // Use closure pattern to allow access to collection from within sync callback
+  let collection: Collection<T, string>;
 
-      // Persistence handler for inserts
-      // QueryCollection automatically refetches after handler completes
-      onInsert: async ({ transaction }) => {
-        await Promise.all(
-          transaction.mutations.map((mutation) =>
-            toolCaller(createToolName, { data: mutation.modified }),
-          ),
-        );
+  collection = createCollection<T, string>({
+    id: `collection-${collectionName.toLowerCase()}`,
+    getKey: (item: T) => item.id,
+
+    sync: {
+      rowUpdateMode: "full",
+      sync: ({ begin, write, commit, markReady }) => {
+        let isActive = true;
+
+        // Queue for sequential processing of mutations
+        let queue = Promise.resolve();
+
+        const enqueue = (cb: () => Promise<void>) => {
+          queue = queue.then(cb).catch(console.error);
+        };
+
+        // Centralized handler for sync mutations with timestamp comparison
+        const handleMutation = (e: Event) => {
+          const { type, item } = (e as SyncMutationEvent<T>).detail;
+
+          enqueue(async () => {
+            if (!isActive) return;
+
+            // Check current state via closure
+            const current = collection.get(item.id);
+
+            // Only update if:
+            // - Item doesn't exist in collection (new insert), OR
+            // - Incoming data is newer than current data
+            if (
+              current &&
+              new Date(current.updated_at) >= new Date(item.updated_at)
+            ) {
+              // Current data is same or newer, skip
+              console.warn(
+                `Skipping mutation for ${collectionName} ${item.id} because it is the same or newer than the current data`,
+              );
+              return;
+            }
+
+            begin();
+            write({ type, value: item });
+            commit();
+          });
+        };
+
+        syncEventTarget.addEventListener("mutation", handleMutation);
+
+        async function initialSync() {
+          try {
+            const items = await fetchAllPages();
+
+            if (!isActive) return;
+
+            begin();
+            for (const item of items) {
+              write({ type: "insert", value: item });
+            }
+            commit();
+          } catch (error) {
+            console.error(`Initial sync failed for ${collectionName}:`, error);
+          } finally {
+            markReady();
+          }
+        }
+
+        initialSync();
+
+        // Return cleanup function
+        return () => {
+          isActive = false;
+          syncEventTarget.removeEventListener("mutation", handleMutation);
+        };
       },
+    },
 
-      // Persistence handler for updates
-      onUpdate: async ({ transaction }) => {
-        await Promise.all(
-          transaction.mutations.map((mutation) =>
+    // Persistence handler for inserts
+    onInsert: async ({ transaction }) => {
+      const results = await Promise.all(
+        transaction.mutations.map(
+          (mutation) =>
+            toolCaller(createToolName, {
+              data: mutation.modified,
+            }) as Promise<CollectionInsertOutput<T>>,
+        ),
+      );
+
+      // Dispatch events with server-returned data
+      for (const result of results) {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("mutation", {
+            detail: { type: "insert" as const, item: result.item },
+          }),
+        );
+      }
+    },
+
+    // Persistence handler for updates
+    onUpdate: async ({ transaction }) => {
+      const results = await Promise.all(
+        transaction.mutations.map(
+          (mutation) =>
             toolCaller(updateToolName, {
               id: mutation.key,
               data: mutation.changes,
-            }),
-          ),
-        );
-      },
+            }) as Promise<CollectionUpdateOutput<T>>,
+        ),
+      );
 
-      // Persistence handler for deletes
-      onDelete: async ({ transaction }) => {
-        await Promise.all(
-          transaction.mutations.map((mutation) =>
-            toolCaller(deleteToolName, { id: mutation.key }),
-          ),
+      // Dispatch events with server-returned data
+      for (const result of results) {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("mutation", {
+            detail: { type: "update" as const, item: result.item },
+          }),
         );
-      },
-    }),
-  );
+      }
+    },
+
+    // Persistence handler for deletes
+    onDelete: async ({ transaction }) => {
+      const results = await Promise.all(
+        transaction.mutations.map(
+          (mutation) =>
+            toolCaller(deleteToolName, {
+              id: mutation.key,
+            }) as Promise<CollectionDeleteOutput<T>>,
+        ),
+      );
+
+      // Dispatch events with server-returned data
+      for (const result of results) {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("mutation", {
+            detail: { type: "delete" as const, item: result.item },
+          }),
+        );
+      }
+    },
+  });
+
+  return collection;
 }
 
 /**
@@ -293,10 +400,9 @@ export function useCollectionList<T extends CollectionEntity>(
         });
       }
 
-      // Use functional select to extract actual item data
-      return query.fn.select((row) => row.item as T);
+      return query;
     },
-    [searchTerm, filters, sortKey, sortDirection],
+    [searchTerm, filters, sortKey, sortDirection, collection],
   );
 }
 
@@ -322,9 +428,8 @@ export function useCollectionItem<T extends CollectionEntity>(
         query = query.where(({ item }) => item && eq(item.id, itemId));
       }
 
-      // Use functional select to extract actual item data
-      return query.fn.select((row) => row.item as T);
+      return query;
     },
-    [itemId],
+    [itemId, collection],
   );
 }

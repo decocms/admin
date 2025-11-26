@@ -53,6 +53,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v3";
+import { useConnectionsCollection } from "../../hooks/use-connections";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
@@ -94,12 +95,8 @@ export default function OrgMcps() {
   });
 
   // Fetch connections with filtering and sorting applied
-  const {
-    data: connections,
-    isLoading,
-    isError,
-    collection,
-  } = useConnections(listState);
+  const collection = useConnectionsCollection();
+  const { data: connections, isLoading, isError } = useConnections(listState);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] =
@@ -160,6 +157,10 @@ export default function OrgMcps() {
 
   const onSubmit = async (data: ConnectionFormData) => {
     try {
+      setIsDialogOpen(false);
+      setEditingConnection(null);
+      form.reset();
+
       if (editingConnection) {
         // Update existing connection
         const tx = collection.update(editingConnection.id, (draft) => {
@@ -176,21 +177,19 @@ export default function OrgMcps() {
         // Create new connection - cast through unknown because the insert API
         // accepts ConnectionCreateInput but the collection is typed as ConnectionEntity
         const tx = collection.insert({
+          id: crypto.randomUUID(),
           title: data.title,
-          description: data.description || undefined,
-          connection: {
-            type: data.connectionType,
-            url: data.connectionUrl,
-            token: data.connectionToken || undefined,
-          },
-        } as unknown as Parameters<typeof collection.insert>[0]);
+          description: data.description || null,
+          connectionType: data.connectionType,
+          connectionUrl: data.connectionUrl,
+          connectionToken: data.connectionToken || undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: "inactive",
+          organizationId: org,
+        });
         await tx.isPersisted.promise;
       }
-
-      // Success - close dialog and reset form
-      setIsDialogOpen(false);
-      setEditingConnection(null);
-      form.reset();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save connection",

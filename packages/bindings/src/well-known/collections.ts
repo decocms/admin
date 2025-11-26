@@ -194,12 +194,15 @@ export const CollectionDeleteInputSchema = z.object({
 });
 
 /**
- * Delete output schema
+ * Factory function to create delete output schema
  */
-export const CollectionDeleteOutputSchema = z.object({
-  success: z.boolean().describe("Whether the deletion was successful"),
-  id: z.string().describe("ID of the deleted entity"),
-});
+export function createCollectionDeleteOutputSchema<T extends z.ZodTypeAny>(
+  entitySchema: T,
+) {
+  return z.object({
+    item: entitySchema.describe("The deleted entity"),
+  });
+}
 
 /**
  * Options for creating collection bindings
@@ -288,7 +291,7 @@ export function createCollectionBindings<
       {
         name: `DECO_COLLECTION_${upperName}_DELETE` as const,
         inputSchema: CollectionDeleteInputSchema,
-        outputSchema: CollectionDeleteOutputSchema,
+        outputSchema: createCollectionDeleteOutputSchema(entitySchema),
         opt: true,
       },
     );
@@ -315,9 +318,6 @@ export type CollectionTools<
 export type CollectionListInput = z.infer<typeof CollectionListInputSchema>;
 export type CollectionGetInput = z.infer<typeof CollectionGetInputSchema>;
 export type CollectionDeleteInput = z.infer<typeof CollectionDeleteInputSchema>;
-export type CollectionDeleteOutput = z.infer<
-  typeof CollectionDeleteOutputSchema
->;
 export type OrderByExpression = z.infer<typeof OrderByExpressionSchema>;
 
 /**
@@ -347,6 +347,13 @@ export type CollectionInsertOutput<T> = {
  * Type helper for update output with generic item type
  */
 export type CollectionUpdateOutput<T> = {
+  item: T;
+};
+
+/**
+ * Type helper for delete output with generic item type
+ */
+export type CollectionDeleteOutput<T> = {
   item: T;
 };
 

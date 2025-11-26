@@ -13,15 +13,16 @@ import {
 } from "../../core/mesh-context";
 import {
   ConnectionEntitySchema,
-  ConnectionCreateInputSchema,
+  ConnectionCreateDataSchema,
   connectionToEntity,
 } from "./schema";
 
 /**
  * Input schema for creating connections (wrapped in data field for collection compliance)
+ * Uses the entity schema structure for collection binding compliance
  */
 const CreateInputSchema = z.object({
-  data: ConnectionCreateInputSchema.describe(
+  data: ConnectionCreateDataSchema.describe(
     "Data for the new connection (id is auto-generated)",
   ),
 });
@@ -58,15 +59,20 @@ export const DECO_COLLECTION_CONNECTIONS_CREATE = defineTool({
 
     const { data } = input;
 
-    // Create connection - transform title back to name
+    // Create connection - transform entity schema to storage format
     const connection = await ctx.storage.connections.create({
       organizationId: organization.id,
       createdById: userId,
       name: data.title, // Map title to name
-      description: data.description,
-      icon: data.icon,
-      connection: data.connection,
-      metadata: data.metadata,
+      description: data.description ?? undefined,
+      icon: data.icon ?? undefined,
+      connection: {
+        type: data.connectionType,
+        url: data.connectionUrl,
+        token: data.connectionToken ?? undefined,
+        headers: data.connectionHeaders ?? undefined,
+      },
+      metadata: data.metadata ?? undefined,
     });
 
     return {

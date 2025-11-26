@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import { bindingClient, type ToolBinder } from "../core/binder";
+import { MODELS_BINDING } from "./models";
 
 /**
  * Language Model Call Options Schema
@@ -288,10 +289,6 @@ export const LanguageModelInputSchema = z.object({
   callOptions: LanguageModelCallOptionsSchema,
 });
 
-export const ListModelsInputSchema = z.object({});
-export const ListModelsOutputSchema = z.object({
-  items: z.array(ModelSchema).describe("List of models"),
-});
 export const LANGUAGE_MODEL_BINDING = [
   {
     name: "LLM_METADATA" as const,
@@ -310,11 +307,7 @@ export const LANGUAGE_MODEL_BINDING = [
     inputSchema: LanguageModelInputSchema,
     outputSchema: LanguageModelGenerateOutputSchema,
   },
-  {
-    name: "LLM_LIST_MODELS" as const,
-    inputSchema: ListModelsInputSchema,
-    outputSchema: ListModelsOutputSchema,
-  },
+  ...MODELS_BINDING,
 ] satisfies ToolBinder[];
 
 export const LanguageModelBinding = bindingClient(LANGUAGE_MODEL_BINDING);

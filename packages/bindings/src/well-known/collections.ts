@@ -260,7 +260,7 @@ export function createCollectionBindings<
   const upperName = collectionName.toUpperCase();
   const readOnly = options?.readOnly ?? false;
 
-  const bindings: ToolBinder[] = [
+  const bindings = [
     {
       name: `COLLECTION_${upperName}_LIST` as const,
       inputSchema: CollectionListInputSchema,

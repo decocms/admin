@@ -7,6 +7,7 @@ export default defineConfig({
     collections: "src/well-known/collections.ts",
     "language-model": "src/well-known/language-model.ts",
     connection: "src/core/connection.ts",
+    client: "src/core/client/index.ts",
   },
   format: ["esm"],
   target: "es2022",

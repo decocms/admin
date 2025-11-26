@@ -3,10 +3,7 @@ import type {
   LanguageModelV2CallOptions,
   ProviderV2,
 } from "@ai-sdk/provider";
-import {
-  LanguageModelBinding,
-  ListModelsOutputSchema,
-} from "@decocms/bindings/llm";
+import { LanguageModelBinding } from "@decocms/bindings/llm";
 import z from "zod";
 import { responseToStream } from "./utils.ts";
 
@@ -19,8 +16,12 @@ const toRegExp = (supportedUrls: Record<string, string[]>) => {
   );
 };
 
+type LLMBindingClient = ReturnType<
+  (typeof LanguageModelBinding)["forConnection"]
+>;
+
 export interface Provider extends ProviderV2 {
-  listModels: () => Promise<z.infer<typeof ListModelsOutputSchema>>;
+  listModels: () => Promise<unknown>;
 }
 
 /**
@@ -28,9 +29,7 @@ export interface Provider extends ProviderV2 {
  * @param binding - The binding to create the provider from
  * @returns The provider
  */
-export const createProvider = (
-  binding: ReturnType<(typeof LanguageModelBinding)["forConnection"]>,
-): Provider => {
+export const createProvider = (binding: LLMBindingClient): Provider => {
   return {
     imageModel: () => {
       throw new Error("Image models are not supported by this provider");
@@ -41,8 +40,7 @@ export const createProvider = (
       );
     },
     listModels: async () => {
-      const response = await binding.LLM_LIST_MODELS({});
-      return response;
+      return await binding.COLLECTION_MODELS_LIST({});
     },
     languageModel: (modelId: string): LanguageModelV2 => {
       let metadataPromise:

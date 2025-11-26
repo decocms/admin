@@ -46,6 +46,11 @@
       "source": "./src/core/connection.ts",
       "types": "./src/core/connection.ts",
       "default": "./dist/core/connection.js"
+    },
+    "./client": {
+      "source": "./src/core/client/index.ts",
+      "types": "./src/core/client/index.ts",
+      "default": "./dist/core/client/index.js"
     }
   },
   "devDependencies": {

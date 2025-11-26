@@ -14,78 +14,47 @@ FROM base AS deps
 WORKDIR /app
 USER bunuser
 
-# Copy all package.json files preserving monorepo structure
-COPY --chown=bunuser:bunapp --parents **/package.json ./
-
-# Copy lockfile and npmrc
-COPY --chown=bunuser:bunapp bun.lockb .npmrc ./
+# Copy package.json files recursively to preserve monorepo structure
+COPY --chown=bunuser:bunapp package.json bun.lockb .npmrc ./
+COPY --chown=bunuser:bunapp --parents packages/**/package.json ./
+COPY --chown=bunuser:bunapp --parents apps/**/package.json ./
 
 # Install all dependencies (including dev) with frozen lockfile
 RUN bun install --frozen-lockfile
 
-# Runtime dependencies stage - prune node_modules to only include kysely-bun-worker and its dependencies
-FROM base AS runtime-deps
-WORKDIR /app
+# Build stage - builds packages that will be used later in the build process
+FROM deps AS builder
 USER bunuser
 
-# Copy node_modules from deps stage
-COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
-COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
-
-# Copy only the prune script (minimal copy for better caching)
-COPY --chown=bunuser:bunapp apps/mesh/scripts/prune-node-modules.ts ./apps/mesh/scripts/prune-node-modules.ts
-
-# Install @vercel/nft for dependency tracing
-RUN bun add -d @vercel/nft
-
-# Prune node_modules to only include kysely-bun-worker and its dependencies
-WORKDIR /app/apps/mesh
-RUN bun run scripts/prune-node-modules.ts
-
-# Build stage
-FROM base AS builder
 WORKDIR /app
-USER bunuser
 
-# Copy node_modules from deps stage (this layer will be cached when dependencies don't change)
-# Copy root node_modules (includes .bun nested structure)
-COPY --from=deps --chown=bunuser:bunapp /app/node_modules ./node_modules
-# Copy app-specific node_modules (includes symlinks to root)
-COPY --from=deps --chown=bunuser:bunapp /app/apps/mesh/node_modules ./apps/mesh/node_modules
-
-# Copy source code (this will invalidate cache when source changes, but deps layer stays cached)
+# Copy the rest of the files (.dockerignore excludes node_modules)
 COPY --chown=bunuser:bunapp . .
 
 # Build packages/bindings first (workspace dependency)
 WORKDIR /app/packages/bindings
 RUN bun run build
 
-# Build the frontend static assets
+# Build mesh app (client and server - includes migrate)
 WORKDIR /app/apps/mesh
-RUN bun run build:client 
+RUN bun run build:client
 RUN bun run build:server
 
 # Production stage
 FROM base AS runner
-WORKDIR /app
 USER bunuser
 
+WORKDIR /app
 # Copy only what's needed for production
 
 # Mesh app (runtime files + external dependencies)
-# copy client assets
+# Copy SPA client assets
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-# copy server script (handles both migrations and serving)
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/server.js ./apps/mesh/server.js
-# copy migrations
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/migrations ./apps/mesh/migrations
 
-# copy external dependencies needed at runtime
-# kysely-bun-worker requires the node_modules structure to be intact
-# Copy pruned node_modules containing only kysely-bun-worker and its dependencies
-COPY --from=runtime-deps --chown=bunuser:bunapp /app/pruned_node_modules/node_modules ./node_modules
+# Copy server and migrate scripts with their shared dependencies
+COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist-server ./apps/mesh/dist-server
 
-# copy start script
+# Copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh
 
 # Create data directory with correct ownership
@@ -106,9 +75,9 @@ ENV DATABASE_URL=file:/app/data/mesh.db
 WORKDIR /app/apps/mesh
 
 # Run database migrations on startup and start the application
-# Both Kysely and Better Auth migrations are handled by server.js
+# Both Kysely and Better Auth migrations are handled by migrate.js
 CMD ["sh", "-c", "\
   echo '=== Starting migrations ===' && \
-  bun run server.js --migrate-only && \
+  bun run db:migrate && \
   echo '=== Starting application ===' && \
   bun run start"]

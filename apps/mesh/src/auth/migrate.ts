@@ -59,9 +59,3 @@ export async function migrateBetterAuth(): Promise<void> {
     );
   }
 }
-
-// Allow running directly
-if (import.meta.main) {
-  await migrateBetterAuth();
-  process.exit(0);
-}

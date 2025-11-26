@@ -5,7 +5,6 @@
  */
 
 import { Migrator } from "kysely";
-import * as path from "node:path";
 import migrations from "../../migrations";
 import { migrateBetterAuth } from "../auth/migrate";
 import { getDb } from "./index";
@@ -23,10 +22,6 @@ export async function migrateToLatest(): Promise<void> {
   console.log("✅ Database instance obtained");
 
   console.log("🔧 Creating migrator...");
-
-  // In bundled code, __dirname might not be correct, so we use process.cwd()
-  const migrationsPath = path.join(process.cwd(), "migrations");
-  console.log(`📂 Looking for migrations in: ${migrationsPath}`);
 
   const migrator = new Migrator({
     db,
@@ -93,5 +88,20 @@ export async function migrateDown(): Promise<void> {
   }
 }
 
-// Note: This file exports functions for use in other modules.
-// For running migrations directly, use migrate-entry.ts
+// Entry point: Run migrations when executed directly
+if (import.meta.main) {
+  console.log("🚀 Migration script starting...");
+  console.log("📦 Imported migrateToLatest function");
+
+  (async () => {
+    console.log("🏃 Executing migration function...");
+    try {
+      await migrateToLatest();
+      console.log("✅ All migrations completed. Exiting...");
+      process.exit(0);
+    } catch (error) {
+      console.error("❌ Migration failed:", error);
+      process.exit(1);
+    }
+  })();
+}

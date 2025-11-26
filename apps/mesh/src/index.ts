@@ -1,26 +1,29 @@
 /**
- * MCP Mesh Entry Point
+ * MCP Mesh Server Entry Point
  *
- * Routes to either migration or server based on command-line arguments.
- * - With --migrate-only: runs migrations only
- * - Without --migrate-only: starts the server
- *
- * Usage:
- *   bun run src/index.ts              # Start server
- *   bun run src/index.ts --migrate-only  # Run migrations
+ * Bundled server entry point for production.
+ * Start with: bun run index.js
+ * Or: bun run src/index.ts
  */
 
-// Make this file a module to allow top-level await
-export {};
+// Import observability module early to initialize OpenTelemetry SDK
+import "./observability";
+import app from "./api";
 
-const args = process.argv.slice(2);
-const isMigrateOnly = args.includes("--migrate-only");
+const port = parseInt(process.env.PORT || "3000", 10);
 
-if (isMigrateOnly) {
-  // Run migrations only
-  console.log("🚀 Running migrations...");
-  await import("./migrate");
-} else {
-  // Start the server
-  await import("./serve");
-}
+// Log startup info
+console.log("✅ MCP Mesh starting...");
+console.log("");
+console.log(`📋 Health check:  http://0.0.0.0:${port}/health`);
+console.log(`🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*`);
+console.log(`🔧 MCP endpoint:   http://0.0.0.0:${port}/mcp`);
+console.log(`🌐 Listening on:   0.0.0.0:${port}`);
+console.log("");
+
+Bun.serve({
+  port,
+  hostname: "0.0.0.0", // Listen on all network interfaces (required for K8s)
+  fetch: app.fetch,
+  development: process.env.NODE_ENV !== "production",
+});

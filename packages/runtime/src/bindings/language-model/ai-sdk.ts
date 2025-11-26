@@ -3,9 +3,11 @@ import type {
   LanguageModelV2CallOptions,
   ProviderV2,
 } from "@ai-sdk/provider";
-import { ListModelsOutputSchema } from "@decocms/bindings";
+import {
+  LanguageModelBinding,
+  ListModelsOutputSchema,
+} from "@decocms/bindings/llm";
 import z from "zod";
-import { LanguageModelBinding } from "../binder.ts";
 import { responseToStream } from "./utils.ts";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {

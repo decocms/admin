@@ -1,4 +1,3 @@
-import { LanguageModelBinding } from "../../runtime/src/bindings/binder";
 /**
  * @decocms/bindings
  *
@@ -8,10 +7,9 @@ import { LanguageModelBinding } from "../../runtime/src/bindings/binder";
 
 // Re-export core binder types and utilities
 export {
-  type ToolBinder,
-  type Binder,
-  type ToolWithSchemas,
-  type BindingChecker,
   createBindingChecker,
+  type Binder,
+  type BindingChecker,
+  type ToolBinder,
+  type ToolWithSchemas,
 } from "./core/binder";
-export * from "./well-known/language-model";

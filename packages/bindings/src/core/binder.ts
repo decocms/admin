@@ -5,9 +5,11 @@
  * Bindings define standardized interfaces that integrations (MCPs) can implement.
  */
 
+import { diffSchemas } from "json-schema-diff";
 import type { ZodType } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { diffSchemas } from "json-schema-diff";
+import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
+import { MCPConnection } from "./connection";
 
 /**
  * ToolBinder defines a single tool within a binding.
@@ -128,6 +130,31 @@ export interface BindingChecker {
    */
   isImplementedBy: (tools: ToolWithSchemas[]) => Promise<boolean>;
 }
+
+export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
+  binder: TDefinition,
+) => {
+  return {
+    ...createBindingChecker(binder),
+    forConnection: (
+      mcpConnection: MCPConnection,
+    ): MCPClientFetchStub<TDefinition> => {
+      return createMCPFetchStub<TDefinition>({
+        connection: mcpConnection,
+        streamable: binder.reduce(
+          (acc, tool) => {
+            acc[tool.name] = tool.streamable === true;
+            return acc;
+          },
+          {} as Record<string, boolean>,
+        ),
+      });
+    },
+  };
+};
+
+export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
+  ReturnType<T["forConnection"]>;
 
 /**
  * Creates a binding checker with full schema validation using json-schema-diff.

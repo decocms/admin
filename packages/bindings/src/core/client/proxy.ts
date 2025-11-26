@@ -1,0 +1,151 @@
+/* oxlint-disable no-explicit-any */
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
+import type { CreateStubAPIOptions } from "./mcp";
+import { createServerClient } from "./mcp-client";
+
+const safeParse = (content: string) => {
+  try {
+    return JSON.parse(content as string);
+  } catch {
+    return content;
+  }
+};
+
+const toolsMap = new Map<
+  string,
+  Promise<
+    Array<{
+      name: string;
+      inputSchema: any;
+      outputSchema?: any;
+      description: string;
+    }>
+  >
+>();
+
+/**
+ * The base fetcher used to fetch the MCP from API.
+ */
+export function createMCPClientProxy<T extends Record<string, unknown>>(
+  options: CreateStubAPIOptions,
+): T {
+  return new Proxy<T>({} as T, {
+    get(_, name) {
+      if (name === "toJSON") {
+        return null;
+      }
+      if (typeof name !== "string") {
+        throw new Error("Name must be a string");
+      }
+      async function callToolFn(args: unknown) {
+        const debugId = options?.debugId?.();
+        const extraHeaders = debugId
+          ? { "x-trace-debug-id": debugId }
+          : undefined;
+
+        const { client, callStreamableTool } = await createServerClient(
+          { connection: options.connection },
+          undefined,
+          extraHeaders,
+        );
+
+        if (options?.streamable?.[String(name)]) {
+          return callStreamableTool(String(name), args);
+        }
+
+        const { structuredContent, isError, content } = await client.callTool(
+          {
+            name: String(name),
+            arguments: args as Record<string, unknown>,
+          },
+          undefined,
+          {
+            timeout: 3000000,
+          },
+        );
+
+        if (isError) {
+          const maybeErrorMessage = (content as { text: string }[])?.[0]?.text;
+          const error =
+            typeof maybeErrorMessage === "string"
+              ? safeParse(maybeErrorMessage)
+              : null;
+
+          const throwableError =
+            error?.code && typeof options?.getErrorByStatusCode === "function"
+              ? options.getErrorByStatusCode(
+                  error.code,
+                  error.message,
+                  error.traceId,
+                )
+              : null;
+
+          if (throwableError) {
+            throw throwableError;
+          }
+
+          throw new Error(
+            `Tool ${String(name)} returned an error: ${JSON.stringify(
+              structuredContent ?? content,
+            )}`,
+          );
+        }
+        return structuredContent;
+      }
+
+      const listToolsFn = async () => {
+        const { client } = await createServerClient({
+          connection: options.connection,
+        });
+        const { tools } = await client.listTools();
+
+        return tools as {
+          name: string;
+          inputSchema: any;
+          outputSchema?: any;
+          description: string;
+        }[];
+      };
+
+      async function listToolsOnce() {
+        const conn = options.connection;
+        const key = JSON.stringify(conn);
+
+        try {
+          if (!toolsMap.has(key)) {
+            toolsMap.set(key, listToolsFn());
+          }
+
+          return await toolsMap.get(key)!;
+        } catch (error) {
+          console.error("Failed to list tools", error);
+
+          toolsMap.delete(key);
+          return;
+        }
+      }
+      callToolFn.asTool = async () => {
+        const tools = (await listToolsOnce()) ?? [];
+        const tool = tools.find((t) => t.name === name);
+        if (!tool) {
+          throw new Error(`Tool ${name} not found`);
+        }
+
+        return {
+          ...tool,
+          id: tool.name,
+          inputSchema: tool.inputSchema
+            ? convertJsonSchemaToZod(tool.inputSchema)
+            : undefined,
+          outputSchema: tool.outputSchema
+            ? convertJsonSchemaToZod(tool.outputSchema)
+            : undefined,
+          execute: (input: any) => {
+            return callToolFn(input.context);
+          },
+        };
+      };
+      return callToolFn;
+    },
+  });
+}

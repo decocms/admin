@@ -188,7 +188,7 @@ export const callTool = createIntegrationManagementTool({
       return { error: "Missing url parameter" };
     }
 
-    const client = await createMcpServerClient({
+    const { client } = await createMcpServerClient({
       name: "deco-chat-client",
       connection,
     });

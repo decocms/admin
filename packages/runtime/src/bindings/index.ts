@@ -2,7 +2,7 @@ import { CHANNEL_BINDING } from "./channels.ts";
 import { VIEW_BINDING as VIEWS_BINDING } from "./views.ts";
 
 // Import new Resources 2.0 bindings function
-import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings";
+import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { createResourceBindings } from "./resources/bindings.ts";
 
 // Export types and utilities from binder

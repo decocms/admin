@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import type { ToolBinder } from "../core/binder";
+import { bindingClient, type ToolBinder } from "../core/binder";
 
 /**
  * Language Model Call Options Schema
@@ -316,3 +316,5 @@ export const LANGUAGE_MODEL_BINDING = [
     outputSchema: ListModelsOutputSchema,
   },
 ] satisfies ToolBinder[];
+
+export const LanguageModelBinding = bindingClient(LANGUAGE_MODEL_BINDING);

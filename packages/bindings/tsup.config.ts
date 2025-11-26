@@ -3,8 +3,10 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    "well-known/models": "src/well-known/models.ts",
-    "well-known/collections": "src/well-known/collections.ts",
+    models: "src/well-known/models.ts",
+    collections: "src/well-known/collections.ts",
+    "language-model": "src/well-known/language-model.ts",
+    connection: "src/core/connection.ts",
   },
   format: ["esm"],
   target: "es2022",

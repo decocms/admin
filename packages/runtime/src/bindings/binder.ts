@@ -1,5 +1,4 @@
 /* oxlint-disable no-explicit-any */
-import { LANGUAGE_MODEL_BINDING } from "@deco/bindings";
 import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
 import { createPrivateTool, createStreamableTool } from "../mastra.ts";
@@ -76,7 +75,7 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     forConnection: (
       mcpConnection: MCPConnection,
     ): MCPClientFetchStub<TDefinition> => {
-      const stub = createMCPFetchStub<TDefinition>({
+      return createMCPFetchStub<TDefinition>({
         connection: mcpConnection,
         streamable: binder.reduce(
           (acc, tool) => {
@@ -86,24 +85,6 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
           {} as Record<string, boolean>,
         ),
       });
-      return new Proxy<MCPClientFetchStub<TDefinition>>(
-        {} as MCPClientFetchStub<TDefinition>,
-        {
-          get(_, name) {
-            if (typeof name !== "string") {
-              throw new Error("Name must be a string");
-            }
-
-            return (args: Record<string, unknown>) => {
-              return (
-                stub[name as keyof MCPClientFetchStub<TDefinition>] as (
-                  args: Record<string, unknown>,
-                ) => Promise<unknown>
-              )(args);
-            };
-          },
-        },
-      );
     },
   };
 };
@@ -113,7 +94,6 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
 
 export const ChannelBinding = bindingClient(CHANNEL_BINDING);
 export const ViewBinding = bindingClient(VIEW_BINDING);
-export const LanguageModelBinding = bindingClient(LANGUAGE_MODEL_BINDING);
 
 export type { Callbacks } from "./channels.ts";
 

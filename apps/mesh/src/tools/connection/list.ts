@@ -175,12 +175,17 @@ function evaluateWhereExpression(
         return false;
       // Limit pattern length to prevent ReDoS
       if (value.length > 100) return false;
-      // Escape regex special chars, then convert % and _ wildcards
-      const escaped = value
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-        .replace(/%/g, ".*")
-        .replace(/_/g, ".");
-      return new RegExp(`^${escaped}$`, "i").test(fieldValue);
+      // First, replace wildcards with unique placeholders
+      const withPlaceholders = value
+        .replace(/%/g, "\x00PERCENT\x00")
+        .replace(/_/g, "\x00UNDERSCORE\x00");
+      // Then escape all regex special chars
+      const escaped = withPlaceholders.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      // Finally, replace placeholders with regex patterns
+      const pattern = escaped
+        .replace(/\x00PERCENT\x00/g, ".*")
+        .replace(/\x00UNDERSCORE\x00/g, ".");
+      return new RegExp(`^${pattern}$`, "i").test(fieldValue);
     case "contains":
       if (typeof fieldValue !== "string" || typeof value !== "string")
         return false;

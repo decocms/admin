@@ -29,15 +29,15 @@ export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
     // Check authorization
     await ctx.access.check();
 
-    // Verify it belongs to the current organization
-    if (connection.organizationId !== organization.id) {
-      throw new Error("Connection not found in organization");
-    }
-
     // Fetch connection before deleting to return the entity
     const connection = await ctx.storage.connections.findById(input.id);
     if (!connection) {
       throw new Error(`Connection not found: ${input.id}`);
+    }
+
+    // Verify it belongs to the current organization
+    if (connection.organizationId !== organization.id) {
+      throw new Error("Connection not found in organization");
     }
 
     // Delete connection

@@ -1,7 +1,18 @@
-import { useState } from "react";
-import { useParams } from "@tanstack/react-router";
 import { createToolCaller } from "@/tools/client";
-import { useMcp, type Tool, type Resource, type Prompt } from "use-mcp/react";
+import {
+  useConnection,
+  useConnectionsCollection,
+  type ConnectionEntity,
+} from "@/web/hooks/use-connections";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
   CardContent,
@@ -9,8 +20,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 import {
   Tabs,
   TabsContent,
@@ -18,33 +30,21 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Separator } from "@deco/ui/components/separator.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
+import { useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
+  ArrowLeft,
+  Check,
   CheckCircle2,
+  Copy,
   Loader2,
   PlayCircle,
-  ArrowLeft,
   RefreshCw,
   Trash2,
-  Copy,
-  Check,
 } from "lucide-react";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { useState } from "react";
 import { toast } from "sonner";
-import {
-  useConnection,
-  type ConnectionEntity,
-} from "@/web/hooks/use-connections";
-import { useConnectionsCollection } from "@/web/hooks/use-connections";
+import { useMcp, type Prompt, type Resource, type Tool } from "use-mcp/react";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {

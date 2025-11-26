@@ -339,7 +339,6 @@ export function DecoChatPanel() {
       const metadata = {
         modelId: selectedModelId,
         provider: selectedModel.provider,
-        endpoint: selectedModel.endpoint,
       };
 
       return await chat.sendMessage(message, { metadata });

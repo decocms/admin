@@ -119,12 +119,6 @@ const StreamRequestSchema = z.object({
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
   maxWindowSize: z.number().optional(),
-  endpoint: z.object({
-    url: z.string(),
-    method: z.string().optional(),
-    contentType: z.string().optional(),
-    stream: z.boolean().optional(),
-  }),
   provider: z
     .enum([
       "openai",
@@ -376,7 +370,6 @@ app.post("/:org/models/stream", async (c) => {
     const {
       modelId,
       messages,
-      endpoint,
       provider: modelProvider,
       temperature,
       maxOutputTokens = DEFAULT_MAX_TOKENS,

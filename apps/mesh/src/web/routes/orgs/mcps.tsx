@@ -5,6 +5,16 @@ import {
 } from "@/web/hooks/use-connections";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
@@ -49,7 +59,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { MoreVertical, Plus, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v3";
@@ -70,6 +80,31 @@ const connectionFormSchema = ConnectionEntitySchema.pick({
 });
 
 type ConnectionFormData = z.infer<typeof connectionFormSchema>;
+
+type DialogState =
+  | { mode: "idle" }
+  | { mode: "creating" }
+  | { mode: "editing"; connection: ConnectionEntity }
+  | { mode: "deleting"; connection: ConnectionEntity };
+
+type DialogAction =
+  | { type: "create" }
+  | { type: "edit"; connection: ConnectionEntity }
+  | { type: "delete"; connection: ConnectionEntity }
+  | { type: "close" };
+
+function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
+  switch (action.type) {
+    case "create":
+      return { mode: "creating" };
+    case "edit":
+      return { mode: "editing", connection: action.connection };
+    case "delete":
+      return { mode: "deleting", connection: action.connection };
+    case "close":
+      return { mode: "idle" };
+  }
+}
 
 function getStatusBadgeVariant(status: string) {
   switch (status) {
@@ -98,12 +133,7 @@ export default function OrgMcps() {
   const collection = useConnectionsCollection();
   const { data: connections, isLoading, isError } = useConnections(listState);
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] =
-    useState<ConnectionEntity | null>(null);
-  const [deletingConnection, setDeletingConnection] =
-    useState<ConnectionEntity | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
   // React Hook Form setup
   const form = useForm<ConnectionFormData>({
@@ -118,6 +148,9 @@ export default function OrgMcps() {
   });
 
   // Reset form when editing connection changes
+  const editingConnection =
+    dialogState.mode === "editing" ? dialogState.connection : null;
+
   useEffect(() => {
     if (editingConnection) {
       form.reset({
@@ -141,35 +174,29 @@ export default function OrgMcps() {
   const errorMessage = isError ? "Failed to load connections." : null;
 
   const handleEdit = (connection: ConnectionEntity) => {
-    setEditingConnection(connection);
-    setIsDialogOpen(true);
+    dispatch({ type: "edit", connection });
   };
 
   const handleDelete = (connection: ConnectionEntity) => {
-    setDeletingConnection(connection);
+    dispatch({ type: "delete", connection });
   };
 
-  const confirmDelete = async () => {
-    if (!deletingConnection) return;
+  const confirmDelete = () => {
+    if (dialogState.mode !== "deleting") return;
 
-    setIsDeleting(true);
-    try {
-      const tx = collection.delete(deletingConnection.id);
-      await tx.isPersisted.promise;
-      setDeletingConnection(null);
-    } catch (error) {
+    const id = dialogState.connection.id;
+    dispatch({ type: "close" });
+
+    collection.delete(id).isPersisted.promise.catch((error) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete connection",
       );
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   const onSubmit = async (data: ConnectionFormData) => {
     try {
-      setIsDialogOpen(false);
-      setEditingConnection(null);
+      dispatch({ type: "close" });
       form.reset();
 
       if (editingConnection) {
@@ -209,9 +236,8 @@ export default function OrgMcps() {
   };
 
   const handleDialogClose = (open: boolean) => {
-    setIsDialogOpen(open);
     if (!open) {
-      setEditingConnection(null);
+      dispatch({ type: "close" });
       form.reset();
     }
   };
@@ -316,7 +342,7 @@ export default function OrgMcps() {
 
   const ctaButton = (
     <Button
-      onClick={() => setIsDialogOpen(true)}
+      onClick={() => dispatch({ type: "create" })}
       size="sm"
       className="rounded-xl"
     >
@@ -327,7 +353,10 @@ export default function OrgMcps() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+      <Dialog
+        open={dialogState.mode === "creating" || dialogState.mode === "editing"}
+        onOpenChange={handleDialogClose}
+      >
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>
@@ -458,41 +487,33 @@ export default function OrgMcps() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deletingConnection !== null}
-        onOpenChange={(open) => !open && setDeletingConnection(null)}
+      <AlertDialog
+        open={dialogState.mode === "deleting"}
+        onOpenChange={(open) => !open && dispatch({ type: "close" })}
       >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Connection</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete{" "}
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Connection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{" "}
               <span className="font-medium text-foreground">
-                {deletingConnection?.title}
+                {dialogState.mode === "deleting" &&
+                  dialogState.connection.title}
               </span>
-              ? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeletingConnection(null)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={confirmDelete}
-              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="shrink-0 bg-background">
         <div className="px-8 py-6">
@@ -552,7 +573,7 @@ export default function OrgMcps() {
                 title="No connections found"
                 description="Create a connection to get started."
                 buttonProps={{
-                  onClick: () => setIsDialogOpen(true),
+                  onClick: () => dispatch({ type: "create" }),
                   children: "New Connection",
                 }}
               />

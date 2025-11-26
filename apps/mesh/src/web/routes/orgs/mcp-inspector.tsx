@@ -39,10 +39,12 @@ import {
   Check,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { toast } from "sonner";
 import {
   useConnection,
   type ConnectionEntity,
 } from "@/web/hooks/use-connections";
+import { useConnectionsCollection } from "@/web/hooks/use-connections";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {
@@ -84,11 +86,8 @@ function getStatusBadgeInfo(state: string) {
 
 export default function McpInspector() {
   const { connectionId } = useParams({ strict: false });
-  const {
-    data,
-    isLoading: isLoadingConnection,
-    collection,
-  } = useConnection(connectionId);
+  const { data, isLoading: isLoadingConnection } = useConnection(connectionId);
+  const collection = useConnectionsCollection();
   const connection = data?.[0] as ConnectionEntity | undefined;
 
   // Tool invocation state
@@ -168,9 +167,6 @@ export default function McpInspector() {
       };
 
       const tokenSnapshotBefore = captureTokenSnapshot("mcp:auth");
-      console.log(
-        `[MCP Inspector] Captured ${tokenSnapshotBefore.size} token(s) before OAuth`,
-      );
 
       // Store connection context for OAuth callback to use
       if (connection && connectionId) {
@@ -184,9 +180,6 @@ export default function McpInspector() {
             timestamp: Date.now(),
           }),
         );
-        console.log(
-          "[MCP Inspector] Stored connection context for OAuth callback",
-        );
       }
 
       // Listen for messages from the OAuth popup
@@ -195,35 +188,18 @@ export default function McpInspector() {
 
         // Handle OAuth completion message
         if (event.data.type === "mcp:oauth:complete") {
-          console.log(
-            "[MCP Inspector] Received OAuth completion message",
-            event.data,
-          );
-
           if (event.data.success && connection && connectionId) {
-            console.log(
-              "[MCP Inspector] OAuth completed successfully, saving token to database",
-            );
-
             try {
               // Capture snapshot AFTER OAuth and find the diff
               const tokenSnapshotAfter = captureTokenSnapshot("mcp:auth");
-              console.log(
-                `[MCP Inspector] Captured ${tokenSnapshotAfter.size} token(s) after OAuth`,
-              );
 
               // Find new or changed tokens
               let newOrChangedToken: string | null = null;
-              let newOrChangedKey: string | null = null;
 
               for (const [key, value] of tokenSnapshotAfter) {
                 const beforeValue = tokenSnapshotBefore.get(key);
                 if (!beforeValue || beforeValue !== value) {
                   // This is a new or changed token
-                  console.log(
-                    `[MCP Inspector] Found ${!beforeValue ? "new" : "changed"} token key: ${key}`,
-                  );
-                  newOrChangedKey = key;
 
                   // Extract the actual token from the stored value
                   try {
@@ -238,49 +214,27 @@ export default function McpInspector() {
               }
 
               if (newOrChangedToken) {
-                console.log(
-                  `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
-                );
-
                 if (!collection.has(connectionId as string)) {
                   throw new Error("Connection not found in collection");
                 }
 
                 // Call collection.update to save the token
-                await collection.update(
+                const tx = collection.update(
                   connectionId as string,
-                  {
-                    connection: {
-                      type: connection.connectionType,
-                      url: connection.connectionUrl,
-                      token: newOrChangedToken,
-                    },
-                  } as Parameters<typeof collection.update>[1],
+                  (draft) => {
+                    draft.connectionType = connection.connectionType;
+                    draft.connectionUrl = connection.connectionUrl;
+                    draft.connectionToken = newOrChangedToken;
+                  },
                 );
-
-                console.log(
-                  "[MCP Inspector] Token saved to database successfully",
-                );
-              } else {
-                console.warn(
-                  "[MCP Inspector] No new or changed token found in localStorage",
-                );
-                console.log(
-                  "[MCP Inspector] Before keys:",
-                  Array.from(tokenSnapshotBefore.keys()),
-                );
-                console.log(
-                  "[MCP Inspector] After keys:",
-                  Array.from(tokenSnapshotAfter.keys()),
-                );
+                await tx.isPersisted.promise;
               }
 
               // Clear pending auth from storage
               localStorage.removeItem("mcp_oauth_pending");
             } catch (saveErr) {
-              console.error(
-                "[MCP Inspector] Failed to save token to database:",
-                saveErr,
+              toast.error(
+                `Failed to save token: ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`,
               );
             }
 
@@ -290,10 +244,7 @@ export default function McpInspector() {
             }
             window.removeEventListener("message", messageHandler);
           } else if (!event.data.success) {
-            console.error(
-              "[MCP Inspector] OAuth completion failed:",
-              event.data.error,
-            );
+            toast.error(`OAuth failed: ${event.data.error || "Unknown error"}`);
             // Close popup on error
             if (popupWindow && !popupWindow.closed) {
               popupWindow.close();

@@ -131,6 +131,32 @@ async function fetchToolsFromMCP(
 }
 
 /**
+ * Convert SQL LIKE pattern to regex pattern by tokenizing
+ * Handles % (any chars) and _ (single char) wildcards
+ */
+function convertLikeToRegex(likePattern: string): string {
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < likePattern.length) {
+    const char = likePattern[i];
+    if (char === "%") {
+      result.push(".*");
+    } else if (char === "_") {
+      result.push(".");
+    } else if (/[.*+?^${}()|[\]\\]/.test(char)) {
+      // Escape regex special characters
+      result.push("\\" + char);
+    } else {
+      result.push(char);
+    }
+    i++;
+  }
+
+  return result.join("");
+}
+
+/**
  * Evaluate a where expression against a connection entity
  */
 function evaluateWhereExpression(
@@ -175,16 +201,8 @@ function evaluateWhereExpression(
         return false;
       // Limit pattern length to prevent ReDoS
       if (value.length > 100) return false;
-      // First, replace wildcards with unique placeholders
-      const withPlaceholders = value
-        .replace(/%/g, "\x00PERCENT\x00")
-        .replace(/_/g, "\x00UNDERSCORE\x00");
-      // Then escape all regex special chars
-      const escaped = withPlaceholders.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // Finally, replace placeholders with regex patterns
-      const pattern = escaped
-        .replace(/\x00PERCENT\x00/g, ".*")
-        .replace(/\x00UNDERSCORE\x00/g, ".");
+      // Convert SQL LIKE pattern to regex by tokenizing and escaping
+      const pattern = convertLikeToRegex(value);
       return new RegExp(`^${pattern}$`, "i").test(fieldValue);
     case "contains":
       if (typeof fieldValue !== "string" || typeof value !== "string")

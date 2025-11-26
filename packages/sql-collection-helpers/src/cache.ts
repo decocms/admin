@@ -123,11 +123,7 @@ export class IntrospectionCache {
   /**
    * Clear cache entry for specific database
    */
-  clearEntry(
-    type: string,
-    connectionString: string,
-    schema?: string,
-  ): void {
+  clearEntry(type: string, connectionString: string, schema?: string): void {
     const key = this.getCacheKey(type, connectionString, schema);
     this.cache.delete(key);
   }
@@ -196,4 +192,3 @@ export function getGlobalCache(ttl?: number): IntrospectionCache {
 export function resetGlobalCache(): void {
   globalCache = null;
 }
-

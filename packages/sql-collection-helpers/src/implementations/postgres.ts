@@ -262,4 +262,3 @@ export class PostgresAdapter implements DatabaseAdapter {
     return { clause: "", nextIndex: paramIndex };
   }
 }
-

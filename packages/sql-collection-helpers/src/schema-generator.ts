@@ -253,4 +253,3 @@ export function detectAuditFields(
 
   return auditFields;
 }
-

@@ -1,11 +1,11 @@
 /**
- * SQLite Database Introspection
+ * Bun SQLite Database Introspection
  *
- * Uses the `better-sqlite3` package to introspect SQLite database schema
- * via sqlite_master and PRAGMA queries.
+ * Uses Bun's native SQLite (bun:sqlite) to introspect database schema.
+ * This is used for testing in Bun runtime.
  */
 
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import type { ColumnMetadata, TableMetadata } from "../types";
 import { detectAuditFields, normalizeSqlType } from "../schema-generator";
 import type { DatabaseIntrospector } from "./types";
@@ -27,10 +27,10 @@ interface PragmaTableInfoRow {
 }
 
 /**
- * SQLite introspector implementation
+ * Bun SQLite introspector implementation
  */
-export class SqliteIntrospector implements DatabaseIntrospector {
-  private db: Database.Database;
+export class SqliteIntrospectorBun implements DatabaseIntrospector {
+  private db: Database;
 
   constructor(filename: string) {
     this.db = new Database(filename);
@@ -69,7 +69,7 @@ export class SqliteIntrospector implements DatabaseIntrospector {
 
       return tableMetadata;
     } catch (error) {
-      console.error("SQLite introspection failed:", error);
+      console.error("Bun SQLite introspection failed:", error);
       throw error;
     }
   }
@@ -125,3 +125,4 @@ export class SqliteIntrospector implements DatabaseIntrospector {
     this.db.close();
   }
 }
+

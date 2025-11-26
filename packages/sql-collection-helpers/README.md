@@ -11,6 +11,7 @@ Dynamic MCP tool generation from SQL database schemas with support for PostgreSQ
 - 🎯 **Type Safety**: Runtime Zod schema generation from database metadata
 - 🎨 **Flexible Configuration**: Per-table mutation control, table filtering, and more
 - 🗄️ **Multi-Database**: PostgreSQL and SQLite support with unified API
+- ⚡ **Runtime-Aware**: Automatically uses Bun's native SQLite in Bun runtime, `better-sqlite3` in Node.js
 
 ## Installation
 
@@ -203,6 +204,41 @@ The package automatically detects and populates audit fields:
 
 ## Advanced Usage
 
+### Using Adapters Directly
+
+You can also use the adapters directly if you need more control:
+
+```typescript
+import { 
+  PostgresAdapter, 
+  SqliteAdapter,        // Node.js
+  BunSqliteAdapter      // Bun
+} from '@decocms/sql-collection-helpers';
+
+// PostgreSQL
+const pgAdapter = new PostgresAdapter({
+  type: 'postgres',
+  connectionString: 'postgresql://localhost/mydb',
+  schema: 'public'
+});
+
+// SQLite in Node.js
+const nodeAdapter = new SqliteAdapter({
+  type: 'sqlite',
+  filename: './data.db'
+});
+
+// SQLite in Bun
+const bunAdapter = new BunSqliteAdapter({
+  type: 'sqlite',
+  filename: './data.db'
+});
+
+// All adapters implement the same DatabaseAdapter interface
+const tables = await pgAdapter.introspect();
+const results = await pgAdapter.query('users', { limit: 10 });
+```
+
 ### Custom Adapter
 
 You can create your own adapter by implementing the `DatabaseAdapter` interface:
@@ -255,9 +291,30 @@ cache.clear();
 resetGlobalCache();
 ```
 
+## Database Implementations
+
+This package provides **three separate database implementations**, all implementing the same `DatabaseAdapter` interface:
+
+### 1. PostgreSQL Adapter (`PostgresAdapter`)
+- **Driver**: `postgres` package (raw SQL driver)
+- **Usage**: Automatically used for `{ type: 'postgres' }` config
+- **Features**: Full support for schemas, parameterized queries, RETURNING clauses
+
+### 2. SQLite Adapter for Node.js (`SqliteAdapter`)
+- **Driver**: `better-sqlite3` package
+- **Usage**: Automatically used for `{ type: 'sqlite' }` config in Node.js runtime
+- **Features**: Synchronous API, excellent performance, native bindings
+
+### 3. SQLite Adapter for Bun (`BunSqliteAdapter`)
+- **Driver**: `bun:sqlite` (Bun's native SQLite)
+- **Usage**: **Automatically used** for `{ type: 'sqlite' }` config when running in Bun runtime
+- **Features**: Native Bun integration, no external dependencies, zero-copy operations
+
+> **Note**: The correct SQLite implementation is automatically selected at runtime based on the environment. You don't need to choose manually - just use `{ type: 'sqlite' }` and the package handles the rest!
+
 ## Requirements
 
-- Node.js >= 24.0.0
+- Node.js >= 24.0.0 **or** Bun >= 1.0.0
 - PostgreSQL >= 9.6 (for PostgreSQL support)
 - SQLite >= 3.35 (for RETURNING support in UPDATE/DELETE)
 

@@ -33,14 +33,23 @@ import { getGlobalCache } from "./cache";
 /**
  * Create database adapter from configuration
  */
-function createAdapter(config: CreateCollectionToolsConfig): DatabaseAdapter {
+async function createAdapter(config: CreateCollectionToolsConfig): Promise<DatabaseAdapter> {
   switch (config.database.type) {
     case "postgres":
       return new PostgresAdapter(config.database);
-    case "sqlite":
+    case "sqlite": {
+      // Use Bun's native SQLite in Bun runtime, otherwise use better-sqlite3
+      const isBun = typeof Bun !== "undefined";
+      if (isBun) {
+        const { BunSqliteAdapter } = await import("./implementations/bun-sqlite");
+        return new BunSqliteAdapter(config.database);
+      }
       return new SqliteAdapter(config.database);
+    }
     default:
-      throw new Error(`Unsupported database type: ${(config.database as any).type}`);
+      throw new Error(
+        `Unsupported database type: ${(config.database as any).type}`,
+      );
   }
 }
 
@@ -334,7 +343,7 @@ export async function createCollectionTools(
   config: CreateCollectionToolsConfig,
 ): Promise<Tool[]> {
   // Create adapter
-  const adapter = createAdapter(config);
+  const adapter = await createAdapter(config);
 
   // Get cache configuration
   const cacheConfig = config.cache ?? { ttl: 60000, enabled: true };
@@ -371,9 +380,7 @@ export async function createCollectionTools(
   for (const table of filteredTables) {
     // Skip tables without primary keys
     if (!table.primaryKey) {
-      console.warn(
-        `Skipping table ${table.name}: no primary key found`,
-      );
+      console.warn(`Skipping table ${table.name}: no primary key found`);
       continue;
     }
 
@@ -394,4 +401,3 @@ export async function createCollectionTools(
 
   return tools;
 }
-

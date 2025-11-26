@@ -1,10 +1,11 @@
 /**
- * SQLite Database Adapter Implementation
+ * Bun SQLite Database Adapter Implementation
  *
- * Implements CRUD operations using the `better-sqlite3` package.
+ * Implements CRUD operations using Bun's native SQLite (bun:sqlite).
+ * This is used for testing in Bun runtime.
  */
 
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import type {
   DatabaseAdapter,
   QueryParams,
@@ -12,18 +13,18 @@ import type {
   SqliteConfig,
 } from "../types";
 import type { WhereExpression } from "@decocms/bindings/collections";
-import { SqliteIntrospector } from "../introspection/sqlite";
+import { SqliteIntrospectorBun } from "../introspection/bun-sqlite";
 
 /**
- * SQLite adapter for collection operations
+ * Bun SQLite adapter for collection operations
  */
-export class SqliteAdapter implements DatabaseAdapter {
-  private db: Database.Database;
-  private introspector: SqliteIntrospector;
+export class BunSqliteAdapter implements DatabaseAdapter {
+  private db: Database;
+  private introspector: SqliteIntrospectorBun;
 
   constructor(config: SqliteConfig) {
     this.db = new Database(config.filename);
-    this.introspector = new SqliteIntrospector(config.filename);
+    this.introspector = new SqliteIntrospectorBun(config.filename);
   }
 
   async introspect(): Promise<TableMetadata[]> {
@@ -42,10 +43,7 @@ export class SqliteAdapter implements DatabaseAdapter {
 
     // Add WHERE clause if provided
     if (where) {
-      const whereClause = this.buildWhereClause(
-        where as WhereExpression,
-        queryParams,
-      );
+      const whereClause = this.buildWhereClause(where as WhereExpression, queryParams);
       if (whereClause) {
         query += ` WHERE ${whereClause}`;
       }
@@ -101,10 +99,12 @@ export class SqliteAdapter implements DatabaseAdapter {
     `;
 
     const stmt = this.db.prepare(query);
-    const result = stmt.run(...values);
+    stmt.run(...values);
 
     // Get the inserted row
-    if (result.lastInsertRowid) {
+    const lastInsertRowid = this.db.query("SELECT last_insert_rowid() as id").get() as { id: number };
+    
+    if (lastInsertRowid) {
       // Find the primary key column
       const tableInfo = this.db
         .prepare(`PRAGMA table_info("${table}")`)
@@ -115,13 +115,13 @@ export class SqliteAdapter implements DatabaseAdapter {
         const selectStmt = this.db.prepare(
           `SELECT * FROM "${table}" WHERE "${pkColumn.name}" = ?`,
         );
-        const inserted = selectStmt.get(result.lastInsertRowid);
+        const inserted = selectStmt.get(lastInsertRowid.id);
         return inserted as Record<string, unknown>;
       }
     }
 
     // Fallback: return the data with lastInsertRowid
-    return { ...data, id: result.lastInsertRowid };
+    return { ...data, id: lastInsertRowid.id };
   }
 
   async update(
@@ -141,11 +141,7 @@ export class SqliteAdapter implements DatabaseAdapter {
     `;
 
     const stmt = this.db.prepare(query);
-    const result = stmt.run(...values, id);
-
-    if (result.changes === 0) {
-      throw new Error("Update failed: no rows affected");
-    }
+    stmt.run(...values, id);
 
     // Get the updated row
     const selectStmt = this.db.prepare(
@@ -168,8 +164,8 @@ export class SqliteAdapter implements DatabaseAdapter {
     const stmt = this.db.prepare(
       `DELETE FROM "${table}" WHERE "${primaryKey}" = ?`,
     );
-    const result = stmt.run(id);
-    return result.changes > 0;
+    stmt.run(id);
+    return (this.db.query("SELECT changes() as changes").get() as { changes: number }).changes > 0;
   }
 
   async close(): Promise<void> {
@@ -180,7 +176,10 @@ export class SqliteAdapter implements DatabaseAdapter {
   /**
    * Build WHERE clause from WhereExpression
    */
-  private buildWhereClause(where: WhereExpression, params: unknown[]): string {
+  private buildWhereClause(
+    where: WhereExpression,
+    params: unknown[],
+  ): string {
     // Check if it's a comparison expression
     if ("field" in where && "operator" in where && "value" in where) {
       const field = where.field.join(".");
@@ -247,3 +246,4 @@ export class SqliteAdapter implements DatabaseAdapter {
     return "";
   }
 }
+

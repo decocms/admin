@@ -13,4 +13,3 @@ export interface DatabaseIntrospector {
    */
   introspect(): Promise<TableMetadata[]>;
 }
-

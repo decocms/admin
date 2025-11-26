@@ -9,4 +9,3 @@ export default defineConfig({
   treeshake: true,
   splitting: false,
 });
-

@@ -102,9 +102,7 @@ export class PostgresIntrospector implements DatabaseIntrospector {
         AND tc.constraint_type = 'PRIMARY KEY'
     `;
 
-    const primaryKeyColumns = new Set(
-      constraints.map((c) => c.column_name),
-    );
+    const primaryKeyColumns = new Set(constraints.map((c) => c.column_name));
 
     return columns.map((col) => {
       const isPrimaryKey = primaryKeyColumns.has(col.column_name);
@@ -151,4 +149,3 @@ export class PostgresIntrospector implements DatabaseIntrospector {
     await this.sql.end();
   }
 }
-

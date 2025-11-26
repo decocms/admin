@@ -71,12 +71,24 @@ export const fetcher = new Proxy({} as MeshClient, {
 }) as MeshClient;
 
 /**
- * Create a tool caller for a specific connection
- * Routes through mesh backend at /mcp/:connectionId
+ * Type for a generic tool caller function
  */
-export function createConnectionToolCaller(connectionId: string) {
+export type ToolCaller = (toolName: string, args: unknown) => Promise<unknown>;
+
+/**
+ * Create a unified tool caller
+ *
+ * - If connectionId is provided: routes to /mcp/:connectionId (connection-specific tools)
+ * - If connectionId is omitted/null: routes to /mcp (mesh API tools)
+ *
+ * This abstracts the routing logic so hooks don't need to know if they're
+ * calling mesh tools or connection-specific tools.
+ */
+export function createToolCaller(connectionId?: string | null): ToolCaller {
+  const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
+
   return async (toolName: string, args: unknown) => {
-    const response = await fetch(`/mcp/${connectionId}`, {
+    const response = await fetch(endpoint, {
       method: "POST",
       body: JSON.stringify({
         jsonrpc: "2.0",

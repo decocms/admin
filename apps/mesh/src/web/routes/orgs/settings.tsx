@@ -20,9 +20,9 @@ import { Label } from "@deco/ui/components/label.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { authClient } from "@/web/lib/auth-client";
 import { KEYS } from "@/web/lib/query-keys";
-import { fetcher } from "@/tools/client";
+import { createToolCaller } from "@/tools/client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import type { MCPConnection } from "@/storage/types";
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import {
   useOrganizationSettings,
   useUpdateOrganizationSettings,
@@ -55,6 +55,9 @@ export default function OrgSettings() {
     error: settingsErrorValue,
   } = useOrganizationSettings(organizationId);
 
+  // Create tool caller for mesh API
+  const toolCaller = useMemo(() => createToolCaller(), []);
+
   const {
     data: connectionsData,
     isLoading: connectionsLoading,
@@ -63,14 +66,20 @@ export default function OrgSettings() {
   } = useQuery({
     queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
     queryFn: async () => {
-      return (await fetcher.CONNECTION_LIST({
+      return (await toolCaller("DECO_COLLECTION_CONNECTIONS_LIST", {
         binding: "MODELS",
-      })) as { connections: MCPConnection[] };
+      })) as { items: ConnectionEntity[] };
     },
     retry: 1,
   });
 
-  const connections = connectionsData?.connections ?? [];
+  // Map collection entity to expected format (title -> name)
+  const connections = useMemo(() => {
+    return (connectionsData?.items ?? []).map((item) => ({
+      ...item,
+      name: item.title, // Map title back to name for display
+    }));
+  }, [connectionsData]);
 
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null

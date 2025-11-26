@@ -1,31 +1,29 @@
 /**
- * CONNECTION_GET Tool
+ * DECO_COLLECTION_CONNECTIONS_GET Tool
  *
- * Get connection details by ID
+ * Get connection details by ID with collection binding compliance.
  */
 
-import { z } from "zod/v3";
+import {
+  CollectionGetInputSchema,
+  createCollectionGetOutputSchema,
+} from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
+import { ConnectionEntitySchema, connectionToEntity } from "./schema";
 
-export const CONNECTION_GET = defineTool({
-  name: "CONNECTION_GET",
+/**
+ * Output schema using the ConnectionEntitySchema
+ */
+const ConnectionGetOutputSchema = createCollectionGetOutputSchema(
+  ConnectionEntitySchema,
+);
+
+export const DECO_COLLECTION_CONNECTIONS_GET = defineTool({
+  name: "DECO_COLLECTION_CONNECTIONS_GET",
   description: "Get connection details by ID",
 
-  inputSchema: z.object({
-    id: z.string(),
-  }),
-
-  outputSchema: z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-    organizationId: z.string(),
-    status: z.enum(["active", "inactive", "error"]),
-    connectionType: z.enum(["HTTP", "SSE", "Websocket"]),
-    connectionUrl: z.string(),
-    tools: z.array(z.any()).nullable(),
-    bindings: z.array(z.string()).nullable(),
-  }),
+  inputSchema: CollectionGetInputSchema,
+  outputSchema: ConnectionGetOutputSchema,
 
   handler: async (input, ctx) => {
     // Check authorization
@@ -35,19 +33,16 @@ export const CONNECTION_GET = defineTool({
     const connection = await ctx.storage.connections.findById(input.id);
 
     if (!connection) {
-      throw new Error(`Connection not found: ${input.id}`);
+      return { item: null };
     }
 
     return {
-      id: connection.id,
-      name: connection.name,
-      description: connection.description,
-      organizationId: connection.organizationId,
-      status: connection.status,
-      connectionType: connection.connectionType,
-      connectionUrl: connection.connectionUrl,
-      tools: connection.tools,
-      bindings: connection.bindings,
+      item: connectionToEntity(connection),
     };
   },
 });
+
+/**
+ * @deprecated Use DECO_COLLECTION_CONNECTIONS_GET instead
+ */
+export const CONNECTION_GET = DECO_COLLECTION_CONNECTIONS_GET;

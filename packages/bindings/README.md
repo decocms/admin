@@ -576,7 +576,7 @@ import type {
   CollectionListInput,
   CollectionGetInput,
   CollectionDeleteInput,
-} from "@decocms/bindings/well-known/collections";
+} from "@decocms/bindings/collections";
 
 // Extract the binding type
 type TodoBinding = typeof TODO_COLLECTION_BINDING;

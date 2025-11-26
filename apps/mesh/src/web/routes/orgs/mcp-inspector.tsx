@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { fetcher, createConnectionToolCaller } from "@/tools/client";
+import { createToolCaller } from "@/tools/client";
 import { useMcp, type Tool, type Resource, type Prompt } from "use-mcp/react";
 import {
   Card,
@@ -40,17 +39,7 @@ import {
   Check,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import type { MCPConnection } from "@/storage/types";
-import { KEYS } from "@/web/lib/query-keys";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-
-const useConnection = (connectionId: string) => {
-  const { locator } = useProjectContext();
-  return useQuery({
-    queryKey: KEYS.connection(locator, connectionId),
-    queryFn: () => fetcher.CONNECTION_GET({ id: connectionId }),
-  });
-};
+import { useConnection } from "@/web/hooks/use-connections";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {
@@ -92,9 +81,12 @@ function getStatusBadgeInfo(state: string) {
 
 export default function McpInspector() {
   const { connectionId } = useParams({ strict: false });
-  const { data: connectionData, isLoading: isLoadingConnection } =
-    useConnection(connectionId as string);
-  const connection = connectionData as MCPConnection | undefined;
+  const {
+    data,
+    isLoading: isLoadingConnection,
+    collection,
+  } = useConnection(connectionId);
+  const connection = data?.[0] as ConnectionEntity | undefined;
 
   // Tool invocation state
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -247,15 +239,25 @@ export default function McpInspector() {
                   `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
                 );
 
-                // Call CONNECTION_UPDATE to save the token
-                await fetcher.CONNECTION_UPDATE({
-                  id: connectionId as string,
-                  connection: {
-                    type: connection.connectionType,
-                    url: connection.connectionUrl,
-                    token: newOrChangedToken,
-                  },
-                });
+                // Ensure collection is ready and has the connection before updating
+                if (!collection.isReady()) {
+                  await collection.preload();
+                }
+                if (!collection.has(connectionId as string)) {
+                  throw new Error("Connection not found in collection");
+                }
+
+                // Call collection.update to save the token
+                await collection.update(
+                  connectionId as string,
+                  {
+                    connection: {
+                      type: connection.connectionType,
+                      url: connection.connectionUrl,
+                      token: newOrChangedToken,
+                    },
+                  } as Parameters<typeof collection.update>[1],
+                );
 
                 console.log(
                   "[MCP Inspector] Token saved to database successfully",
@@ -326,7 +328,7 @@ export default function McpInspector() {
 
     try {
       const args = JSON.parse(toolArgs);
-      const callTool = createConnectionToolCaller(connectionId as string);
+      const callTool = createToolCaller(connectionId as string);
       const result = await callTool(selectedTool.name, args);
       setToolResult(result);
     } catch (error) {
@@ -411,7 +413,7 @@ export default function McpInspector() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">MCP Inspector</h1>
-            <p className="text-muted-foreground">{connection.name}</p>
+            <p className="text-muted-foreground">{connection.title}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

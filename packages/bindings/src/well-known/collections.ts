@@ -319,3 +319,38 @@ export type CollectionDeleteOutput = z.infer<
   typeof CollectionDeleteOutputSchema
 >;
 export type OrderByExpression = z.infer<typeof OrderByExpressionSchema>;
+
+/**
+ * Type helper for list output with generic item type
+ */
+export type CollectionListOutput<T> = {
+  items: T[];
+  totalCount?: number;
+  hasMore?: boolean;
+};
+
+/**
+ * Type helper for get output with generic item type
+ */
+export type CollectionGetOutput<T> = {
+  item: T | null;
+};
+
+/**
+ * Type helper for insert output with generic item type
+ */
+export type CollectionInsertOutput<T> = {
+  item: T;
+};
+
+/**
+ * Type helper for update output with generic item type
+ */
+export type CollectionUpdateOutput<T> = {
+  item: T;
+};
+
+/**
+ * Base collection entity type - inferred from BaseCollectionEntitySchema
+ */
+export type BaseCollectionEntity = z.infer<typeof BaseCollectionEntitySchema>;

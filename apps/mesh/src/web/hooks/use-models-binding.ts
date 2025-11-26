@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { MCPConnection } from "@/storage/types";
-import { fetcher } from "@/tools/client";
+import { createToolCaller } from "@/tools/client";
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
@@ -19,19 +19,22 @@ export function useModelsBindingState() {
 
   const settingsQuery = useOrganizationSettings(organizationId);
 
+  // Create tool caller for mesh API
+  const toolCaller = useMemo(() => createToolCaller(), []);
+
   const connectionsQuery = useQuery({
     queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
     queryFn: async () => {
-      return (await fetcher.CONNECTION_LIST({
+      return (await toolCaller("DECO_COLLECTION_CONNECTIONS_LIST", {
         binding: "MODELS",
-      })) as { connections: MCPConnection[] };
+      })) as { items: ConnectionEntity[] };
     },
     enabled: Boolean(locator),
     staleTime: 30_000,
   });
 
   const connection = useMemo(() => {
-    if (!connectionsQuery.data?.connections || !settingsQuery.data) {
+    if (!connectionsQuery.data?.items || !settingsQuery.data) {
       return undefined;
     }
 
@@ -40,9 +43,7 @@ export function useModelsBindingState() {
       return undefined;
     }
 
-    return connectionsQuery.data.connections.find(
-      (item) => item.id === connectionId,
-    );
+    return connectionsQuery.data.items.find((item) => item.id === connectionId);
   }, [connectionsQuery.data, settingsQuery.data]);
 
   const [isOrgActive, setIsOrgActive] = useState(false);

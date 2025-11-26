@@ -1,51 +1,41 @@
 /**
- * CONNECTION_UPDATE Tool
+ * DECO_COLLECTION_CONNECTIONS_UPDATE Tool
  *
- * Update an existing MCP connection (organization-scoped)
+ * Update an existing MCP connection (organization-scoped) with collection binding compliance.
  */
 
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
+import {
+  ConnectionEntitySchema,
+  ConnectionUpdateDataSchema,
+  connectionToEntity,
+} from "./schema";
 
-const connectionSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("HTTP"),
-    url: z.string().url(),
-    token: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal("SSE"),
-    url: z.string().url(),
-    token: z.string().optional(),
-    headers: z.record(z.string(), z.string()).optional(),
-  }),
-  z.object({
-    type: z.literal("Websocket"),
-    url: z.string().url(),
-    token: z.string().optional(),
-  }),
-]);
+/**
+ * Input schema for updating connections
+ */
+const UpdateInputSchema = z.object({
+  id: z.string().describe("ID of the connection to update"),
+  data: ConnectionUpdateDataSchema.describe(
+    "Partial connection data to update",
+  ),
+});
 
-export const CONNECTION_UPDATE = defineTool({
-  name: "CONNECTION_UPDATE",
+/**
+ * Output schema for updated connection
+ */
+const UpdateOutputSchema = z.object({
+  item: ConnectionEntitySchema.describe("The updated connection entity"),
+});
+
+export const DECO_COLLECTION_CONNECTIONS_UPDATE = defineTool({
+  name: "DECO_COLLECTION_CONNECTIONS_UPDATE",
   description: "Update an existing MCP connection in the organization",
 
-  inputSchema: z.object({
-    id: z.string(),
-    name: z.string().min(1).max(255).optional(),
-    description: z.string().optional(),
-    icon: z.string().url().optional(),
-    connection: connectionSchema.optional(),
-    metadata: z.record(z.string(), z.any()).optional(),
-  }),
-
-  outputSchema: z.object({
-    id: z.string(),
-    name: z.string(),
-    organizationId: z.string(),
-    status: z.enum(["active", "inactive", "error"]),
-  }),
+  inputSchema: UpdateInputSchema,
+  outputSchema: UpdateOutputSchema,
 
   handler: async (input, ctx) => {
     // Require authentication
@@ -57,7 +47,9 @@ export const CONNECTION_UPDATE = defineTool({
     // Check authorization
     await ctx.access.check();
 
-    // Prepare update data
+    const { id, data } = input;
+
+    // Prepare update data - transform title to name
     const updateData: Partial<{
       name: string;
       description: string;
@@ -68,28 +60,26 @@ export const CONNECTION_UPDATE = defineTool({
       connectionToken: string;
       connectionHeaders: Record<string, string>;
     }> = {};
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined)
-      updateData.description = input.description;
-    if (input.icon !== undefined) updateData.icon = input.icon;
-    if (input.metadata !== undefined) updateData.metadata = input.metadata;
 
-    if (input.connection) {
-      updateData.connectionType = input.connection.type;
-      updateData.connectionUrl = input.connection.url;
-      if (input.connection.token) {
-        updateData.connectionToken = input.connection.token;
+    if (data.title !== undefined) updateData.name = data.title; // Map title to name
+    if (data.description !== undefined)
+      updateData.description = data.description;
+    if (data.icon !== undefined) updateData.icon = data.icon;
+    if (data.metadata !== undefined) updateData.metadata = data.metadata;
+
+    if (data.connection) {
+      updateData.connectionType = data.connection.type;
+      updateData.connectionUrl = data.connection.url;
+      if (data.connection.token) {
+        updateData.connectionToken = data.connection.token;
       }
-      if ("headers" in input.connection && input.connection.headers) {
-        updateData.connectionHeaders = input.connection.headers;
+      if ("headers" in data.connection && data.connection.headers) {
+        updateData.connectionHeaders = data.connection.headers;
       }
     }
 
     // Update connection
-    const connection = await ctx.storage.connections.update(
-      input.id,
-      updateData,
-    );
+    const connection = await ctx.storage.connections.update(id, updateData);
 
     // Verify it belongs to the current organization
     if (connection.organizationId !== organization.id) {
@@ -97,10 +87,12 @@ export const CONNECTION_UPDATE = defineTool({
     }
 
     return {
-      id: connection.id,
-      name: connection.name,
-      organizationId: connection.organizationId,
-      status: connection.status,
+      item: connectionToEntity(connection),
     };
   },
 });
+
+/**
+ * @deprecated Use DECO_COLLECTION_CONNECTIONS_UPDATE instead
+ */
+export const CONNECTION_UPDATE = DECO_COLLECTION_CONNECTIONS_UPDATE;

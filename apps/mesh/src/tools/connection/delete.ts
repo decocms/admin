@@ -1,24 +1,21 @@
 /**
- * CONNECTION_DELETE Tool
+ * DECO_COLLECTION_CONNECTIONS_DELETE Tool
  *
- * Delete a connection
+ * Delete a connection with collection binding compliance.
  */
 
-import { z } from "zod/v3";
+import {
+  CollectionDeleteInputSchema,
+  CollectionDeleteOutputSchema,
+} from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
 
-export const CONNECTION_DELETE = defineTool({
-  name: "CONNECTION_DELETE",
+export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
+  name: "DECO_COLLECTION_CONNECTIONS_DELETE",
   description: "Delete a connection",
 
-  inputSchema: z.object({
-    id: z.string(),
-  }),
-
-  outputSchema: z.object({
-    success: z.boolean(),
-    id: z.string(),
-  }),
+  inputSchema: CollectionDeleteInputSchema,
+  outputSchema: CollectionDeleteOutputSchema,
 
   handler: async (input, ctx) => {
     // Check authorization
@@ -33,3 +30,8 @@ export const CONNECTION_DELETE = defineTool({
     };
   },
 });
+
+/**
+ * @deprecated Use DECO_COLLECTION_CONNECTIONS_DELETE instead
+ */
+export const CONNECTION_DELETE = DECO_COLLECTION_CONNECTIONS_DELETE;

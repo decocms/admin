@@ -1,7 +1,7 @@
 /**
- * CONNECTION_CREATE Tool
+ * COLLECTION_CONNECTIONS_CREATE Tool
  *
- * Create a new MCP connection (organization-scoped)
+ * Create a new MCP connection (organization-scoped) with collection binding compliance.
  */
 
 import { z } from "zod/v3";
@@ -11,44 +11,35 @@ import {
   requireAuth,
   requireOrganization,
 } from "../../core/mesh-context";
+import {
+  ConnectionEntitySchema,
+  ConnectionCreateDataSchema,
+  connectionToEntity,
+} from "./schema";
 
-const connectionSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("HTTP"),
-    url: z.string().url(),
-    token: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal("SSE"),
-    url: z.string().url(),
-    token: z.string().optional(),
-    headers: z.record(z.string(), z.string()).optional(),
-  }),
-  z.object({
-    type: z.literal("Websocket"),
-    url: z.string().url(),
-    token: z.string().optional(),
-  }),
-]);
+/**
+ * Input schema for creating connections (wrapped in data field for collection compliance)
+ * Uses the entity schema structure for collection binding compliance
+ */
+const CreateInputSchema = z.object({
+  data: ConnectionCreateDataSchema.describe(
+    "Data for the new connection (id is auto-generated)",
+  ),
+});
 
-export const CONNECTION_CREATE = defineTool({
-  name: "CONNECTION_CREATE",
+/**
+ * Output schema for created connection
+ */
+const CreateOutputSchema = z.object({
+  item: ConnectionEntitySchema.describe("The created connection entity"),
+});
+
+export const COLLECTION_CONNECTIONS_CREATE = defineTool({
+  name: "COLLECTION_CONNECTIONS_CREATE",
   description: "Create a new MCP connection in the organization",
 
-  inputSchema: z.object({
-    name: z.string().min(1).max(255),
-    description: z.string().optional(),
-    icon: z.string().url().optional(),
-    connection: connectionSchema,
-    metadata: z.record(z.string(), z.any()).optional(),
-  }),
-
-  outputSchema: z.object({
-    id: z.string(),
-    name: z.string(),
-    organizationId: z.string(),
-    status: z.enum(["active", "inactive", "error"]),
-  }),
+  inputSchema: CreateInputSchema,
+  outputSchema: CreateOutputSchema,
 
   handler: async (input, ctx) => {
     // Require authentication
@@ -66,22 +57,31 @@ export const CONNECTION_CREATE = defineTool({
       throw new Error("User ID required to create connection");
     }
 
-    // Create connection
+    const { data } = input;
+
+    // Create connection - transform entity schema to storage format
     const connection = await ctx.storage.connections.create({
       organizationId: organization.id,
       createdById: userId,
-      name: input.name,
-      description: input.description,
-      icon: input.icon,
-      connection: input.connection,
-      metadata: input.metadata,
+      name: data.title, // Map title to name
+      description: data.description ?? undefined,
+      icon: data.icon ?? undefined,
+      connection: {
+        type: data.connectionType,
+        url: data.connectionUrl,
+        token: data.connectionToken ?? undefined,
+        headers: data.connectionHeaders ?? undefined,
+      },
+      metadata: data.metadata ?? undefined,
     });
 
     return {
-      id: connection.id,
-      name: connection.name,
-      organizationId: connection.organizationId,
-      status: connection.status,
+      item: connectionToEntity(connection),
     };
   },
 });
+
+/**
+ * @deprecated Use COLLECTION_CONNECTIONS_CREATE instead
+ */
+export const CONNECTION_CREATE = COLLECTION_CONNECTIONS_CREATE;

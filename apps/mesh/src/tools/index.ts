@@ -22,11 +22,12 @@ export const ALL_TOOLS = [
   OrganizationTools.ORGANIZATION_MEMBER_LIST,
   OrganizationTools.ORGANIZATION_MEMBER_UPDATE_ROLE,
 
-  ConnectionTools.CONNECTION_CREATE,
-  ConnectionTools.CONNECTION_LIST,
-  ConnectionTools.CONNECTION_GET,
-  ConnectionTools.CONNECTION_UPDATE,
-  ConnectionTools.CONNECTION_DELETE,
+  // Connection collection tools
+  ConnectionTools.COLLECTION_CONNECTIONS_CREATE,
+  ConnectionTools.COLLECTION_CONNECTIONS_LIST,
+  ConnectionTools.COLLECTION_CONNECTIONS_GET,
+  ConnectionTools.COLLECTION_CONNECTIONS_UPDATE,
+  ConnectionTools.COLLECTION_CONNECTIONS_DELETE,
   ConnectionTools.CONNECTION_TEST,
 ] as const;
 

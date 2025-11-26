@@ -119,12 +119,6 @@ const StreamRequestSchema = z.object({
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
   maxWindowSize: z.number().optional(),
-  endpoint: z.object({
-    url: z.string(),
-    method: z.string().optional(),
-    contentType: z.string().optional(),
-    stream: z.boolean().optional(),
-  }),
   provider: z
     .enum([
       "openai",
@@ -376,7 +370,6 @@ app.post("/:org/models/stream", async (c) => {
     const {
       modelId,
       messages,
-      endpoint,
       provider: modelProvider,
       temperature,
       maxOutputTokens = DEFAULT_MAX_TOKENS,
@@ -384,21 +377,6 @@ app.post("/:org/models/stream", async (c) => {
     } = payload;
 
     const headers = buildConnectionHeaders(connection);
-
-    console.info(
-      "[models:stream] Starting stream",
-      JSON.stringify({
-        org: orgSlug,
-        connectionId: connection.id,
-        modelId,
-        provider: modelProvider,
-        endpointUrl: endpoint.url,
-        messagesCount: messages.length,
-        maxOutputTokens,
-        maxWindowSize,
-        connectionsCount: connections.length,
-      }),
-    );
 
     // Convert UIMessages to CoreMessages using AI SDK helper
     const modelMessages = convertToModelMessages(messages);
@@ -446,14 +424,8 @@ app.post("/:org/models/stream", async (c) => {
       onError: (error) => {
         console.error("[models:stream] Error", error);
       },
-      onFinish: (result) => {
-        console.log("[models:stream] Finish", result);
-      },
       onAbort: (error) => {
         console.error("[models:stream] Abort", error);
-      },
-      onChunk: (chunk) => {
-        console.log("[models:stream] Chunk", chunk);
       },
     });
 

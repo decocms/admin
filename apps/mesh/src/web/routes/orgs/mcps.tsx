@@ -1,17 +1,23 @@
-import { useDeferredValue, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { fetcher } from "@/tools/client";
-import { Card } from "@deco/ui/components/card.tsx";
+import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import {
+  useConnections,
+  type ConnectionEntity,
+} from "@/web/hooks/use-connections";
+import { useListState } from "@/web/hooks/use-list-state";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Plus, MoreVertical, Search } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
   DialogContent,
@@ -20,9 +26,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
+import {
+  Table as ResourceTable,
+  type TableColumn,
+} from "@deco/ui/components/resource-table.tsx";
 import {
   Select,
   SelectContent,
@@ -30,27 +54,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Table as ResourceTable,
-  type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
-import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { usePersistedFilters } from "@deco/ui/hooks/use-persisted-filters.ts";
-import { useSortable } from "@deco/ui/hooks/use-sortable.ts";
-import { KEYS } from "@/web/lib/query-keys";
-import type { MCPConnection } from "@/storage/types";
-import { useProjectContext } from "@/web/providers/project-context-provider";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "@tanstack/react-router";
+import { MoreVertical, Plus, Search } from "lucide-react";
+import { useEffect, useReducer } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod/v3";
+import { useConnectionsCollection } from "../../hooks/use-connections";
 
-const useConnections = () => {
-  const { locator } = useProjectContext();
-  return useQuery({
-    queryKey: KEYS.connections(locator),
-    queryFn: () => fetcher.CONNECTION_LIST({}),
-  });
-};
+// Form validation schema derived from ConnectionEntitySchema
+// Pick the relevant fields and adapt for form use
+const connectionFormSchema = ConnectionEntitySchema.pick({
+  title: true,
+  description: true,
+  connectionType: true,
+  connectionUrl: true,
+  connectionToken: true,
+}).partial({
+  // These are optional for form input
+  description: true,
+  connectionToken: true,
+});
+
+type ConnectionFormData = z.infer<typeof connectionFormSchema>;
+
+type DialogState =
+  | { mode: "idle" }
+  | { mode: "creating" }
+  | { mode: "editing"; connection: ConnectionEntity }
+  | { mode: "deleting"; connection: ConnectionEntity };
+
+type DialogAction =
+  | { type: "create" }
+  | { type: "edit"; connection: ConnectionEntity }
+  | { type: "delete"; connection: ConnectionEntity }
+  | { type: "close" };
+
+function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
+  switch (action.type) {
+    case "create":
+      return { mode: "creating" };
+    case "edit":
+      return { mode: "editing", connection: action.connection };
+    case "delete":
+      return { mode: "deleting", connection: action.connection };
+    case "close":
+      return { mode: "idle" };
+  }
+}
 
 function getStatusBadgeVariant(status: string) {
   switch (status) {
@@ -66,238 +120,135 @@ function getStatusBadgeVariant(status: string) {
 }
 
 export default function OrgMcps() {
-  const { locator, org } = useProjectContext();
+  const { org } = useProjectContext();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { data, isLoading, isError, error } = useConnections();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<
-    (typeof connections)[number] | null
-  >(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    type: "HTTP" as "HTTP" | "SSE" | "Websocket",
-    url: "",
-    token: "",
+
+  // Consolidated list UI state (search, filters, sorting, view mode)
+  const listState = useListState<ConnectionEntity>({
+    namespace: org,
+    resource: "connections",
   });
 
-  const connections = (data?.connections ?? []) as MCPConnection[];
-  const [localSearch, setLocalSearch] = useState("");
-  const deferredSearch = useDeferredValue(localSearch);
-  const filterPersistKey = `${org}-mcp-connections`;
-  const [filters, setFilters] = usePersistedFilters(filterPersistKey);
-  const filterBarVisibilityKey = `mesh-connections-filter-visible-${org}`;
-  const [filterBarVisible, setFilterBarVisible] = useState(() => {
-    const stored = globalThis.localStorage?.getItem(filterBarVisibilityKey);
-    return stored === "true";
-  });
-  const [viewMode, setViewMode] = useViewMode(
-    `mesh-connections-${org}`,
-    "table",
-  );
-  const { sortKey, sortDirection, handleSort } = useSortable("title");
-  const errorMessage = isError
-    ? error instanceof Error
-      ? error.message
-      : "Failed to load connections."
-    : null;
+  // Fetch connections with filtering and sorting applied
+  const collection = useConnectionsCollection();
+  const { data: connections, isLoading, isError } = useConnections(listState);
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      type: "HTTP",
-      url: "",
-      token: "",
-    });
-    setEditingConnection(null);
-  };
+  const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      return fetcher.CONNECTION_CREATE({
-        name: data.name,
-        description: data.description || undefined,
-        connection: {
-          type: data.type,
-          url: data.url,
-          token: data.token || undefined,
-        },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
-      setIsDialogOpen(false);
-      resetForm();
+  // React Hook Form setup
+  const form = useForm<ConnectionFormData>({
+    resolver: zodResolver(connectionFormSchema),
+    defaultValues: {
+      title: "",
+      description: null,
+      connectionType: "HTTP",
+      connectionUrl: "",
+      connectionToken: null,
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      return fetcher.CONNECTION_UPDATE({
-        id,
-        name: data.name,
-        description: data.description || undefined,
-        connection: {
-          type: data.type,
-          url: data.url,
-          token: data.token || undefined,
-        },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
-      setIsDialogOpen(false);
-      resetForm();
-    },
-  });
+  // Reset form when editing connection changes
+  const editingConnection =
+    dialogState.mode === "editing" ? dialogState.connection : null;
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return fetcher.CONNECTION_DELETE({ id });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KEYS.connections(locator) });
-    },
-  });
-
-  const handleEdit = (connection: MCPConnection) => {
-    setEditingConnection(connection);
-    setFormData({
-      name: connection.name,
-      description: connection.description || "",
-      type: connection.connectionType,
-      url: connection.connectionUrl,
-      token: "",
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this connection?")) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
     if (editingConnection) {
-      updateMutation.mutate({ id: editingConnection.id, data: formData });
+      form.reset({
+        title: editingConnection.title,
+        description: editingConnection.description,
+        connectionType: editingConnection.connectionType,
+        connectionUrl: editingConnection.connectionUrl,
+        connectionToken: null, // Don't pre-fill token for security
+      });
     } else {
-      createMutation.mutate(formData);
+      form.reset({
+        title: "",
+        description: null,
+        connectionType: "HTTP",
+        connectionUrl: "",
+        connectionToken: null,
+      });
+    }
+  }, [editingConnection, form]);
+
+  const errorMessage = isError ? "Failed to load connections." : null;
+
+  const handleEdit = (connection: ConnectionEntity) => {
+    dispatch({ type: "edit", connection });
+  };
+
+  const handleDelete = (connection: ConnectionEntity) => {
+    dispatch({ type: "delete", connection });
+  };
+
+  const confirmDelete = () => {
+    if (dialogState.mode !== "deleting") return;
+
+    const id = dialogState.connection.id;
+    dispatch({ type: "close" });
+
+    collection.delete(id).isPersisted.promise.catch((error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete connection",
+      );
+    });
+  };
+
+  const onSubmit = async (data: ConnectionFormData) => {
+    try {
+      dispatch({ type: "close" });
+      form.reset();
+
+      if (editingConnection) {
+        // Update existing connection
+        const tx = collection.update(editingConnection.id, (draft) => {
+          draft.title = data.title;
+          draft.description = data.description || null;
+          draft.connectionType = data.connectionType;
+          draft.connectionUrl = data.connectionUrl;
+          if (data.connectionToken) {
+            draft.connectionToken = data.connectionToken;
+          }
+        });
+        await tx.isPersisted.promise;
+      } else {
+        // Create new connection - cast through unknown because the insert API
+        // accepts ConnectionCreateInput but the collection is typed as ConnectionEntity
+        const tx = collection.insert({
+          id: crypto.randomUUID(),
+          title: data.title,
+          description: data.description || null,
+          connectionType: data.connectionType,
+          connectionUrl: data.connectionUrl,
+          connectionToken: data.connectionToken || undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: "inactive",
+          organizationId: org,
+        });
+        await tx.isPersisted.promise;
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save connection",
+      );
     }
   };
 
   const handleDialogClose = (open: boolean) => {
-    setIsDialogOpen(open);
     if (!open) {
-      resetForm();
+      dispatch({ type: "close" });
+      form.reset();
     }
   };
 
-  const filteredConnections = useMemo(() => {
-    let result = connections;
-    const searchTerm = deferredSearch.trim().toLowerCase();
-    if (searchTerm) {
-      result = result.filter((connection) => {
-        const name = connection.name?.toLowerCase() ?? "";
-        const description = connection.description?.toLowerCase() ?? "";
-        return name.includes(searchTerm) || description.includes(searchTerm);
-      });
-    }
-
-    if (filters.length === 0) {
-      return result;
-    }
-
-    return result.filter((connection) => {
-      return filters.every((filter) => {
-        if (filter.column === "name") {
-          const value = connection.name?.toLowerCase() ?? "";
-          const filterValue = filter.value.toLowerCase();
-          switch (filter.operator) {
-            case "contains":
-              return value.includes(filterValue);
-            case "does_not_contain":
-              return !value.includes(filterValue);
-            case "is":
-              return value === filterValue;
-            case "is_not":
-              return value !== filterValue;
-            default:
-              return true;
-          }
-        }
-
-        if (filter.column === "description") {
-          const value = connection.description?.toLowerCase() ?? "";
-          const filterValue = filter.value.toLowerCase();
-          switch (filter.operator) {
-            case "contains":
-              return value.includes(filterValue);
-            case "does_not_contain":
-              return !value.includes(filterValue);
-            case "is":
-              return value === filterValue;
-            case "is_not":
-              return value !== filterValue;
-            default:
-              return true;
-          }
-        }
-
-        return true;
-      });
-    });
-  }, [connections, deferredSearch, filters]);
-
-  const sortedConnections = useMemo(() => {
-    if (!sortKey || !sortDirection) {
-      return filteredConnections;
-    }
-
-    const compareStrings = (a: string, b: string) => {
-      if (a < b) return sortDirection === "asc" ? -1 : 1;
-      if (a > b) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    };
-
-    return [...filteredConnections].sort((a, b) => {
-      switch (sortKey) {
-        case "title":
-          return compareStrings(
-            (a.name ?? "").toLowerCase(),
-            (b.name ?? "").toLowerCase(),
-          );
-        case "description":
-          return compareStrings(
-            (a.description ?? "").toLowerCase(),
-            (b.description ?? "").toLowerCase(),
-          );
-        case "status":
-          return compareStrings(
-            (a.status ?? "").toLowerCase(),
-            (b.status ?? "").toLowerCase(),
-          );
-        case "connectionType":
-          return compareStrings(
-            (a.connectionType ?? "").toLowerCase(),
-            (b.connectionType ?? "").toLowerCase(),
-          );
-        default:
-          return 0;
-      }
-    });
-  }, [filteredConnections, sortKey, sortDirection]);
-
-  const columns: TableColumn<MCPConnection>[] = [
+  const columns: TableColumn<ConnectionEntity>[] = [
     {
       id: "title",
       header: "Name",
       render: (connection) => (
         <div>
-          <div className="font-medium">{connection.name}</div>
+          <div className="font-medium">{connection.title}</div>
           {connection.description && (
             <div className="text-sm text-muted-foreground">
               {connection.description}
@@ -377,7 +328,7 @@ export default function OrgMcps() {
               className="text-destructive"
               onClick={(event) => {
                 event.stopPropagation();
-                handleDelete(connection.id);
+                handleDelete(connection);
               }}
             >
               Delete
@@ -391,7 +342,7 @@ export default function OrgMcps() {
 
   const ctaButton = (
     <Button
-      onClick={() => setIsDialogOpen(true)}
+      onClick={() => dispatch({ type: "create" })}
       size="sm"
       className="rounded-xl"
     >
@@ -402,7 +353,10 @@ export default function OrgMcps() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+      <Dialog
+        open={dialogState.mode === "creating" || dialogState.mode === "editing"}
+        onOpenChange={handleDialogClose}
+      >
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>
@@ -414,117 +368,152 @@ export default function OrgMcps() {
                 : "Add a new connection to your organization. Fill in the details below."}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="My Connection"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="grid gap-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="My Connection" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="A brief description of this connection"
+                          rows={3}
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="connectionType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="HTTP">HTTP</SelectItem>
+                          <SelectItem value="SSE">SSE</SelectItem>
+                          <SelectItem value="Websocket">Websocket</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="connectionUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com/mcp"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="connectionToken"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Token (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Bearer token or API key"
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="A brief description of this connection"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="type">Type *</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      type: value as "HTTP" | "SSE" | "Websocket",
-                    })
-                  }
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDialogClose(false)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HTTP">HTTP</SelectItem>
-                    <SelectItem value="SSE">SSE</SelectItem>
-                    <SelectItem value="Websocket">Websocket</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="url">URL *</Label>
-                <Input
-                  id="url"
-                  type="url"
-                  required
-                  value={formData.url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, url: e.target.value })
-                  }
-                  placeholder="https://example.com/mcp"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="token">Token (optional)</Label>
-                <Input
-                  id="token"
-                  type="password"
-                  value={formData.token}
-                  onChange={(e) =>
-                    setFormData({ ...formData, token: e.target.value })
-                  }
-                  placeholder="Bearer token or API key"
-                />
-              </div>
-
-              {(createMutation.isError || updateMutation.isError) && (
-                <div className="text-sm text-destructive">
-                  Error:{" "}
-                  {createMutation.error?.message ||
-                    updateMutation.error?.message ||
-                    `Failed to ${editingConnection ? "update" : "create"} connection`}
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleDialogClose(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? editingConnection
-                    ? "Updating..."
-                    : "Creating..."
-                  : editingConnection
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingConnection
                     ? "Update Connection"
                     : "Create Connection"}
-              </Button>
-            </DialogFooter>
-          </form>
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={dialogState.mode === "deleting"}
+        onOpenChange={(open) => !open && dispatch({ type: "close" })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Connection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {dialogState.mode === "deleting" &&
+                  dialogState.connection.title}
+              </span>
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="shrink-0 bg-background">
         <div className="px-8 py-6">
@@ -538,35 +527,23 @@ export default function OrgMcps() {
             <ResourceHeader
               tabs={[{ id: "all", label: "All" }]}
               activeTab="all"
-              searchValue={localSearch}
-              onSearchChange={setLocalSearch}
+              searchValue={listState.search}
+              onSearchChange={listState.setSearch}
               onSearchKeyDown={(event) => {
                 if (event.key === "Escape") {
-                  setLocalSearch("");
+                  listState.setSearch("");
                   (event.target as HTMLInputElement).blur();
                 }
               }}
-              onRefresh={() =>
-                queryClient.invalidateQueries({
-                  queryKey: KEYS.connections(locator),
-                })
-              }
-              onFilterClick={() => {
-                const newValue = !filterBarVisible;
-                setFilterBarVisible(newValue);
-                globalThis.localStorage?.setItem(
-                  filterBarVisibilityKey,
-                  String(newValue),
-                );
-              }}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              sortKey={sortKey}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              filterBarVisible={filterBarVisible}
-              filters={filters}
-              onFiltersChange={setFilters}
+              onFilterClick={listState.toggleFilterBar}
+              viewMode={listState.viewMode}
+              onViewModeChange={listState.setViewMode}
+              sortKey={listState.sortKey}
+              sortDirection={listState.sortDirection}
+              onSort={listState.handleSort}
+              filterBarVisible={listState.filterBarVisible}
+              filters={listState.filters}
+              onFiltersChange={listState.setFilters}
               availableUsers={[]}
               ctaButton={ctaButton}
             />
@@ -587,24 +564,24 @@ export default function OrgMcps() {
               <div className="flex justify-center items-center py-12">
                 <Spinner />
               </div>
-            ) : sortedConnections.length === 0 ? (
+            ) : connections.length === 0 ? (
               <EmptyState
                 icon="cable"
                 title="No connections found"
                 description="Create a connection to get started."
                 buttonProps={{
-                  onClick: () => setIsDialogOpen(true),
+                  onClick: () => dispatch({ type: "create" }),
                   children: "New Connection",
                 }}
               />
-            ) : viewMode === "cards" ? (
+            ) : listState.viewMode === "cards" ? (
               <div
                 className="grid gap-4"
                 style={{
                   gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 }}
               >
-                {sortedConnections.map((connection) => (
+                {connections.map((connection) => (
                   <Card
                     key={connection.id}
                     className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer"
@@ -618,7 +595,7 @@ export default function OrgMcps() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-foreground">
-                            {connection.name}
+                            {connection.title}
                           </div>
                           {connection.description && (
                             <div className="text-xs text-muted-foreground mt-1">
@@ -632,7 +609,7 @@ export default function OrgMcps() {
                           {connection.status}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground break-words">
+                      <div className="text-xs text-muted-foreground wrap-break-word">
                         {connection.connectionUrl}
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -680,7 +657,7 @@ export default function OrgMcps() {
                                 className="text-destructive"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  handleDelete(connection.id);
+                                  handleDelete(connection);
                                 }}
                               >
                                 Delete
@@ -696,10 +673,10 @@ export default function OrgMcps() {
             ) : (
               <ResourceTable
                 columns={columns}
-                data={sortedConnections}
-                sortKey={sortKey}
-                sortDirection={sortDirection}
-                onSort={handleSort}
+                data={connections}
+                sortKey={listState.sortKey}
+                sortDirection={listState.sortDirection}
+                onSort={listState.handleSort}
                 onRowClick={(connection) =>
                   navigate({
                     to: `/${org}/mcps/${connection.id}/inspector`,

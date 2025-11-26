@@ -1,5 +1,5 @@
-import type { MCPConnection } from "@/storage/types";
-import { createConnectionToolCaller, fetcher } from "@/tools/client";
+import { createToolCaller } from "@/tools/client";
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
 import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
@@ -123,19 +123,22 @@ export function DecoChatPanel() {
 
   const settingsQuery = useOrganizationSettings(organization?.id);
 
+  // Create tool caller for mesh API
+  const toolCaller = useMemo(() => createToolCaller(), []);
+
   const connectionsQuery = useQuery({
     queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
     queryFn: async () => {
-      return (await fetcher.CONNECTION_LIST({
+      return (await toolCaller("COLLECTION_CONNECTIONS_LIST", {
         binding: "MODELS",
-      })) as { connections: MCPConnection[] };
+      })) as { items: ConnectionEntity[] };
     },
     enabled: Boolean(locator),
     staleTime: 30_000,
   });
 
   const connection = useMemo(() => {
-    if (!connectionsQuery.data?.connections || !settingsQuery.data) {
+    if (!connectionsQuery.data?.items || !settingsQuery.data) {
       return undefined;
     }
 
@@ -144,10 +147,16 @@ export function DecoChatPanel() {
       return undefined;
     }
 
-    const found = connectionsQuery.data.connections.find(
+    const found = connectionsQuery.data.items.find(
       (item) => item.id === connectionId,
     );
-    return found;
+    if (!found) return undefined;
+
+    // Map collection entity to expected format (title -> name)
+    return {
+      ...found,
+      name: found.title, // Map title back to name
+    };
   }, [connectionsQuery.data, settingsQuery.data]);
 
   const modelsQuery = useQuery({
@@ -159,8 +168,8 @@ export function DecoChatPanel() {
         throw new Error("No connection available");
       }
 
-      const callTool = createConnectionToolCaller(connection.id);
-      const result = await callTool("DECO_COLLECTION_MODELS_LIST", {});
+      const callTool = createToolCaller(connection.id);
+      const result = await callTool("COLLECTION_MODELS_LIST", {});
 
       return {
         models: result?.items ?? [],
@@ -330,7 +339,6 @@ export function DecoChatPanel() {
       const metadata = {
         modelId: selectedModelId,
         provider: selectedModel.provider,
-        endpoint: selectedModel.endpoint,
       };
 
       return await chat.sendMessage(message, { metadata });

@@ -1,35 +1,55 @@
 /**
- * CONNECTION_DELETE Tool
+ * COLLECTION_CONNECTIONS_DELETE Tool
  *
- * Delete a connection
+ * Delete a connection with collection binding compliance.
  */
 
-import { z } from "zod/v3";
+import {
+  CollectionDeleteInputSchema,
+  createCollectionDeleteOutputSchema,
+} from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
+import { requireAuth, requireOrganization } from "../../core/mesh-context";
+import { ConnectionEntitySchema, connectionToEntity } from "./schema";
 
-export const CONNECTION_DELETE = defineTool({
-  name: "CONNECTION_DELETE",
+export const COLLECTION_CONNECTIONS_DELETE = defineTool({
+  name: "COLLECTION_CONNECTIONS_DELETE",
   description: "Delete a connection",
 
-  inputSchema: z.object({
-    id: z.string(),
-  }),
-
-  outputSchema: z.object({
-    success: z.boolean(),
-    id: z.string(),
-  }),
+  inputSchema: CollectionDeleteInputSchema,
+  outputSchema: createCollectionDeleteOutputSchema(ConnectionEntitySchema),
 
   handler: async (input, ctx) => {
+    // Require authentication
+    requireAuth(ctx);
+
+    // Require organization context
+    const organization = requireOrganization(ctx);
+
     // Check authorization
     await ctx.access.check();
+
+    // Fetch connection before deleting to return the entity
+    const connection = await ctx.storage.connections.findById(input.id);
+    if (!connection) {
+      throw new Error(`Connection not found: ${input.id}`);
+    }
+
+    // Verify it belongs to the current organization
+    if (connection.organizationId !== organization.id) {
+      throw new Error("Connection not found in organization");
+    }
 
     // Delete connection
     await ctx.storage.connections.delete(input.id);
 
     return {
-      success: true,
-      id: input.id,
+      item: connectionToEntity(connection),
     };
   },
 });
+
+/**
+ * @deprecated Use COLLECTION_CONNECTIONS_DELETE instead
+ */
+export const CONNECTION_DELETE = COLLECTION_CONNECTIONS_DELETE;

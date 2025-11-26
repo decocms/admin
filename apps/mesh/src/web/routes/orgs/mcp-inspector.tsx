@@ -1,8 +1,18 @@
-import { useState } from "react";
-import { useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { fetcher, createConnectionToolCaller } from "@/tools/client";
-import { useMcp, type Tool, type Resource, type Prompt } from "use-mcp/react";
+import { createToolCaller } from "@/tools/client";
+import {
+  useConnection,
+  useConnectionsCollection,
+  type ConnectionEntity,
+} from "@/web/hooks/use-connections";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
   CardContent,
@@ -10,8 +20,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 import {
   Tabs,
   TabsContent,
@@ -19,38 +30,21 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Separator } from "@deco/ui/components/separator.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
+import { useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
+  ArrowLeft,
+  Check,
   CheckCircle2,
+  Copy,
   Loader2,
   PlayCircle,
-  ArrowLeft,
   RefreshCw,
   Trash2,
-  Copy,
-  Check,
 } from "lucide-react";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import type { MCPConnection } from "@/storage/types";
-import { KEYS } from "@/web/lib/query-keys";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-
-const useConnection = (connectionId: string) => {
-  const { locator } = useProjectContext();
-  return useQuery({
-    queryKey: KEYS.connection(locator, connectionId),
-    queryFn: () => fetcher.CONNECTION_GET({ id: connectionId }),
-  });
-};
+import { useState } from "react";
+import { toast } from "sonner";
+import { useMcp, type Prompt, type Resource, type Tool } from "use-mcp/react";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {
@@ -92,9 +86,9 @@ function getStatusBadgeInfo(state: string) {
 
 export default function McpInspector() {
   const { connectionId } = useParams({ strict: false });
-  const { data: connectionData, isLoading: isLoadingConnection } =
-    useConnection(connectionId as string);
-  const connection = connectionData as MCPConnection | undefined;
+  const { data, isLoading: isLoadingConnection } = useConnection(connectionId);
+  const collection = useConnectionsCollection();
+  const connection = data?.[0] as ConnectionEntity | undefined;
 
   // Tool invocation state
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -173,9 +167,6 @@ export default function McpInspector() {
       };
 
       const tokenSnapshotBefore = captureTokenSnapshot("mcp:auth");
-      console.log(
-        `[MCP Inspector] Captured ${tokenSnapshotBefore.size} token(s) before OAuth`,
-      );
 
       // Store connection context for OAuth callback to use
       if (connection && connectionId) {
@@ -189,9 +180,6 @@ export default function McpInspector() {
             timestamp: Date.now(),
           }),
         );
-        console.log(
-          "[MCP Inspector] Stored connection context for OAuth callback",
-        );
       }
 
       // Listen for messages from the OAuth popup
@@ -200,35 +188,18 @@ export default function McpInspector() {
 
         // Handle OAuth completion message
         if (event.data.type === "mcp:oauth:complete") {
-          console.log(
-            "[MCP Inspector] Received OAuth completion message",
-            event.data,
-          );
-
           if (event.data.success && connection && connectionId) {
-            console.log(
-              "[MCP Inspector] OAuth completed successfully, saving token to database",
-            );
-
             try {
               // Capture snapshot AFTER OAuth and find the diff
               const tokenSnapshotAfter = captureTokenSnapshot("mcp:auth");
-              console.log(
-                `[MCP Inspector] Captured ${tokenSnapshotAfter.size} token(s) after OAuth`,
-              );
 
               // Find new or changed tokens
               let newOrChangedToken: string | null = null;
-              let newOrChangedKey: string | null = null;
 
               for (const [key, value] of tokenSnapshotAfter) {
                 const beforeValue = tokenSnapshotBefore.get(key);
                 if (!beforeValue || beforeValue !== value) {
                   // This is a new or changed token
-                  console.log(
-                    `[MCP Inspector] Found ${!beforeValue ? "new" : "changed"} token key: ${key}`,
-                  );
-                  newOrChangedKey = key;
 
                   // Extract the actual token from the stored value
                   try {
@@ -243,43 +214,27 @@ export default function McpInspector() {
               }
 
               if (newOrChangedToken) {
-                console.log(
-                  `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
-                );
+                if (!collection.has(connectionId as string)) {
+                  throw new Error("Connection not found in collection");
+                }
 
-                // Call CONNECTION_UPDATE to save the token
-                await fetcher.CONNECTION_UPDATE({
-                  id: connectionId as string,
-                  connection: {
-                    type: connection.connectionType,
-                    url: connection.connectionUrl,
-                    token: newOrChangedToken,
+                // Call collection.update to save the token
+                const tx = collection.update(
+                  connectionId as string,
+                  (draft) => {
+                    draft.connectionType = connection.connectionType;
+                    draft.connectionUrl = connection.connectionUrl;
+                    draft.connectionToken = newOrChangedToken;
                   },
-                });
-
-                console.log(
-                  "[MCP Inspector] Token saved to database successfully",
                 );
-              } else {
-                console.warn(
-                  "[MCP Inspector] No new or changed token found in localStorage",
-                );
-                console.log(
-                  "[MCP Inspector] Before keys:",
-                  Array.from(tokenSnapshotBefore.keys()),
-                );
-                console.log(
-                  "[MCP Inspector] After keys:",
-                  Array.from(tokenSnapshotAfter.keys()),
-                );
+                await tx.isPersisted.promise;
               }
 
               // Clear pending auth from storage
               localStorage.removeItem("mcp_oauth_pending");
             } catch (saveErr) {
-              console.error(
-                "[MCP Inspector] Failed to save token to database:",
-                saveErr,
+              toast.error(
+                `Failed to save token: ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`,
               );
             }
 
@@ -289,10 +244,7 @@ export default function McpInspector() {
             }
             window.removeEventListener("message", messageHandler);
           } else if (!event.data.success) {
-            console.error(
-              "[MCP Inspector] OAuth completion failed:",
-              event.data.error,
-            );
+            toast.error(`OAuth failed: ${event.data.error || "Unknown error"}`);
             // Close popup on error
             if (popupWindow && !popupWindow.closed) {
               popupWindow.close();
@@ -326,7 +278,7 @@ export default function McpInspector() {
 
     try {
       const args = JSON.parse(toolArgs);
-      const callTool = createConnectionToolCaller(connectionId as string);
+      const callTool = createToolCaller(connectionId as string);
       const result = await callTool(selectedTool.name, args);
       setToolResult(result);
     } catch (error) {
@@ -411,7 +363,7 @@ export default function McpInspector() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">MCP Inspector</h1>
-            <p className="text-muted-foreground">{connection.name}</p>
+            <p className="text-muted-foreground">{connection.title}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

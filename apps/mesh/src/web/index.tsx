@@ -11,7 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { SplashScreen } from "@/web/components/splash-screen";
-import * as z from "zod";
+import * as z from "zod/v3";
 
 import "../../index.css";
 

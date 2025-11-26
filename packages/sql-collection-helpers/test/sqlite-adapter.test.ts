@@ -59,7 +59,7 @@ describe("SqliteAdapter", () => {
   describe("CRUD operations with test table", () => {
     beforeEach(() => {
       // Create a test table directly
-      const db = (adapter as any).db;
+      const db = (adapter as { db: { exec: (sql: string) => void } }).db;
       db.exec(`
         CREATE TABLE users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -280,9 +280,9 @@ describe("SqliteAdapter", () => {
 describe("SqliteIntrospector", () => {
   it("should introspect database schema", async () => {
     const introspector = await createIntrospector(":memory:");
-
+    
     // Create a test table
-    const db = (introspector as any).db;
+    const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`
       CREATE TABLE test_table (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -308,8 +308,8 @@ describe("SqliteIntrospector", () => {
 
   it("should detect audit fields", async () => {
     const introspector = await createIntrospector(":memory:");
-
-    const db = (introspector as any).db;
+    
+    const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`
       CREATE TABLE audit_table (
         id INTEGER PRIMARY KEY,
@@ -333,8 +333,8 @@ describe("SqliteIntrospector", () => {
 
   it("should exclude sqlite internal tables", async () => {
     const introspector = await createIntrospector(":memory:");
-
-    const db = (introspector as any).db;
+    
+    const db = (introspector as { db: { exec: (sql: string) => void } }).db;
     db.exec(`CREATE TABLE user_table (id INTEGER PRIMARY KEY)`);
     db.exec(`CREATE TABLE mastra_internal (id INTEGER PRIMARY KEY)`);
 

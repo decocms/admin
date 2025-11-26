@@ -5,7 +5,6 @@
  * Uses lazy introspection with SWR caching and generates tools dynamically.
  */
 
-import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/mastra";
 import type { Tool } from "@decocms/runtime/mastra";
 import {
@@ -52,7 +51,7 @@ async function createAdapter(
     }
     default:
       throw new Error(
-        `Unsupported database type: ${(config.database as any).type}`,
+        `Unsupported database type: ${(config.database as { type: string }).type}`,
       );
   }
 }
@@ -110,14 +109,15 @@ function isMutationEnabled(
 /**
  * Get authenticated user ID from context
  */
-function getUserId(context: any): string | undefined {
+function getUserId(context: unknown): string | undefined {
   try {
-    const env = context.runtimeContext.get("env");
+    const ctx = context as { runtimeContext?: { get: (key: string) => unknown } };
+    const env = ctx.runtimeContext?.get("env") as { DECO_REQUEST_CONTEXT?: { ensureAuthenticated: () => { id?: string } } } | undefined;
     if (env?.DECO_REQUEST_CONTEXT) {
       const auth = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
       return auth?.id;
     }
-  } catch (error) {
+  } catch {
     // User not authenticated or context not available
     return undefined;
   }

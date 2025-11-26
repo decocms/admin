@@ -2,7 +2,7 @@
  * Tests for Tool Factory
  */
 
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { createCollectionTools } from "../src/tool-factory";
 import type {
   CreateCollectionToolsConfig,
@@ -39,7 +39,7 @@ describe("createCollectionTools", () => {
       adapter = new SqliteAdapter(sqliteConfig.database);
     }
 
-    const db = (adapter as any).db;
+    const db = (adapter as { db: { exec: (sql: string) => void } }).db;
 
     // Drop existing tables if they exist
     db.exec(`DROP TABLE IF EXISTS users`);
@@ -94,7 +94,7 @@ describe("createCollectionTools", () => {
       if (fs.existsSync(testDbFile)) {
         fs.unlinkSync(testDbFile);
       }
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -322,10 +322,10 @@ describe("createCollectionTools", () => {
     it("should throw error for unsupported database type", async () => {
       const config = {
         database: {
-          type: "mysql" as any,
+          type: "mysql" as unknown,
           connectionString: "mysql://localhost/test",
         },
-      };
+      } as CreateCollectionToolsConfig;
 
       await expect(createCollectionTools(config)).rejects.toThrow(
         "Unsupported database type",
@@ -345,7 +345,7 @@ describe("createCollectionTools", () => {
         const { SqliteAdapter } = await import("../src/implementations/sqlite");
         adapter = new SqliteAdapter(sqliteConfig.database);
       }
-      const db = (adapter as any).db;
+      const db = (adapter as { db: { exec: (sql: string) => void } }).db;
 
       db.exec(`
         CREATE TABLE no_pk_table (

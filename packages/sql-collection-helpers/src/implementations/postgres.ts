@@ -101,9 +101,6 @@ export class PostgresAdapter implements DatabaseAdapter {
     table: string,
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const columns = Object.keys(data);
-    const values = Object.values(data);
-
     const result = await this.sql`
       INSERT INTO ${this.sql(this.schema)}.${this.sql(table)}
       ${this.sql(data)}

@@ -277,17 +277,17 @@ export interface GeneratedSchemas {
   /**
    * Full entity schema (all columns)
    */
-  entitySchema: z.ZodObject<any>;
+  entitySchema: z.ZodObject<z.ZodRawShape>;
 
   /**
    * Insert schema (omit auto-generated fields)
    */
-  insertSchema: z.ZodObject<any>;
+  insertSchema: z.ZodObject<z.ZodRawShape>;
 
   /**
    * Update schema (all fields optional except ID)
    */
-  updateSchema: z.ZodObject<any>;
+  updateSchema: z.ZodObject<z.ZodRawShape>;
 }
 
 /**

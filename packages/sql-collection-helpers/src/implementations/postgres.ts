@@ -62,8 +62,11 @@ export class PostgresAdapter implements DatabaseAdapter {
     // Add ORDER BY clause
     if (orderBy && orderBy.length > 0) {
       const orderClauses = orderBy.map((order) => {
-        const field = order.field.join(".");
-        return `"${field}" ${order.direction.toUpperCase()}`;
+        const sanitizedField = this.sanitizeOrderByField(order.field);
+        const sanitizedDirection = this.sanitizeOrderByDirection(
+          order.direction,
+        );
+        return `${sanitizedField} ${sanitizedDirection}`;
       });
       query += ` ORDER BY ${orderClauses.join(", ")}`;
     }
@@ -153,6 +156,51 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   /**
+   * Validates a SQL identifier segment (column name, table name, etc.)
+   * Must start with letter or underscore, followed by letters, numbers, or underscores
+   */
+  private validateIdentifier(segment: string): boolean {
+    const identifierRegex = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    return identifierRegex.test(segment);
+  }
+
+  /**
+   * Validates and sanitizes ORDER BY field path
+   * Returns properly quoted identifier or throws error
+   */
+  private sanitizeOrderByField(fieldSegments: string[]): string {
+    if (!fieldSegments || fieldSegments.length === 0) {
+      throw new Error("ORDER BY field cannot be empty");
+    }
+
+    // Validate each segment
+    for (const segment of fieldSegments) {
+      if (!this.validateIdentifier(segment)) {
+        throw new Error(
+          `Invalid ORDER BY field segment: "${segment}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+        );
+      }
+    }
+
+    // Quote each segment separately and join with "."
+    return fieldSegments.map((segment) => `"${segment}"`).join(".");
+  }
+
+  /**
+   * Validates ORDER BY direction
+   * Returns uppercase "ASC" or "DESC" or throws error
+   */
+  private sanitizeOrderByDirection(direction: string): "ASC" | "DESC" {
+    const normalized = direction.toUpperCase();
+    if (normalized !== "ASC" && normalized !== "DESC") {
+      throw new Error(
+        `Invalid ORDER BY direction: "${direction}". Must be "asc" or "desc"`,
+      );
+    }
+    return normalized as "ASC" | "DESC";
+  }
+
+  /**
    * Build WHERE clause from WhereExpression
    */
   private buildWhereClause(
@@ -164,7 +212,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     // Check if it's a comparison expression
     if ("field" in where && "operator" in where && "value" in where) {
-      const field = where.field.join(".");
+      const field = this.sanitizeOrderByField(where.field);
       const operator = where.operator;
       const value = where.value;
 
@@ -172,38 +220,38 @@ export class PostgresAdapter implements DatabaseAdapter {
         case "eq":
           params.push(value);
           return {
-            clause: `"${field}" = $${paramIndex}`,
+            clause: `${field} = $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "gt":
           params.push(value);
           return {
-            clause: `"${field}" > $${paramIndex}`,
+            clause: `${field} > $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "gte":
           params.push(value);
           return {
-            clause: `"${field}" >= $${paramIndex}`,
+            clause: `${field} >= $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "lt":
           params.push(value);
           return {
-            clause: `"${field}" < $${paramIndex}`,
+            clause: `${field} < $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "lte":
           params.push(value);
           return {
-            clause: `"${field}" <= $${paramIndex}`,
+            clause: `${field} <= $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "in":
           if (Array.isArray(value)) {
             params.push(value);
             return {
-              clause: `"${field}" = ANY($${paramIndex})`,
+              clause: `${field} = ANY($${paramIndex})`,
               nextIndex: paramIndex + 1,
             };
           }
@@ -211,13 +259,13 @@ export class PostgresAdapter implements DatabaseAdapter {
         case "like":
           params.push(value);
           return {
-            clause: `"${field}" LIKE $${paramIndex}`,
+            clause: `${field} LIKE $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         case "contains":
           params.push(`%${value}%`);
           return {
-            clause: `"${field}" LIKE $${paramIndex}`,
+            clause: `${field} LIKE $${paramIndex}`,
             nextIndex: paramIndex + 1,
           };
         default:

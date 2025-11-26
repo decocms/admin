@@ -385,21 +385,6 @@ app.post("/:org/models/stream", async (c) => {
 
     const headers = buildConnectionHeaders(connection);
 
-    console.info(
-      "[models:stream] Starting stream",
-      JSON.stringify({
-        org: orgSlug,
-        connectionId: connection.id,
-        modelId,
-        provider: modelProvider,
-        endpointUrl: endpoint.url,
-        messagesCount: messages.length,
-        maxOutputTokens,
-        maxWindowSize,
-        connectionsCount: connections.length,
-      }),
-    );
-
     // Convert UIMessages to CoreMessages using AI SDK helper
     const modelMessages = convertToModelMessages(messages);
 
@@ -446,14 +431,8 @@ app.post("/:org/models/stream", async (c) => {
       onError: (error) => {
         console.error("[models:stream] Error", error);
       },
-      onFinish: (result) => {
-        console.log("[models:stream] Finish", result);
-      },
       onAbort: (error) => {
         console.error("[models:stream] Abort", error);
-      },
-      onChunk: (chunk) => {
-        console.log("[models:stream] Chunk", chunk);
       },
     });
 

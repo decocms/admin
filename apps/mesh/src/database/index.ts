@@ -74,10 +74,7 @@ class PostgresDatabase implements SupportedDatabase {
       pool: new Pool({
         connectionString: config.connectionString,
         max: config.options?.maxConnections || 10,
-        ssl: {
-          // unsafe for now.
-          rejectUnauthorized: false, // <-- bypass verification
-        },
+        ssl: false,
       }),
     });
   }

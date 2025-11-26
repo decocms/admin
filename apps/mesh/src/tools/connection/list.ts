@@ -1,5 +1,5 @@
 /**
- * DECO_COLLECTION_CONNECTIONS_LIST Tool
+ * COLLECTION_CONNECTIONS_LIST Tool
  *
  * List all connections in the organization with collection binding compliance.
  * Supports filtering, sorting, and pagination.
@@ -287,8 +287,8 @@ const ConnectionListOutputSchema = createCollectionListOutputSchema(
   ConnectionEntitySchema,
 );
 
-export const DECO_COLLECTION_CONNECTIONS_LIST = defineTool({
-  name: "DECO_COLLECTION_CONNECTIONS_LIST",
+export const COLLECTION_CONNECTIONS_LIST = defineTool({
+  name: "COLLECTION_CONNECTIONS_LIST",
   description:
     "List all connections in the organization with filtering, sorting, and pagination",
 
@@ -393,7 +393,7 @@ export const DECO_COLLECTION_CONNECTIONS_LIST = defineTool({
 
     if (bindingChecker) {
       logConnectionDebug(
-        `DECO_COLLECTION_CONNECTIONS_LIST returning ${filteredConnections.length} connection(s) for binding ${input.binding}`,
+        `COLLECTION_CONNECTIONS_LIST returning ${filteredConnections.length} connection(s) for binding ${input.binding}`,
       ).catch(() => {});
     }
 
@@ -428,6 +428,6 @@ export const DECO_COLLECTION_CONNECTIONS_LIST = defineTool({
 });
 
 /**
- * @deprecated Use DECO_COLLECTION_CONNECTIONS_LIST instead
+ * @deprecated Use COLLECTION_CONNECTIONS_LIST instead
  */
-export const CONNECTION_LIST = DECO_COLLECTION_CONNECTIONS_LIST;
+export const CONNECTION_LIST = COLLECTION_CONNECTIONS_LIST;

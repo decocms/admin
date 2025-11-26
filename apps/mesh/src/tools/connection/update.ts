@@ -1,5 +1,5 @@
 /**
- * DECO_COLLECTION_CONNECTIONS_UPDATE Tool
+ * COLLECTION_CONNECTIONS_UPDATE Tool
  *
  * Update an existing MCP connection (organization-scoped) with collection binding compliance.
  */
@@ -30,8 +30,8 @@ const UpdateOutputSchema = z.object({
   item: ConnectionEntitySchema.describe("The updated connection entity"),
 });
 
-export const DECO_COLLECTION_CONNECTIONS_UPDATE = defineTool({
-  name: "DECO_COLLECTION_CONNECTIONS_UPDATE",
+export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
+  name: "COLLECTION_CONNECTIONS_UPDATE",
   description: "Update an existing MCP connection in the organization",
 
   inputSchema: UpdateInputSchema,
@@ -90,6 +90,6 @@ export const DECO_COLLECTION_CONNECTIONS_UPDATE = defineTool({
 });
 
 /**
- * @deprecated Use DECO_COLLECTION_CONNECTIONS_UPDATE instead
+ * @deprecated Use COLLECTION_CONNECTIONS_UPDATE instead
  */
-export const CONNECTION_UPDATE = DECO_COLLECTION_CONNECTIONS_UPDATE;
+export const CONNECTION_UPDATE = COLLECTION_CONNECTIONS_UPDATE;

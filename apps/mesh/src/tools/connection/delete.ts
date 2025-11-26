@@ -1,5 +1,5 @@
 /**
- * DECO_COLLECTION_CONNECTIONS_DELETE Tool
+ * COLLECTION_CONNECTIONS_DELETE Tool
  *
  * Delete a connection with collection binding compliance.
  */
@@ -12,8 +12,8 @@ import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 import { ConnectionEntitySchema, connectionToEntity } from "./schema";
 
-export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
-  name: "DECO_COLLECTION_CONNECTIONS_DELETE",
+export const COLLECTION_CONNECTIONS_DELETE = defineTool({
+  name: "COLLECTION_CONNECTIONS_DELETE",
   description: "Delete a connection",
 
   inputSchema: CollectionDeleteInputSchema,
@@ -50,6 +50,6 @@ export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
 });
 
 /**
- * @deprecated Use DECO_COLLECTION_CONNECTIONS_DELETE instead
+ * @deprecated Use COLLECTION_CONNECTIONS_DELETE instead
  */
-export const CONNECTION_DELETE = DECO_COLLECTION_CONNECTIONS_DELETE;
+export const CONNECTION_DELETE = COLLECTION_CONNECTIONS_DELETE;

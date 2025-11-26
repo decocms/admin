@@ -1,5 +1,5 @@
 /**
- * DECO_COLLECTION_CONNECTIONS_GET Tool
+ * COLLECTION_CONNECTIONS_GET Tool
  *
  * Get connection details by ID with collection binding compliance.
  */
@@ -18,8 +18,8 @@ const ConnectionGetOutputSchema = createCollectionGetOutputSchema(
   ConnectionEntitySchema,
 );
 
-export const DECO_COLLECTION_CONNECTIONS_GET = defineTool({
-  name: "DECO_COLLECTION_CONNECTIONS_GET",
+export const COLLECTION_CONNECTIONS_GET = defineTool({
+  name: "COLLECTION_CONNECTIONS_GET",
   description: "Get connection details by ID",
 
   inputSchema: CollectionGetInputSchema,
@@ -43,6 +43,6 @@ export const DECO_COLLECTION_CONNECTIONS_GET = defineTool({
 });
 
 /**
- * @deprecated Use DECO_COLLECTION_CONNECTIONS_GET instead
+ * @deprecated Use COLLECTION_CONNECTIONS_GET instead
  */
-export const CONNECTION_GET = DECO_COLLECTION_CONNECTIONS_GET;
+export const CONNECTION_GET = COLLECTION_CONNECTIONS_GET;

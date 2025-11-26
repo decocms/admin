@@ -1,5 +1,5 @@
 /**
- * DECO_COLLECTION_CONNECTIONS_CREATE Tool
+ * COLLECTION_CONNECTIONS_CREATE Tool
  *
  * Create a new MCP connection (organization-scoped) with collection binding compliance.
  */
@@ -34,8 +34,8 @@ const CreateOutputSchema = z.object({
   item: ConnectionEntitySchema.describe("The created connection entity"),
 });
 
-export const DECO_COLLECTION_CONNECTIONS_CREATE = defineTool({
-  name: "DECO_COLLECTION_CONNECTIONS_CREATE",
+export const COLLECTION_CONNECTIONS_CREATE = defineTool({
+  name: "COLLECTION_CONNECTIONS_CREATE",
   description: "Create a new MCP connection in the organization",
 
   inputSchema: CreateInputSchema,
@@ -82,6 +82,6 @@ export const DECO_COLLECTION_CONNECTIONS_CREATE = defineTool({
 });
 
 /**
- * @deprecated Use DECO_COLLECTION_CONNECTIONS_CREATE instead
+ * @deprecated Use COLLECTION_CONNECTIONS_CREATE instead
  */
-export const CONNECTION_CREATE = DECO_COLLECTION_CONNECTIONS_CREATE;
+export const CONNECTION_CREATE = COLLECTION_CONNECTIONS_CREATE;

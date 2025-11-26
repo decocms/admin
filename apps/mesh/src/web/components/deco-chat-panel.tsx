@@ -129,7 +129,7 @@ export function DecoChatPanel() {
   const connectionsQuery = useQuery({
     queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
     queryFn: async () => {
-      return (await toolCaller("DECO_COLLECTION_CONNECTIONS_LIST", {
+      return (await toolCaller("COLLECTION_CONNECTIONS_LIST", {
         binding: "MODELS",
       })) as { items: ConnectionEntity[] };
     },
@@ -169,7 +169,7 @@ export function DecoChatPanel() {
       }
 
       const callTool = createToolCaller(connection.id);
-      const result = await callTool("DECO_COLLECTION_MODELS_LIST", {});
+      const result = await callTool("COLLECTION_MODELS_LIST", {});
 
       return {
         models: result?.items ?? [],

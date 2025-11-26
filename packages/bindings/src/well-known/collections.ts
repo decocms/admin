@@ -9,7 +9,7 @@ import type { ToolBinder } from "../core/binder";
  *
  * Key Features:
  * - Generic collection bindings that work with any entity type
- * - Standardized tool naming: `DECO_COLLECTION_{COLLECTION}_*`
+ * - Standardized tool naming: `COLLECTION_{COLLECTION}_*`
  * - Compatible with TanStack DB query-collection
  * - Full TypeScript support with proper type constraints
  * - Support for filtering, sorting, and pagination
@@ -220,11 +220,11 @@ export interface CollectionBindingOptions {
  *
  * This function generates standardized tool bindings that work with any collection/table
  * by accepting a custom entity schema and collection name. The bindings provide:
- * - DECO_COLLECTION_{NAME}_LIST - Query/search entities with filtering and sorting (required)
- * - DECO_COLLECTION_{NAME}_GET - Get a single entity by ID (required)
- * - DECO_COLLECTION_{NAME}_CREATE - Create a new entity (optional, excluded if readOnly=true)
- * - DECO_COLLECTION_{NAME}_UPDATE - Update an existing entity (optional, excluded if readOnly=true)
- * - DECO_COLLECTION_{NAME}_DELETE - Delete an entity (optional, excluded if readOnly=true)
+ * - COLLECTION_{NAME}_LIST - Query/search entities with filtering and sorting (required)
+ * - COLLECTION_{NAME}_GET - Get a single entity by ID (required)
+ * - COLLECTION_{NAME}_CREATE - Create a new entity (optional, excluded if readOnly=true)
+ * - COLLECTION_{NAME}_UPDATE - Update an existing entity (optional, excluded if readOnly=true)
+ * - COLLECTION_{NAME}_DELETE - Delete an entity (optional, excluded if readOnly=true)
  *
  * @param collectionName - The name of the collection/table (e.g., "users", "products", "orders")
  * @param entitySchema - The Zod schema for the entity type (must extend BaseCollectionEntitySchema)
@@ -262,12 +262,12 @@ export function createCollectionBindings<
 
   const bindings: ToolBinder[] = [
     {
-      name: `DECO_COLLECTION_${upperName}_LIST` as const,
+      name: `COLLECTION_${upperName}_LIST` as const,
       inputSchema: CollectionListInputSchema,
       outputSchema: createCollectionListOutputSchema(entitySchema),
     },
     {
-      name: `DECO_COLLECTION_${upperName}_GET` as const,
+      name: `COLLECTION_${upperName}_GET` as const,
       inputSchema: CollectionGetInputSchema,
       outputSchema: createCollectionGetOutputSchema(entitySchema),
     },
@@ -277,19 +277,19 @@ export function createCollectionBindings<
   if (!readOnly) {
     bindings.push(
       {
-        name: `DECO_COLLECTION_${upperName}_CREATE` as const,
+        name: `COLLECTION_${upperName}_CREATE` as const,
         inputSchema: createCollectionInsertInputSchema(entitySchema),
         outputSchema: createCollectionInsertOutputSchema(entitySchema),
         opt: true,
       },
       {
-        name: `DECO_COLLECTION_${upperName}_UPDATE` as const,
+        name: `COLLECTION_${upperName}_UPDATE` as const,
         inputSchema: createCollectionUpdateInputSchema(entitySchema),
         outputSchema: createCollectionUpdateOutputSchema(entitySchema),
         opt: true,
       },
       {
-        name: `DECO_COLLECTION_${upperName}_DELETE` as const,
+        name: `COLLECTION_${upperName}_DELETE` as const,
         inputSchema: CollectionDeleteInputSchema,
         outputSchema: createCollectionDeleteOutputSchema(entitySchema),
         opt: true,

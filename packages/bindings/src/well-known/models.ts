@@ -79,8 +79,8 @@ export const MODELS_COLLECTION_BINDING = createCollectionBindings(
  * Any MCP that implements this binding can provide AI models and streaming endpoints.
  *
  * Required tools:
- * - DECO_COLLECTION_MODELS_LIST: List available AI models with their capabilities
- * - DECO_COLLECTION_MODELS_GET: Get a single model by ID (includes streaming endpoint info)
+ * - COLLECTION_MODELS_LIST: List available AI models with their capabilities
+ * - COLLECTION_MODELS_GET: Get a single model by ID (includes streaming endpoint info)
  */
 export const MODELS_BINDING = [
   ...MODELS_COLLECTION_BINDING,

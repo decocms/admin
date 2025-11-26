@@ -25,7 +25,7 @@ export function useModelsBindingState() {
   const connectionsQuery = useQuery({
     queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
     queryFn: async () => {
-      return (await toolCaller("DECO_COLLECTION_CONNECTIONS_LIST", {
+      return (await toolCaller("COLLECTION_CONNECTIONS_LIST", {
         binding: "MODELS",
       })) as { items: ConnectionEntity[] };
     },

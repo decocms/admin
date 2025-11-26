@@ -86,10 +86,10 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
   const { toolCaller, collectionName, pageSize = 100 } = options;
 
   const upperName = collectionName.toUpperCase();
-  const listToolName = `DECO_COLLECTION_${upperName}_LIST`;
-  const createToolName = `DECO_COLLECTION_${upperName}_CREATE`;
-  const updateToolName = `DECO_COLLECTION_${upperName}_UPDATE`;
-  const deleteToolName = `DECO_COLLECTION_${upperName}_DELETE`;
+  const listToolName = `COLLECTION_${upperName}_LIST`;
+  const createToolName = `COLLECTION_${upperName}_CREATE`;
+  const updateToolName = `COLLECTION_${upperName}_UPDATE`;
+  const deleteToolName = `COLLECTION_${upperName}_DELETE`;
 
   /**
    * Fetches all pages of data using pagination.

@@ -24,7 +24,6 @@ export interface ToolBinder<
   TInput = any,
   TReturn extends object | null | boolean = object,
   TStreamable extends boolean = boolean,
-
 > {
   /** The name of the tool (e.g., "DECO_CHAT_CHANNELS_JOIN") */
   name: TName;
@@ -34,6 +33,11 @@ export interface ToolBinder<
 
   /** Optional Zod schema for validating tool output */
   outputSchema?: TStreamable extends true ? never : ZodType<TReturn>;
+
+  /**
+   * Whether this tool is streamable.
+   */
+  streamable?: TStreamable;
 
   /**
    * Whether this tool is optional in the binding.

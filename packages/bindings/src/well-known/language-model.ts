@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import type { ToolBinder } from "../../mcp.ts";
+import type { ToolBinder } from "../core/binder";
 
 /**
  * Language Model Call Options Schema
@@ -292,7 +292,7 @@ export const ListModelsInputSchema = z.object({});
 export const ListModelsOutputSchema = z.object({
   items: z.array(ModelSchema).describe("List of models"),
 });
-export const LANGUAGE_MODEL_BINDING_SCHEMA = [
+export const LANGUAGE_MODEL_BINDING = [
   {
     name: "LLM_METADATA" as const,
     inputSchema: z.object({

@@ -1,4 +1,5 @@
 /* oxlint-disable no-explicit-any */
+import { LANGUAGE_MODEL_BINDING } from "@deco/bindings";
 import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
 import { createPrivateTool, createStreamableTool } from "../mastra.ts";
@@ -7,9 +8,8 @@ import {
   type MCPClientFetchStub,
   type ToolBinder,
 } from "../mcp.ts";
-import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
-import { LANGUAGE_MODEL_BINDING_SCHEMA } from "./language-model/binding.ts";
-import { VIEW_BINDING_SCHEMA } from "./views.ts";
+import { CHANNEL_BINDING } from "./channels.ts";
+import { VIEW_BINDING } from "./views.ts";
 
 // ToolLike is a simplified version of the Tool interface that matches what we need for bindings
 export interface ToolLike<
@@ -111,11 +111,9 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   ReturnType<T["forConnection"]>;
 
-export const ChannelBinding = bindingClient(CHANNEL_BINDING_SCHEMA);
-export const ViewBinding = bindingClient(VIEW_BINDING_SCHEMA);
-export const LanguageModelBinding = bindingClient(
-  LANGUAGE_MODEL_BINDING_SCHEMA,
-);
+export const ChannelBinding = bindingClient(CHANNEL_BINDING);
+export const ViewBinding = bindingClient(VIEW_BINDING);
+export const LanguageModelBinding = bindingClient(LANGUAGE_MODEL_BINDING);
 
 export type { Callbacks } from "./channels.ts";
 

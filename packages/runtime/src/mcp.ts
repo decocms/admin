@@ -101,18 +101,8 @@ export const MCPClient = new Proxy(
   },
 );
 
-export interface ToolBinder<
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
-  TStreamable extends boolean = boolean,
-> {
-  name: TName;
-  inputSchema: z.ZodType<TInput>;
-  outputSchema?: TStreamable extends true ? never : z.ZodType<TReturn>;
-  opt?: true;
-  streamable?: TStreamable;
-}
+import { ToolBinder } from "@decocms/bindings";
+export type { ToolBinder };
 
 export const isStreamableToolBinder = (
   toolBinder: ToolBinder,

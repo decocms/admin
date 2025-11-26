@@ -1,3 +1,4 @@
+import { LanguageModelBinding } from "../../runtime/src/bindings/binder";
 /**
  * @decocms/bindings
  *
@@ -13,3 +14,4 @@ export {
   type BindingChecker,
   createBindingChecker,
 } from "./core/binder";
+export * from "./well-known/language-model";

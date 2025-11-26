@@ -1,8 +1,8 @@
-import { CHANNEL_BINDING_SCHEMA as CHANNELS_BINDING } from "./channels.ts";
-import { VIEW_BINDING_SCHEMA as VIEWS_BINDING } from "./views.ts";
+import { CHANNEL_BINDING } from "./channels.ts";
+import { VIEW_BINDING as VIEWS_BINDING } from "./views.ts";
 
 // Import new Resources 2.0 bindings function
-import { LANGUAGE_MODEL_BINDING_SCHEMA as LANGUAGE_MODEL_BINDING } from "./language-model/binding.ts";
+import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings";
 import { createResourceBindings } from "./resources/bindings.ts";
 
 // Export types and utilities from binder
@@ -25,8 +25,6 @@ export * from "./utils.ts";
 
 // Export views schemas
 export * from "./views.ts";
-
-export * from "./language-model/binding.ts";
 
 // Re-export Resources bindings function for convenience
 export { createResourceBindings };
@@ -55,7 +53,7 @@ export type {
 export { deconfigTools } from "./deconfig/types.ts";
 
 export const WellKnownBindings = {
-  Channel: CHANNELS_BINDING,
+  Channel: CHANNEL_BINDING,
   View: VIEWS_BINDING,
   LanguageModel: LANGUAGE_MODEL_BINDING,
   // Note: Resources is not included here since it's a generic function

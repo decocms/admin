@@ -78,7 +78,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       queryParams.push(offset);
     }
 
-    const result = await this.sql.unsafe(query, queryParams);
+    const result = await this.sql.unsafe(query, queryParams as never[]);
     return result as Array<Record<string, unknown>>;
   }
 

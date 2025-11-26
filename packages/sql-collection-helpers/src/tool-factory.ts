@@ -6,7 +6,6 @@
  */
 
 import { createPrivateTool } from "@decocms/runtime/mastra";
-import type { Tool } from "@decocms/runtime/mastra";
 import {
   CollectionListInputSchema,
   CollectionGetInputSchema,
@@ -109,10 +108,9 @@ function isMutationEnabled(
 /**
  * Get authenticated user ID from context
  */
-function getUserId(context: unknown): string | undefined {
+function getUserId(context: { runtimeContext?: { get: (key: string) => unknown } }): string | undefined {
   try {
-    const ctx = context as { runtimeContext?: { get: (key: string) => unknown } };
-    const env = ctx.runtimeContext?.get("env") as { DECO_REQUEST_CONTEXT?: { ensureAuthenticated: () => { id?: string } } } | undefined;
+    const env = context.runtimeContext?.get("env") as { DECO_REQUEST_CONTEXT?: { ensureAuthenticated: () => { id?: string } } } | undefined;
     if (env?.DECO_REQUEST_CONTEXT) {
       const auth = env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
       return auth?.id;
@@ -131,7 +129,7 @@ function createListTool(
   table: TableMetadata,
   adapter: DatabaseAdapter,
   schemas: ReturnType<typeof generateSchemas>,
-): Tool {
+) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_LIST`;
 
   return createPrivateTool({
@@ -139,7 +137,8 @@ function createListTool(
     description: `Query and list ${table.name} with filtering, sorting, and pagination`,
     inputSchema: CollectionListInputSchema,
     outputSchema: createCollectionListOutputSchema(schemas.entitySchema),
-    execute: async (context) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    execute: async (context: any) => {
       const { where, orderBy, limit, offset } = context.data;
 
       const items = await adapter.query(table.name, {
@@ -165,7 +164,7 @@ function createGetTool(
   table: TableMetadata,
   adapter: DatabaseAdapter,
   schemas: ReturnType<typeof generateSchemas>,
-): Tool {
+) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_GET`;
 
   if (!table.primaryKey) {
@@ -177,7 +176,8 @@ function createGetTool(
     description: `Get a single ${table.name} by ID`,
     inputSchema: CollectionGetInputSchema,
     outputSchema: createCollectionGetOutputSchema(schemas.entitySchema),
-    execute: async (context) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    execute: async (context: any) => {
       const { id } = context.data;
 
       const item = await adapter.getById(table.name, id, table.primaryKey!);
@@ -194,7 +194,7 @@ function createInsertTool(
   table: TableMetadata,
   adapter: DatabaseAdapter,
   schemas: ReturnType<typeof generateSchemas>,
-): Tool {
+) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_CREATE`;
 
   return createPrivateTool({
@@ -202,7 +202,8 @@ function createInsertTool(
     description: `Create a new ${table.name}`,
     inputSchema: createCollectionInsertInputSchema(schemas.insertSchema),
     outputSchema: createCollectionInsertOutputSchema(schemas.entitySchema),
-    execute: async (context) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    execute: async (context: any) => {
       const { data } = context.data;
       const userId = getUserId(context);
 
@@ -237,7 +238,7 @@ function createUpdateTool(
   table: TableMetadata,
   adapter: DatabaseAdapter,
   schemas: ReturnType<typeof generateSchemas>,
-): Tool {
+) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_UPDATE`;
 
   if (!table.primaryKey) {
@@ -249,7 +250,8 @@ function createUpdateTool(
     description: `Update an existing ${table.name}`,
     inputSchema: createCollectionUpdateInputSchema(schemas.entitySchema),
     outputSchema: createCollectionUpdateOutputSchema(schemas.entitySchema),
-    execute: async (context) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    execute: async (context: any) => {
       const { id, data } = context.data;
       const userId = getUserId(context);
 
@@ -281,7 +283,7 @@ function createUpdateTool(
 function createDeleteTool(
   table: TableMetadata,
   adapter: DatabaseAdapter,
-): Tool {
+) {
   const toolName = `DECO_COLLECTION_${table.name.toUpperCase()}_DELETE`;
 
   if (!table.primaryKey) {
@@ -293,7 +295,8 @@ function createDeleteTool(
     description: `Delete a ${table.name} by ID`,
     inputSchema: CollectionDeleteInputSchema,
     outputSchema: CollectionDeleteOutputSchema,
-    execute: async (context) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    execute: async (context: any) => {
       const { id } = context.data;
 
       const success = await adapter.delete(table.name, id, table.primaryKey!);
@@ -314,7 +317,7 @@ function createDeleteTool(
  * 5. Returns an array of tools that can be registered with an MCP server
  *
  * @param config - Configuration for database, collections, mutations, and cache
- * @returns Promise<Tool[]> - Array of collection tools
+ * @returns Promise<ReturnType<typeof createPrivateTool>[]> - Array of collection tools
  *
  * @example
  * ```typescript
@@ -345,7 +348,7 @@ function createDeleteTool(
  */
 export async function createCollectionTools(
   config: CreateCollectionToolsConfig,
-): Promise<Tool[]> {
+): Promise<ReturnType<typeof createPrivateTool>[]> {
   // Create adapter
   const adapter = await createAdapter(config);
 
@@ -379,7 +382,7 @@ export async function createCollectionTools(
   const filteredTables = filterTables(tables, config);
 
   // Generate tools for each table
-  const tools: Tool[] = [];
+  const tools: ReturnType<typeof createPrivateTool>[] = [];
 
   for (const table of filteredTables) {
     // Skip tables without primary keys

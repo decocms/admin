@@ -5,6 +5,7 @@
  * This is used for testing in Bun runtime.
  */
 
+// @ts-ignore - bun:sqlite only available in Bun runtime
 import { Database } from "bun:sqlite";
 import type { ColumnMetadata, TableMetadata } from "../types";
 import { detectAuditFields, normalizeSqlType } from "../schema-generator";

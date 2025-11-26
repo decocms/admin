@@ -12,6 +12,7 @@
   "dependencies": {
     "@decocms/bindings": "workspace:*",
     "@decocms/runtime": "workspace:*",
+    "@mastra/core": "^0.20.2",
     "better-sqlite3": "^11.8.0",
     "postgres": "^3.4.5",
     "zod": "^3.25.76",

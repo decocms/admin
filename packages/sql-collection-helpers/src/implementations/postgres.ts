@@ -21,6 +21,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   private sql: ReturnType<typeof postgres>;
   private introspector: PostgresIntrospector;
   private schema: string;
+  private tableColumnsCache: Map<string, Set<string>> = new Map();
 
   constructor(config: PostgresConfig) {
     this.sql = postgres(config.connectionString);
@@ -39,6 +40,13 @@ export class PostgresAdapter implements DatabaseAdapter {
     table: string,
     params: QueryParams,
   ): Promise<Array<Record<string, unknown>>> {
+    // Validate table name
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
     const { where, orderBy, limit, offset } = params;
 
     // Build query dynamically
@@ -90,6 +98,20 @@ export class PostgresAdapter implements DatabaseAdapter {
     id: string | number,
     primaryKey: string,
   ): Promise<Record<string, unknown> | null> {
+    // Validate table name
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Validate primary key identifier
+    if (!this.validateIdentifier(primaryKey)) {
+      throw new Error(
+        `Invalid primary key: "${primaryKey}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
     const result = await this.sql`
       SELECT *
       FROM ${this.sql(this.schema)}.${this.sql(table)}
@@ -104,6 +126,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     table: string,
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
+    // Validate table name
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Validate all column names against schema
+    await this.validateDataColumns(table, data);
+
     const result = await this.sql`
       INSERT INTO ${this.sql(this.schema)}.${this.sql(table)}
       ${this.sql(data)}
@@ -123,6 +155,23 @@ export class PostgresAdapter implements DatabaseAdapter {
     primaryKey: string,
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
+    // Validate table name
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Validate primary key identifier
+    if (!this.validateIdentifier(primaryKey)) {
+      throw new Error(
+        `Invalid primary key: "${primaryKey}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Validate all column names against schema
+    await this.validateDataColumns(table, data);
+
     const result = await this.sql`
       UPDATE ${this.sql(this.schema)}.${this.sql(table)}
       SET ${this.sql(data)}
@@ -142,6 +191,20 @@ export class PostgresAdapter implements DatabaseAdapter {
     id: string | number,
     primaryKey: string,
   ): Promise<boolean> {
+    // Validate table name
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Validate primary key identifier
+    if (!this.validateIdentifier(primaryKey)) {
+      throw new Error(
+        `Invalid primary key: "${primaryKey}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
     const result = await this.sql`
       DELETE FROM ${this.sql(this.schema)}.${this.sql(table)}
       WHERE ${this.sql(primaryKey)} = ${id}
@@ -153,6 +216,62 @@ export class PostgresAdapter implements DatabaseAdapter {
   async close(): Promise<void> {
     await this.sql.end();
     await this.introspector.close();
+  }
+
+  /**
+   * Get valid column names for a table from database schema
+   * Results are cached to avoid repeated queries
+   */
+  private async getTableColumns(table: string): Promise<Set<string>> {
+    // Validate table name first
+    if (!this.validateIdentifier(table)) {
+      throw new Error(
+        `Invalid table name: "${table}". Must match [A-Za-z_][A-Za-z0-9_]*`,
+      );
+    }
+
+    // Check cache first
+    const cacheKey = `${this.schema}.${table}`;
+    if (this.tableColumnsCache.has(cacheKey)) {
+      return this.tableColumnsCache.get(cacheKey)!;
+    }
+
+    // Query schema
+    const result = await this.sql<Array<{ column_name: string }>>`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = ${this.schema}
+        AND table_name = ${table}
+    `;
+
+    if (result.length === 0) {
+      throw new Error(
+        `Table "${this.schema}"."${table}" does not exist or has no columns`,
+      );
+    }
+
+    const columns = new Set(result.map((col) => col.column_name));
+    this.tableColumnsCache.set(cacheKey, columns);
+    return columns;
+  }
+
+  /**
+   * Validates that all data keys are valid column names for the table
+   * Throws error if any unknown columns are found
+   */
+  private async validateDataColumns(
+    table: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const validColumns = await this.getTableColumns(table);
+    const dataKeys = Object.keys(data);
+
+    const invalidColumns = dataKeys.filter((key) => !validColumns.has(key));
+    if (invalidColumns.length > 0) {
+      throw new Error(
+        `Invalid column names for table "${table}": ${invalidColumns.join(", ")}. Valid columns are: ${Array.from(validColumns).join(", ")}`,
+      );
+    }
   }
 
   /**

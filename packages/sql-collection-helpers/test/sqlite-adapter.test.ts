@@ -275,6 +275,461 @@ describe("SqliteAdapter", () => {
       expect(results.every((r) => r.age === 30)).toBe(true);
     });
   });
+
+  describe("SQL Injection Protection", () => {
+    beforeEach(() => {
+      // Create a test table directly
+      const db = (adapter as { db: { exec: (sql: string) => void } }).db;
+      db.exec(`
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          age INTEGER,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    });
+
+    describe("Table name validation", () => {
+      it("should reject table names with SQL injection attempts", async () => {
+        await expect(
+          adapter.query("users; DROP TABLE users; --", {}),
+        ).rejects.toThrow(/Invalid table name/);
+      });
+
+      it("should reject table names with special characters", async () => {
+        await expect(adapter.query("users' OR '1'='1", {})).rejects.toThrow(
+          /Invalid table name/,
+        );
+      });
+
+      it("should reject table names starting with numbers", async () => {
+        await expect(adapter.query("123users", {})).rejects.toThrow(
+          /Invalid table name/,
+        );
+      });
+
+      it("should accept valid table names with underscores", async () => {
+        const db = (adapter as { db: { exec: (sql: string) => void } }).db;
+        db.exec("CREATE TABLE user_profiles (id INTEGER PRIMARY KEY)");
+
+        const result = await adapter.query("user_profiles", {});
+        expect(Array.isArray(result)).toBe(true);
+      });
+    });
+
+    describe("Primary key validation", () => {
+      it("should reject primary keys with SQL injection attempts", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        await expect(
+          adapter.getById(
+            "users",
+            inserted.id as number,
+            "id; DROP TABLE users; --",
+          ),
+        ).rejects.toThrow(/Invalid primary key/);
+      });
+
+      it("should reject primary keys with special characters", async () => {
+        await expect(
+          adapter.getById("users", 1, "id' OR '1'='1"),
+        ).rejects.toThrow(/Invalid primary key/);
+      });
+
+      it("should accept valid primary keys", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        const result = await adapter.getById(
+          "users",
+          inserted.id as number,
+          "id",
+        );
+        expect(result).toBeDefined();
+      });
+    });
+
+    describe("ORDER BY field validation", () => {
+      beforeEach(async () => {
+        await adapter.insert("users", {
+          name: "Alice",
+          email: "alice@example.com",
+          age: 25,
+        });
+        await adapter.insert("users", {
+          name: "Bob",
+          email: "bob@example.com",
+          age: 30,
+        });
+      });
+
+      it("should reject ORDER BY with SQL injection attempts", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [
+              { field: ["name; DROP TABLE users; --"], direction: "asc" },
+            ],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should reject ORDER BY with special characters in field", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [{ field: ["name' OR '1'='1"], direction: "asc" }],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should reject ORDER BY with invalid field starting with number", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [{ field: ["123name"], direction: "asc" }],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should accept valid ORDER BY fields", async () => {
+        const results = await adapter.query("users", {
+          orderBy: [{ field: ["name"], direction: "asc" }],
+        });
+
+        expect(results).toHaveLength(2);
+        expect(results[0].name).toBe("Alice");
+      });
+
+      it("should accept valid ORDER BY with underscores", async () => {
+        const results = await adapter.query("users", {
+          orderBy: [{ field: ["created_at"], direction: "desc" }],
+        });
+
+        expect(Array.isArray(results)).toBe(true);
+      });
+    });
+
+    describe("ORDER BY direction validation", () => {
+      beforeEach(async () => {
+        await adapter.insert("users", {
+          name: "Alice",
+          email: "alice@example.com",
+          age: 25,
+        });
+      });
+
+      it("should reject invalid ORDER BY direction", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [{ field: ["name"], direction: "DROP TABLE" as "asc" }],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY direction/);
+      });
+
+      it("should reject ORDER BY direction with SQL injection", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [
+              { field: ["name"], direction: "ASC; DROP TABLE users" as "asc" },
+            ],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY direction/);
+      });
+
+      it("should accept lowercase asc/desc", async () => {
+        const results = await adapter.query("users", {
+          orderBy: [{ field: ["name"], direction: "asc" }],
+        });
+        expect(Array.isArray(results)).toBe(true);
+      });
+
+      it("should accept uppercase ASC/DESC", async () => {
+        const results = await adapter.query("users", {
+          orderBy: [{ field: ["name"], direction: "DESC" as "desc" }],
+        });
+        expect(Array.isArray(results)).toBe(true);
+      });
+
+      it("should accept mixed case", async () => {
+        const results = await adapter.query("users", {
+          orderBy: [{ field: ["name"], direction: "AsC" as "asc" }],
+        });
+        expect(Array.isArray(results)).toBe(true);
+      });
+    });
+
+    describe("INSERT column name validation", () => {
+      it("should reject INSERT with invalid column names", async () => {
+        await expect(
+          adapter.insert("users", {
+            name: "Test",
+            email: "test@example.com",
+            "age; DROP TABLE users; --": 30,
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should reject INSERT with non-existent columns", async () => {
+        await expect(
+          adapter.insert("users", {
+            name: "Test",
+            email: "test@example.com",
+            nonexistent_column: "value",
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should reject INSERT with SQL injection in column name", async () => {
+        await expect(
+          adapter.insert("users", {
+            name: "Test",
+            "email' OR '1'='1": "test@example.com",
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should accept INSERT with valid column names", async () => {
+        const result = await adapter.insert("users", {
+          name: "John Doe",
+          email: "john@example.com",
+          age: 30,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.name).toBe("John Doe");
+      });
+
+      it("should provide helpful error message listing valid columns", async () => {
+        try {
+          await adapter.insert("users", {
+            name: "Test",
+            invalid_col: "value",
+          });
+          expect.fail("Should have thrown an error");
+        } catch (error) {
+          expect((error as Error).message).toContain("invalid_col");
+          expect((error as Error).message).toContain("Valid columns are:");
+          expect((error as Error).message).toContain("name");
+          expect((error as Error).message).toContain("email");
+        }
+      });
+    });
+
+    describe("UPDATE column name validation", () => {
+      it("should reject UPDATE with invalid column names", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        await expect(
+          adapter.update("users", inserted.id as number, "id", {
+            "age; DROP TABLE users; --": 31,
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should reject UPDATE with non-existent columns", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        await expect(
+          adapter.update("users", inserted.id as number, "id", {
+            nonexistent_column: "value",
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should reject UPDATE with SQL injection in column name", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        await expect(
+          adapter.update("users", inserted.id as number, "id", {
+            "name' OR '1'='1": "Hacked",
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+
+      it("should accept UPDATE with valid column names", async () => {
+        const inserted = await adapter.insert("users", {
+          name: "John Doe",
+          email: "john@example.com",
+          age: 30,
+        });
+
+        const result = await adapter.update(
+          "users",
+          inserted.id as number,
+          "id",
+          {
+            age: 31,
+          },
+        );
+
+        expect(result).toBeDefined();
+        expect(result.age).toBe(31);
+      });
+    });
+
+    describe("WHERE clause field validation", () => {
+      beforeEach(async () => {
+        await adapter.insert("users", {
+          name: "Alice",
+          email: "alice@example.com",
+          age: 25,
+        });
+        await adapter.insert("users", {
+          name: "Bob",
+          email: "bob@example.com",
+          age: 30,
+        });
+      });
+
+      it("should reject WHERE clause with SQL injection in field", async () => {
+        await expect(
+          adapter.query("users", {
+            where: {
+              field: ["age; DROP TABLE users; --"],
+              operator: "eq",
+              value: 25,
+            },
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should reject WHERE clause with special characters in field", async () => {
+        await expect(
+          adapter.query("users", {
+            where: {
+              field: ["age' OR '1'='1"],
+              operator: "eq",
+              value: 25,
+            },
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should accept WHERE clause with valid field names", async () => {
+        const results = await adapter.query("users", {
+          where: {
+            field: ["age"],
+            operator: "eq",
+            value: 25,
+          },
+        });
+
+        expect(results).toHaveLength(1);
+        expect(results[0].name).toBe("Alice");
+      });
+
+      it("should accept WHERE clause with valid field names using underscores", async () => {
+        const results = await adapter.query("users", {
+          where: {
+            field: ["created_at"],
+            operator: "gt",
+            value: "2000-01-01",
+          },
+        });
+
+        expect(Array.isArray(results)).toBe(true);
+      });
+    });
+
+    describe("Multi-segment field paths", () => {
+      it("should validate each segment in dotted field paths", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [{ field: ["valid", "invalid!"], direction: "asc" }],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+
+      it("should reject if any segment contains SQL injection", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [
+              { field: ["valid", "DROP TABLE users"], direction: "asc" },
+            ],
+          }),
+        ).rejects.toThrow(/Invalid ORDER BY field segment/);
+      });
+    });
+
+    describe("Schema caching", () => {
+      it("should cache table schema and reuse it", async () => {
+        // First call populates cache
+        const result1 = await adapter.insert("users", {
+          name: "Test1",
+          email: "test1@example.com",
+          age: 30,
+        });
+        expect(result1).toBeDefined();
+
+        // Second call should use cached schema
+        const result2 = await adapter.insert("users", {
+          name: "Test2",
+          email: "test2@example.com",
+          age: 31,
+        });
+        expect(result2).toBeDefined();
+
+        // Both should work correctly
+        const allUsers = await adapter.query("users", {});
+        expect(allUsers).toHaveLength(2);
+      });
+
+      it("should still validate against cached schema", async () => {
+        // Populate cache with valid insert
+        await adapter.insert("users", {
+          name: "Test",
+          email: "test@example.com",
+          age: 30,
+        });
+
+        // Try invalid column with cached schema
+        await expect(
+          adapter.insert("users", {
+            name: "Test2",
+            invalid_col: "value",
+          }),
+        ).rejects.toThrow(/Invalid column names/);
+      });
+    });
+
+    describe("Edge cases", () => {
+      it("should reject empty field arrays", async () => {
+        await expect(
+          adapter.query("users", {
+            orderBy: [{ field: [], direction: "asc" }],
+          }),
+        ).rejects.toThrow(/ORDER BY field cannot be empty/);
+      });
+
+      it("should handle table names at maximum valid length", async () => {
+        // SQLite typically allows up to 255 characters
+        const longValidName = "a".repeat(255);
+        // This will fail because table doesn't exist, but should pass validation
+        await expect(adapter.query(longValidName, {})).rejects.toThrow(
+          /no such table/,
+        );
+      });
+    });
+  });
 });
 
 describe("SqliteIntrospector", () => {

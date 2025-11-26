@@ -535,9 +535,6 @@ export default function OrgMcps() {
                   (event.target as HTMLInputElement).blur();
                 }
               }}
-              onRefresh={() =>
-                (collection.utils as { refetch?: () => void }).refetch?.()
-              }
               onFilterClick={listState.toggleFilterBar}
               viewMode={listState.viewMode}
               onViewModeChange={listState.setViewMode}

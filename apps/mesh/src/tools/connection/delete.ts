@@ -9,7 +9,8 @@ import {
   createCollectionDeleteOutputSchema,
 } from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
-import { connectionToEntity, ConnectionEntitySchema } from "./schema";
+import { requireAuth, requireOrganization } from "../../core/mesh-context";
+import { ConnectionEntitySchema, connectionToEntity } from "./schema";
 
 export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
   name: "DECO_COLLECTION_CONNECTIONS_DELETE",
@@ -19,8 +20,19 @@ export const DECO_COLLECTION_CONNECTIONS_DELETE = defineTool({
   outputSchema: createCollectionDeleteOutputSchema(ConnectionEntitySchema),
 
   handler: async (input, ctx) => {
+    // Require authentication
+    requireAuth(ctx);
+
+    // Require organization context
+    const organization = requireOrganization(ctx);
+
     // Check authorization
     await ctx.access.check();
+
+    // Verify it belongs to the current organization
+    if (connection.organizationId !== organization.id) {
+      throw new Error("Connection not found in organization");
+    }
 
     // Fetch connection before deleting to return the entity
     const connection = await ctx.storage.connections.findById(input.id);

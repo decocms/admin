@@ -42,15 +42,13 @@ export type CollectionEntity = BaseCollectionEntity;
 /**
  * Options for creating a collection from a tool caller
  */
-export interface CreateCollectionOptions<T extends CollectionEntity> {
+export interface CreateCollectionOptions {
   /** The tool caller function for making API calls */
   toolCaller: ToolCaller;
   /** The collection name (e.g., "CONNECTIONS", "MODELS") - used for tool names and query key */
   collectionName: string;
   /** Default page size for pagination (default: 100) */
   pageSize?: number;
-  /** Transform function for items after fetch (optional) */
-  transformItem?: (item: unknown) => T;
 }
 
 /**
@@ -83,7 +81,7 @@ export interface CreateCollectionOptions<T extends CollectionEntity> {
  * @returns A TanStack DB collection instance with persistence handlers
  */
 export function createCollectionFromToolCaller<T extends CollectionEntity>(
-  options: CreateCollectionOptions<T>,
+  options: CreateCollectionOptions,
 ): Collection<T, string> {
   const { toolCaller, collectionName, pageSize = 100 } = options;
 
@@ -118,7 +116,6 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
         )) as CollectionListOutput<unknown>;
         const items = result.items || [];
 
-        // Transform and accumulate items
         for (const item of items) {
           allItems.push(item as T);
         }

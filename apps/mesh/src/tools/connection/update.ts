@@ -72,13 +72,16 @@ export const DECO_COLLECTION_CONNECTIONS_UPDATE = defineTool({
       updateData.connectionToken = data.connectionToken ?? undefined;
     if (data.status !== undefined) updateData.status = data.status;
 
-    // Update connection
-    const connection = await ctx.storage.connections.update(id, updateData);
+    // First fetch the connection to verify ownership before updating
+    const existing = await ctx.storage.connections.findById(id);
 
-    // Verify it belongs to the current organization
-    if (connection.organizationId !== organization.id) {
+    // Verify it exists and belongs to the current organization
+    if (!existing || existing.organizationId !== organization.id) {
       throw new Error("Connection not found in organization");
     }
+
+    // Now update - safe because we verified ownership first
+    const connection = await ctx.storage.connections.update(id, updateData);
 
     return {
       item: connectionToEntity(connection),

@@ -173,8 +173,14 @@ function evaluateWhereExpression(
     case "like":
       if (typeof fieldValue !== "string" || typeof value !== "string")
         return false;
-      const pattern = value.replace(/%/g, ".*").replace(/_/g, ".");
-      return new RegExp(`^${pattern}$`, "i").test(fieldValue);
+      // Limit pattern length to prevent ReDoS
+      if (value.length > 100) return false;
+      // Escape regex special chars, then convert % and _ wildcards
+      const escaped = value
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/%/g, ".*")
+        .replace(/_/g, ".");
+      return new RegExp(`^${escaped}$`, "i").test(fieldValue);
     case "contains":
       if (typeof fieldValue !== "string" || typeof value !== "string")
         return false;

@@ -39,7 +39,7 @@ import {
   Check,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { useConnection } from "@/web/hooks/use-connections";
+import { useConnection, type ConnectionEntity } from "@/web/hooks/use-connections";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {
@@ -239,10 +239,6 @@ export default function McpInspector() {
                   `[MCP Inspector] Found new/changed token from key: ${newOrChangedKey}`,
                 );
 
-                // Ensure collection is ready and has the connection before updating
-                if (!collection.isReady()) {
-                  await collection.preload();
-                }
                 if (!collection.has(connectionId as string)) {
                   throw new Error("Connection not found in collection");
                 }

@@ -101,6 +101,9 @@ export default function OrgMcps() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] =
     useState<ConnectionEntity | null>(null);
+  const [deletingConnection, setDeletingConnection] =
+    useState<ConnectionEntity | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // React Hook Form setup
   const form = useForm<ConnectionFormData>({
@@ -142,16 +145,24 @@ export default function OrgMcps() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this connection?")) return;
+  const handleDelete = (connection: ConnectionEntity) => {
+    setDeletingConnection(connection);
+  };
 
+  const confirmDelete = async () => {
+    if (!deletingConnection) return;
+
+    setIsDeleting(true);
     try {
-      const tx = collection.delete(id);
+      const tx = collection.delete(deletingConnection.id);
       await tx.isPersisted.promise;
+      setDeletingConnection(null);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete connection",
       );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -291,7 +302,7 @@ export default function OrgMcps() {
               className="text-destructive"
               onClick={(event) => {
                 event.stopPropagation();
-                handleDelete(connection.id);
+                handleDelete(connection);
               }}
             >
               Delete
@@ -446,6 +457,43 @@ export default function OrgMcps() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deletingConnection !== null}
+        onOpenChange={(open) => !open && setDeletingConnection(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Connection</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                {deletingConnection?.title}
+              </span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeletingConnection(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="shrink-0 bg-background">
         <div className="px-8 py-6">
           <div className="max-w-6xl mx-auto space-y-6">
@@ -591,7 +639,7 @@ export default function OrgMcps() {
                                 className="text-destructive"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  handleDelete(connection.id);
+                                  handleDelete(connection);
                                 }}
                               >
                                 Delete

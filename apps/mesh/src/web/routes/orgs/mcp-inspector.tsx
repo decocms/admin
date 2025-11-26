@@ -39,7 +39,10 @@ import {
   Check,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { useConnection, type ConnectionEntity } from "@/web/hooks/use-connections";
+import {
+  useConnection,
+  type ConnectionEntity,
+} from "@/web/hooks/use-connections";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {

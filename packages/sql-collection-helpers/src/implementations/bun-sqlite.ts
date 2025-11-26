@@ -43,7 +43,10 @@ export class BunSqliteAdapter implements DatabaseAdapter {
 
     // Add WHERE clause if provided
     if (where) {
-      const whereClause = this.buildWhereClause(where as WhereExpression, queryParams);
+      const whereClause = this.buildWhereClause(
+        where as WhereExpression,
+        queryParams,
+      );
       if (whereClause) {
         query += ` WHERE ${whereClause}`;
       }
@@ -102,8 +105,10 @@ export class BunSqliteAdapter implements DatabaseAdapter {
     stmt.run(...values);
 
     // Get the inserted row
-    const lastInsertRowid = this.db.query("SELECT last_insert_rowid() as id").get() as { id: number };
-    
+    const lastInsertRowid = this.db
+      .query("SELECT last_insert_rowid() as id")
+      .get() as { id: number };
+
     if (lastInsertRowid) {
       // Find the primary key column
       const tableInfo = this.db
@@ -165,7 +170,13 @@ export class BunSqliteAdapter implements DatabaseAdapter {
       `DELETE FROM "${table}" WHERE "${primaryKey}" = ?`,
     );
     stmt.run(id);
-    return (this.db.query("SELECT changes() as changes").get() as { changes: number }).changes > 0;
+    return (
+      (
+        this.db.query("SELECT changes() as changes").get() as {
+          changes: number;
+        }
+      ).changes > 0
+    );
   }
 
   async close(): Promise<void> {
@@ -176,10 +187,7 @@ export class BunSqliteAdapter implements DatabaseAdapter {
   /**
    * Build WHERE clause from WhereExpression
    */
-  private buildWhereClause(
-    where: WhereExpression,
-    params: unknown[],
-  ): string {
+  private buildWhereClause(where: WhereExpression, params: unknown[]): string {
     // Check if it's a comparison expression
     if ("field" in where && "operator" in where && "value" in where) {
       const field = where.field.join(".");
@@ -246,4 +254,3 @@ export class BunSqliteAdapter implements DatabaseAdapter {
     return "";
   }
 }
-

@@ -70,11 +70,51 @@ describe("normalizeSqlType", () => {
 describe("detectAuditFields", () => {
   it("should detect standard audit fields", () => {
     const columns: ColumnMetadata[] = [
-      { name: "id", type: "string", rawType: "VARCHAR", nullable: false, isPrimaryKey: true, hasDefault: false, isAutoIncrement: false },
-      { name: "created_at", type: "datetime", rawType: "TIMESTAMP", nullable: false, isPrimaryKey: false, hasDefault: true, isAutoIncrement: false },
-      { name: "updated_at", type: "datetime", rawType: "TIMESTAMP", nullable: false, isPrimaryKey: false, hasDefault: true, isAutoIncrement: false },
-      { name: "created_by", type: "string", rawType: "VARCHAR", nullable: true, isPrimaryKey: false, hasDefault: false, isAutoIncrement: false },
-      { name: "updated_by", type: "string", rawType: "VARCHAR", nullable: true, isPrimaryKey: false, hasDefault: false, isAutoIncrement: false },
+      {
+        name: "id",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: false,
+        isPrimaryKey: true,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
+      {
+        name: "created_at",
+        type: "datetime",
+        rawType: "TIMESTAMP",
+        nullable: false,
+        isPrimaryKey: false,
+        hasDefault: true,
+        isAutoIncrement: false,
+      },
+      {
+        name: "updated_at",
+        type: "datetime",
+        rawType: "TIMESTAMP",
+        nullable: false,
+        isPrimaryKey: false,
+        hasDefault: true,
+        isAutoIncrement: false,
+      },
+      {
+        name: "created_by",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: true,
+        isPrimaryKey: false,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
+      {
+        name: "updated_by",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: true,
+        isPrimaryKey: false,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
     ];
 
     const auditFields = detectAuditFields(columns);
@@ -87,9 +127,33 @@ describe("detectAuditFields", () => {
 
   it("should detect camelCase audit fields", () => {
     const columns: ColumnMetadata[] = [
-      { name: "id", type: "string", rawType: "VARCHAR", nullable: false, isPrimaryKey: true, hasDefault: false, isAutoIncrement: false },
-      { name: "createdAt", type: "datetime", rawType: "TIMESTAMP", nullable: false, isPrimaryKey: false, hasDefault: true, isAutoIncrement: false },
-      { name: "updatedAt", type: "datetime", rawType: "TIMESTAMP", nullable: false, isPrimaryKey: false, hasDefault: true, isAutoIncrement: false },
+      {
+        name: "id",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: false,
+        isPrimaryKey: true,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
+      {
+        name: "createdAt",
+        type: "datetime",
+        rawType: "TIMESTAMP",
+        nullable: false,
+        isPrimaryKey: false,
+        hasDefault: true,
+        isAutoIncrement: false,
+      },
+      {
+        name: "updatedAt",
+        type: "datetime",
+        rawType: "TIMESTAMP",
+        nullable: false,
+        isPrimaryKey: false,
+        hasDefault: true,
+        isAutoIncrement: false,
+      },
     ];
 
     const auditFields = detectAuditFields(columns);
@@ -100,8 +164,24 @@ describe("detectAuditFields", () => {
 
   it("should return empty object when no audit fields present", () => {
     const columns: ColumnMetadata[] = [
-      { name: "id", type: "string", rawType: "VARCHAR", nullable: false, isPrimaryKey: true, hasDefault: false, isAutoIncrement: false },
-      { name: "name", type: "string", rawType: "VARCHAR", nullable: false, isPrimaryKey: false, hasDefault: false, isAutoIncrement: false },
+      {
+        name: "id",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: false,
+        isPrimaryKey: true,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
+      {
+        name: "name",
+        type: "string",
+        rawType: "VARCHAR",
+        nullable: false,
+        isPrimaryKey: false,
+        hasDefault: false,
+        isAutoIncrement: false,
+      },
     ];
 
     const auditFields = detectAuditFields(columns);
@@ -252,4 +332,3 @@ describe("generateSchemas", () => {
     expect(result.success).toBe(false);
   });
 });
-

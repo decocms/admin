@@ -10,7 +10,9 @@ const isBun = typeof Bun !== "undefined";
 
 async function createAdapter(config: SqliteConfig): Promise<DatabaseAdapter> {
   if (isBun) {
-    const { BunSqliteAdapter } = await import("../src/implementations/bun-sqlite");
+    const { BunSqliteAdapter } = await import(
+      "../src/implementations/bun-sqlite"
+    );
     return new BunSqliteAdapter(config);
   }
   const { SqliteAdapter } = await import("../src/implementations/sqlite");
@@ -19,7 +21,9 @@ async function createAdapter(config: SqliteConfig): Promise<DatabaseAdapter> {
 
 async function createIntrospector(filename: string) {
   if (isBun) {
-    const { SqliteIntrospectorBun } = await import("../src/introspection/bun-sqlite");
+    const { SqliteIntrospectorBun } = await import(
+      "../src/introspection/bun-sqlite"
+    );
     return new SqliteIntrospectorBun(filename);
   }
   const { SqliteIntrospector } = await import("../src/introspection/sqlite");
@@ -92,7 +96,11 @@ describe("SqliteAdapter", () => {
       });
 
       // Then get
-      const result = await adapter.getById("users", inserted.id as number, "id");
+      const result = await adapter.getById(
+        "users",
+        inserted.id as number,
+        "id",
+      );
 
       expect(result).toBeDefined();
       expect(result?.name).toBe("Jane Doe");
@@ -113,9 +121,14 @@ describe("SqliteAdapter", () => {
       });
 
       // Then update
-      const updated = await adapter.update("users", inserted.id as number, "id", {
-        age: 36,
-      });
+      const updated = await adapter.update(
+        "users",
+        inserted.id as number,
+        "id",
+        {
+          age: 36,
+        },
+      );
 
       expect(updated).toBeDefined();
       expect(updated.age).toBe(36);
@@ -137,11 +150,19 @@ describe("SqliteAdapter", () => {
       });
 
       // Then delete
-      const deleted = await adapter.delete("users", inserted.id as number, "id");
+      const deleted = await adapter.delete(
+        "users",
+        inserted.id as number,
+        "id",
+      );
       expect(deleted).toBe(true);
 
       // Verify deletion
-      const result = await adapter.getById("users", inserted.id as number, "id");
+      const result = await adapter.getById(
+        "users",
+        inserted.id as number,
+        "id",
+      );
       expect(result).toBeNull();
     });
 
@@ -152,9 +173,21 @@ describe("SqliteAdapter", () => {
 
     it("should query records with limit", async () => {
       // Insert multiple records
-      await adapter.insert("users", { name: "User 1", email: "user1@example.com", age: 20 });
-      await adapter.insert("users", { name: "User 2", email: "user2@example.com", age: 21 });
-      await adapter.insert("users", { name: "User 3", email: "user3@example.com", age: 22 });
+      await adapter.insert("users", {
+        name: "User 1",
+        email: "user1@example.com",
+        age: 20,
+      });
+      await adapter.insert("users", {
+        name: "User 2",
+        email: "user2@example.com",
+        age: 21,
+      });
+      await adapter.insert("users", {
+        name: "User 3",
+        email: "user3@example.com",
+        age: 22,
+      });
 
       const results = await adapter.query("users", { limit: 2 });
 
@@ -163,9 +196,21 @@ describe("SqliteAdapter", () => {
 
     it("should query records with offset", async () => {
       // Insert multiple records
-      await adapter.insert("users", { name: "User 1", email: "user1@example.com", age: 20 });
-      await adapter.insert("users", { name: "User 2", email: "user2@example.com", age: 21 });
-      await adapter.insert("users", { name: "User 3", email: "user3@example.com", age: 22 });
+      await adapter.insert("users", {
+        name: "User 1",
+        email: "user1@example.com",
+        age: 20,
+      });
+      await adapter.insert("users", {
+        name: "User 2",
+        email: "user2@example.com",
+        age: 21,
+      });
+      await adapter.insert("users", {
+        name: "User 3",
+        email: "user3@example.com",
+        age: 22,
+      });
 
       const results = await adapter.query("users", { offset: 1, limit: 2 });
 
@@ -175,9 +220,21 @@ describe("SqliteAdapter", () => {
 
     it("should query records with ordering", async () => {
       // Insert multiple records
-      await adapter.insert("users", { name: "Charlie", email: "charlie@example.com", age: 30 });
-      await adapter.insert("users", { name: "Alice", email: "alice@example.com", age: 25 });
-      await adapter.insert("users", { name: "Bob", email: "bob@example.com", age: 35 });
+      await adapter.insert("users", {
+        name: "Charlie",
+        email: "charlie@example.com",
+        age: 30,
+      });
+      await adapter.insert("users", {
+        name: "Alice",
+        email: "alice@example.com",
+        age: 25,
+      });
+      await adapter.insert("users", {
+        name: "Bob",
+        email: "bob@example.com",
+        age: 35,
+      });
 
       const results = await adapter.query("users", {
         orderBy: [{ field: ["name"], direction: "asc" }],
@@ -190,9 +247,21 @@ describe("SqliteAdapter", () => {
 
     it("should query records with WHERE filter", async () => {
       // Insert multiple records
-      await adapter.insert("users", { name: "John", email: "john@example.com", age: 30 });
-      await adapter.insert("users", { name: "Jane", email: "jane@example.com", age: 25 });
-      await adapter.insert("users", { name: "Bob", email: "bob@example.com", age: 30 });
+      await adapter.insert("users", {
+        name: "John",
+        email: "john@example.com",
+        age: 30,
+      });
+      await adapter.insert("users", {
+        name: "Jane",
+        email: "jane@example.com",
+        age: 25,
+      });
+      await adapter.insert("users", {
+        name: "Bob",
+        email: "bob@example.com",
+        age: 30,
+      });
 
       const results = await adapter.query("users", {
         where: {
@@ -211,7 +280,7 @@ describe("SqliteAdapter", () => {
 describe("SqliteIntrospector", () => {
   it("should introspect database schema", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     // Create a test table
     const db = (introspector as any).db;
     db.exec(`
@@ -239,7 +308,7 @@ describe("SqliteIntrospector", () => {
 
   it("should detect audit fields", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     const db = (introspector as any).db;
     db.exec(`
       CREATE TABLE audit_table (
@@ -264,7 +333,7 @@ describe("SqliteIntrospector", () => {
 
   it("should exclude sqlite internal tables", async () => {
     const introspector = await createIntrospector(":memory:");
-    
+
     const db = (introspector as any).db;
     db.exec(`CREATE TABLE user_table (id INTEGER PRIMARY KEY)`);
     db.exec(`CREATE TABLE mastra_internal (id INTEGER PRIMARY KEY)`);
@@ -277,4 +346,3 @@ describe("SqliteIntrospector", () => {
     await introspector.close();
   });
 });
-

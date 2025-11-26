@@ -121,4 +121,3 @@ describe("Type definitions", () => {
     expect(config.cache).toBeUndefined();
   });
 });
-

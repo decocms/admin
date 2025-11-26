@@ -4,14 +4,17 @@
 
 import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { createCollectionTools } from "../src/tool-factory";
-import type { CreateCollectionToolsConfig, DatabaseAdapter } from "../src/types";
+import type {
+  CreateCollectionToolsConfig,
+  DatabaseAdapter,
+} from "../src/types";
 
 // Detect runtime
 const isBun = typeof Bun !== "undefined";
 
 describe("createCollectionTools", () => {
   const testDbFile = "./test-db.sqlite";
-  
+
   const sqliteConfig: CreateCollectionToolsConfig = {
     database: {
       type: "sqlite",
@@ -25,23 +28,25 @@ describe("createCollectionTools", () => {
   // Helper to create a test database with tables
   async function setupTestDatabase() {
     let adapter: DatabaseAdapter;
-    
+
     if (isBun) {
-      const { BunSqliteAdapter } = await import("../src/implementations/bun-sqlite");
+      const { BunSqliteAdapter } = await import(
+        "../src/implementations/bun-sqlite"
+      );
       adapter = new BunSqliteAdapter(sqliteConfig.database);
     } else {
       const { SqliteAdapter } = await import("../src/implementations/sqlite");
       adapter = new SqliteAdapter(sqliteConfig.database);
     }
-    
+
     const db = (adapter as any).db;
-    
+
     // Drop existing tables if they exist
     db.exec(`DROP TABLE IF EXISTS users`);
     db.exec(`DROP TABLE IF EXISTS posts`);
     db.exec(`DROP TABLE IF EXISTS audit_logs`);
     db.exec(`DROP TABLE IF EXISTS no_pk_table`);
-    
+
     // Create test tables
     db.exec(`
       CREATE TABLE users (
@@ -99,13 +104,17 @@ describe("createCollectionTools", () => {
       const tools = await createCollectionTools(sqliteConfig);
 
       expect(tools.length).toBeGreaterThan(0);
-      
+
       // Check that tools are generated for each table
       const toolNames = tools.map((t) => t.id);
-      
-      const hasUsersList = toolNames.some((n) => n === "DECO_COLLECTION_USERS_LIST");
-      const hasUsersGet = toolNames.some((n) => n === "DECO_COLLECTION_USERS_GET");
-      
+
+      const hasUsersList = toolNames.some(
+        (n) => n === "DECO_COLLECTION_USERS_LIST",
+      );
+      const hasUsersGet = toolNames.some(
+        (n) => n === "DECO_COLLECTION_USERS_GET",
+      );
+
       expect(hasUsersList).toBe(true);
       expect(hasUsersGet).toBe(true);
     });
@@ -212,9 +221,7 @@ describe("createCollectionTools", () => {
         ...sqliteConfig,
         mutations: {
           defaultEnabled: true,
-          overrides: [
-            { table: "audit_logs", enabled: false },
-          ],
+          overrides: [{ table: "audit_logs", enabled: false }],
         },
       };
 
@@ -239,9 +246,7 @@ describe("createCollectionTools", () => {
         ...sqliteConfig,
         mutations: {
           defaultEnabled: false,
-          overrides: [
-            { table: "users", enabled: true },
-          ],
+          overrides: [{ table: "users", enabled: true }],
         },
       };
 
@@ -259,8 +264,10 @@ describe("createCollectionTools", () => {
   describe("tool naming convention", () => {
     it("should use uppercase table names in tool IDs", async () => {
       const tools = await createCollectionTools(sqliteConfig);
-      
-      const usersTool = tools.find((t) => t.id === "DECO_COLLECTION_USERS_LIST");
+
+      const usersTool = tools.find(
+        (t) => t.id === "DECO_COLLECTION_USERS_LIST",
+      );
       expect(usersTool).toBeDefined();
     });
 
@@ -320,29 +327,33 @@ describe("createCollectionTools", () => {
         },
       };
 
-      await expect(createCollectionTools(config)).rejects.toThrow("Unsupported database type");
+      await expect(createCollectionTools(config)).rejects.toThrow(
+        "Unsupported database type",
+      );
     });
 
     it("should skip tables without primary keys", async () => {
       // Create a table without primary key
       let adapter: DatabaseAdapter;
-      
+
       if (isBun) {
-        const { BunSqliteAdapter } = await import("../src/implementations/bun-sqlite");
+        const { BunSqliteAdapter } = await import(
+          "../src/implementations/bun-sqlite"
+        );
         adapter = new BunSqliteAdapter(sqliteConfig.database);
       } else {
         const { SqliteAdapter } = await import("../src/implementations/sqlite");
         adapter = new SqliteAdapter(sqliteConfig.database);
       }
       const db = (adapter as any).db;
-      
+
       db.exec(`
         CREATE TABLE no_pk_table (
           name TEXT NOT NULL,
           value TEXT
         )
       `);
-      
+
       await adapter.close();
 
       const tools = await createCollectionTools(sqliteConfig);
@@ -365,7 +376,7 @@ describe("createCollectionTools", () => {
 
       // First call - should introspect
       const tools1 = await createCollectionTools(config);
-      
+
       // Second call - should use cache
       const tools2 = await createCollectionTools(config);
 
@@ -387,4 +398,3 @@ describe("createCollectionTools", () => {
     });
   });
 });
-

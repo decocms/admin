@@ -33,7 +33,9 @@ import { getGlobalCache } from "./cache";
 /**
  * Create database adapter from configuration
  */
-async function createAdapter(config: CreateCollectionToolsConfig): Promise<DatabaseAdapter> {
+async function createAdapter(
+  config: CreateCollectionToolsConfig,
+): Promise<DatabaseAdapter> {
   switch (config.database.type) {
     case "postgres":
       return new PostgresAdapter(config.database);
@@ -41,7 +43,9 @@ async function createAdapter(config: CreateCollectionToolsConfig): Promise<Datab
       // Use Bun's native SQLite in Bun runtime, otherwise use better-sqlite3
       const isBun = typeof Bun !== "undefined";
       if (isBun) {
-        const { BunSqliteAdapter } = await import("./implementations/bun-sqlite");
+        const { BunSqliteAdapter } = await import(
+          "./implementations/bun-sqlite"
+        );
         return new BunSqliteAdapter(config.database);
       }
       return new SqliteAdapter(config.database);

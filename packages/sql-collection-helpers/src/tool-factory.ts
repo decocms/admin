@@ -19,8 +19,9 @@ import {
   createCollectionUpdateOutputSchema,
 } from "@decocms/bindings/collections";
 import type {
-  CreateCollectionToolsConfig,
+  CollectionToolsOptions,
   DatabaseAdapter,
+  DatabaseConfig,
   TableMetadata,
 } from "./types";
 import { PostgresAdapter } from "./implementations/postgres";
@@ -30,13 +31,14 @@ import { getGlobalCache } from "./cache";
 
 /**
  * Create database adapter from configuration
+ * Exported as a convenience helper
  */
-async function createAdapter(
-  config: CreateCollectionToolsConfig,
+export async function createAdapter(
+  config: DatabaseConfig,
 ): Promise<DatabaseAdapter> {
-  switch (config.database.type) {
+  switch (config.type) {
     case "postgres":
-      return new PostgresAdapter(config.database);
+      return new PostgresAdapter(config);
     case "sqlite": {
       // Use Bun's native SQLite in Bun runtime, otherwise use better-sqlite3
       const isBun = typeof Bun !== "undefined";
@@ -44,13 +46,13 @@ async function createAdapter(
         const { BunSqliteAdapter } = await import(
           "./implementations/bun-sqlite"
         );
-        return new BunSqliteAdapter(config.database);
+        return new BunSqliteAdapter(config);
       }
-      return new SqliteAdapter(config.database);
+      return new SqliteAdapter(config);
     }
     default:
       throw new Error(
-        `Unsupported database type: ${(config.database as { type: string }).type}`,
+        `Unsupported database type: ${(config as { type: string }).type}`,
       );
   }
 }
@@ -60,9 +62,9 @@ async function createAdapter(
  */
 function filterTables(
   tables: TableMetadata[],
-  config: CreateCollectionToolsConfig,
+  options: CollectionToolsOptions,
 ): TableMetadata[] {
-  const collectionConfig = config.collections ?? { mode: "all" };
+  const collectionConfig = options.collections ?? { mode: "all" };
 
   switch (collectionConfig.mode) {
     case "all":
@@ -87,9 +89,9 @@ function filterTables(
  */
 function isMutationEnabled(
   tableName: string,
-  config: CreateCollectionToolsConfig,
+  options: CollectionToolsOptions,
 ): boolean {
-  const mutationConfig = config.mutations ?? { defaultEnabled: false };
+  const mutationConfig = options.mutations ?? { defaultEnabled: false };
   const defaultEnabled = mutationConfig.defaultEnabled ?? false;
 
   // Check for table-specific override
@@ -147,12 +149,16 @@ function createListTool(
     execute: async (context: any) => {
       const { where, orderBy, limit, offset } = context.data;
 
-      const items = await adapter.query(table.name, {
-        where,
-        orderBy,
-        limit,
-        offset,
-      });
+      const items = await adapter.query(
+        table.name,
+        {
+          where,
+          orderBy,
+          limit,
+          offset,
+        },
+        context,
+      );
 
       return {
         items,
@@ -186,7 +192,12 @@ function createGetTool(
     execute: async (context: any) => {
       const { id } = context.data;
 
-      const item = await adapter.getById(table.name, id, table.primaryKey!);
+      const item = await adapter.getById(
+        table.name,
+        id,
+        table.primaryKey!,
+        context,
+      );
 
       return { item };
     },
@@ -230,7 +241,7 @@ function createInsertTool(
         insertData[table.auditFields.updatedBy] = userId;
       }
 
-      const item = await adapter.insert(table.name, insertData);
+      const item = await adapter.insert(table.name, insertData, context);
 
       return { item };
     },
@@ -276,6 +287,7 @@ function createUpdateTool(
         id,
         table.primaryKey!,
         updateData,
+        context,
       );
 
       return { item };
@@ -302,7 +314,12 @@ function createDeleteTool(table: TableMetadata, adapter: DatabaseAdapter) {
     execute: async (context: any) => {
       const { id } = context.data;
 
-      const success = await adapter.delete(table.name, id, table.primaryKey!);
+      const success = await adapter.delete(
+        table.name,
+        id,
+        table.primaryKey!,
+        context,
+      );
 
       return { success, id };
     },
@@ -310,35 +327,27 @@ function createDeleteTool(table: TableMetadata, adapter: DatabaseAdapter) {
 }
 
 /**
- * Create all collection tools for the configured database
+ * Create all collection tools from a database adapter
  *
  * This function:
- * 1. Creates a database adapter from the configuration
- * 2. Introspects the database schema (with SWR caching)
- * 3. Filters tables based on collection configuration
- * 4. Generates tools for each table (LIST, GET, CREATE, UPDATE, DELETE)
- * 5. Returns an array of tools that can be registered with an MCP server
+ * 1. Introspects the database schema (with SWR caching)
+ * 2. Filters tables based on collection configuration
+ * 3. Generates tools for each table (LIST, GET, CREATE, UPDATE, DELETE)
+ * 4. Returns an array of tools that can be registered with an MCP server
  *
- * @param config - Configuration for database, collections, mutations, and cache
+ * @param adapter - Database adapter instance
+ * @param options - Optional configuration for collections, mutations, and cache
  * @returns Promise<ReturnType<typeof createPrivateTool>[]> - Array of collection tools
  *
  * @example
  * ```typescript
- * // PostgreSQL with all tables
- * const tools = await createCollectionTools({
- *   database: {
- *     type: 'postgres',
- *     connectionString: 'postgresql://localhost/mydb',
- *     schema: 'public'
- *   }
+ * // With PostgreSQL adapter
+ * const adapter = new PostgresAdapter({
+ *   connectionString: 'postgresql://localhost/mydb',
+ *   schema: 'public'
  * });
  *
- * // SQLite with specific tables and mutations enabled
- * const tools = await createCollectionTools({
- *   database: {
- *     type: 'sqlite',
- *     filename: './data.db'
- *   },
+ * const tools = await createCollectionTools(adapter, {
  *   collections: {
  *     mode: 'include',
  *     tables: ['users', 'posts']
@@ -347,16 +356,26 @@ function createDeleteTool(table: TableMetadata, adapter: DatabaseAdapter) {
  *     defaultEnabled: true
  *   }
  * });
+ *
+ * // With SQLite adapter
+ * const sqliteAdapter = new SqliteAdapter({ filename: './data.db' });
+ * const tools = await createCollectionTools(sqliteAdapter);
+ *
+ * // With custom adapter implementation
+ * class MyCustomAdapter implements DatabaseAdapter {
+ *   async introspect() { ... }
+ *   // ... implement other methods
+ * }
+ * const customAdapter = new MyCustomAdapter();
+ * const tools = await createCollectionTools(customAdapter);
  * ```
  */
 export async function createCollectionTools(
-  config: CreateCollectionToolsConfig,
+  adapter: DatabaseAdapter,
+  options: CollectionToolsOptions = {},
 ): Promise<ReturnType<typeof createPrivateTool>[]> {
-  // Create adapter
-  const adapter = await createAdapter(config);
-
   // Get cache configuration
-  const cacheConfig = config.cache ?? { ttl: 60000, enabled: true };
+  const cacheConfig = options.cache ?? { ttl: 60000, enabled: true };
   const cacheEnabled = cacheConfig.enabled ?? true;
 
   // Introspect database schema with caching
@@ -364,25 +383,21 @@ export async function createCollectionTools(
 
   if (cacheEnabled) {
     const cache = getGlobalCache(cacheConfig.ttl);
-    const cacheKey =
-      config.database.type === "postgres"
-        ? config.database.connectionString
-        : config.database.filename;
-    const schema =
-      config.database.type === "postgres" ? config.database.schema : undefined;
+    // For custom adapters, use a stable cache key based on constructor name
+    const cacheKey = `${adapter.constructor.name}`;
 
     tables = await cache.getOrFetch(
-      config.database.type,
+      "custom",
       cacheKey,
       () => adapter.introspect(),
-      schema,
+      undefined,
     );
   } else {
     tables = await adapter.introspect();
   }
 
   // Filter tables
-  const filteredTables = filterTables(tables, config);
+  const filteredTables = filterTables(tables, options);
 
   // Generate tools for each table
   const tools: ReturnType<typeof createPrivateTool>[] = [];
@@ -402,7 +417,7 @@ export async function createCollectionTools(
     tools.push(createGetTool(table, adapter, schemas));
 
     // Create mutation tools if enabled
-    if (isMutationEnabled(table.name, config)) {
+    if (isMutationEnabled(table.name, options)) {
       tools.push(createInsertTool(table, adapter, schemas));
       tools.push(createUpdateTool(table, adapter, schemas));
       tools.push(createDeleteTool(table, adapter));

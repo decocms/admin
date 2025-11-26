@@ -210,9 +210,18 @@ export interface QueryParams {
 }
 
 /**
+ * Execution context passed to adapter methods
+ * Contains runtime context with env and other bindings
+ */
+export interface AdapterContext {
+  runtimeContext?: { get: (key: string) => unknown };
+}
+
+/**
  * Generic database adapter interface
  *
- * This interface abstracts database-specific operations for introspection and CRUD
+ * This interface abstracts database-specific operations for introspection and CRUD.
+ * Methods accept optional context for runtime-dependent operations (like Drizzle).
  */
 export interface DatabaseAdapter {
   /**
@@ -226,6 +235,7 @@ export interface DatabaseAdapter {
   query(
     table: string,
     params: QueryParams,
+    context?: AdapterContext,
   ): Promise<Array<Record<string, unknown>>>;
 
   /**
@@ -235,6 +245,7 @@ export interface DatabaseAdapter {
     table: string,
     id: string | number,
     primaryKey: string,
+    context?: AdapterContext,
   ): Promise<Record<string, unknown> | null>;
 
   /**
@@ -243,6 +254,7 @@ export interface DatabaseAdapter {
   insert(
     table: string,
     data: Record<string, unknown>,
+    context?: AdapterContext,
   ): Promise<Record<string, unknown>>;
 
   /**
@@ -253,6 +265,7 @@ export interface DatabaseAdapter {
     id: string | number,
     primaryKey: string,
     data: Record<string, unknown>,
+    context?: AdapterContext,
   ): Promise<Record<string, unknown>>;
 
   /**
@@ -262,6 +275,7 @@ export interface DatabaseAdapter {
     table: string,
     id: string | number,
     primaryKey: string,
+    context?: AdapterContext,
   ): Promise<boolean>;
 
   /**
@@ -291,14 +305,9 @@ export interface GeneratedSchemas {
 }
 
 /**
- * Configuration for createCollectionTools
+ * Configuration for createCollectionTools (without database adapter)
  */
-export interface CreateCollectionToolsConfig {
-  /**
-   * Database configuration
-   */
-  database: DatabaseConfig;
-
+export interface CollectionToolsOptions {
   /**
    * Collection filtering configuration
    * @default { mode: 'all' }
@@ -316,4 +325,15 @@ export interface CreateCollectionToolsConfig {
    * @default { ttl: 60000, enabled: true }
    */
   cache?: CacheConfig;
+}
+
+/**
+ * Configuration for createCollectionTools with database config
+ * @deprecated Use createCollectionTools with adapter instance and CollectionToolsOptions instead
+ */
+export interface CreateCollectionToolsConfig extends CollectionToolsOptions {
+  /**
+   * Database configuration
+   */
+  database: DatabaseConfig;
 }

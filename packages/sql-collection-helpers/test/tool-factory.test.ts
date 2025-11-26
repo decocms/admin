@@ -3,42 +3,26 @@
  */
 
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { createCollectionTools } from "../src/tool-factory";
-import type {
-  CreateCollectionToolsConfig,
-  DatabaseAdapter,
-} from "../src/types";
+import { createCollectionTools, createAdapter } from "../src/tool-factory";
+import type { DatabaseAdapter } from "../src/types";
 
 // Detect runtime
-const isBun = typeof Bun !== "undefined";
+const _isBun = typeof Bun !== "undefined";
 
 describe("createCollectionTools", () => {
   const testDbFile = "./test-db.sqlite";
 
-  const sqliteConfig: CreateCollectionToolsConfig = {
-    database: {
+  // Helper to create adapter
+  async function getAdapter(): Promise<DatabaseAdapter> {
+    return await createAdapter({
       type: "sqlite",
       filename: testDbFile,
-    },
-    cache: {
-      enabled: false, // Disable cache for testing
-    },
-  };
+    });
+  }
 
   // Helper to create a test database with tables
   async function setupTestDatabase() {
-    let adapter: DatabaseAdapter;
-
-    if (isBun) {
-      const { BunSqliteAdapter } = await import(
-        "../src/implementations/bun-sqlite"
-      );
-      adapter = new BunSqliteAdapter(sqliteConfig.database);
-    } else {
-      const { SqliteAdapter } = await import("../src/implementations/sqlite");
-      adapter = new SqliteAdapter(sqliteConfig.database);
-    }
-
+    const adapter = await getAdapter();
     const db = (adapter as { db: { exec: (sql: string) => void } }).db;
 
     // Drop existing tables if they exist
@@ -80,6 +64,13 @@ describe("createCollectionTools", () => {
       )
     `);
 
+    db.exec(`
+      CREATE TABLE no_pk_table (
+        name TEXT,
+        value TEXT
+      )
+    `);
+
     await adapter.close();
   }
 
@@ -101,33 +92,37 @@ describe("createCollectionTools", () => {
 
   describe("basic tool generation", () => {
     it("should generate tools for all tables", async () => {
-      const tools = await createCollectionTools(sqliteConfig);
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      expect(tools.length).toBeGreaterThan(0);
+      // Should have at least 6 tools (2 per table: LIST + GET for users, posts, audit_logs)
+      expect(tools.length).toBeGreaterThanOrEqual(6);
 
-      // Check that tools are generated for each table
-      const toolNames = tools.map((t) => t.id);
-
-      const hasUsersList = toolNames.some(
-        (n) => n === "DECO_COLLECTION_USERS_LIST",
+      // Check for users table tools
+      const hasUsersList = tools.some((t) =>
+        t.id.includes("COLLECTION_USERS_LIST"),
       );
-      const hasUsersGet = toolNames.some(
-        (n) => n === "DECO_COLLECTION_USERS_GET",
+      const hasUsersGet = tools.some((t) =>
+        t.id.includes("COLLECTION_USERS_GET"),
       );
 
       expect(hasUsersList).toBe(true);
       expect(hasUsersGet).toBe(true);
+
+      await adapter.close();
     });
 
     it("should generate LIST and GET tools for read-only tables", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         mutations: {
           defaultEnabled: false,
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Should have LIST and GET
@@ -138,17 +133,19 @@ describe("createCollectionTools", () => {
       expect(toolNames).not.toContain("DECO_COLLECTION_USERS_CREATE");
       expect(toolNames).not.toContain("DECO_COLLECTION_USERS_UPDATE");
       expect(toolNames).not.toContain("DECO_COLLECTION_USERS_DELETE");
+
+      await adapter.close();
     });
 
     it("should generate mutation tools when enabled", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         mutations: {
           defaultEnabled: true,
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Should have all CRUD tools
@@ -157,20 +154,22 @@ describe("createCollectionTools", () => {
       expect(toolNames).toContain("DECO_COLLECTION_USERS_CREATE");
       expect(toolNames).toContain("DECO_COLLECTION_USERS_UPDATE");
       expect(toolNames).toContain("DECO_COLLECTION_USERS_DELETE");
+
+      await adapter.close();
     });
   });
 
   describe("collection filtering", () => {
     it("should include only specified tables", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         collections: {
           mode: "include",
           tables: ["users"],
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Should have users tools
@@ -179,18 +178,20 @@ describe("createCollectionTools", () => {
       // Should NOT have posts or audit_logs tools
       expect(toolNames.some((n) => n.includes("POSTS"))).toBe(false);
       expect(toolNames.some((n) => n.includes("AUDIT_LOGS"))).toBe(false);
+
+      await adapter.close();
     });
 
     it("should exclude specified tables", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         collections: {
           mode: "exclude",
           tables: ["audit_logs"],
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Should have users and posts tools
@@ -199,33 +200,37 @@ describe("createCollectionTools", () => {
 
       // Should NOT have audit_logs tools
       expect(toolNames.some((n) => n.includes("AUDIT_LOGS"))).toBe(false);
+
+      await adapter.close();
     });
 
     it("should return empty array when include list is empty", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         collections: {
           mode: "include",
           tables: [],
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       expect(tools).toHaveLength(0);
+
+      await adapter.close();
     });
   });
 
   describe("per-table mutation configuration", () => {
     it("should respect per-table mutation overrides", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         mutations: {
           defaultEnabled: true,
           overrides: [{ table: "audit_logs", enabled: false }],
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Users should have mutations (default)
@@ -239,18 +244,20 @@ describe("createCollectionTools", () => {
       // But should still have LIST and GET
       expect(toolNames).toContain("DECO_COLLECTION_AUDIT_LOGS_LIST");
       expect(toolNames).toContain("DECO_COLLECTION_AUDIT_LOGS_GET");
+
+      await adapter.close();
     });
 
     it("should enable mutations for specific tables when default is false", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
         mutations: {
           defaultEnabled: false,
           overrides: [{ table: "users", enabled: true }],
         },
-      };
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
       // Users should have mutations (override)
@@ -258,143 +265,228 @@ describe("createCollectionTools", () => {
 
       // Posts should NOT have mutations (default)
       expect(toolNames).not.toContain("DECO_COLLECTION_POSTS_CREATE");
+
+      await adapter.close();
     });
   });
 
   describe("tool naming convention", () => {
     it("should use uppercase table names in tool IDs", async () => {
-      const tools = await createCollectionTools(sqliteConfig);
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      const usersTool = tools.find(
-        (t) => t.id === "DECO_COLLECTION_USERS_LIST",
-      );
-      expect(usersTool).toBeDefined();
+      const toolNames = tools.map((t) => t.id);
+
+      // All tool names should be uppercase
+      expect(toolNames.every((n) => n === n.toUpperCase())).toBe(true);
+
+      await adapter.close();
     });
 
     it("should follow DECO_COLLECTION_{TABLE}_{OPERATION} format", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
-        mutations: {
-          defaultEnabled: true,
-        },
-      };
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
       const toolNames = tools.map((t) => t.id);
 
-      // Check format for users table
-      expect(toolNames).toContain("DECO_COLLECTION_USERS_LIST");
-      expect(toolNames).toContain("DECO_COLLECTION_USERS_GET");
-      expect(toolNames).toContain("DECO_COLLECTION_USERS_CREATE");
-      expect(toolNames).toContain("DECO_COLLECTION_USERS_UPDATE");
-      expect(toolNames).toContain("DECO_COLLECTION_USERS_DELETE");
+      // Check format
+      expect(toolNames.every((n) => n.startsWith("DECO_COLLECTION_"))).toBe(
+        true,
+      );
+
+      await adapter.close();
     });
   });
 
   describe("tool schemas", () => {
     it("should have input and output schemas", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
-        mutations: {
-          defaultEnabled: true,
-        },
-      };
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      const tools = await createCollectionTools(config);
-      const listTool = tools.find((t) => t.id === "DECO_COLLECTION_USERS_LIST");
+      tools.forEach((tool) => {
+        expect(tool.inputSchema).toBeDefined();
+        expect(tool.outputSchema).toBeDefined();
+      });
 
-      expect(listTool).toBeDefined();
-      expect(listTool!.inputSchema).toBeDefined();
-      expect(listTool!.outputSchema).toBeDefined();
+      await adapter.close();
     });
 
     it("should have descriptions", async () => {
-      const tools = await createCollectionTools(sqliteConfig);
-      const listTool = tools.find((t) => t.id === "DECO_COLLECTION_USERS_LIST");
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      expect(listTool).toBeDefined();
-      expect(listTool!.description).toBeDefined();
-      expect(listTool!.description.length).toBeGreaterThan(0);
+      tools.forEach((tool) => {
+        expect(tool.description).toBeDefined();
+        expect(tool.description.length).toBeGreaterThan(0);
+      });
+
+      await adapter.close();
     });
   });
 
   describe("error handling", () => {
     it("should throw error for unsupported database type", async () => {
-      const config = {
-        database: {
-          type: "mysql" as unknown,
-          connectionString: "mysql://localhost/test",
-        },
-      } as CreateCollectionToolsConfig;
-
-      await expect(createCollectionTools(config)).rejects.toThrow(
-        "Unsupported database type",
-      );
+      await expect(
+        createAdapter({ type: "mysql" as "sqlite", filename: "" }),
+      ).rejects.toThrow("Unsupported database type");
     });
 
     it("should skip tables without primary keys", async () => {
-      // Create a table without primary key
-      let adapter: DatabaseAdapter;
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
 
-      if (isBun) {
-        const { BunSqliteAdapter } = await import(
-          "../src/implementations/bun-sqlite"
-        );
-        adapter = new BunSqliteAdapter(sqliteConfig.database);
-      } else {
-        const { SqliteAdapter } = await import("../src/implementations/sqlite");
-        adapter = new SqliteAdapter(sqliteConfig.database);
-      }
-      const db = (adapter as { db: { exec: (sql: string) => void } }).db;
-
-      db.exec(`
-        CREATE TABLE no_pk_table (
-          name TEXT NOT NULL,
-          value TEXT
-        )
-      `);
-
-      await adapter.close();
-
-      const tools = await createCollectionTools(sqliteConfig);
       const toolNames = tools.map((t) => t.id);
 
-      // Should not have tools for no_pk_table
+      // Should NOT have tools for no_pk_table
       expect(toolNames.some((n) => n.includes("NO_PK_TABLE"))).toBe(false);
+
+      await adapter.close();
     });
   });
 
   describe("caching", () => {
     it("should use cache when enabled", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
-        cache: {
-          enabled: true,
-          ttl: 60000,
-        },
-      };
+      const adapter = await getAdapter();
 
-      // First call - should introspect
-      const tools1 = await createCollectionTools(config);
+      // First call - populates cache
+      const tools1 = await createCollectionTools(adapter, {
+        cache: { enabled: true, ttl: 60000 },
+      });
 
       // Second call - should use cache
-      const tools2 = await createCollectionTools(config);
+      const tools2 = await createCollectionTools(adapter, {
+        cache: { enabled: true, ttl: 60000 },
+      });
 
       expect(tools1.length).toBe(tools2.length);
+
+      await adapter.close();
     });
 
     it("should skip cache when disabled", async () => {
-      const config: CreateCollectionToolsConfig = {
-        ...sqliteConfig,
-        cache: {
-          enabled: false,
+      const adapter = await getAdapter();
+
+      const tools1 = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
+
+      const tools2 = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
+
+      expect(tools1.length).toBe(tools2.length);
+
+      await adapter.close();
+    });
+  });
+
+  describe("adapter-first API", () => {
+    it("should work with adapter instance directly", async () => {
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        cache: { enabled: false },
+      });
+
+      expect(tools.length).toBeGreaterThan(0);
+
+      await adapter.close();
+    });
+
+    it("should allow custom adapter implementations", async () => {
+      // Mock custom adapter
+      const customAdapter: DatabaseAdapter = {
+        async introspect() {
+          return [
+            {
+              name: "custom_table",
+              primaryKey: "id",
+              columns: [
+                {
+                  name: "id",
+                  type: "INTEGER",
+                  nullable: false,
+                  isPrimaryKey: true,
+                  isAutoIncrement: true,
+                },
+                {
+                  name: "name",
+                  type: "TEXT",
+                  nullable: false,
+                  isPrimaryKey: false,
+                  isAutoIncrement: false,
+                },
+              ],
+              auditFields: {},
+            },
+          ];
+        },
+        async query() {
+          return [];
+        },
+        async getById() {
+          return null;
+        },
+        async insert(table: string, data: Record<string, unknown>) {
+          return { id: 1, ...data };
+        },
+        async update(
+          table: string,
+          id: string | number,
+          primaryKey: string,
+          data: Record<string, unknown>,
+        ) {
+          return { id, ...data };
+        },
+        async delete() {
+          return true;
+        },
+        async close() {
+          // No-op
         },
       };
 
-      const tools1 = await createCollectionTools(config);
-      const tools2 = await createCollectionTools(config);
+      const tools = await createCollectionTools(customAdapter, {
+        cache: { enabled: false },
+      });
 
-      expect(tools1.length).toBe(tools2.length);
+      // Should generate tools for the custom table
+      expect(tools.length).toBeGreaterThan(0);
+
+      // Check tool names contain the custom table
+      const toolIds = tools.map((t) => t.id);
+      expect(toolIds.some((id) => id.includes("CUSTOM_TABLE"))).toBe(true);
+    });
+
+    it("should support all options with adapter", async () => {
+      const adapter = await getAdapter();
+      const tools = await createCollectionTools(adapter, {
+        collections: {
+          mode: "include",
+          tables: ["users"],
+        },
+        mutations: {
+          defaultEnabled: true,
+        },
+        cache: {
+          enabled: false,
+        },
+      });
+
+      // Should have 5 tools for users (LIST, GET, CREATE, UPDATE, DELETE)
+      const userTools = tools.filter((t) => t.id.includes("USERS"));
+      expect(userTools.length).toBe(5);
+
+      await adapter.close();
     });
   });
 });

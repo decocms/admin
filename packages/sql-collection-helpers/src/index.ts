@@ -20,7 +20,7 @@
  * - Automatically used when running in Bun
  */
 
-export { createCollectionTools } from "./tool-factory";
+export { createCollectionTools, createAdapter } from "./tool-factory";
 
 export type {
   DatabaseConfig,
@@ -31,8 +31,10 @@ export type {
   MutationConfig,
   TableMutationConfig,
   CacheConfig,
+  CollectionToolsOptions,
   CreateCollectionToolsConfig,
   DatabaseAdapter,
+  AdapterContext,
   TableMetadata,
   ColumnMetadata,
   SqlType,
@@ -59,3 +61,6 @@ export { SqliteIntrospector } from "./introspection/sqlite";
 // SQLite implementation for Bun runtime (bun:sqlite)
 export { BunSqliteAdapter } from "./implementations/bun-sqlite";
 export { SqliteIntrospectorBun } from "./introspection/bun-sqlite";
+
+// Drizzle ORM implementation (lazy initialization with factory)
+export { DrizzleAdapter, type DrizzleFactory } from "./implementations/drizzle";

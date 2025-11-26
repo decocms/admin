@@ -45,6 +45,7 @@ import { InstalledConnections } from "./installed-connections.tsx";
 import {
   Marketplace,
   type MarketplaceIntegration,
+  type MarketplaceIntegrationCompat,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
@@ -227,7 +228,7 @@ export const useUIInstallIntegration = ({
     integration,
     mainFormData = {},
   }: {
-    integration: MarketplaceIntegration | null;
+    integration: MarketplaceIntegrationCompat | null;
     mainFormData?: Record<string, unknown>;
   }) => {
     const isValid = await validate();
@@ -244,7 +245,7 @@ export const useUIInstallIntegration = ({
         {
           appId: integration.id,
           appName: integration.name,
-          provider: integration.provider,
+          provider: integration.provider ?? "unknown",
           returnUrl: returnUrl.href,
         },
         mainFormData,
@@ -291,8 +292,8 @@ export const useUIInstallIntegration = ({
 };
 
 interface ConfirmMarketplaceInstallDialogProps extends HandleInstallUI {
-  integration: MarketplaceIntegration | null;
-  setIntegration: (integration: MarketplaceIntegration | null) => void;
+  integration: MarketplaceIntegrationCompat | null;
+  setIntegration: (integration: MarketplaceIntegrationCompat | null) => void;
 }
 
 export function ConfirmMarketplaceInstallDialog({
@@ -417,7 +418,7 @@ export function InstallStepsButtons({
 }
 
 interface DependencyStepProps {
-  integration: MarketplaceIntegration;
+  integration: MarketplaceIntegrationCompat;
   dependencyName?: string;
   dependencySchema?: JSONSchema7;
   currentStep: number;
@@ -465,7 +466,7 @@ export function DependencyStep({
       ...app,
       name: dependencyIntegration,
       provider: "marketplace",
-    } as MarketplaceIntegration;
+    } as MarketplaceIntegrationCompat;
   }, [app, dependencyIntegration]);
   const permissionsFromThisDependency = useMemo(
     () =>
@@ -641,13 +642,14 @@ function AddConnectionDialogContent({
   const createCustomConnection = useCreateCustomApp();
   const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
-    useState<MarketplaceIntegration | null>(() => {
+    useState<MarketplaceIntegrationCompat | null>(() => {
       if (!appName) return null;
       return (
-        marketplace?.integrations.find(
-          (integration: MarketplaceIntegration) =>
-            integration.appName === appName,
-        ) ?? null
+        (marketplace?.integrations.find(
+          (integration) =>
+            (integration as any).appName === appName ||
+            integration.name === appName,
+        ) as MarketplaceIntegrationCompat | undefined) ?? null
       );
     });
   const [oauthCompletionDialog, setOauthCompletionDialog] =
@@ -661,12 +663,31 @@ function AddConnectionDialogContent({
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
   const handleInstallFromRegistry = async (appName: string) => {
-    const app = await getRegistryApp({ name: appName ?? "" });
-    setInstallingIntegration({
-      ...app,
-      name: AppName.build(app.scopeName, app.name),
-      provider: "marketplace",
-    });
+    // First, check if it's in the marketplace (MCP Registry or other sources)
+    const marketplaceApp = marketplace?.integrations.find(
+      (integration) =>
+        integration.name === appName ||
+        integration.name?.endsWith(`/${appName}`),
+    );
+
+    if (marketplaceApp) {
+      // Use the marketplace app directly - it already has all the info we need
+      setInstallingIntegration(marketplaceApp as MarketplaceIntegrationCompat);
+      return;
+    }
+
+    // If not in marketplace, try to fetch from Deco registry
+    try {
+      const app = await getRegistryApp({ name: appName ?? "" });
+      setInstallingIntegration({
+        ...app,
+        name: AppName.build(app.scopeName, app.name),
+        provider: "marketplace",
+      });
+    } catch (error) {
+      // If still not found, silently fail - user will see empty state
+      console.error("App not found in marketplace or registry:", appName);
+    }
   };
 
   useEffect(() => {

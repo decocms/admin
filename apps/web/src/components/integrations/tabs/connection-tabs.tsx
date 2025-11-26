@@ -9,6 +9,7 @@ import {
   useToolCall,
   useTools,
 } from "@deco/sdk";
+import { getConnection } from "../marketplace-adapter.ts";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
@@ -337,7 +338,7 @@ function ToolsInspector({
   }, [data.instances, selectedIntegrationId]);
 
   const connection =
-    selectedIntegration?.connection || data?.info?.connection || {};
+    selectedIntegration?.connection || getConnection(data?.info) || {};
 
   const tools = useTools(connection as MCPConnection, true);
 
@@ -677,7 +678,9 @@ export function ConnectionTabs({
 
   const readOnly = !data.instances || data.instances?.length === 0;
 
-  const connection = selectedIntegration?.connection || data?.info?.connection;
+  const connection =
+    selectedIntegration?.connection ||
+    (data?.info ? getConnection(data.info) : undefined);
 
   // Legacy availability checks
   const { data: toolsData, isLoading: isLoadingTools } = useTools(

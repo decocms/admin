@@ -24,7 +24,10 @@ import {
   addIntegrationUpdateListener,
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
-import { MarketplaceIntegration } from "./marketplace.tsx";
+import {
+  type MarketplaceIntegration,
+  type MarketplaceIntegrationCompat,
+} from "./marketplace.tsx";
 
 export interface GroupedApp {
   id: string;
@@ -358,7 +361,7 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
     return grouped[appKey];
   }, [installedIntegrations, appKey]);
 
-  const info = useMemo<Partial<MarketplaceIntegration>>(() => {
+  const info = useMemo<Partial<MarketplaceIntegrationCompat>>(() => {
     const wellKnownApp = WELL_KNOWN_APPS[appKey];
     if (wellKnownApp) {
       return wellKnownApp;
@@ -370,7 +373,7 @@ export function useGroupedApp({ appKey }: { appKey: string }) {
         description: app.description ?? "No description available",
         name: AppName.build(app.scopeName, app.name),
         provider: "marketplace",
-      } satisfies MarketplaceIntegration;
+      } satisfies MarketplaceIntegrationCompat;
     }
 
     const firstInstance = instances?.[0];

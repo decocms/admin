@@ -410,7 +410,7 @@ function ConfigureConnectionInstanceForm({
       description: data.info?.description ?? "",
       icon: data.info?.icon ?? "",
       verified: data.info?.verified ?? false,
-      connection: data.info?.connection ?? { type: "HTTP", url: "" },
+      connection: data.info?.connection,
       friendlyName: data.info?.friendlyName ?? "",
     };
     if (!needsApproval) {

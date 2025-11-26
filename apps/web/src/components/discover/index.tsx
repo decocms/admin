@@ -1,25 +1,34 @@
-import {
-  type Integration,
-  MCPConnection,
-  useMarketplaceIntegrations,
-} from "@deco/sdk";
+import { type Integration } from "@deco/sdk";
+import { useMarketplaceSpec } from "../../hooks/use-marketplace-spec.ts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
-import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
+import { AppKeys } from "../integrations/apps.ts";
+import { getMarketplaceAppKey } from "../integrations/marketplace-adapter.ts";
 import { VerifiedBadge } from "../integrations/marketplace.tsx";
+import {
+  type MarketplaceIntegration,
+  getVerified,
+  getIconUrl,
+  getBannerUrl,
+  getTags,
+} from "../integrations/marketplace-adapter.ts";
 
 // For the future, it should be controlled in a view
 const HIGHLIGHTS = [
   {
-    appName: "@deco/google-sheets",
-    name: "Google Sheets",
+    name: "@deco/google-sheets",
+    title: "Google Sheets",
     description: "Manage spreadsheets with structured data",
-    banner:
-      "https://assets.decocache.com/decocms/3cbf2b30-57aa-47a3-89c5-9277a6b8c993/googlesheets.png",
+    _meta: {
+      "deco/internal": {
+        banner:
+          "https://assets.decocache.com/decocms/3cbf2b30-57aa-47a3-89c5-9277a6b8c993/googlesheets.png",
+      },
+    },
   },
 ];
 
@@ -29,26 +38,17 @@ const FEATURED = ["@deco/airtable", "@deco/slack", "@deco/google-docs"];
 /**
  * Filter apps that have valid icons (not empty and not default).
  * Remove apps without icon and apps with default icon that ends with /app.png
- * @param integrations - List of integrations to filter
- * @returns Filtered list of integrations with valid icons
  */
-const filterAppsWithValidIcons = <T extends Integration>(
-  integrations: T[],
-): T[] => {
-  return integrations.filter((integration) => {
-    if (!integration.icon || integration.icon.trim() === "") return false;
-    if (integration.icon.endsWith("/app.png")) return false;
-    return true;
-  });
+const hasValidIcon = (integration: MarketplaceIntegration): boolean => {
+  const iconUrl = getIconUrl(integration);
+  if (!iconUrl || iconUrl.trim() === "") return false;
+  return !iconUrl.endsWith("/app.png");
 };
 
 /**
- * Return the most recent apps based on the order of return from the marketplace.
+ * Return the most recent app names based on marketplace order.
  * The apps from the marketplace already come ordered by creation date (most recent first).
  * Filter only apps with valid icons.
- * @param integrations - List of integrations from the marketplace
- * @param limit - Number of apps to return (default: 3)
- * @returns Array with the names of the most recent apps
  */
 const getRecentApps = (
   integrations: Integration[] | undefined,
@@ -56,7 +56,7 @@ const getRecentApps = (
 ): string[] => {
   if (!integrations || integrations.length === 0) return FEATURED;
 
-  const appsWithValidIcons = filterAppsWithValidIcons(integrations);
+  const appsWithValidIcons = integrations.filter(hasValidIcon);
   const appsWithCreatedAt = appsWithValidIcons.filter(
     (integration) => integration.createdAt,
   );
@@ -66,11 +66,19 @@ const getRecentApps = (
     : appsWithCreatedAt.slice(0, limit).map((integration) => integration.name);
 };
 
-type FeaturedIntegration = Integration & {
-  provider: string;
-  friendlyName?: string;
-  verified?: boolean | null;
-  connection: MCPConnection;
+// FeaturedIntegration agora usa _meta["deco/internal"].banner
+type FeaturedIntegration = MarketplaceIntegration;
+
+const handleCardClick = (
+  appKey: string,
+  onAppClick?: (appKey: string) => void,
+  navigateWorkspace?: (path: string) => void,
+) => {
+  if (onAppClick) {
+    onAppClick(appKey);
+  } else if (navigateWorkspace) {
+    navigateWorkspace(`/apps/${appKey}`);
+  }
 };
 
 const FeaturedCard = ({
@@ -81,29 +89,30 @@ const FeaturedCard = ({
   onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
-  const key = getConnectionAppKey(integration);
-  const appKey = AppKeys.build(key);
+  const appKeyData = getMarketplaceAppKey(integration);
+  const appKey = AppKeys.build(appKeyData);
+
+  const handleClick = () => {
+    handleCardClick(appKey, onAppClick, navigateWorkspace);
+  };
+
   return (
     <div
-      onClick={() => {
-        if (onAppClick) {
-          onAppClick(appKey);
-        } else {
-          navigateWorkspace(`/apps/${appKey}`);
-        }
-      }}
-      className="flex flex-col gap-2 p-4 bg-card relative rounded-xl cursor-pointer overflow-hidden"
+      onClick={handleClick}
+      className="flex flex-col gap-2 p-4 bg-card rounded-xl cursor-pointer overflow-hidden hover:shadow-md transition-shadow"
     >
       <IntegrationAvatar
-        url={integration.icon}
-        fallback={integration.friendlyName ?? integration.name}
+        url={getIconUrl(integration)}
+        fallback={integration.title || integration.name}
         size="lg"
       />
       <h3 className="text-sm flex gap-1 items-center">
-        {integration.friendlyName || integration.name}
-        {integration.verified && <VerifiedBadge />}
+        {integration.title || integration.name}
+        {getVerified(integration) && <VerifiedBadge />}
       </h3>
-      <p className="text-sm text-muted-foreground">{integration.description}</p>
+      <p className="text-sm text-muted-foreground line-clamp-2">
+        {integration.description}
+      </p>
     </div>
   );
 };
@@ -116,29 +125,23 @@ const SimpleFeaturedCard = ({
   onAppClick?: (appKey: string) => void;
 }) => {
   const navigateWorkspace = useNavigateWorkspace();
-  const key = getConnectionAppKey(integration);
-  const appKey = AppKeys.build(key);
+  const appKey = AppKeys.build(getMarketplaceAppKey(integration));
+
   return (
     <div
-      onClick={() => {
-        if (onAppClick) {
-          onAppClick(appKey);
-        } else {
-          navigateWorkspace(`/apps/${appKey}`);
-        }
-      }}
-      className="flex p-2 gap-2 cursor-pointer overflow-hidden items-center hover:bg-muted rounded-lg"
+      onClick={() => handleCardClick(appKey, onAppClick, navigateWorkspace)}
+      className="flex gap-2 p-2 items-center cursor-pointer rounded-lg hover:bg-muted transition-colors"
     >
       <IntegrationAvatar
-        url={integration.icon}
-        fallback={integration.friendlyName ?? integration.name}
+        url={getIconUrl(integration)}
+        fallback={integration.title || integration.name}
         size="lg"
       />
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm flex gap-1 items-center">
-          {integration.friendlyName || integration.name}
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <h3 className="text-sm font-medium truncate">
+          {integration.title || integration.name}
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground line-clamp-1">
           {integration.description}
         </p>
       </div>
@@ -149,11 +152,12 @@ const SimpleFeaturedCard = ({
 function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
   const { onAppClick } = props;
   const [search, setSearch] = useState("");
-  const { data: integrations } = useMarketplaceIntegrations();
+  const { data: integrations } = useMarketplaceSpec();
   const navigateWorkspace = useNavigateWorkspace();
 
   const recentApps = useMemo(
-    () => getRecentApps(integrations?.integrations, 3),
+    () =>
+      getRecentApps(integrations?.integrations as Integration[] | undefined, 3),
     [integrations],
   );
 
@@ -161,35 +165,49 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
     (integration) => recentApps.includes(integration.name),
   );
   const verifiedIntegrations = integrations?.integrations.filter(
-    (integration) => integration.verified,
+    (integration) => getVerified(integration),
   );
 
   const sortedIntegrations = useMemo<FeaturedIntegration[]>(() => {
     if (!integrations?.integrations) return [];
 
-    const validIconApps = filterAppsWithValidIcons(integrations.integrations);
-    const noIconApps = integrations.integrations.filter(
-      (integration) => !validIconApps.includes(integration),
+    const appsWithIcons = integrations.integrations.filter((app) =>
+      hasValidIcon(app),
     );
-    const allApps = [...validIconApps, ...noIconApps];
+    const appsWithoutIcons = integrations.integrations.filter(
+      (app) => !hasValidIcon(app),
+    );
 
-    return [...allApps].sort((a, b) => {
-      if (a.verified === true && b.verified !== true) return -1;
-      if (a.verified !== true && b.verified === true) return 1;
-
-      return 0;
-    });
+    return [...appsWithIcons, ...appsWithoutIcons]
+      .sort((a, b) => {
+        const aVerified = getVerified(a);
+        const bVerified = getVerified(b);
+        if (aVerified && !bVerified) return -1;
+        if (!aVerified && bVerified) return 1;
+        return 0;
+      })
+      .map((integration) => integration as FeaturedIntegration);
   }, [integrations]);
 
   const highlights = useMemo(() => {
     return HIGHLIGHTS.map((highlight) => {
       const integration = integrations?.integrations.find(
-        (integration) => integration.name === highlight.appName,
+        (integration) => integration.name === highlight.name,
       );
+      if (!integration) {
+        return highlight as MarketplaceIntegration;
+      }
+      const bannerUrl = highlight._meta?.["deco/internal"]?.banner;
       return {
         ...integration,
-        ...highlight,
-      };
+        _meta: {
+          ...integration._meta,
+          "deco/internal": {
+            ...integration._meta?.["deco/internal"],
+            banner: bannerUrl,
+          },
+        },
+      } as MarketplaceIntegration;
     });
   }, [integrations]);
 
@@ -198,9 +216,9 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
       ?.filter(
         (integration) =>
           integration.name.toLowerCase().includes(search.toLowerCase()) ||
-          integration.friendlyName
-            ?.toLowerCase()
-            .includes(search.toLowerCase()),
+          getTags(integration).some((tag: string) =>
+            tag.toLowerCase().includes(search.toLowerCase()),
+          ),
       )
       ?.slice(0, 7);
   }, [integrations, search]);
@@ -248,55 +266,54 @@ function Discover(props: { onAppClick?: (appKey: string) => void } = {}) {
         <div className="col-span-4 overflow-y-auto">
           <div className="flex flex-col gap-4">
             {highlights.map((item) => {
-              if (!item.id) {
-                return null;
-              }
-              const key = getConnectionAppKey(item as Integration);
-              const appKey = AppKeys.build(key);
+              if (!item.id) return null;
+
+              const marketplaceItem = item as MarketplaceIntegration;
+              const appKey = AppKeys.build(
+                getMarketplaceAppKey(marketplaceItem),
+              );
+              const displayName = marketplaceItem.title || marketplaceItem.name;
+
+              const handleKeyDown = (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleCardClick(appKey, onAppClick, navigateWorkspace);
+                }
+              };
+
               return (
                 <button
-                  key={item.appName}
+                  key={item.name}
                   type="button"
-                  onClick={() => {
-                    if (onAppClick) {
-                      onAppClick(appKey);
-                    } else {
-                      navigateWorkspace(`/apps/${appKey}`);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (onAppClick) {
-                        onAppClick(appKey);
-                      } else {
-                        navigateWorkspace(`/apps/${appKey}`);
-                      }
-                    }
-                  }}
-                  className="relative rounded-xl cursor-pointer overflow-hidden"
+                  onClick={() =>
+                    handleCardClick(appKey, onAppClick, navigateWorkspace)
+                  }
+                  onKeyDown={handleKeyDown}
+                  className="relative rounded-xl overflow-hidden group cursor-pointer transition-transform hover:scale-105"
                 >
                   <img
-                    src={item.banner}
-                    alt={item.appName || ""}
+                    src={getBannerUrl(item) || ""}
+                    alt={displayName}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute flex flex-col bottom-6 left-6">
                     <IntegrationAvatar
-                      url={item.icon}
-                      fallback={item.friendlyName ?? item.name}
+                      url={getIconUrl(item)}
+                      fallback={displayName}
                       size="lg"
                       className="border-none mb-2"
                     />
-                    <h3 className="flex gap-2 items-center text-3xl text-white mb-0.5">
-                      {item.name || item.friendlyName || item.appName}
-                      <VerifiedBadge />
+                    <h3 className="flex gap-2 items-center text-3xl font-bold text-white mb-0.5">
+                      {displayName}
+                      {getVerified(item) && <VerifiedBadge />}
                     </h3>
-                    <p className="text-sm text-white">{item.description}</p>
+                    <p className="text-sm text-white/90 line-clamp-2">
+                      {item.description}
+                    </p>
                   </div>
                   <Button
-                    className="absolute bottom-6 right-6"
+                    className="absolute bottom-6 right-6 group-hover:scale-105 transition-transform"
                     variant="default"
                   >
                     See app

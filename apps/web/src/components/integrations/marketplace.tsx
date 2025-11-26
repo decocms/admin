@@ -1,4 +1,3 @@
-import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -7,13 +6,14 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
+import { useMarketplaceSpec } from "../../hooks/use-marketplace-spec.ts";
+import {
+  type MarketplaceIntegration,
+  getVerified,
+  getTags,
+  getIconUrl,
+} from "./marketplace-adapter.ts";
 import { IntegrationIcon } from "./common.tsx";
-
-export interface MarketplaceIntegration extends Integration {
-  provider: string;
-  friendlyName?: string;
-  verified?: boolean | null;
-}
 
 export function VerifiedBadge() {
   return (
@@ -47,7 +47,8 @@ function CardsView({
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
       {integrations.map((integration) => {
         const showVerifiedBadge =
-          integration.id !== NEW_CUSTOM_CONNECTION.id && integration.verified;
+          integration.id !== NEW_CUSTOM_CONNECTION.id &&
+          getVerified(integration);
         return (
           <Card
             key={integration.id}
@@ -57,14 +58,14 @@ function CardsView({
             <CardContent className="p-4">
               <div className="grid grid-cols-[min-content_1fr] gap-4">
                 <IntegrationIcon
-                  icon={integration.icon}
-                  name={integration.friendlyName ?? integration.name}
+                  icon={getIconUrl(integration)}
+                  name={integration.title || integration.name}
                   className="h-10 w-10"
                 />
                 <div className="grid grid-cols-1 gap-1">
                   <div className="flex items-start gap-1">
                     <div className="text-sm font-semibold truncate">
-                      {integration.friendlyName ?? integration.name}
+                      {integration.title || integration.name}
                     </div>
                     {showVerifiedBadge && <VerifiedBadge />}
                   </div>
@@ -83,11 +84,17 @@ function CardsView({
 
 export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   id: "NEW_CUSTOM_CONNECTION",
-  name: "Create custom integration",
+  name: "custom",
+  title: "Create custom integration",
   description: "Create a new integration with any MCP server",
-  icon: "",
-  provider: "deco",
-  connection: { type: "HTTP", url: "" },
+  icons: undefined,
+  _meta: {
+    "deco/internal": {
+      status: "active",
+      verified: false,
+      connection: { type: "HTTP", url: "" },
+    },
+  },
 };
 
 export function Marketplace({
@@ -99,7 +106,7 @@ export function Marketplace({
   onClick: (integration: MarketplaceIntegration) => void;
   emptyState?: React.ReactNode;
 }) {
-  const { data: marketplace } = useMarketplaceIntegrations();
+  const { data: marketplace } = useMarketplaceSpec();
 
   const filteredIntegrations = useMemo(() => {
     const searchTerm = filter.toLowerCase();
@@ -115,9 +122,8 @@ export function Marketplace({
             (integration.description?.toLowerCase() ?? "").includes(
               searchTerm,
             ) ||
-            integration.provider.toLowerCase().includes(searchTerm) ||
-            (integration.friendlyName?.toLowerCase() ?? "").includes(
-              searchTerm,
+            getTags(integration).some((tag: string) =>
+              tag.toLowerCase().includes(searchTerm),
             ),
         )
       : integrations;
@@ -135,3 +141,8 @@ export function Marketplace({
     </div>
   );
 }
+
+export type {
+  MarketplaceIntegration,
+  MarketplaceIntegrationCompat,
+} from "./marketplace-adapter.ts";

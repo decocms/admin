@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -50,18 +50,18 @@
       "default": "./dist/node/connection.js"
     },
     "./collections": {
-      "types": "./dist/node/well-known/collections.d.ts",
-      "browser": "./dist/browser/well-known/collections.js",
-      "bun": "./dist/node/well-known/collections.js",
-      "node": "./dist/node/well-known/collections.js",
-      "default": "./dist/node/well-known/collections.js"
+      "types": "./dist/node/collections.d.ts",
+      "browser": "./dist/browser/collections.js",
+      "bun": "./dist/node/collections.js",
+      "node": "./dist/node/collections.js",
+      "default": "./dist/node/collections.js"
     },
     "./agents": {
-      "types": "./dist/node/well-known/agents.d.ts",
-      "browser": "./dist/browser/well-known/agents.js",
-      "bun": "./dist/node/well-known/agents.js",
-      "node": "./dist/node/well-known/agents.js",
-      "default": "./dist/node/well-known/agents.js"
+      "types": "./dist/node/agents.d.ts",
+      "browser": "./dist/browser/agents.js",
+      "bun": "./dist/node/agents.js",
+      "node": "./dist/node/agents.js",
+      "default": "./dist/node/agents.js"
     }
   },
   "devDependencies": {

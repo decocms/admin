@@ -1,16 +1,21 @@
 /**
- * Models Well-Known Binding
+ * Language Model Well-Known Binding
  *
  * Defines the interface for AI model providers.
  * Any MCP that implements this binding can provide AI models and streaming endpoints.
  *
- * This binding uses collection bindings for LIST and GET operations (read-only).
- * Streaming endpoint information is included directly in the model entity schema.
+ * This binding includes:
+ * - LLM operations (metadata, stream, generate)
+ * - Collection bindings for LIST and GET operations (read-only)
+ * - Streaming endpoint information is included directly in the model entity schema.
  */
 
 import { z } from "zod";
 import { bindingClient, type ToolBinder } from "../core/binder";
-import { MODELS_BINDING } from "./models";
+import {
+  BaseCollectionEntitySchema,
+  createCollectionBindings,
+} from "./collections";
 
 /**
  * Language Model Call Options Schema
@@ -252,6 +257,10 @@ export const LanguageModelMetadataSchema = z.object({
     .record(z.string(), z.array(z.string()))
     .describe("Supported URL patterns by media type for the provider"),
 });
+
+/**
+ * Simple Model schema for LLM operations
+ */
 export const ModelSchema = z.object({
   modelId: z.string().describe("The ID of the model"),
   // Model-specific fields
@@ -289,6 +298,67 @@ export const LanguageModelInputSchema = z.object({
   callOptions: LanguageModelCallOptionsSchema,
 });
 
+/**
+ * Model entity schema for AI models (Collection Entity)
+ * Extends BaseCollectionEntitySchema with model-specific fields
+ * Base schema already includes: id, title, created_at, updated_at, created_by, updated_by
+ */
+export const ModelCollectionEntitySchema = BaseCollectionEntitySchema.extend({
+  // Model-specific fields
+  logo: z.string().nullable(),
+  description: z.string().nullable(),
+  capabilities: z.array(z.string()),
+  limits: z
+    .object({
+      contextWindow: z.number(),
+      maxOutputTokens: z.number(),
+    })
+    .nullable(),
+  costs: z
+    .object({
+      input: z.number(),
+      output: z.number(),
+    })
+    .nullable(),
+  // Provider information
+  provider: z
+    .enum([
+      "openai",
+      "anthropic",
+      "google",
+      "xai",
+      "deepseek",
+      "openai-compatible",
+      "openrouter",
+    ])
+    .nullable(),
+});
+
+/**
+ * LLM Collection Binding (internal)
+ *
+ * Collection bindings for language models (read-only).
+ * Provides LIST and GET operations for AI models.
+ */
+const LLM_COLLECTION_BINDING = createCollectionBindings(
+  "llm",
+  ModelCollectionEntitySchema,
+  { readOnly: true },
+);
+
+/**
+ * Language Model Binding
+ *
+ * Defines the interface for AI model providers.
+ * Any MCP that implements this binding can provide AI models.
+ *
+ * Required tools:
+ * - LLM_METADATA: Get metadata for a specific model
+ * - LLM_DO_STREAM: Stream a language model response
+ * - LLM_DO_GENERATE: Generate a language model response
+ * - COLLECTION_LLM_LIST: List available AI models with their capabilities
+ * - COLLECTION_LLM_GET: Get a single model by ID
+ */
 export const LANGUAGE_MODEL_BINDING = [
   {
     name: "LLM_METADATA" as const,
@@ -307,7 +377,7 @@ export const LANGUAGE_MODEL_BINDING = [
     inputSchema: LanguageModelInputSchema,
     outputSchema: LanguageModelGenerateOutputSchema,
   },
-  ...MODELS_BINDING,
+  ...LLM_COLLECTION_BINDING,
 ] satisfies ToolBinder[];
 
 export const LanguageModelBinding = bindingClient(LANGUAGE_MODEL_BINDING);

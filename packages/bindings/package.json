@@ -16,41 +16,34 @@
     "@modelcontextprotocol/sdk": "^1.20.2"
   },
   "main": "./dist/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "files": [
-    "dist/**/*",
-    "src/**/*"
+    "dist/**/*"
   ],
   "exports": {
     ".": {
-      "source": "./src/index.ts",
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./models": {
-      "source": "./src/well-known/models.ts",
-      "types": "./src/well-known/models.ts",
-      "default": "./dist/well-known/models.js"
+      "types": "./dist/models.d.ts",
+      "default": "./dist/models.js"
     },
     "./collections": {
-      "source": "./src/well-known/collections.ts",
-      "types": "./src/well-known/collections.ts",
-      "default": "./dist/well-known/collections.js"
+      "types": "./dist/collections.d.ts",
+      "default": "./dist/collections.js"
     },
     "./llm": {
-      "source": "./src/well-known/language-model.ts",
-      "types": "./src/well-known/language-model.ts",
-      "default": "./dist/well-known/language-model.js"
+      "types": "./dist/language-model.d.ts",
+      "default": "./dist/language-model.js"
     },
     "./connection": {
-      "source": "./src/core/connection.ts",
-      "types": "./src/core/connection.ts",
-      "default": "./dist/core/connection.js"
+      "types": "./dist/connection.d.ts",
+      "default": "./dist/connection.js"
     },
     "./client": {
-      "source": "./src/core/client/index.ts",
-      "types": "./src/core/client/index.ts",
-      "default": "./dist/core/client/index.js"
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
     }
   },
   "devDependencies": {

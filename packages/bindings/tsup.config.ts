@@ -14,11 +14,13 @@ export default defineConfig({
   bundle: true,
   sourcemap: true,
   clean: true,
-  dts: true,
+  dts: {
+    resolve: true,
+  },
   minify: false,
-  splitting: true,
+  splitting: false,
   treeshake: true,
   shims: true,
   // Keep all dependencies as external since this is a library
-  external: ["node:*", "zod"],
+  external: ["node:*", "zod", "@modelcontextprotocol/sdk"],
 });

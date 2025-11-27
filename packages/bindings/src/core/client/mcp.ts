@@ -34,7 +34,7 @@ export const MCPClient = new Proxy(
   },
 );
 
-import { ToolBinder } from "@decocms/bindings";
+import type { ToolBinder } from "../binder";
 export type { ToolBinder };
 
 export const isStreamableToolBinder = (

@@ -1,8 +1,6 @@
 /* oxlint-disable no-explicit-any */
-import { env } from "cloudflare:workers";
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
-import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
 import type { ToolBinder } from "@decocms/bindings";
 
@@ -69,9 +67,11 @@ export const MCPClient = new Proxy(
     forWorkspace: (
       workspace: string,
       token?: string,
+      decoCmsApiUrl?: string,
     ) => MCPClientFetchStub<typeof workspaceTools>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnectionProvider,
+      decoCmsApiUrl?: string,
     ) => MCPClientFetchStub<TDefinition>;
   },
   {
@@ -81,20 +81,21 @@ export const MCPClient = new Proxy(
       }
 
       if (name === "forWorkspace") {
-        return (workspace: string, token?: string) =>
+        return (workspace: string, token?: string, decoCmsApiUrl?: string) =>
           createMCPFetchStub<[]>({
             workspace,
             token,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoCmsApiUrl,
           });
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(
           connection: MCPConnectionProvider,
+          decoCmsApiUrl?: string,
         ) =>
           createMCPFetchStub<TDefinition>({
             connection,
-            decoCmsApiUrl: (env as DefaultEnv).DECO_API_URL,
+            decoCmsApiUrl,
           });
       }
       return global[name as keyof typeof global];

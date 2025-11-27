@@ -30,7 +30,6 @@ const config: Options = {
     "node:*",
     "@cloudflare/workers-types",
     "@deco/mcp",
-    "@mastra/cloudflare-d1",
     "@mastra/core",
     "@modelcontextprotocol/sdk",
     "bidc",

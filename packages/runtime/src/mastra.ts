@@ -6,16 +6,8 @@ import {
   Tool,
   type ToolAction,
   type ToolExecutionContext,
-  type Workflow,
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
-import {
-  createWorkflow,
-  createStep as mastraCreateStep,
-  type DefaultEngineType,
-  type ExecuteFunction,
-  type Step as MastraStep,
-} from "@mastra/core/workflows";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
@@ -35,9 +27,6 @@ import {
 } from "./resources.ts";
 import { createStateValidationTool, State } from "./state.ts";
 import { ViewsListOutputSchema } from "./views.ts";
-export { createWorkflow };
-
-export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
 
 export const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   const runtimeContext = new RuntimeContext<AppContext>();
@@ -207,111 +196,6 @@ export type ExecWithContext<TF extends (...args: any[]) => any> = (
   },
 ) => ReturnType<TF>;
 
-export interface Step<
-  TStepId extends string = string,
-  // @ts-expect-error - TState is not a ZodObject
-  TState extends z.ZodObject<any> = z.ZodObject<any, z.$strip>,
-  TSchemaIn extends z.ZodType<any> = z.ZodType<any>,
-  TSchemaOut extends z.ZodType<any> = z.ZodType<any>,
-  TResumeSchema extends z.ZodType<any> = z.ZodType<any>,
-  TSuspendSchema extends z.ZodType<any> = z.ZodType<any>,
-  TEngineType = any,
-> extends Omit<
-    MastraStep<
-      TStepId,
-      TState,
-      TSchemaIn,
-      TSchemaOut,
-      TResumeSchema,
-      TSuspendSchema,
-      TEngineType
-    >,
-    "execute"
-  > {
-  execute: ExecWithContext<
-    ExecuteFunction<
-      z.infer<TState>,
-      z.infer<TSchemaIn>,
-      z.infer<TSchemaOut>,
-      z.infer<TResumeSchema>,
-      z.infer<TSuspendSchema>,
-      TEngineType
-    >
-  >;
-}
-export function createStepFromTool<
-  TSchemaIn extends z.ZodType<any>,
-  TSchemaOut extends z.ZodType<any>,
-  TSuspendSchema extends z.ZodType<any>,
-  TResumeSchema extends z.ZodType<any>,
-  TContext extends ToolExecutionContext<
-    TSchemaIn,
-    TSuspendSchema,
-    TResumeSchema
-  >,
->(
-  tool: Tool<TSchemaIn, TSchemaOut, TSuspendSchema, TResumeSchema, TContext> & {
-    inputSchema: TSchemaIn;
-    outputSchema: TSchemaOut;
-    execute: (context: TContext) => Promise<any>;
-  },
-): Step<
-  string,
-  // @ts-expect-error - TSchemaIn is not a ZodType
-  TSchemaIn,
-  TSchemaOut,
-  z.ZodType<any>,
-  z.ZodType<any>,
-  DefaultEngineType
-> {
-  // @ts-expect-error - TSchemaIn is not a ZodType
-  return mastraCreateStep(tool);
-}
-
-export function createStep<
-  TStepId extends string,
-  TStepInput extends z.ZodType<any>,
-  TStepOutput extends z.ZodType<any>,
-  TResumeSchema extends z.ZodType<any>,
-  TSuspendSchema extends z.ZodType<any>,
->(opts: {
-  id: TStepId;
-  description?: string;
-  inputSchema: TStepInput;
-  outputSchema: TStepOutput;
-  resumeSchema?: TResumeSchema;
-  suspendSchema?: TSuspendSchema;
-  execute: ExecWithContext<
-    // @ts-expect-error - TStepInput is not a ZodObject
-    ExecuteFunction<
-      z.infer<TStepInput>,
-      z.infer<TStepOutput>,
-      z.infer<TResumeSchema>,
-      z.infer<TSuspendSchema>,
-      DefaultEngineType
-    >
-  >;
-}): Step<
-  TStepId,
-  // @ts-expect-error - TStepInput is not a ZodObject
-  TStepInput,
-  TStepOutput,
-  TResumeSchema,
-  TSuspendSchema,
-  DefaultEngineType
-> {
-  // @ts-expect-error - TStepInput is not a ZodObject
-  return mastraCreateStep({
-    ...opts,
-    execute: (input) => {
-      return opts.execute({
-        ...input,
-        runtimeContext: createRuntimeContext(input.runtimeContext),
-      });
-    },
-  });
-}
-
 export interface ViewExport {
   title: string;
   icon: string;
@@ -392,13 +276,6 @@ export interface CreateMCPServerOptions<
     | ((
         env: Env & DefaultEnv<TSchema>,
       ) => CreatedTool[] | Promise<CreatedTool[]>);
-  workflows?: Array<
-    (
-      env: Env & DefaultEnv<TSchema>,
-    ) => // this is a workaround to allow workflows to be thenables
-      | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
-      | ReturnType<typeof createWorkflow>
-  >;
 }
 
 export type Fetch<TEnv = any> = (
@@ -441,89 +318,6 @@ const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
   ];
 };
 
-const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
-  workflow: ReturnType<typeof createWorkflow>,
-  bindings: TEnv & DefaultEnv<TSchema>,
-) => {
-  const startTool = createTool({
-    id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
-    description: workflow.description ?? `Start workflow ${workflow.id}`,
-    inputSchema:
-      workflow.inputSchema && "shape" in workflow.inputSchema
-        ? workflow.inputSchema
-        : z.object({}),
-    outputSchema: z.object({
-      id: z.string(),
-    }),
-    execute: async (args) => {
-      const store = State.getStore();
-      const runId =
-        store?.req?.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID();
-      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
-        bindings.DECO_WORKFLOW_DO.idFromName(runId),
-      );
-
-      using result = await workflowDO.start({
-        workflowId: workflow.id,
-        args: args.context,
-        runId,
-        ctx: bindings.DECO_REQUEST_CONTEXT,
-      });
-      return { id: result.runId };
-    },
-  });
-
-  const cancelTool = createTool({
-    id: `DECO_CHAT_WORKFLOWS_CANCEL_${workflow.id}`,
-    description: `Cancel ${workflow.description ?? `workflow ${workflow.id}`}`,
-    inputSchema: z.object({ runId: z.string() }),
-    outputSchema: z.object({ cancelled: z.boolean() }),
-    execute: async (args) => {
-      const runId = args.context.runId;
-      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
-        bindings.DECO_WORKFLOW_DO.idFromName(runId),
-      );
-
-      using _ = await workflowDO.cancel({
-        workflowId: workflow.id,
-        runId,
-        ctx: bindings.DECO_REQUEST_CONTEXT,
-      });
-
-      return { cancelled: true };
-    },
-  });
-
-  const resumeTool = createTool({
-    id: `DECO_CHAT_WORKFLOWS_RESUME_${workflow.id}`,
-    description: `Resume ${workflow.description ?? `workflow ${workflow.id}`}`,
-    inputSchema: z.object({
-      runId: z.string(),
-      stepId: z.string(),
-      resumeData: z.any(),
-    }),
-    outputSchema: z.object({ resumed: z.boolean() }),
-    execute: async (args) => {
-      const runId = args.context.runId;
-      const workflowDO = bindings.DECO_WORKFLOW_DO.get(
-        bindings.DECO_WORKFLOW_DO.idFromName(runId),
-      );
-
-      using _ = await workflowDO.resume({
-        workflowId: workflow.id,
-        runId,
-        resumeData: args.context.resumeData,
-        stepId: args.context.stepId,
-        ctx: bindings.DECO_REQUEST_CONTEXT,
-      });
-
-      return { resumed: true };
-    },
-  });
-
-  return [startTool, cancelTool, resumeTool];
-};
-
 type CallTool = (opts: {
   toolCallId: string;
   toolCallInput: any;
@@ -532,10 +326,6 @@ type CallTool = (opts: {
 export type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
   fetch: Fetch<TEnv & DefaultEnv<TSchema>>;
   callTool: CallTool;
-};
-
-export const isWorkflow = (value: any): value is Workflow => {
-  return value && !(value instanceof Promise);
 };
 
 export const createMCPServer = <
@@ -706,24 +496,6 @@ export const createMCPServer = <
           };
     const tools = await toolsFn(bindings);
 
-    // since mastra workflows are thenables, we need to await and add as a prop
-    const workflows = await Promise.all(
-      options.workflows?.map(async (workflow) => {
-        const workflowResult = workflow(bindings);
-        if (isWorkflow(workflowResult)) {
-          return { workflow: workflowResult };
-        }
-
-        return await workflowResult;
-      }) ?? [],
-    ).then((w) => w.map((w) => w.workflow));
-
-    const workflowTools =
-      workflows?.flatMap((workflow) =>
-        createWorkflowTools(workflow, bindings),
-      ) ?? [];
-
-    tools.push(...workflowTools);
     tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));
     tools.push(createStateValidationTool(options.oauth?.state));
 

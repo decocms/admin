@@ -1,5 +1,6 @@
 import type { Integration } from "@deco/sdk";
 import { useMarketplaceIntegrations, useRegistryApp } from "@deco/sdk";
+import type { MarketplaceIntegrationCompat } from "../../integrations/marketplace.tsx";
 import { AppName } from "@deco/sdk/common";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -97,7 +98,7 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
     if (!needsApproval) {
       try {
         await install({
-          integration,
+          integration: integration as MarketplaceIntegrationCompat,
         });
         return;
       } catch {

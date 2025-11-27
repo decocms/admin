@@ -15,6 +15,7 @@ import {
   useOrganizations,
   useProjects,
 } from "@deco/sdk/hooks";
+import type { MarketplaceIntegrationCompat } from "../integrations/marketplace.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Combobox } from "@deco/ui/components/combobox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -533,7 +534,7 @@ const InlineInstallationForm = ({
     integrationState,
     install: () =>
       install({
-        integration: integrationFromMarketplace,
+        integration: integrationFromMarketplace as MarketplaceIntegrationCompat,
         mainFormData: formRef.current?.getValues(),
       }),
   });
@@ -595,7 +596,9 @@ const InlineInstallationForm = ({
         {/* Desktop: grid layout, Mobile: column layout */}
         <div className="md:hidden h-full">
           <DependencyStep
-            integration={integrationFromMarketplace}
+            integration={
+              integrationFromMarketplace as MarketplaceIntegrationCompat
+            }
             dependencyName={dependencyName}
             dependencySchema={currentSchema}
             currentStep={stepIndex + 1}
@@ -607,7 +610,9 @@ const InlineInstallationForm = ({
         </div>
         <div className="hidden md:flex h-full [&>div]:max-h-full! [&>div]:min-h-full! [&>div]:h-full!">
           <DependencyStep
-            integration={integrationFromMarketplace}
+            integration={
+              integrationFromMarketplace as MarketplaceIntegrationCompat
+            }
             dependencyName={dependencyName}
             dependencySchema={currentSchema}
             currentStep={stepIndex + 1}
@@ -879,7 +884,8 @@ const SelectProjectAppInstance = ({
                   if (integrationFromMarketplace && totalSteps === 0) {
                     // No requirements, install directly
                     autoInstall({
-                      integration: integrationFromMarketplace,
+                      integration:
+                        integrationFromMarketplace as MarketplaceIntegrationCompat,
                       mainFormData: {},
                     });
                   } else {

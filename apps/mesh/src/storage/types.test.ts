@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Database, MCPConnection, Permission } from "./types";
+import type { Database, Permission } from "./types";
+import type { ConnectionEntity } from "../tools/connection/schema";
 
 describe("Database Types", () => {
   describe("Permission format", () => {
@@ -29,32 +30,32 @@ describe("Database Types", () => {
     });
   });
 
-  describe("MCPConnection types", () => {
+  describe("ConnectionEntity types", () => {
     it("should allow organization-scoped connection", () => {
-      const conn: Partial<MCPConnection> = {
+      const conn: Partial<ConnectionEntity> = {
         id: "conn_123",
-        organizationId: "org_123", // All connections are organization-scoped
-        name: "Test",
-        connectionType: "HTTP",
-        connectionUrl: "https://example.com",
+        organization_id: "org_123",
+        title: "Test",
+        connection_type: "HTTP",
+        connection_url: "https://example.com",
       };
-      expect(conn.organizationId).toBe("org_123");
+      expect(conn.organization_id).toBe("org_123");
     });
 
     it("should support all connection types", () => {
-      const httpConn: Pick<MCPConnection, "connectionType"> = {
-        connectionType: "HTTP",
+      const httpConn: Pick<ConnectionEntity, "connection_type"> = {
+        connection_type: "HTTP",
       };
-      const sseConn: Pick<MCPConnection, "connectionType"> = {
-        connectionType: "SSE",
+      const sseConn: Pick<ConnectionEntity, "connection_type"> = {
+        connection_type: "SSE",
       };
-      const wsConn: Pick<MCPConnection, "connectionType"> = {
-        connectionType: "Websocket",
+      const wsConn: Pick<ConnectionEntity, "connection_type"> = {
+        connection_type: "Websocket",
       };
 
-      expect(httpConn.connectionType).toBe("HTTP");
-      expect(sseConn.connectionType).toBe("SSE");
-      expect(wsConn.connectionType).toBe("Websocket");
+      expect(httpConn.connection_type).toBe("HTTP");
+      expect(sseConn.connection_type).toBe("SSE");
+      expect(wsConn.connection_type).toBe("Websocket");
     });
   });
 

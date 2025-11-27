@@ -6,6 +6,7 @@
  * manipulating connections.
  */
 
+import { useMemo } from "react";
 import { createToolCaller } from "../../tools/client";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import {
@@ -15,6 +16,7 @@ import {
   useCollectionList,
   type UseCollectionListOptions,
 } from "./use-collections";
+import { useToolCall } from "./use-tool-call";
 
 // Module-level singleton to store the collection instance
 let connectionsCollectionSingleton: ReturnType<
@@ -83,3 +85,50 @@ export function useConnection(connectionId: string | undefined) {
  * Re-export ConnectionEntity type for convenience
  */
 export type { ConnectionEntity };
+
+/**
+ * Validated collection binding
+ */
+export interface ValidatedCollection {
+  name: string;
+  displayName: string;
+}
+
+/**
+ * Response from CONNECTION_DETECT_COLLECTIONS tool
+ */
+interface DetectCollectionsResponse {
+  collections: ValidatedCollection[];
+}
+
+/**
+ * Hook to detect and validate collection bindings from connection tools
+ * Uses the server-side CONNECTION_DETECT_COLLECTIONS tool to avoid browser
+ * compatibility issues with json-schema-diff
+ *
+ * @param connectionId - The ID of the connection to analyze
+ * @returns Object with collections array and loading state
+ */
+export function useCollectionBindings(connectionId: string | undefined): {
+  collections: ValidatedCollection[];
+  isLoading: boolean;
+} {
+  // Create tool caller for mesh API (no connection ID)
+  const toolCaller = useMemo(() => createToolCaller(), []);
+
+  const { data, isLoading } = useToolCall<
+    { connectionId: string },
+    DetectCollectionsResponse
+  >({
+    toolCaller,
+    toolName: "CONNECTION_DETECT_COLLECTIONS",
+    toolInputParams: { connectionId: connectionId ?? "" },
+    enabled: Boolean(connectionId),
+    staleTime: 60_000, // Cache for 1 minute
+  });
+
+  return {
+    collections: data?.collections ?? [],
+    isLoading,
+  };
+}

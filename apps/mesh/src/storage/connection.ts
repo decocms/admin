@@ -8,12 +8,45 @@
 import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
 import type { CredentialVault } from "../encryption/credential-vault";
+import type { ConnectionStoragePort } from "./ports";
+import type { Database } from "./types";
 import type {
-  ConnectionStoragePort,
-  CreateConnectionData,
-  UpdateConnectionData,
-} from "./ports";
-import type { Database, MCPConnection, ToolDefinition } from "./types";
+  ConnectionEntity,
+  OAuthConfig,
+  ToolDefinition,
+} from "../tools/connection/schema";
+
+/** JSON fields that need serialization/deserialization */
+const JSON_FIELDS = [
+  "connection_headers",
+  "oauth_config",
+  "metadata",
+  "tools",
+  "bindings",
+] as const;
+
+/** Raw database row type */
+type RawConnectionRow = {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  app_name: string | null;
+  app_id: string | null;
+  connection_type: "HTTP" | "SSE" | "Websocket";
+  connection_url: string;
+  connection_token: string | null;
+  connection_headers: string | Record<string, string> | null;
+  oauth_config: string | OAuthConfig | null;
+  metadata: string | Record<string, unknown> | null;
+  tools: string | ToolDefinition[] | null;
+  bindings: string | string[] | null;
+  status: "active" | "inactive" | "error";
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
 export class ConnectionStorage implements ConnectionStoragePort {
   constructor(
@@ -21,51 +54,20 @@ export class ConnectionStorage implements ConnectionStoragePort {
     private vault: CredentialVault,
   ) {}
 
-  async create(data: CreateConnectionData): Promise<MCPConnection> {
+  async create(data: Partial<ConnectionEntity>): Promise<ConnectionEntity> {
     const id = `conn_${nanoid()}`;
+    const now = new Date().toISOString();
 
-    // Encrypt token if provided
-    let encryptedToken: string | null = null;
-    if (data.connection.token) {
-      encryptedToken = await this.vault.encrypt(data.connection.token);
-    }
+    const serialized = await this.serializeConnection({
+      ...data,
+      id,
+      status: "active",
+      created_at: now,
+      updated_at: now,
+    });
 
-    // Insert the connection
-    await this.db
-      .insertInto("connections")
-      .values({
-        id,
-        organizationId: data.organizationId,
-        createdById: data.createdById,
-        name: data.name,
-        description: data.description ?? null,
-        icon: data.icon ?? null,
-        appName: data.appName ?? null,
-        appId: data.appId ?? null,
+    await this.db.insertInto("connections").values(serialized).execute();
 
-        // Connection details
-        connectionType: data.connection.type,
-        connectionUrl: data.connection.url,
-        connectionToken: encryptedToken,
-        connectionHeaders: data.connection.headers
-          ? JSON.stringify(data.connection.headers)
-          : null,
-
-        // OAuth config
-        oauthConfig: data.oauthConfig ? JSON.stringify(data.oauthConfig) : null,
-
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
-
-        tools: null, // Populated later via discovery
-        bindings: null, // Populated later via binding detection
-
-        status: "active",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .execute();
-
-    // Fetch the created connection
     const connection = await this.findById(id);
     if (!connection) {
       throw new Error(`Failed to create connection with id: ${id}`);
@@ -74,82 +76,49 @@ export class ConnectionStorage implements ConnectionStoragePort {
     return connection;
   }
 
-  async findById(id: string): Promise<MCPConnection | null> {
-    const connection = await this.db
+  async findById(id: string): Promise<ConnectionEntity | null> {
+    const row = await this.db
       .selectFrom("connections")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
 
-    return connection
-      ? await this.deserializeConnection(
-          connection as Parameters<typeof this.deserializeConnection>[0],
-        )
-      : null;
+    return row ? this.deserializeConnection(row as RawConnectionRow) : null;
   }
 
-  async list(organizationId: string): Promise<MCPConnection[]> {
-    const connections = await this.db
+  async list(organizationId: string): Promise<ConnectionEntity[]> {
+    const rows = await this.db
       .selectFrom("connections")
       .selectAll()
-      .where("organizationId", "=", organizationId)
+      .where("organization_id", "=", organizationId)
       .execute();
 
-    return await Promise.all(
-      connections.map((c) =>
-        this.deserializeConnection(
-          c as Parameters<typeof this.deserializeConnection>[0],
-        ),
-      ),
+    return Promise.all(
+      rows.map((row) => this.deserializeConnection(row as RawConnectionRow)),
     );
   }
 
-  async update(id: string, data: UpdateConnectionData): Promise<MCPConnection> {
-    // Prepare update data with proper JSON serialization
-    const updateData: Partial<{
-      name: string;
-      description: string;
-      icon: string;
-      status: "active" | "inactive" | "error";
-      connectionToken: string;
-      metadata: string;
-      tools: string;
-      bindings: string;
-      updatedAt: string;
-    }> = {
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined)
-      updateData.description = data.description;
-    if (data.icon !== undefined) updateData.icon = data.icon;
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.connectionToken !== undefined) {
-      // Encrypt token before storing
-      updateData.connectionToken = await this.vault.encrypt(
-        data.connectionToken,
-      );
+  async update(
+    id: string,
+    data: Partial<ConnectionEntity>,
+  ): Promise<ConnectionEntity> {
+    if (Object.keys(data).length === 0) {
+      const connection = await this.findById(id);
+      if (!connection) throw new Error("Connection not found");
+      return connection;
     }
 
-    // Serialize JSON fields
-    if (data.metadata !== undefined) {
-      updateData.metadata = JSON.stringify(data.metadata);
-    }
-    if (data.tools !== undefined) {
-      updateData.tools = JSON.stringify(data.tools);
-    }
-    if (data.bindings !== undefined) {
-      updateData.bindings = JSON.stringify(data.bindings);
-    }
+    const serialized = await this.serializeConnection({
+      ...data,
+      updated_at: new Date().toISOString(),
+    });
 
     await this.db
       .updateTable("connections")
-      .set(updateData)
+      .set(serialized)
       .where("id", "=", id)
       .execute();
 
-    // Fetch the updated connection
     const connection = await this.findById(id);
     if (!connection) {
       throw new Error("Connection not found after update");
@@ -173,13 +142,12 @@ export class ConnectionStorage implements ConnectionStoragePort {
     const startTime = Date.now();
 
     try {
-      // Simple health check - try to reach the URL
-      const response = await fetch(connection.connectionUrl, {
+      const response = await fetch(connection.connection_url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(connection.connectionToken && {
-            Authorization: `Bearer ${connection.connectionToken}`,
+          ...(connection.connection_token && {
+            Authorization: `Bearer ${connection.connection_token}`,
           }),
         },
         body: JSON.stringify({
@@ -189,11 +157,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
         }),
       });
 
-      const latencyMs = Date.now() - startTime;
-
       return {
-        healthy: response.ok || response.status === 404, // 404 is ok (service exists)
-        latencyMs,
+        healthy: response.ok || response.status === 404,
+        latencyMs: Date.now() - startTime,
       };
     } catch {
       return {
@@ -204,43 +170,43 @@ export class ConnectionStorage implements ConnectionStoragePort {
   }
 
   /**
-   * Deserialize JSON fields from database and decrypt token
-   * Note: BunWorkerDialect doesn't automatically deserialize JSON, so we parse manually
+   * Serialize entity data to database format
    */
-  private async deserializeConnection(raw: {
-    id: string;
-    organizationId: string;
-    createdById: string;
-    name: string;
-    description: string | null;
-    icon: string | null;
-    appName: string | null;
-    appId: string | null;
-    connectionType: "HTTP" | "SSE" | "Websocket";
-    connectionUrl: string;
-    connectionToken: string | null;
-    connectionHeaders: string | Record<string, string> | null;
-    oauthConfig: string | unknown;
-    metadata: string | Record<string, unknown> | null;
-    tools: string | ToolDefinition[] | null;
-    bindings: string | string[] | null;
-    status: "active" | "inactive" | "error";
-    createdAt: Date | string;
-    updatedAt: Date | string;
-  }): Promise<MCPConnection> {
-    // Decrypt token if present
-    let decryptedToken: string | null = null;
-    if (raw.connectionToken) {
-      try {
-        decryptedToken = await this.vault.decrypt(raw.connectionToken);
-      } catch (error) {
-        console.error("Failed to decrypt connection token:", error);
-        // Keep token encrypted if decryption fails (should not happen in production)
-        decryptedToken = null;
+  private async serializeConnection(
+    data: Partial<ConnectionEntity>,
+  ): Promise<Record<string, unknown>> {
+    const result: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) continue;
+
+      if (key === "connection_token" && value) {
+        result[key] = await this.vault.encrypt(value as string);
+      } else if (JSON_FIELDS.includes(key as (typeof JSON_FIELDS)[number])) {
+        result[key] = value ? JSON.stringify(value) : null;
+      } else {
+        result[key] = value;
       }
     }
 
-    // Parse JSON fields if they're still strings
+    return result;
+  }
+
+  /**
+   * Deserialize database row to entity
+   */
+  private async deserializeConnection(
+    row: RawConnectionRow,
+  ): Promise<ConnectionEntity> {
+    let decryptedToken: string | null = null;
+    if (row.connection_token) {
+      try {
+        decryptedToken = await this.vault.decrypt(row.connection_token);
+      } catch (error) {
+        console.error("Failed to decrypt connection token:", error);
+      }
+    }
+
     const parseJson = <T>(value: string | T | null): T | null => {
       if (value === null) return null;
       if (typeof value === "string") {
@@ -254,29 +220,27 @@ export class ConnectionStorage implements ConnectionStoragePort {
     };
 
     return {
-      id: raw.id,
-      organizationId: raw.organizationId,
-      createdById: raw.createdById,
-      name: raw.name,
-      description: raw.description,
-      icon: raw.icon,
-      appName: raw.appName,
-      appId: raw.appId,
-      connectionType: raw.connectionType,
-      connectionUrl: raw.connectionUrl,
-      connectionToken: decryptedToken,
-      connectionHeaders: parseJson<Record<string, string>>(
-        raw.connectionHeaders,
+      id: row.id,
+      organization_id: row.organization_id,
+      created_by: row.created_by,
+      title: row.title,
+      description: row.description,
+      icon: row.icon,
+      app_name: row.app_name,
+      app_id: row.app_id,
+      connection_type: row.connection_type,
+      connection_url: row.connection_url,
+      connection_token: decryptedToken,
+      connection_headers: parseJson<Record<string, string>>(
+        row.connection_headers,
       ),
-      oauthConfig: parseJson<MCPConnection["oauthConfig"]>(
-        raw.oauthConfig as string | MCPConnection["oauthConfig"] | null,
-      ),
-      metadata: parseJson<Record<string, unknown>>(raw.metadata),
-      tools: parseJson<ToolDefinition[]>(raw.tools),
-      bindings: parseJson<string[]>(raw.bindings),
-      status: raw.status,
-      createdAt: raw.createdAt as Date | string,
-      updatedAt: raw.updatedAt as Date | string,
+      oauth_config: parseJson<OAuthConfig>(row.oauth_config),
+      metadata: parseJson<Record<string, unknown>>(row.metadata),
+      tools: parseJson<ToolDefinition[]>(row.tools),
+      bindings: parseJson<string[]>(row.bindings),
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     };
   }
 }

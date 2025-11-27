@@ -16,7 +16,7 @@ import {
 import { Hono } from "hono";
 import { z } from "zod/v3";
 import type { MeshContext } from "../../core/mesh-context";
-import type { MCPConnection } from "../../storage/types";
+import type { ConnectionEntity } from "../../tools/connection/schema";
 import { ConnectionTools, OrganizationTools } from "../../tools";
 
 // Default values
@@ -51,21 +51,21 @@ type ConnectionSummary = {
 };
 
 // Helper to create MCP client for a connection
-async function createConnectionClient(connection: MCPConnection) {
+async function createConnectionClient(connection: ConnectionEntity) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
 
-  if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  if (connection.connection_token) {
+    headers.Authorization = `Bearer ${connection.connection_token}`;
   }
 
-  if (connection.connectionHeaders) {
-    Object.assign(headers, connection.connectionHeaders);
+  if (connection.connection_headers) {
+    Object.assign(headers, connection.connection_headers);
   }
 
   const transport = new StreamableHTTPClientTransport(
-    new URL(connection.connectionUrl),
+    new URL(connection.connection_url),
     {
       requestInit: {
         headers,
@@ -93,7 +93,7 @@ async function listConnections(
     .filter((conn) => conn.status === "active")
     .map((conn) => ({
       id: conn.id,
-      name: conn.name,
+      name: conn.title,
       description: conn.description,
     }));
 }
@@ -151,7 +151,7 @@ function ensureOrganization(ctx: MeshContext, orgSlug: string) {
 async function getBindingConnection(
   ctx: MeshContext,
   organizationId: string,
-): Promise<MCPConnection | null> {
+): Promise<ConnectionEntity | null> {
   const settings = await OrganizationTools.ORGANIZATION_SETTINGS_GET.execute(
     { organizationId },
     ctx,
@@ -169,7 +169,7 @@ async function getBindingConnection(
     return null;
   }
 
-  if (connection.organizationId !== organizationId) {
+  if (connection.organization_id !== organizationId) {
     throw new Error(
       "Configured MODELS binding does not belong to organization",
     );
@@ -184,14 +184,18 @@ async function getBindingConnection(
   return connection;
 }
 
-function buildConnectionHeaders(connection: MCPConnection) {
+function buildConnectionHeaders(connection: ConnectionEntity) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(connection.connectionHeaders ?? {}),
+    ...(connection.connection_headers ?? {}),
   };
 
-  if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  if (connection.connection_token) {
+    if (headers.Authorization) {
+      headers["x-deco-proxy-token"] = connection.connection_token;
+    } else {
+      headers.Authorization = `Bearer ${connection.connection_token}`;
+    }
   }
 
   return headers;
@@ -247,7 +251,10 @@ function createConnectionTools(ctx: MeshContext) {
       }),
       execute: async ({ id }) => {
         try {
-          return await ConnectionTools.CONNECTION_GET.execute({ id }, ctx);
+          return await ConnectionTools.COLLECTION_CONNECTIONS_GET.execute(
+            { id },
+            ctx,
+          );
         } catch (error) {
           console.error(`Error getting connection ${id}:`, error);
           return {
@@ -285,7 +292,7 @@ function createConnectionTools(ctx: MeshContext) {
 
         if (
           !ctx.organization ||
-          connection.organizationId !== ctx.organization.id
+          connection.organization_id !== ctx.organization.id
         ) {
           throw new Error(
             "Connection does not belong to the current organization",
@@ -386,8 +393,8 @@ app.post("/:org/models/stream", async (c) => {
     }).slice(-maxWindowSize);
 
     // Create provider based on the requested provider
-    // const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
-    const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
+    // const endpointUrl = `${connection.connection_url}/call-tool/STREAM_TEXT`;
+    const endpointUrl = `${connection.connection_url}/call-tool/STREAM_TEXT`;
     const provider = createProvider(
       modelProvider,
       endpointUrl,

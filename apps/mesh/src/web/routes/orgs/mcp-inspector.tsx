@@ -1,5 +1,7 @@
 import { createToolCaller } from "@/tools/client";
+import { CollectionItemsList } from "@/web/components/collection-items-list";
 import {
+  useCollectionBindings,
   useConnection,
   useConnectionsCollection,
   type ConnectionEntity,
@@ -22,7 +24,6 @@ import {
 } from "@deco/ui/components/card.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Separator } from "@deco/ui/components/separator.tsx";
 import {
   Tabs,
   TabsContent,
@@ -44,7 +45,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useMcp, type Prompt, type Resource, type Tool } from "use-mcp/react";
+import { useMcp, type Tool } from "use-mcp/react";
 
 function getStatusBadgeInfo(state: string) {
   switch (state) {
@@ -87,8 +88,12 @@ function getStatusBadgeInfo(state: string) {
 export default function McpInspector() {
   const { connectionId } = useParams({ strict: false });
   const { data, isLoading: isLoadingConnection } = useConnection(connectionId);
-  const collection = useConnectionsCollection();
+  const connectionsCollection = useConnectionsCollection();
   const connection = data?.[0] as ConnectionEntity | undefined;
+
+  // Detect collection bindings via server-side tool
+  const { collections, isLoading: isLoadingCollections } =
+    useCollectionBindings(connectionId as string | undefined);
 
   // Tool invocation state
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -96,21 +101,6 @@ export default function McpInspector() {
   const [toolResult, setToolResult] = useState<unknown>(null);
   const [isInvokingTool, setIsInvokingTool] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
-
-  // Resource state
-  const [selectedResource, setSelectedResource] = useState<Resource | null>(
-    null,
-  );
-  const [resourceContent, setResourceContent] = useState<unknown>(null);
-  const [isLoadingResource, setIsLoadingResource] = useState(false);
-  const [resourceError, setResourceError] = useState<string | null>(null);
-
-  // Prompt state
-  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
-  const [promptArgs, setPromptArgs] = useState<string>("{}");
-  const [promptResult, setPromptResult] = useState<unknown>(null);
-  const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
-  const [promptError, setPromptError] = useState<string | null>(null);
 
   // Copy state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -130,8 +120,8 @@ export default function McpInspector() {
   };
 
   // Initialize MCP connection
-  const normalizedUrl = connection?.connectionUrl
-    ? normalizeUrl(connection.connectionUrl)
+  const normalizedUrl = connection?.connection_url
+    ? normalizeUrl(connection.connection_url)
     : "";
 
   // Use a consistent storage prefix for all connections
@@ -174,9 +164,9 @@ export default function McpInspector() {
           "mcp_oauth_pending",
           JSON.stringify({
             connectionId: connectionId as string,
-            orgId: connection.organizationId,
-            connectionType: connection.connectionType,
-            connectionUrl: connection.connectionUrl,
+            orgId: connection.organization_id,
+            connectionType: connection.connection_type,
+            connectionUrl: connection.connection_url,
             timestamp: Date.now(),
           }),
         );
@@ -214,17 +204,17 @@ export default function McpInspector() {
               }
 
               if (newOrChangedToken) {
-                if (!collection.has(connectionId as string)) {
+                if (!connectionsCollection.has(connectionId as string)) {
                   throw new Error("Connection not found in collection");
                 }
 
                 // Call collection.update to save the token
-                const tx = collection.update(
+                const tx = connectionsCollection.update(
                   connectionId as string,
                   (draft) => {
-                    draft.connectionType = connection.connectionType;
-                    draft.connectionUrl = connection.connectionUrl;
-                    draft.connectionToken = newOrChangedToken;
+                    draft.connection_type = connection.connection_type;
+                    draft.connection_url = connection.connection_url;
+                    draft.connection_token = newOrChangedToken;
                   },
                 );
                 await tx.isPersisted.promise;
@@ -288,42 +278,6 @@ export default function McpInspector() {
     }
   };
 
-  const handleReadResource = async (resource: Resource) => {
-    if (mcp.state !== "ready") return;
-
-    setSelectedResource(resource);
-    setIsLoadingResource(true);
-    setResourceError(null);
-    setResourceContent(null);
-
-    try {
-      const content = await mcp.readResource(resource.uri);
-      setResourceContent(content);
-    } catch (error) {
-      setResourceError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsLoadingResource(false);
-    }
-  };
-
-  const handleGetPrompt = async () => {
-    if (!selectedPrompt || mcp.state !== "ready") return;
-
-    setIsLoadingPrompt(true);
-    setPromptError(null);
-    setPromptResult(null);
-
-    try {
-      const args = JSON.parse(promptArgs);
-      const result = await mcp.getPrompt(selectedPrompt.name, args);
-      setPromptResult(result);
-    } catch (error) {
-      setPromptError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsLoadingPrompt(false);
-    }
-  };
-
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -348,6 +302,9 @@ export default function McpInspector() {
       </div>
     );
   }
+
+  // Calculate the number of tab columns (Tools + collections)
+  const tabCount = 1 + collections.length;
 
   return (
     <div className="container max-w-7xl mx-auto py-6 space-y-6">
@@ -384,12 +341,12 @@ export default function McpInspector() {
         <CardContent className="space-y-2">
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="text-muted-foreground">Type:</div>
-            <div className="font-medium">{connection.connectionType}</div>
+            <div className="font-medium">{connection.connection_type}</div>
             <div className="text-muted-foreground">URL:</div>
             <div className="font-mono text-xs break-all">
-              {connection.connectionUrl}
+              {connection.connection_url}
             </div>
-            {normalizedUrl !== connection.connectionUrl && (
+            {normalizedUrl !== connection.connection_url && (
               <>
                 <div className="text-muted-foreground">Normalized URL:</div>
                 <div className="font-mono text-xs break-all text-blue-600">
@@ -402,6 +359,22 @@ export default function McpInspector() {
             )}
             <div className="text-muted-foreground">Status:</div>
             <div className="font-medium">{connection.status}</div>
+            {collections.length > 0 && (
+              <>
+                <div className="text-muted-foreground">Collections:</div>
+                <div className="flex flex-wrap gap-1">
+                  {collections.map((col) => (
+                    <Badge
+                      key={col.name}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {col.displayName}
+                    </Badge>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -449,14 +422,22 @@ export default function McpInspector() {
       {/* Main Content - Only show when ready */}
       {mcp.state === "ready" && (
         <Tabs defaultValue="tools" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList
+            className="w-full"
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${tabCount}, 1fr)`,
+            }}
+          >
             <TabsTrigger value="tools">Tools ({mcp.tools.length})</TabsTrigger>
-            <TabsTrigger value="resources">
-              Resources ({mcp.resources.length + mcp.resourceTemplates.length})
-            </TabsTrigger>
-            <TabsTrigger value="prompts">
-              Prompts ({mcp.prompts.length})
-            </TabsTrigger>
+            {collections.map((collection) => (
+              <TabsTrigger
+                key={collection.name}
+                value={`collection-${collection.name}`}
+              >
+                {collection.displayName}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Tools Tab */}
@@ -650,343 +631,41 @@ export default function McpInspector() {
             </div>
           </TabsContent>
 
-          {/* Resources Tab */}
-          <TabsContent value="resources" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Resource List */}
+          {/* Dynamic Collection Tabs */}
+          {collections.map((collection) => (
+            <TabsContent
+              key={collection.name}
+              value={`collection-${collection.name}`}
+              className="space-y-4"
+            >
               <Card>
                 <CardHeader>
-                  <CardTitle>Available Resources</CardTitle>
+                  <CardTitle>{collection.displayName}</CardTitle>
                   <CardDescription>
-                    Select a resource to view its contents
+                    Items from the {collection.displayName.toLowerCase()}{" "}
+                    collection
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {mcp.resources.length === 0 &&
-                  mcp.resourceTemplates.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No resources available
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-2">
-                        {mcp.resources.map((resource) => (
-                          <div
-                            key={resource.uri}
-                            className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => handleReadResource(resource)}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">
-                                  {resource.name}
-                                </div>
-                                {resource.description && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {resource.description}
-                                  </p>
-                                )}
-                                <div className="text-xs text-muted-foreground font-mono mt-1 truncate">
-                                  {resource.uri}
-                                </div>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className="text-xs shrink-0"
-                              >
-                                {resource.mimeType || "unknown"}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-
-                        {mcp.resourceTemplates.length > 0 && (
-                          <>
-                            <Separator className="my-4" />
-                            <h4 className="text-sm font-semibold mb-2">
-                              Resource Templates
-                            </h4>
-                            {mcp.resourceTemplates.map((template) => (
-                              <div
-                                key={template.uriTemplate}
-                                className="p-3 border rounded-lg bg-muted/30"
-                              >
-                                <div className="font-medium text-sm">
-                                  {template.name}
-                                </div>
-                                {template.description && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {template.description}
-                                  </p>
-                                )}
-                                <div className="text-xs text-muted-foreground font-mono mt-1">
-                                  {template.uriTemplate}
-                                </div>
-                              </div>
-                            ))}
-                          </>
-                        )}
-                      </div>
-                    </ScrollArea>
+                  {connectionId && (
+                    <CollectionItemsList
+                      connectionId={connectionId as string}
+                      collectionName={collection.name}
+                    />
                   )}
                 </CardContent>
               </Card>
-
-              {/* Resource Content */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resource Content</CardTitle>
-                  <CardDescription>
-                    {selectedResource ? (
-                      <>
-                        Reading{" "}
-                        <span className="font-mono">
-                          {selectedResource.uri}
-                        </span>
-                      </>
-                    ) : (
-                      "Select a resource to view"
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingResource ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : resourceError ? (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{resourceError}</AlertDescription>
-                    </Alert>
-                  ) : resourceContent ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Contents</Label>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            copyToClipboard(
-                              JSON.stringify(resourceContent, null, 2),
-                              "resource-content",
-                            )
-                          }
-                        >
-                          {copiedId === "resource-content" ? (
-                            <Check className="h-3.5 w-3.5" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-[500px]">
-                        <pre className="text-xs bg-muted p-4 rounded">
-                          {JSON.stringify(resourceContent, null, 2)}
-                        </pre>
-                      </ScrollArea>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No resource selected
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Prompts Tab */}
-          <TabsContent value="prompts" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Prompt List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available Prompts</CardTitle>
-                  <CardDescription>
-                    Select a prompt to view details and execute
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {mcp.prompts.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No prompts available
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px] pr-4">
-                      <Accordion type="single" collapsible className="w-full">
-                        {mcp.prompts.map((prompt) => (
-                          <AccordionItem key={prompt.name} value={prompt.name}>
-                            <AccordionTrigger className="hover:no-underline">
-                              <div className="flex items-center justify-between w-full pr-2">
-                                <span className="font-mono text-sm">
-                                  {prompt.name}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    selectedPrompt?.name === prompt.name
-                                      ? "default"
-                                      : "ghost"
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedPrompt(prompt);
-                                    setPromptError(null);
-                                    setPromptResult(null);
-                                    setPromptArgs("{}");
-                                  }}
-                                >
-                                  Select
-                                </Button>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="space-y-2 text-sm pt-2">
-                                {prompt.description && (
-                                  <p className="text-muted-foreground">
-                                    {prompt.description}
-                                  </p>
-                                )}
-                                {prompt.arguments &&
-                                  prompt.arguments.length > 0 && (
-                                    <div>
-                                      <h4 className="font-semibold mb-1">
-                                        Arguments:
-                                      </h4>
-                                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                        {prompt.arguments.map((arg) => (
-                                          <li key={arg.name}>
-                                            <span className="font-mono text-xs">
-                                              {arg.name}
-                                            </span>
-                                            {arg.required && (
-                                              <Badge
-                                                variant="secondary"
-                                                className="ml-2 text-xs"
-                                              >
-                                                required
-                                              </Badge>
-                                            )}
-                                            {arg.description && (
-                                              <span className="ml-1">
-                                                - {arg.description}
-                                              </span>
-                                            )}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                      </Accordion>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Prompt Execution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Execute Prompt</CardTitle>
-                  <CardDescription>
-                    {selectedPrompt ? (
-                      <>
-                        Executing{" "}
-                        <span className="font-mono">{selectedPrompt.name}</span>
-                      </>
-                    ) : (
-                      "Select a prompt to execute"
-                    )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {selectedPrompt ? (
-                    <>
-                      {selectedPrompt.arguments &&
-                        selectedPrompt.arguments.length > 0 && (
-                          <div className="space-y-2">
-                            <Label htmlFor="prompt-args">
-                              Arguments (JSON)
-                            </Label>
-                            <Textarea
-                              id="prompt-args"
-                              value={promptArgs}
-                              onChange={(e) => setPromptArgs(e.target.value)}
-                              placeholder='{"key": "value"}'
-                              className="font-mono text-sm"
-                              rows={8}
-                            />
-                          </div>
-                        )}
-
-                      <Button
-                        onClick={handleGetPrompt}
-                        disabled={isLoadingPrompt}
-                        className="w-full"
-                      >
-                        {isLoadingPrompt ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Executing...
-                          </>
-                        ) : (
-                          <>
-                            <PlayCircle className="h-4 w-4 mr-2" />
-                            Execute Prompt
-                          </>
-                        )}
-                      </Button>
-
-                      {promptError && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>{promptError}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      {promptResult && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label>Result</Label>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                copyToClipboard(
-                                  JSON.stringify(promptResult, null, 2),
-                                  "prompt-result",
-                                )
-                              }
-                            >
-                              {copiedId === "prompt-result" ? (
-                                <Check className="h-3.5 w-3.5" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                          </div>
-                          <ScrollArea className="h-[300px]">
-                            <pre className="text-xs bg-muted p-4 rounded">
-                              {JSON.stringify(promptResult, null, 2)}
-                            </pre>
-                          </ScrollArea>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No prompt selected
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          ))}
         </Tabs>
+      )}
+
+      {/* Loading Collections State */}
+      {isLoadingCollections && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Detecting collection bindings...
+        </div>
       )}
 
       {/* Debug Logs */}

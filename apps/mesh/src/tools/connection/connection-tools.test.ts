@@ -3,11 +3,11 @@ import { createDatabase, closeDatabase } from "../../database";
 import { createTestSchema } from "../../storage/test-helpers";
 import { CredentialVault } from "../../encryption/credential-vault";
 import {
-  CONNECTION_CREATE,
-  CONNECTION_LIST,
-  CONNECTION_GET,
-  CONNECTION_DELETE,
-  CONNECTION_TEST,
+  COLLECTION_CONNECTIONS_CREATE,
+  COLLECTION_CONNECTIONS_LIST,
+  COLLECTION_CONNECTIONS_GET,
+  COLLECTION_CONNECTIONS_DELETE,
+  COLLECTION_CONNECTIONS_TEST,
 } from "./index";
 import type { Kysely } from "kysely";
 import type { Database } from "../../storage/types";
@@ -89,14 +89,17 @@ describe("Connection Tools", () => {
       },
     };
 
-    const connectionWithModels = await CONNECTION_CREATE.execute(
+    const connectionWithModels = await COLLECTION_CONNECTIONS_CREATE.execute(
       {
-        name: "Org Connection 1",
-        connection: { type: "HTTP", url: "https://org1.com" },
+        data: {
+          title: "Org Connection 1",
+          connection_type: "HTTP",
+          connection_url: "https://org1.com",
+        },
       },
       ctx,
     );
-    matchingConnectionId = connectionWithModels.id;
+    matchingConnectionId = connectionWithModels.item.id;
 
     await ctx.storage.connections.update(matchingConnectionId, {
       tools: [
@@ -113,10 +116,13 @@ describe("Connection Tools", () => {
       ],
     });
 
-    await CONNECTION_CREATE.execute(
+    await COLLECTION_CONNECTIONS_CREATE.execute(
       {
-        name: "Org Connection 2",
-        connection: { type: "HTTP", url: "https://org2.com" },
+        data: {
+          title: "Org Connection 2",
+          connection_type: "HTTP",
+          connection_url: "https://org2.com",
+        },
       },
       ctx,
     );
@@ -126,177 +132,190 @@ describe("Connection Tools", () => {
     await closeDatabase(db);
   });
 
-  describe("CONNECTION_CREATE", () => {
+  describe("COLLECTION_CONNECTIONS_CREATE", () => {
     it("should create organization-scoped connection", async () => {
-      const result = await CONNECTION_CREATE.execute(
+      const result = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "Company Slack",
-          description: "Organization-wide Slack",
-          connection: {
-            type: "HTTP",
-            url: "https://slack.com/mcp",
-            token: "slack-token",
+          data: {
+            title: "Company Slack",
+            description: "Organization-wide Slack",
+            connection_type: "HTTP",
+            connection_url: "https://slack.com/mcp",
+            connection_token: "slack-token",
           },
         },
         ctx,
       );
 
-      expect(result.id).toMatch(/^conn_/);
-      expect(result.name).toBe("Company Slack");
-      expect(result.organizationId).toBe("org_123");
-      expect(result.status).toBe("active");
+      expect(result.item.id).toMatch(/^conn_/);
+      expect(result.item.title).toBe("Company Slack");
+      expect(result.item.organization_id).toBe("org_123");
+      expect(result.item.status).toBe("active");
     });
 
     it("should support different connection types", async () => {
-      const httpResult = await CONNECTION_CREATE.execute(
+      const httpResult = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "HTTP Connection",
-          connection: { type: "HTTP", url: "https://http.com" },
-        },
-        ctx,
-      );
-      expect(httpResult.id).toBeDefined();
-
-      const sseResult = await CONNECTION_CREATE.execute(
-        {
-          name: "SSE Connection",
-          connection: {
-            type: "SSE",
-            url: "https://sse.com",
-            headers: { "X-Custom": "value" },
+          data: {
+            title: "HTTP Connection",
+            connection_type: "HTTP",
+            connection_url: "https://http.com",
           },
         },
         ctx,
       );
-      expect(sseResult.id).toBeDefined();
+      expect(httpResult.item.id).toBeDefined();
 
-      const wsResult = await CONNECTION_CREATE.execute(
+      const sseResult = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "WS Connection",
-          connection: { type: "Websocket", url: "wss://ws.com" },
+          data: {
+            title: "SSE Connection",
+            connection_type: "SSE",
+            connection_url: "https://sse.com",
+            connection_headers: { "X-Custom": "value" },
+          },
         },
         ctx,
       );
-      expect(wsResult.id).toBeDefined();
+      expect(sseResult.item.id).toBeDefined();
+
+      const wsResult = await COLLECTION_CONNECTIONS_CREATE.execute(
+        {
+          data: {
+            title: "WS Connection",
+            connection_type: "Websocket",
+            connection_url: "wss://ws.com",
+          },
+        },
+        ctx,
+      );
+      expect(wsResult.item.id).toBeDefined();
     });
   });
 
-  describe("CONNECTION_LIST", () => {
+  describe("COLLECTION_CONNECTIONS_LIST", () => {
     it("should list all connections in organization", async () => {
-      const result = await CONNECTION_LIST.execute({}, ctx);
+      const result = await COLLECTION_CONNECTIONS_LIST.execute({}, ctx);
 
-      expect(result.connections.length).toBeGreaterThan(0);
-      expect(
-        result.connections.every((c) => c.organizationId === "org_123"),
-      ).toBe(true);
+      expect(result.items.length).toBeGreaterThan(0);
+      expect(result.items.every((c) => c.organization_id === "org_123")).toBe(
+        true,
+      );
     });
 
     it("should include connection details", async () => {
-      const result = await CONNECTION_LIST.execute({}, ctx);
+      const result = await COLLECTION_CONNECTIONS_LIST.execute({}, ctx);
 
-      const conn = result.connections[0];
+      const conn = result.items[0];
       expect(conn).toHaveProperty("id");
-      expect(conn).toHaveProperty("name");
-      expect(conn).toHaveProperty("organizationId");
-      expect(conn).toHaveProperty("connectionType");
-      expect(conn).toHaveProperty("connectionUrl");
+      expect(conn).toHaveProperty("title");
+      expect(conn).toHaveProperty("organization_id");
+      expect(conn).toHaveProperty("connection_type");
+      expect(conn).toHaveProperty("connection_url");
       expect(conn).toHaveProperty("status");
     });
 
     it("should filter connections by binding schema", async () => {
-      const result = await CONNECTION_LIST.execute({ binding: "MODELS" }, ctx);
+      const result = await COLLECTION_CONNECTIONS_LIST.execute(
+        { binding: "MODELS" },
+        ctx,
+      );
 
-      expect(result.connections).toHaveLength(1);
-      expect(result.connections[0]?.id).toBe(matchingConnectionId);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]?.id).toBe(matchingConnectionId);
     });
   });
 
-  describe("CONNECTION_GET", () => {
+  describe("COLLECTION_CONNECTIONS_GET", () => {
     it("should get connection by ID", async () => {
-      const created = await CONNECTION_CREATE.execute(
+      const created = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "Get Test",
-          connection: { type: "HTTP", url: "https://test.com" },
+          data: {
+            title: "Get Test",
+            connection_type: "HTTP",
+            connection_url: "https://test.com",
+          },
         },
         ctx,
       );
 
-      const result = await CONNECTION_GET.execute(
+      const result = await COLLECTION_CONNECTIONS_GET.execute(
         {
-          id: created.id,
+          id: created.item.id,
         },
         ctx,
       );
 
-      expect(result.id).toBe(created.id);
-      expect(result.name).toBe("Get Test");
+      expect(result.item?.id).toBe(created.item.id);
+      expect(result.item?.title).toBe("Get Test");
     });
 
-    it("should throw when connection not found", async () => {
-      await expect(
-        CONNECTION_GET.execute(
-          {
-            id: "conn_nonexistent",
-          },
-          ctx,
-        ),
-      ).rejects.toThrow("Connection not found");
+    it("should return null when connection not found", async () => {
+      const result = await COLLECTION_CONNECTIONS_GET.execute(
+        {
+          id: "conn_nonexistent",
+        },
+        ctx,
+      );
+
+      expect(result.item).toBeNull();
     });
   });
 
-  describe("CONNECTION_DELETE", () => {
+  describe("COLLECTION_CONNECTIONS_DELETE", () => {
     it("should delete connection", async () => {
-      const created = await CONNECTION_CREATE.execute(
+      const created = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "To Delete",
-          connection: { type: "HTTP", url: "https://delete.com" },
+          data: {
+            title: "To Delete",
+            connection_type: "HTTP",
+            connection_url: "https://delete.com",
+          },
         },
         ctx,
       );
 
-      const result = await CONNECTION_DELETE.execute(
+      const result = await COLLECTION_CONNECTIONS_DELETE.execute(
         {
-          id: created.id,
+          id: created.item.id,
         },
         ctx,
       );
 
-      expect(result.success).toBe(true);
-      expect(result.id).toBe(created.id);
+      expect(result.item.id).toBe(created.item.id);
 
       // Verify it's deleted
-      await expect(
-        CONNECTION_GET.execute(
-          {
-            id: created.id,
-          },
-          ctx,
-        ),
-      ).rejects.toThrow("Connection not found");
+      const getResult = await COLLECTION_CONNECTIONS_GET.execute(
+        {
+          id: created.item.id,
+        },
+        ctx,
+      );
+      expect(getResult.item).toBeNull();
     });
   });
 
-  describe("CONNECTION_TEST", () => {
+  describe("COLLECTION_CONNECTIONS_TEST", () => {
     it("should test connection health", async () => {
-      const created = await CONNECTION_CREATE.execute(
+      const created = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
-          name: "Test Health",
-          connection: {
-            type: "HTTP",
-            url: "https://this-will-fail.invalid",
+          data: {
+            title: "Test Health",
+            connection_type: "HTTP",
+            connection_url: "https://this-will-fail.invalid",
           },
         },
         ctx,
       );
 
-      const result = await CONNECTION_TEST.execute(
+      const result = await COLLECTION_CONNECTIONS_TEST.execute(
         {
-          id: created.id,
+          id: created.item.id,
         },
         ctx,
       );
 
-      expect(result.id).toBe(created.id);
+      expect(result.id).toBe(created.item.id);
       expect(result).toHaveProperty("healthy");
       expect(result).toHaveProperty("latencyMs");
       expect(typeof result.latencyMs).toBe("number");
@@ -304,7 +323,7 @@ describe("Connection Tools", () => {
 
     it("should throw when connection not found", async () => {
       await expect(
-        CONNECTION_TEST.execute(
+        COLLECTION_CONNECTIONS_TEST.execute(
           {
             id: "conn_nonexistent",
           },

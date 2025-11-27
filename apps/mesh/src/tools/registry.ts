@@ -38,12 +38,13 @@ const TOOL_CATEGORIES: Record<
   ORGANIZATION_MEMBER_UPDATE_ROLE: { category: "Organizations" },
 
   // Connection tools
-  CONNECTION_CREATE: { category: "Connections" },
-  CONNECTION_LIST: { category: "Connections" },
-  CONNECTION_GET: { category: "Connections" },
-  CONNECTION_UPDATE: { category: "Connections" },
-  CONNECTION_DELETE: { category: "Connections", dangerous: true },
-  CONNECTION_TEST: { category: "Connections" },
+  COLLECTION_CONNECTIONS_CREATE: { category: "Connections" },
+  COLLECTION_CONNECTIONS_LIST: { category: "Connections" },
+  COLLECTION_CONNECTIONS_GET: { category: "Connections" },
+  COLLECTION_CONNECTIONS_UPDATE: { category: "Connections" },
+  COLLECTION_CONNECTIONS_DELETE: { category: "Connections", dangerous: true },
+  COLLECTION_CONNECTIONS_TEST: { category: "Connections" },
+  CONNECTION_DETECT_COLLECTIONS: { category: "Connections" },
 };
 
 /**

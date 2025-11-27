@@ -38,11 +38,11 @@ describe("MCP Integration", () => {
               "ORGANIZATION_GET",
               "ORGANIZATION_UPDATE",
               "ORGANIZATION_DELETE",
-              "CONNECTION_CREATE",
-              "CONNECTION_LIST",
-              "CONNECTION_GET",
-              "CONNECTION_DELETE",
-              "CONNECTION_TEST",
+              "COLLECTION_CONNECTIONS_CREATE",
+              "COLLECTION_CONNECTIONS_LIST",
+              "COLLECTION_CONNECTIONS_GET",
+              "COLLECTION_CONNECTIONS_DELETE",
+              "COLLECTION_CONNECTIONS_TEST",
             ],
           },
           metadata: {
@@ -117,11 +117,11 @@ describe("MCP Integration", () => {
         "ORGANIZATION_GET",
         "ORGANIZATION_UPDATE",
         "ORGANIZATION_DELETE",
-        "CONNECTION_CREATE",
-        "CONNECTION_LIST",
-        "CONNECTION_GET",
-        "CONNECTION_DELETE",
-        "CONNECTION_TEST",
+        "COLLECTION_CONNECTIONS_CREATE",
+        "COLLECTION_CONNECTIONS_LIST",
+        "COLLECTION_CONNECTIONS_GET",
+        "COLLECTION_CONNECTIONS_DELETE",
+        "COLLECTION_CONNECTIONS_TEST",
       ];
 
       expect(result.tools.length).toBe(expectedTools.length);

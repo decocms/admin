@@ -1,164 +1,123 @@
 /**
  * Connection Entity Schema
  *
- * Defines the schema for connections that complies with the collections binding pattern.
- * Maps MCPConnection fields to collection entity structure.
+ * Single source of truth for connection types.
+ * Uses snake_case field names matching the database schema directly.
  */
 
 import { z } from "zod/v3";
-import type { MCPConnection } from "../../storage/types";
 
 /**
- * Connection entity schema compliant with collections binding.
- * Uses `title` instead of `name` to match BaseCollectionEntitySchema.
+ * OAuth configuration schema for downstream MCP
+ */
+export const OAuthConfigSchema = z.object({
+  authorizationEndpoint: z.string().url(),
+  tokenEndpoint: z.string().url(),
+  introspectionEndpoint: z.string().url().optional(),
+  clientId: z.string(),
+  clientSecret: z.string().optional(),
+  scopes: z.array(z.string()),
+  grantType: z.enum(["authorization_code", "client_credentials"]),
+});
+
+export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
+
+/**
+ * Tool definition schema from MCP discovery
+ */
+export const ToolDefinitionSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  inputSchema: z.record(z.unknown()),
+  outputSchema: z.record(z.unknown()).optional(),
+});
+
+export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
+
+/**
+ * Connection entity schema - single source of truth.
+ * Compliant with collections binding pattern.
  */
 export const ConnectionEntitySchema = z.object({
   // Base collection entity fields
   id: z.string().describe("Unique identifier for the connection"),
   title: z.string().describe("Human-readable name for the connection"),
-  created_at: z.string().datetime().describe("When the connection was created"),
+  created_at: z
+    .union([z.string(), z.date()])
+    .describe("When the connection was created"),
   updated_at: z
-    .string()
-    .datetime()
+    .union([z.string(), z.date()])
     .describe("When the connection was last updated"),
-  created_by: z
-    .string()
-    .optional()
-    .describe("User ID who created the connection"),
+  created_by: z.string().describe("User ID who created the connection"),
   updated_by: z
     .string()
     .optional()
     .describe("User ID who last updated the connection"),
 
   // Connection-specific fields
-  organizationId: z
+  organization_id: z
     .string()
     .describe("Organization ID this connection belongs to"),
   description: z.string().nullable().describe("Description of the connection"),
-  icon: z
-    .string()
-    .url()
-    .nullable()
-    .optional()
-    .describe("Icon URL for the connection"),
-  appName: z.string().nullable().optional().describe("Associated app name"),
-  appId: z.string().nullable().optional().describe("Associated app ID"),
+  icon: z.string().nullable().describe("Icon URL for the connection"),
+  app_name: z.string().nullable().describe("Associated app name"),
+  app_id: z.string().nullable().describe("Associated app ID"),
 
-  connectionType: z
+  connection_type: z
     .enum(["HTTP", "SSE", "Websocket"])
     .describe("Type of connection"),
-  connectionUrl: z.string().url().describe("URL for the connection"),
-  connectionToken: z
-    .string()
-    .nullable()
-    .optional()
-    .describe("Authentication token (encrypted)"),
-  connectionHeaders: z
+  connection_url: z.string().describe("URL for the connection"),
+  connection_token: z.string().nullable().describe("Authentication token"),
+  connection_headers: z
     .record(z.string(), z.string())
     .nullable()
-    .optional()
     .describe("Custom headers"),
 
-  oauthConfig: z
-    .record(z.unknown())
-    .nullable()
-    .optional()
-    .describe("OAuth configuration"),
-  metadata: z
-    .record(z.unknown())
-    .nullable()
-    .optional()
-    .describe("Additional metadata"),
+  oauth_config: OAuthConfigSchema.nullable().describe("OAuth configuration"),
+  metadata: z.record(z.unknown()).nullable().describe("Additional metadata"),
   tools: z
-    .array(z.any())
+    .array(ToolDefinitionSchema)
     .nullable()
-    .optional()
     .describe("Discovered tools from MCP"),
-  bindings: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe("Detected bindings"),
+  bindings: z.array(z.string()).nullable().describe("Detected bindings"),
 
-  status: z
-    .enum(["active", "inactive", "error"])
-    .describe("Current status of the connection"),
+  status: z.enum(["active", "inactive", "error"]).describe("Current status"),
 });
 
 /**
- * Type for the collection entity format
+ * The connection entity type - use this everywhere instead of MCPConnection
  */
 export type ConnectionEntity = z.infer<typeof ConnectionEntitySchema>;
 
 /**
- * Transform MCPConnection to collection entity format
- * Maps: name → title, createdById → created_by, timestamps to ISO strings
- */
-export function connectionToEntity(
-  connection: MCPConnection,
-): ConnectionEntity {
-  return {
-    id: connection.id,
-    title: connection.name, // Map name to title
-    created_at:
-      typeof connection.createdAt === "string"
-        ? connection.createdAt
-        : connection.createdAt.toISOString(),
-    updated_at:
-      typeof connection.updatedAt === "string"
-        ? connection.updatedAt
-        : connection.updatedAt.toISOString(),
-    created_by: connection.createdById, // Map createdById to created_by
-    updated_by: undefined, // Not tracked in MCPConnection currently
-    organizationId: connection.organizationId,
-    description: connection.description,
-    icon: connection.icon,
-    appName: connection.appName,
-    appId: connection.appId,
-    connectionType: connection.connectionType,
-    connectionUrl: connection.connectionUrl,
-    connectionToken: connection.connectionToken,
-    connectionHeaders: connection.connectionHeaders,
-    oauthConfig: connection.oauthConfig as Record<string, unknown> | null,
-    metadata: connection.metadata,
-    tools: connection.tools,
-    bindings: connection.bindings,
-    status: connection.status,
-  };
-}
-
-/**
- * Input schema for creating connections - collection binding compliant
- * Matches the entity schema structure but with optional auto-generated fields
+ * Input schema for creating connections
  */
 export const ConnectionCreateDataSchema = ConnectionEntitySchema.omit({
-  // These fields are auto-generated by the server
   id: true,
   created_at: true,
   updated_at: true,
   created_by: true,
   updated_by: true,
-  organizationId: true,
-  // These fields are auto-populated from MCP discovery
+  organization_id: true,
   tools: true,
   bindings: true,
   status: true,
-}).extend({
-  // Make some fields optional for creation
-  description: z.string().nullable().optional(),
-  icon: z.string().url().nullable().optional(),
-  appName: z.string().nullable().optional(),
-  appId: z.string().nullable().optional(),
-  connectionToken: z.string().nullable().optional(),
-  connectionHeaders: z.record(z.string(), z.string()).nullable().optional(),
-  oauthConfig: z.record(z.unknown()).nullable().optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
+}).partial({
+  description: true,
+  icon: true,
+  app_name: true,
+  app_id: true,
+  connection_token: true,
+  connection_headers: true,
+  oauth_config: true,
+  metadata: true,
 });
 
 export type ConnectionCreateData = z.infer<typeof ConnectionCreateDataSchema>;
 
 /**
- * Partial input schema for updating connections - collection binding compliant
- * This is a partial of the entity schema for incremental updates
+ * Input schema for updating connections
  */
 export const ConnectionUpdateDataSchema = ConnectionEntitySchema.partial();
+
+export type ConnectionUpdateData = z.infer<typeof ConnectionUpdateDataSchema>;

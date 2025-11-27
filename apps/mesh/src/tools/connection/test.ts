@@ -1,5 +1,5 @@
 /**
- * CONNECTION_TEST Tool
+ * COLLECTION_CONNECTIONS_TEST Tool
  *
  * Test connection health
  */
@@ -7,8 +7,8 @@
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 
-export const CONNECTION_TEST = defineTool({
-  name: "CONNECTION_TEST",
+export const COLLECTION_CONNECTIONS_TEST = defineTool({
+  name: "COLLECTION_CONNECTIONS_TEST",
   description: "Test connection health and latency",
 
   inputSchema: z.object({

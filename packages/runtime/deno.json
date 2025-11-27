@@ -1,0 +1,11 @@
+{
+  "unstable": ["sloppy-imports"],
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@decocms/bindings": "npm:@decocms/bindings@0.2.0",
+    "@decocms/bindings/client": "npm:@decocms/bindings@0.2.0/client",
+    "@decocms/bindings/connection": "npm:@decocms/bindings@0.2.0/connection",
+    "@decocms/bindings/llm": "npm:@decocms/bindings@0.2.0/llm"
+  }
+}
+

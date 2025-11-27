@@ -1,7 +1,7 @@
 {
   "name": "@decocms/runtime",
-  "type": "module",
   "version": "0.26.0",
+  "type": "module",
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build"

@@ -15,7 +15,6 @@ import {
 } from "./bindings.ts";
 import { DeconfigResource } from "./bindings/deconfig/index.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
-import { DeprecatedEnv } from "./deprecated.ts";
 import {
   createMCPServer,
   type CreateMCPServerOptions,
@@ -23,8 +22,6 @@ import {
 } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import { State } from "./state.ts";
-import type { WorkflowDO } from "./workflow.ts";
-import { Workflow } from "./workflow.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
 export { proxyConnectionForId } from "./bindings.ts";
 export {
@@ -39,8 +36,7 @@ export interface WorkspaceDB {
   }) => Promise<{ result: QueryResult[] }>;
 }
 
-export interface DefaultEnv<TSchema extends z.ZodTypeAny = any>
-  extends DeprecatedEnv<TSchema> {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_APP_NAME: string;
   DECO_APP_SLUG: string;
@@ -51,7 +47,6 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any>
   DECO_APP_DEPLOYMENT_ID: string;
   DECO_BINDINGS: string;
   DECO_API_TOKEN: string;
-  DECO_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;
   DECO_WORKSPACE_DB: WorkspaceDB & {
     forContext: (ctx: RequestContext) => WorkspaceDB;
   };
@@ -144,9 +139,9 @@ const withDefaultBindings = ({
   ctx: RequestContext;
   url?: string;
 }) => {
-  const client = workspaceClient(ctx);
+  const client = workspaceClient(ctx, env.DECO_API_URL);
   const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
-    const client = workspaceClient(ctx);
+    const client = workspaceClient(ctx, env.DECO_API_URL);
     return {
       query: ({ sql, params }) => {
         return client.DATABASES_RUN_SQL({
@@ -182,11 +177,6 @@ const withDefaultBindings = ({
   env["DECO_API"] = MCPClient;
   env["DECO_WORKSPACE_API"] = client;
   env["DECO_WORKSPACE_DB"] = workspaceDbBinding;
-
-  // Backwards compatibility
-  env["DECO_CHAT_API"] = MCPClient;
-  env["DECO_CHAT_WORKSPACE_API"] = client;
-  env["DECO_CHAT_WORKSPACE_DB"] = workspaceDbBinding;
 
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
@@ -277,8 +267,6 @@ export const withBindings = <TEnv>({
   }
 
   env.DECO_REQUEST_CONTEXT = context;
-  // Backwards compatibility
-  env.DECO_CHAT_REQUEST_CONTEXT = context;
   const bindings = WorkersMCPBindings.parse(env.DECO_BINDINGS);
 
   for (const binding of bindings) {
@@ -297,9 +285,7 @@ export const withBindings = <TEnv>({
 
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
-): ExportedHandler<TEnv & DefaultEnv<TSchema>> & {
-  Workflow: ReturnType<typeof Workflow>;
-} => {
+): ExportedHandler<TEnv & DefaultEnv<TSchema>> => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
   const fetcher = async (
     req: Request,
@@ -357,7 +343,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     );
   };
   return {
-    Workflow: Workflow(server, userFns.workflows),
     fetch: async (
       req: Request,
       env: TEnv & DefaultEnv<TSchema>,

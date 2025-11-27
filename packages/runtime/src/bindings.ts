@@ -63,8 +63,9 @@ type WorkspaceClientContext = Omit<
 >;
 export const workspaceClient = (
   ctx: WorkspaceClientContext,
+  decocmsApiUrl?: string,
 ): ReturnType<(typeof MCPClient)["forWorkspace"]> => {
-  return MCPClient.forWorkspace(ctx.workspace, ctx.token);
+  return MCPClient.forWorkspace(ctx.workspace, ctx.token, decocmsApiUrl);
 };
 
 const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
@@ -76,7 +77,7 @@ const mcpClientForAppName = (appName: string, decoChatApiUrl?: string) => {
     }),
   };
 
-  return MCPClient.forConnection(mcpConnection);
+  return MCPClient.forConnection(mcpConnection, decoChatApiUrl);
 };
 
 export const proxyConnectionForId = (
@@ -85,7 +86,7 @@ export const proxyConnectionForId = (
     token?: string;
     cookie?: string;
   },
-  decoChatApiUrl?: string,
+  decocmsApiUrl?: string,
   appName?: string,
 ): MCPConnection => {
   let headers: Record<string, string> | undefined = appName
@@ -100,7 +101,7 @@ export const proxyConnectionForId = (
     url: createIntegrationsUrl({
       integrationId,
       workspace: ctx.workspace,
-      decoCmsApiUrl: decoChatApiUrl,
+      decoCmsApiUrl: decocmsApiUrl,
       branch: ctx.branch,
     }),
     token: ctx.token,
@@ -110,18 +111,18 @@ export const proxyConnectionForId = (
 const mcpClientForIntegrationId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
-  decoChatApiUrl?: string,
+  decocmsApiUrl?: string,
   appName?: string,
 ) => {
   const mcpConnection = proxyConnectionForId(
     integrationId,
     ctx,
-    decoChatApiUrl,
+    decocmsApiUrl,
     appName,
   );
 
   // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
-  return MCPClient.forConnection(mcpConnection);
+  return MCPClient.forConnection(mcpConnection, decocmsApiUrl);
 };
 
 function mcpClientFromState(

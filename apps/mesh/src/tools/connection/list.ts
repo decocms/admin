@@ -13,14 +13,14 @@ import {
   type OrderByExpression,
 } from "@decocms/bindings/collections";
 import { AGENTS_BINDING } from "@decocms/bindings/agents";
-import { MODELS_BINDING } from "@decocms/bindings/models";
+import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
-  MODELS: MODELS_BINDING,
+  MODELS: LANGUAGE_MODEL_BINDING,
   AGENTS: AGENTS_BINDING,
 };
 

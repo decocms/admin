@@ -27,13 +27,7 @@ export default defineConfig([
     treeshake: true,
     shims: true,
     esbuildPlugins: [
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      polyfillNode({
-        polyfills: {
-          buffer: true,
-          process: true,
-        },
-      }) as any,
+      polyfillNode({ polyfills: { buffer: true, process: true } }),
     ],
     external: ["zod"],
     noExternal: ["json-schema-diff", "zod-to-json-schema"],

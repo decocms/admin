@@ -36,7 +36,7 @@ export interface UseToolCallOptions<TInput, _TOutput> {
  * ```tsx
  * const { data, isLoading, error } = useToolCall({
  *   toolCaller: createToolCaller(),
- *   toolName: "COLLECTION_MODELS_LIST",
+ *   toolName: "COLLECTION_LLM_LIST",
  *   toolInputParams: { limit: 10 },
  * });
  * ```

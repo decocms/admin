@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { type Binder, createBindingChecker } from "@decocms/bindings";
 import { AGENTS_BINDING } from "@decocms/bindings/agents";
-import { MODELS_BINDING } from "@decocms/bindings/models";
+import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import {
   useConnections,
   type ConnectionEntity,
@@ -12,7 +12,7 @@ import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
  * Map of well-known binding names to their definitions
  */
 const BUILTIN_BINDINGS: Record<string, Binder> = {
-  MODELS: MODELS_BINDING,
+  MODELS: LANGUAGE_MODEL_BINDING,
   AGENTS: AGENTS_BINDING,
 };
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
+import type { ToolBinder } from "@decocms/bindings";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -101,7 +102,6 @@ export const MCPClient = new Proxy(
   },
 );
 
-import { ToolBinder } from "@decocms/bindings";
 export type { ToolBinder };
 
 export const isStreamableToolBinder = (

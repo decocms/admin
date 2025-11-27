@@ -14,9 +14,6 @@ export { COLLECTION_CONNECTIONS_DELETE } from "./delete";
 // Connection test tool
 export { COLLECTION_CONNECTIONS_TEST } from "./test";
 
-// Collection detection tool
-export { CONNECTION_DETECT_COLLECTIONS } from "./detect-collections";
-
 // Schema exports
 export { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
 

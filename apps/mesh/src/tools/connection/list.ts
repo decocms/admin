@@ -12,6 +12,7 @@ import {
   type WhereExpression,
   type OrderByExpression,
 } from "@decocms/bindings/collections";
+import { AGENTS_BINDING } from "@decocms/bindings/agents";
 import { MODELS_BINDING } from "@decocms/bindings/models";
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
@@ -20,6 +21,7 @@ import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
   MODELS: MODELS_BINDING,
+  AGENTS: AGENTS_BINDING,
 };
 
 /**

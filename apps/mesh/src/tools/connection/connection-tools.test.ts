@@ -46,12 +46,8 @@ describe("Connection Tools", () => {
         auditLogs: null as never,
         organizationSettings: {
           get: async () => null,
-          upsert: async (
-            _orgId: string,
-            data: { modelsBindingConnectionId?: string },
-          ) => ({
+          upsert: async (_orgId: string) => ({
             organizationId: _orgId,
-            modelsBindingConnectionId: data.modelsBindingConnectionId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }),

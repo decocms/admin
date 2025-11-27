@@ -15,38 +15,57 @@
     "zod-from-json-schema": "^0.0.5",
     "@modelcontextprotocol/sdk": "^1.20.2"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/node/index.js",
+  "types": "./dist/node/index.d.ts",
   "files": [
     "dist/**/*"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./models": {
-      "types": "./dist/models.d.ts",
-      "default": "./dist/models.js"
-    },
-    "./collections": {
-      "types": "./dist/collections.d.ts",
-      "default": "./dist/collections.js"
-    },
-    "./llm": {
-      "types": "./dist/language-model.d.ts",
-      "default": "./dist/language-model.js"
-    },
-    "./connection": {
-      "types": "./dist/connection.d.ts",
-      "default": "./dist/connection.js"
+      "types": "./dist/node/index.d.ts",
+      "browser": "./dist/browser/index.js",
+      "bun": "./dist/node/index.js",
+      "node": "./dist/node/index.js",
+      "default": "./dist/node/index.js"
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+      "types": "./dist/node/index.d.ts",
+      "browser": "./dist/browser/index.js",
+      "bun": "./dist/node/index.js",
+      "node": "./dist/node/index.js",
+      "default": "./dist/node/index.js"
+    },
+    "./llm": {
+      "types": "./dist/node/language-model.d.ts",
+      "browser": "./dist/browser/language-model.js",
+      "bun": "./dist/node/language-model.js",
+      "node": "./dist/node/language-model.js",
+      "default": "./dist/node/language-model.js"
+    },
+    "./connection": {
+      "types": "./dist/node/connection.d.ts",
+      "browser": "./dist/browser/connection.js",
+      "bun": "./dist/node/connection.js",
+      "node": "./dist/node/connection.js",
+      "default": "./dist/node/connection.js"
+    },
+    "./collections": {
+      "types": "./dist/node/well-known/collections.d.ts",
+      "browser": "./dist/browser/well-known/collections.js",
+      "bun": "./dist/node/well-known/collections.js",
+      "node": "./dist/node/well-known/collections.js",
+      "default": "./dist/node/well-known/collections.js"
+    },
+    "./agents": {
+      "types": "./dist/node/well-known/agents.d.ts",
+      "browser": "./dist/browser/well-known/agents.js",
+      "bun": "./dist/node/well-known/agents.js",
+      "node": "./dist/node/well-known/agents.js",
+      "default": "./dist/node/well-known/agents.js"
     }
   },
   "devDependencies": {
+    "esbuild-plugin-polyfill-node": "^0.3.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "3.2.4"

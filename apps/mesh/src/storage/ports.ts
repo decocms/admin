@@ -30,8 +30,5 @@ export interface ConnectionStoragePort {
 
 export interface OrganizationSettingsStoragePort {
   get(organizationId: string): Promise<OrganizationSettings | null>;
-  upsert(
-    organizationId: string,
-    data: { modelsBindingConnectionId: string | null },
-  ): Promise<OrganizationSettings>;
+  upsert(organizationId: string): Promise<OrganizationSettings>;
 }

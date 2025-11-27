@@ -23,10 +23,7 @@ export function useUpdateOrganizationSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: {
-      organizationId: string;
-      modelsBindingConnectionId: string | null;
-    }) => {
+    mutationFn: async (input: { organizationId: string }) => {
       return await fetcher.ORGANIZATION_SETTINGS_UPDATE(input);
     },
     onSuccess: (_data, variables) => {

@@ -74,6 +74,11 @@ const orgMcpsRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/mcps",
   component: lazyRouteComponent(() => import("./routes/orgs/mcps.tsx")),
+  validateSearch: z.lazy(() =>
+    z.object({
+      action: z.enum(["create"]).optional(),
+    }),
+  ),
 });
 
 const orgSettingsRoute = createRoute({

@@ -96,18 +96,12 @@ export interface Organization {
 
 export interface OrganizationSettingsTable {
   organizationId: string;
-  modelsBindingConnectionId: ColumnType<
-    string | null,
-    string | null,
-    string | null
-  >;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
 
 export interface OrganizationSettings {
   organizationId: string;
-  modelsBindingConnectionId: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

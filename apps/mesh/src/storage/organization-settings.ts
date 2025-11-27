@@ -20,29 +20,23 @@ export class OrganizationSettingsStorage
 
     return {
       organizationId: record.organizationId,
-      modelsBindingConnectionId: record.modelsBindingConnectionId ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
   }
 
-  async upsert(
-    organizationId: string,
-    data: { modelsBindingConnectionId: string | null },
-  ): Promise<OrganizationSettings> {
+  async upsert(organizationId: string): Promise<OrganizationSettings> {
     const now = new Date().toISOString();
 
     await this.db
       .insertInto("organization_settings")
       .values({
         organizationId,
-        modelsBindingConnectionId: data.modelsBindingConnectionId,
         createdAt: now,
         updatedAt: now,
       })
       .onConflict((oc) =>
         oc.column("organizationId").doUpdateSet({
-          modelsBindingConnectionId: data.modelsBindingConnectionId,
           updatedAt: now,
         }),
       )
@@ -53,7 +47,6 @@ export class OrganizationSettingsStorage
       // Should not happen, but return synthesized value in case of race conditions
       return {
         organizationId,
-        modelsBindingConnectionId: data.modelsBindingConnectionId,
         createdAt: now,
         updatedAt: now,
       };

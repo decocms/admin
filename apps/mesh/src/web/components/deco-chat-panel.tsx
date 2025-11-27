@@ -1,12 +1,9 @@
-import { createToolCaller } from "@/tools/client";
-import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
-import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
-import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useChat } from "@ai-sdk/react";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
@@ -15,52 +12,24 @@ import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
 import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provider.tsx";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
-
-// Model type matching ModelSchema from @decocms/bindings
-interface Model {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  updated_by?: string;
-  logo: string | null;
-  description: string | null;
-  capabilities: string[];
-  limits: {
-    contextWindow: number;
-    maxOutputTokens: number;
-  } | null;
-  costs: {
-    input: number;
-    output: number;
-  } | null;
-  provider:
-    | "openai"
-    | "anthropic"
-    | "google"
-    | "xai"
-    | "deepseek"
-    | "openai-compatible"
-    | null;
-  endpoint: {
-    url: string;
-    method: string;
-    contentType: string;
-    stream: boolean;
-  } | null;
-}
-
-interface ModelsResponse {
-  models: Model[];
-}
+import { EmptyState } from "@/web/components/empty-state";
+import { useBindingConnections } from "@/web/hooks/use-models-binding";
+import { useModelsFromConnection } from "@/web/hooks/use-models";
+import { useAgentsFromConnection } from "@/web/hooks/use-agents";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -86,9 +55,8 @@ function createModelsTransport(
       return {
         body: {
           messages,
-          modelId: metadata?.modelId,
-          provider: metadata?.provider,
-          endpoint: metadata?.endpoint,
+          model: metadata?.model,
+          agent: metadata?.agent,
           stream: true,
         },
       };
@@ -97,10 +65,11 @@ function createModelsTransport(
 }
 
 export function DecoChatPanel() {
-  const { locator } = useProjectContext();
+  const { locator, org } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
   const { setOpen } = useDecoChatOpen();
+  const navigate = useNavigate();
 
   // Use thread management from ChatThreadsProvider
   const {
@@ -121,65 +90,35 @@ export function DecoChatPanel() {
   // Sentinel ref for auto-scrolling to bottom
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const settingsQuery = useOrganizationSettings(organization?.id);
+  // Get first connection that implements MODELS binding
+  const {
+    connections: modelsConnections,
+    isLoading: modelsConnectionsLoading,
+    error: modelsBindingError,
+  } = useBindingConnections("MODELS");
+  const modelsConnection = modelsConnections[0];
 
-  // Create tool caller for mesh API
-  const toolCaller = useMemo(() => createToolCaller(), []);
+  // Get first connection that implements AGENTS binding
+  const {
+    connections: agentsConnections,
+    isLoading: agentsConnectionsLoading,
+  } = useBindingConnections("AGENTS");
+  const agentsConnection = agentsConnections[0];
 
-  const connectionsQuery = useQuery({
-    queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
-    queryFn: async () => {
-      return (await toolCaller("COLLECTION_CONNECTIONS_LIST", {
-        binding: "MODELS",
-      })) as { items: ConnectionEntity[] };
-    },
-    enabled: Boolean(locator),
-    staleTime: 30_000,
-  });
+  // Fetch models from the first MODELS connection
+  const { data: modelsData, isPending: modelsLoading } =
+    useModelsFromConnection(modelsConnection?.id);
 
-  const connection = useMemo(() => {
-    if (!connectionsQuery.data?.items || !settingsQuery.data) {
-      return undefined;
-    }
+  // Fetch agents from the first AGENTS connection
+  const { data: agentsData, isPending: agentsLoading } =
+    useAgentsFromConnection(agentsConnection?.id);
 
-    const connectionId = settingsQuery.data.modelsBindingConnectionId;
-    if (!connectionId) {
-      return undefined;
-    }
+  const isModelsLoading = modelsConnectionsLoading || modelsLoading;
+  const isAgentsLoading = agentsConnectionsLoading || agentsLoading;
 
-    const found = connectionsQuery.data.items.find(
-      (item) => item.id === connectionId,
-    );
-    if (!found) return undefined;
-
-    // Map collection entity to expected format (title -> name)
-    return {
-      ...found,
-      name: found.title, // Map title back to name
-    };
-  }, [connectionsQuery.data, settingsQuery.data]);
-
-  const modelsQuery = useQuery({
-    queryKey: KEYS.modelsList(orgSlug),
-    enabled: Boolean(orgSlug) && Boolean(connection),
-    staleTime: 30_000,
-    queryFn: async () => {
-      if (!connection) {
-        throw new Error("No connection available");
-      }
-
-      const callTool = createToolCaller(connection.id);
-      const result = await callTool("COLLECTION_MODELS_LIST", {});
-
-      return {
-        models: result?.items ?? [],
-      } as ModelsResponse;
-    },
-  });
-
-  // Transform models: add logos, convert costs, filter capabilities
+  // Transform models for UI display
   const models = useMemo(() => {
-    if (!modelsQuery.data?.models) return [];
+    if (!modelsData || !modelsConnection) return [];
 
     // Provider logo mapping
     const providerLogos: Record<string, string> = {
@@ -201,7 +140,7 @@ export function DecoChatPanel() {
       "web-search",
     ]);
 
-    return modelsQuery.data.models.map((model: Model) => {
+    return modelsData.map((model) => {
       // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
       const provider = model.id.split("/")[0] || "";
       const logo = model.logo || providerLogos[provider] || null;
@@ -230,31 +169,73 @@ export function DecoChatPanel() {
         outputCost,
         contextWindow: model.limits?.contextWindow ?? null,
         outputLimit: model.limits?.maxOutputTokens ?? null,
-        provider: model.provider, // Include provider type
-        endpoint: model.endpoint, // Include endpoint for completions API
+        provider: model.provider,
+        endpoint: model.endpoint,
+        connectionId: modelsConnection.id,
+        connectionName: modelsConnection.title,
       };
     });
-  }, [modelsQuery.data]);
+  }, [modelsData, modelsConnection]);
 
-  // Persist selected model per organization in localStorage
-  const [selectedModelId, setSelectedModelId] = useLocalStorage<
-    string | undefined
-  >(LOCALSTORAGE_KEYS.chatSelectedModel(locator), (existing) => existing);
+  // Transform agents with connection info
+  const agents = useMemo(() => {
+    if (!agentsData || !agentsConnection) return [];
+
+    return agentsData.map((agent) => ({
+      ...agent,
+      connectionId: agentsConnection.id,
+      connectionName: agentsConnection.title,
+    }));
+  }, [agentsData, agentsConnection]);
+
+  // Persist selected model (including connectionId) per organization in localStorage
+  const [selectedModelState, setSelectedModelState] = useLocalStorage<{
+    modelId: string;
+    connectionId: string;
+  } | null>(
+    LOCALSTORAGE_KEYS.chatSelectedModel(locator),
+    (existing) => existing as { modelId: string; connectionId: string } | null,
+  );
+
+  // Persist selected agent per organization in localStorage
+  const [selectedAgentState, setSelectedAgentState] = useLocalStorage<{
+    agentId: string;
+    connectionId: string;
+  } | null>(`${locator}:selected-agent`, () => null);
 
   // Initialize with first model
   useEffect(() => {
-    if (models.length > 0 && !selectedModelId) {
+    if (models.length > 0 && !selectedModelState) {
       const firstModel = models[0];
       if (firstModel) {
-        setSelectedModelId(firstModel.id);
+        setSelectedModelState({
+          modelId: firstModel.id,
+          connectionId: firstModel.connectionId,
+        });
       }
     }
-  }, [models, selectedModelId, setSelectedModelId]);
+  }, [models, selectedModelState, setSelectedModelState]);
 
   // Get selected model info
   const selectedModel = useMemo(
-    () => models.find((m) => m.id === selectedModelId),
-    [models, selectedModelId],
+    () =>
+      models.find(
+        (m) =>
+          m.id === selectedModelState?.modelId &&
+          m.connectionId === selectedModelState?.connectionId,
+      ),
+    [models, selectedModelState],
+  );
+
+  // Get selected agent info
+  const selectedAgent = useMemo(
+    () =>
+      agents.find(
+        (a) =>
+          a.id === selectedAgentState?.agentId &&
+          a.connectionId === selectedAgentState?.connectionId,
+      ),
+    [agents, selectedAgentState],
   );
 
   // Create transport (stable, doesn't depend on selected model)
@@ -309,41 +290,68 @@ export function DecoChatPanel() {
     }
   }, [chat.messages]);
 
-  // ModelsBindingProvider value
+  // ModelsBindingProvider value - use modelId for backward compat
   const modelsBindingValue = useMemo(
     () => ({
       models,
-      selectedModel: selectedModelId,
-      setSelectedModel: setSelectedModelId,
-      isLoading: modelsQuery.isLoading,
-      error: modelsQuery.error as Error | undefined,
+      selectedModel: selectedModelState?.modelId,
+      setSelectedModel: (modelId: string) => {
+        const model = models.find((m) => m.id === modelId);
+        if (model) {
+          setSelectedModelState({
+            modelId: model.id,
+            connectionId: model.connectionId,
+          });
+        }
+      },
+      isLoading: isModelsLoading,
+      error: modelsBindingError as Error | undefined,
     }),
     [
       models,
-      selectedModelId,
-      modelsQuery.isLoading,
-      modelsQuery.error,
-      setSelectedModelId,
+      selectedModelState?.modelId,
+      isModelsLoading,
+      modelsBindingError,
+      setSelectedModelState,
     ],
   );
 
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
     async (message: UIMessage) => {
-      if (!selectedModelId || !selectedModel?.endpoint) {
+      if (!selectedModelState || !selectedModel?.endpoint) {
         console.error("No model or endpoint configured");
         return;
       }
 
-      // Prepare metadata with current model configuration
-      const metadata = {
-        modelId: selectedModelId,
-        provider: selectedModel.provider,
+      // Prepare metadata with model and agent configuration
+      const metadata: {
+        model: { id: string; connectionId: string; provider?: string | null };
+        agent?: {
+          id: string;
+          instructions: string;
+          tool_set: Record<string, string[]>;
+        };
+      } = {
+        model: {
+          id: selectedModelState.modelId,
+          connectionId: selectedModelState.connectionId,
+          provider: selectedModel.provider,
+        },
       };
+
+      // Add agent if selected
+      if (selectedAgent) {
+        metadata.agent = {
+          id: selectedAgent.id,
+          instructions: selectedAgent.instructions,
+          tool_set: selectedAgent.tool_set,
+        };
+      }
 
       return await chat.sendMessage(message, { metadata });
     },
-    [chat, selectedModelId, selectedModel],
+    [chat, selectedModelState, selectedModel, selectedAgent],
   );
 
   const handleSendMessage = useCallback(
@@ -365,20 +373,42 @@ export function DecoChatPanel() {
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, isLoading, selectedModelId, wrappedSendMessage],
+    [input, isLoading, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
     chat.stop?.();
   }, [chat]);
 
-  // Show skeleton while loading models
-  if (modelsQuery.isLoading) {
+  // Show skeleton while loading connections
+  if (isModelsLoading || isAgentsLoading) {
     return <DecoChatSkeleton />;
   }
 
-  return (
-    <ModelsBindingProvider value={modelsBindingValue}>
+  // Check if both required bindings are present
+  const hasModelsBinding = modelsConnections.length > 0;
+  const hasAgentsBinding = agentsConnections.length > 0;
+  const hasBothBindings = hasModelsBinding && hasAgentsBinding;
+
+  // If missing bindings, show empty state with appropriate message
+  if (!hasBothBindings) {
+    let title: string;
+    let description: string;
+
+    if (!hasModelsBinding && !hasAgentsBinding) {
+      title = "Connect your providers";
+      description =
+        "Add MCPs with MODELS and AGENTS to unlock AI-powered features.";
+    } else if (!hasModelsBinding) {
+      title = "No model provider connected";
+      description =
+        "Connect to a model provider to unlock AI-powered features.";
+    } else {
+      title = "No agents configured";
+      description = "Connect to an agents provider to use AI assistants.";
+    }
+
+    return (
       <DecoChatAside className="h-full">
         <DecoChatAside.Header>
           <div className="flex items-center gap-2">
@@ -388,6 +418,59 @@ export function DecoChatPanel() {
               className="size-5 rounded"
             />
             <span className="text-sm font-medium">deco chat</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+              title="Close chat"
+            >
+              <Icon
+                name="close"
+                size={16}
+                className="text-muted-foreground group-hover:text-foreground transition-colors"
+              />
+            </button>
+          </div>
+        </DecoChatAside.Header>
+        <DecoChatAside.Content className="flex flex-col items-center">
+          <EmptyState
+            title={title}
+            description={description}
+            actions={
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate({
+                    to: "/$org/mcps",
+                    params: { org },
+                    search: { action: "create" },
+                  })
+                }
+              >
+                Add connection
+              </Button>
+            }
+          />
+        </DecoChatAside.Content>
+      </DecoChatAside>
+    );
+  }
+
+  return (
+    <ModelsBindingProvider value={modelsBindingValue}>
+      <DecoChatAside className="h-full">
+        <DecoChatAside.Header>
+          <div className="flex items-center gap-2">
+            <img
+              src={selectedAgent?.avatar || CAPYBARA_AVATAR_URL}
+              alt="deco chat"
+              className="size-5 rounded"
+            />
+            <span className="text-sm font-medium">
+              {selectedAgent?.title || "deco chat"}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             {!isEmpty && (
@@ -423,29 +506,24 @@ export function DecoChatPanel() {
         </DecoChatAside.Header>
 
         <DecoChatAside.Content>
-          {modelsQuery.error && (
+          {modelsBindingError && (
             <div className="p-4">
               <Alert variant="destructive">
                 <AlertDescription>
-                  {(modelsQuery.error as Error).message}
+                  {(modelsBindingError as Error).message}
                 </AlertDescription>
               </Alert>
             </div>
           )}
 
-          {!modelsQuery.isLoading && models.length === 0 && (
-            <div className="p-4 text-xs text-muted-foreground">
-              The configured Models Provider isn't returning any models. Review
-              it under Settings → Models Provider; no extra setup is required
-              inside this chat.
-            </div>
-          )}
-
           {isEmpty ? (
             <DecoChatEmptyState
-              title="Ask deco chat"
-              description="Ask anything about configuring model providers or using MCP Mesh. The assistant uses the Models Provider configured in Settings for this organization."
-              avatar="/img/logo-tiny.svg"
+              title={selectedAgent?.title || "Ask deco chat"}
+              description={
+                selectedAgent?.description ||
+                "Ask anything about configuring model providers or using MCP Mesh."
+              }
+              avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
             />
           ) : (
             <DecoChatMessages>
@@ -469,14 +547,81 @@ export function DecoChatPanel() {
             onChange={setInput}
             onSubmit={handleSendMessage}
             onStop={handleStop}
-            disabled={models.length === 0 || !selectedModelId}
+            disabled={models.length === 0 || !selectedModelState}
             isStreaming={isLoading}
             placeholder={
               models.length === 0
-                ? "Configure a Models Provider in Settings to start chatting"
+                ? "Add a MODELS binding connection to start chatting"
                 : "Ask anything or @ for context"
             }
-            rightActions={<DecoChatModelSelectorRich />}
+            rightActions={
+              <div className="flex items-center gap-1">
+                {/* Agent Selector */}
+                {agents.length > 0 && (
+                  <Select
+                    value={
+                      selectedAgentState
+                        ? `${selectedAgentState.connectionId}:${selectedAgentState.agentId}`
+                        : "__none__"
+                    }
+                    onValueChange={(value) => {
+                      if (value === "__none__") {
+                        setSelectedAgentState(null);
+                      } else {
+                        const [connectionId, agentId] = value.split(":");
+                        setSelectedAgentState({ agentId, connectionId });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto min-w-[80px] text-xs border-0 bg-transparent hover:bg-accent px-2">
+                      <SelectValue placeholder="Agent">
+                        {selectedAgent ? (
+                          <div className="flex items-center gap-1">
+                            <img
+                              src={selectedAgent.avatar}
+                              alt={selectedAgent.title}
+                              className="size-4 rounded"
+                            />
+                            <span className="truncate max-w-[60px]">
+                              {selectedAgent.title}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Agent</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">
+                        <span className="text-muted-foreground">No agent</span>
+                      </SelectItem>
+                      {agents.map((agent) => (
+                        <SelectItem
+                          key={`${agent.connectionId}:${agent.id}`}
+                          value={`${agent.connectionId}:${agent.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={agent.avatar}
+                              alt={agent.title}
+                              className="size-5 rounded"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm">{agent.title}</span>
+                              <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                {agent.description}
+                              </span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {/* Model Selector */}
+                <DecoChatModelSelectorRich />
+              </div>
+            }
           />
         </DecoChatAside.Footer>
       </DecoChatAside>

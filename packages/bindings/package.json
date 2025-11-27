@@ -15,8 +15,8 @@
     "zod-from-json-schema": "^0.0.5",
     "@modelcontextprotocol/sdk": "^1.20.2"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/node/index.js",
+  "types": "./dist/node/index.d.ts",
   "files": [
     "dist/**/*"
   ],
@@ -44,9 +44,14 @@
     "./client": {
       "types": "./src/core/client/index.ts",
       "default": "./dist/client.js"
+    },
+    "./agents": {
+      "types": "./src/well-known/agents.ts",
+      "default": "./dist/agents.js"
     }
   },
   "devDependencies": {
+    "esbuild-plugin-polyfill-node": "^0.3.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "3.2.4"

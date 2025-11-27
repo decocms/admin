@@ -29,7 +29,6 @@ export const ALL_TOOLS = [
   ConnectionTools.COLLECTION_CONNECTIONS_UPDATE,
   ConnectionTools.COLLECTION_CONNECTIONS_DELETE,
   ConnectionTools.COLLECTION_CONNECTIONS_TEST,
-  ConnectionTools.CONNECTION_DETECT_COLLECTIONS,
 ] as const;
 
 export type MCPMeshTools = typeof ALL_TOOLS;

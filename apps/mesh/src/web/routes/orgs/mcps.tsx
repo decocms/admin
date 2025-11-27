@@ -57,7 +57,7 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { MoreVertical, Plus, Search } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
@@ -83,20 +83,16 @@ type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
 type DialogState =
   | { mode: "idle" }
-  | { mode: "creating" }
   | { mode: "editing"; connection: ConnectionEntity }
   | { mode: "deleting"; connection: ConnectionEntity };
 
 type DialogAction =
-  | { type: "create" }
   | { type: "edit"; connection: ConnectionEntity }
   | { type: "delete"; connection: ConnectionEntity }
   | { type: "close" };
 
 function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   switch (action.type) {
-    case "create":
-      return { mode: "creating" };
     case "edit":
       return { mode: "editing", connection: action.connection };
     case "delete":
@@ -122,6 +118,7 @@ function getStatusBadgeVariant(status: string) {
 export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { action?: "create" };
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
@@ -134,6 +131,21 @@ export default function OrgMcps() {
   const { data: connections, isLoading, isError } = useConnections(listState);
 
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
+
+  // Create dialog state is derived from search params
+  const isCreating = search.action === "create";
+
+  const openCreateDialog = () => {
+    navigate({
+      to: "/$org/mcps",
+      params: { org },
+      search: { action: "create" },
+    });
+  };
+
+  const closeCreateDialog = () => {
+    navigate({ to: "/$org/mcps", params: { org }, search: {} });
+  };
 
   console.log({ connections });
 
@@ -198,7 +210,12 @@ export default function OrgMcps() {
 
   const onSubmit = async (data: ConnectionFormData) => {
     try {
-      dispatch({ type: "close" });
+      // Close dialog based on mode
+      if (isCreating) {
+        closeCreateDialog();
+      } else {
+        dispatch({ type: "close" });
+      }
       form.reset();
 
       if (editingConnection) {
@@ -239,7 +256,11 @@ export default function OrgMcps() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      dispatch({ type: "close" });
+      if (isCreating) {
+        closeCreateDialog();
+      } else {
+        dispatch({ type: "close" });
+      }
       form.reset();
     }
   };
@@ -345,11 +366,7 @@ export default function OrgMcps() {
   ];
 
   const ctaButton = (
-    <Button
-      onClick={() => dispatch({ type: "create" })}
-      size="sm"
-      className="rounded-xl"
-    >
+    <Button onClick={openCreateDialog} size="sm" className="rounded-xl">
       <Plus className="mr-2 h-4 w-4" />
       New Connection
     </Button>
@@ -358,7 +375,7 @@ export default function OrgMcps() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <Dialog
-        open={dialogState.mode === "creating" || dialogState.mode === "editing"}
+        open={isCreating || dialogState.mode === "editing"}
         onOpenChange={handleDialogClose}
       >
         <DialogContent className="sm:max-w-[525px]">
@@ -574,7 +591,7 @@ export default function OrgMcps() {
                 title="No connections found"
                 description="Create a connection to get started."
                 buttonProps={{
-                  onClick: () => dispatch({ type: "create" }),
+                  onClick: openCreateDialog,
                   children: "New Connection",
                 }}
               />

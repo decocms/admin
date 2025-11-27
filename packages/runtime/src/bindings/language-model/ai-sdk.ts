@@ -4,7 +4,6 @@ import type {
   ProviderV2,
 } from "@ai-sdk/provider";
 import { LanguageModelBinding } from "@decocms/bindings/llm";
-import z from "zod";
 import { responseToStream } from "./utils.ts";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {
@@ -21,7 +20,7 @@ type LLMBindingClient = ReturnType<
 >;
 
 export interface Provider extends ProviderV2 {
-  listModels: () => Promise<unknown>;
+  listModels: LLMBindingClient["COLLECTION_MODELS_LIST"];
 }
 
 /**

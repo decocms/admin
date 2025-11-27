@@ -13,8 +13,8 @@ import {
   ListToolsRequest,
   ListToolsResultSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { MCPConnection } from "./connection.ts";
-import { HTTPClientTransport } from "./http-client-transport.ts";
+import { MCPConnection } from "../connection";
+import { HTTPClientTransport } from "./http-client-transport";
 
 /**
  * WARNNING: This is a hack to prevent schema compilation errors.

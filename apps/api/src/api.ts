@@ -390,7 +390,7 @@ const proxy = (
         },
         undefined,
         await requestHeaders(options),
-      );
+      ).then((c) => c.client);
     };
 
     const listTools = compose(

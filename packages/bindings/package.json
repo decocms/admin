@@ -11,7 +11,9 @@
   "dependencies": {
     "json-schema-diff": "^1.0.0",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.4"
+    "zod-to-json-schema": "^3.24.4",
+    "zod-from-json-schema": "^0.0.5",
+    "@modelcontextprotocol/sdk": "^1.20.2"
   },
   "main": "./dist/index.js",
   "types": "./src/index.ts",
@@ -34,6 +36,21 @@
       "source": "./src/well-known/collections.ts",
       "types": "./src/well-known/collections.ts",
       "default": "./dist/well-known/collections.js"
+    },
+    "./llm": {
+      "source": "./src/well-known/language-model.ts",
+      "types": "./src/well-known/language-model.ts",
+      "default": "./dist/well-known/language-model.js"
+    },
+    "./connection": {
+      "source": "./src/core/connection.ts",
+      "types": "./src/core/connection.ts",
+      "default": "./dist/core/connection.js"
+    },
+    "./client": {
+      "source": "./src/core/client/index.ts",
+      "types": "./src/core/client/index.ts",
+      "default": "./dist/core/client/index.js"
     }
   },
   "devDependencies": {

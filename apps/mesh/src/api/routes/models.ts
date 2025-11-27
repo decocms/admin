@@ -191,11 +191,7 @@ function buildConnectionHeaders(connection: MCPConnection) {
   };
 
   if (connection.connectionToken) {
-    if (headers.Authorization) {
-      headers["x-deco-proxy-token"] = connection.connectionToken;
-    } else {
-      headers.Authorization = `Bearer ${connection.connectionToken}`;
-    }
+    headers.Authorization = `Bearer ${connection.connectionToken}`;
   }
 
   return headers;

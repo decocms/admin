@@ -1,14 +1,14 @@
 /* oxlint-disable no-explicit-any */
 import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
-import { createPrivateTool } from "../mastra.ts";
+import { createPrivateTool, createStreamableTool } from "../mastra.ts";
 import {
   createMCPFetchStub,
   type MCPClientFetchStub,
   type ToolBinder,
 } from "../mcp.ts";
-import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
-import { VIEW_BINDING_SCHEMA } from "./views.ts";
+import { CHANNEL_BINDING } from "./channels.ts";
+import { VIEW_BINDING } from "./views.ts";
 
 // ToolLike is a simplified version of the Tool interface that matches what we need for bindings
 export interface ToolLike<
@@ -75,27 +75,16 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     forConnection: (
       mcpConnection: MCPConnection,
     ): MCPClientFetchStub<TDefinition> => {
-      const stub = createMCPFetchStub<TDefinition>({
+      return createMCPFetchStub<TDefinition>({
         connection: mcpConnection,
-      });
-      return new Proxy<MCPClientFetchStub<TDefinition>>(
-        {} as MCPClientFetchStub<TDefinition>,
-        {
-          get(_, name) {
-            if (typeof name !== "string") {
-              throw new Error("Name must be a string");
-            }
-
-            return (args: Record<string, unknown>) => {
-              return (
-                stub[name as keyof MCPClientFetchStub<TDefinition>] as (
-                  args: Record<string, unknown>,
-                ) => Promise<unknown>
-              )(args);
-            };
+        streamable: binder.reduce(
+          (acc, tool) => {
+            acc[tool.name] = tool.streamable === true;
+            return acc;
           },
-        },
-      );
+          {} as Record<string, boolean>,
+        ),
+      });
     },
   };
 };
@@ -103,9 +92,8 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   ReturnType<T["forConnection"]>;
 
-export const ChannelBinding = bindingClient(CHANNEL_BINDING_SCHEMA);
-
-export const ViewBinding = bindingClient(VIEW_BINDING_SCHEMA);
+export const ChannelBinding = bindingClient(CHANNEL_BINDING);
+export const ViewBinding = bindingClient(VIEW_BINDING);
 
 export type { Callbacks } from "./channels.ts";
 
@@ -113,8 +101,12 @@ export const impl = <TBinder extends Binder>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
   createToolFn = createPrivateTool,
+  createStreamableToolFn = createStreamableTool,
 ) => {
-  const impl: ReturnType<typeof createToolFn>[] = [];
+  const impl: (
+    | ReturnType<typeof createToolFn>
+    | ReturnType<typeof createStreamableToolFn>
+  )[] = [];
   for (const key in schema) {
     const toolSchema = schema[key];
     const toolImplementation = implementation[key];
@@ -127,17 +119,28 @@ export const impl = <TBinder extends Binder>(
       throw new Error(`Implementation for ${key} is required`);
     }
 
-    const { name, handler, ...toolLike }: ToolLike = {
+    const { name, handler, streamable, ...toolLike } = {
       ...toolSchema,
       ...toolImplementation,
     };
-    impl.push(
-      createToolFn({
-        ...toolLike,
-        id: name,
-        execute: ({ context }) => Promise.resolve(handler(context)),
-      }),
-    );
+    if (streamable) {
+      impl.push(
+        createStreamableToolFn({
+          ...toolLike,
+          streamable,
+          id: name,
+          execute: ({ context }) => Promise.resolve(handler(context)),
+        }),
+      );
+    } else {
+      impl.push(
+        createToolFn({
+          ...toolLike,
+          id: name,
+          execute: ({ context }) => Promise.resolve(handler(context)),
+        }),
+      );
+    }
   }
   return impl;
 };

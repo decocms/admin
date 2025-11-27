@@ -252,26 +252,28 @@ export interface CollectionBindingOptions {
  */
 export function createCollectionBindings<
   TEntitySchema extends BaseCollectionEntitySchemaType,
+  TName extends string,
 >(
-  collectionName: string,
+  collectionName: TName,
   entitySchema: TEntitySchema,
   options?: CollectionBindingOptions,
 ) {
-  const upperName = collectionName.toUpperCase();
+  const upperName = collectionName.toUpperCase() as Uppercase<TName>;
   const readOnly = options?.readOnly ?? false;
 
-  const bindings: ToolBinder[] = [
-    {
-      name: `COLLECTION_${upperName}_LIST` as const,
-      inputSchema: CollectionListInputSchema,
-      outputSchema: createCollectionListOutputSchema(entitySchema),
-    },
-    {
-      name: `COLLECTION_${upperName}_GET` as const,
-      inputSchema: CollectionGetInputSchema,
-      outputSchema: createCollectionGetOutputSchema(entitySchema),
-    },
-  ];
+  const bindings: CollectionBinding<TEntitySchema, Uppercase<TName>>[number][] =
+    [
+      {
+        name: `COLLECTION_${upperName}_LIST` as const,
+        inputSchema: CollectionListInputSchema,
+        outputSchema: createCollectionListOutputSchema(entitySchema),
+      },
+      {
+        name: `COLLECTION_${upperName}_GET` as const,
+        inputSchema: CollectionGetInputSchema,
+        outputSchema: createCollectionGetOutputSchema(entitySchema),
+      },
+    ];
 
   // Only include mutation operations if not read-only
   if (!readOnly) {
@@ -300,19 +302,70 @@ export function createCollectionBindings<
   return bindings satisfies readonly ToolBinder[];
 }
 
+export type ReadOnlyCollectionBinding<
+  TEntitySchema extends BaseCollectionEntitySchemaType,
+  TUpperName extends Uppercase<string> = Uppercase<string>,
+> = [
+  {
+    name: `COLLECTION_${TUpperName}_LIST`;
+    inputSchema: typeof CollectionListInputSchema;
+    outputSchema: ReturnType<
+      typeof createCollectionListOutputSchema<TEntitySchema>
+    >;
+  },
+  {
+    name: `COLLECTION_${TUpperName}_GET`;
+    inputSchema: typeof CollectionGetInputSchema;
+    outputSchema: ReturnType<
+      typeof createCollectionGetOutputSchema<TEntitySchema>
+    >;
+  },
+];
 /**
  * Type helper to extract the collection binding type
  */
 export type CollectionBinding<
   TEntitySchema extends BaseCollectionEntitySchemaType,
-> = ReturnType<typeof createCollectionBindings<TEntitySchema>>;
+  TUpperName extends Uppercase<string> = Uppercase<string>,
+> = [
+  ...ReadOnlyCollectionBinding<TEntitySchema, TUpperName>,
+  {
+    name: `COLLECTION_${TUpperName}_CREATE`;
+    inputSchema: ReturnType<
+      typeof createCollectionInsertInputSchema<TEntitySchema>
+    >;
+    outputSchema: ReturnType<
+      typeof createCollectionInsertOutputSchema<TEntitySchema>
+    >;
+    opt: true;
+  },
+  {
+    name: `COLLECTION_${TUpperName}_UPDATE`;
+    inputSchema: ReturnType<
+      typeof createCollectionUpdateInputSchema<TEntitySchema>
+    >;
+    outputSchema: ReturnType<
+      typeof createCollectionUpdateOutputSchema<TEntitySchema>
+    >;
+    opt: true;
+  },
+  {
+    name: `COLLECTION_${TUpperName}_DELETE`;
+    inputSchema: typeof CollectionDeleteInputSchema;
+    outputSchema: ReturnType<
+      typeof createCollectionDeleteOutputSchema<TEntitySchema>
+    >;
+    opt: true;
+  },
+];
 
 /**
  * Type helper to extract tool names from a collection binding
  */
 export type CollectionTools<
   TEntitySchema extends BaseCollectionEntitySchemaType,
-> = CollectionBinding<TEntitySchema>[number]["name"];
+  TUpperName extends Uppercase<string> = Uppercase<string>,
+> = CollectionBinding<TEntitySchema, TUpperName>[number]["name"];
 
 // Export types for TypeScript usage
 export type CollectionListInput = z.infer<typeof CollectionListInputSchema>;

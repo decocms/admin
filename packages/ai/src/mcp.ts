@@ -22,8 +22,8 @@ import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
-import { patchedJsonSchema } from "./utils/json-schema.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
+import { patchedJsonSchema } from "./utils/json-schema.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
 
 export { createServerClient, createTransport, jsonSchemaToModel };
@@ -61,12 +61,13 @@ const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
 export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
   return swr.cache(
     async () => {
-      const client = await createServerClient(mcpServer, signal).catch(
+      const mcpClient = await createServerClient(mcpServer, signal).catch(
         console.error,
       );
-      if (!client) {
+      if (!mcpClient) {
         return { tools: [] };
       }
+      const { client } = mcpClient;
 
       return client.listTools().finally(() => client.close());
     },
@@ -112,8 +113,10 @@ const getMCPServerTools = async (
               if (!innerClient) {
                 throw new Error("Failed to create inner client");
               }
+              const { client } = innerClient;
+
               try {
-                const result = await innerClient.callTool(
+                const result = await client.callTool(
                   {
                     name: tool.name,
                     arguments: input,
@@ -127,7 +130,7 @@ const getMCPServerTools = async (
                 agent._resetCallableToolSet(mcpServer.id);
                 throw error;
               } finally {
-                await innerClient.close();
+                await client.close();
               }
             },
           }),
@@ -250,7 +253,7 @@ export const swrMCPMetadata = (
   ignoreCache = false,
 ) => {
   const fetch = async () => {
-    const client = await createServerClient(
+    const { client } = await createServerClient(
       mcpServer,
       undefined,
       ignoreCache ? { "x-domain-swr-ignore-cache": "true" } : undefined,

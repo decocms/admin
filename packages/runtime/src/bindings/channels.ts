@@ -34,7 +34,7 @@ const listChannelsSchema = z.object({
 export type Callbacks = z.infer<typeof callbacksSchema>;
 export type JoinedChannelPayload = z.infer<typeof joinChannelSchema>;
 export type ListChannelsSchema = z.infer<typeof listChannelsSchema>;
-export const CHANNEL_BINDING_SCHEMA = [
+export const CHANNEL_BINDING = [
   {
     name: "DECO_CHAT_CHANNELS_JOIN" as const,
     inputSchema: joinChannelSchema,

@@ -101,16 +101,14 @@ export const MCPClient = new Proxy(
   },
 );
 
-export interface ToolBinder<
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
-> {
-  name: TName;
-  inputSchema: z.ZodType<TInput>;
-  outputSchema?: z.ZodType<TReturn>;
-  opt?: true;
-}
+import { ToolBinder } from "@decocms/bindings";
+export type { ToolBinder };
+
+export const isStreamableToolBinder = (
+  toolBinder: ToolBinder,
+): toolBinder is ToolBinder<string, any, any, true> => {
+  return toolBinder.streamable === true;
+};
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     string,
@@ -122,13 +120,13 @@ export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
 };
 
 export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
-  [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
-    string,
-    infer TInput,
-    infer TReturn
-  >
-    ? (params: TInput, init?: RequestInit) => Promise<Awaited<TReturn>>
-    : never;
+  [K in TDefinition[number] as K["name"]]: K["streamable"] extends true
+    ? K extends ToolBinder<string, infer TInput, any, true>
+      ? (params: TInput, init?: RequestInit) => Promise<Response>
+      : never
+    : K extends ToolBinder<string, infer TInput, infer TReturn, any>
+      ? (params: TInput, init?: RequestInit) => Promise<Awaited<TReturn>>
+      : never;
 };
 
 export type MCPConnectionProvider = MCPConnection;
@@ -151,6 +149,7 @@ export interface CreateStubAPIOptions {
   workspace?: string;
   token?: string;
   connection?: MCPConnectionProvider;
+  streamable?: Record<string, boolean>;
   debugId?: () => string;
   getErrorByStatusCode?: (
     statusCode: number,

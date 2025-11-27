@@ -128,6 +128,10 @@ export function createStreamableTool<
   return {
     ...streamableTool,
     execute: (input: ToolExecutionContext<TSchemaIn>) => {
+      const env = input.runtimeContext.get("env") as DefaultEnv;
+      if (env) {
+        env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+      }
       return streamableTool.execute({
         ...input,
         runtimeContext: createRuntimeContext(input.runtimeContext),

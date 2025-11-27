@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "0.25.1",
+  "version": "0.25.2",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -9,9 +9,11 @@
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
+    "@decocms/bindings": "workspace:*",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",
+    "@ai-sdk/provider": "^2.0.0",
     "bidc": "0.0.3",
     "drizzle-orm": "^0.44.5",
     "jose": "^6.0.11",

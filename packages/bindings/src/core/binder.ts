@@ -5,9 +5,11 @@
  * Bindings define standardized interfaces that integrations (MCPs) can implement.
  */
 
+import { diffSchemas } from "json-schema-diff";
 import type { ZodType } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { diffSchemas } from "json-schema-diff";
+import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
+import { MCPConnection } from "./connection";
 
 /**
  * ToolBinder defines a single tool within a binding.
@@ -23,6 +25,7 @@ export interface ToolBinder<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
+  TStreamable extends boolean = boolean,
 > {
   /** The name of the tool (e.g., "DECO_CHAT_CHANNELS_JOIN") */
   name: TName;
@@ -31,7 +34,12 @@ export interface ToolBinder<
   inputSchema: ZodType<TInput>;
 
   /** Optional Zod schema for validating tool output */
-  outputSchema?: ZodType<TReturn>;
+  outputSchema?: TStreamable extends true ? never : ZodType<TReturn>;
+
+  /**
+   * Whether this tool is streamable.
+   */
+  streamable?: TStreamable;
 
   /**
    * Whether this tool is optional in the binding.
@@ -122,6 +130,31 @@ export interface BindingChecker {
    */
   isImplementedBy: (tools: ToolWithSchemas[]) => Promise<boolean>;
 }
+
+export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
+  binder: TDefinition,
+) => {
+  return {
+    ...createBindingChecker(binder),
+    forConnection: (
+      mcpConnection: MCPConnection,
+    ): MCPClientFetchStub<TDefinition> => {
+      return createMCPFetchStub<TDefinition>({
+        connection: mcpConnection,
+        streamable: binder.reduce(
+          (acc, tool) => {
+            acc[tool.name] = tool.streamable === true;
+            return acc;
+          },
+          {} as Record<string, boolean>,
+        ),
+      });
+    },
+  };
+};
+
+export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
+  ReturnType<T["forConnection"]>;
 
 /**
  * Creates a binding checker with full schema validation using json-schema-diff.

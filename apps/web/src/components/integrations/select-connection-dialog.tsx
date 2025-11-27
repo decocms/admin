@@ -685,7 +685,11 @@ function AddConnectionDialogContent({
       });
     } catch (error) {
       // If still not found, silently fail - user will see empty state
-      console.error("App not found in marketplace or registry:", appName, error);
+      console.error(
+        "App not found in marketplace or registry:",
+        appName,
+        error,
+      );
     }
   };
 

@@ -24,9 +24,7 @@ import {
   addIntegrationUpdateListener,
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
-import {
-  type MarketplaceIntegrationCompat,
-} from "./marketplace.tsx";
+import { type MarketplaceIntegrationCompat } from "./marketplace.tsx";
 
 export interface GroupedApp {
   id: string;

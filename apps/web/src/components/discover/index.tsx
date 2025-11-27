@@ -3,7 +3,7 @@ import { useMarketplaceSpec } from "../../hooks/use-marketplace-spec.ts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { AppKeys } from "../integrations/apps.ts";

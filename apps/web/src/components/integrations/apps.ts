@@ -25,7 +25,6 @@ import {
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
 import {
-  type MarketplaceIntegration,
   type MarketplaceIntegrationCompat,
 } from "./marketplace.tsx";
 

@@ -44,7 +44,6 @@ import { IntegrationIcon } from "./common.tsx";
 import { InstalledConnections } from "./installed-connections.tsx";
 import {
   Marketplace,
-  type MarketplaceIntegration,
   type MarketplaceIntegrationCompat,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
@@ -647,7 +646,7 @@ function AddConnectionDialogContent({
       return (
         (marketplace?.integrations.find(
           (integration) =>
-            (integration as any).appName === appName ||
+            (integration as MarketplaceIntegrationCompat).appName === appName ||
             integration.name === appName,
         ) as MarketplaceIntegrationCompat | undefined) ?? null
       );
@@ -686,7 +685,7 @@ function AddConnectionDialogContent({
       });
     } catch (error) {
       // If still not found, silently fail - user will see empty state
-      console.error("App not found in marketplace or registry:", appName);
+      console.error("App not found in marketplace or registry:", appName, error);
     }
   };
 

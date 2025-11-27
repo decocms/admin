@@ -4,7 +4,7 @@ import type {
   ProviderV2,
 } from "@ai-sdk/provider";
 import { LanguageModelBinding } from "@decocms/bindings/llm";
-import { responseToStream } from "./utils.ts";
+import { lazy, responseToStream } from "./utils";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {
   return Object.fromEntries(
@@ -42,29 +42,12 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
       return await binding.COLLECTION_MODELS_LIST({});
     },
     languageModel: (modelId: string): LanguageModelV2 => {
-      let metadataPromise:
-        | Promise<{ supportedUrls: Record<string, string[]> }>
-        | undefined;
-      const fetchMetadataOnce = async () => {
-        return (metadataPromise ??= binding.LLM_METADATA({ modelId }));
-      };
-
-      const supportedUrlsPromise =
-        Promise.withResolvers<Record<string, RegExp[]>>();
-
-      const supportedUrls = new Proxy<Promise<Record<string, RegExp[]>>>(
-        supportedUrlsPromise.promise,
-        {
-          get(target, prop) {
-            fetchMetadataOnce()
-              .then((metadata) =>
-                supportedUrlsPromise.resolve(toRegExp(metadata.supportedUrls)),
-              )
-              .catch(supportedUrlsPromise.reject);
-            return target[prop as keyof typeof target];
-          },
-        },
+      const supportedUrls = lazy(() =>
+        binding
+          .LLM_METADATA({ modelId })
+          .then((metadata) => toRegExp(metadata.supportedUrls)),
       );
+
       return {
         specificationVersion: "v2" as const,
         provider: "llm-binding",

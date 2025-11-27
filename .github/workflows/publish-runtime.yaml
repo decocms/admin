@@ -22,6 +22,9 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Build bindings
+        run: cd ./packages/bindings && deno install && deno run build
+
       - name: Deno install
         run: cd ./packages/runtime && deno install
 

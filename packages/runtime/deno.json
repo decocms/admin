@@ -1,11 +1,27 @@
 {
-  "unstable": ["sloppy-imports"],
-  "nodeModulesDir": "auto",
+  "unstable": [
+    "sloppy-imports"
+  ],
+  "name": "@deco/workers-runtime",
+  "version": "0.26.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./proxy": "./src/proxy.ts",
+    "./client": "./src/client.ts",
+    "./admin": "./src/admin.ts",
+    "./mastra": "./src/mastra.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./d1": "./src/d1-store.ts",
+    "./resources": "./src/resources.ts",
+    "./views": "./src/views.ts",
+    "./mcp-client": "./src/mcp-client.ts",
+    "./bindings": "./src/bindings/index.ts",
+    "./deconfig": "./src/bindings/deconfig/index.ts"
+  },
   "imports": {
-    "@decocms/bindings": "npm:@decocms/bindings@0.2.0",
-    "@decocms/bindings/client": "npm:@decocms/bindings@0.2.0/client",
-    "@decocms/bindings/connection": "npm:@decocms/bindings@0.2.0/connection",
-    "@decocms/bindings/llm": "npm:@decocms/bindings@0.2.0/llm"
+    "@decocms/bindings": "../bindings/src/index.ts",
+    "@decocms/bindings/client": "../bindings/src/core/client/index.ts",
+    "@decocms/bindings/connection": "../bindings/src/core/connection.ts",
+    "@decocms/bindings/llm": "../bindings/src/well-known/language-model.ts"
   }
 }
-

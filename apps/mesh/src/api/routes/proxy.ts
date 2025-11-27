@@ -115,7 +115,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     throw new Error("Connection not found");
   }
 
-  if (ctx.organization && connection.organizationId !== ctx.organization.id) {
+  if (ctx.organization && connection.organization_id !== ctx.organization.id) {
     throw new Error("Connection does not belong to the active organization");
   }
 
@@ -129,18 +129,18 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     const headers: Record<string, string> = {};
 
     // Add connection token (already decrypted by storage layer)
-    if (connection.connectionToken) {
-      headers["Authorization"] = `Bearer ${connection.connectionToken}`;
+    if (connection.connection_token) {
+      headers["Authorization"] = `Bearer ${connection.connection_token}`;
     }
 
     // Add custom headers
-    if (connection.connectionHeaders) {
-      Object.assign(headers, connection.connectionHeaders);
+    if (connection.connection_headers) {
+      Object.assign(headers, connection.connection_headers);
     }
 
     // Create transport to downstream MCP using StreamableHTTP
     const transport = new StreamableHTTPClientTransport(
-      new URL(connection.connectionUrl),
+      new URL(connection.connection_url),
       { requestInit: { headers } },
     );
 

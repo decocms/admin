@@ -10,7 +10,7 @@
     "db:migrate": "bun run ./dist-server/migrate.js",
     "check": "tsc --noEmit",
     "start": "bun run ./dist-server/server.js",
-    "migrate": "bun run scripts/generate-migrations.ts",
+    "migrate": "bun run src/database/migrate.ts",
     "test": "bun test .",
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },

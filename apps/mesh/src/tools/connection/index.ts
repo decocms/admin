@@ -4,34 +4,21 @@
  * Export all connection-related tools with collection binding compliance.
  */
 
-// New collection-compliant tools
-export {
-  COLLECTION_CONNECTIONS_CREATE,
-  CONNECTION_CREATE,
-} from "./create";
-export {
-  COLLECTION_CONNECTIONS_LIST,
-  CONNECTION_LIST,
-} from "./list";
-export {
-  COLLECTION_CONNECTIONS_GET,
-  CONNECTION_GET,
-} from "./get";
-export {
-  COLLECTION_CONNECTIONS_UPDATE,
-  CONNECTION_UPDATE,
-} from "./update";
-export {
-  COLLECTION_CONNECTIONS_DELETE,
-  CONNECTION_DELETE,
-} from "./delete";
+// Collection-compliant CRUD tools
+export { COLLECTION_CONNECTIONS_CREATE } from "./create";
+export { COLLECTION_CONNECTIONS_LIST } from "./list";
+export { COLLECTION_CONNECTIONS_GET } from "./get";
+export { COLLECTION_CONNECTIONS_UPDATE } from "./update";
+export { COLLECTION_CONNECTIONS_DELETE } from "./delete";
 
-// Connection test tool (not part of collections)
-export { CONNECTION_TEST } from "./test";
+// Connection test tool
+export { COLLECTION_CONNECTIONS_TEST } from "./test";
+
+// Collection detection tool
+export { CONNECTION_DETECT_COLLECTIONS } from "./detect-collections";
 
 // Schema exports
-export {
-  ConnectionEntitySchema,
-  connectionToEntity,
-  type ConnectionEntity,
-} from "./schema";
+export { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
+
+// Utility exports
+export { fetchToolsFromMCP } from "./fetch-tools";

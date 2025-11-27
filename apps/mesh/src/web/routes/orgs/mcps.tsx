@@ -70,13 +70,13 @@ import { useConnectionsCollection } from "../../hooks/use-connections";
 const connectionFormSchema = ConnectionEntitySchema.pick({
   title: true,
   description: true,
-  connectionType: true,
-  connectionUrl: true,
-  connectionToken: true,
+  connection_type: true,
+  connection_url: true,
+  connection_token: true,
 }).partial({
   // These are optional for form input
   description: true,
-  connectionToken: true,
+  connection_token: true,
 });
 
 type ConnectionFormData = z.infer<typeof connectionFormSchema>;
@@ -135,15 +135,17 @@ export default function OrgMcps() {
 
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
+  console.log({ connections });
+
   // React Hook Form setup
   const form = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionFormSchema),
     defaultValues: {
       title: "",
       description: null,
-      connectionType: "HTTP",
-      connectionUrl: "",
-      connectionToken: null,
+      connection_type: "HTTP",
+      connection_url: "",
+      connection_token: null,
     },
   });
 
@@ -156,17 +158,17 @@ export default function OrgMcps() {
       form.reset({
         title: editingConnection.title,
         description: editingConnection.description,
-        connectionType: editingConnection.connectionType,
-        connectionUrl: editingConnection.connectionUrl,
-        connectionToken: null, // Don't pre-fill token for security
+        connection_type: editingConnection.connection_type,
+        connection_url: editingConnection.connection_url,
+        connection_token: null, // Don't pre-fill token for security
       });
     } else {
       form.reset({
         title: "",
         description: null,
-        connectionType: "HTTP",
-        connectionUrl: "",
-        connectionToken: null,
+        connection_type: "HTTP",
+        connection_url: "",
+        connection_token: null,
       });
     }
   }, [editingConnection, form]);
@@ -204,10 +206,10 @@ export default function OrgMcps() {
         const tx = collection.update(editingConnection.id, (draft) => {
           draft.title = data.title;
           draft.description = data.description || null;
-          draft.connectionType = data.connectionType;
-          draft.connectionUrl = data.connectionUrl;
-          if (data.connectionToken) {
-            draft.connectionToken = data.connectionToken;
+          draft.connection_type = data.connection_type;
+          draft.connection_url = data.connection_url;
+          if (data.connection_token) {
+            draft.connection_token = data.connection_token;
           }
         });
         await tx.isPersisted.promise;
@@ -218,13 +220,13 @@ export default function OrgMcps() {
           id: crypto.randomUUID(),
           title: data.title,
           description: data.description || null,
-          connectionType: data.connectionType,
-          connectionUrl: data.connectionUrl,
-          connectionToken: data.connectionToken || undefined,
+          connection_type: data.connection_type,
+          connection_url: data.connection_url,
+          connection_token: data.connection_token || undefined,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           status: "inactive",
-          organizationId: org,
+          organization_id: org,
         });
         await tx.isPersisted.promise;
       }
@@ -260,20 +262,22 @@ export default function OrgMcps() {
       sortable: true,
     },
     {
-      id: "connectionType",
+      id: "connection_type",
       header: "Type",
       accessor: (connection) => (
-        <span className="text-sm font-medium">{connection.connectionType}</span>
+        <span className="text-sm font-medium">
+          {connection.connection_type}
+        </span>
       ),
       cellClassName: "w-[120px]",
       sortable: true,
     },
     {
-      id: "connectionUrl",
+      id: "connection_url",
       header: "URL",
       render: (connection) => (
         <span className="text-sm text-muted-foreground block truncate max-w-sm">
-          {connection.connectionUrl}
+          {connection.connection_url}
         </span>
       ),
       wrap: true,
@@ -406,7 +410,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionType"
+                  name="connection_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type *</FormLabel>
@@ -432,7 +436,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionUrl"
+                  name="connection_url"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>URL *</FormLabel>
@@ -449,7 +453,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionToken"
+                  name="connection_token"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Token (optional)</FormLabel>
@@ -610,11 +614,11 @@ export default function OrgMcps() {
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground wrap-break-word">
-                        {connection.connectionUrl}
+                        {connection.connection_url}
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-medium uppercase text-muted-foreground">
-                          {connection.connectionType}
+                          {connection.connection_type}
                         </span>
                         <div className="flex items-center gap-2">
                           <Button

@@ -176,7 +176,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
             // - Incoming data is newer than current data
             if (
               current &&
-              new Date(current.updated_at) >= new Date(item.updated_at)
+              new Date(current.updated_at) > new Date(item.updated_at)
             ) {
               // Current data is same or newer, skip
               console.warn(
@@ -249,7 +249,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           (mutation) =>
             toolCaller(updateToolName, {
               id: mutation.key,
-              data: mutation.changes,
+              data: mutation.modified,
             }) as Promise<CollectionUpdateOutput<T>>,
         ),
       );

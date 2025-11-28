@@ -11,22 +11,17 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
+import {
+  DecoChatCompactSelector,
+  type CompactSelectorOption,
+} from "@deco/ui/components/deco-chat-compact-selector.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
 import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
-import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
-import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provider.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -283,35 +278,31 @@ export function DecoChatPanel() {
     }
   }, [chat.messages]);
 
-  // ModelsBindingProvider value - use modelId for backward compat
-  const modelsBindingValue = useMemo(
-    () => ({
-      models,
-      selectedModel: selectedModelState?.modelId,
-      setSelectedModel: (modelId: string) => {
-        const model = models.find((m) => m.id === modelId);
-        if (model) {
-          setSelectedModelState({
-            modelId: model.id,
-            connectionId: model.connectionId,
-          });
-        }
-      },
-      isLoading: isModelsLoading,
-      error: undefined,
-    }),
-    [
-      models,
-      selectedModelState?.modelId,
-      isModelsLoading,
-      setSelectedModelState,
-    ],
-  );
+  // Transform agents to compact selector options
+  const agentOptions = useMemo<CompactSelectorOption[]>(() => {
+    return agents.map((agent) => ({
+      id: `${agent.connectionId}:${agent.id}`,
+      label: agent.title,
+      icon: agent.avatar,
+      description: agent.description,
+    }));
+  }, [agents]);
+
+  // Transform models to compact selector options
+  const modelOptions = useMemo<CompactSelectorOption[]>(() => {
+    return models.map((model) => ({
+      id: model.id,
+      label: model.name,
+      icon: model.logo,
+      description: model.description,
+    }));
+  }, [models]);
 
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
     async (message: UIMessage) => {
       if (!selectedModelState || !selectedModel) {
+        // Console error kept for critical missing configuration
         console.error("No model configured");
         return;
       }
@@ -451,162 +442,132 @@ export function DecoChatPanel() {
   }
 
   return (
-    <ModelsBindingProvider value={modelsBindingValue}>
-      <DecoChatAside className="h-full">
-        <DecoChatAside.Header>
-          <div className="flex items-center gap-2">
-            <img
-              src={selectedAgent?.avatar || CAPYBARA_AVATAR_URL}
-              alt="deco chat"
-              className="size-5 rounded"
-            />
-            <span className="text-sm font-medium">
-              {selectedAgent?.title || "deco chat"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {!isEmpty && (
-              <button
-                type="button"
-                onClick={() => {
-                  // Create new thread (copies tabs from current)
-                  copyThreadTabs();
-                }}
-                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
-                title="New chat"
-              >
-                <Icon
-                  name="add"
-                  size={16}
-                  className="text-muted-foreground group-hover:text-foreground transition-colors"
-                />
-              </button>
-            )}
+    <DecoChatAside className="h-full">
+      <DecoChatAside.Header>
+        <div className="flex items-center gap-2">
+          <img
+            src={selectedAgent?.avatar || CAPYBARA_AVATAR_URL}
+            alt="deco chat"
+            className="size-5 rounded"
+          />
+          <span className="text-sm font-medium">
+            {selectedAgent?.title || "deco chat"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {!isEmpty && (
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
-              title="Close chat"
+              onClick={() => {
+                // Create new thread (copies tabs from current)
+                copyThreadTabs();
+              }}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+              title="New chat"
             >
               <Icon
-                name="close"
+                name="add"
                 size={16}
                 className="text-muted-foreground group-hover:text-foreground transition-colors"
               />
             </button>
-          </div>
-        </DecoChatAside.Header>
-
-        <DecoChatAside.Content>
-          {isEmpty ? (
-            <DecoChatEmptyState
-              title={selectedAgent?.title || "Ask deco chat"}
-              description={
-                selectedAgent?.description ||
-                "Ask anything about configuring model providers or using MCP Mesh."
-              }
-              avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
-            />
-          ) : (
-            <DecoChatMessages>
-              {chat.messages.map((message: UIMessage, index: number) => (
-                <DecoChatMessage
-                  key={message.id}
-                  message={message}
-                  timestamp={new Date().toISOString()}
-                  isStreaming={isLoading && index === chat.messages.length - 1}
-                />
-              ))}
-              {/* Sentinel element for smooth scrolling to bottom */}
-              <div ref={sentinelRef} className="h-0" />
-            </DecoChatMessages>
           )}
-        </DecoChatAside.Content>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+            title="Close chat"
+          >
+            <Icon
+              name="close"
+              size={16}
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
+            />
+          </button>
+        </div>
+      </DecoChatAside.Header>
 
-        <DecoChatAside.Footer>
-          <DecoChatInputV2
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSendMessage}
-            onStop={handleStop}
-            disabled={models.length === 0 || !selectedModelState}
-            isStreaming={isLoading}
-            placeholder={
-              models.length === 0
-                ? "Add an LLM binding connection to start chatting"
-                : "Ask anything or @ for context"
+      <DecoChatAside.Content>
+        {isEmpty ? (
+          <DecoChatEmptyState
+            title={selectedAgent?.title || "Ask deco chat"}
+            description={
+              selectedAgent?.description ||
+              "Ask anything about configuring model providers or using MCP Mesh."
             }
-            rightActions={
-              <div className="flex items-center gap-1">
-                {/* Agent Selector */}
-                {agents.length > 0 && (
-                  <Select
-                    value={
-                      selectedAgentState
-                        ? `${selectedAgentState.connectionId}:${selectedAgentState.agentId}`
-                        : "__none__"
-                    }
-                    onValueChange={(value) => {
-                      if (value === "__none__") {
-                        setSelectedAgentState(null);
-                      } else {
-                        const [connectionId, agentId] = value.split(":");
-                        setSelectedAgentState({ agentId, connectionId });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-7 w-auto min-w-[80px] text-xs border-0 bg-transparent hover:bg-accent px-2">
-                      <SelectValue placeholder="Agent">
-                        {selectedAgent ? (
-                          <div className="flex items-center gap-1">
-                            <img
-                              src={selectedAgent.avatar}
-                              alt={selectedAgent.title}
-                              className="size-4 rounded"
-                            />
-                            <span className="truncate max-w-[60px]">
-                              {selectedAgent.title}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Agent</span>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">
-                        <span className="text-muted-foreground">No agent</span>
-                      </SelectItem>
-                      {agents.map((agent) => (
-                        <SelectItem
-                          key={`${agent.connectionId}:${agent.id}`}
-                          value={`${agent.connectionId}:${agent.id}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={agent.avatar}
-                              alt={agent.title}
-                              className="size-5 rounded"
-                            />
-                            <div className="flex flex-col">
-                              <span className="text-sm">{agent.title}</span>
-                              <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                                {agent.description}
-                              </span>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {/* Model Selector */}
-                <DecoChatModelSelectorRich />
-              </div>
-            }
+            avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
           />
-        </DecoChatAside.Footer>
-      </DecoChatAside>
-    </ModelsBindingProvider>
+        ) : (
+          <DecoChatMessages>
+            {chat.messages.map((message: UIMessage, index: number) => (
+              <DecoChatMessage
+                key={message.id}
+                message={message}
+                timestamp={new Date().toISOString()}
+                isStreaming={isLoading && index === chat.messages.length - 1}
+              />
+            ))}
+            {/* Sentinel element for smooth scrolling to bottom */}
+            <div ref={sentinelRef} className="h-0" />
+          </DecoChatMessages>
+        )}
+      </DecoChatAside.Content>
+
+      <DecoChatAside.Footer>
+        <DecoChatInputV2
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSendMessage}
+          onStop={handleStop}
+          disabled={models.length === 0 || !selectedModelState}
+          isStreaming={isLoading}
+          placeholder={
+            models.length === 0
+              ? "Add an LLM binding connection to start chatting"
+              : "Ask anything or @ for context"
+          }
+          leftActions={
+            <div className="flex items-center gap-2">
+              {/* Agent Selector - bordered style */}
+              {agents.length > 0 && (
+                <DecoChatCompactSelector
+                  value={
+                    selectedAgentState
+                      ? `${selectedAgentState.connectionId}:${selectedAgentState.agentId}`
+                      : undefined
+                  }
+                  onValueChange={(value) => {
+                    const [connectionId, agentId] = value.split(":");
+                    setSelectedAgentState({ agentId, connectionId });
+                  }}
+                  options={agentOptions}
+                  placeholder="Agent"
+                  variant="bordered"
+                />
+              )}
+              {/* Model Selector - borderless style */}
+              {models.length > 0 && (
+                <DecoChatCompactSelector
+                  value={selectedModelState?.modelId}
+                  onValueChange={(modelId) => {
+                    const model = models.find((m) => m.id === modelId);
+                    if (model) {
+                      setSelectedModelState({
+                        modelId: model.id,
+                        connectionId: model.connectionId,
+                      });
+                    }
+                  }}
+                  options={modelOptions}
+                  placeholder="Model"
+                  variant="borderless"
+                  showPlaceholderLabel={false}
+                />
+              )}
+            </div>
+          }
+        />
+      </DecoChatAside.Footer>
+    </DecoChatAside>
   );
 }

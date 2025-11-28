@@ -107,7 +107,10 @@ function OrgContextSetter({
 
 export default function ShellLayout() {
   const { org } = useParams({ strict: false });
-  const [sidebarOpen, setSidebarOpen] = useLocalStorage("mesh:sidebar-open", true);
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage(
+    "mesh:sidebar-open",
+    true,
+  );
   const { open: chatOpen, toggle: toggleChat } = useDecoChatOpen();
   const hasOrg = !!org;
 

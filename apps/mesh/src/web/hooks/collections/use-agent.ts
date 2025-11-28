@@ -5,9 +5,9 @@
  * using TanStack DB collections and live queries.
  */
 
-import { createToolCaller, UNKNOWN_CONNECTION_ID } from "../../../tools/client";
+import { UNKNOWN_CONNECTION_ID } from "../../../tools/client";
 import {
-  createCollectionFromToolCaller,
+  useCollection,
   useCollectionList,
   type UseCollectionListOptions,
 } from "../use-collections";
@@ -24,30 +24,6 @@ export interface Agent {
   updated_at: string;
   created_by?: string;
   updated_by?: string;
-}
-
-// Cache for agents collections per connection
-const agentsCollectionCache = new Map<
-  string,
-  ReturnType<typeof createCollectionFromToolCaller<Agent>>
->();
-
-/**
- * Get or create an agents collection for a specific connection.
- * Collections are cached per connectionId.
- */
-function getOrCreateAgentsCollection(connectionId: string) {
-  let collection = agentsCollectionCache.get(connectionId);
-
-  if (!collection) {
-    collection = createCollectionFromToolCaller<Agent>({
-      collectionName: "AGENT",
-      toolCaller: createToolCaller(connectionId),
-    });
-    agentsCollectionCache.set(connectionId, collection);
-  }
-
-  return collection;
 }
 
 /**
@@ -68,8 +44,9 @@ export function useAgentsFromConnection(
 ) {
   // Use a placeholder ID when connectionId is undefined to ensure hooks are always called
   // in the same order (Rules of Hooks compliance)
-  const collection = getOrCreateAgentsCollection(
+  const collection = useCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
+    "AGENT",
   );
   const result = useCollectionList(collection, options);
 

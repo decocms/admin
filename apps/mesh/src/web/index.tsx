@@ -89,9 +89,17 @@ const orgSettingsRoute = createRoute({
 
 const mcpInspectorRoute = createRoute({
   getParentRoute: () => shellLayout,
-  path: "/$org/mcps/$connectionId/inspector",
+  path: "/$org/mcps/$connectionId",
   component: lazyRouteComponent(
     () => import("./routes/orgs/mcp-inspector.tsx"),
+  ),
+});
+
+const mcpItemDetailsRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/mcps/$connectionId/$collectionName/$itemId",
+  component: lazyRouteComponent(
+    () => import("./routes/orgs/mcp-item-details.tsx"),
   ),
 });
 
@@ -108,6 +116,7 @@ const shellRouteTree = shellLayout.addChildren([
   orgMcpsRoute,
   orgSettingsRoute,
   mcpInspectorRoute,
+  mcpItemDetailsRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([

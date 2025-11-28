@@ -1,11 +1,8 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createDeepSeek } from "@ai-sdk/deepseek";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createXai } from "@ai-sdk/xai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { LanguageModelBinding } from "@decocms/bindings/llm";
+import type { HTTPConnection } from "@decocms/bindings/connection";
+import { createLLMProvider } from "../llm-provider";
 import {
   convertToModelMessages,
   pruneMessages,
@@ -196,9 +193,11 @@ async function getConnectionById(
   return connection;
 }
 
-function buildConnectionHeaders(connection: ConnectionEntity) {
+// Helper to convert ConnectionEntity to MCPConnection for LLM binding
+function connectionToMCPConnection(
+  connection: ConnectionEntity,
+): HTTPConnection {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(connection.connection_headers ?? {}),
   };
 
@@ -206,46 +205,11 @@ function buildConnectionHeaders(connection: ConnectionEntity) {
     headers.Authorization = `Bearer ${connection.connection_token}`;
   }
 
-  return headers;
-}
-
-function createProvider(
-  provider: string | undefined | null,
-  baseURL: string,
-  headers: Record<string, string>,
-) {
-  switch (provider) {
-    case "anthropic":
-      return createAnthropic({ baseURL, apiKey: "", headers });
-    case "google":
-      return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
-    case "deepseek":
-      return createDeepSeek({ baseURL, apiKey: "", headers });
-    case "xai":
-      return createXai({ baseURL, apiKey: "", headers });
-    case "openrouter":
-      return createOpenRouter({
-        baseURL,
-        apiKey: "",
-        headers,
-        compatibility: "strict",
-        // @ts-expect-error - fetch is somehow wrong.
-        fetch: (input, init) => {
-          const inputStr = input instanceof URL ? input.href : String(input);
-          console.log("inputStr", inputStr);
-          return fetch(inputStr.replace("/chat/completions", ""), {
-            ...init,
-            headers: {
-              ...init?.headers,
-              ...headers,
-            },
-          });
-        },
-      });
-    default:
-      // Default to OpenAI-compatible provider (covers OpenAI, etc.)
-      return createOpenAI({ baseURL, headers });
-  }
+  return {
+    type: "HTTP",
+    url: connection.connection_url,
+    headers,
+  };
 }
 
 // Create AI SDK tools for connection management
@@ -485,8 +449,6 @@ app.post("/:org/models/stream", async (c) => {
     // List connections (filtered by agent's tool_set if provided)
     const connections = await listConnections(ctx, organization.id, toolSet);
 
-    const headers = buildConnectionHeaders(connection);
-
     // Convert UIMessages to CoreMessages using AI SDK helper
     const modelMessages = convertToModelMessages(messages);
 
@@ -498,13 +460,12 @@ app.post("/:org/models/stream", async (c) => {
       toolCalls: "none",
     }).slice(-maxWindowSize);
 
-    // Create provider based on the requested provider
-    const endpointUrl = `${connection.connection_url}/call-tool/STREAM_TEXT`;
-    const provider = createProvider(
-      modelConfig.provider,
-      endpointUrl,
-      headers,
-    )(modelConfig.id);
+    // Create provider using the LanguageModelBinding
+    const mcpConnection = connectionToMCPConnection(connection);
+    const llmBinding = LanguageModelBinding.forConnection(mcpConnection);
+    const provider = createLLMProvider(llmBinding).languageModel(
+      modelConfig.id,
+    );
 
     // Build system prompt with available connections and optional agent instructions
     const systemPrompt = buildSystemPrompt(

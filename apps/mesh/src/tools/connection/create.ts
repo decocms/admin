@@ -55,19 +55,14 @@ export const COLLECTION_CONNECTIONS_CREATE = defineTool({
     };
 
     // Fetch tools from the MCP server before creating the connection
-    const tools = await fetchToolsFromMCP({
+    const fetchedTools = await fetchToolsFromMCP({
       id: "pending",
       title: connectionData.title,
       connection_url: connectionData.connection_url,
       connection_token: connectionData.connection_token,
       connection_headers: connectionData.connection_headers,
-    });
-
-    if (!tools || tools.length === 0) {
-      throw new Error(
-        "Failed to fetch tools from the MCP server. Please verify the connection URL and credentials.",
-      );
-    }
+    }).catch(() => null);
+    const tools = fetchedTools?.length ? fetchedTools : null;
 
     // Create the connection with the fetched tools
     const connection = await ctx.storage.connections.create({

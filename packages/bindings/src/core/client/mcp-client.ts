@@ -70,14 +70,24 @@ export const createServerClient = async (
       if (mcpServer.connection.type !== "HTTP") {
         throw new Error("HTTP connection required");
       }
+
+      const headers = new Headers(extraHeaders);
+
+      if (!headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${mcpServer.connection.token}`);
+      }
+
+      for (const [key, value] of Object.entries(
+        mcpServer.connection.headers ?? {},
+      )) {
+        headers.set(key, value);
+      }
+
       return fetch(mcpServer.connection.url + `/call-tool/${tool}`, {
         method: "POST",
         redirect: "manual",
         body: JSON.stringify(args),
-        headers: {
-          ...extraHeaders,
-          Authorization: `Bearer ${mcpServer.connection.token}`,
-        },
+        headers,
       });
     },
   };

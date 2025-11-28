@@ -164,7 +164,6 @@ export function DecoChatPanel() {
         contextWindow: model.limits?.contextWindow ?? null,
         outputLimit: model.limits?.maxOutputTokens ?? null,
         provider: model.provider,
-        endpoint: model.endpoint,
         connectionId: modelsConnection.id,
         connectionName: modelsConnection.title,
       };
@@ -312,8 +311,8 @@ export function DecoChatPanel() {
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
     async (message: UIMessage) => {
-      if (!selectedModelState || !selectedModel?.endpoint) {
-        console.error("No model or endpoint configured");
+      if (!selectedModelState || !selectedModel) {
+        console.error("No model configured");
         return;
       }
 

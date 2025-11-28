@@ -42,18 +42,21 @@ export default function McpInspector() {
     if (!connection || !connectionsCollection) return;
 
     try {
-      const tx = connectionsCollection.update(connection.id, (draft: any) => {
-        if (updatedConnection.title !== undefined)
-          draft.title = updatedConnection.title;
-        if (updatedConnection.description !== undefined)
-          draft.description = updatedConnection.description;
-        if (updatedConnection.connection_type !== undefined)
-          draft.connection_type = updatedConnection.connection_type;
-        if (updatedConnection.connection_url !== undefined)
-          draft.connection_url = updatedConnection.connection_url;
-        if (updatedConnection.connection_token !== undefined)
-          draft.connection_token = updatedConnection.connection_token;
-      });
+      const tx = connectionsCollection.update(
+        connection.id,
+        (draft: ConnectionEntity) => {
+          if (updatedConnection.title !== undefined)
+            draft.title = updatedConnection.title;
+          if (updatedConnection.description !== undefined)
+            draft.description = updatedConnection.description;
+          if (updatedConnection.connection_type !== undefined)
+            draft.connection_type = updatedConnection.connection_type;
+          if (updatedConnection.connection_url !== undefined)
+            draft.connection_url = updatedConnection.connection_url;
+          if (updatedConnection.connection_token !== undefined)
+            draft.connection_token = updatedConnection.connection_token;
+        },
+      );
       await tx.isPersisted.promise;
       toast.success("Connection updated successfully");
     } catch (error) {
@@ -155,7 +158,7 @@ export default function McpInspector() {
 
                 const tx = connectionsCollection.update(
                   connectionId as string,
-                  (draft: any) => {
+                  (draft: ConnectionEntity) => {
                     draft.connection_type = connection.connection_type;
                     draft.connection_url = connection.connection_url;
                     draft.connection_token = newOrChangedToken;
@@ -307,7 +310,7 @@ function ToolsList({
   connectionId,
   org,
 }: {
-  tools: any[];
+  tools: { name: string; description?: string }[];
   search: string;
   connectionId: string;
   org: string;
@@ -328,7 +331,7 @@ function ToolsList({
     {
       id: "name",
       header: "NAME",
-      accessor: (tool: any) => (
+      accessor: (tool: { name: string }) => (
         <div className="font-medium font-mono text-sm">{tool.name}</div>
       ),
       sortable: true,
@@ -336,7 +339,7 @@ function ToolsList({
     {
       id: "description",
       header: "DESCRIPTION",
-      accessor: (tool: any) => (
+      accessor: (tool: { description?: string }) => (
         <div className="text-muted-foreground text-sm line-clamp-1">
           {tool.description}
         </div>

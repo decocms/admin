@@ -291,7 +291,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
 
 // Module-level cache for collection instances
 // Key format: `${connectionId}:${collectionName}`
-const collectionCache = new Map<string, Collection<any, string>>();
+const collectionCache = new Map<string, Collection<unknown, string>>();
 
 /**
  * Get or create a collection instance for a specific connection and collection name.

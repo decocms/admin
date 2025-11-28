@@ -39,10 +39,10 @@ export default function McpItemDetails() {
     window.history.back();
   };
 
-  const handleUpdate = async (updates: Record<string, any>) => {
+  const handleUpdate = async (updates: Record<string, unknown>) => {
     if (!collection || !itemId) return;
     try {
-      const tx = collection.update(itemId, (draft: any) => {
+      const tx = collection.update(itemId, (draft: Record<string, unknown>) => {
         // Apply updates to draft
         // Note: The draft structure depends on how the collection was defined and data shape.
         // For objects, Object.assign is usually fine if we want shallow merge.
@@ -99,9 +99,9 @@ export default function McpItemDetails() {
   const WellKnownViews: Record<
     string,
     React.ComponentType<{
-      item: any;
+      item: unknown;
       onBack: () => void;
-      onUpdate: (updates: Record<string, any>) => Promise<void>;
+      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
     }>
   > = {
     agents: AgentDetailsView,

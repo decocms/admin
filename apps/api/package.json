@@ -19,7 +19,7 @@
     "@supabase/supabase-js": "2.49.4",
     "ai": "^5.0.101",
     "cloudflare": "^4.5.0",
-    "hono": "catalog:",
+    "hono": "^4.10.7",
     "mimetext": "^3.0.27",
     "outerbase-browsable-do-enforced": "0.2.0",
     "postal-mime": "^2.4.3",

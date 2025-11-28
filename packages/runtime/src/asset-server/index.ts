@@ -1,6 +1,7 @@
 import { serveStatic } from "hono/bun";
 import { Hono } from "hono";
 import { devServerProxy } from "./dev-server-proxy";
+import { Handler } from "hono/types";
 
 interface AssetServerConfig {
   env: "development" | "production" | "test";
@@ -11,8 +12,13 @@ interface AssetServerConfig {
 const DEFAULT_LOCAL_DEV_PROXY_URL = "http://localhost:4000";
 const DEFAULT_ASSETS_DIRECTORY = "./dist/client";
 
+interface HonoApp {
+  use: (path: string, handler: Handler) => void;
+  get: (path: string, handler: Handler) => void;
+}
+
 export const applyAssetServerRoutes = (
-  app: Hono,
+  app: HonoApp,
   config: AssetServerConfig,
 ) => {
   const environment = config.env;

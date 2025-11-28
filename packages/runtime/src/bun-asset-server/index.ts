@@ -9,7 +9,7 @@ interface AssetServerConfig {
 }
 
 const DEFAULT_LOCAL_DEV_PROXY_URL = "http://localhost:4000";
-const DEFAULT_ASSETS_DIRECTORY = "./dist";
+const DEFAULT_ASSETS_DIRECTORY = "./dist/client";
 
 export const applyAssetServerRoutes = (
   app: Hono,

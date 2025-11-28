@@ -23,7 +23,7 @@ jobs:
         run: bun install
 
       - name: Build deps
-        run: bun run build --filter=@decocms/bindings
+        run: bun run build
         working-directory: packages/bindings
 
       - name: Run format

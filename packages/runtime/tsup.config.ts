@@ -10,7 +10,7 @@ const config: Options = {
     drizzle: "src/drizzle.ts",
     resources: "src/resources.ts",
     views: "src/views.ts",
-    "bun-asset-server": "src/bun-asset-server/index.ts",
+    "asset-server": "src/asset-server/index.ts",
     "mcp-client": "src/mcp-client.ts",
     "bindings/index": "src/bindings/index.ts",
     "bindings/deconfig/index": "src/bindings/deconfig/index.ts",

@@ -21,7 +21,7 @@ import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 import authRoutes from "./routes/auth";
 import modelsRoutes from "./routes/models";
-import { applyAssetServerRoutes } from "@decocms/runtime/bun-asset-server";
+import { applyAssetServerRoutes } from "@decocms/runtime/asset-server";
 
 // Define Hono variables type
 type Variables = {

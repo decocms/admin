@@ -15,6 +15,7 @@
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },
   "dependencies": {
+    "@decocms/vite-plugin": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.45",
     "@ai-sdk/deepseek": "^1.0.29",
     "@ai-sdk/google": "^2.0.40",
@@ -55,7 +56,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fetch-to-node": "^2.1.0",
-    "hono": "catalog:",
+    "hono": "^4.10.7",
     "input-otp": "^1.4.2",
     "kysely": "^0.28.8",
     "kysely-bun-worker": "^0.6.0",

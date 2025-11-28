@@ -15,7 +15,7 @@
     "@ai-sdk/provider": "^2.0.0",
     "bidc": "0.0.3",
     "drizzle-orm": "^0.44.5",
-    "hono": "catalog:",
+    "hono": "^4.10.7",
     "jose": "^6.0.11",
     "mime-db": "1.52.0",
     "zod": "^3.25.76",
@@ -85,10 +85,10 @@
       "types": "./dist/bindings/deconfig/index.d.ts",
       "default": "./dist/bindings/deconfig/index.js"
     },
-    "./bun-asset-server": {
-      "source": "./src/bun-asset-server/index.ts",
-      "types": "./dist/bun-asset-server.d.ts",
-      "default": "./dist/bun-asset-server.js"
+    "./asset-server": {
+      "source": "./src/asset-server/index.ts",
+      "types": "./dist/asset-server.d.ts",
+      "default": "./dist/asset-server.js"
     }
   },
   "devDependencies": {

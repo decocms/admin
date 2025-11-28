@@ -23,7 +23,7 @@
     "@openrouter/ai-sdk-provider": "^1.2.0",
     "ai": "^5.0.61",
     "croner": "^9.0.0",
-    "hono": "catalog:",
+    "hono": "^4.10.7",
     "zod": "^3.25.76",
     "zod-to-json-schema": "3.25.0"
   },

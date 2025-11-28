@@ -13,7 +13,7 @@ export type Agent = z.infer<typeof AgentSchema>;
 export interface AgentDetailsViewProps {
   item: Agent;
   onBack: () => void;
-  onUpdate: (updates: Record<string, any>) => Promise<void>;
+  onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }
 
 function SmartAvatarUpload({

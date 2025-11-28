@@ -23,26 +23,32 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./models": {
       "types": "./dist/models.d.ts",
+      "source": "./src/models/index.ts",
       "default": "./dist/models.js"
     },
     "./collections": {
       "types": "./dist/collections.d.ts",
+      "source": "./src/collections/index.ts",
       "default": "./dist/collections.js"
     },
     "./llm": {
       "types": "./dist/language-model.d.ts",
+      "source": "./src/language-model/index.ts",
       "default": "./dist/language-model.js"
     },
     "./connection": {
       "types": "./dist/connection.d.ts",
+      "source": "./src/connection/index.ts",
       "default": "./dist/connection.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
+      "source": "./src/client/index.ts",
       "default": "./dist/client.js"
     }
   },

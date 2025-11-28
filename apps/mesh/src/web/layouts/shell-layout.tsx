@@ -17,7 +17,7 @@ import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { MeshUserMenu } from "@/web/components/user-menu";
 import { authClient } from "@/web/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { SplashScreen } from "@/web/components/splash-screen";
 import { MeshSidebar } from "@/web/components/mesh-sidebar";
 import { MeshOrgSwitcher } from "@/web/components/org-switcher";
@@ -111,7 +111,11 @@ export default function ShellLayout() {
     "mesh:sidebar-open",
     true,
   );
-  const { open: chatOpen, toggle: toggleChat } = useDecoChatOpen();
+  const [chatOpen, setChatOpen] = useDecoChatOpen();
+  const toggleChat = useCallback(
+    () => setChatOpen((prev) => !prev),
+    [setChatOpen],
+  );
   const hasOrg = !!org;
 
   return (

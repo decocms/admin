@@ -538,7 +538,7 @@ const createMcpServerProxyForIntegration = async (
       }
 
       return await issuer.issue({
-        sub: `proxy:${callerApp ?? crypto.randomUUID()}`,
+        sub: `proxy:${callerApp ?? ctx.user.id ?? crypto.randomUUID()}`,
         aud: ctx.locator?.value,
         iat: new Date().getTime(),
         exp: new Date(Date.now() + 1000 * 60).getTime(), //1 minute

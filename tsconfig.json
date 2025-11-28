@@ -10,6 +10,7 @@
     "strictPropertyInitialization": true,
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
+    "disableSizeLimit": true,
     // Module system
     "target": "ESNext",
     "module": "ESNext",

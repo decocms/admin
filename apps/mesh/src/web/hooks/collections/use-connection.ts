@@ -242,4 +242,3 @@ export function useCollectionBindings(connectionId: string | undefined): {
     isLoading: connectionLoading || isDetecting,
   };
 }
-

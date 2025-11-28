@@ -9,7 +9,7 @@
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@decocms/bindings": "^0.2.0",
+    "@decocms/bindings": "*",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",

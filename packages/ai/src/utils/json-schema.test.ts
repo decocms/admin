@@ -3,7 +3,7 @@ import { expect, test, describe } from "vitest";
 import { fixJsonSchemaArrayItems, patchedJsonSchema } from "./json-schema.ts";
 import type { JSONSchema7 } from "ai";
 import type { Schema } from "@ai-sdk/provider-utils";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 describe("fixJsonSchemaArrayItems", () => {

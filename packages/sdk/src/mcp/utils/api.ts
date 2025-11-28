@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createToolGroup } from "../context.ts";
 
 // Create a custom tool group for HTTP

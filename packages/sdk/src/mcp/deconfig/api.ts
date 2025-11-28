@@ -10,7 +10,7 @@
  * and workspace-level isolation. Each branch can contain files managed
  * by the existing Durable Object infrastructure.
  */
-import { z } from "zod";
+import { z } from "zod/v3";
 import { DECO_CHAT_ISSUER } from "../../auth/jwt.ts";
 import { WellKnownMcpGroups } from "../../crud/groups.ts";
 import { doRetryable } from "../../do-commons.ts";

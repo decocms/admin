@@ -8,7 +8,7 @@
  * This binding uses collection bindings for LIST and GET operations (read-only).
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { Binder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,
@@ -35,15 +35,14 @@ export const AgentSchema = BaseCollectionEntitySchema.extend({
 });
 
 /**
- * AGENTS Collection Binding
+ * AGENT Collection Binding
  *
  * Collection bindings for agents (read-only).
  * Provides LIST and GET operations for AI agents.
  */
 export const AGENTS_COLLECTION_BINDING = createCollectionBindings(
-  "agents",
+  "agent",
   AgentSchema,
-  { readOnly: true },
 );
 
 /**
@@ -53,8 +52,8 @@ export const AGENTS_COLLECTION_BINDING = createCollectionBindings(
  * Any MCP that implements this binding can provide configurable AI agents.
  *
  * Required tools:
- * - COLLECTION_AGENTS_LIST: List available AI agents with their configurations
- * - COLLECTION_AGENTS_GET: Get a single agent by ID (includes instructions and tool_set)
+ * - COLLECTION_AGENT_LIST: List available AI agents with their configurations
+ * - COLLECTION_AGENT_GET: Get a single agent by ID (includes instructions and tool_set)
  */
 export const AGENTS_BINDING = [
   ...AGENTS_COLLECTION_BINDING,

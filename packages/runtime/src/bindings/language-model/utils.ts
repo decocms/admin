@@ -1,4 +1,4 @@
-import { LanguageModelV2StreamPart } from "@ai-sdk/provider";
+import type { LanguageModelV2StreamPart } from "@ai-sdk/provider";
 
 // Helper to convert the AI SDK stream to a Response
 export function streamToResponse(

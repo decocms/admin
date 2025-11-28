@@ -2,7 +2,7 @@ import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import {
   useConnections,
   type ConnectionEntity,
-} from "@/web/hooks/use-connections";
+} from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
@@ -63,7 +63,7 @@ import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v3";
-import { useConnectionsCollection } from "../../hooks/use-connections";
+import { useConnectionsCollection } from "../../hooks/collections/use-connection";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
@@ -146,8 +146,6 @@ export default function OrgMcps() {
   const closeCreateDialog = () => {
     navigate({ to: "/$org/mcps", params: { org }, search: {} });
   };
-
-  console.log({ connections });
 
   // React Hook Form setup
   const form = useForm<ConnectionFormData>({

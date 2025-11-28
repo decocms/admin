@@ -3,8 +3,8 @@ import type {
   LanguageModelV2CallOptions,
   ProviderV2,
 } from "@ai-sdk/provider";
-import { LanguageModelBinding } from "@decocms/bindings/llm";
-import { lazy, responseToStream } from "./utils";
+import type { LanguageModelBinding } from "@decocms/bindings/llm";
+import { lazy, responseToStream } from "./utils.ts";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {
   return Object.fromEntries(

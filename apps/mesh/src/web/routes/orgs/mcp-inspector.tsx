@@ -5,7 +5,7 @@ import {
   useConnection,
   useConnectionsCollection,
   type ConnectionEntity,
-} from "@/web/hooks/use-connections";
+} from "@/web/hooks/collections/use-connection";
 import {
   Accordion,
   AccordionContent,

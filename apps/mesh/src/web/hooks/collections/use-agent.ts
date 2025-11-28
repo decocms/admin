@@ -1,16 +1,16 @@
 /**
- * Agents Hooks
+ * Agent Collection Hooks
  *
  * Provides React hooks for working with agents from remote connections
  * using TanStack DB collections and live queries.
  */
 
-import { createToolCaller } from "../../tools/client";
+import { createToolCaller, UNKNOWN_CONNECTION_ID } from "../../../tools/client";
 import {
   createCollectionFromToolCaller,
   useCollectionList,
   type UseCollectionListOptions,
-} from "./use-collections";
+} from "../use-collections";
 
 // Agent type matching AgentSchema from @decocms/bindings
 export interface Agent {
@@ -41,8 +41,8 @@ function getOrCreateAgentsCollection(connectionId: string) {
 
   if (!collection) {
     collection = createCollectionFromToolCaller<Agent>({
+      collectionName: "AGENT",
       toolCaller: createToolCaller(connectionId),
-      collectionName: "AGENTS",
     });
     agentsCollectionCache.set(connectionId, collection);
   }
@@ -66,16 +66,12 @@ export function useAgentsFromConnection(
   connectionId: string | undefined,
   options: UseAgentsOptions = {},
 ) {
-  // Return empty state if no connectionId
-  if (!connectionId) {
-    return {
-      data: [] as Agent[],
-      isPending: false,
-      isError: false,
-      error: null,
-    };
-  }
+  // Use a placeholder ID when connectionId is undefined to ensure hooks are always called
+  // in the same order (Rules of Hooks compliance)
+  const collection = getOrCreateAgentsCollection(
+    connectionId ?? UNKNOWN_CONNECTION_ID,
+  );
+  const result = useCollectionList(collection, options);
 
-  const collection = getOrCreateAgentsCollection(connectionId);
-  return useCollectionList(collection, options);
+  return result;
 }

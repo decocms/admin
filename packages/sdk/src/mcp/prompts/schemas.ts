@@ -1,4 +1,4 @@
-import * as z from "zod";
+import * as z from "zod/v3";
 
 export const PromptSchema = z.lazy(() =>
   z.object({

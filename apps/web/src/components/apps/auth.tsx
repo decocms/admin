@@ -50,7 +50,7 @@ import {
 } from "../integrations/select-connection-dialog.tsx";
 import { AppsAuthLayout, OAuthSearchParams } from "./layout.tsx";
 import { useBidcForTopWindow } from "../../lib/bidc.ts";
-import * as z from "zod";
+import * as z from "zod/v3";
 
 class IntegrationNotFoundError extends Error {
   constructor(public readonly integrationId: string) {

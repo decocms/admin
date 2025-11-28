@@ -1,5 +1,5 @@
 import { decodeJwt, JWTPayload } from "jose";
-import { z } from "zod";
+import { z } from "zod/v3";
 import {
   assertHasLocator,
   assertHasWorkspace,

@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "0.2.2",
+  "version": "0.2.4-beta.4",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -9,14 +9,13 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "json-schema-diff": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.4",
     "zod-from-json-schema": "^0.0.5",
-    "@modelcontextprotocol/sdk": "^1.20.2"
+    "zod-to-json-schema": "3.25.0"
   },
-  "main": "./dist/node/index.js",
-  "types": "./dist/node/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist/**/*"
   ],
@@ -51,7 +50,6 @@
     }
   },
   "devDependencies": {
-    "esbuild-plugin-polyfill-node": "^0.3.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "3.2.4"

@@ -5,7 +5,7 @@ import {
   getExtensionFromContentType,
   isAllowedFileExt,
 } from "../utils/knowledge.ts";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export const FileMetadataSchema = z.object({
   fileSize: z.number(),

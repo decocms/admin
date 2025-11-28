@@ -25,7 +25,7 @@
     "croner": "^9.0.0",
     "hono": "^4.7.9",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.4"
+    "zod-to-json-schema": "3.25.0"
   },
   "exports": {
     ".": "./src/index.ts",

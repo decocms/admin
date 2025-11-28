@@ -5,11 +5,49 @@
  * Bindings define standardized interfaces that integrations (MCPs) can implement.
  */
 
-import { diffSchemas } from "json-schema-diff";
-import type { ZodType } from "zod";
+import type { ZodType } from "zod/v3";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
 import { MCPConnection } from "./connection";
+import { isSubset } from "./subset";
+
+type JsonSchema = Record<string, unknown>;
+
+/**
+ * Checks if a value is a Zod schema by looking for the _def property
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isZodSchema(value: unknown): value is ZodType<any> {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "_def" in value &&
+    typeof (value as Record<string, unknown>)._def === "object"
+  );
+}
+
+/**
+ * Normalizes a schema to JSON Schema format.
+ * Accepts either a Zod schema or a JSON schema and returns a JSON schema.
+ *
+ * @param schema - A Zod schema or JSON schema
+ * @returns The JSON schema representation, or null if input is null/undefined
+ */
+export function normalizeToJsonSchema(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: ZodType<any> | JsonSchema | null | undefined,
+): JsonSchema | null {
+  if (schema == null) {
+    return null;
+  }
+
+  if (isZodSchema(schema)) {
+    return zodToJsonSchema(schema) as JsonSchema;
+  }
+
+  // Already a JSON schema
+  return schema as JsonSchema;
+}
 
 /**
  * ToolBinder defines a single tool within a binding.
@@ -79,41 +117,6 @@ export interface ToolWithSchemas {
 }
 
 /**
- * Converts a schema to JSON Schema format if it's a Zod schema
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeSchema(schema: any): Record<string, unknown> | undefined {
-  if (!schema) return undefined;
-
-  // If it's a Zod schema (has _def property), convert it
-  if (schema._def) {
-    const jsonSchema = zodToJsonSchema(schema, {
-      // Don't add additionalProperties: false to allow structural compatibility
-      $refStrategy: "none",
-    }) as Record<string, unknown>;
-
-    // Remove additionalProperties constraint to allow subtyping
-    if (jsonSchema.type === "object") {
-      delete jsonSchema.additionalProperties;
-    }
-
-    return jsonSchema;
-  }
-
-  // Otherwise assume it's already a JSON Schema
-  const jsonSchema = schema as Record<string, unknown>;
-
-  // Remove additionalProperties constraint if present
-  if (jsonSchema.type === "object" && "additionalProperties" in jsonSchema) {
-    const copy = { ...jsonSchema };
-    delete copy.additionalProperties;
-    return copy;
-  }
-
-  return jsonSchema;
-}
-
-/**
  * Binding checker interface
  */
 export interface BindingChecker {
@@ -128,7 +131,7 @@ export interface BindingChecker {
    * @param tools - Array of tools with names and schemas
    * @returns Promise<boolean> - true if all tools implement the binding correctly
    */
-  isImplementedBy: (tools: ToolWithSchemas[]) => Promise<boolean>;
+  isImplementedBy: (tools: ToolWithSchemas[]) => boolean;
 }
 
 export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
@@ -157,11 +160,11 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   ReturnType<T["forConnection"]>;
 
 /**
- * Creates a binding checker with full schema validation using json-schema-diff.
+ * Creates a binding checker with full schema validation using structural subset checking.
  *
  * This performs strict compatibility checking:
- * - For input schemas: Validates that the tool can accept what the binder requires
- * - For output schemas: Validates that the tool provides what the binder expects
+ * - For input schemas: Validates that the tool can accept what the binder requires (binder ⊆ tool)
+ * - For output schemas: Validates that the tool provides what the binder expects (binder ⊆ tool)
  *
  * @param binderTools - The binding definition to check against
  * @returns A binding checker with an async isImplementedBy method
@@ -176,13 +179,12 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
   binderTools: TDefinition,
 ): BindingChecker {
   return {
-    isImplementedBy: async (tools: ToolWithSchemas[]) => {
+    isImplementedBy: (tools: ToolWithSchemas[]): boolean => {
       for (const binderTool of binderTools) {
         // Find matching tool by name (exact or regex)
-        const pattern =
-          typeof binderTool.name === "string"
-            ? new RegExp(`^${binderTool.name}$`)
-            : binderTool.name;
+        const pattern = typeof binderTool.name === "string"
+          ? new RegExp(`^${binderTool.name}$`)
+          : binderTool.name;
 
         const matchedTool = tools.find((t) => pattern.test(t.name));
 
@@ -198,25 +200,17 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
 
         // === INPUT SCHEMA VALIDATION ===
         // Tool must accept what binder requires
-        // Check: binder (source) -> tool (destination)
-        // If removals found, tool doesn't accept something binder requires
-        const binderInputSchema = normalizeSchema(binderTool.inputSchema);
-        const toolInputSchema = normalizeSchema(matchedTool.inputSchema);
+        // Check: isSubset(binder, tool) - every value valid under binder is valid under tool
+        const binderInputSchema = normalizeToJsonSchema(
+          binderTool.inputSchema,
+        );
+        const toolInputSchema = normalizeToJsonSchema(
+          matchedTool.inputSchema,
+        );
 
         if (binderInputSchema && toolInputSchema) {
-          try {
-            const inputDiff = await diffSchemas({
-              sourceSchema: binderInputSchema,
-              destinationSchema: toolInputSchema,
-            });
-
-            // If something was removed from binder to tool, tool can't accept it
-            if (inputDiff.removalsFound) {
-              return false;
-            }
-          } catch (error) {
-            console.error("Schema diff failed", error);
-            // Schema diff failed - consider incompatible
+          // Check if binder input is a subset of tool input (tool accepts what binder requires)
+          if (!isSubset(binderInputSchema, toolInputSchema)) {
             return false;
           }
         } else if (binderInputSchema && !toolInputSchema) {
@@ -226,25 +220,17 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
 
         // === OUTPUT SCHEMA VALIDATION ===
         // Tool must provide what binder expects (but can provide more)
-        // Check: binder (source) -> tool (destination)
-        // If removals found, tool doesn't provide something binder expects
-        const binderOutputSchema = normalizeSchema(binderTool.outputSchema);
-        const toolOutputSchema = normalizeSchema(matchedTool.outputSchema);
+        // Check: isSubset(binder, tool) - tool provides at least what binder expects
+        const binderOutputSchema = normalizeToJsonSchema(
+          binderTool.outputSchema,
+        );
+        const toolOutputSchema = normalizeToJsonSchema(
+          matchedTool.outputSchema,
+        );
 
         if (binderOutputSchema && toolOutputSchema) {
-          try {
-            const outputDiff = await diffSchemas({
-              sourceSchema: binderOutputSchema,
-              destinationSchema: toolOutputSchema,
-            });
-
-            // If something was removed from binder to tool, tool doesn't provide it
-            if (outputDiff.removalsFound) {
-              return false;
-            }
-          } catch (error) {
-            console.error("Schema diff failed", error);
-            // Schema diff failed - consider incompatible
+          // Check if binder output is a subset of tool output (tool provides what binder expects)
+          if (!isSubset(binderOutputSchema, toolOutputSchema)) {
             return false;
           }
         } else if (binderOutputSchema && !toolOutputSchema) {
@@ -252,7 +238,6 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
           return false;
         }
       }
-
       return true;
     },
   };

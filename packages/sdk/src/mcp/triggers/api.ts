@@ -1,6 +1,6 @@
 import { Trigger } from "@deco/ai/actors";
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import { WELL_KNOWN_AGENT_IDS } from "../../constants.ts";
 import {
   InternalServerError,

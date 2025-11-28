@@ -1,5 +1,5 @@
 /**
- * Connection Hooks
+ * Connection Collection Hooks
  *
  * Provides React hooks for working with connections using TanStack DB collections
  * and live queries. These hooks offer a reactive interface for accessing and
@@ -12,15 +12,15 @@ import {
   createCollectionBindings,
 } from "@decocms/bindings/collections";
 import { useEffect, useMemo, useState } from "react";
-import { createToolCaller } from "../../tools/client";
-import type { ConnectionEntity } from "../../tools/connection/schema";
+import { createToolCaller } from "../../../tools/client";
+import type { ConnectionEntity } from "../../../tools/connection/schema";
 import {
   type CollectionFilter,
   createCollectionFromToolCaller,
   useCollectionItem,
   useCollectionList,
   type UseCollectionListOptions,
-} from "./use-collections";
+} from "../use-collections";
 
 // Module-level singleton to store the collection instance
 let connectionsCollectionSingleton: ReturnType<
@@ -100,7 +100,7 @@ export interface ValidatedCollection {
 
 /**
  * Formats a collection name for display
- * e.g., "MODELS" -> "Models", "USER_PROFILES" -> "User Profiles"
+ * e.g., "LLM" -> "Llm", "USER_PROFILES" -> "User Profiles"
  */
 function formatCollectionName(name: string): string {
   return name
@@ -181,7 +181,7 @@ async function detectCollections(
       }));
 
       const checker = createBindingChecker(bindingForChecker);
-      const isValid = await checker.isImplementedBy(toolsForChecker);
+      const isValid = checker.isImplementedBy(toolsForChecker);
 
       if (isValid) {
         validatedCollections.push({
@@ -242,3 +242,4 @@ export function useCollectionBindings(connectionId: string | undefined): {
     isLoading: connectionLoading || isDetecting,
   };
 }
+

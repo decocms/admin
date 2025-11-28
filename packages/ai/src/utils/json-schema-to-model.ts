@@ -1,5 +1,5 @@
 /* oxlint-disable no-explicit-any */
-import z, { type ZodObject } from "zod";
+import z, { type ZodObject } from "zod/v3";
 
 function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
   if (!value?.type) {

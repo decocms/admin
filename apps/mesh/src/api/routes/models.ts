@@ -24,7 +24,8 @@ const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const BASE_SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const BASE_SYSTEM_PROMPT =
+  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -203,11 +204,7 @@ function buildConnectionHeaders(connection: ConnectionEntity) {
   };
 
   if (connection.connection_token) {
-    if (headers.Authorization) {
-      headers["x-deco-proxy-token"] = connection.connection_token;
-    } else {
-      headers.Authorization = `Bearer ${connection.connection_token}`;
-    }
+    headers.Authorization = `Bearer ${connection.connection_token}`;
   }
 
   return headers;
@@ -277,8 +274,8 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
         }
 
         try {
-          const result =
-            await ConnectionTools.COLLECTION_CONNECTIONS_GET.execute(
+          const result = await ConnectionTools.COLLECTION_CONNECTIONS_GET
+            .execute(
               { id },
               ctx,
             );
@@ -289,7 +286,7 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
             // If allowedTools is empty array, allow all tools for this connection
             if (allowedTools.size > 0) {
               result.item.tools = result.item.tools.filter((t) =>
-                allowedTools.has(t.name),
+                allowedTools.has(t.name)
               );
             }
           }
@@ -332,7 +329,8 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
               content: [
                 {
                   type: "text",
-                  text: `Connection ${connectionId} is not available for this agent`,
+                  text:
+                    `Connection ${connectionId} is not available for this agent`,
                 },
               ],
             };
@@ -345,7 +343,8 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
               content: [
                 {
                   type: "text",
-                  text: `Tool ${toolName} is not available for this agent on connection ${connectionId}`,
+                  text:
+                    `Tool ${toolName} is not available for this agent on connection ${connectionId}`,
                 },
               ],
             };

@@ -26,6 +26,7 @@ import { Locator } from "@/web/lib/locator";
 import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { DecoChatPanel } from "@/web/components/deco-chat-panel";
 import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -106,7 +107,7 @@ function OrgContextSetter({
 
 export default function ShellLayout() {
   const { org } = useParams({ strict: false });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage("mesh:sidebar-open", true);
   const { open: chatOpen, toggle: toggleChat } = useDecoChatOpen();
   const hasOrg = !!org;
 

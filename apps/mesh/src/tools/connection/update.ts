@@ -64,8 +64,8 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
       title: data.title ?? existing.title,
       connection_url: data.connection_url ?? existing.connection_url,
       connection_token: data.connection_token ?? existing.connection_token,
-      connection_headers: data.connection_headers ??
-        existing.connection_headers,
+      connection_headers:
+        data.connection_headers ?? existing.connection_headers,
     });
 
     if (!tools || tools.length === 0) {

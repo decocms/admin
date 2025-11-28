@@ -53,14 +53,6 @@ function supportsToolNameInPath(url: string): boolean {
 export function createMCPClientProxy<T extends Record<string, unknown>>(
   options?: CreateStubAPIOptions,
 ): T {
-  if (typeof options?.connection === "function") {
-    // [DEPRECATED] Passing a function as 'connection' is deprecated and will be removed in a future release.
-    // Please provide a connection object instead.
-    throw new Error(
-      "Deprecation Notice: Passing a function as 'connection' is deprecated and will be removed in a future release. Please provide a connection object instead.",
-    );
-  }
-
   const mcpPath = options?.mcpPath ?? "/mcp";
 
   const connection: MCPConnection = options?.connection || {

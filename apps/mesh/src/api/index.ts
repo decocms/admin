@@ -21,7 +21,7 @@ import managementRoutes from "./routes/management";
 import proxyRoutes from "./routes/proxy";
 import authRoutes from "./routes/auth";
 import modelsRoutes from "./routes/models";
-import { serveStatic } from "hono/bun";
+import { applyAssetServerRoutes } from "@decocms/runtime/asset-server";
 
 // Define Hono variables type
 type Variables = {
@@ -283,16 +283,8 @@ app.notFound((c) => {
   );
 });
 
-const isDevelopment = process.env.NODE_ENV === "development";
-const isTest = process.env.NODE_ENV === "test";
-
-if (isDevelopment) {
-  const { devServerProxy } = await import("./utils/dev-server-proxy");
-  app.use("*", (c) => devServerProxy(c));
-} else if (!isTest) {
-  // --- Production static serving ---
-  app.use("/assets/*", serveStatic({ root: "./dist" })); // serve Vite assets
-  app.get("*", serveStatic({ path: "./dist/index.html" })); // SPA fallback
-}
+applyAssetServerRoutes(app, {
+  env: process.env.NODE_ENV as "development" | "production" | "test",
+});
 
 export default app;

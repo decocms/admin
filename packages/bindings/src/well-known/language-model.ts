@@ -10,7 +10,7 @@
  * - Streaming endpoint information is included directly in the model entity schema.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import { bindingClient, type ToolBinder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,
@@ -285,7 +285,7 @@ export const ModelSchema = z.object({
       "openai",
       "anthropic",
       "google",
-      "xai",
+      "x-ai",
       "deepseek",
       "openai-compatible",
       "openrouter",

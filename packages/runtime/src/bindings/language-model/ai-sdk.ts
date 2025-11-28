@@ -3,8 +3,8 @@ import type {
   LanguageModelV2CallOptions,
   ProviderV2,
 } from "@ai-sdk/provider";
-import { LanguageModelBinding } from "@decocms/bindings/llm";
-import { lazy, responseToStream } from "./utils";
+import type { LanguageModelBinding } from "@decocms/bindings/llm";
+import { lazy, responseToStream } from "./utils.ts";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {
   return Object.fromEntries(
@@ -45,7 +45,7 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
       const supportedUrls = lazy(() =>
         binding
           .LLM_METADATA({ modelId })
-          .then((metadata) => toRegExp(metadata.supportedUrls)),
+          .then((metadata) => toRegExp(metadata.supportedUrls))
       );
 
       return {

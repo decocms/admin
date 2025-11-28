@@ -22,7 +22,7 @@ import { KEYS } from "../lib/query-keys";
 interface CollectionItemsListProps {
   /** The connection ID to fetch items from */
   connectionId: string;
-  /** The collection name (e.g., "MODELS", "USER_PROFILES") */
+  /** The collection name (e.g., "LLM", "USER_PROFILES") */
   collectionName: string;
 }
 
@@ -34,7 +34,7 @@ interface CollectionListResponse {
 
 /**
  * Formats a collection name for display
- * e.g., "MODELS" -> "Models", "USER_PROFILES" -> "User Profiles"
+ * e.g., "LLM" -> "Llm", "USER_PROFILES" -> "User Profiles"
  */
 function formatCollectionName(name: string): string {
   return name

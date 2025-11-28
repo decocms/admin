@@ -17,7 +17,7 @@ import {
 import { useParams } from "react-router";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
-import * as z from "zod";
+import * as z from "zod/v3";
 import { ReissueApiKeyDialog } from "../api-keys/reissue-api-key-dialog.tsx";
 import { useBidcOnIframe } from "../../lib/bidc.ts";
 

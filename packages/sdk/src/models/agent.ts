@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
 import { MCPConnectionSchema } from "./mcp.ts";
 

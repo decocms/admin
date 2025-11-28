@@ -1,6 +1,6 @@
 import { createChannel } from "bidc";
 import { useEffect, useRef } from "react";
-import * as z from "zod";
+import * as z from "zod/v3";
 
 function useBidcChannel<T extends z.ZodTypeAny>({
   createChannelFn,

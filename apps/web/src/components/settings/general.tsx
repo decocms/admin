@@ -28,7 +28,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 

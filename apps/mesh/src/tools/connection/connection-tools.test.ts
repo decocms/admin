@@ -213,7 +213,7 @@ describe("Connection Tools", () => {
 
     it("should filter connections by binding schema", async () => {
       const result = await COLLECTION_CONNECTIONS_LIST.execute(
-        { binding: "MODELS" },
+        { binding: "LLM" },
         ctx,
       );
 

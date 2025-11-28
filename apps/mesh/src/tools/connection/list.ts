@@ -12,7 +12,7 @@ import {
   type WhereExpression,
   type OrderByExpression,
 } from "@decocms/bindings/collections";
-import { AGENTS_BINDING } from "@decocms/bindings/agents";
+import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
@@ -20,7 +20,7 @@ import { requireOrganization } from "../../core/mesh-context";
 import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
-  MODELS: LANGUAGE_MODEL_BINDING,
+  LLM: LANGUAGE_MODEL_BINDING,
   AGENTS: AGENTS_BINDING,
 };
 
@@ -217,7 +217,7 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
               return null;
             }
 
-            const isValid = await bindingChecker.isImplementedBy(
+            const isValid = bindingChecker.isImplementedBy(
               connection.tools.map((t) => ({
                 name: t.name,
                 inputSchema: t.inputSchema as Record<string, unknown>,

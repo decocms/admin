@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "0.26.0",
+  "version": "0.28.0-beta.2",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -9,7 +9,7 @@
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@decocms/bindings": "workspace:*",
+    "@decocms/bindings": "^0.2.0",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
     "@modelcontextprotocol/sdk": "^1.19.1",
@@ -20,7 +20,7 @@
     "mime-db": "1.52.0",
     "zod": "^3.25.76",
     "zod-from-json-schema": "^0.0.5",
-    "zod-to-json-schema": "^3.24.4"
+    "zod-to-json-schema": "3.25.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

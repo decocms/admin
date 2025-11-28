@@ -33,7 +33,7 @@ Crie um schema em `server/tools/`:
 
 ```typescript
 import { DeconfigResource } from "@decocms/runtime/deconfig";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const ThemeSettings = DeconfigResource.define({
   resourceName: "theme_settings",

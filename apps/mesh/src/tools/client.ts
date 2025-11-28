@@ -8,12 +8,13 @@ export type MCPClient<
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     infer TInput,
     infer TReturn
-  >
-    ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
+  > ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
     : never;
 };
 
 export type MeshClient = MCPClient<MCPMeshTools>;
+
+export const UNKNOWN_CONNECTION_ID = "UNKNOWN_CONNECTION_ID";
 
 const parseSSEResponseAsJson = async (response: Response) => {
   /**
@@ -84,7 +85,11 @@ export type ToolCaller = (toolName: string, args: unknown) => Promise<unknown>;
  * This abstracts the routing logic so hooks don't need to know if they're
  * calling mesh tools or connection-specific tools.
  */
-export function createToolCaller(connectionId?: string | null): ToolCaller {
+export function createToolCaller(connectionId?: string): ToolCaller {
+  if (connectionId === UNKNOWN_CONNECTION_ID) {
+    return async () => {};
+  }
+
   const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
 
   return async (toolName: string, args: unknown) => {

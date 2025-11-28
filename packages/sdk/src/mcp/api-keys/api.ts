@@ -1,5 +1,5 @@
 import { and, eq, isNull, or, getTableColumns, desc } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { userFromJWT } from "../../auth/user.ts";
 import {
   InternalServerError,

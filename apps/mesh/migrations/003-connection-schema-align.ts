@@ -135,3 +135,4 @@ export async function down(db: Kysely<unknown>): Promise<void> {
     .renameColumn("app_id", "appId")
     .execute();
 }
+

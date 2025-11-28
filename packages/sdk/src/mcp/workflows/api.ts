@@ -1,5 +1,5 @@
 import { inspect } from "@deco/cf-sandbox";
-import z from "zod";
+import z from "zod/v3";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { NotFoundError } from "../../errors.ts";
 import { impl } from "../bindings/binder.ts";

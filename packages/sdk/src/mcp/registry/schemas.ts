@@ -1,4 +1,4 @@
-import * as z from "zod";
+import * as z from "zod/v3";
 import { MCPConnectionSchema } from "../../models/mcp.ts";
 
 export const RegistryScopeSchema = z.lazy(() =>

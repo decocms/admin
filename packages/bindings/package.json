@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "0.2.2",
+  "version": "0.2.4-beta.4",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -9,63 +9,43 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "json-schema-diff": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.4",
     "zod-from-json-schema": "^0.0.5",
-    "@modelcontextprotocol/sdk": "^1.20.2"
+    "zod-to-json-schema": "3.25.0"
   },
-  "main": "./dist/node/index.js",
-  "types": "./dist/node/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist/**/*"
   ],
   "exports": {
     ".": {
-      "types": "./dist/node/index.d.ts",
-      "browser": "./dist/browser/index.js",
-      "bun": "./dist/node/index.js",
-      "node": "./dist/node/index.js",
-      "default": "./dist/node/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./client": {
-      "types": "./dist/node/index.d.ts",
-      "browser": "./dist/browser/index.js",
-      "bun": "./dist/node/index.js",
-      "node": "./dist/node/index.js",
-      "default": "./dist/node/index.js"
+      "types": "./dist/core/client/index.d.ts",
+      "default": "./dist/core/client/index.js"
     },
     "./llm": {
-      "types": "./dist/node/language-model.d.ts",
-      "browser": "./dist/browser/language-model.js",
-      "bun": "./dist/node/language-model.js",
-      "node": "./dist/node/language-model.js",
-      "default": "./dist/node/language-model.js"
+      "types": "./dist/well-known/language-model.d.ts",
+      "default": "./dist/well-known/language-model.js"
     },
     "./connection": {
-      "types": "./dist/node/connection.d.ts",
-      "browser": "./dist/browser/connection.js",
-      "bun": "./dist/node/connection.js",
-      "node": "./dist/node/connection.js",
-      "default": "./dist/node/connection.js"
+      "types": "./dist/core/connection.d.ts",
+      "default": "./dist/core/connection.js"
     },
     "./collections": {
-      "types": "./dist/node/collections.d.ts",
-      "browser": "./dist/browser/collections.js",
-      "bun": "./dist/node/collections.js",
-      "node": "./dist/node/collections.js",
-      "default": "./dist/node/collections.js"
+      "types": "./dist/well-known/collections.d.ts",
+      "default": "./dist/well-known/collections.js"
     },
-    "./agents": {
-      "types": "./dist/node/agents.d.ts",
-      "browser": "./dist/browser/agents.js",
-      "bun": "./dist/node/agents.js",
-      "node": "./dist/node/agents.js",
-      "default": "./dist/node/agents.js"
+    "./agent": {
+      "types": "./dist/well-known/agent.d.ts",
+      "default": "./dist/well-known/agent.js"
     }
   },
   "devDependencies": {
-    "esbuild-plugin-polyfill-node": "^0.3.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "3.2.4"

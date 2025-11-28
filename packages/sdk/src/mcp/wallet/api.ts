@@ -1,5 +1,5 @@
 import type { ClientOf } from "@deco/sdk/http";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { WebCache } from "../../cache/index.ts";
 import { InternalServerError, UserInputError } from "../../errors.ts";
 import { Markup } from "../../plan.ts";

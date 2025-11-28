@@ -1,8 +1,14 @@
+import { EmptyState } from "@/web/components/empty-state";
+import { useAgentsFromConnection } from "@/web/hooks/collections/use-agent";
+import { useConnections } from "@/web/hooks/collections/use-connection";
+import { useLLMsFromConnection } from "@/web/hooks/collections/use-llm";
+import { useBindingConnections } from "@/web/hooks/use-binding";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
+import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useChat } from "@ai-sdk/react";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
@@ -24,12 +30,6 @@ import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provide
 import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
-import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
-import { EmptyState } from "@/web/components/empty-state";
-import { useBindingConnections } from "@/web/hooks/use-models-binding";
-import { useModelsFromConnection } from "@/web/hooks/use-models";
-import { useAgentsFromConnection } from "@/web/hooks/use-agents";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -90,31 +90,25 @@ export function DecoChatPanel() {
   // Sentinel ref for auto-scrolling to bottom
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Get first connection that implements MODELS binding
-  const {
-    connections: modelsConnections,
-    isLoading: modelsConnectionsLoading,
-    error: modelsBindingError,
-  } = useBindingConnections("MODELS");
-  const modelsConnection = modelsConnections[0];
+  // Get all connections
+  const { data: allConnections, isLoading: connectionsLoading } =
+    useConnections();
 
-  // Get first connection that implements AGENTS binding
-  const {
-    connections: agentsConnections,
-    isLoading: agentsConnectionsLoading,
-  } = useBindingConnections("AGENTS");
-  const agentsConnection = agentsConnections[0];
+  // Filter connections by binding type
+  const [modelsConnection] = useBindingConnections(allConnections, "LLMS");
+  const [agentsConnection] = useBindingConnections(allConnections, "AGENTS");
 
-  // Fetch models from the first MODELS connection
-  const { data: modelsData, isPending: modelsLoading } =
-    useModelsFromConnection(modelsConnection?.id);
+  // Fetch models from the first LLM connection
+  const { data: modelsData, isPending: modelsLoading } = useLLMsFromConnection(
+    modelsConnection?.id,
+  );
 
   // Fetch agents from the first AGENTS connection
   const { data: agentsData, isPending: agentsLoading } =
     useAgentsFromConnection(agentsConnection?.id);
 
-  const isModelsLoading = modelsConnectionsLoading || modelsLoading;
-  const isAgentsLoading = agentsConnectionsLoading || agentsLoading;
+  const isModelsLoading = connectionsLoading || modelsLoading;
+  const isAgentsLoading = connectionsLoading || agentsLoading;
 
   // Transform models for UI display
   const models = useMemo(() => {
@@ -305,13 +299,12 @@ export function DecoChatPanel() {
         }
       },
       isLoading: isModelsLoading,
-      error: modelsBindingError as Error | undefined,
+      error: undefined,
     }),
     [
       models,
       selectedModelState?.modelId,
       isModelsLoading,
-      modelsBindingError,
       setSelectedModelState,
     ],
   );
@@ -386,8 +379,8 @@ export function DecoChatPanel() {
   }
 
   // Check if both required bindings are present
-  const hasModelsBinding = modelsConnections.length > 0;
-  const hasAgentsBinding = agentsConnections.length > 0;
+  const hasModelsBinding = !!modelsConnection;
+  const hasAgentsBinding = !!agentsConnection;
   const hasBothBindings = hasModelsBinding && hasAgentsBinding;
 
   // If missing bindings, show empty state with appropriate message
@@ -398,7 +391,7 @@ export function DecoChatPanel() {
     if (!hasModelsBinding && !hasAgentsBinding) {
       title = "Connect your providers";
       description =
-        "Add MCPs with MODELS and AGENTS to unlock AI-powered features.";
+        "Add MCPs with llm and agents to unlock AI-powered features.";
     } else if (!hasModelsBinding) {
       title = "No model provider connected";
       description =
@@ -506,16 +499,6 @@ export function DecoChatPanel() {
         </DecoChatAside.Header>
 
         <DecoChatAside.Content>
-          {modelsBindingError && (
-            <div className="p-4">
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {(modelsBindingError as Error).message}
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
           {isEmpty ? (
             <DecoChatEmptyState
               title={selectedAgent?.title || "Ask deco chat"}
@@ -551,7 +534,7 @@ export function DecoChatPanel() {
             isStreaming={isLoading}
             placeholder={
               models.length === 0
-                ? "Add a MODELS binding connection to start chatting"
+                ? "Add an LLM binding connection to start chatting"
                 : "Ask anything or @ for context"
             }
             rightActions={

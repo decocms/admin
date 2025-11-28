@@ -45,7 +45,7 @@ export type CollectionEntity = BaseCollectionEntity;
 export interface CreateCollectionOptions {
   /** The tool caller function for making API calls */
   toolCaller: ToolCaller;
-  /** The collection name (e.g., "CONNECTIONS", "MODELS") - used for tool names and query key */
+  /** The collection name (e.g., "CONNECTIONS", "LLM") - used for tool names and query key */
   collectionName: string;
   /** Default page size for pagination (default: 100) */
   pageSize?: number;
@@ -114,14 +114,14 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           listToolName,
           params,
         )) as CollectionListOutput<unknown>;
-        const items = result.items || [];
+        const items = result?.items || [];
 
         for (const item of items) {
           allItems.push(item as T);
         }
 
         // Check if we've fetched all pages
-        if (!result.hasMore || items.length === 0) {
+        if (!result?.hasMore || items.length === 0) {
           break;
         }
 

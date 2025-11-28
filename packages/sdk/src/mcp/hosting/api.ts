@@ -1,6 +1,6 @@
 import { D1Store } from "@decocms/runtime/d1";
 import { parse as parseToml } from "smol-toml";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { purge } from "../../cache/routing.ts";
 import { AppName } from "../../common/index.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";

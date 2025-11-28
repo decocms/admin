@@ -6,7 +6,7 @@ import {
   ModelMessage,
   type LanguageModelUsage,
 } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../../constants.ts";
 import type { PlanWithTeamMetadata } from "../../plan.ts";
 import {

@@ -1,7 +1,7 @@
 {
   "unstable": ["sloppy-imports"],
   "name": "@deco/workers-runtime",
-  "version": "0.26.0",
+  "version": "0.28.0",
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",

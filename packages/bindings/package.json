@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "0.2.4-beta.4",
+  "version": "0.2.4",
   "type": "module",
   "scripts": {
     "build": "tsup",

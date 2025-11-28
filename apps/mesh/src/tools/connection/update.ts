@@ -58,21 +58,16 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
       throw new Error("Connection not found in organization");
     }
 
-    // Always fetch tools from the MCP server
-    const tools = await fetchToolsFromMCP({
+    // Fetch tools from the MCP server
+    const fetchedTools = await fetchToolsFromMCP({
       id: existing.id,
       title: data.title ?? existing.title,
       connection_url: data.connection_url ?? existing.connection_url,
       connection_token: data.connection_token ?? existing.connection_token,
       connection_headers:
         data.connection_headers ?? existing.connection_headers,
-    });
-
-    if (!tools || tools.length === 0) {
-      throw new Error(
-        "Failed to fetch tools from the MCP server. Please verify the connection URL and credentials.",
-      );
-    }
+    }).catch(() => null);
+    const tools = fetchedTools?.length ? fetchedTools : null;
 
     // Update the connection with the refreshed tools
     const updatePayload: Partial<ConnectionEntity> = { ...data, tools };

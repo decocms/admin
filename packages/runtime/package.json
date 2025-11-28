@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "0.28.0-beta.2",
+  "version": "0.28.1",
   "type": "module",
   "scripts": {
     "build": "tsup",

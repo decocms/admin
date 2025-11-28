@@ -79,6 +79,7 @@ export function useBindingConnections(
 export interface ValidatedCollection {
   name: string;
   displayName: string;
+  schema?: Record<string, unknown>;
 }
 
 /**
@@ -116,12 +117,58 @@ function extractCollectionNames(
 }
 
 /**
+ * Extracts collection schema from tools
+ */
+function extractCollectionSchema(
+  tools: Array<{
+    name: string;
+    inputSchema?: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
+  }>,
+  collectionName: string,
+): Record<string, unknown> | undefined {
+  // Try to get schema from CREATE tool (preferred as it has full entity)
+  const createTool = tools.find(
+    (t) => t.name === `COLLECTION_${collectionName}_CREATE`,
+  );
+  if (createTool?.inputSchema?.properties?.data) {
+    return createTool.inputSchema.properties.data as Record<string, unknown>;
+  }
+
+  // Try to get schema from UPDATE tool
+  const updateTool = tools.find(
+    (t) => t.name === `COLLECTION_${collectionName}_UPDATE`,
+  );
+  if (updateTool?.inputSchema?.properties?.data) {
+    // Update usually has partial data, but might still be useful
+    return updateTool.inputSchema.properties.data as Record<string, unknown>;
+  }
+
+  // Try to get schema from LIST tool (output)
+  const listTool = tools.find(
+    (t) => t.name === `COLLECTION_${collectionName}_LIST`,
+  );
+  if (listTool?.outputSchema?.properties?.items) {
+    const itemsSchema = listTool.outputSchema.properties.items as Record<
+      string,
+      unknown
+    >;
+    if (itemsSchema.items) {
+      return itemsSchema.items as Record<string, unknown>;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Detects and validates collection bindings from tools
  */
 function detectCollections(
   tools: Array<{
     name: string;
     inputSchema?: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
   }> | null,
 ): ValidatedCollection[] {
   if (!tools || tools.length === 0) {
@@ -169,6 +216,7 @@ function detectCollections(
         validatedCollections.push({
           name: collectionName,
           displayName: formatCollectionName(collectionName),
+          schema: extractCollectionSchema(tools, collectionName),
         });
       }
     } catch {

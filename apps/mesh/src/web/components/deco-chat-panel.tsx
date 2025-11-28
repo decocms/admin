@@ -63,7 +63,7 @@ export function DecoChatPanel() {
   const { locator, org } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
-  const { setOpen } = useDecoChatOpen();
+  const [, setOpen] = useDecoChatOpen();
   const navigate = useNavigate();
 
   // Use thread management from ChatThreadsProvider

@@ -1,25 +1,25 @@
-import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
-import { CollectionsList } from "@/web/components/collections-list.tsx";
+import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
 import { ConnectionDetailsSidebar } from "@/web/components/connection-details-sidebar.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 import {
   useConnection,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
+import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useCollectionBindings } from "@/web/hooks/use-binding";
-import { KEYS } from "@/web/lib/query-keys";
+import { useListState } from "@/web/hooks/use-list-state";
+import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { ResourceTabs } from "@deco/ui/components/resource-tabs.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
-import { Loader2, Lock, Search } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
+import { z } from "zod/v3";
+import { Card } from "@deco/ui/components/card.tsx";
 
 export default function McpInspector() {
   const { connectionId, org } = useParams({ strict: false });
@@ -27,7 +27,6 @@ export default function McpInspector() {
   // We can use search params for active tab if we want persistent tabs
   const search = useSearch({ strict: false }) as { tab?: string };
   const [activeTabId, setActiveTabId] = useState<string>(search.tab || "tools");
-  const [searchValue, setSearchValue] = useState("");
 
   const { data: connection } = useConnection(connectionId);
   const connectionsCollection = useConnectionsCollection();
@@ -224,13 +223,15 @@ export default function McpInspector() {
 
   const handleTabChange = (tabId: string) => {
     setActiveTabId(tabId);
-    setSearchValue(""); // Reset search on tab change
     // Optionally update URL search params
     navigate({
+      // @ts-expect-error - dynamic search params
       search: (prev: Record<string, unknown>) => ({ ...prev, tab: tabId }),
       replace: true,
     });
   };
+
+  const activeCollection = collections.find((c) => c.name === activeTabId);
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden">
@@ -246,16 +247,6 @@ export default function McpInspector() {
               tabs={tabs}
               activeTab={activeTabId}
               onTabChange={handleTabChange}
-            />
-          </div>
-
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={`Search ${activeTabId === "tools" ? "tools" : "items"}...`}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="pl-9 h-8"
             />
           </div>
         </div>
@@ -285,7 +276,6 @@ export default function McpInspector() {
           ) : activeTabId === "tools" ? (
             <ToolsList
               tools={mcp.tools}
-              search={searchValue}
               connectionId={connectionId as string}
               org={org as string}
             />
@@ -294,8 +284,8 @@ export default function McpInspector() {
               key={activeTabId}
               connectionId={connectionId as string}
               collectionName={activeTabId}
-              search={searchValue}
               org={org as string}
+              schema={activeCollection?.schema}
             />
           )}
         </div>
@@ -306,32 +296,34 @@ export default function McpInspector() {
 
 function ToolsList({
   tools,
-  search,
   connectionId,
   org,
 }: {
   tools: { name: string; description?: string }[];
-  search: string;
   connectionId: string;
   org: string;
 }) {
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   const filteredTools = useMemo(() => {
     if (!search.trim()) return tools;
     const searchLower = search.toLowerCase();
-    return tools.filter(
-      (t) =>
-        t.name.toLowerCase().includes(searchLower) ||
-        (t.description && t.description.toLowerCase().includes(searchLower)),
-    );
+    return tools
+      .filter(
+        (t) =>
+          t.name.toLowerCase().includes(searchLower) ||
+          (t.description && t.description.toLowerCase().includes(searchLower)),
+      )
+      .map((t) => ({ ...t, id: t.name })); // Ensure ID exists
   }, [tools, search]);
 
   const columns = [
     {
       id: "name",
       header: "NAME",
-      accessor: (tool: { name: string }) => (
+      render: (tool: { name: string }) => (
         <div className="font-medium font-mono text-sm">{tool.name}</div>
       ),
       sortable: true,
@@ -339,7 +331,7 @@ function ToolsList({
     {
       id: "description",
       header: "DESCRIPTION",
-      accessor: (tool: { description?: string }) => (
+      render: (tool: { description?: string }) => (
         <div className="text-muted-foreground text-sm line-clamp-1">
           {tool.description}
         </div>
@@ -349,14 +341,26 @@ function ToolsList({
 
   return (
     <CollectionsList
-      data={filteredTools}
-      viewMode="table"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data={filteredTools as any[]}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      search={search}
+      onSearchChange={setSearch}
       columns={columns}
       onItemClick={(tool) => {
         navigate({
           to: `/${org}/mcps/${connectionId}/tools/${tool.name}`,
         });
       }}
+      renderCard={(tool) => (
+        <Card className="p-4">
+          <div className="font-medium">{tool.name}</div>
+          <div className="text-sm text-muted-foreground">
+            {tool.description}
+          </div>
+        </Card>
+      )}
       emptyState={
         <div className="text-center py-12 text-muted-foreground">
           {search ? "No tools found matching search" : "No tools available"}
@@ -369,92 +373,111 @@ function ToolsList({
 function CollectionContent({
   connectionId,
   collectionName,
-  search,
   org,
+  schema: jsonSchema,
 }: {
   connectionId: string;
   collectionName: string;
-  search: string;
   org: string;
+  schema?: Record<string, unknown>;
 }) {
   const navigate = useNavigate();
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
-  );
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: KEYS.collectionItems(connectionId, collectionName),
-    queryFn: async () => {
-      const toolName = `COLLECTION_${collectionName}_LIST`;
-      const result = await toolCaller(toolName, {});
-      return result as { items: BaseCollectionEntity[] };
-    },
-    staleTime: 30_000,
+  const collection = useCollection(connectionId, collectionName);
+
+  const {
+    search,
+    searchTerm,
+    setSearch,
+    viewMode,
+    setViewMode,
+    sortKey,
+    sortDirection,
+    handleSort,
+  } = useListState<BaseCollectionEntity>({
+    namespace: org,
+    resource: `${connectionId}-${collectionName}`,
+    defaultSortKey: "updated_at",
   });
 
-  const filteredItems = useMemo(() => {
-    if (!data?.items) return [];
-    if (!search.trim()) return data.items;
-    const searchLower = search.toLowerCase();
-    return data.items.filter((item) =>
-      item.title.toLowerCase().includes(searchLower),
-    );
-  }, [data?.items, search]);
+  const { data: items, isLoading } = useCollectionList(collection, {
+    searchTerm,
+    sortKey,
+    sortDirection,
+  });
 
-  const columns = [
-    {
-      id: "title",
-      header: "NAME",
-      accessor: (item: BaseCollectionEntity) => (
-        <div className="font-medium">{item.title}</div>
-      ),
-      sortable: true,
-    },
-    {
-      id: "id",
-      header: "ID",
-      accessor: (item: BaseCollectionEntity) => (
-        <div className="font-mono text-xs text-muted-foreground truncate max-w-[120px]">
-          {item.id}
-        </div>
-      ),
-    },
-    {
-      id: "updated_at",
-      header: "LAST UPDATED",
-      accessor: (item: BaseCollectionEntity) => (
-        <div className="text-muted-foreground text-sm">
-          {item.updated_at
-            ? formatDistanceToNow(new Date(item.updated_at), {
-                addSuffix: true,
-              })
-            : "-"}
-        </div>
-      ),
-    },
-  ];
+  const schema = useMemo(
+    () =>
+      jsonSchema
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (jsonSchemaToZod(jsonSchema as any) as z.AnyZodObject)
+        : undefined,
+    [jsonSchema],
+  );
 
-  if (isError) {
-    return (
-      <div className="p-4 text-sm text-destructive border border-destructive/30 bg-destructive/10 rounded-md">
-        Failed to load collection:{" "}
-        {error instanceof Error ? error.message : String(error)}
-      </div>
-    );
-  }
-
-  return (
-    <CollectionsList
-      data={filteredItems}
-      viewMode="table"
-      isLoading={isLoading}
-      columns={columns}
-      onItemClick={(item) => {
+  const handleAction = async (
+    action: "open" | "delete" | "duplicate" | "edit",
+    item: BaseCollectionEntity,
+  ) => {
+    switch (action) {
+      case "open":
         navigate({
           to: `/${org}/mcps/${connectionId}/${collectionName}/${item.id}`,
         });
-      }}
+        break;
+      case "delete":
+        if (confirm("Are you sure you want to delete this item?")) {
+          await collection.delete(item.id);
+          toast.success("Item deleted");
+        }
+        break;
+      case "duplicate": {
+        const {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          id: _id,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          created_at: _created_at,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          updated_at: _updated_at,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          created_by: _created_by,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          updated_by: _updated_by,
+          ...rest
+        } = item as unknown as Record<string, unknown>;
+
+        await collection.insert({
+          ...rest,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          title: `${(rest as any).title} (Copy)`,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+        toast.success("Item duplicated");
+        break;
+      }
+      case "edit":
+        // Default edit is same as open for now if we don't have inline edit
+        navigate({
+          to: `/${org}/mcps/${connectionId}/${collectionName}/${item.id}`,
+        });
+        break;
+    }
+  };
+
+  return (
+    <CollectionsList
+      data={items ?? []}
+      schema={schema}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      search={search}
+      onSearchChange={setSearch}
+      sortKey={sortKey as string}
+      sortDirection={sortDirection}
+      onSort={handleSort}
+      onAction={handleAction}
+      onItemClick={(item) => handleAction("open", item)}
+      isLoading={isLoading}
       emptyState={
         <div className="text-center py-12 text-muted-foreground">
           {search ? "No items found matching search" : "No items found"}

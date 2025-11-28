@@ -1,5 +1,5 @@
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
-import { CollectionsList } from "@/web/components/collections-list.tsx";
+import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import {
   useConnections,
@@ -580,6 +580,9 @@ export default function OrgMcps() {
               <CollectionsList
                 data={connections}
                 viewMode={listState.viewMode}
+                onViewModeChange={listState.setViewMode}
+                search={listState.search}
+                onSearchChange={listState.setSearch}
                 columns={columns}
                 isLoading={isLoading}
                 sortKey={listState.sortKey}
@@ -681,6 +684,7 @@ export default function OrgMcps() {
                     </div>
                   </Card>
                 )}
+                hideToolbar={true}
               />
             )}
           </div>

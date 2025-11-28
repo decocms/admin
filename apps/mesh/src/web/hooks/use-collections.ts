@@ -271,6 +271,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           (mutation) =>
             toolCaller(deleteToolName, {
               id: mutation.key,
+              data: mutation.modified,
             }) as Promise<CollectionDeleteOutput<T>>,
         ),
       );
@@ -291,7 +292,8 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
 
 // Module-level cache for collection instances
 // Key format: `${connectionId}:${collectionName}`
-const collectionCache = new Map<string, Collection<unknown, string>>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const collectionCache = new Map<string, Collection<any, string>>();
 
 /**
  * Get or create a collection instance for a specific connection and collection name.

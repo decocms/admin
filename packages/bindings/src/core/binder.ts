@@ -182,9 +182,10 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
     isImplementedBy: (tools: ToolWithSchemas[]): boolean => {
       for (const binderTool of binderTools) {
         // Find matching tool by name (exact or regex)
-        const pattern = typeof binderTool.name === "string"
-          ? new RegExp(`^${binderTool.name}$`)
-          : binderTool.name;
+        const pattern =
+          typeof binderTool.name === "string"
+            ? new RegExp(`^${binderTool.name}$`)
+            : binderTool.name;
 
         const matchedTool = tools.find((t) => pattern.test(t.name));
 
@@ -201,12 +202,8 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
         // === INPUT SCHEMA VALIDATION ===
         // Tool must accept what binder requires
         // Check: isSubset(binder, tool) - every value valid under binder is valid under tool
-        const binderInputSchema = normalizeToJsonSchema(
-          binderTool.inputSchema,
-        );
-        const toolInputSchema = normalizeToJsonSchema(
-          matchedTool.inputSchema,
-        );
+        const binderInputSchema = normalizeToJsonSchema(binderTool.inputSchema);
+        const toolInputSchema = normalizeToJsonSchema(matchedTool.inputSchema);
 
         if (binderInputSchema && toolInputSchema) {
           // Check if binder input is a subset of tool input (tool accepts what binder requires)

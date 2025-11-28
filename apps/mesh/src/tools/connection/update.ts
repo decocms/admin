@@ -7,7 +7,11 @@
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
-import { ConnectionEntitySchema, ConnectionUpdateDataSchema } from "./schema";
+import {
+  type ConnectionEntity,
+  ConnectionEntitySchema,
+  ConnectionUpdateDataSchema,
+} from "./schema";
 import { fetchToolsFromMCP } from "./fetch-tools";
 
 /**
@@ -60,8 +64,8 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
       title: data.title ?? existing.title,
       connection_url: data.connection_url ?? existing.connection_url,
       connection_token: data.connection_token ?? existing.connection_token,
-      connection_headers:
-        data.connection_headers ?? existing.connection_headers,
+      connection_headers: data.connection_headers ??
+        existing.connection_headers,
     });
 
     if (!tools || tools.length === 0) {
@@ -71,10 +75,8 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
     }
 
     // Update the connection with the refreshed tools
-    const connection = await ctx.storage.connections.update(id, {
-      ...data,
-      tools,
-    } as never);
+    const updatePayload: Partial<ConnectionEntity> = { ...data, tools };
+    const connection = await ctx.storage.connections.update(id, updatePayload);
 
     return {
       item: connection,

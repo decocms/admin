@@ -8,7 +8,8 @@ export type MCPClient<
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     infer TInput,
     infer TReturn
-  > ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
+  >
+    ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
     : never;
 };
 

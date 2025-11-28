@@ -136,22 +136,17 @@ function isMultipleOf(a: number, b: number): boolean {
 /**
  * Check if A's enum values are all valid in B
  */
-function isEnumSubset(
-  enumA: unknown[],
-  schemaB: JSONSchema,
-): boolean {
+function isEnumSubset(enumA: unknown[], schemaB: JSONSchema): boolean {
   // If B has enum, check set inclusion
   if (schemaB.enum) {
     return enumA.every((val) =>
-      schemaB.enum.some((bVal: unknown) => deepEqual(val, bVal))
+      schemaB.enum.some((bVal: unknown) => deepEqual(val, bVal)),
     );
   }
 
   // If B has const, check if A's enum only contains that value
   if (schemaB.const !== undefined) {
-    return (
-      enumA.length === 1 && deepEqual(enumA[0], schemaB.const)
-    );
+    return enumA.length === 1 && deepEqual(enumA[0], schemaB.const);
   }
 
   // Otherwise, enum values must match B's type constraints
@@ -367,9 +362,7 @@ function isObjectSubset(a: JSONSchema, b: JSONSchema): boolean {
   // Additional properties constraint
   if (b.additionalProperties === false) {
     // B is closed, A must also be closed or not have extra properties
-    const aHasExtraProps = Object.keys(aProps).some(
-      (key) => !(key in bProps),
-    );
+    const aHasExtraProps = Object.keys(aProps).some((key) => !(key in bProps));
     if (aHasExtraProps) {
       return false;
     }

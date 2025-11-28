@@ -63,8 +63,8 @@ export function useBindingConnections(
       !connections || !binding
         ? []
         : connections.filter((conn) =>
-          connectionImplementsBinding(conn, binding)
-        ),
+            connectionImplementsBinding(conn, binding),
+          ),
     [connections, binding],
   );
 }

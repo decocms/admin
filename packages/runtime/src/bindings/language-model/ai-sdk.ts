@@ -45,7 +45,7 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
       const supportedUrls = lazy(() =>
         binding
           .LLM_METADATA({ modelId })
-          .then((metadata) => toRegExp(metadata.supportedUrls))
+          .then((metadata) => toRegExp(metadata.supportedUrls)),
       );
 
       return {

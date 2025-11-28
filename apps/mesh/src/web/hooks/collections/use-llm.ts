@@ -5,9 +5,9 @@
  * using TanStack DB collections and live queries.
  */
 
-import { createToolCaller, UNKNOWN_CONNECTION_ID } from "../../../tools/client";
+import { UNKNOWN_CONNECTION_ID } from "../../../tools/client";
 import {
-  createCollectionFromToolCaller,
+  useCollection,
   useCollectionList,
   type UseCollectionListOptions,
 } from "../use-collections";
@@ -48,30 +48,6 @@ export interface LLM {
   } | null;
 }
 
-// Cache for LLM collections per connection
-const llmCollectionCache = new Map<
-  string,
-  ReturnType<typeof createCollectionFromToolCaller<LLM>>
->();
-
-/**
- * Get or create an LLM collection for a specific connection.
- * Collections are cached per connectionId.
- */
-function getOrCreateLLMCollection(connectionId: string) {
-  let collection = llmCollectionCache.get(connectionId);
-
-  if (!collection) {
-    collection = createCollectionFromToolCaller<LLM>({
-      toolCaller: createToolCaller(connectionId),
-      collectionName: "LLM",
-    });
-    llmCollectionCache.set(connectionId, collection);
-  }
-
-  return collection;
-}
-
 /**
  * Options for useLLMsFromConnection hook
  */
@@ -90,8 +66,9 @@ export function useLLMsFromConnection(
 ) {
   // Use a placeholder ID when connectionId is undefined to ensure hooks are always called
   // in the same order (Rules of Hooks compliance)
-  const collection = getOrCreateLLMCollection(
+  const collection = useCollection<LLM>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
+    "LLM",
   );
   const result = useCollectionList(collection, options);
 

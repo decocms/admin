@@ -42,12 +42,8 @@ export const ConnectionEntitySchema = z.object({
   // Base collection entity fields
   id: z.string().describe("Unique identifier for the connection"),
   title: z.string().describe("Human-readable name for the connection"),
-  created_at: z
-    .union([z.string(), z.date()])
-    .describe("When the connection was created"),
-  updated_at: z
-    .union([z.string(), z.date()])
-    .describe("When the connection was last updated"),
+  created_at: z.string().describe("When the connection was created"),
+  updated_at: z.string().describe("When the connection was last updated"),
   created_by: z.string().describe("User ID who created the connection"),
   updated_by: z
     .string()

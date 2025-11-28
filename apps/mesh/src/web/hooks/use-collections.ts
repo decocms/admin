@@ -22,7 +22,7 @@ import {
   or,
 } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
-import type { ToolCaller } from "../../tools/client";
+import { createToolCaller, type ToolCaller } from "../../tools/client";
 
 /**
  * Custom event type for sync mutations
@@ -289,6 +289,37 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
   return collection;
 }
 
+// Module-level cache for collection instances
+// Key format: `${connectionId}:${collectionName}`
+const collectionCache = new Map<string, Collection<any, string>>();
+
+/**
+ * Get or create a collection instance for a specific connection and collection name.
+ * Collections are cached to ensure singleton-like behavior per connection/collection pair.
+ *
+ * @param connectionId - The ID of the connection (or undefined/null for mesh tools)
+ * @param collectionName - The name of the collection (e.g., "AGENT", "LLM")
+ * @returns A TanStack DB collection instance
+ */
+export function useCollection<T extends CollectionEntity>(
+  connectionId: string | undefined | null,
+  collectionName: string,
+): Collection<T, string> {
+  // Use empty string key for null/undefined connectionId to represent mesh tools
+  const safeConnectionId = connectionId ?? "";
+  const key = `${safeConnectionId}:${collectionName}`;
+
+  if (!collectionCache.has(key)) {
+    const collection = createCollectionFromToolCaller<T>({
+      toolCaller: createToolCaller(connectionId || undefined),
+      collectionName,
+    });
+    collectionCache.set(key, collection);
+  }
+
+  return collectionCache.get(key) as Collection<T, string>;
+}
+
 /**
  * Filter definition for collection queries (matches @deco/ui Filter shape)
  */
@@ -425,7 +456,7 @@ export function useCollectionItem<T extends CollectionEntity>(
         query = query.where(({ item }) => item && eq(item.id, itemId));
       }
 
-      return query;
+      return query.findOne();
     },
     [itemId, collection],
   );

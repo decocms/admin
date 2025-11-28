@@ -1,7 +1,9 @@
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import { CollectionsList } from "@/web/components/collections-list.tsx";
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import {
   useConnections,
-  type ConnectionEntity,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -43,10 +45,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
-import {
-  Table as ResourceTable,
-  type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+import { type TableColumn } from "@deco/ui/components/resource-table.tsx";
 import {
   Select,
   SelectContent,
@@ -54,7 +53,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -63,7 +61,6 @@ import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v3";
-import { useConnectionsCollection } from "../../hooks/collections/use-connection";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
@@ -237,7 +234,7 @@ export default function OrgMcps() {
           description: data.description || null,
           connection_type: data.connection_type,
           connection_url: data.connection_url,
-          connection_token: data.connection_token || undefined,
+          connection_token: data.connection_token || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           status: "inactive",
@@ -332,7 +329,7 @@ export default function OrgMcps() {
               onClick={(event) => {
                 event.stopPropagation();
                 navigate({
-                  to: `/${org}/mcps/${connection.id}/inspector`,
+                  to: `/${org}/mcps/${connection.id}`,
                 });
               }}
             >
@@ -579,37 +576,33 @@ export default function OrgMcps() {
                   {errorMessage}
                 </div>
               </Card>
-            ) : isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Spinner />
-              </div>
-            ) : connections.length === 0 ? (
-              <EmptyState
-                icon="cable"
-                title="No connections found"
-                description="Create a connection to get started."
-                buttonProps={{
-                  onClick: openCreateDialog,
-                  children: "New Connection",
-                }}
-              />
-            ) : listState.viewMode === "cards" ? (
-              <div
-                className="grid gap-4"
-                style={{
-                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                }}
-              >
-                {connections.map((connection) => (
-                  <Card
-                    key={connection.id}
-                    className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer"
-                    onClick={() =>
-                      navigate({
-                        to: `/${org}/mcps/${connection.id}/inspector`,
-                      })
-                    }
-                  >
+            ) : (
+              <CollectionsList
+                data={connections}
+                viewMode={listState.viewMode}
+                columns={columns}
+                isLoading={isLoading}
+                sortKey={listState.sortKey}
+                sortDirection={listState.sortDirection}
+                onSort={listState.handleSort}
+                onItemClick={(connection) =>
+                  navigate({
+                    to: `/${org}/mcps/${connection.id}`,
+                  })
+                }
+                emptyState={
+                  <EmptyState
+                    icon="cable"
+                    title="No connections found"
+                    description="Create a connection to get started."
+                    buttonProps={{
+                      onClick: openCreateDialog,
+                      children: "New Connection",
+                    }}
+                  />
+                }
+                renderCard={(connection) => (
+                  <Card className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer h-full">
                     <div className="flex flex-col gap-3 h-full">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -631,7 +624,7 @@ export default function OrgMcps() {
                       <div className="text-xs text-muted-foreground wrap-break-word">
                         {connection.connection_url}
                       </div>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 mt-auto">
                         <span className="text-xs font-medium uppercase text-muted-foreground">
                           {connection.connection_type}
                         </span>
@@ -642,7 +635,7 @@ export default function OrgMcps() {
                             onClick={(event) => {
                               event.stopPropagation();
                               navigate({
-                                to: `/${org}/mcps/${connection.id}/inspector`,
+                                to: `/${org}/mcps/${connection.id}`,
                               });
                             }}
                           >
@@ -687,20 +680,7 @@ export default function OrgMcps() {
                       </div>
                     </div>
                   </Card>
-                ))}
-              </div>
-            ) : (
-              <ResourceTable
-                columns={columns}
-                data={connections}
-                sortKey={listState.sortKey}
-                sortDirection={listState.sortDirection}
-                onSort={listState.handleSort}
-                onRowClick={(connection) =>
-                  navigate({
-                    to: `/${org}/mcps/${connection.id}/inspector`,
-                  })
-                }
+                )}
               />
             )}
           </div>

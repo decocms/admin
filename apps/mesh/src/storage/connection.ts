@@ -14,7 +14,6 @@ import type {
   UpdateConnectionData,
 } from "./ports";
 import type { Database, MCPConnection, ToolDefinition } from "./types";
-
 export class ConnectionStorage implements ConnectionStoragePort {
   constructor(
     private db: Kysely<Database>,
@@ -29,7 +28,6 @@ export class ConnectionStorage implements ConnectionStoragePort {
     if (data.connection.token) {
       encryptedToken = await this.vault.encrypt(data.connection.token);
     }
-
     // Insert the connection
     await this.db
       .insertInto("connections")

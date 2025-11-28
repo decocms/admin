@@ -1,11 +1,9 @@
 import { proxy } from "hono/proxy";
 import { Context } from "hono";
 
-export const devServerProxy = (c: Context) => {
+export const devServerProxy = (url: string | URL) => (c: Context) => {
   const incomingUrl = new URL(c.req.raw.url);
-  const target = new URL(
-    process.env.VITE_SERVER_URL ?? "http://localhost:4000",
-  );
+  const target = new URL(url);
   target.pathname = incomingUrl.pathname;
   target.search = incomingUrl.search;
 

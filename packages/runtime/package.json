@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "0.28.1",
+  "version": "1.0.0-alpha.1",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -16,6 +16,7 @@
     "@ai-sdk/provider": "^2.0.0",
     "bidc": "0.0.3",
     "drizzle-orm": "^0.44.5",
+    "hono": "catalog:",
     "jose": "^6.0.11",
     "mime-db": "1.52.0",
     "zod": "^3.25.76",
@@ -60,11 +61,6 @@
       "types": "./dist/drizzle.d.ts",
       "default": "./dist/drizzle.js"
     },
-    "./d1": {
-      "source": "./src/d1-store.ts",
-      "types": "./dist/d1-store.d.ts",
-      "default": "./dist/d1-store.js"
-    },
     "./resources": {
       "source": "./src/resources.ts",
       "types": "./dist/resources.d.ts",
@@ -89,6 +85,11 @@
       "source": "./src/bindings/deconfig/index.ts",
       "types": "./dist/bindings/deconfig/index.d.ts",
       "default": "./dist/bindings/deconfig/index.js"
+    },
+    "./bun-asset-server": {
+      "source": "./src/bun-asset-server/index.ts",
+      "types": "./dist/bun-asset-server.d.ts",
+      "default": "./dist/bun-asset-server.js"
     }
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createTool, type AppContext } from "../index.ts";
 import {
   BaseViewRenderInputSchema,

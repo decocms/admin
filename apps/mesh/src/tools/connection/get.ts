@@ -9,7 +9,7 @@ import {
   createCollectionGetOutputSchema,
 } from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
-import { ConnectionEntitySchema, connectionToEntity } from "./schema";
+import { ConnectionEntitySchema } from "./schema";
 
 /**
  * Output schema using the ConnectionEntitySchema
@@ -37,12 +37,7 @@ export const COLLECTION_CONNECTIONS_GET = defineTool({
     }
 
     return {
-      item: connectionToEntity(connection),
+      item: connection,
     };
   },
 });
-
-/**
- * @deprecated Use COLLECTION_CONNECTIONS_GET instead
- */
-export const CONNECTION_GET = COLLECTION_CONNECTIONS_GET;

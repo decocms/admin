@@ -6,7 +6,7 @@ import {
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { AppName } from "../../common/index.ts";
 import {
   KNOWLEDGE_BASE_GROUP,

@@ -10,7 +10,7 @@ import {
 } from "@decocms/bindings/collections";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
-import { ConnectionEntitySchema, connectionToEntity } from "./schema";
+import { ConnectionEntitySchema } from "./schema";
 
 export const COLLECTION_CONNECTIONS_DELETE = defineTool({
   name: "COLLECTION_CONNECTIONS_DELETE",
@@ -36,7 +36,7 @@ export const COLLECTION_CONNECTIONS_DELETE = defineTool({
     }
 
     // Verify it belongs to the current organization
-    if (connection.organizationId !== organization.id) {
+    if (connection.organization_id !== organization.id) {
       throw new Error("Connection not found in organization");
     }
 
@@ -44,12 +44,7 @@ export const COLLECTION_CONNECTIONS_DELETE = defineTool({
     await ctx.storage.connections.delete(input.id);
 
     return {
-      item: connectionToEntity(connection),
+      item: connection,
     };
   },
 });
-
-/**
- * @deprecated Use COLLECTION_CONNECTIONS_DELETE instead
- */
-export const CONNECTION_DELETE = COLLECTION_CONNECTIONS_DELETE;

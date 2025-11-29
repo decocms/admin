@@ -8,10 +8,19 @@ import {
 } from "./responsive-select.tsx";
 import { cn } from "../lib/utils.ts";
 import { memo, useMemo, useState } from "react";
-import {
-  useModelsBinding,
-  type ModelInfo,
-} from "../providers/models-binding-provider.tsx";
+
+export interface ModelInfo {
+  id: string;
+  name: string;
+  logo?: string | null;
+  description?: string | null;
+  capabilities?: string[];
+  contextWindow?: number | null;
+  inputCost?: number | null;
+  outputCost?: number | null;
+  outputLimit?: number | null;
+  provider?: string | null;
+}
 
 const CAPABILITY_CONFIGS = {
   reasoning: {
@@ -296,33 +305,38 @@ function SelectedModelDisplay({ model }: { model: ModelInfo | undefined }) {
   );
 }
 
-interface DecoChatModelSelectorRichProps {
+export interface DecoChatModelSelectorRichProps {
+  models: ModelInfo[];
+  selectedModelId?: string;
+  onModelChange: (modelId: string) => void;
   variant?: "borderless" | "bordered";
   className?: string;
+  placeholder?: string;
 }
 
 /**
  * Rich model selector with detailed info panel, capabilities badges, and responsive UI
- * Uses ModelsBindingProvider for data
  */
 export function DecoChatModelSelectorRich({
+  models,
+  selectedModelId,
+  onModelChange,
   variant = "borderless",
   className,
+  placeholder = "Select model",
 }: DecoChatModelSelectorRichProps) {
-  const { models, selectedModel, setSelectedModel, isLoading } =
-    useModelsBinding();
   const [open, setOpen] = useState(false);
   const [hoveredModel, setHoveredModel] = useState<ModelInfo | null>(null);
   const [showInfoMobile, setShowInfoMobile] = useState(false);
 
-  const currentModel = models.find((m) => m.id === selectedModel);
+  const currentModel = models.find((m) => m.id === selectedModelId);
 
   const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
+    onModelChange(modelId);
     setOpen(false);
   };
 
-  if (isLoading || models.length === 0) {
+  if (models.length === 0) {
     return null;
   }
 
@@ -330,7 +344,7 @@ export function DecoChatModelSelectorRich({
     <ResponsiveSelect
       open={open}
       onOpenChange={setOpen}
-      value={selectedModel || ""}
+      value={selectedModelId || ""}
       onValueChange={handleModelChange}
     >
       <ResponsiveSelectTrigger
@@ -340,12 +354,12 @@ export function DecoChatModelSelectorRich({
           className,
         )}
       >
-        <ResponsiveSelectValue placeholder="Select model">
+        <ResponsiveSelectValue placeholder={placeholder}>
           <SelectedModelDisplay model={currentModel} />
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
       <ResponsiveSelectContent
-        title="Select model"
+        title={placeholder}
         className="w-full md:w-auto md:min-w-[600px] [&_button[aria-label='Scroll down']]:!hidden [&_button[aria-label='Scroll up']]:!hidden"
         headerActions={
           <button
@@ -373,13 +387,13 @@ export function DecoChatModelSelectorRich({
                 onClick={() => handleModelChange(m.id)}
                 className={cn(
                   "rounded-xl mb-1",
-                  m.id === selectedModel && "bg-accent",
+                  m.id === selectedModelId && "bg-accent",
                 )}
               >
                 <ModelItemContent
                   model={m}
                   onHover={setHoveredModel}
-                  isSelected={m.id === selectedModel}
+                  isSelected={m.id === selectedModelId}
                   hasExpandedInfo={showInfoMobile}
                 />
                 {/* Mobile info panel - shows inside model item when toggled */}

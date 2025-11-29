@@ -52,6 +52,8 @@ export type {
 } from "./deconfig/index.ts";
 export { deconfigTools } from "./deconfig/types.ts";
 
+export { streamToResponse } from "./language-model/utils.ts";
+
 export const WellKnownBindings = {
   Channel: CHANNEL_BINDING,
   View: VIEWS_BINDING,

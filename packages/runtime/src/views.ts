@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const installBehavior = z.enum(["none", "open", "autoPin"]);
 

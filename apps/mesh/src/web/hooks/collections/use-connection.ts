@@ -1,20 +1,20 @@
 /**
- * Connection Hooks
+ * Connection Collection Hooks
  *
  * Provides React hooks for working with connections using TanStack DB collections
  * and live queries. These hooks offer a reactive interface for accessing and
  * manipulating connections.
  */
 
-import { createToolCaller } from "../../tools/client";
-import type { ConnectionEntity } from "../../tools/connection/schema";
+import { createToolCaller } from "../../../tools/client";
+import type { ConnectionEntity } from "../../../tools/connection/schema";
 import {
   type CollectionFilter,
   createCollectionFromToolCaller,
   useCollectionItem,
   useCollectionList,
   type UseCollectionListOptions,
-} from "./use-collections";
+} from "../use-collections";
 
 // Module-level singleton to store the collection instance
 let connectionsCollectionSingleton: ReturnType<
@@ -44,7 +44,11 @@ function getOrCreateConnectionsCollection() {
  * @returns The connections collection with CRUD operations
  */
 export function useConnectionsCollection() {
-  return getOrCreateConnectionsCollection();
+  const collection = getOrCreateConnectionsCollection();
+  if (!collection) {
+    throw new Error("Failed to initialize connections collection");
+  }
+  return collection;
 }
 
 /**

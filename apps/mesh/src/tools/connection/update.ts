@@ -8,10 +8,11 @@ import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 import {
+  type ConnectionEntity,
   ConnectionEntitySchema,
   ConnectionUpdateDataSchema,
-  connectionToEntity,
 } from "./schema";
+import { fetchToolsFromMCP } from "./fetch-tools";
 
 /**
  * Input schema for updating connections
@@ -49,47 +50,31 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
 
     const { id, data } = input;
 
-    // Prepare update data - transform entity schema fields to storage format
-    // Note: Storage layer uses undefined for optional fields, not null
-    const updateData: {
-      name?: string;
-      description?: string;
-      icon?: string;
-      metadata?: Record<string, unknown>;
-      connectionToken?: string;
-      status?: "active" | "inactive" | "error";
-    } = {};
-
-    // Map entity schema fields to storage fields (convert null to undefined)
-    if (data.title !== undefined) updateData.name = data.title;
-    if (data.description !== undefined)
-      updateData.description = data.description ?? undefined;
-    if (data.icon !== undefined) updateData.icon = data.icon ?? undefined;
-    if (data.metadata !== undefined)
-      updateData.metadata =
-        (data.metadata as Record<string, unknown>) ?? undefined;
-    if (data.connectionToken !== undefined)
-      updateData.connectionToken = data.connectionToken ?? undefined;
-    if (data.status !== undefined) updateData.status = data.status;
-
     // First fetch the connection to verify ownership before updating
     const existing = await ctx.storage.connections.findById(id);
 
     // Verify it exists and belongs to the current organization
-    if (!existing || existing.organizationId !== organization.id) {
+    if (!existing || existing.organization_id !== organization.id) {
       throw new Error("Connection not found in organization");
     }
 
-    // Now update - safe because we verified ownership first
-    const connection = await ctx.storage.connections.update(id, updateData);
+    // Fetch tools from the MCP server
+    const fetchedTools = await fetchToolsFromMCP({
+      id: existing.id,
+      title: data.title ?? existing.title,
+      connection_url: data.connection_url ?? existing.connection_url,
+      connection_token: data.connection_token ?? existing.connection_token,
+      connection_headers:
+        data.connection_headers ?? existing.connection_headers,
+    }).catch(() => null);
+    const tools = fetchedTools?.length ? fetchedTools : null;
+
+    // Update the connection with the refreshed tools
+    const updatePayload: Partial<ConnectionEntity> = { ...data, tools };
+    const connection = await ctx.storage.connections.update(id, updatePayload);
 
     return {
-      item: connectionToEntity(connection),
+      item: connection,
     };
   },
 });
-
-/**
- * @deprecated Use COLLECTION_CONNECTIONS_UPDATE instead
- */
-export const CONNECTION_UPDATE = COLLECTION_CONNECTIONS_UPDATE;

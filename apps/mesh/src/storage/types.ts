@@ -12,6 +12,7 @@
  */
 
 import type { ColumnType } from "kysely";
+import type { OAuthConfig, ToolDefinition } from "../tools/connection/schema";
 
 // ============================================================================
 // Type Utilities
@@ -95,43 +96,38 @@ export interface Organization {
 
 export interface OrganizationSettingsTable {
   organizationId: string;
-  modelsBindingConnectionId: ColumnType<
-    string | null,
-    string | null,
-    string | null
-  >;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
 
 export interface OrganizationSettings {
   organizationId: string;
-  modelsBindingConnectionId: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
 
 /**
  * MCP Connection table definition
+ * Uses snake_case column names to align with ConnectionEntitySchema
  */
 export interface MCPConnectionTable {
   id: string;
-  organizationId: string; // All connections are organization-scoped
-  createdById: string; // User who created this connection
-  name: string;
+  organization_id: string; // All connections are organization-scoped
+  created_by: string; // User who created this connection
+  title: string;
   description: string | null;
   icon: string | null;
-  appName: string | null;
-  appId: string | null;
+  app_name: string | null;
+  app_id: string | null;
 
   // Connection details
-  connectionType: "HTTP" | "SSE" | "Websocket";
-  connectionUrl: string;
-  connectionToken: string | null; // Encrypted
-  connectionHeaders: JsonObject<Record<string, string>> | null;
+  connection_type: "HTTP" | "SSE" | "Websocket";
+  connection_url: string;
+  connection_token: string | null; // Encrypted
+  connection_headers: JsonObject<Record<string, string>> | null;
 
   // OAuth config for downstream MCP (if MCP supports OAuth)
-  oauthConfig: JsonObject<OAuthConfig> | null;
+  oauth_config: JsonObject<OAuthConfig> | null;
 
   // Metadata and discovery
   metadata: JsonObject<Record<string, unknown>> | null;
@@ -139,61 +135,12 @@ export interface MCPConnectionTable {
   bindings: JsonArray<string[]> | null; // Detected bindings (CHAT, EMAIL, etc.)
 
   status: "active" | "inactive" | "error";
-  createdAt: ColumnType<Date, Date | string, never>;
-  updatedAt: ColumnType<Date, Date | string, Date | string>;
+  created_at: ColumnType<Date, Date | string, never>;
+  updated_at: ColumnType<Date, Date | string, Date | string>;
 }
 
-/**
- * MCP Connection entity - Runtime representation
- */
-export interface MCPConnection {
-  id: string;
-  organizationId: string;
-  createdById: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  appName: string | null;
-  appId: string | null;
-
-  connectionType: "HTTP" | "SSE" | "Websocket";
-  connectionUrl: string;
-  connectionToken: string | null;
-  connectionHeaders: Record<string, string> | null;
-
-  oauthConfig: OAuthConfig | null;
-
-  metadata: Record<string, unknown> | null;
-  tools: ToolDefinition[] | null;
-  bindings: string[] | null;
-
-  status: "active" | "inactive" | "error";
-  createdAt: Date | string;
-  updatedAt: Date | string;
-}
-
-/**
- * OAuth configuration for downstream MCP
- */
-export interface OAuthConfig {
-  authorizationEndpoint: string;
-  tokenEndpoint: string;
-  introspectionEndpoint?: string;
-  clientId: string;
-  clientSecret?: string; // Encrypted
-  scopes: string[];
-  grantType: "authorization_code" | "client_credentials";
-}
-
-/**
- * Tool definition from MCP discovery
- */
-export interface ToolDefinition {
-  name: string;
-  description?: string;
-  inputSchema: object;
-  outputSchema?: object;
-}
+// MCPConnection runtime type is now ConnectionEntity from "../tools/connection/schema"
+// OAuthConfig and ToolDefinition are also exported from schema.ts
 
 /**
  * API Key table definition

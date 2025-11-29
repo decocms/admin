@@ -53,7 +53,6 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .createTable("organization_settings")
     .ifNotExists()
     .addColumn("organizationId", "text", (col) => col.primaryKey())
-    .addColumn("modelsBindingConnectionId", "text")
     .addColumn("createdAt", "text", (col) => col.notNull())
     .addColumn("updatedAt", "text", (col) => col.notNull())
     .execute();

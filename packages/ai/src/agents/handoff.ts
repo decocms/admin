@@ -1,6 +1,6 @@
 import type { Integration } from "@deco/sdk";
 import { Path } from "@deco/sdk/path";
-import z from "zod";
+import z from "zod/v3";
 import { AIAgent } from "../agent.ts";
 import { createInnateTool } from "../utils/create-tool.ts";
 

@@ -5,51 +5,21 @@
  * Following the Ports & Adapters (Hexagonal Architecture) pattern.
  */
 
-import type { MCPConnection, OAuthConfig, OrganizationSettings } from "./types";
+import type { ConnectionEntity } from "../tools/connection/schema";
+import type { OrganizationSettings } from "./types";
 
 // ============================================================================
 // Connection Storage Port
 // ============================================================================
 
-export interface CreateConnectionData {
-  organizationId: string; // All connections are organization-scoped
-  createdById: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  appName?: string;
-  appId?: string;
-  connection: {
-    type: "HTTP" | "SSE" | "Websocket";
-    url: string;
-    token?: string;
-    headers?: Record<string, string>;
-  };
-  oauthConfig?: OAuthConfig; // OAuth config for downstream MCP
-  metadata?: Record<string, unknown>;
-}
-
-export interface UpdateConnectionData {
-  name?: string;
-  description?: string;
-  icon?: string;
-  status?: "active" | "inactive" | "error";
-  connectionToken?: string;
-  metadata?: Record<string, unknown>;
-  tools?: Array<{
-    name: string;
-    description?: string;
-    inputSchema: object;
-    outputSchema?: object;
-  }>;
-  bindings?: string[];
-}
-
 export interface ConnectionStoragePort {
-  create(data: CreateConnectionData): Promise<MCPConnection>;
-  findById(id: string): Promise<MCPConnection | null>;
-  list(organizationId: string): Promise<MCPConnection[]>;
-  update(id: string, data: UpdateConnectionData): Promise<MCPConnection>;
+  create(data: Partial<ConnectionEntity>): Promise<ConnectionEntity>;
+  findById(id: string): Promise<ConnectionEntity | null>;
+  list(organizationId: string): Promise<ConnectionEntity[]>;
+  update(
+    id: string,
+    data: Partial<ConnectionEntity>,
+  ): Promise<ConnectionEntity>;
   delete(id: string): Promise<void>;
   testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }>;
 }
@@ -60,8 +30,5 @@ export interface ConnectionStoragePort {
 
 export interface OrganizationSettingsStoragePort {
   get(organizationId: string): Promise<OrganizationSettings | null>;
-  upsert(
-    organizationId: string,
-    data: { modelsBindingConnectionId: string | null },
-  ): Promise<OrganizationSettings>;
+  upsert(organizationId: string): Promise<OrganizationSettings>;
 }

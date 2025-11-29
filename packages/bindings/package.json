@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "0.2.1",
+  "version": "0.2.4",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -9,11 +9,10 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "json-schema-diff": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.4",
     "zod-from-json-schema": "^0.0.5",
-    "@modelcontextprotocol/sdk": "^1.20.2"
+    "zod-to-json-schema": "3.25.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,25 +24,25 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./models": {
-      "types": "./dist/models.d.ts",
-      "default": "./dist/models.js"
-    },
-    "./collections": {
-      "types": "./dist/collections.d.ts",
-      "default": "./dist/collections.js"
+    "./client": {
+      "types": "./dist/core/client/index.d.ts",
+      "default": "./dist/core/client/index.js"
     },
     "./llm": {
-      "types": "./dist/language-model.d.ts",
-      "default": "./dist/language-model.js"
+      "types": "./dist/well-known/language-model.d.ts",
+      "default": "./dist/well-known/language-model.js"
     },
     "./connection": {
-      "types": "./dist/connection.d.ts",
-      "default": "./dist/connection.js"
+      "types": "./dist/core/connection.d.ts",
+      "default": "./dist/core/connection.js"
     },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+    "./collections": {
+      "types": "./dist/well-known/collections.d.ts",
+      "default": "./dist/well-known/collections.js"
+    },
+    "./agent": {
+      "types": "./dist/well-known/agent.d.ts",
+      "default": "./dist/well-known/agent.js"
     }
   },
   "devDependencies": {

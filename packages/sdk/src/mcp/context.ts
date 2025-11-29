@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/postgres-js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import postgres from "postgres";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { stubFor } from "../actors/index.ts";
 import { JwtIssuer, JWTPayload } from "../auth/jwt.ts";
 import { AuthorizationClient, Policy, PolicyClient } from "../auth/policy.ts";

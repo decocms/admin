@@ -1,8 +1,10 @@
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
 import {
   useConnections,
-  type ConnectionEntity,
-} from "@/web/hooks/use-connections";
+  useConnectionsCollection,
+} from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
@@ -43,10 +45,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
-import {
-  Table as ResourceTable,
-  type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+import { type TableColumn } from "@deco/ui/components/resource-table.tsx";
 import {
   Select,
   SelectContent,
@@ -54,49 +53,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { MoreVertical, Plus, Search } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod/v3";
-import { useConnectionsCollection } from "../../hooks/use-connections";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
 const connectionFormSchema = ConnectionEntitySchema.pick({
   title: true,
   description: true,
-  connectionType: true,
-  connectionUrl: true,
-  connectionToken: true,
+  connection_type: true,
+  connection_url: true,
+  connection_token: true,
 }).partial({
   // These are optional for form input
   description: true,
-  connectionToken: true,
+  connection_token: true,
 });
 
 type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
 type DialogState =
   | { mode: "idle" }
-  | { mode: "creating" }
   | { mode: "editing"; connection: ConnectionEntity }
   | { mode: "deleting"; connection: ConnectionEntity };
 
 type DialogAction =
-  | { type: "create" }
   | { type: "edit"; connection: ConnectionEntity }
   | { type: "delete"; connection: ConnectionEntity }
   | { type: "close" };
 
 function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   switch (action.type) {
-    case "create":
-      return { mode: "creating" };
     case "edit":
       return { mode: "editing", connection: action.connection };
     case "delete":
@@ -122,6 +115,7 @@ function getStatusBadgeVariant(status: string) {
 export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { action?: "create" };
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
@@ -135,15 +129,30 @@ export default function OrgMcps() {
 
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
+  // Create dialog state is derived from search params
+  const isCreating = search.action === "create";
+
+  const openCreateDialog = () => {
+    navigate({
+      to: "/$org/mcps",
+      params: { org },
+      search: { action: "create" },
+    });
+  };
+
+  const closeCreateDialog = () => {
+    navigate({ to: "/$org/mcps", params: { org }, search: {} });
+  };
+
   // React Hook Form setup
   const form = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionFormSchema),
     defaultValues: {
       title: "",
       description: null,
-      connectionType: "HTTP",
-      connectionUrl: "",
-      connectionToken: null,
+      connection_type: "HTTP",
+      connection_url: "",
+      connection_token: null,
     },
   });
 
@@ -156,17 +165,17 @@ export default function OrgMcps() {
       form.reset({
         title: editingConnection.title,
         description: editingConnection.description,
-        connectionType: editingConnection.connectionType,
-        connectionUrl: editingConnection.connectionUrl,
-        connectionToken: null, // Don't pre-fill token for security
+        connection_type: editingConnection.connection_type,
+        connection_url: editingConnection.connection_url,
+        connection_token: null, // Don't pre-fill token for security
       });
     } else {
       form.reset({
         title: "",
         description: null,
-        connectionType: "HTTP",
-        connectionUrl: "",
-        connectionToken: null,
+        connection_type: "HTTP",
+        connection_url: "",
+        connection_token: null,
       });
     }
   }, [editingConnection, form]);
@@ -196,7 +205,12 @@ export default function OrgMcps() {
 
   const onSubmit = async (data: ConnectionFormData) => {
     try {
-      dispatch({ type: "close" });
+      // Close dialog based on mode
+      if (isCreating) {
+        closeCreateDialog();
+      } else {
+        dispatch({ type: "close" });
+      }
       form.reset();
 
       if (editingConnection) {
@@ -204,10 +218,10 @@ export default function OrgMcps() {
         const tx = collection.update(editingConnection.id, (draft) => {
           draft.title = data.title;
           draft.description = data.description || null;
-          draft.connectionType = data.connectionType;
-          draft.connectionUrl = data.connectionUrl;
-          if (data.connectionToken) {
-            draft.connectionToken = data.connectionToken;
+          draft.connection_type = data.connection_type;
+          draft.connection_url = data.connection_url;
+          if (data.connection_token) {
+            draft.connection_token = data.connection_token;
           }
         });
         await tx.isPersisted.promise;
@@ -218,13 +232,13 @@ export default function OrgMcps() {
           id: crypto.randomUUID(),
           title: data.title,
           description: data.description || null,
-          connectionType: data.connectionType,
-          connectionUrl: data.connectionUrl,
-          connectionToken: data.connectionToken || undefined,
+          connection_type: data.connection_type,
+          connection_url: data.connection_url,
+          connection_token: data.connection_token || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           status: "inactive",
-          organizationId: org,
+          organization_id: org,
         });
         await tx.isPersisted.promise;
       }
@@ -237,7 +251,11 @@ export default function OrgMcps() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      dispatch({ type: "close" });
+      if (isCreating) {
+        closeCreateDialog();
+      } else {
+        dispatch({ type: "close" });
+      }
       form.reset();
     }
   };
@@ -260,20 +278,22 @@ export default function OrgMcps() {
       sortable: true,
     },
     {
-      id: "connectionType",
+      id: "connection_type",
       header: "Type",
       accessor: (connection) => (
-        <span className="text-sm font-medium">{connection.connectionType}</span>
+        <span className="text-sm font-medium">
+          {connection.connection_type}
+        </span>
       ),
       cellClassName: "w-[120px]",
       sortable: true,
     },
     {
-      id: "connectionUrl",
+      id: "connection_url",
       header: "URL",
       render: (connection) => (
         <span className="text-sm text-muted-foreground block truncate max-w-sm">
-          {connection.connectionUrl}
+          {connection.connection_url}
         </span>
       ),
       wrap: true,
@@ -309,7 +329,7 @@ export default function OrgMcps() {
               onClick={(event) => {
                 event.stopPropagation();
                 navigate({
-                  to: `/${org}/mcps/${connection.id}/inspector`,
+                  to: `/${org}/mcps/${connection.id}`,
                 });
               }}
             >
@@ -341,11 +361,7 @@ export default function OrgMcps() {
   ];
 
   const ctaButton = (
-    <Button
-      onClick={() => dispatch({ type: "create" })}
-      size="sm"
-      className="rounded-xl"
-    >
+    <Button onClick={openCreateDialog} size="sm" className="rounded-xl">
       <Plus className="mr-2 h-4 w-4" />
       New Connection
     </Button>
@@ -354,7 +370,7 @@ export default function OrgMcps() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <Dialog
-        open={dialogState.mode === "creating" || dialogState.mode === "editing"}
+        open={isCreating || dialogState.mode === "editing"}
         onOpenChange={handleDialogClose}
       >
         <DialogContent className="sm:max-w-[525px]">
@@ -406,7 +422,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionType"
+                  name="connection_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type *</FormLabel>
@@ -432,7 +448,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionUrl"
+                  name="connection_url"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>URL *</FormLabel>
@@ -449,7 +465,7 @@ export default function OrgMcps() {
 
                 <FormField
                   control={form.control}
-                  name="connectionToken"
+                  name="connection_token"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Token (optional)</FormLabel>
@@ -560,37 +576,36 @@ export default function OrgMcps() {
                   {errorMessage}
                 </div>
               </Card>
-            ) : isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Spinner />
-              </div>
-            ) : connections.length === 0 ? (
-              <EmptyState
-                icon="cable"
-                title="No connections found"
-                description="Create a connection to get started."
-                buttonProps={{
-                  onClick: () => dispatch({ type: "create" }),
-                  children: "New Connection",
-                }}
-              />
-            ) : listState.viewMode === "cards" ? (
-              <div
-                className="grid gap-4"
-                style={{
-                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                }}
-              >
-                {connections.map((connection) => (
-                  <Card
-                    key={connection.id}
-                    className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer"
-                    onClick={() =>
-                      navigate({
-                        to: `/${org}/mcps/${connection.id}/inspector`,
-                      })
-                    }
-                  >
+            ) : (
+              <CollectionsList
+                data={connections}
+                viewMode={listState.viewMode}
+                onViewModeChange={listState.setViewMode}
+                search={listState.search}
+                onSearchChange={listState.setSearch}
+                columns={columns}
+                isLoading={isLoading}
+                sortKey={listState.sortKey}
+                sortDirection={listState.sortDirection}
+                onSort={listState.handleSort}
+                onItemClick={(connection) =>
+                  navigate({
+                    to: `/${org}/mcps/${connection.id}`,
+                  })
+                }
+                emptyState={
+                  <EmptyState
+                    icon="cable"
+                    title="No connections found"
+                    description="Create a connection to get started."
+                    buttonProps={{
+                      onClick: openCreateDialog,
+                      children: "New Connection",
+                    }}
+                  />
+                }
+                renderCard={(connection) => (
+                  <Card className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer h-full">
                     <div className="flex flex-col gap-3 h-full">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -610,11 +625,11 @@ export default function OrgMcps() {
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground wrap-break-word">
-                        {connection.connectionUrl}
+                        {connection.connection_url}
                       </div>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 mt-auto">
                         <span className="text-xs font-medium uppercase text-muted-foreground">
-                          {connection.connectionType}
+                          {connection.connection_type}
                         </span>
                         <div className="flex items-center gap-2">
                           <Button
@@ -623,7 +638,7 @@ export default function OrgMcps() {
                             onClick={(event) => {
                               event.stopPropagation();
                               navigate({
-                                to: `/${org}/mcps/${connection.id}/inspector`,
+                                to: `/${org}/mcps/${connection.id}`,
                               });
                             }}
                           >
@@ -668,20 +683,8 @@ export default function OrgMcps() {
                       </div>
                     </div>
                   </Card>
-                ))}
-              </div>
-            ) : (
-              <ResourceTable
-                columns={columns}
-                data={connections}
-                sortKey={listState.sortKey}
-                sortDirection={listState.sortDirection}
-                onSort={listState.handleSort}
-                onRowClick={(connection) =>
-                  navigate({
-                    to: `/${org}/mcps/${connection.id}/inspector`,
-                  })
-                }
+                )}
+                hideToolbar={true}
               />
             )}
           </div>

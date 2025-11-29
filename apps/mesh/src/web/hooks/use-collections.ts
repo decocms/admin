@@ -22,7 +22,7 @@ import {
   or,
 } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
-import type { ToolCaller } from "../../tools/client";
+import { createToolCaller, type ToolCaller } from "../../tools/client";
 
 /**
  * Custom event type for sync mutations
@@ -45,7 +45,7 @@ export type CollectionEntity = BaseCollectionEntity;
 export interface CreateCollectionOptions {
   /** The tool caller function for making API calls */
   toolCaller: ToolCaller;
-  /** The collection name (e.g., "CONNECTIONS", "MODELS") - used for tool names and query key */
+  /** The collection name (e.g., "CONNECTIONS", "LLM") - used for tool names and query key */
   collectionName: string;
   /** Default page size for pagination (default: 100) */
   pageSize?: number;
@@ -114,14 +114,14 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           listToolName,
           params,
         )) as CollectionListOutput<unknown>;
-        const items = result.items || [];
+        const items = result?.items || [];
 
         for (const item of items) {
           allItems.push(item as T);
         }
 
         // Check if we've fetched all pages
-        if (!result.hasMore || items.length === 0) {
+        if (!result?.hasMore || items.length === 0) {
           break;
         }
 
@@ -176,7 +176,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
             // - Incoming data is newer than current data
             if (
               current &&
-              new Date(current.updated_at) >= new Date(item.updated_at)
+              new Date(current.updated_at) > new Date(item.updated_at)
             ) {
               // Current data is same or newer, skip
               console.warn(
@@ -249,7 +249,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           (mutation) =>
             toolCaller(updateToolName, {
               id: mutation.key,
-              data: mutation.changes,
+              data: mutation.modified,
             }) as Promise<CollectionUpdateOutput<T>>,
         ),
       );
@@ -271,6 +271,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           (mutation) =>
             toolCaller(deleteToolName, {
               id: mutation.key,
+              data: mutation.modified,
             }) as Promise<CollectionDeleteOutput<T>>,
         ),
       );
@@ -287,6 +288,38 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
   });
 
   return collection;
+}
+
+// Module-level cache for collection instances
+// Key format: `${connectionId}:${collectionName}`
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const collectionCache = new Map<string, Collection<any, string>>();
+
+/**
+ * Get or create a collection instance for a specific connection and collection name.
+ * Collections are cached to ensure singleton-like behavior per connection/collection pair.
+ *
+ * @param connectionId - The ID of the connection (or undefined/null for mesh tools)
+ * @param collectionName - The name of the collection (e.g., "AGENT", "LLM")
+ * @returns A TanStack DB collection instance
+ */
+export function useCollection<T extends CollectionEntity>(
+  connectionId: string | undefined | null,
+  collectionName: string,
+): Collection<T, string> {
+  // Use empty string key for null/undefined connectionId to represent mesh tools
+  const safeConnectionId = connectionId ?? "";
+  const key = `${safeConnectionId}:${collectionName}`;
+
+  if (!collectionCache.has(key)) {
+    const collection = createCollectionFromToolCaller<T>({
+      toolCaller: createToolCaller(connectionId || undefined),
+      collectionName,
+    });
+    collectionCache.set(key, collection);
+  }
+
+  return collectionCache.get(key) as Collection<T, string>;
 }
 
 /**
@@ -425,7 +458,7 @@ export function useCollectionItem<T extends CollectionEntity>(
         query = query.where(({ item }) => item && eq(item.id, itemId));
       }
 
-      return query;
+      return query.findOne();
     },
     [itemId, collection],
   );

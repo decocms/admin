@@ -5,6 +5,8 @@
  * using TanStack DB collections and live queries.
  */
 
+import type { ModelCollectionEntitySchema } from "@decocms/bindings/llm";
+import { z } from "zod/v3";
 import { UNKNOWN_CONNECTION_ID } from "../../../tools/client";
 import {
   useCollection,
@@ -13,40 +15,7 @@ import {
 } from "../use-collections";
 
 // LLM type matching ModelSchema from @decocms/bindings
-export interface LLM {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  updated_by?: string;
-  logo: string | null;
-  description: string | null;
-  capabilities: string[];
-  limits: {
-    contextWindow: number;
-    maxOutputTokens: number;
-  } | null;
-  costs: {
-    input: number;
-    output: number;
-  } | null;
-  provider:
-    | "openai"
-    | "anthropic"
-    | "google"
-    | "xai"
-    | "deepseek"
-    | "openai-compatible"
-    | "openrouter"
-    | null;
-  endpoint: {
-    url: string;
-    method: string;
-    contentType: string;
-    stream: boolean;
-  } | null;
-}
+export type LLM = z.infer<typeof ModelCollectionEntitySchema>;
 
 /**
  * Options for useLLMsFromConnection hook
@@ -70,17 +39,5 @@ export function useLLMsFromConnection(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "LLM",
   );
-  const result = useCollectionList(collection, options);
-
-  // Return empty state if no connectionId was provided
-  if (!connectionId) {
-    return {
-      data: [] as LLM[],
-      isPending: false,
-      isError: false,
-      error: null,
-    };
-  }
-
-  return result;
+  return useCollectionList(collection, options);
 }

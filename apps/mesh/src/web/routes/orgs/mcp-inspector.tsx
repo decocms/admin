@@ -85,7 +85,7 @@ export default function McpInspector() {
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,
-    debug: true,
+    debug: false,
     autoReconnect: true,
     autoRetry: 5000,
     onPopupWindow: (_url, _features, popupWindow) => {
@@ -223,9 +223,7 @@ export default function McpInspector() {
 
   const handleTabChange = (tabId: string) => {
     setActiveTabId(tabId);
-    // Optionally update URL search params
     navigate({
-      // @ts-expect-error - dynamic search params
       search: (prev: Record<string, unknown>) => ({ ...prev, tab: tabId }),
       replace: true,
     });

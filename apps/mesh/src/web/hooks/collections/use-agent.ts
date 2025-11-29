@@ -48,7 +48,5 @@ export function useAgentsFromConnection(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "AGENT",
   );
-  const result = useCollectionList(collection, options);
-
-  return result;
+  return useCollectionList(collection, options);
 }

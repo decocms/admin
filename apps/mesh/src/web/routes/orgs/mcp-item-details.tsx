@@ -1,26 +1,16 @@
 import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/views/agent-details-view.tsx";
-import { useConnection } from "@/web/hooks/collections/use-connection";
+import { ToolDetailsView } from "@/web/components/views/tool-details-view.tsx";
 import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@deco/ui/components/card.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export default function McpItemDetails() {
   const { connectionId, collectionName, itemId } = useParams({
     strict: false,
   });
-
-  const { data: connection } = useConnection(connectionId);
 
   // Use dynamic collection hook
   // collectionName can be "tools", "agents", etc.
@@ -73,22 +63,11 @@ export default function McpItemDetails() {
   // For now, let's just show a placeholder or redirect back if we can't handle it yet
   if (isTools) {
     return (
-      <div className="container max-w-4xl py-6">
-        <Button variant="ghost" onClick={handleBack} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Card>
-          <CardHeader>
-            <CardTitle>Tool: {itemId}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Tool invocation interface will be implemented here.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ToolDetailsView
+        connectionId={connectionId ?? UNKNOWN_CONNECTION_ID}
+        toolName={itemId ?? ""}
+        onBack={handleBack}
+      />
     );
   }
 
@@ -118,33 +97,14 @@ export default function McpItemDetails() {
   }
 
   return (
-    <div className="container max-w-4xl py-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={handleBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {item?.title || itemId}
-          </h1>
-          <p className="text-muted-foreground">
-            {collectionName} • {connection?.title}
-          </p>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[500px] w-full rounded-md border p-4">
-            <pre className="text-sm font-mono">
-              {JSON.stringify(item, null, 2)}
-            </pre>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+    <EmptyState
+      icon="extension"
+      title="No component defined"
+      description="No component for this collection was defined"
+      buttonProps={{
+        onClick: handleBack,
+        children: "Go back",
+      }}
+    />
   );
 }

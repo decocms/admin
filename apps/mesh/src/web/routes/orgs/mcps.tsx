@@ -1,6 +1,6 @@
+import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
-import type { ConnectionEntity } from "@/tools/connection/schema";
 import {
   useConnections,
   useConnectionsCollection,

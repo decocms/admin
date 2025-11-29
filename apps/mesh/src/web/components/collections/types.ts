@@ -110,4 +110,16 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
    * Useful if the parent component handles these controls.
    */
   hideToolbar?: boolean;
+
+  /**
+   * Default number of items per page
+   * @default 12
+   */
+  defaultItemsPerPage?: number;
+
+  /**
+   * Options for items per page selector
+   * @default [12, 24, 48, 96]
+   */
+  itemsPerPageOptions?: number[];
 }

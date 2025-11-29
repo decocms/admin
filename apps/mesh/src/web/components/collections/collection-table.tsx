@@ -69,10 +69,19 @@ export function CollectionTable<T extends BaseCollectionEntity>({
       id: key,
       render: (row) => {
         const val = row[key as keyof T];
+        let displayValue: string;
+
         if (typeof val === "object" && val !== null) {
-          return JSON.stringify(val);
+          displayValue = JSON.stringify(val);
+        } else {
+          displayValue = String(val ?? "");
         }
-        return String(val ?? "");
+
+        return (
+          <div className="truncate max-w-[100ch]" title={displayValue}>
+            {displayValue}
+          </div>
+        );
       },
     };
   });

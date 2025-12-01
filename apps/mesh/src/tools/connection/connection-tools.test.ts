@@ -7,7 +7,7 @@ import {
   COLLECTION_CONNECTIONS_LIST,
   COLLECTION_CONNECTIONS_GET,
   COLLECTION_CONNECTIONS_DELETE,
-  COLLECTION_CONNECTIONS_TEST,
+  CONNECTION_TEST,
 } from "./index";
 import type { Kysely } from "kysely";
 import type { Database } from "../../storage/types";
@@ -291,7 +291,7 @@ describe("Connection Tools", () => {
     });
   });
 
-  describe("COLLECTION_CONNECTIONS_TEST", () => {
+  describe("CONNECTION_TEST", () => {
     it("should test connection health", async () => {
       const created = await COLLECTION_CONNECTIONS_CREATE.execute(
         {
@@ -304,7 +304,7 @@ describe("Connection Tools", () => {
         ctx,
       );
 
-      const result = await COLLECTION_CONNECTIONS_TEST.execute(
+      const result = await CONNECTION_TEST.execute(
         {
           id: created.item.id,
         },
@@ -319,7 +319,7 @@ describe("Connection Tools", () => {
 
     it("should throw when connection not found", async () => {
       await expect(
-        COLLECTION_CONNECTIONS_TEST.execute(
+        CONNECTION_TEST.execute(
           {
             id: "conn_nonexistent",
           },

@@ -36,7 +36,7 @@ const ConfigureOutputSchema = z.object({
 });
 
 export const CONNECTION_CONFIGURE = defineTool({
-  name: "COLLECTION_CONNECTIONS_CONFIGURE",
+  name: "CONNECTION_CONFIGURE",
   description:
     "Configure connection state and scopes for cross-MCP dependencies",
 

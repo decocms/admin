@@ -79,6 +79,7 @@ export const ConnectionEntitySchema = z.object({
   configuration_scopes: z
     .array(z.string())
     .nullable()
+    .optional()
     .describe("Configuration scopes"),
 
   metadata: z.record(z.unknown()).nullable().describe("Additional metadata"),

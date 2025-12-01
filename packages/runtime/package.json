@@ -1,11 +1,7 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "type": "module",
-  "scripts": {
-    "build": "tsup",
-    "prepublishOnly": "npm run build"
-  },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
@@ -22,80 +18,23 @@
     "zod-from-json-schema": "^0.0.5",
     "zod-to-json-schema": "3.25.0"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**/*",
-    "src/**/*",
-    "config-schema.json"
-  ],
   "exports": {
-    ".": {
-      "source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./proxy": {
-      "source": "./src/proxy.ts",
-      "types": "./dist/proxy.d.ts",
-      "default": "./dist/proxy.js"
-    },
-    "./admin": {
-      "source": "./src/admin.ts",
-      "types": "./dist/admin.d.ts",
-      "default": "./dist/admin.js"
-    },
-    "./client": {
-      "source": "./src/client.ts",
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
-    },
-    "./mastra": {
-      "source": "./src/mastra.ts",
-      "types": "./dist/mastra.d.ts",
-      "default": "./dist/mastra.js"
-    },
-    "./drizzle": {
-      "source": "./src/drizzle.ts",
-      "types": "./dist/drizzle.d.ts",
-      "default": "./dist/drizzle.js"
-    },
-    "./resources": {
-      "source": "./src/resources.ts",
-      "types": "./dist/resources.d.ts",
-      "default": "./dist/resources.js"
-    },
-    "./views": {
-      "source": "./src/views.ts",
-      "types": "./dist/views.d.ts",
-      "default": "./dist/views.js"
-    },
-    "./mcp-client": {
-      "source": "./src/mcp-client.ts",
-      "types": "./dist/mcp-client.d.ts",
-      "default": "./dist/mcp-client.js"
-    },
-    "./bindings": {
-      "source": "./src/bindings/index.ts",
-      "types": "./dist/bindings/index.d.ts",
-      "default": "./dist/bindings/index.js"
-    },
-    "./deconfig": {
-      "source": "./src/bindings/deconfig/index.ts",
-      "types": "./dist/bindings/deconfig/index.d.ts",
-      "default": "./dist/bindings/deconfig/index.js"
-    },
-    "./asset-server": {
-      "source": "./src/asset-server/index.ts",
-      "types": "./dist/asset-server.d.ts",
-      "default": "./dist/asset-server.js"
-    }
+    ".": "./src/index.ts",
+    "./proxy": "./src/proxy.ts",
+    "./admin": "./src/admin.ts",
+    "./client": "./src/client.ts",
+    "./mastra": "./src/mastra.ts",
+    "./drizzle": "./src/drizzle.ts",
+    "./resources": "./src/resources.ts",
+    "./views": "./src/views.ts",
+    "./mcp-client": "./src/mcp-client.ts",
+    "./bindings": "./src/bindings/index.ts",
+    "./deconfig": "./src/bindings/deconfig/index.ts",
+    "./asset-server": "./src/asset-server/index.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",
-    "ts-json-schema-generator": "^2.4.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.3"
+    "ts-json-schema-generator": "^2.4.0"
   },
   "engines": {
     "node": ">=24.0.0"

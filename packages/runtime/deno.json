@@ -1,7 +1,5 @@
 {
-  "unstable": [
-    "sloppy-imports"
-  ],
+  "unstable": ["sloppy-imports"],
   "name": "@deco/workers-runtime",
   "version": "0.26.0",
   "exports": {

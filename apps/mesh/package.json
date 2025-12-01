@@ -8,6 +8,7 @@
     "build:client": "bun --bun vite build",
     "build:server": "bun run scripts/bundle-server-script.ts --dist ./dist-server",
     "db:migrate": "bun run ./dist-server/migrate.js",
+    "check": "tsc --noEmit",
     "start": "bun run ./dist-server/server.js",
     "migrate": "bun run scripts/generate-migrations.ts",
     "test": "bun test .",

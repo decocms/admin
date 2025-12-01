@@ -64,6 +64,65 @@ export const CollectionDeleteInputSchema = z.object({
   id: z.string().describe("ID of the entity to delete"),
 });
 
+function createCollectionListOutputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    items: z.array(entitySchema).describe("Array of collection items"),
+    totalCount: z
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .describe("Total number of matching items"),
+    hasMore: z
+      .boolean()
+      .optional()
+      .describe("Whether there are more items available"),
+  });
+}
+
+function createCollectionGetOutputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    item: entitySchema
+      .nullable()
+      .describe("The retrieved item, or null if not found"),
+  });
+}
+
+export function createCollectionInsertInputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    data: entitySchema.describe(
+      "Data for the new entity (id may be auto-generated)",
+    ),
+  });
+}
+
+export function createCollectionInsertOutputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    item: entitySchema.describe("The created entity with generated id"),
+  });
+}
+
+export function createCollectionUpdateInputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    id: z.string().describe("ID of the entity to update"),
+    data: (entitySchema as z.AnyZodObject)
+      .partial()
+      .describe("Partial entity data to update"),
+  });
+}
+
+export function createCollectionUpdateOutputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    item: entitySchema.describe("The updated entity"),
+  });
+}
+
+function createCollectionDeleteOutputSchema(entitySchema: z.ZodTypeAny) {
+  return z.object({
+    item: entitySchema.describe("The deleted entity"),
+  });
+}
+
 export interface CollectionBindingOptions {
   readOnly?: boolean;
 }
@@ -77,7 +136,7 @@ export interface CollectionBindingOptions {
  */
 export function createCollectionBindings(
   collectionName: string,
-  entitySchema: z.ZodObject<z.ZodRawShape>,
+  entitySchema: z.ZodTypeAny,
   options?: CollectionBindingOptions,
 ): ToolBinder[] {
   const upperName = collectionName.toUpperCase();
@@ -87,28 +146,12 @@ export function createCollectionBindings(
     {
       name: `COLLECTION_${upperName}_LIST`,
       inputSchema: CollectionListInputSchema,
-      outputSchema: z.object({
-        items: z.array(entitySchema).describe("Array of collection items"),
-        totalCount: z
-          .number()
-          .int()
-          .min(0)
-          .optional()
-          .describe("Total number of matching items"),
-        hasMore: z
-          .boolean()
-          .optional()
-          .describe("Whether there are more items available"),
-      }),
+      outputSchema: createCollectionListOutputSchema(entitySchema),
     },
     {
       name: `COLLECTION_${upperName}_GET`,
       inputSchema: CollectionGetInputSchema,
-      outputSchema: z.object({
-        item: entitySchema
-          .nullable()
-          .describe("The retrieved item, or null if not found"),
-      }),
+      outputSchema: createCollectionGetOutputSchema(entitySchema),
     },
   ];
 
@@ -116,37 +159,20 @@ export function createCollectionBindings(
     bindings.push(
       {
         name: `COLLECTION_${upperName}_CREATE`,
-        inputSchema: z.object({
-          data: entitySchema.describe(
-            "Data for the new entity (id may be auto-generated)",
-          ),
-        }),
-        outputSchema: z.object({
-          item: entitySchema
-            .nullable()
-            .describe("The retrieved item, or null if not found"),
-        }),
+        inputSchema: createCollectionInsertInputSchema(entitySchema),
+        outputSchema: createCollectionInsertOutputSchema(entitySchema),
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_UPDATE`,
-        inputSchema: z.object({
-          id: z.string().describe("ID of the entity to update"),
-          data: (entitySchema as z.AnyZodObject)
-            .partial()
-            .describe("Partial entity data to update"),
-        }),
-        outputSchema: z.object({
-          item: entitySchema.describe("The updated entity"),
-        }),
+        inputSchema: createCollectionUpdateInputSchema(entitySchema),
+        outputSchema: createCollectionUpdateOutputSchema(entitySchema),
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_DELETE`,
         inputSchema: CollectionDeleteInputSchema,
-        outputSchema: z.object({
-          item: entitySchema.describe("The deleted entity"),
-        }),
+        outputSchema: createCollectionDeleteOutputSchema(entitySchema),
         opt: true,
       },
     );
@@ -156,6 +182,12 @@ export function createCollectionBindings(
 }
 
 // Exported types
+export type BaseCollectionEntity = z.infer<typeof BaseCollectionEntitySchema>;
+export type WhereExpression = z.infer<typeof WhereExpressionSchema>;
+export type OrderByExpression = z.infer<typeof OrderByExpressionSchema>;
+export type CollectionListInput = z.infer<typeof CollectionListInputSchema>;
+export type CollectionGetInput = z.infer<typeof CollectionGetInputSchema>;
+export type CollectionDeleteInput = z.infer<typeof CollectionDeleteInputSchema>;
 export type CollectionListOutput<T> = {
   items: T[];
   totalCount?: number;

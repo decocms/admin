@@ -37,9 +37,23 @@ export const OrderByExpressionSchema = z.object({
 
 export const CollectionListInputSchema = z.object({
   where: WhereExpressionSchema.optional().describe("Filter expression"),
-  orderBy: z.array(OrderByExpressionSchema).optional().describe("Sort expressions"),
-  limit: z.number().int().min(1).max(1000).optional().describe("Maximum number of items to return"),
-  offset: z.number().int().min(0).optional().describe("Number of items to skip"),
+  orderBy: z
+    .array(OrderByExpressionSchema)
+    .optional()
+    .describe("Sort expressions"),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .describe("Maximum number of items to return"),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Number of items to skip"),
 });
 
 export const CollectionGetInputSchema = z.object({
@@ -75,15 +89,25 @@ export function createCollectionBindings(
       inputSchema: CollectionListInputSchema,
       outputSchema: z.object({
         items: z.array(entitySchema).describe("Array of collection items"),
-        totalCount: z.number().int().min(0).optional().describe("Total number of matching items"),
-        hasMore: z.boolean().optional().describe("Whether there are more items available"),
+        totalCount: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Total number of matching items"),
+        hasMore: z
+          .boolean()
+          .optional()
+          .describe("Whether there are more items available"),
       }),
     },
     {
       name: `COLLECTION_${upperName}_GET`,
       inputSchema: CollectionGetInputSchema,
       outputSchema: z.object({
-        item: entitySchema.nullable().describe("The retrieved item, or null if not found"),
+        item: entitySchema
+          .nullable()
+          .describe("The retrieved item, or null if not found"),
       }),
     },
   ];
@@ -93,18 +117,24 @@ export function createCollectionBindings(
       {
         name: `COLLECTION_${upperName}_CREATE`,
         inputSchema: z.object({
-                data: entitySchema.describe("Data for the new entity (id may be auto-generated)"),
-            }),
+          data: entitySchema.describe(
+            "Data for the new entity (id may be auto-generated)",
+          ),
+        }),
         outputSchema: z.object({
-            item: entitySchema.nullable().describe("The retrieved item, or null if not found"),
-          }),
+          item: entitySchema
+            .nullable()
+            .describe("The retrieved item, or null if not found"),
+        }),
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_UPDATE`,
         inputSchema: z.object({
           id: z.string().describe("ID of the entity to update"),
-          data: (entitySchema as z.AnyZodObject).partial().describe("Partial entity data to update"),
+          data: (entitySchema as z.AnyZodObject)
+            .partial()
+            .describe("Partial entity data to update"),
         }),
         outputSchema: z.object({
           item: entitySchema.describe("The updated entity"),
@@ -126,7 +156,11 @@ export function createCollectionBindings(
 }
 
 // Exported types
-export type CollectionListOutput<T> = { items: T[]; totalCount?: number; hasMore?: boolean };
+export type CollectionListOutput<T> = {
+  items: T[];
+  totalCount?: number;
+  hasMore?: boolean;
+};
 export type CollectionGetOutput<T> = { item: T | null };
 export type CollectionInsertOutput<T> = { item: T };
 export type CollectionUpdateOutput<T> = { item: T };

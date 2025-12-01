@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { impl } from "../bindings/binder.ts";
 import { WellKnownBindings } from "../bindings/index.ts";

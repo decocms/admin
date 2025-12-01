@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { DocumentEditor } from "./document-editor.tsx";
 import {

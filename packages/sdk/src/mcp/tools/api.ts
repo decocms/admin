@@ -1,5 +1,5 @@
 import { callFunction, inspect } from "@deco/cf-sandbox";
-import z from "zod/v3";
+import z from "zod";
 import { formatIntegrationId, WellKnownMcpGroups } from "../../crud/groups.ts";
 import { DeconfigResourceV2 } from "../deconfig-v2/index.ts";
 import {

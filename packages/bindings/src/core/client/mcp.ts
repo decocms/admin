@@ -1,5 +1,5 @@
 /* oxlint-disable no-explicit-any */
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { MCPConnection } from "../connection";
 import { createMCPClientProxy } from "./proxy";
 

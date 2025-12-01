@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { type Model, WELL_KNOWN_MODELS } from "../../constants.ts";
 import {
   assertHasWorkspace,

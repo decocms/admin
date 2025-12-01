@@ -1,4 +1,4 @@
-import z from "zod/v3";
+import z from "zod";
 import { ToolDependencySchema } from "../tools/schemas.ts";
 
 const RetriesSchema = z.object({

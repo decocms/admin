@@ -5,7 +5,7 @@
  * Uses snake_case field names matching the database schema directly.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 
 /**
  * OAuth configuration schema for downstream MCP

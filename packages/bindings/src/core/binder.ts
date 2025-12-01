@@ -5,7 +5,7 @@
  * Bindings define standardized interfaces that integrations (MCPs) can implement.
  */
 
-import type { ZodType } from "zod/v3";
+import type { ZodType } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
 import { MCPConnection } from "./connection";

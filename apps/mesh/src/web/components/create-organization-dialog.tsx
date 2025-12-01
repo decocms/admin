@@ -22,7 +22,7 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import * as z from "zod/v3";
+import * as z from "zod";
 import { useNavigate } from "@tanstack/react-router";
 
 // Simple slugify function for client-side use

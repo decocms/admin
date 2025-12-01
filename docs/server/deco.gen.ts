@@ -5172,7 +5172,7 @@ export interface WHATSAPP_UPSERT_USERInput {
 export interface WHATSAPP_UPSERT_USEROutput {}
 
 // this should be added to your package.json
-import { z } from "zod/v3";
+import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
   [K in keyof T]: ((
@@ -5436,7 +5436,7 @@ export interface Env {
      * }
      * 2. Import dependencies directly in your files:
      * // main.ts
-     * import { z } from "zod/v3";
+     * import { z } from "zod";
      * import { withRuntime } from "@deco/workers-runtime";
      * 3. Use wrangler.toml to configure your app:
      * // wrangler.toml
@@ -5513,7 +5513,7 @@ export interface Env {
      * {
      * "path": "main.ts",
      * "content": `
-     * import { z } from "zod/v3";
+     * import { z } from "zod";
      * import { withRuntime } from "@deco/workers-runtime";
      * const { Workflow, ...workerAPIs } = withRuntime({
      * fetch: async (request: Request, env: any) => {

@@ -8,9 +8,9 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { UserIndicator } from "./user-indicator.tsx";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import { ZodString } from "zod/v3";
+import { ZodString } from "zod";
 
 interface CollectionCardProps<T extends BaseCollectionEntity> {
   item: T;

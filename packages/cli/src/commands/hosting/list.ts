@@ -1,6 +1,6 @@
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import type { FileLike } from "./deploy.js";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 interface Options {
   workspace: string;

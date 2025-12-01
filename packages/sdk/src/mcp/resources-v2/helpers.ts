@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { type BinderImplementation, impl } from "../bindings/binder.ts";
 import { type AppContext, type ToolBinder } from "../index.ts";
 import {

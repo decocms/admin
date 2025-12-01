@@ -1,5 +1,5 @@
 import { ViewsListOutputSchema } from "@decocms/runtime/views";
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Binder } from "../index.ts";
 
 export const VIEW_BINDING_SCHEMA = [

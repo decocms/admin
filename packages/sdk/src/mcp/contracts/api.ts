@@ -1,5 +1,5 @@
 import { MD5 } from "object-hash";
-import z from "zod/v3";
+import z from "zod";
 import { WebCache } from "../../cache/index.ts";
 import { SWRCache } from "../../cache/swr.ts";
 import { AppName } from "../../common/index.ts";

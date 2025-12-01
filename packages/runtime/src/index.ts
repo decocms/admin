@@ -1,7 +1,7 @@
 /* oxlint-disable no-explicit-any */
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import {
   getReqToken,
   handleAuthCallback,

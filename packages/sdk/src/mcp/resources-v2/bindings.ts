@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Binder } from "../bindings/index.ts";
 import {
   createCreateInputSchema,

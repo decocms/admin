@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { basename } from "@std/path";
 import { embedMany } from "ai";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { KNOWLEDGE_BASE_GROUP as _KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
 import { type AppContext } from "../../mcp/context.ts";

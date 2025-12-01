@@ -53,7 +53,7 @@ import {
   type CallToolRequest,
   type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
-import z from "zod/v3";
+import z from "zod";
 import { HttpServerTransport } from "../http-server-transport";
 import { compose } from "./compose";
 

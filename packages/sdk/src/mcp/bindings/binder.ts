@@ -1,5 +1,5 @@
 /* oxlint-disable no-explicit-any */
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import type { MCPConnection } from "../../models/mcp.ts";
 import {
   createMCPFetchStub,

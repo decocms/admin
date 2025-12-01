@@ -39,7 +39,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });

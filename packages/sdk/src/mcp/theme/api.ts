@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
 import { assertHasLocator, assertTeamResourceAccess } from "../assertions.ts";

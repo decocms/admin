@@ -39,7 +39,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useResourceWatch } from "../../hooks/use-resource-watch.ts";
 import { usePersistedFilters } from "@deco/ui/hooks/use-persisted-filters.ts";

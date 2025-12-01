@@ -41,7 +41,7 @@ import {
 } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { ErrorBoundary } from "../../error-boundary";
 import { useCreateProjectWithRetry } from "../../hooks/use-create-project-with-retry.ts";
 import { useUser } from "../../hooks/use-user.ts";

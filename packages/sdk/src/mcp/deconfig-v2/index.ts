@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../index.ts";
 import {
   assertHasWorkspace,

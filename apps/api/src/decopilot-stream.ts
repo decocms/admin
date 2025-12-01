@@ -24,7 +24,7 @@ import {
   tool,
 } from "ai";
 import type { Context } from "hono";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { honoCtxToAppCtx } from "./api.ts";
 import type { AppEnv } from "./utils/context.ts";
 import { State } from "./utils/context.ts";

@@ -4,7 +4,7 @@
  * Get organization details by slug or ID
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth } from "../../core/mesh-context";
 

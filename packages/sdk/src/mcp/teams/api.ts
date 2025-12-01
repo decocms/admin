@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import JSZip from "jszip";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { BASE_ROLES_ID, RoleUpdateAction } from "../../auth/policy.ts";
 import { WebCache } from "../../cache/index.ts";
 import { TeamWithViews } from "../../crud/teams.ts";

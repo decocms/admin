@@ -139,7 +139,9 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       const parts = scope.split("::");
       if (parts.length === 2) {
         const [key, scopeName] = parts;
-        const stateValue = connection.configurationState[key];
+        if (!key || !scopeName) continue; // Skip invalid parts
+        
+        const stateValue: unknown = connection.configurationState[key];
 
         if (
           typeof stateValue === "object" &&
@@ -171,14 +173,18 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
           userId,
           name: `mesh-config-${connectionId}-${Date.now()}`,
           permissions,
-          metadata: { state: connection.configurationState },
+          metadata: {
+            state: connection.configurationState,
+            meshUrl: ctx.baseUrl, // Include mesh URL so receivers know where mesh is running
+          },
           expiresIn: 60 * 5, // 5 minutes - short lived
         },
       });
 
       // Extract the generated token from result
-      if (apiKeyResult.data?.key) {
-        configurationToken = apiKeyResult.data.key;
+      // Better Auth returns the key directly in the result
+      if (apiKeyResult && "key" in apiKeyResult) {
+        configurationToken = apiKeyResult.key;
       }
     } catch (error) {
       console.error("Failed to issue configuration token:", error);

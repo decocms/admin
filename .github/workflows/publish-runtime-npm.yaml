@@ -29,10 +29,6 @@ jobs:
         run: bun run scripts/generate-json-schema.ts
         working-directory: packages/runtime
 
-      - name: Build bindings
-        run: bun run build
-        working-directory: packages/bindings
-
       - name: Build package
         run: bun run build
         working-directory: packages/runtime

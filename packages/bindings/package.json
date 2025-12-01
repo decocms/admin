@@ -26,27 +26,27 @@
     },
     "./models": {
       "types": "./src/well-known/models.ts",
-      "default": "./dist/models.js"
+      "default": "./dist/well-known/models.js"
     },
     "./collections": {
       "types": "./src/well-known/collections.ts",
-      "default": "./dist/collections.js"
+      "default": "./dist/well-known/collections.js"
     },
     "./llm": {
       "types": "./src/well-known/language-model.ts",
-      "default": "./dist/language-model.js"
+      "default": "./dist/well-known/language-model.js"
     },
     "./connection": {
       "types": "./src/core/connection.ts",
-      "default": "./dist/connection.js"
+      "default": "./dist/core/connection.js"
     },
     "./client": {
       "types": "./src/core/client/index.ts",
-      "default": "./dist/client.js"
+      "default": "./dist/core/client/index.js"
     },
-    "./agents": {
-      "types": "./src/well-known/agents.ts",
-      "default": "./dist/agents.js"
+    "./agent": {
+      "types": "./src/well-known/agent.ts",
+      "default": "./dist/well-known/agent.js"
     }
   },
   "devDependencies": {

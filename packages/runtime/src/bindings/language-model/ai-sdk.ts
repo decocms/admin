@@ -46,9 +46,8 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
         (): Promise<Record<string, RegExp[]>> =>
           binding
             .LLM_METADATA({ modelId })
-            .then(
-              (metadata: { supportedUrls: Record<string, string[]> }) =>
-                toRegExp(metadata.supportedUrls),
+            .then((metadata: { supportedUrls: Record<string, string[]> }) =>
+              toRegExp(metadata.supportedUrls),
             ),
       );
 

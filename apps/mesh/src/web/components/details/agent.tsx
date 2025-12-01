@@ -2,11 +2,12 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { ArrowLeft, Info, Loader2, Upload } from "lucide-react";
+import { Info, Loader2, Upload } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { AgentSchema } from "@decocms/bindings/agent";
 import { z } from "zod";
+import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -125,76 +126,60 @@ export function AgentDetailsView({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-muted-foreground"
-            onClick={onBack}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <div className="h-6 w-px bg-border mx-2" />
-          {/* Tabs placeholder */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 bg-muted text-foreground font-normal"
-            >
-              Profile
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-muted-foreground font-normal"
-              disabled={true}
-            >
-              Tools
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-muted-foreground font-normal"
-              disabled={true}
-            >
-              Triggers
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-muted-foreground font-normal"
-              disabled={true}
-            >
-              Advanced
-            </Button>
-          </div>
-        </div>
+    <ViewLayout onBack={onBack}>
+      <ViewTabs>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-7 bg-muted text-foreground font-normal"
+        >
+          Profile
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-muted-foreground font-normal"
+          disabled={true}
+        >
+          Tools
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-muted-foreground font-normal"
+          disabled={true}
+        >
+          Triggers
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-muted-foreground font-normal"
+          disabled={true}
+        >
+          Advanced
+        </Button>
+      </ViewTabs>
 
-        <div>
-          <Button
-            className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-7 text-xs font-medium"
-            onClick={handleSubmit(onSubmit)}
-            disabled={!isDirty || isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save changes"
-            )}
-          </Button>
-        </div>
-      </div>
+      <ViewActions>
+        <Button
+          className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-7 text-xs font-medium"
+          onClick={handleSubmit(onSubmit)}
+          disabled={!isDirty || isSaving}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </ViewActions>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-5">
+      <div className="p-5">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Agent Identity Header */}
           <div className="flex gap-4 items-start">
@@ -237,6 +222,6 @@ export function AgentDetailsView({
           </div>
         </div>
       </div>
-    </div>
+    </ViewLayout>
   );
 }

@@ -1,29 +1,29 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { createToolCaller } from "@/tools/client";
+import { useConnection } from "@/web/hooks/collections/use-connection";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  ArrowLeft,
+  AlertCircle,
+  Box,
   Clock,
+  Code,
+  Copy,
   Database,
+  Loader2,
   Play,
   Plus,
-  Copy,
-  Box,
-  AlertCircle,
-  Code,
-  Loader2,
 } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
-import { useConnection } from "@/web/hooks/collections/use-connection";
-import { createToolCaller } from "@/tools/client";
-import { useMcp } from "use-mcp/react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@deco/ui/lib/utils.ts";
+import { useMcp } from "use-mcp/react";
+import { ViewLayout } from "./layout";
 
 // Helper to normalize URL for MCP
 const normalizeUrl = (url: string) => {
@@ -175,15 +175,7 @@ export function ToolDetailsView({
   }
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-auto">
-      {/* Header / Nav */}
-      <div className="flex items-center px-6 py-4 border-b border-border shrink-0">
-        <Button variant="ghost" onClick={onBack} className="mr-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      </div>
-
+    <ViewLayout onBack={onBack}>
       <div className="flex flex-col items-center w-full max-w-[1500px] mx-auto p-10 gap-4">
         {/* Tool Title & Description */}
         <div className="flex flex-col items-center gap-2 text-center">
@@ -434,6 +426,6 @@ export function ToolDetailsView({
           </div>
         </div>
       </div>
-    </div>
+    </ViewLayout>
   );
 }

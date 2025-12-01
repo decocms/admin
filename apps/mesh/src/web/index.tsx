@@ -70,10 +70,10 @@ const orgMembersRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/members.tsx")),
 });
 
-const orgMcpsRoute = createRoute({
+const orgConnectionsRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/mcps",
-  component: lazyRouteComponent(() => import("./routes/orgs/mcps.tsx")),
+  component: lazyRouteComponent(() => import("./routes/orgs/connections.tsx")),
   validateSearch: z.lazy(() =>
     z.object({
       action: z.enum(["create"]).optional(),
@@ -87,19 +87,19 @@ const orgSettingsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/settings.tsx")),
 });
 
-const mcpInspectorRoute = createRoute({
+const connectionLayoutRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/mcps/$connectionId",
   component: lazyRouteComponent(
-    () => import("./routes/orgs/mcp-inspector.tsx"),
+    () => import("./routes/orgs/connection-detail.tsx"),
   ),
 });
 
-const mcpItemDetailsRoute = createRoute({
+const collectionDetailsRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/mcps/$connectionId/$collectionName/$itemId",
   component: lazyRouteComponent(
-    () => import("./routes/orgs/mcp-item-details.tsx"),
+    () => import("./routes/orgs/collection-detail.tsx"),
   ),
 });
 
@@ -113,10 +113,10 @@ const shellRouteTree = shellLayout.addChildren([
   homeRoute,
   orgHomeRoute,
   orgMembersRoute,
-  orgMcpsRoute,
+  orgConnectionsRoute,
   orgSettingsRoute,
-  mcpInspectorRoute,
-  mcpItemDetailsRoute,
+  connectionLayoutRoute,
+  collectionDetailsRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([

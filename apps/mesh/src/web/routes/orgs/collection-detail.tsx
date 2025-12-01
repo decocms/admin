@@ -1,16 +1,22 @@
 import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
-import { AgentDetailsView } from "@/web/components/views/agent-details-view.tsx";
-import { ToolDetailsView } from "@/web/components/views/tool-details-view.tsx";
+import { AgentDetailsView } from "@/web/components/details/agent.tsx";
+import { ToolDetailsView } from "@/web/components/details/tool.tsx";
 import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-export default function McpItemDetails() {
-  const { connectionId, collectionName, itemId } = useParams({
+export default function CollectionDetails() {
+  const params = useParams({
     strict: false,
   });
+
+  const connectionId = params.connectionId;
+  const collectionName = params.collectionName
+    ? decodeURIComponent(params.collectionName)
+    : undefined;
+  const itemId = params.itemId ? decodeURIComponent(params.itemId) : undefined;
 
   // Use dynamic collection hook
   // collectionName can be "tools", "agents", etc.

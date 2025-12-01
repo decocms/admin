@@ -29,9 +29,7 @@ interface InviteMemberDialogProps {
   trigger: React.ReactNode;
 }
 
-const emailSchema = z.email({
-  error: "Invalid email address",
-});
+const emailSchema = z.string().email("Invalid email address");
 
 type InviteMemberFormData = {
   emails: string[];

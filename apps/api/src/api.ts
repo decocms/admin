@@ -74,7 +74,7 @@ import { HTTPException } from "hono/http-exception";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { studio } from "outerbase-browsable-do-enforced";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { handleDecopilotStream } from "./decopilot-stream.ts";

@@ -1,7 +1,7 @@
 import type { Client, Json } from "@deco/sdk/storage";
 import { WebCache } from "../cache/index.ts";
 import type { UserPrincipal } from "../mcp/index.ts";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { IsIntegrationSchema, Statement } from "../models/index.ts";
 
 // Cache duration in seconds (WebCache expects seconds)

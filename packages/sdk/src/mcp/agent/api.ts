@@ -1,5 +1,5 @@
 import type { AIAgent } from "@deco/ai";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { stub } from "../../stub.ts";
 import {
   assertHasWorkspace,

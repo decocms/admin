@@ -1,5 +1,5 @@
 // Types for DeconfigResource
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { DefaultEnv } from "../../index.ts";
 import type { MCPClientFetchStub, ToolBinder } from "../../mcp.ts";
 import type { BaseResourceDataSchema } from "../resources/bindings.ts";

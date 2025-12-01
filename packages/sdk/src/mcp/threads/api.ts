@@ -1,7 +1,7 @@
 import { D1Store } from "@mastra/cloudflare-d1";
 import { MessageList } from "@mastra/core/agent";
 import { UIMessage } from "ai";
-import { z } from "zod/v3";
+import { z } from "zod";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,

@@ -1,6 +1,6 @@
 import { listToolsByConnectionType } from "@deco/ai/mcp";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { AppName } from "../../common/index.ts";
 import { UserInputError } from "../../errors.ts";
 import { MCPConnectionSchema } from "../../models/mcp.ts";

@@ -42,7 +42,7 @@ import {
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker, useLocation } from "react-router";
 import { toast } from "sonner";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useTriggerToolCallListeners } from "../../hooks/use-tool-call-listener.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";

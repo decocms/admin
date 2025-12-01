@@ -1,5 +1,5 @@
 import { ViewsListOutputSchema } from "../views.ts";
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { ToolBinder } from "../mcp.ts";
 
 export const VIEW_BINDING = [

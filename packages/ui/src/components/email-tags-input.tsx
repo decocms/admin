@@ -2,7 +2,7 @@
 
 import type * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { Badge } from "./badge.tsx";
 import { Button } from "./button.tsx";
 import { Icon } from "./icon.tsx";

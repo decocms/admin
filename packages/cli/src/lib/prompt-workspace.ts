@@ -18,7 +18,7 @@ import { createWorkspaceClient } from "./mcp.js";
 import { readSession } from "./session.js";
 // @ts-ignore - does not have types
 import inquirerSearchList from "inquirer-search-list";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 interface Team {
   id: number;

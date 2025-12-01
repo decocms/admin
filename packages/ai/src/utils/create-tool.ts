@@ -1,6 +1,6 @@
 import { SpanStatusCode, trace } from "@deco/sdk/observability";
 import { tool, type Tool, type ToolCallOptions } from "ai";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import type { AIAgent, Env } from "../agent.ts";
 
 export interface ToolOptions<

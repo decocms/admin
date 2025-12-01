@@ -51,7 +51,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
 

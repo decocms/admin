@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { createInnateTool } from "./utils/create-tool.ts";
 import type { Agent } from "@deco/sdk";
 import {

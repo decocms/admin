@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import JSZip from "jszip";
 import {
   sanitizeProjectPath,

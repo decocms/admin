@@ -8,7 +8,7 @@
  * This binding uses collection bindings for LIST and GET operations (read-only).
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Binder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,

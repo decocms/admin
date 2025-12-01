@@ -17,7 +17,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useCallback, useEffect, useState } from "react";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";

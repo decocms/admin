@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser, assertPrincipalIsUser } from "../assertions.ts";
 import { UnauthorizedError } from "../index.ts";

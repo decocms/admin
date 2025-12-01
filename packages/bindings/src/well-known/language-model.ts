@@ -10,7 +10,7 @@
  * - Streaming endpoint information is included directly in the model entity schema.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { bindingClient, type ToolBinder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,

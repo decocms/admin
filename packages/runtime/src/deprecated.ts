@@ -2,7 +2,7 @@ import type { RequestContext } from "./index.ts";
 import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 import type { WorkspaceDB } from "./index.ts";
 import type { WorkflowDO } from "./workflow.ts";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 
 // oxlint-disable-next-line no-explicit-any
 export interface DeprecatedEnv<TSchema extends z.ZodTypeAny = any> {

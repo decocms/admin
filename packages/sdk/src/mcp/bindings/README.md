@@ -78,7 +78,7 @@ To create a new binding:
    input/output:
 
 ```ts
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Binder } from "../index.ts";
 
 const myInputSchema = z.object({ ... });

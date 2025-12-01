@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { z } from "zod/v3";
+import { z } from "zod";
 import {
   AgentSchema,
   NEW_AGENT_TEMPLATE,

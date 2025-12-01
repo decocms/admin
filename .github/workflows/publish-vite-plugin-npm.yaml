@@ -1,10 +1,10 @@
-name: Publish Runtime to NPM
+name: Publish Vite Plugin to NPM
 
 on:
   push:
     branches: [main]
     paths:
-      - "packages/runtime/**"
+      - "packages/vite-plugin-deco/**"
   workflow_dispatch:
 
 jobs:
@@ -25,9 +25,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Generate JSON schema
-        run: bun run scripts/generate-json-schema.ts
-        working-directory: packages/runtime
+      - name: Build package
+        run: bun run build
+        working-directory: packages/vite-plugin-deco
 
       - name: Check if version changed
         id: version-check
@@ -36,7 +36,7 @@ jobs:
           CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
 
           # Try to get the published version from npm (will fail if package doesn't exist)
-          PUBLISHED_VERSION=$(bun info @decocms/runtime version 2>/dev/null || echo "0.0.0")
+          PUBLISHED_VERSION=$(bun info @decocms/vite-plugin version 2>/dev/null || echo "0.0.0")
 
           echo "Current version: $CURRENT_VERSION"
           echo "Published version: $PUBLISHED_VERSION"
@@ -49,14 +49,14 @@ jobs:
             echo "version-changed=false" >> $GITHUB_OUTPUT
             echo "⏭️ Version unchanged ($CURRENT_VERSION), skipping publish"
           fi
-        working-directory: packages/runtime
+        working-directory: packages/vite-plugin-deco
 
       - name: Publish to NPM
         if: steps.version-check.outputs.version-changed == 'true'
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
           bun publish --access public
-        working-directory: packages/runtime
+        working-directory: packages/vite-plugin-deco
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -65,13 +65,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "runtime-v${{ steps.version-check.outputs.current-version }}" \
-            --title "@decocms/runtime v${{ steps.version-check.outputs.current-version }}" \
+          gh release create "@decocms/vite-plugin-v${{ steps.version-check.outputs.current-version }}" \
+            --title "@decocms/vite-plugin v${{ steps.version-check.outputs.current-version }}" \
             --notes "## Changes
 
-          Automated release of @decocms/runtime package.
+          Automated release of @decocms/vite-plugin package.
 
           ### Installation
           \`\`\`bash
-          npm install @decocms/runtime
+          npm install @decocms/vite-plugin
           \`\`\`"

@@ -26,12 +26,6 @@ jobs:
         run: |
           bun install
 
-      - name: Build bindings
-        working-directory: ./packages/bindings
-        run: |
-          bun install
-          bun run build
-
       - name: Publish
         uses: cloudflare/wrangler-action@v3
         with:

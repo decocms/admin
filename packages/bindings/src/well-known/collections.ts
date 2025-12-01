@@ -64,7 +64,7 @@ export const CollectionDeleteInputSchema = z.object({
   id: z.string().describe("ID of the entity to delete"),
 });
 
-function createCollectionListOutputSchema(entitySchema: z.ZodTypeAny) {
+export function createCollectionListOutputSchema(entitySchema: z.ZodTypeAny) {
   return z.object({
     items: z.array(entitySchema).describe("Array of collection items"),
     totalCount: z
@@ -80,7 +80,7 @@ function createCollectionListOutputSchema(entitySchema: z.ZodTypeAny) {
   });
 }
 
-function createCollectionGetOutputSchema(entitySchema: z.ZodTypeAny) {
+export function createCollectionGetOutputSchema(entitySchema: z.ZodTypeAny) {
   return z.object({
     item: entitySchema
       .nullable()
@@ -117,7 +117,7 @@ export function createCollectionUpdateOutputSchema(entitySchema: z.ZodTypeAny) {
   });
 }
 
-function createCollectionDeleteOutputSchema(entitySchema: z.ZodTypeAny) {
+export function createCollectionDeleteOutputSchema(entitySchema: z.ZodTypeAny) {
   return z.object({
     item: entitySchema.describe("The deleted entity"),
   });

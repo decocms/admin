@@ -11,7 +11,7 @@
  */
 
 import { SpanStatusCode } from "@opentelemetry/api";
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { MeshContext } from "./mesh-context";
 
 // ============================================================================

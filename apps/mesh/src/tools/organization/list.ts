@@ -4,7 +4,7 @@
  * List all organizations the user has access to
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { getUserId, requireAuth } from "../../core/mesh-context";
 

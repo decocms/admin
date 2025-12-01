@@ -11,7 +11,7 @@ import {
   tool,
 } from "ai";
 import { Hono } from "hono";
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { MeshContext } from "../../core/mesh-context";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import { ConnectionTools } from "../../tools";

@@ -4,7 +4,7 @@
  * Create a new MCP connection (organization-scoped) with collection binding compliance.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import {
   getUserId,

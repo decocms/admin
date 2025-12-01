@@ -4,7 +4,7 @@
  * Add a member to an organization
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth } from "../../core/mesh-context";
 

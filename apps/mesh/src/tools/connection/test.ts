@@ -4,7 +4,7 @@
  * Test connection health
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 
 export const COLLECTION_CONNECTIONS_TEST = defineTool({

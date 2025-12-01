@@ -1,5 +1,5 @@
 import type { ToolBinder } from "@/core/define-tool";
-import type z from "zod/v3";
+import type z from "zod";
 import type { MCPMeshTools } from "./index.ts";
 
 export type MCPClient<

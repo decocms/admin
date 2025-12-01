@@ -5,16 +5,16 @@
  * Supports filtering, sorting, and pagination.
  */
 
-import { type Binder, createBindingChecker } from "@decocms/bindings";
+import { createBindingChecker, type Binder } from "@decocms/bindings";
+import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import {
   CollectionListInputSchema,
   createCollectionListOutputSchema,
-  type WhereExpression,
   type OrderByExpression,
+  type WhereExpression,
 } from "@decocms/bindings/collections";
-import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";

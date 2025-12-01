@@ -12,6 +12,10 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await db.schema
     .alterTable("connections")
     .addColumn("configuration_state", "text") // Encrypted JSON state
+    .execute();
+
+  await db.schema
+    .alterTable("connections")
     .addColumn("configuration_scopes", "text") // JSON array of scope strings
     .execute();
 }
@@ -21,6 +25,10 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   await db.schema
     .alterTable("connections")
     .dropColumn("configuration_state")
+    .execute();
+
+  await db.schema
+    .alterTable("connections")
     .dropColumn("configuration_scopes")
     .execute();
 }

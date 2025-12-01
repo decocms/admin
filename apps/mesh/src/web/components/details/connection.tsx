@@ -55,7 +55,9 @@ export default function ConnectionInspectorView() {
   const navigate = useNavigate();
   // We can use search params for active tab if we want persistent tabs
   const search = useSearch({ strict: false }) as { tab?: string };
-  const [activeTabId, setActiveTabId] = useState<string>(search.tab || "tools");
+  const [activeTabId, setActiveTabId] = useState<string>(
+    search.tab || "settings",
+  );
 
   const { data: connection } = useConnection(connectionId);
   const connectionsCollection = useConnectionsCollection();
@@ -250,8 +252,8 @@ export default function ConnectionInspectorView() {
   }
 
   const tabs = [
-    { id: "tools", label: "Tools", count: mcp.tools?.length ?? 0 },
     { id: "settings", label: "Settings" },
+    { id: "tools", label: "Tools", count: mcp.tools?.length ?? 0 },
     ...(collections || []).map((c) => ({ id: c.name, label: c.displayName })),
   ];
 
@@ -552,12 +554,10 @@ function ConnectionSettingsForm({
             </span>
           </div>
 
-          {form.formState.isDirty && (
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          )}
+          <Button type="submit" disabled={!form.formState.isDirty || isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
         </div>
       </form>
     </Form>

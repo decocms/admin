@@ -140,7 +140,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       if (parts.length === 2) {
         const [key, scopeName] = parts;
         if (!key || !scopeName) continue; // Skip invalid parts
-        
+
         const stateValue: unknown = connection.configurationState[key];
 
         if (

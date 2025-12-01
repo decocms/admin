@@ -29,10 +29,6 @@ jobs:
         run: bun run scripts/generate-json-schema.ts
         working-directory: packages/runtime
 
-      - name: Build package
-        run: bun run build
-        working-directory: packages/runtime
-
       - name: Check if version changed
         id: version-check
         run: |

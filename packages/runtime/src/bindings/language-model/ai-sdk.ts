@@ -42,10 +42,14 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
       return await binding.COLLECTION_MODELS_LIST({});
     },
     languageModel: (modelId: string): LanguageModelV2 => {
-      const supportedUrls = lazy(() =>
-        binding
-          .LLM_METADATA({ modelId })
-          .then((metadata) => toRegExp(metadata.supportedUrls)),
+      const supportedUrls = lazy(
+        (): Promise<Record<string, RegExp[]>> =>
+          binding
+            .LLM_METADATA({ modelId })
+            .then(
+              (metadata: { supportedUrls: Record<string, string[]> }) =>
+                toRegExp(metadata.supportedUrls),
+            ),
       );
 
       return {

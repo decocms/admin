@@ -22,27 +22,27 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./models": {
-      "types": "./dist/models.d.ts",
+      "types": "./src/well-known/models.ts",
       "default": "./dist/models.js"
     },
     "./collections": {
-      "types": "./dist/collections.d.ts",
+      "types": "./src/well-known/collections.ts",
       "default": "./dist/collections.js"
     },
     "./llm": {
-      "types": "./dist/language-model.d.ts",
+      "types": "./src/well-known/language-model.ts",
       "default": "./dist/language-model.js"
     },
     "./connection": {
-      "types": "./dist/connection.d.ts",
+      "types": "./src/core/connection.ts",
       "default": "./dist/connection.js"
     },
     "./client": {
-      "types": "./dist/client.d.ts",
+      "types": "./src/core/client/index.ts",
       "default": "./dist/client.js"
     }
   },

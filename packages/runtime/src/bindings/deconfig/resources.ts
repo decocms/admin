@@ -103,7 +103,9 @@ export const createDeconfigResource = <
         });
 
         // Filter files that end with .json
-        const allFiles = Object.entries(filesList.files)
+        const allFiles = Object.entries(
+          (filesList as { files: Record<string, unknown> }).files,
+        )
           .filter(([path]) => path.endsWith(".json"))
           .map(([path, metadata]) => ({
             path,
@@ -189,8 +191,20 @@ export const createDeconfigResource = <
               aValue = getMetadataString(a.metadata, "description") || "";
               bValue = getMetadataString(b.metadata, "description") || "";
             } else {
-              aValue = a.metadata.mtime;
-              bValue = b.metadata.mtime;
+              aValue =
+                typeof a.metadata === "object" &&
+                a.metadata &&
+                "mtime" in a.metadata &&
+                typeof a.metadata.mtime === "number"
+                  ? a.metadata.mtime
+                  : 0;
+              bValue =
+                typeof b.metadata === "object" &&
+                b.metadata &&
+                "mtime" in b.metadata &&
+                typeof b.metadata.mtime === "number"
+                  ? b.metadata.mtime
+                  : 0;
             }
 
             if (sortOrder === "desc") {
@@ -226,11 +240,17 @@ export const createDeconfigResource = <
               uri,
               data: { name, description },
               created_at:
-                "ctime" in metadata && typeof metadata.ctime === "number"
+                typeof metadata === "object" &&
+                metadata &&
+                "ctime" in metadata &&
+                typeof metadata.ctime === "number"
                   ? new Date(metadata.ctime).toISOString()
                   : undefined,
               updated_at:
-                "mtime" in metadata && typeof metadata.mtime === "number"
+                typeof metadata === "object" &&
+                metadata &&
+                "mtime" in metadata &&
+                typeof metadata.mtime === "number"
                   ? new Date(metadata.mtime).toISOString()
                   : undefined,
               created_by: getMetadataString(metadata, "createdBy"),
@@ -264,12 +284,16 @@ export const createDeconfigResource = <
         const filePath = ResourcePath.build(directory, resourceId);
 
         try {
-          const fileData = await deconfig.READ_FILE({
+          const fileData = (await deconfig.READ_FILE({
             path: filePath,
             format: "plainString",
-          });
+          })) as {
+            content: string;
+            ctime: number;
+            mtime: number;
+          };
 
-          const content = fileData.content as string;
+          const content = fileData.content;
 
           // Parse the JSON content
           let parsedData: Record<string, unknown> = {};
@@ -285,8 +309,14 @@ export const createDeconfigResource = <
           return {
             uri,
             data: validatedData,
-            created_at: new Date(fileData.ctime).toISOString(),
-            updated_at: new Date(fileData.mtime).toISOString(),
+            created_at:
+              typeof fileData.ctime === "number"
+                ? new Date(fileData.ctime).toISOString()
+                : new Date().toISOString(),
+            updated_at:
+              typeof fileData.mtime === "number"
+                ? new Date(fileData.mtime).toISOString()
+                : new Date().toISOString(),
             created_by:
               parsedData &&
               "created_by" in parsedData &&
@@ -347,7 +377,7 @@ export const createDeconfigResource = <
         };
 
         const fileContent = JSON.stringify(resourceData, null, 2);
-        const putResult = await deconfig.PUT_FILE({
+        const putResult = (await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
@@ -357,7 +387,7 @@ export const createDeconfigResource = <
             name: validatedData.name || resourceId,
             description: validatedData.description || "",
           },
-        });
+        })) as { conflict?: boolean };
 
         if (putResult.conflict) {
           throw new UserInputError(
@@ -393,11 +423,11 @@ export const createDeconfigResource = <
         // Read existing file to get current data
         let existingData: Record<string, unknown> = {};
         try {
-          const fileData = await deconfig.READ_FILE({
+          const fileData = (await deconfig.READ_FILE({
             path: filePath,
             format: "plainString",
-          });
-          existingData = JSON.parse(fileData.content as string);
+          })) as { content: string };
+          existingData = JSON.parse(fileData.content);
         } catch {
           throw new NotFoundError(`Resource not found: ${uri}`);
         }
@@ -429,7 +459,7 @@ export const createDeconfigResource = <
 
         const fileContent = JSON.stringify(updatedData, null, 2);
 
-        const putResult = await deconfig.PUT_FILE({
+        const putResult = (await deconfig.PUT_FILE({
           path: filePath,
           content: fileContent,
           metadata: {
@@ -439,7 +469,7 @@ export const createDeconfigResource = <
             name: validatedData.name || resourceId,
             description: validatedData.description || "",
           },
-        });
+        })) as { conflict?: boolean };
 
         if (putResult.conflict) {
           throw new UserInputError(

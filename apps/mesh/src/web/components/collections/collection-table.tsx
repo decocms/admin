@@ -3,7 +3,7 @@ import {
   type TableColumn,
 } from "@deco/ui/components/resource-table.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import { UserIndicator } from "./user-indicator.tsx";
 import {
   DropdownMenu,

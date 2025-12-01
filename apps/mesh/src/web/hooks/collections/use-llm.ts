@@ -6,7 +6,7 @@
  */
 
 import type { ModelCollectionEntitySchema } from "@decocms/bindings/llm";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { UNKNOWN_CONNECTION_ID } from "../../../tools/client";
 import {
   useCollection,

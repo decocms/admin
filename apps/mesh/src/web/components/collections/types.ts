@@ -1,5 +1,5 @@
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import type { z } from "zod/v3";
+import type { z } from "zod";
 import type { ReactNode } from "react";
 import type { Filter } from "@deco/ui/components/filter-bar.tsx";
 import type { TableColumn } from "@deco/ui/components/resource-table.tsx";

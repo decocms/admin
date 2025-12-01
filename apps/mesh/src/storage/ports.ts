@@ -21,7 +21,10 @@ export interface ConnectionStoragePort {
     data: Partial<ConnectionEntity>,
   ): Promise<ConnectionEntity>;
   delete(id: string): Promise<void>;
-  testConnection(id: string): Promise<{ healthy: boolean; latencyMs: number }>;
+  testConnection(
+    id: string,
+    headers?: Record<string, string>,
+  ): Promise<{ healthy: boolean; latencyMs: number }>;
 }
 
 // ============================================================================

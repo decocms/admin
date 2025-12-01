@@ -8,7 +8,7 @@
     "dev-prod": "VITE_USE_LOCAL_BACKEND=false concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
     "fmt": "biome format --write",
     "lint": "oxlint",
-    "check": "NODE_OPTIONS=--max-old-space-size=16384 tsc --noEmit && cd apps/mesh && tsc --noEmit",
+    "check": "NODE_OPTIONS=--max-old-space-size=16384 tsc --noEmit",
     "test": "vitest run",
     "fmt:check": "biome format",
     "test:watch": "vitest",

@@ -31,6 +31,10 @@ jobs:
       - name: Run check
         run: bun run check
 
+      - name: Run mesh check
+        run: bun run check
+        working-directory: apps/mesh
+
       - name: Run test
         run: bun run test
 

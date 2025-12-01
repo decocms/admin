@@ -72,7 +72,7 @@ interface OAuthSession {
  * Output: { "self": ["*"] }
  *
  * Input: "openid profile email self:PROJECT_CREATE self:CONNECTION_LIST"
- * Output: { "self": ["PROJECT_CREATE", "CONNECTION_LIST"] }
+ * Output: { "self": ["PROJECT_CREATE", "COLLECTION_CONNECTIONS_LIST"] }
  */
 function scopesToPermissions(scopes: string): Record<string, string[]> {
   const permissions: Record<string, string[]> = {};

@@ -1,7 +1,7 @@
 import { Trigger } from "@deco/ai/actors";
 import { Hosts } from "@deco/sdk/hosts";
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 
 import type { QueryResult } from "../../storage/index.ts";

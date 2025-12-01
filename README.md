@@ -81,7 +81,7 @@ The **MCP Mesh** is the backbone of Deco — a distributed runtime that manages 
 _On the hosted platform, usage is metered by MCP calls._
 
 ```ts
-import { z } from "zod";
+import { z } from "zod/v3";
 import { defineTool } from "~/core/define-tool";
 
 export const CONNECTION_CREATE = defineTool({

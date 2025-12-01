@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
+import { z } from "zod/v3";
 import {
   createBindingChecker,
   type Binder,
@@ -87,7 +87,7 @@ describe("@decocms/bindings", () => {
       expect(checker.isImplementedBy).toBeInstanceOf(Function);
     });
 
-    it("should return true when all required tools are present with compatible schemas", async () => {
+    it("should return true when all required tools are present with compatible schemas", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -107,10 +107,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
 
-    it("should return true when optional tools are missing", async () => {
+    it("should return true when optional tools are missing", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -127,10 +127,10 @@ describe("@decocms/bindings", () => {
         // OPTIONAL_TOOL is missing, but that's OK
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
 
-    it("should return false when required tools are missing", async () => {
+    it("should return false when required tools are missing", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -142,10 +142,10 @@ describe("@decocms/bindings", () => {
         // ANOTHER_REQUIRED is missing
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should work with extra tools present", async () => {
+    it("should work with extra tools present", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -169,10 +169,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
 
-    it("should return false when tool input schema is incompatible (wrong type)", async () => {
+    it("should return false when tool input schema is incompatible (wrong type)", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -189,10 +189,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should return false when tool input schema is missing required fields", async () => {
+    it("should return false when tool input schema is missing required fields", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -210,13 +210,13 @@ describe("@decocms/bindings", () => {
       ];
 
       // json-schema-diff should detect missing required properties
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // Note: json-schema-diff may or may not detect missing required fields
       // depending on how it handles the schema conversion
       expect(typeof result).toBe("boolean");
     });
 
-    it("should return false when tool input schema has required field as optional", async () => {
+    it("should return false when tool input schema has required field as optional", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -234,12 +234,12 @@ describe("@decocms/bindings", () => {
       ];
 
       // json-schema-diff should detect that required field became optional
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // Note: json-schema-diff may not always detect required->optional changes
       expect(typeof result).toBe("boolean");
     });
 
-    it("should return false when tool output schema is incompatible (wrong type)", async () => {
+    it("should return false when tool output schema is incompatible (wrong type)", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -256,10 +256,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should return false when tool output schema is missing required fields", async () => {
+    it("should return false when tool output schema is missing required fields", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -277,12 +277,12 @@ describe("@decocms/bindings", () => {
       ];
 
       // json-schema-diff should detect missing required output properties
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // Note: json-schema-diff may or may not detect missing required fields
       expect(typeof result).toBe("boolean");
     });
 
-    it("should return false when tool has no input schema but binder requires one", async () => {
+    it("should return false when tool has no input schema but binder requires one", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -298,10 +298,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should return false when tool has no output schema but binder requires one", async () => {
+    it("should return false when tool has no output schema but binder requires one", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -317,10 +317,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should allow tool to accept additional input fields", async () => {
+    it("should allow tool to accept additional input fields", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -342,12 +342,12 @@ describe("@decocms/bindings", () => {
 
       // Tools should be able to accept additional fields (more permissive)
       // Note: json-schema-diff might be strict about additionalProperties
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // The result depends on json-schema-diff's handling of additionalProperties
       expect(typeof result).toBe("boolean");
     });
 
-    it("should allow tool to provide additional output fields", async () => {
+    it("should allow tool to provide additional output fields", () => {
       const checker = createBindingChecker(SAMPLE_BINDING);
 
       const tools = [
@@ -369,7 +369,7 @@ describe("@decocms/bindings", () => {
 
       // Tools should be able to provide additional output fields (more permissive)
       // Note: json-schema-diff might be strict about additionalProperties
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // The result depends on json-schema-diff's handling of additionalProperties
       expect(typeof result).toBe("boolean");
     });
@@ -402,7 +402,7 @@ describe("@decocms/bindings", () => {
       },
     ] as const satisfies Binder;
 
-    it("should pass when tool accepts all nested required fields", async () => {
+    it("should pass when tool accepts all nested required fields", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -431,10 +431,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
 
-    it("should pass when tool accepts additional nested fields", async () => {
+    it("should pass when tool accepts additional nested fields", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -469,12 +469,12 @@ describe("@decocms/bindings", () => {
 
       // Tools should be able to accept/provide additional fields
       // Note: json-schema-diff might be strict about additionalProperties
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // The result depends on json-schema-diff's handling of additionalProperties
       expect(typeof result).toBe("boolean");
     });
 
-    it("should fail when tool is missing nested required fields", async () => {
+    it("should fail when tool is missing nested required fields", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -503,10 +503,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should fail when tool has wrong nested field type", async () => {
+    it("should fail when tool has wrong nested field type", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -535,10 +535,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should fail when tool output is missing nested required fields", async () => {
+    it("should fail when tool output is missing nested required fields", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -567,10 +567,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
 
-    it("should fail when tool output has wrong nested field type", async () => {
+    it("should fail when tool output has wrong nested field type", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -600,12 +600,12 @@ describe("@decocms/bindings", () => {
       ];
 
       // json-schema-diff should detect type mismatch (enum vs string)
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // Note: json-schema-diff may or may not detect enum vs string differences
       expect(typeof result).toBe("boolean");
     });
 
-    it("should fail when tool has wrong array element type", async () => {
+    it("should fail when tool has wrong array element type", () => {
       const checker = createBindingChecker(COMPLEX_BINDING);
 
       const tools = [
@@ -634,12 +634,12 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(false);
+      expect(checker.isImplementedBy(tools)).toBe(false);
     });
   });
 
   describe("Edge cases for schema validation", () => {
-    it("should pass when binder has no input schema", async () => {
+    it("should pass when binder has no input schema", () => {
       const BINDING_NO_INPUT = [
         {
           name: "NO_INPUT_TOOL" as const,
@@ -660,11 +660,11 @@ describe("@decocms/bindings", () => {
 
       // When binder has z.any(), tool should be able to accept anything
       // Note: json-schema-diff might handle z.any() differently
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       expect(typeof result).toBe("boolean");
     });
 
-    it("should pass when binder has no output schema", async () => {
+    it("should pass when binder has no output schema", () => {
       const BINDING_NO_OUTPUT = [
         {
           name: "NO_OUTPUT_TOOL" as const,
@@ -682,10 +682,10 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
 
-    it("should pass when tool input schema accepts union types that include binder type", async () => {
+    it("should pass when tool input schema accepts union types that include binder type", () => {
       const BINDING = [
         {
           name: "UNION_TOOL" as const,
@@ -707,12 +707,12 @@ describe("@decocms/bindings", () => {
 
       // Note: This might fail with json-schema-diff if it's strict about unions
       // But the intent is that tool should accept what binder requires
-      const result = await checker.isImplementedBy(tools);
+      const result = checker.isImplementedBy(tools);
       // The result depends on how json-schema-diff handles unions
       expect(typeof result).toBe("boolean");
     });
 
-    it("should handle optional vs required fields correctly", async () => {
+    it("should handle optional vs required fields correctly", () => {
       const BINDING = [
         {
           name: "OPTIONAL_FIELD_TOOL" as const,
@@ -745,7 +745,7 @@ describe("@decocms/bindings", () => {
       ];
 
       // Tool missing optional field should pass
-      const result1 = await checker.isImplementedBy(tools1);
+      const result1 = checker.isImplementedBy(tools1);
       expect(typeof result1).toBe("boolean");
 
       // Tool that requires optional field should also pass (it accepts what binder requires)
@@ -764,11 +764,11 @@ describe("@decocms/bindings", () => {
       ];
 
       // Note: json-schema-diff might handle optional->required differently
-      const result2 = await checker.isImplementedBy(tools2);
+      const result2 = checker.isImplementedBy(tools2);
       expect(typeof result2).toBe("boolean");
     });
 
-    it("should handle record/object schemas correctly", async () => {
+    it("should handle record/object schemas correctly", () => {
       const BINDING = [
         {
           name: "RECORD_TOOL" as const,
@@ -796,7 +796,7 @@ describe("@decocms/bindings", () => {
         },
       ];
 
-      expect(await checker.isImplementedBy(tools)).toBe(true);
+      expect(checker.isImplementedBy(tools)).toBe(true);
     });
   });
 
@@ -829,7 +829,7 @@ describe("@decocms/bindings", () => {
   });
 
   describe("Real-world binding examples", () => {
-    it("should work with a channel binding", async () => {
+    it("should work with a channel binding", () => {
       const CHANNEL_BINDING = [
         {
           name: "DECO_CHAT_CHANNELS_JOIN" as const,
@@ -867,7 +867,7 @@ describe("@decocms/bindings", () => {
 
       // Should pass with all tools
       expect(
-        await checker.isImplementedBy([
+        checker.isImplementedBy([
           {
             name: "DECO_CHAT_CHANNELS_JOIN",
             inputSchema: z.object({
@@ -902,7 +902,7 @@ describe("@decocms/bindings", () => {
 
       // Should pass without optional tool
       expect(
-        await checker.isImplementedBy([
+        checker.isImplementedBy([
           {
             name: "DECO_CHAT_CHANNELS_JOIN",
             inputSchema: z.object({
@@ -925,7 +925,7 @@ describe("@decocms/bindings", () => {
 
       // Should fail without required tools
       expect(
-        await checker.isImplementedBy([
+        checker.isImplementedBy([
           {
             name: "DECO_CHAT_CHANNELS_JOIN",
             inputSchema: z.object({

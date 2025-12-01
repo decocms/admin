@@ -36,7 +36,7 @@ Bindings are a core concept for defining and enforcing standardized interfaces t
 A binding is an array of tool definitions, each specifying a name and input/output schemas:
 
 ```typescript
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { Binder } from "@decocms/bindings";
 
 // Define input/output schemas
@@ -242,7 +242,7 @@ All collection entity schemas must extend `BaseCollectionEntitySchema`, which re
 Collection bindings are a well-known binding pattern for SQL table-like structures. Import them from the well-known collections module:
 
 ```typescript
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createCollectionBindings } from "@decocms/bindings/collections";
 import { createBindingChecker } from "@decocms/bindings";
 
@@ -279,7 +279,7 @@ const availableTools = [
   { name: "COLLECTION_TODOS_DELETE" },
 ];
 
-const isImplemented = await todoChecker.isImplementedBy(availableTools);
+const isImplemented = todoChecker.isImplementedBy(availableTools);
 console.log(isImplemented); // true if all required tools are present
 ```
 
@@ -350,7 +350,7 @@ const availableTools = [
   { name: "COLLECTION_MODELS_GET" },
 ];
 
-const isImplemented = await modelsChecker.isImplementedBy(availableTools);
+const isImplemented = modelsChecker.isImplementedBy(availableTools);
 console.log(isImplemented); // true if all required tools are present
 ```
 
@@ -491,7 +491,7 @@ Collection bindings are designed to work with TanStack DB's query-collection. Th
 Here's how you would implement a collection binding in an MCP server:
 
 ```typescript
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createCollectionBindings } from "@decocms/bindings/collections";
 import { impl } from "@decocms/sdk/mcp/bindings/binder";
 

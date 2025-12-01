@@ -11,15 +11,11 @@ import {
   requireAuth,
   requireOrganization,
 } from "../../core/mesh-context";
-import {
-  ConnectionEntitySchema,
-  ConnectionCreateDataSchema,
-  connectionToEntity,
-} from "./schema";
+import { ConnectionEntitySchema, ConnectionCreateDataSchema } from "./schema";
+import { fetchToolsFromMCP } from "./fetch-tools";
 
 /**
  * Input schema for creating connections (wrapped in data field for collection compliance)
- * Uses the entity schema structure for collection binding compliance
  */
 const CreateInputSchema = z.object({
   data: ConnectionCreateDataSchema.describe(
@@ -42,46 +38,40 @@ export const COLLECTION_CONNECTIONS_CREATE = defineTool({
   outputSchema: CreateOutputSchema,
 
   handler: async (input, ctx) => {
-    // Require authentication
     requireAuth(ctx);
-
-    // Require organization context
     const organization = requireOrganization(ctx);
-
-    // Check authorization
     await ctx.access.check();
 
-    // Get user ID
     const userId = getUserId(ctx);
     if (!userId) {
       throw new Error("User ID required to create connection");
     }
 
-    const { data } = input;
+    // Build connection data
+    const connectionData = {
+      ...input.data,
+      organization_id: organization.id,
+      created_by: userId,
+    };
 
-    // Create connection - transform entity schema to storage format
+    // Fetch tools from the MCP server before creating the connection
+    const fetchedTools = await fetchToolsFromMCP({
+      id: "pending",
+      title: connectionData.title,
+      connection_url: connectionData.connection_url,
+      connection_token: connectionData.connection_token,
+      connection_headers: connectionData.connection_headers,
+    }).catch(() => null);
+    const tools = fetchedTools?.length ? fetchedTools : null;
+
+    // Create the connection with the fetched tools
     const connection = await ctx.storage.connections.create({
-      organizationId: organization.id,
-      createdById: userId,
-      name: data.title, // Map title to name
-      description: data.description ?? undefined,
-      icon: data.icon ?? undefined,
-      connection: {
-        type: data.connectionType,
-        url: data.connectionUrl,
-        token: data.connectionToken ?? undefined,
-        headers: data.connectionHeaders ?? undefined,
-      },
-      metadata: data.metadata ?? undefined,
+      ...connectionData,
+      tools,
     });
 
     return {
-      item: connectionToEntity(connection),
+      item: connection,
     };
   },
 });
-
-/**
- * @deprecated Use COLLECTION_CONNECTIONS_CREATE instead
- */
-export const CONNECTION_CREATE = COLLECTION_CONNECTIONS_CREATE;

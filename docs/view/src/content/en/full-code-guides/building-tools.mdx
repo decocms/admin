@@ -26,7 +26,7 @@ Every tool requires four components:
 
 ```typescript
 import { createTool } from "@deco/workers-runtime";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const createEmailTool = (env: Env) =>
   createTool({

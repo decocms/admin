@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { InternalServerError } from "../../errors.ts";
 import { assertHasUser, assertPrincipalIsUser } from "../assertions.ts";
 import { createTool } from "../members/api.ts";

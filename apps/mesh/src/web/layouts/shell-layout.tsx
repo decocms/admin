@@ -17,7 +17,7 @@ import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { MeshUserMenu } from "@/web/components/user-menu";
 import { authClient } from "@/web/lib/auth-client";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { SplashScreen } from "@/web/components/splash-screen";
 import { MeshSidebar } from "@/web/components/mesh-sidebar";
 import { MeshOrgSwitcher } from "@/web/components/org-switcher";
@@ -26,6 +26,7 @@ import { Locator } from "@/web/lib/locator";
 import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { DecoChatPanel } from "@/web/components/deco-chat-panel";
 import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -106,8 +107,15 @@ function OrgContextSetter({
 
 export default function ShellLayout() {
   const { org } = useParams({ strict: false });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { open: chatOpen, toggle: toggleChat } = useDecoChatOpen();
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage(
+    "mesh:sidebar-open",
+    true,
+  );
+  const [chatOpen, setChatOpen] = useDecoChatOpen();
+  const toggleChat = useCallback(
+    () => setChatOpen((prev) => !prev),
+    [setChatOpen],
+  );
   const hasOrg = !!org;
 
   return (

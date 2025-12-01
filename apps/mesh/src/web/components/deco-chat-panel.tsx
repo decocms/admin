@@ -1,12 +1,16 @@
-import { createToolCaller } from "@/tools/client";
-import type { ConnectionEntity } from "@/tools/connection/schema";
+import { EmptyState } from "@/web/components/empty-state";
+import { useAgentsFromConnection } from "@/web/hooks/collections/use-agent";
+import { useConnections } from "@/web/hooks/collections/use-connection";
+import { useLLMsFromConnection } from "@/web/hooks/collections/use-llm";
+import { useBindingConnections } from "@/web/hooks/use-binding";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
+import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
-import { useOrganizationSettings } from "@/web/hooks/use-organization-settings";
-import { KEYS } from "@/web/lib/query-keys";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useChat } from "@ai-sdk/react";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selector.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
@@ -16,51 +20,9 @@ import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-s
 import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
-import { ModelsBindingProvider } from "@deco/ui/providers/models-binding-provider.tsx";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
-import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
-
-// Model type matching ModelSchema from @decocms/bindings
-interface Model {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  created_by?: string;
-  updated_by?: string;
-  logo: string | null;
-  description: string | null;
-  capabilities: string[];
-  limits: {
-    contextWindow: number;
-    maxOutputTokens: number;
-  } | null;
-  costs: {
-    input: number;
-    output: number;
-  } | null;
-  provider:
-    | "openai"
-    | "anthropic"
-    | "google"
-    | "xai"
-    | "deepseek"
-    | "openai-compatible"
-    | null;
-  endpoint: {
-    url: string;
-    method: string;
-    contentType: string;
-    stream: boolean;
-  } | null;
-}
-
-interface ModelsResponse {
-  models: Model[];
-}
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -86,9 +48,8 @@ function createModelsTransport(
       return {
         body: {
           messages,
-          modelId: metadata?.modelId,
-          provider: metadata?.provider,
-          endpoint: metadata?.endpoint,
+          model: metadata?.model,
+          agent: metadata?.agent,
           stream: true,
         },
       };
@@ -97,10 +58,11 @@ function createModelsTransport(
 }
 
 export function DecoChatPanel() {
-  const { locator } = useProjectContext();
+  const { locator, org } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
-  const { setOpen } = useDecoChatOpen();
+  const [, setOpen] = useDecoChatOpen();
+  const navigate = useNavigate();
 
   // Use thread management from ChatThreadsProvider
   const {
@@ -121,140 +83,116 @@ export function DecoChatPanel() {
   // Sentinel ref for auto-scrolling to bottom
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const settingsQuery = useOrganizationSettings(organization?.id);
+  // Get all connections
+  const { data: allConnections } = useConnections();
+  const connectionsLoading = allConnections === undefined;
 
-  // Create tool caller for mesh API
-  const toolCaller = useMemo(() => createToolCaller(), []);
+  // Filter connections by binding type
+  const [modelsConnection] = useBindingConnections(allConnections, "LLMS");
+  const [agentsConnection] = useBindingConnections(allConnections, "AGENTS");
 
-  const connectionsQuery = useQuery({
-    queryKey: KEYS.connectionsByBinding(locator, "MODELS"),
-    queryFn: async () => {
-      return (await toolCaller("COLLECTION_CONNECTIONS_LIST", {
-        binding: "MODELS",
-      })) as { items: ConnectionEntity[] };
-    },
-    enabled: Boolean(locator),
-    staleTime: 30_000,
-  });
+  // Fetch models from the first LLM connection
+  const { data: modelsData } = useLLMsFromConnection(modelsConnection?.id);
+  const modelsLoading = modelsData === undefined;
 
-  const connection = useMemo(() => {
-    if (!connectionsQuery.data?.items || !settingsQuery.data) {
-      return undefined;
-    }
+  // Fetch agents from the first AGENTS connection
+  const { data: agentsData } = useAgentsFromConnection(agentsConnection?.id);
+  const agentsLoading = agentsData === undefined;
 
-    const connectionId = settingsQuery.data.modelsBindingConnectionId;
-    if (!connectionId) {
-      return undefined;
-    }
+  const isModelsLoading = connectionsLoading || modelsLoading;
+  const isAgentsLoading = connectionsLoading || agentsLoading;
 
-    const found = connectionsQuery.data.items.find(
-      (item) => item.id === connectionId,
-    );
-    if (!found) return undefined;
-
-    // Map collection entity to expected format (title -> name)
-    return {
-      ...found,
-      name: found.title, // Map title back to name
-    };
-  }, [connectionsQuery.data, settingsQuery.data]);
-
-  const modelsQuery = useQuery({
-    queryKey: KEYS.modelsList(orgSlug),
-    enabled: Boolean(orgSlug) && Boolean(connection),
-    staleTime: 30_000,
-    queryFn: async () => {
-      if (!connection) {
-        throw new Error("No connection available");
-      }
-
-      const callTool = createToolCaller(connection.id);
-      const result = await callTool("COLLECTION_MODELS_LIST", {});
-
-      return {
-        models: result?.items ?? [],
-      } as ModelsResponse;
-    },
-  });
-
-  // Transform models: add logos, convert costs, filter capabilities
+  // Transform models for UI display
   const models = useMemo(() => {
-    if (!modelsQuery.data?.models) return [];
+    if (!modelsData || !modelsConnection) return [];
 
-    // Provider logo mapping
-    const providerLogos: Record<string, string> = {
-      anthropic:
-        "https://api.dicebear.com/7.x/initials/svg?seed=Anthropic&backgroundColor=D97706",
-      openai:
-        "https://api.dicebear.com/7.x/initials/svg?seed=OpenAI&backgroundColor=10B981",
-      google:
-        "https://api.dicebear.com/7.x/initials/svg?seed=Google&backgroundColor=3B82F6",
-      "x-ai":
-        "https://api.dicebear.com/7.x/initials/svg?seed=xAI&backgroundColor=8B5CF6",
-    };
-
-    // Known visual capabilities to show
-    const knownCapabilities = new Set([
-      "reasoning",
-      "image-upload",
-      "file-upload",
-      "web-search",
-    ]);
-
-    return modelsQuery.data.models.map((model: Model) => {
-      // Extract provider from model id (e.g., "anthropic/claude-3.5-sonnet" → "anthropic")
-      const provider = model.id.split("/")[0] || "";
-      const logo = model.logo || providerLogos[provider] || null;
-
-      // Filter capabilities to only show known visual ones
-      const capabilities = model.capabilities.filter((cap) =>
-        knownCapabilities.has(cap),
-      );
-
-      // Convert costs from per-token to per-1M-tokens (multiply by 1,000,000)
-      const inputCost = model.costs?.input
-        ? model.costs.input * 1_000_000
-        : null;
-      const outputCost = model.costs?.output
-        ? model.costs.output * 1_000_000
-        : null;
-
-      return {
-        id: model.id,
-        model: model.title,
+    return modelsData
+      .map((model) => ({
+        ...model,
         name: model.title,
-        logo,
-        description: model.description,
-        capabilities,
-        inputCost,
-        outputCost,
-        contextWindow: model.limits?.contextWindow ?? null,
-        outputLimit: model.limits?.maxOutputTokens ?? null,
-        provider: model.provider, // Include provider type
-        endpoint: model.endpoint, // Include endpoint for completions API
-      };
-    });
-  }, [modelsQuery.data]);
+        contextWindow: model.limits?.contextWindow,
+        outputLimit: model.limits?.maxOutputTokens,
+        inputCost: model.costs?.input,
+        outputCost: model.costs?.output,
+        provider: model.provider,
+        connectionId: modelsConnection.id,
+        connectionName: modelsConnection.title,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [modelsData, modelsConnection]);
 
-  // Persist selected model per organization in localStorage
-  const [selectedModelId, setSelectedModelId] = useLocalStorage<
-    string | undefined
-  >(LOCALSTORAGE_KEYS.chatSelectedModel(locator), (existing) => existing);
+  // Transform agents with connection info
+  const agents = useMemo(() => {
+    if (!agentsData || !agentsConnection) return [];
+
+    return agentsData.map((agent) => ({
+      ...agent,
+      connectionId: agentsConnection.id,
+      connectionName: agentsConnection.title,
+    }));
+  }, [agentsData, agentsConnection]);
+
+  // Persist selected model (including connectionId) per organization in localStorage
+  const [selectedModelState, setSelectedModelState] = useLocalStorage<{
+    modelId: string;
+    connectionId: string;
+  } | null>(
+    LOCALSTORAGE_KEYS.chatSelectedModel(locator),
+    (existing) => existing as { modelId: string; connectionId: string } | null,
+  );
+
+  // Persist selected agent per organization in localStorage
+  const [selectedAgentState, setSelectedAgentState] = useLocalStorage<{
+    agentId: string;
+    connectionId: string;
+  } | null>(`${locator}:selected-agent`, () => null);
 
   // Initialize with first model
   useEffect(() => {
-    if (models.length > 0 && !selectedModelId) {
+    if (models.length > 0 && !selectedModelState) {
       const firstModel = models[0];
       if (firstModel) {
-        setSelectedModelId(firstModel.id);
+        setSelectedModelState({
+          modelId: firstModel.id,
+          connectionId: firstModel.connectionId,
+        });
       }
     }
-  }, [models, selectedModelId, setSelectedModelId]);
+  }, [models, selectedModelState, setSelectedModelState]);
+
+  // Initialize with first agent
+  useEffect(() => {
+    if (agents.length > 0 && !selectedAgentState) {
+      const firstAgent = agents[0];
+      if (firstAgent) {
+        setSelectedAgentState({
+          agentId: firstAgent.id,
+          connectionId: firstAgent.connectionId,
+        });
+      }
+    }
+  }, [agents, selectedAgentState, setSelectedAgentState]);
 
   // Get selected model info
   const selectedModel = useMemo(
-    () => models.find((m) => m.id === selectedModelId),
-    [models, selectedModelId],
+    () =>
+      models.find(
+        (m) =>
+          m.id === selectedModelState?.modelId &&
+          m.connectionId === selectedModelState?.connectionId,
+      ),
+    [models, selectedModelState],
+  );
+
+  // Get selected agent info
+  const selectedAgent = useMemo(
+    () =>
+      agents.find(
+        (a) =>
+          a.id === selectedAgentState?.agentId &&
+          a.connectionId === selectedAgentState?.connectionId,
+      ),
+    [agents, selectedAgentState],
   );
 
   // Create transport (stable, doesn't depend on selected model)
@@ -309,41 +247,74 @@ export function DecoChatPanel() {
     }
   }, [chat.messages]);
 
-  // ModelsBindingProvider value
-  const modelsBindingValue = useMemo(
-    () => ({
-      models,
-      selectedModel: selectedModelId,
-      setSelectedModel: setSelectedModelId,
-      isLoading: modelsQuery.isLoading,
-      error: modelsQuery.error as Error | undefined,
-    }),
-    [
-      models,
-      selectedModelId,
-      modelsQuery.isLoading,
-      modelsQuery.error,
-      setSelectedModelId,
-    ],
-  );
+  // Transform agents to selector options
+  const agentSelectorOptions = useMemo(() => {
+    return agents.map((agent) => ({
+      id: `${agent.connectionId}:${agent.id}`,
+      name: agent.title,
+      avatar: agent.avatar,
+      description: agent.description,
+    }));
+  }, [agents]);
+
+  // Transform models to selector options
+  // We ensure the structure matches ModelInfo expected by the rich selector
+  const modelSelectorOptions = useMemo(() => {
+    return models.map((model) => ({
+      ...model,
+      // Ensure we have a unique ID for selection if needed, or just use model.id
+      // The selector will use this ID for value
+      // If we need composite ID for models too, we might need to adjust.
+      // For now assuming model.id is sufficient or we are handling it via state.
+      // Wait, we need to handle selection correctly.
+      // The current selection state uses { modelId, connectionId }.
+      // We can pass a composite ID to the selector or just use model.id if unique within the list.
+      // Let's use model.id for now as the list is derived from modelsData which implies one connection for now?
+      // No, modelsData comes from `useLLMsFromConnection(modelsConnection?.id)`.
+      // So all models are from the same connection.
+      // But if we had multiple connections, we'd need composite IDs.
+      // The selector uses `value` prop to match item ID.
+      id: model.id,
+    }));
+  }, [models]);
 
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
     async (message: UIMessage) => {
-      if (!selectedModelId || !selectedModel?.endpoint) {
-        console.error("No model or endpoint configured");
+      if (!selectedModelState || !selectedModel) {
+        // Console error kept for critical missing configuration
+        console.error("No model configured");
         return;
       }
 
-      // Prepare metadata with current model configuration
-      const metadata = {
-        modelId: selectedModelId,
-        provider: selectedModel.provider,
+      // Prepare metadata with model and agent configuration
+      const metadata: {
+        model: { id: string; connectionId: string; provider?: string | null };
+        agent?: {
+          id: string;
+          instructions: string;
+          tool_set: Record<string, string[]>;
+        };
+      } = {
+        model: {
+          id: selectedModelState.modelId,
+          connectionId: selectedModelState.connectionId,
+          provider: selectedModel.provider,
+        },
       };
+
+      // Add agent if selected
+      if (selectedAgent) {
+        metadata.agent = {
+          id: selectedAgent.id,
+          instructions: selectedAgent.instructions,
+          tool_set: selectedAgent.tool_set,
+        };
+      }
 
       return await chat.sendMessage(message, { metadata });
     },
-    [chat, selectedModelId, selectedModel],
+    [chat, selectedModelState, selectedModel, selectedAgent],
   );
 
   const handleSendMessage = useCallback(
@@ -365,20 +336,42 @@ export function DecoChatPanel() {
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, isLoading, selectedModelId, wrappedSendMessage],
+    [input, isLoading, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
     chat.stop?.();
   }, [chat]);
 
-  // Show skeleton while loading models
-  if (modelsQuery.isLoading) {
+  // Show skeleton while loading connections
+  if (isModelsLoading || isAgentsLoading) {
     return <DecoChatSkeleton />;
   }
 
-  return (
-    <ModelsBindingProvider value={modelsBindingValue}>
+  // Check if both required bindings are present
+  const hasModelsBinding = !!modelsConnection;
+  const hasAgentsBinding = !!agentsConnection;
+  const hasBothBindings = hasModelsBinding && hasAgentsBinding;
+
+  // If missing bindings, show empty state with appropriate message
+  if (!hasBothBindings) {
+    let title: string;
+    let description: string;
+
+    if (!hasModelsBinding && !hasAgentsBinding) {
+      title = "Connect your providers";
+      description =
+        "Add MCPs with llm and agents to unlock AI-powered features.";
+    } else if (!hasModelsBinding) {
+      title = "No model provider connected";
+      description =
+        "Connect to a model provider to unlock AI-powered features.";
+    } else {
+      title = "No agents configured";
+      description = "Connect to an agents provider to use AI assistants.";
+    }
+
+    return (
       <DecoChatAside className="h-full">
         <DecoChatAside.Header>
           <div className="flex items-center gap-2">
@@ -390,23 +383,6 @@ export function DecoChatPanel() {
             <span className="text-sm font-medium">deco chat</span>
           </div>
           <div className="flex items-center gap-1">
-            {!isEmpty && (
-              <button
-                type="button"
-                onClick={() => {
-                  // Create new thread (copies tabs from current)
-                  copyThreadTabs();
-                }}
-                className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
-                title="New chat"
-              >
-                <Icon
-                  name="add"
-                  size={16}
-                  className="text-muted-foreground group-hover:text-foreground transition-colors"
-                />
-              </button>
-            )}
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -421,65 +397,160 @@ export function DecoChatPanel() {
             </button>
           </div>
         </DecoChatAside.Header>
-
-        <DecoChatAside.Content>
-          {modelsQuery.error && (
-            <div className="p-4">
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {(modelsQuery.error as Error).message}
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {!modelsQuery.isLoading && models.length === 0 && (
-            <div className="p-4 text-xs text-muted-foreground">
-              The configured Models Provider isn't returning any models. Review
-              it under Settings → Models Provider; no extra setup is required
-              inside this chat.
-            </div>
-          )}
-
-          {isEmpty ? (
-            <DecoChatEmptyState
-              title="Ask deco chat"
-              description="Ask anything about configuring model providers or using MCP Mesh. The assistant uses the Models Provider configured in Settings for this organization."
-              avatar="/img/logo-tiny.svg"
-            />
-          ) : (
-            <DecoChatMessages>
-              {chat.messages.map((message: UIMessage, index: number) => (
-                <DecoChatMessage
-                  key={message.id}
-                  message={message}
-                  timestamp={new Date().toISOString()}
-                  isStreaming={isLoading && index === chat.messages.length - 1}
-                />
-              ))}
-              {/* Sentinel element for smooth scrolling to bottom */}
-              <div ref={sentinelRef} className="h-0" />
-            </DecoChatMessages>
-          )}
-        </DecoChatAside.Content>
-
-        <DecoChatAside.Footer>
-          <DecoChatInputV2
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSendMessage}
-            onStop={handleStop}
-            disabled={models.length === 0 || !selectedModelId}
-            isStreaming={isLoading}
-            placeholder={
-              models.length === 0
-                ? "Configure a Models Provider in Settings to start chatting"
-                : "Ask anything or @ for context"
+        <DecoChatAside.Content className="flex flex-col items-center">
+          <EmptyState
+            title={title}
+            description={description}
+            actions={
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate({
+                    to: "/$org/mcps",
+                    params: { org },
+                    search: { action: "create" },
+                  })
+                }
+              >
+                Add connection
+              </Button>
             }
-            rightActions={<DecoChatModelSelectorRich />}
           />
-        </DecoChatAside.Footer>
+        </DecoChatAside.Content>
       </DecoChatAside>
-    </ModelsBindingProvider>
+    );
+  }
+
+  return (
+    <DecoChatAside className="h-full">
+      <DecoChatAside.Header>
+        <div className="flex items-center gap-2">
+          <img
+            src={selectedAgent?.avatar || CAPYBARA_AVATAR_URL}
+            alt="deco chat"
+            className="size-5 rounded"
+          />
+          <span className="text-sm font-medium">
+            {selectedAgent?.title || "deco chat"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {!isEmpty && (
+            <button
+              type="button"
+              onClick={() => {
+                // Create new thread (copies tabs from current)
+                copyThreadTabs();
+              }}
+              className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
+              title="New chat"
+            >
+              <Icon
+                name="add"
+                size={16}
+                className="text-muted-foreground group-hover:text-foreground transition-colors"
+              />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent transition-colors group cursor-pointer"
+            title="Close chat"
+          >
+            <Icon
+              name="close"
+              size={16}
+              className="text-muted-foreground group-hover:text-foreground transition-colors"
+            />
+          </button>
+        </div>
+      </DecoChatAside.Header>
+
+      <DecoChatAside.Content>
+        {isEmpty ? (
+          <DecoChatEmptyState
+            title={selectedAgent?.title || "Ask deco chat"}
+            description={
+              selectedAgent?.description ||
+              "Ask anything about configuring model providers or using MCP Mesh."
+            }
+            avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
+          />
+        ) : (
+          <DecoChatMessages>
+            {chat.messages.map((message: UIMessage, index: number) => (
+              <DecoChatMessage
+                key={message.id}
+                message={message}
+                timestamp={new Date().toISOString()}
+                isStreaming={isLoading && index === chat.messages.length - 1}
+              />
+            ))}
+            {/* Sentinel element for smooth scrolling to bottom */}
+            <div ref={sentinelRef} className="h-0" />
+          </DecoChatMessages>
+        )}
+      </DecoChatAside.Content>
+
+      <DecoChatAside.Footer>
+        <DecoChatInputV2
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSendMessage}
+          onStop={handleStop}
+          disabled={models.length === 0 || !selectedModelState}
+          isStreaming={isLoading}
+          placeholder={
+            models.length === 0
+              ? "Add an LLM binding connection to start chatting"
+              : "Ask anything or @ for context"
+          }
+          leftActions={
+            <div className="flex items-center gap-2">
+              {/* Agent Selector - Rich style */}
+              {agents.length > 0 && (
+                <DecoChatAgentSelector
+                  agents={agentSelectorOptions}
+                  selectedAgentId={
+                    selectedAgentState
+                      ? `${selectedAgentState.connectionId}:${selectedAgentState.agentId}`
+                      : undefined
+                  }
+                  onAgentChange={(value) => {
+                    if (!value) return;
+                    const [connectionId, agentId] = value.split(":");
+                    if (connectionId && agentId) {
+                      setSelectedAgentState({ agentId, connectionId });
+                    }
+                  }}
+                  placeholder="Agent"
+                  variant="bordered"
+                />
+              )}
+              {/* Model Selector - Rich style */}
+              {models.length > 0 && (
+                <DecoChatModelSelectorRich
+                  models={modelSelectorOptions}
+                  selectedModelId={selectedModelState?.modelId}
+                  onModelChange={(modelId) => {
+                    if (!modelId) return;
+                    const model = models.find((m) => m.id === modelId);
+                    if (model) {
+                      setSelectedModelState({
+                        modelId: model.id,
+                        connectionId: model.connectionId,
+                      });
+                    }
+                  }}
+                  placeholder="Model"
+                  variant="borderless"
+                />
+              )}
+            </div>
+          }
+        />
+      </DecoChatAside.Footer>
+    </DecoChatAside>
   );
 }

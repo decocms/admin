@@ -1,0 +1,68 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { ArrowLeft } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
+const TABS_PORTAL_ID = "view-details-tabs-portal";
+const ACTIONS_PORTAL_ID = "view-details-actions-portal";
+
+interface PortalProps {
+  children: ReactNode;
+}
+
+function usePortal(id: string) {
+  const [element, setElement] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setElement(document.getElementById(id));
+  }, [id]);
+
+  return element;
+}
+
+export function ViewTabs({ children }: PortalProps) {
+  const target = usePortal(TABS_PORTAL_ID);
+  if (!target) return null;
+  return createPortal(children, target);
+}
+
+export function ViewActions({ children }: PortalProps) {
+  const target = usePortal(ACTIONS_PORTAL_ID);
+  if (!target) return null;
+  return createPortal(children, target);
+}
+
+interface ViewLayoutProps {
+  children: ReactNode;
+  onBack: () => void;
+}
+
+export function ViewLayout({ children, onBack }: ViewLayoutProps) {
+  return (
+    <div className="flex flex-col h-full bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-muted-foreground"
+            onClick={onBack}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <div className="h-6 w-px bg-border mx-2" />
+          {/* Tabs Slot */}
+          <div id={TABS_PORTAL_ID} className="flex items-center gap-2" />
+        </div>
+
+        {/* Actions Slot */}
+        <div id={ACTIONS_PORTAL_ID} className="flex items-center gap-2" />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">{children}</div>
+    </div>
+  );
+}

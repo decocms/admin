@@ -1,5 +1,5 @@
 import { mimeType } from "@decocms/runtime/resources";
-import z from "zod";
+import z from "zod/v3";
 import { NotFoundError, UserInputError } from "../../index.ts";
 import {
   assertHasWorkspace,

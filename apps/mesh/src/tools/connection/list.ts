@@ -12,123 +12,17 @@ import {
   type WhereExpression,
   type OrderByExpression,
 } from "@decocms/bindings/collections";
-import { MODELS_BINDING } from "@decocms/bindings/models";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { appendFile } from "fs/promises";
+import { AGENTS_BINDING } from "@decocms/bindings/agent";
+import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { z } from "zod/v3";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
-import type { MCPConnection, ToolDefinition } from "../../storage/types";
-import { ConnectionEntitySchema, connectionToEntity } from "./schema";
-
-async function logConnectionDebug(message: string) {
-  try {
-    await appendFile(
-      "./connection-tools.log",
-      `[${new Date().toISOString()}] ${message}\n`,
-    );
-  } catch {
-    // ignore logging errors
-  }
-}
+import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
-  MODELS: MODELS_BINDING,
+  LLM: LANGUAGE_MODEL_BINDING,
+  AGENTS: AGENTS_BINDING,
 };
-
-async function createConnectionClient(connection: MCPConnection) {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
-  }
-
-  if (connection.connectionHeaders) {
-    Object.assign(headers, connection.connectionHeaders);
-  }
-
-  const transport = new StreamableHTTPClientTransport(
-    new URL(connection.connectionUrl),
-    {
-      requestInit: {
-        headers,
-      },
-    },
-  );
-
-  const client = new Client({
-    name: "mcp-mesh-connection-list",
-    version: "1.0.0",
-  });
-
-  await client.connect(transport);
-  return client;
-}
-
-async function fetchToolsFromMCP(
-  connection: MCPConnection,
-): Promise<ToolDefinition[] | null> {
-  let client: Client | null = null;
-  try {
-    await logConnectionDebug(
-      `Fetching tools for connection ${connection.id} (${connection.name})`,
-    );
-
-    // Add timeout to prevent hanging connections
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Connection timeout")), 3000);
-    });
-
-    const fetchPromise = async () => {
-      const c = await createConnectionClient(connection);
-      client = c;
-      return await c.listTools();
-    };
-
-    const result = await Promise.race([fetchPromise(), timeoutPromise]);
-
-    if (!result.tools || result.tools.length === 0) {
-      await logConnectionDebug(
-        `No tools returned for connection ${connection.id}`,
-      );
-      return null;
-    }
-
-    const tools = result.tools.map((tool) => ({
-      name: tool.name,
-      description: tool.description ?? undefined,
-      inputSchema: tool.inputSchema ?? {},
-      outputSchema: tool.outputSchema ?? undefined,
-    }));
-    await logConnectionDebug(
-      `Fetched ${tools.length} tools for connection ${connection.id}`,
-    );
-    return tools;
-  } catch (error) {
-    console.error(
-      `Failed to fetch tools from connection ${connection.id}:`,
-      error,
-    );
-    await logConnectionDebug(
-      `Error fetching tools for connection ${connection.id}: ${
-        (error as Error).message
-      }`,
-    );
-    return null;
-  } finally {
-    try {
-      const c = client as Client | null;
-      if (c && typeof c.close === "function") {
-        await c.close();
-      }
-    } catch {
-      // Ignore close errors
-    }
-  }
-}
 
 /**
  * Convert SQL LIKE pattern to regex pattern by tokenizing
@@ -160,7 +54,7 @@ function convertLikeToRegex(likePattern: string): string {
  * Evaluate a where expression against a connection entity
  */
 function evaluateWhereExpression(
-  connection: MCPConnection,
+  connection: ConnectionEntity,
   where: WhereExpression,
 ): boolean {
   if ("conditions" in where) {
@@ -214,20 +108,14 @@ function evaluateWhereExpression(
 }
 
 /**
- * Get a field value from a connection, handling nested paths and field name mappings
+ * Get a field value from a connection, handling nested paths
+ * Since ConnectionEntity now uses snake_case matching the entity schema, no mapping needed
  */
-function getFieldValue(connection: MCPConnection, fieldPath: string): unknown {
-  // Map collection field names to MCPConnection field names
-  const fieldMapping: Record<string, string> = {
-    title: "name",
-    created_at: "createdAt",
-    updated_at: "updatedAt",
-    created_by: "createdById",
-  };
-
-  const mappedPath = fieldMapping[fieldPath] || fieldPath;
-
-  const parts = mappedPath.split(".");
+function getFieldValue(
+  connection: ConnectionEntity,
+  fieldPath: string,
+): unknown {
+  const parts = fieldPath.split(".");
   let value: unknown = connection;
   for (const part of parts) {
     if (value == null || typeof value !== "object") return undefined;
@@ -240,9 +128,9 @@ function getFieldValue(connection: MCPConnection, fieldPath: string): unknown {
  * Apply orderBy expressions to sort connections
  */
 function applyOrderBy(
-  connections: MCPConnection[],
+  connections: ConnectionEntity[],
   orderBy: OrderByExpression[],
-): MCPConnection[] {
+): ConnectionEntity[] {
   return [...connections].sort((a, b) => {
     for (const order of orderBy) {
       const fieldPath = order.field.join(".");
@@ -319,41 +207,9 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
       ? createBindingChecker(bindingDefinition)
       : undefined;
 
-    let connections = await ctx.storage.connections.list(organization.id);
+    const connections = await ctx.storage.connections.list(organization.id);
 
-    // If a binding filter is specified, fetch tools for connections that need them
-    if (bindingChecker) {
-      const connectionsNeedingTools = connections.filter(
-        (conn) => !conn.tools || conn.tools.length === 0,
-      );
-
-      // Fetch tools for all connections in parallel
-      if (connectionsNeedingTools.length > 0) {
-        const fetchResults = await Promise.all(
-          connectionsNeedingTools.map(async (connection) => {
-            const tools = await fetchToolsFromMCP(connection);
-            return { connection, tools };
-          }),
-        );
-
-        // Update connections with fetched tools
-        await Promise.all(
-          fetchResults.map(async ({ connection, tools }) => {
-            if (tools && tools.length > 0) {
-              await ctx.storage.connections.update(connection.id, { tools });
-              await logConnectionDebug(
-                `Stored ${tools.length} tools for connection ${connection.id}`,
-              );
-            }
-          }),
-        );
-
-        // Refresh connections list after updates
-        connections = await ctx.storage.connections.list(organization.id);
-      }
-    }
-
-    // Filter connections by binding if specified
+    // Filter connections by binding if specified (tools are pre-populated at create/update time)
     let filteredConnections = bindingChecker
       ? await Promise.all(
           connections.map(async (connection) => {
@@ -361,7 +217,7 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
               return null;
             }
 
-            const isValid = await bindingChecker.isImplementedBy(
+            const isValid = bindingChecker.isImplementedBy(
               connection.tools.map((t) => ({
                 name: t.name,
                 inputSchema: t.inputSchema as Record<string, unknown>,
@@ -371,31 +227,12 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
               })),
             );
 
-            if (!isValid) {
-              logConnectionDebug(
-                `Connection ${connection.id} does not implement binding`,
-              ).catch(() => {});
-              return null;
-            }
-
-            logConnectionDebug(
-              `Connection ${connection.id} implements binding with tools: ${connection.tools
-                .map((t) => t.name)
-                .join(", ")}`,
-            ).catch(() => {});
-
-            return connection;
+            return isValid ? connection : null;
           }),
         ).then((results) =>
-          results.filter((c): c is MCPConnection => c !== null),
+          results.filter((c): c is ConnectionEntity => c !== null),
         )
       : connections;
-
-    if (bindingChecker) {
-      logConnectionDebug(
-        `COLLECTION_CONNECTIONS_LIST returning ${filteredConnections.length} connection(s) for binding ${input.binding}`,
-      ).catch(() => {});
-    }
 
     // Apply where filter if specified
     if (input.where) {
@@ -420,14 +257,9 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
     const hasMore = offset + limit < totalCount;
 
     return {
-      items: paginatedConnections.map(connectionToEntity),
+      items: paginatedConnections,
       totalCount,
       hasMore,
     };
   },
 });
-
-/**
- * @deprecated Use COLLECTION_CONNECTIONS_LIST instead
- */
-export const CONNECTION_LIST = COLLECTION_CONNECTIONS_LIST;

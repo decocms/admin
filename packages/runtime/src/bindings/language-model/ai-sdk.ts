@@ -3,8 +3,8 @@ import type {
   LanguageModelV2CallOptions,
   ProviderV2,
 } from "@ai-sdk/provider";
-import { LanguageModelBinding } from "@decocms/bindings/llm";
-import { lazy, responseToStream } from "./utils";
+import type { LanguageModelBinding } from "@decocms/bindings/llm";
+import { lazy, responseToStream } from "./utils.ts";
 
 const toRegExp = (supportedUrls: Record<string, string[]>) => {
   return Object.fromEntries(
@@ -20,7 +20,7 @@ type LLMBindingClient = ReturnType<
 >;
 
 export interface Provider extends ProviderV2 {
-  listModels: LLMBindingClient["COLLECTION_MODELS_LIST"];
+  listModels: LLMBindingClient["COLLECTION_LLM_LIST"];
 }
 
 /**
@@ -39,7 +39,7 @@ export const createProvider = (binding: LLMBindingClient): Provider => {
       );
     },
     listModels: async () => {
-      return await binding.COLLECTION_MODELS_LIST({});
+      return await binding.COLLECTION_LLM_LIST({});
     },
     languageModel: (modelId: string): LanguageModelV2 => {
       const supportedUrls = lazy(

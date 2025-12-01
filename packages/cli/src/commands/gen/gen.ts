@@ -340,7 +340,7 @@ export const genEnv = async ({
     // Generated types - do not edit manually
 ${tsTypes}
    
-  import { z } from "zod";
+  import { z } from "zod/v3";
 
   export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
     [K in keyof T]: ((input: Parameters<T[K]>[0]) => Promise<Awaited<ReturnType<T[K]>>>) & {

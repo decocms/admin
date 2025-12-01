@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { WELL_KNOWN_PROMPT_IDS } from "../../constants.ts";
 import { resolveMentions as resolveMentionsFn } from "../../utils/prompt-mentions.ts";
 import {

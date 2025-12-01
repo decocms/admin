@@ -1,11 +1,8 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createDeepSeek } from "@ai-sdk/deepseek";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createXai } from "@ai-sdk/xai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { LanguageModelBinding } from "@decocms/bindings/llm";
+import type { HTTPConnection } from "@decocms/bindings/connection";
+import { createLLMProvider } from "../llm-provider";
 import {
   convertToModelMessages,
   pruneMessages,
@@ -16,15 +13,15 @@ import {
 import { Hono } from "hono";
 import { z } from "zod/v3";
 import type { MeshContext } from "../../core/mesh-context";
-import type { MCPConnection } from "../../storage/types";
-import { ConnectionTools, OrganizationTools } from "../../tools";
+import type { ConnectionEntity } from "../../tools/connection/schema";
+import { ConnectionTools } from "../../tools";
 
 // Default values
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const BASE_SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -50,22 +47,25 @@ type ConnectionSummary = {
   description: string | null;
 };
 
+// Agent tool_set type
+type AgentToolSet = Record<string, string[]>;
+
 // Helper to create MCP client for a connection
-async function createConnectionClient(connection: MCPConnection) {
+async function createConnectionClient(connection: ConnectionEntity) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
 
-  if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  if (connection.connection_token) {
+    headers.Authorization = `Bearer ${connection.connection_token}`;
   }
 
-  if (connection.connectionHeaders) {
-    Object.assign(headers, connection.connectionHeaders);
+  if (connection.connection_headers) {
+    Object.assign(headers, connection.connection_headers);
   }
 
   const transport = new StreamableHTTPClientTransport(
-    new URL(connection.connectionUrl),
+    new URL(connection.connection_url),
     {
       requestInit: {
         headers,
@@ -83,19 +83,27 @@ async function createConnectionClient(connection: MCPConnection) {
 }
 
 // List all active connections for the organization (id, name, description only)
+// Optionally filter by agent's tool_set
 async function listConnections(
   ctx: MeshContext,
   organizationId: string,
+  toolSet?: AgentToolSet,
 ): Promise<ConnectionSummary[]> {
   const connections = await ctx.storage.connections.list(organizationId);
 
-  return connections
-    .filter((conn) => conn.status === "active")
-    .map((conn) => ({
-      id: conn.id,
-      name: conn.name,
-      description: conn.description,
-    }));
+  let filtered = connections.filter((conn) => conn.status === "active");
+
+  // If tool_set is provided, filter to only include allowed connections
+  if (toolSet) {
+    const allowedConnectionIds = new Set(Object.keys(toolSet));
+    filtered = filtered.filter((conn) => allowedConnectionIds.has(conn.id));
+  }
+
+  return filtered.map((conn) => ({
+    id: conn.id,
+    name: conn.title,
+    description: conn.description,
+  }));
 }
 
 // Format connections for system prompt
@@ -114,22 +122,35 @@ function formatAvailableConnections(connections: ConnectionSummary[]): string {
 
 const StreamRequestSchema = z.object({
   messages: z.any(), // Complex type from frontend, keeping as any
-  modelId: z.string(),
+  model: z
+    .object({
+      id: z.string(),
+      connectionId: z.string(),
+      provider: z
+        .enum([
+          "openai",
+          "anthropic",
+          "google",
+          "xai",
+          "deepseek",
+          "openrouter",
+          "openai-compatible",
+        ])
+        .optional()
+        .nullable(),
+    })
+    .optional(),
+  agent: z
+    .object({
+      id: z.string(),
+      instructions: z.string(),
+      tool_set: z.record(z.string(), z.array(z.string())),
+    })
+    .optional(),
   stream: z.boolean().optional(),
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
   maxWindowSize: z.number().optional(),
-  provider: z
-    .enum([
-      "openai",
-      "anthropic",
-      "google",
-      "xai",
-      "deepseek",
-      "openrouter",
-      "openai-compatible",
-    ])
-    .optional(),
 });
 
 export type StreamRequest = z.infer<typeof StreamRequestSchema>;
@@ -148,96 +169,52 @@ function ensureOrganization(ctx: MeshContext, orgSlug: string) {
   return ctx.organization;
 }
 
-async function getBindingConnection(
+async function getConnectionById(
   ctx: MeshContext,
   organizationId: string,
-): Promise<MCPConnection | null> {
-  const settings = await OrganizationTools.ORGANIZATION_SETTINGS_GET.execute(
-    { organizationId },
-    ctx,
-  );
-
-  if (!settings.modelsBindingConnectionId) {
-    return null;
-  }
-
-  const connection = await ctx.storage.connections.findById(
-    settings.modelsBindingConnectionId,
-  );
+  connectionId: string,
+): Promise<ConnectionEntity | null> {
+  const connection = await ctx.storage.connections.findById(connectionId);
 
   if (!connection) {
     return null;
   }
 
-  if (connection.organizationId !== organizationId) {
-    throw new Error(
-      "Configured MODELS binding does not belong to organization",
-    );
+  if (connection.organization_id !== organizationId) {
+    throw new Error("Connection does not belong to organization");
   }
 
   if (connection.status !== "active") {
     throw new Error(
-      `Configured MODELS binding connection is ${connection.status.toUpperCase()}`,
+      `Connection is ${connection.status.toUpperCase()}, not active`,
     );
   }
 
   return connection;
 }
 
-function buildConnectionHeaders(connection: MCPConnection) {
+// Helper to convert ConnectionEntity to MCPConnection for LLM binding
+function connectionToMCPConnection(
+  connection: ConnectionEntity,
+): HTTPConnection {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(connection.connectionHeaders ?? {}),
+    ...(connection.connection_headers ?? {}),
   };
 
-  if (connection.connectionToken) {
-    headers.Authorization = `Bearer ${connection.connectionToken}`;
+  if (connection.connection_token) {
+    headers.Authorization = `Bearer ${connection.connection_token}`;
   }
 
-  return headers;
-}
-
-function createProvider(
-  provider: string | undefined,
-  baseURL: string,
-  headers: Record<string, string>,
-) {
-  switch (provider) {
-    case "anthropic":
-      return createAnthropic({ baseURL, apiKey: "", headers });
-    case "google":
-      return createGoogleGenerativeAI({ baseURL, apiKey: "", headers });
-    case "deepseek":
-      return createDeepSeek({ baseURL, apiKey: "", headers });
-    case "xai":
-      return createXai({ baseURL, apiKey: "", headers });
-    case "openrouter":
-      return createOpenRouter({
-        baseURL,
-        apiKey: "",
-        headers,
-        compatibility: "strict",
-        // @ts-expect-error - fetch is somehow wrong.
-        fetch: (input, init) => {
-          const inputStr = input instanceof URL ? input.href : String(input);
-          console.log("inputStr", inputStr);
-          return fetch(inputStr.replace("/chat/completions", ""), {
-            ...init,
-            headers: {
-              ...init?.headers,
-              ...headers,
-            },
-          });
-        },
-      });
-    default:
-      // Default to OpenAI-compatible provider (covers OpenAI, etc.)
-      return createOpenAI({ baseURL, headers });
-  }
+  return {
+    type: "HTTP",
+    url: connection.connection_url,
+    headers,
+  };
 }
 
 // Create AI SDK tools for connection management
-function createConnectionTools(ctx: MeshContext) {
+// Optionally filter by agent's tool_set
+function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
   return {
     READ_MCP_TOOLS: tool({
       description:
@@ -246,8 +223,38 @@ function createConnectionTools(ctx: MeshContext) {
         id: z.string().describe("The connection ID"),
       }),
       execute: async ({ id }) => {
+        // If tool_set is provided, check if connection is allowed
+        if (toolSet && !toolSet[id]) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: `Connection ${id} is not available for this agent`,
+              },
+            ],
+          };
+        }
+
         try {
-          return await ConnectionTools.CONNECTION_GET.execute({ id }, ctx);
+          const result =
+            await ConnectionTools.COLLECTION_CONNECTIONS_GET.execute(
+              { id },
+              ctx,
+            );
+
+          // If tool_set is provided, filter the tools returned
+          if (toolSet && result.item?.tools) {
+            const allowedTools = new Set(toolSet[id] || []);
+            // If allowedTools is empty array, allow all tools for this connection
+            if (allowedTools.size > 0) {
+              result.item.tools = result.item.tools.filter((t) =>
+                allowedTools.has(t.name),
+              );
+            }
+          }
+
+          return result;
         } catch (error) {
           console.error(`Error getting connection ${id}:`, error);
           return {
@@ -276,6 +283,35 @@ function createConnectionTools(ctx: MeshContext) {
           .describe("Arguments to pass to the tool"),
       }),
       execute: async ({ connectionId, toolName, arguments: args }) => {
+        // If tool_set is provided, validate the call
+        if (toolSet) {
+          const allowedTools = toolSet[connectionId];
+          if (!allowedTools) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: "text",
+                  text: `Connection ${connectionId} is not available for this agent`,
+                },
+              ],
+            };
+          }
+
+          // If allowedTools array is not empty, check if tool is allowed
+          if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: "text",
+                  text: `Tool ${toolName} is not available for this agent on connection ${connectionId}`,
+                },
+              ],
+            };
+          }
+        }
+
         // Get connection using existing tool
         const connection = await ctx.storage.connections.findById(connectionId);
 
@@ -285,7 +321,7 @@ function createConnectionTools(ctx: MeshContext) {
 
         if (
           !ctx.organization ||
-          connection.organizationId !== ctx.organization.id
+          connection.organization_id !== ctx.organization.id
         ) {
           throw new Error(
             "Connection does not belong to the current organization",
@@ -333,21 +369,37 @@ function createConnectionTools(ctx: MeshContext) {
   };
 }
 
+// Build system prompt, optionally including agent instructions
+function buildSystemPrompt(
+  connections: ConnectionSummary[],
+  agentInstructions?: string,
+): string {
+  const parts: string[] = [];
+
+  // Add agent instructions first if provided
+  if (agentInstructions) {
+    parts.push(agentInstructions);
+    parts.push(""); // Empty line separator
+  }
+
+  // Add base system prompt
+  parts.push(BASE_SYSTEM_PROMPT);
+
+  // Add available connections
+  parts.push(
+    `\nAvailable MCP Connections:\n${formatAvailableConnections(connections)}`,
+  );
+
+  return parts.join("\n");
+}
+
 app.post("/:org/models/stream", async (c) => {
   const ctx = c.get("meshContext");
   const orgSlug = c.req.param("org");
 
   try {
     const organization = ensureOrganization(ctx, orgSlug);
-    const [rawPayload, connection, connections] = await Promise.all([
-      c.req.json(),
-      getBindingConnection(ctx, organization.id),
-      listConnections(ctx, organization.id),
-    ]);
-
-    if (!connection) {
-      return c.json({ error: "MODELS binding not configured" }, 404);
-    }
+    const rawPayload = await c.req.json();
 
     // Validate request using Zod schema
     const parseResult = StreamRequestSchema.safeParse(rawPayload);
@@ -363,16 +415,39 @@ app.post("/:org/models/stream", async (c) => {
 
     const payload = parseResult.data;
 
+    // Validate model is provided
+    if (!payload.model) {
+      return c.json({ error: "model is required" }, 400);
+    }
+
     const {
-      modelId,
+      model: modelConfig,
+      agent: agentConfig,
       messages,
-      provider: modelProvider,
       temperature,
       maxOutputTokens = DEFAULT_MAX_TOKENS,
       maxWindowSize = DEFAULT_MEMORY,
     } = payload;
 
-    const headers = buildConnectionHeaders(connection);
+    // Get the model provider connection
+    const connection = await getConnectionById(
+      ctx,
+      organization.id,
+      modelConfig.connectionId,
+    );
+
+    if (!connection) {
+      return c.json(
+        { error: `Model connection not found: ${modelConfig.connectionId}` },
+        404,
+      );
+    }
+
+    // Get agent's tool_set if agent is provided
+    const toolSet = agentConfig?.tool_set;
+
+    // List connections (filtered by agent's tool_set if provided)
+    const connections = await listConnections(ctx, organization.id, toolSet);
 
     // Convert UIMessages to CoreMessages using AI SDK helper
     const modelMessages = convertToModelMessages(messages);
@@ -385,30 +460,24 @@ app.post("/:org/models/stream", async (c) => {
       toolCalls: "none",
     }).slice(-maxWindowSize);
 
-    // Create provider based on the requested provider
-    // const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
-    const endpointUrl = `${connection.connectionUrl}/call-tool/STREAM_TEXT`;
-    const provider = createProvider(
-      modelProvider,
-      endpointUrl,
-      headers,
-    )(modelId);
-    // const provider = createPassthroughProvider(endpointUrl, modelId, headers);
+    // Create provider using the LanguageModelBinding
+    const mcpConnection = connectionToMCPConnection(connection);
+    const llmBinding = LanguageModelBinding.forConnection(mcpConnection);
+    const provider = createLLMProvider(llmBinding).languageModel(
+      modelConfig.id,
+    );
 
-    // Build system prompt with available connections
-    const systemPrompt = [
-      SYSTEM_PROMPT,
-      `\nAvailable MCP Connections:\n${formatAvailableConnections(
-        connections,
-      )}`,
-    ].join("\n");
+    // Build system prompt with available connections and optional agent instructions
+    const systemPrompt = buildSystemPrompt(
+      connections,
+      agentConfig?.instructions,
+    );
 
-    // Create connection tools with MeshContext
-    const connectionTools = createConnectionTools(ctx);
+    // Create connection tools with MeshContext (filtered by agent's tool_set if provided)
+    const connectionTools = createConnectionTools(ctx, toolSet);
 
     // Use streamText from AI SDK with pruned messages and parameters
     const result = streamText({
-      // model: provider(model || "default"),
       model: provider,
       messages: prunedMessages,
       system: systemPrompt,
@@ -416,7 +485,7 @@ app.post("/:org/models/stream", async (c) => {
       temperature,
       maxOutputTokens,
       abortSignal: c.req.raw.signal,
-      stopWhen: stepCountIs(30), // Stop after 5 steps with tool calls
+      stopWhen: stepCountIs(30), // Stop after 30 steps with tool calls
       onError: (error) => {
         console.error("[models:stream] Error", error);
       },
@@ -425,7 +494,7 @@ app.post("/:org/models/stream", async (c) => {
       },
     });
 
-    // Return the stream using toTextStreamResponse
+    // Return the stream using toUIMessageStreamResponse
     return result.toUIMessageStreamResponse();
   } catch (error) {
     const err = error as Error;

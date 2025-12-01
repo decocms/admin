@@ -168,8 +168,8 @@ const plugins = [
           "ORGANIZATION_LIST",
           "ORGANIZATION_GET", // Organization read access
           "ORGANIZATION_MEMBER_LIST", // Member read access
-          "CONNECTION_LIST",
-          "CONNECTION_GET", // Connection read access
+          "COLLECTION_CONNECTIONS_LIST",
+          "COLLECTION_CONNECTIONS_GET", // Connection read access
         ],
       },
     },

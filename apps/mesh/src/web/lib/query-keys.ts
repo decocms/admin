@@ -34,4 +34,12 @@ export const KEYS = {
   // Collections (scoped by connection)
   connectionCollections: (connectionId: string) =>
     [connectionId, "collections", "discovery"] as const,
+
+  // Tool call results (generic caching for MCP tool calls)
+  toolCall: (toolName: string, paramsKey: string) =>
+    ["tool-call", toolName, paramsKey] as const,
+
+  // Collection items (scoped by connection and collection name)
+  collectionItems: (connectionId: string, collectionName: string) =>
+    ["collection", connectionId, collectionName] as const,
 } as const;

@@ -10,7 +10,7 @@
     "db:migrate": "bun run ./dist-server/migrate.js",
     "check": "tsc --noEmit",
     "start": "bun run ./dist-server/server.js",
-    "migrate": "bun run scripts/generate-migrations.ts",
+    "migrate": "bun run src/database/migrate.ts",
     "test": "bun test .",
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },
@@ -68,7 +68,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.17",
     "use-mcp": "^0.0.21",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@better-auth/cli": "1.4.1",

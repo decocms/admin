@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,9 +29,7 @@ interface InviteMemberDialogProps {
   trigger: React.ReactNode;
 }
 
-const emailSchema = z.email({
-  error: "Invalid email address",
-});
+const emailSchema = z.string().email("Invalid email address");
 
 type InviteMemberFormData = {
   emails: string[];

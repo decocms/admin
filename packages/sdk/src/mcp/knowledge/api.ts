@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { basename } from "@std/path";
 import { embed, embedMany } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import {
   DEFAULT_KNOWLEDGE_BASE_NAME,
   KNOWLEDGE_BASE_DIMENSION,

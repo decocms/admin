@@ -40,7 +40,14 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
 
   // Transform results to registry items
   const items: RegistryItem[] = useMemo(() => {
-    if (!listResults) return [];
+    if (!listResults) {
+      console.log("listResults is empty or undefined:", listResults);
+      return [];
+    }
+
+    console.log("Raw listResults from tool:", listResults);
+    console.log("listResults type:", typeof listResults);
+    console.log("listResults keys:", Object.keys(listResults));
 
     // Helper function to transform a single item
     const transformItem = (item: any, idx: number): RegistryItem => ({
@@ -68,6 +75,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
 
     // Handle different response structures
     if (Array.isArray(listResults)) {
+      console.log("Response is array with", listResults.length, "items");
       return listResults.map((item: any, idx: number) =>
         transformItem(item, idx)
       );
@@ -79,11 +87,18 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
         (key) => Array.isArray(listResults[key as keyof typeof listResults])
       );
 
+      console.log("Found items key:", itemsKey);
+
       if (itemsKey) {
         const itemsArray = listResults[
           itemsKey as keyof typeof listResults
         ] as any[];
+        console.log("Transforming", itemsArray.length, "items from key:", itemsKey);
         return itemsArray.map((item, idx) => transformItem(item, idx));
+      } else {
+        console.log("No array found in response. Available keys:", Object.keys(listResults));
+        // Log the full structure
+        console.log("Full response structure:", JSON.stringify(listResults, null, 2));
       }
     }
 

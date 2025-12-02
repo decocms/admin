@@ -15,13 +15,13 @@ import {
 } from "./bindings.ts";
 import { DeconfigResource } from "./bindings/deconfig/index.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import { MCPClient, type QueryResult } from "./mcp.ts";
+import { State } from "./state.ts";
 import {
   createMCPServer,
   type CreateMCPServerOptions,
   MCPServer,
-} from "./mastra.ts";
-import { MCPClient, type QueryResult } from "./mcp.ts";
-import { State } from "./state.ts";
+} from "./tools.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
 export { proxyConnectionForId } from "./bindings.ts";
 export {
@@ -29,7 +29,7 @@ export {
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-export interface WorkspaceDB {
+export interface DatabaseBinding {
   query: (params: {
     sql: string;
     params: string[];
@@ -47,8 +47,8 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_APP_DEPLOYMENT_ID: string;
   DECO_BINDINGS: string;
   DECO_API_TOKEN: string;
-  DECO_WORKSPACE_DB: WorkspaceDB & {
-    forContext: (ctx: RequestContext) => WorkspaceDB;
+  DECO_WORKSPACE_DB: DatabaseBinding & {
+    forContext: (ctx: RequestContext) => DatabaseBinding;
   };
   IS_LOCAL: boolean;
   [key: string]: unknown;
@@ -104,9 +104,8 @@ export interface User {
 
 export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
-  branch?: string;
   token: string;
-  workspace: string;
+  meshUrl?: string;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
@@ -140,7 +139,7 @@ const withDefaultBindings = ({
   url?: string;
 }) => {
   const client = workspaceClient(ctx, env.DECO_API_URL);
-  const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
+  const createDBBinding = (ctx: RequestContext): DatabaseBinding => {
     const client = workspaceClient(ctx, env.DECO_API_URL);
     return {
       query: ({ sql, params }) => {
@@ -169,14 +168,14 @@ const withDefaultBindings = ({
     },
   );
 
-  const workspaceDbBinding = {
-    ...createWorkspaceDB(ctx),
-    forContext: createWorkspaceDB,
+  const dbBinding = {
+    ...createDBBinding(ctx),
+    forContext: createDBBinding,
   };
 
   env["DECO_API"] = MCPClient;
   env["DECO_WORKSPACE_API"] = client;
-  env["DECO_WORKSPACE_DB"] = workspaceDbBinding;
+  env["DECO_WORKSPACE_DB"] = dbBinding;
 
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
@@ -197,10 +196,9 @@ export class UnauthorizedError extends Error {
 const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
 const AUTH_START_ENDPOINT = "/oauth/start";
 const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
-const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
+const AUTHENTICATED = (user?: unknown) => () => {
   return {
     ...((user as User) ?? {}),
-    workspace,
   } as User;
 };
 
@@ -210,60 +208,35 @@ export const withBindings = <TEnv>({
   tokenOrContext,
   origin,
   url,
-  branch,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
   tokenOrContext?: string | RequestContext;
   origin?: string | null;
   url?: string;
-  branch?: string | null;
 }): TEnv => {
-  branch ??= undefined;
   const env = _env as DefaultEnv<any>;
 
-  const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
-    const workspace = decoded.aud as string;
 
     context = {
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
       integrationId: decoded.integrationId as string,
-      workspace,
-      ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
-      branch,
+      ensureAuthenticated: AUTHENTICATED(decoded.user),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
-    const workspace = decoded.aud as string;
     const appName = decoded.appName as string | undefined;
     context.callerApp = appName;
     context.integrationId ??= decoded.integrationId as string;
-    context.ensureAuthenticated = AUTHENTICATED(decoded.user, workspace);
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user);
   } else {
-    context = {
-      state: undefined,
-      token: env.DECO_API_TOKEN,
-      workspace: env.DECO_WORKSPACE,
-      branch,
-      ensureAuthenticated: (options?: { workspaceHint?: string }) => {
-        const workspaceHint = options?.workspaceHint ?? env.DECO_WORKSPACE;
-        const authUri = new URL("/apps/oauth", apiUrl);
-        authUri.searchParams.set("client_id", env.DECO_APP_NAME);
-        authUri.searchParams.set(
-          "redirect_uri",
-          new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT)
-            .href,
-        );
-        workspaceHint &&
-          authUri.searchParams.set("workspace_hint", workspaceHint);
-        throw new UnauthorizedError("Unauthorized", authUri);
-      },
-    };
+    // should not reach here
+    throw new Error("Invalid token or context");
   }
 
   env.DECO_REQUEST_CONTEXT = context;
@@ -355,9 +328,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         const bindings = withBindings({
           env,
           server,
-          branch:
-            req.headers.get("x-deco-branch") ??
-            new URL(req.url).searchParams.get("__b"),
           tokenOrContext: await getReqToken(req, env),
           origin:
             referer ?? req.headers.get("origin") ?? new URL(req.url).origin,

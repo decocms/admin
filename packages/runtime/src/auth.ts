@@ -74,29 +74,37 @@ const parseCookies = (cookieHeader: string): Record<string, string> => {
 const parseJWK = (jwk: string): JWK => JSON.parse(atob(jwk)) as JWK;
 
 export const getReqToken = async (req: Request, env: DefaultEnv) => {
-  const token = () => {
+  const token = (): [string | undefined, boolean] => {
+    const xMeshToken = req.headers.get("x-mesh-token");
+    if (xMeshToken) {
+      return [xMeshToken, false];
+    }
     // First try to get token from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
-      return authHeader.split(" ")[1];
+      return [authHeader.split(" ")[1], true];
     }
 
     // If not found, try to get from cookie
     const cookieHeader = req.headers.get("Cookie");
     if (cookieHeader) {
       const cookies = parseCookies(cookieHeader);
-      return reassembleChunkedCookies(cookies, DECO_APP_AUTH_COOKIE_NAME);
+      return [
+        reassembleChunkedCookies(cookies, DECO_APP_AUTH_COOKIE_NAME),
+        true,
+      ];
     }
 
-    return undefined;
+    return [undefined, false];
   };
 
-  const authToken = token();
+  const [authToken, shouldValidate] = token();
   if (!authToken) {
     return undefined;
   }
 
   env.DECO_API_JWT_PUBLIC_KEY &&
+    shouldValidate &&
     (await jwtVerify(authToken, parseJWK(env.DECO_API_JWT_PUBLIC_KEY), {
       issuer: "https://api.decocms.com",
       algorithms: ["RS256"],

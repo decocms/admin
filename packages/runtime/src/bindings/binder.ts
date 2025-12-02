@@ -1,7 +1,7 @@
 /* oxlint-disable no-explicit-any */
 import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
-import { createPrivateTool, createStreamableTool } from "../mastra.ts";
+import { createPrivateTool, createStreamableTool } from "../tools.ts";
 import {
   createMCPFetchStub,
   type MCPClientFetchStub,

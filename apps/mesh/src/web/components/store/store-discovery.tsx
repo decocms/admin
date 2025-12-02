@@ -27,8 +27,9 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
 
   // Call the LIST tool to get items
+  // Provide a default empty object to avoid React Query undefined error
   const {
-    data: listResults,
+    data: listResults = {},
     isLoading: isLoadingList,
     error: listError,
   } = useToolCall({
@@ -40,14 +41,14 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
 
   // Transform results to registry items
   const items: RegistryItem[] = useMemo(() => {
-    if (!listResults) {
+    if (!listResults || Object.keys(listResults).length === 0) {
       console.log("listResults is empty or undefined:", listResults);
       return [];
     }
 
     console.log("Raw listResults from tool:", listResults);
     console.log("listResults type:", typeof listResults);
-    console.log("listResults keys:", Object.keys(listResults));
+    console.log("listResults keys:", Object.keys(listResults || {}));
 
     // Helper function to transform a single item
     const transformItem = (item: any, idx: number): RegistryItem => ({

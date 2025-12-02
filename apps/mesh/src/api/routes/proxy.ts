@@ -126,22 +126,22 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Issue configuration JWT if connection has configuration state
   let configurationToken: string | undefined;
   if (
-    connection.configurationState &&
-    connection.configurationScopes &&
-    connection.configurationScopes.length > 0
+    connection.configuration_state &&
+    connection.configuration_scopes &&
+    connection.configuration_scopes.length > 0
   ) {
     // Parse scopes to build permissions object
     // Format: "KEY::SCOPE" where KEY is in state and state[KEY].value is a connection ID
     // Result: { [connectionId]: [scopes...] }
     const permissions: Record<string, string[]> = {};
 
-    for (const scope of connection.configurationScopes) {
+    for (const scope of connection.configuration_scopes) {
       const parts = scope.split("::");
       if (parts.length === 2) {
         const [key, scopeName] = parts;
         if (!key || !scopeName) continue; // Skip invalid parts
 
-        const stateValue: unknown = connection.configurationState[key];
+        const stateValue: unknown = connection.configuration_state[key];
 
         if (
           typeof stateValue === "object" &&
@@ -174,7 +174,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
           name: `mesh-config-${connectionId}-${Date.now()}`,
           permissions,
           metadata: {
-            state: connection.configurationState,
+            state: connection.configuration_state,
             meshUrl: ctx.baseUrl, // Include mesh URL so receivers know where mesh is running
           },
           expiresIn: 60 * 5, // 5 minutes - short lived

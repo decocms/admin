@@ -17,7 +17,6 @@ import { useToolCall } from "@/web/hooks/use-tool-call";
 import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import {
   Form,
   FormControl,
@@ -326,9 +325,6 @@ export default function ConnectionInspectorView() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RJSFForm = RJSForm as any;
-
 const connectionFormSchema = ConnectionEntitySchema.pick({
   title: true,
   description: true,
@@ -368,7 +364,10 @@ function SettingsTab({
         <div className="space-y-4">
           <h3 className="text-lg font-medium">MCP Configuration</h3>
           <div className="border border-border rounded-lg p-6 bg-card">
-            <McpConfigurationForm connectionId={connectionId} />
+            <McpConfigurationForm
+              connectionId={connectionId}
+              connection={connection}
+            />
           </div>
         </div>
       )}
@@ -564,7 +563,13 @@ function ConnectionSettingsForm({
   );
 }
 
-function McpConfigurationForm({ connectionId }: { connectionId: string }) {
+function McpConfigurationForm({
+  connectionId,
+  connection,
+}: {
+  connectionId: string;
+  connection: ConnectionEntity;
+}) {
   const toolCaller = useMemo(
     () => createToolCaller(connectionId),
     [connectionId],
@@ -580,29 +585,30 @@ function McpConfigurationForm({ connectionId }: { connectionId: string }) {
     toolInputParams: {},
   });
 
-  const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(
+    connection.configuration_scopes ?? [],
+  );
+  const [formState, setFormState] = useState<Record<string, unknown>>(
+    connection.configuration_state ?? {},
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   // Initialize scopes from data if needed
   useEffect(() => {
-    if (config) {
-      // Could initialize selectedScopes here if we had the current values
+    if (connection.configuration_scopes) {
+      setSelectedScopes(connection.configuration_scopes);
     }
-  }, [config]);
-
-  const handleScopeChange = (scope: string, checked: boolean) => {
-    if (checked) {
-      setSelectedScopes([...selectedScopes, scope]);
-    } else {
-      setSelectedScopes(selectedScopes.filter((s) => s !== scope));
+    if (connection.configuration_state) {
+      setFormState(connection.configuration_state);
     }
-  };
+  }, [connection]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSubmit = async (data: IChangeEvent<any>) => {
+  const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
     setIsSaving(true);
     try {
-      await toolCaller("CONNECTION_CONFIGURE", {
+      const meshToolCaller = createToolCaller();
+      await meshToolCaller("CONNECTION_CONFIGURE", {
+        connectionId,
         scopes: selectedScopes,
         state: data.formData,
       });
@@ -641,25 +647,13 @@ function McpConfigurationForm({ connectionId }: { connectionId: string }) {
       {scopes && scopes.length > 0 && (
         <div className="space-y-4">
           <h4 className="text-sm font-medium text-muted-foreground">Scopes</h4>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="list-disc list-inside space-y-1">
             {scopes.map((scope) => (
-              <div key={scope} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`scope-${scope}`}
-                  checked={selectedScopes.includes(scope)}
-                  onCheckedChange={(checked) =>
-                    handleScopeChange(scope, checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor={`scope-${scope}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {scope}
-                </label>
-              </div>
+              <li key={scope} className="text-sm text-muted-foreground">
+                {scope}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -667,9 +661,11 @@ function McpConfigurationForm({ connectionId }: { connectionId: string }) {
         <h4 className="text-sm font-medium text-muted-foreground">
           Configuration
         </h4>
-        <RJSFForm
+        <RJSForm
           schema={stateSchema}
           validator={validator}
+          formData={formState}
+          onChange={(e) => setFormState(e.formData)}
           onSubmit={handleSubmit}
           disabled={isSaving}
           uiSchema={{
@@ -685,7 +681,7 @@ function McpConfigurationForm({ connectionId }: { connectionId: string }) {
               Save Configuration
             </Button>
           </div>
-        </RJSFForm>
+        </RJSForm>
       </div>
     </div>
   );
@@ -738,8 +734,7 @@ function ToolsList({
 
   return (
     <CollectionsList
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data={filteredTools as any[]}
+      data={filteredTools}
       viewMode={viewMode}
       onViewModeChange={setViewMode}
       search={search}

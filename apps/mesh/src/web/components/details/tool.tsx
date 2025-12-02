@@ -79,7 +79,7 @@ export function ToolDetailsView({
 
   // Initialize MCP client
   const mcp = useMcp({
-    url: connectionUrl,
+    url: mcpProxyUrl.href,
     clientName: "MCP Tool Inspector",
     clientUri: window.location.origin,
     autoReconnect: true,

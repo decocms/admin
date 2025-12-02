@@ -197,8 +197,15 @@ export const withBindings = <TEnv>({
       (decoded.connectionId as string) ?? metadata.connectionId;
     context.ensureAuthenticated = AUTHENTICATED(decoded.user ?? decoded.sub);
   } else {
-    // should not reach here
-    throw new Error("Invalid token or context");
+    context = {
+      state: {},
+      token: undefined,
+      meshUrl: undefined,
+      connectionId: undefined,
+      ensureAuthenticated: () => {
+        throw new Error("Unauthorized");
+      },
+    } as unknown as RequestContext<any>;
   }
 
   env.MESH_REQUEST_CONTEXT = context;

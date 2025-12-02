@@ -69,8 +69,8 @@ export function useBindingConnections(
       !connections || !binding
         ? []
         : connections.filter((conn) =>
-          connectionImplementsBinding(conn, binding)
-        ),
+            connectionImplementsBinding(conn, binding),
+          ),
     [connections, binding],
   );
 }
@@ -135,7 +135,8 @@ function extractCollectionSchema(
   );
   const createToolProperties = createTool?.inputSchema?.properties;
   if (
-    createToolProperties && typeof createToolProperties === "object" &&
+    createToolProperties &&
+    typeof createToolProperties === "object" &&
     "data" in createToolProperties
   ) {
     return createToolProperties.data as Record<string, unknown>;
@@ -147,7 +148,8 @@ function extractCollectionSchema(
   );
   const updateToolProperties = updateTool?.inputSchema?.properties;
   if (
-    updateToolProperties && typeof updateToolProperties === "object" &&
+    updateToolProperties &&
+    typeof updateToolProperties === "object" &&
     "data" in updateToolProperties
   ) {
     // Update usually has partial data, but might still be useful
@@ -160,7 +162,8 @@ function extractCollectionSchema(
   );
   const listToolProperties = listTool?.outputSchema?.properties;
   if (
-    listToolProperties && typeof listToolProperties === "object" &&
+    listToolProperties &&
+    typeof listToolProperties === "object" &&
     "items" in listToolProperties
   ) {
     const itemsSchema = listToolProperties.items as Record<string, unknown>;
@@ -176,13 +179,11 @@ function extractCollectionSchema(
  * Detects and validates collection bindings from tools
  */
 function detectCollections(
-  tools:
-    | Array<{
-      name: string;
-      inputSchema?: Record<string, unknown>;
-      outputSchema?: Record<string, unknown>;
-    }>
-    | null,
+  tools: Array<{
+    name: string;
+    inputSchema?: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
+  }> | null,
 ): ValidatedCollection[] {
   if (!tools || tools.length === 0) {
     return [];

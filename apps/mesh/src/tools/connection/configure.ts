@@ -38,7 +38,8 @@ const ConfigureOutputSchema = z.object({
 function parseScope(scope: string): [string, string] {
   const parts = scope.split("::");
   if (
-    parts.length !== 2 || typeof parts[0] !== "string" ||
+    parts.length !== 2 ||
+    typeof parts[0] !== "string" ||
     typeof parts[1] !== "string"
   ) {
     throw new Error(
@@ -113,9 +114,8 @@ export const CONNECTION_CONFIGURE = defineTool({
     // Validate all referenced connections
     for (const refConnectionId of referencedConnections) {
       // Verify connection exists
-      const refConnection = await ctx.storage.connections.findById(
-        refConnectionId,
-      );
+      const refConnection =
+        await ctx.storage.connections.findById(refConnectionId);
       if (!refConnection) {
         throw new Error(`Referenced connection not found: ${refConnectionId}`);
       }

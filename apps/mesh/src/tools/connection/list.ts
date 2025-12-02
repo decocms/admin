@@ -85,17 +85,29 @@ function evaluateWhereExpression(
     case "eq":
       return fieldValue === value;
     case "gt":
-      return isStringOrValue(fieldValue) && isStringOrValue(value) &&
-        fieldValue > value;
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue > value
+      );
     case "gte":
-      return isStringOrValue(fieldValue) && isStringOrValue(value) &&
-        fieldValue >= value;
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue >= value
+      );
     case "lt":
-      return isStringOrValue(fieldValue) && isStringOrValue(value) &&
-        fieldValue < value;
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue < value
+      );
     case "lte":
-      return isStringOrValue(fieldValue) && isStringOrValue(value) &&
-        fieldValue <= value;
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue <= value
+      );
     case "in":
       return Array.isArray(value) && value.includes(fieldValue);
     case "like":
@@ -202,13 +214,13 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
     const bindingDefinition: Binder | undefined = input.binding
       ? typeof input.binding === "string"
         ? (() => {
-          const wellKnownBinding =
-            BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
-          if (!wellKnownBinding) {
-            throw new Error(`Unknown binding: ${input.binding}`);
-          }
-          return wellKnownBinding;
-        })()
+            const wellKnownBinding =
+              BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
+            if (!wellKnownBinding) {
+              throw new Error(`Unknown binding: ${input.binding}`);
+            }
+            return wellKnownBinding;
+          })()
         : (input.binding as unknown as Binder)
       : undefined;
 
@@ -222,32 +234,32 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
     // Filter connections by binding if specified (tools are pre-populated at create/update time)
     let filteredConnections = bindingChecker
       ? await Promise.all(
-        connections.map(async (connection) => {
-          if (!connection.tools || connection.tools.length === 0) {
-            return null;
-          }
+          connections.map(async (connection) => {
+            if (!connection.tools || connection.tools.length === 0) {
+              return null;
+            }
 
-          const isValid = bindingChecker.isImplementedBy(
-            connection.tools.map((t) => ({
-              name: t.name,
-              inputSchema: t.inputSchema as Record<string, unknown>,
-              outputSchema: t.outputSchema as
-                | Record<string, unknown>
-                | undefined,
-            })),
-          );
+            const isValid = bindingChecker.isImplementedBy(
+              connection.tools.map((t) => ({
+                name: t.name,
+                inputSchema: t.inputSchema as Record<string, unknown>,
+                outputSchema: t.outputSchema as
+                  | Record<string, unknown>
+                  | undefined,
+              })),
+            );
 
-          return isValid ? connection : null;
-        }),
-      ).then((results) =>
-        results.filter((c): c is ConnectionEntity => c !== null)
-      )
+            return isValid ? connection : null;
+          }),
+        ).then((results) =>
+          results.filter((c): c is ConnectionEntity => c !== null),
+        )
       : connections;
 
     // Apply where filter if specified
     if (input.where) {
       filteredConnections = filteredConnections.filter((conn) =>
-        evaluateWhereExpression(conn, input.where!)
+        evaluateWhereExpression(conn, input.where!),
       );
     }
 

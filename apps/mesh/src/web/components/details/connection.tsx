@@ -814,7 +814,13 @@ function CollectionContent({
     switch (action) {
       case "open":
         navigate({
-          to: `/${org}/mcps/${connectionId}/${encodeURIComponent(collectionName)}/${encodeURIComponent(item.id)}`,
+          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+          params: {
+            org,
+            connectionId,
+            collectionName,
+            itemId: item.id,
+          },
         });
         break;
       case "delete":
@@ -850,7 +856,13 @@ function CollectionContent({
       case "edit":
         // Default edit is same as open for now if we don't have inline edit
         navigate({
-          to: `/${org}/mcps/${connectionId}/${encodeURIComponent(collectionName)}/${encodeURIComponent(item.id)}`,
+          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+          params: {
+            org,
+            connectionId,
+            collectionName,
+            itemId: item.id,
+          },
         });
         break;
     }

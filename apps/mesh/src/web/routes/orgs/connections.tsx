@@ -1,12 +1,12 @@
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
-import { authClient } from "@/web/lib/auth-client";
 import {
   useConnections,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
+import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
   AlertDialog,
@@ -341,7 +341,8 @@ export default function OrgMcps() {
               onClick={(event) => {
                 event.stopPropagation();
                 navigate({
-                  to: `/${org}/mcps/${connection.id}`,
+                  to: "/$org/mcps/$connectionId",
+                  params: { org, connectionId: connection.id },
                 });
               }}
             >
@@ -602,7 +603,8 @@ export default function OrgMcps() {
                 onSort={listState.handleSort}
                 onItemClick={(connection) =>
                   navigate({
-                    to: `/${org}/mcps/${connection.id}`,
+                    to: "/$org/mcps/$connectionId",
+                    params: { org, connectionId: connection.id },
                   })
                 }
                 emptyState={
@@ -650,7 +652,8 @@ export default function OrgMcps() {
                             onClick={(event) => {
                               event.stopPropagation();
                               navigate({
-                                to: `/${org}/mcps/${connection.id}`,
+                                to: "/$org/mcps/$connectionId",
+                                params: { org, connectionId: connection.id },
                               });
                             }}
                           >

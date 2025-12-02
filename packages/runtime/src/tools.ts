@@ -24,6 +24,10 @@ export interface ToolExecutionContext<
   context: z.infer<TSchemaIn>;
   runtimeContext: AppContext;
 }
+
+/**
+ * Tool interface with generic schema types for type-safe tool creation.
+ */
 export interface Tool<
   TSchemaIn extends z.ZodTypeAny = z.ZodTypeAny,
   TSchemaOut extends z.ZodTypeAny | undefined = undefined,
@@ -32,12 +36,37 @@ export interface Tool<
   description?: string;
   inputSchema: TSchemaIn;
   outputSchema?: TSchemaOut;
-  execute: (
+  execute(
     context: ToolExecutionContext<TSchemaIn>,
-  ) => TSchemaOut extends z.ZodSchema
+  ): TSchemaOut extends z.ZodSchema
     ? Promise<z.infer<TSchemaOut>>
-    : Promise<any>;
+    : Promise<unknown>;
 }
+
+/**
+ * Streamable tool interface for tools that return Response streams.
+ */
+export interface StreamableTool<TSchemaIn extends z.ZodSchema = z.ZodSchema> {
+  id: string;
+  inputSchema: TSchemaIn;
+  streamable?: true;
+  description?: string;
+  execute(input: ToolExecutionContext<TSchemaIn>): Promise<Response>;
+}
+
+/**
+ * CreatedTool is a permissive type that any Tool or StreamableTool can be assigned to.
+ * Uses a structural type with relaxed execute signature to allow tools with any schema.
+ */
+export type CreatedTool = {
+  id: string;
+  description?: string;
+  inputSchema: z.ZodTypeAny;
+  outputSchema?: z.ZodTypeAny;
+  streamable?: true;
+  // Use a permissive execute signature - accepts any context shape
+  execute(context: { context: unknown; runtimeContext: AppContext }): Promise<unknown>;
+};
 
 /**
  * creates a private tool that always ensure for athentication before being executed
@@ -57,14 +86,6 @@ export function createPrivateTool<
     };
   }
   return createTool(opts);
-}
-
-export interface StreamableTool<TSchemaIn extends z.ZodSchema = z.ZodSchema> {
-  id: string;
-  inputSchema: TSchemaIn;
-  streamable?: true;
-  description?: string;
-  execute: (input: ToolExecutionContext<TSchemaIn>) => Promise<Response>;
 }
 
 export function createStreamableTool<
@@ -113,14 +134,15 @@ export interface Integration {
   id: string;
   appId: string;
 }
-export type CreatedTool =
-  | ReturnType<typeof createTool>
-  | ReturnType<typeof createStreamableTool>;
-export function isStreamableTool(tool: CreatedTool): tool is StreamableTool {
+
+export function isStreamableTool(
+  tool: CreatedTool,
+): tool is StreamableTool & CreatedTool {
   return tool && "streamable" in tool && tool.streamable === true;
 }
+
 export interface CreateMCPServerOptions<
-  Env = any,
+  Env = unknown,
   TSchema extends z.ZodTypeAny = never,
 > {
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
@@ -143,24 +165,22 @@ export interface CreateMCPServerOptions<
       ) => CreatedTool[] | Promise<CreatedTool[]>);
 }
 
-export type Fetch<TEnv = any> = (
+export type Fetch<TEnv = unknown> = (
   req: Request,
   env: TEnv,
   ctx: ExecutionContext,
 ) => Promise<Response> | Response;
 
-export interface AppContext<TEnv = any> {
+export interface AppContext<TEnv = unknown> {
   env: TEnv;
-  ctx: { waitUntil: (promise: Promise<any>) => void };
+  ctx: { waitUntil: (promise: Promise<unknown>) => void };
   req?: Request;
 }
 
 const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
   state: schema,
   scopes,
-}: CreateMCPServerOptions<any, TSchema>["configuration"] = {}): ReturnType<
-  typeof createTool<any, any>
->[] => {
+}: CreateMCPServerOptions<unknown, TSchema>["configuration"] = {}): CreatedTool[] => {
   const jsonSchema = schema
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
@@ -171,7 +191,7 @@ const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
       description: "MCP Configuration",
       inputSchema: z.object({}),
       outputSchema: z.object({
-        stateSchema: z.any(),
+        stateSchema: z.unknown(),
         scopes: z.array(z.string()).optional(),
       }),
       execute: () => {
@@ -186,16 +206,16 @@ const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
 
 type CallTool = (opts: {
   toolCallId: string;
-  toolCallInput: any;
-}) => Promise<any>;
+  toolCallInput: unknown;
+}) => Promise<unknown>;
 
-export type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
+export type MCPServer<TEnv = unknown, TSchema extends z.ZodTypeAny = never> = {
   fetch: Fetch<TEnv & DefaultEnv<TSchema>>;
   callTool: CallTool;
 };
 
 export const createMCPServer = <
-  TEnv = any,
+  TEnv = unknown,
   TSchema extends z.ZodTypeAny = never,
 >(
   options: CreateMCPServerOptions<TEnv, TSchema>,
@@ -251,7 +271,7 @@ export const createMCPServer = <
               : z.object({}).shape,
         },
         async (args) => {
-          let result = await tool.execute!({
+          let result = await tool.execute({
             context: args,
             runtimeContext: createRuntimeContext(),
           });

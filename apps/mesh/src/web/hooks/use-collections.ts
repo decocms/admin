@@ -136,6 +136,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
       }
     }
 
+
     return allItems;
   }
 
@@ -197,7 +198,9 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
           try {
             const items = await fetchAllPages();
 
+
             if (!isActive) return;
+
 
             begin();
             for (const item of items) {
@@ -377,58 +380,58 @@ export function useCollectionList<T extends CollectionEntity>(
       // Start with base query and sorting
       let query = q
         .from({ item: collection })
-        .orderBy(
-          ({ item }) => item?.[sortKey ?? defaultSortKey],
-          sortDirection ?? "asc",
-        );
+      //   .orderBy(
+      //     ({ item }) => item?.[sortKey ?? defaultSortKey],
+      //     sortDirection ?? "asc",
+      //   );
 
-      // Check if we need .where() (TanStack DB doesn't support returning plain `true`)
-      const hasSearch = !!searchTerm?.trim();
-      const hasFilters = filters && filters.length > 0;
+      // // Check if we need .where() (TanStack DB doesn't support returning plain `true`)
+      // const hasSearch = !!searchTerm?.trim();
+      // const hasFilters = filters && filters.length > 0;
 
-      if (hasSearch || hasFilters) {
-        query = query.where(({ item }) => {
-          if (!item) {
-            return false;
-          }
+      // if (hasSearch || hasFilters) {
+      //   query = query.where(({ item }) => {
+      //     if (!item) {
+      //       return false;
+      //     }
 
-          const conditions: unknown[] = [];
+      //     const conditions: unknown[] = [];
 
-          // Text search (searches configured fields)
-          const search = searchTerm?.trim();
-          if (search) {
-            const searchConditions = searchFields
-              .filter((field) => field in item)
-              .map((field) =>
-                like((item[field] as string) ?? "", `%${search}%`),
-              );
+      //     // Text search (searches configured fields)
+      //     const search = searchTerm?.trim();
+      //     if (search) {
+      //       const searchConditions = searchFields
+      //         .filter((field) => field in item)
+      //         .map((field) =>
+      //           like((item[field] as string) ?? "", `%${search}%`),
+      //         );
 
-            if (searchConditions.length > 0) {
-              conditions.push(
-                searchConditions.length === 1
-                  ? searchConditions[0]
-                  : or(...(searchConditions as Parameters<typeof or>)),
-              );
-            }
-          }
+      //       if (searchConditions.length > 0) {
+      //         conditions.push(
+      //           searchConditions.length === 1
+      //             ? searchConditions[0]
+      //             : or(...(searchConditions as Parameters<typeof or>)),
+      //         );
+      //       }
+      //     }
 
-          // Field filters
-          if (filters && filters.length > 0) {
-            for (const filter of filters) {
-              // Column must match an entity property
-              if (!(filter.column in item)) continue;
-              const field =
-                (item as Record<string, unknown>)[filter.column] ?? "";
-              conditions.push(eq(field as string, filter.value));
-            }
-          }
+      //     // Field filters
+      //     if (filters && filters.length > 0) {
+      //       for (const filter of filters) {
+      //         // Column must match an entity property
+      //         if (!(filter.column in item)) continue;
+      //         const field =
+      //           (item as Record<string, unknown>)[filter.column] ?? "";
+      //         conditions.push(eq(field as string, filter.value));
+      //       }
+      //     }
 
-          // Combine all conditions with AND using a ternary
-          return conditions.length === 1
-            ? conditions[0]
-            : and(...(conditions as Parameters<typeof and>));
-        });
-      }
+      //     // Combine all conditions with AND using a ternary
+      //     return conditions.length === 1
+      //       ? conditions[0]
+      //       : and(...(conditions as Parameters<typeof and>));
+      //   });
+      // }
 
       return query;
     },

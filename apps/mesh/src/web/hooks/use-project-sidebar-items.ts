@@ -17,6 +17,12 @@ async function getProjectSidebarItems({
 
   const KNOWN_ORG_ADMIN_SIDEBAR_ITEMS: NavigationSidebarItem[] = [
     {
+      key: "store",
+      label: "Store",
+      icon: "shopping_bag",
+      onClick: () => navigate({ to: "/$org/store", params: { org } }),
+    },
+    {
       key: "mcps",
       label: "MCPs",
       icon: "grid_view",

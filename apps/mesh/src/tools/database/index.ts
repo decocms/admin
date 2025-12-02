@@ -16,7 +16,7 @@ const DatatabasesRunSqlInputSchema = z.object({
     .optional(),
 });
 
-export const DATBASES_RUN_SQL = defineTool({
+export const DATABASES_RUN_SQL = defineTool({
   name: "DATABASES_RUN_SQL",
   description: "Run a SQL query against the database",
 

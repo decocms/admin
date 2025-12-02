@@ -70,9 +70,16 @@ export function ToolDetailsView({
     ? normalizeUrl(connection.connection_url)
     : "";
 
+  // Use proxy URL when connection has a token (OAuth completed)
+  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
+  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
+  const connectionUrl = connection?.connection_token
+    ? mcpProxyUrl.href
+    : normalizedUrl;
+
   // Initialize MCP client
   const mcp = useMcp({
-    url: normalizedUrl,
+    url: connectionUrl,
     clientName: "MCP Tool Inspector",
     clientUri: window.location.origin,
     autoReconnect: true,
@@ -262,7 +269,8 @@ export function ToolDetailsView({
             </div>
 
             <div className="p-4 space-y-4">
-              {mcp.state === "pending_auth" && (
+              {(mcp.state === "pending_auth" ||
+                (!connection.connection_token && mcp.state === "failed")) && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Authorization Required</AlertTitle>

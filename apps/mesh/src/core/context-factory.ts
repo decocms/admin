@@ -19,6 +19,7 @@ import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
 import type { MeshContext, BetterAuthInstance } from "./mesh-context";
 import { CredentialVault } from "../encryption/credential-vault";
+import { verifyMeshToken } from "../auth/jwt";
 
 // ============================================================================
 // Configuration
@@ -161,10 +162,26 @@ async function authenticateRequest(
     console.error("[Auth] OAuth session check failed:", err);
   }
 
-  // Try API Key authentication
+  // Try API Key or Mesh JWT authentication
   if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "").trim();
+
+    // First, try to verify as Mesh JWT token
+    // These are issued by mesh for downstream services calling back
     try {
-      const token = authHeader.replace("Bearer ", "").trim();
+      const meshJwtPayload = await verifyMeshToken(token);
+      if (meshJwtPayload) {
+        return {
+          user: { id: meshJwtPayload.sub },
+          permissions: meshJwtPayload.permissions || {},
+        };
+      }
+    } catch {
+      // Not a valid mesh JWT, continue to API key check
+    }
+
+    // Try API Key authentication
+    try {
       const result = await auth.api.verifyApiKey({
         body: { key: token },
       });

@@ -1,4 +1,4 @@
-import { WorkersMCPBindings } from "@decocms/runtime";
+import { WorkersMCPBindings as MCPBindings } from "@decocms/runtime";
 import type {
   ScriptUpdateParams,
   ScriptUpdateResponse,
@@ -332,7 +332,7 @@ export async function deployToCloudflare({
 
   const decoBindings = deco?.bindings ?? [];
   if (decoBindings.length > 0) {
-    const bindingsString = WorkersMCPBindings.stringify(decoBindings);
+    const bindingsString = MCPBindings.stringify(decoBindings);
     envVars["DECO_BINDINGS"] = bindingsString;
     // Backwards compatibility
     envVars["DECO_CHAT_BINDINGS"] = bindingsString;

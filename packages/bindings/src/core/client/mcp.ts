@@ -3,6 +3,38 @@ import { z } from "zod";
 import type { MCPConnection } from "../connection";
 import { createMCPClientProxy } from "./proxy";
 
+export const isStreamableToolBinder = (
+  toolBinder: ToolBinder,
+): toolBinder is ToolBinder<string, any, any, true> => {
+  return toolBinder.streamable === true;
+};
+
+// Default fetcher instance with API_SERVER_URL and API_HEADERS
+export const MCPClient = new Proxy(
+  {} as {
+    forConnection: <TDefinition extends readonly ToolBinder[]>(
+      connection: MCPConnection,
+    ) => MCPClientFetchStub<TDefinition>;
+  },
+  {
+    get(_, name) {
+      if (name === "toJSON") {
+        return null;
+      }
+
+      if (name === "forConnection") {
+        return <TDefinition extends readonly ToolBinder[]>(
+          connection: MCPConnection,
+        ) =>
+          createMCPFetchStub<TDefinition>({
+            connection,
+          });
+      }
+      return global[name as keyof typeof global];
+    },
+  },
+);
+
 export interface FetchOptions extends RequestInit {
   path?: string;
   segments?: string[];

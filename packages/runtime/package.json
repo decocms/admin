@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "type": "module",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
@@ -21,16 +21,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
-    "./admin": "./src/admin.ts",
     "./client": "./src/client.ts",
-    "./mastra": "./src/mastra.ts",
-    "./drizzle": "./src/drizzle.ts",
-    "./resources": "./src/resources.ts",
-    "./views": "./src/views.ts",
     "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
-    "./deconfig": "./src/bindings/deconfig/index.ts",
-    "./asset-server": "./src/asset-server/index.ts"
+    "./asset-server": "./src/asset-server/index.ts",
+    "./tools": "./src/tools.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",

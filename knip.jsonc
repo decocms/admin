@@ -38,7 +38,9 @@
     "**/test/**",
     "**/dist/**",
     "**/node_modules/**",
-    ".github/workflows/publish-runtime-npm.yaml"
+    ".github/workflows/publish-runtime-npm.yaml",
+    ".github/workflows/publish-bindings.yml",
+    ".github/workflows/publish-vite-plugin-npm.yaml"
   ],
   "ignoreDependencies": ["@types/*"],
   // TODO(@camudo): Remove this config once I fix all unused type exports

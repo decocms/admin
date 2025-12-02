@@ -65,7 +65,10 @@ export type CreatedTool = {
   outputSchema?: z.ZodTypeAny;
   streamable?: true;
   // Use a permissive execute signature - accepts any context shape
-  execute(context: { context: unknown; runtimeContext: AppContext }): Promise<unknown>;
+  execute(context: {
+    context: unknown;
+    runtimeContext: AppContext;
+  }): Promise<unknown>;
 };
 
 /**
@@ -80,7 +83,7 @@ export function createPrivateTool<
     opts.execute = (input: ToolExecutionContext<TSchemaIn>) => {
       const env = input.runtimeContext.env;
       if (env) {
-        env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+        env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
       }
       return execute(input);
     };
@@ -96,7 +99,7 @@ export function createStreamableTool<
     execute: (input: ToolExecutionContext<TSchemaIn>) => {
       const env = input.runtimeContext.env;
       if (env) {
-        env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
+        env.MESH_REQUEST_CONTEXT?.ensureAuthenticated();
       }
       return streamableTool.execute({
         ...input,
@@ -171,7 +174,7 @@ export type Fetch<TEnv = unknown> = (
   ctx: ExecutionContext,
 ) => Promise<Response> | Response;
 
-export interface AppContext<TEnv = unknown> {
+export interface AppContext<TEnv extends DefaultEnv = DefaultEnv> {
   env: TEnv;
   ctx: { waitUntil: (promise: Promise<unknown>) => void };
   req?: Request;
@@ -180,7 +183,10 @@ export interface AppContext<TEnv = unknown> {
 const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
   state: schema,
   scopes,
-}: CreateMCPServerOptions<unknown, TSchema>["configuration"] = {}): CreatedTool[] => {
+}: CreateMCPServerOptions<
+  unknown,
+  TSchema
+>["configuration"] = {}): CreatedTool[] => {
   const jsonSchema = schema
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
@@ -280,7 +286,7 @@ export const createMCPServer = <
             result = { bytes: await result.bytes() };
           }
           return {
-            structuredContent: result,
+            structuredContent: result as Record<string, unknown>,
             content: [
               {
                 type: "text",
@@ -314,7 +320,7 @@ export const createMCPServer = <
       throw new Error("Missing state, did you forget to call State.bind?");
     }
     const env = currentState?.env;
-    const { tools } = await createServer(env);
+    const { tools } = await createServer(env as TEnv & DefaultEnv<TSchema>);
     const tool = tools.find((t) => t.id === toolCallId);
     const execute = tool?.execute;
     if (!execute) {

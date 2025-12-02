@@ -15,6 +15,7 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import {
   admin as adminPlugin,
   apiKey,
+  jwt,
   magicLink,
   mcp,
   openAPI,
@@ -162,6 +163,11 @@ const plugins = [
   // API Key plugin for direct tool access
   // https://www.better-auth.com/docs/plugins/api-key
   apiKey({
+    enableMetadata: true,
+    maximumNameLength: 64,
+    keyExpiration: {
+      minExpiresIn: 5 / 1440, // 5 minutes in days (default is 1 day)
+    },
     permissions: {
       defaultPermissions: {
         self: [
@@ -185,6 +191,16 @@ const plugins = [
   // OpenAPI plugin for API documentation
   // https://www.better-auth.com/docs/plugins/openAPI
   openAPI(),
+
+  // JWT plugin for issuing tokens with custom payloads
+  // https://www.better-auth.com/docs/plugins/jwt
+  // Used by proxy routes to issue short-lived tokens with connection metadata
+  jwt({
+    jwt: {
+      // Short expiration for proxy tokens (5 minutes)
+      expirationTime: "5m",
+    },
+  }),
 
   sso(authConfig.ssoConfig ? createSSOConfig(authConfig.ssoConfig) : undefined),
 

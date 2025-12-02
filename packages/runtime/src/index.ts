@@ -166,31 +166,36 @@ export const withBindings = <TEnv>({
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
-    const metadata = decoded.metadata as {
-      state: Record<string, unknown>;
-      meshUrl: string;
-      connectionId: string;
-    };
+    // Support both new JWT format (fields directly on payload) and legacy format (nested in metadata)
+    const metadata =
+      (decoded.metadata as {
+        state?: Record<string, unknown>;
+        meshUrl?: string;
+        connectionId?: string;
+      }) ?? {};
 
     context = {
-      state: metadata.state,
+      state: decoded.state ?? metadata.state,
       token: tokenOrContext,
-      meshUrl: metadata.meshUrl,
-      connectionId: metadata.connectionId,
-      ensureAuthenticated: AUTHENTICATED(decoded.user),
+      meshUrl: (decoded.meshUrl as string) ?? metadata.meshUrl,
+      connectionId: (decoded.connectionId as string) ?? metadata.connectionId,
+      ensureAuthenticated: AUTHENTICATED(decoded.user ?? decoded.sub),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
-    const metadata = decoded.metadata as {
-      state: Record<string, unknown>;
-      meshUrl: string;
-      connectionId: string;
-    };
+    // Support both new JWT format (fields directly on payload) and legacy format (nested in metadata)
+    const metadata =
+      (decoded.metadata as {
+        state?: Record<string, unknown>;
+        meshUrl?: string;
+        connectionId?: string;
+      }) ?? {};
     const appName = decoded.appName as string | undefined;
     context.callerApp = appName;
-    context.connectionId ??= metadata.connectionId;
-    context.ensureAuthenticated = AUTHENTICATED(decoded.user);
+    context.connectionId ??=
+      (decoded.connectionId as string) ?? metadata.connectionId;
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user ?? decoded.sub);
   } else {
     // should not reach here
     throw new Error("Invalid token or context");

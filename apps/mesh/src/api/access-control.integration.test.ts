@@ -151,7 +151,7 @@ describe("Access Control Integration Tests", () => {
       role,
     };
 
-    // Insert directly into database
+    // Insert directly into database - using camelCase column names
     await db
       .insertInto("users")
       .values({

@@ -65,7 +65,7 @@ export function RegistryItemCard({
             </Tooltip>
           </div>
           <div className="text-sm text-muted-foreground line-clamp-2">
-            {description || "No description available"}
+            {description || "No description avASDASDAailable"}
           </div>
         </div>
       </div>

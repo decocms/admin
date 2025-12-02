@@ -15,7 +15,6 @@
     "better-auth:migrate": "bunx --bun @better-auth/cli migrate -y --config src/auth/index.ts"
   },
   "dependencies": {
-    "@decocms/vite-plugin": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.45",
     "@ai-sdk/deepseek": "^1.0.29",
     "@ai-sdk/google": "^2.0.40",
@@ -28,6 +27,7 @@
     "@deco/ui": "workspace:*",
     "@decocms/bindings": "workspace:*",
     "@decocms/runtime": "workspace:*",
+    "@decocms/vite-plugin": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@openrouter/ai-sdk-provider": "^1.2.0",
@@ -52,9 +52,10 @@
     "@tanstack/react-router": "^1.139.7",
     "@tanstack/react-router-devtools": "^1.139.7",
     "ai": "^5.0.101",
-    "better-auth": "^1.4.1",
+    "better-auth": "^1.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "fetch-to-node": "^2.1.0",
     "hono": "^4.10.7",
     "input-otp": "^1.4.2",
@@ -70,7 +71,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.17",
     "use-mcp": "^0.0.21",
-    "zod": "^3.25.76"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@better-auth/cli": "1.4.1",

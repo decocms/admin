@@ -7,6 +7,7 @@ import {
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
+import { authClient } from "@/web/lib/auth-client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,6 +117,7 @@ export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { action?: "create" };
+  const { data: session } = authClient.useSession();
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
@@ -239,6 +241,15 @@ export default function OrgMcps() {
           updated_at: new Date().toISOString(),
           status: "inactive",
           organization_id: org,
+          created_by: session?.user?.id || "unknown",
+          icon: null,
+          app_name: null,
+          app_id: null,
+          connection_headers: null,
+          oauth_config: null,
+          metadata: null,
+          tools: null,
+          bindings: null,
         });
         await tx.isPersisted.promise;
       }

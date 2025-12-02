@@ -222,8 +222,14 @@ export class ConnectionStorage implements ConnectionStoragePort {
       return value as T;
     };
 
-    const createdAt = row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
-    const updatedAt = row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at;
+    const createdAt =
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : row.created_at;
+    const updatedAt =
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at;
 
     return {
       id: row.id,

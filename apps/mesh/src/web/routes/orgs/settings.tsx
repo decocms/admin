@@ -10,6 +10,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
+import { Organization } from "@deco/sdk";
 
 export default function OrgSettings() {
   const navigate = useNavigate();
@@ -26,7 +27,9 @@ export default function OrgSettings() {
     organizationsPending && organizations.length === 0;
 
   const currentOrganization = useMemo(() => {
-    return organizations.find((organization) => organization.slug === org);
+    return organizations.find(
+      (organization: Organization) => organization.slug === org,
+    );
   }, [organizations, org]);
 
   const organizationId = currentOrganization?.id;

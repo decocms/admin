@@ -70,7 +70,10 @@ export const ConnectionEntitySchema = z.object({
     .describe("Custom headers"),
 
   oauth_config: OAuthConfigSchema.nullable().describe("OAuth configuration"),
-  metadata: z.record(z.string(), z.unknown()).nullable().describe("Additional metadata"),
+  metadata: z
+    .record(z.string(), z.unknown())
+    .nullable()
+    .describe("Additional metadata"),
   tools: z
     .array(ToolDefinitionSchema)
     .nullable()

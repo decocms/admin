@@ -22,7 +22,7 @@ Common patterns:
        "@deco/mcp": "npm:@jsr/deco__mcp@^0.5.6",
        "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^${DECO_WORKER_RUNTIME_VERSION}",
        "@mastra/core": "0.12.1",
-       "zod": "^3.25.67"
+       "zod": "^3.25.76"
      },
      "devDependencies": {
        "wrangler": "^4.13.2"
@@ -113,7 +113,7 @@ Example of files deployment:
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.2.18",
     "@mastra/core": "0.12.1",
-    "zod": "^3.25.67"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "wrangler": "^4.13.2"

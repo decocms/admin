@@ -540,3 +540,93 @@ export const publishApp = createTool({
     return Mappers.mapApp(data);
   },
 });
+
+export const reindexAppTools = createTool({
+  name: "REGISTRY_REINDEX_APP_TOOLS",
+  description:
+    "Reindex tools for an app by fetching fresh tool definitions from its MCP connection",
+  inputSchema: z.lazy(() =>
+    z.object({
+      appId: z.string().describe("The ID of the app to reindex tools for"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      appId: z.string(),
+      toolsCount: z.number().describe("Number of tools after reindexing"),
+      deletedCount: z.number().describe("Number of old tools deleted"),
+      upsertedCount: z.number().describe("Number of tools upserted"),
+    }),
+  ),
+  handler: async ({ appId }, c) => {
+    await assertWorkspaceResourceAccess(c);
+
+    // Get the app from the registry
+    const app = await c.drizzle.query.registryApps.findFirst({
+      where: {
+        id: appId,
+      },
+      with: {
+        scope: { columns: { scope_name: true } },
+      },
+    });
+
+    if (!app) {
+      throw new UserInputError(`App with ID "${appId}" not found`);
+    }
+
+    // Fetch fresh tools from the MCP connection
+    const { tools = [] } = await listToolsByConnectionType(
+      app.connection,
+      c,
+      true,
+    ).catch((e) => {
+      console.error("Error fetching tools for reindex:", e);
+      return { tools: [] };
+    });
+
+    // Get current tools to calculate counts
+    const { data: currentTools, error: currentToolsError } = await c.db
+      .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
+      .select("name")
+      .eq("app_id", appId);
+
+    if (currentToolsError) throw currentToolsError;
+
+    const currentToolCount = currentTools?.length || 0;
+
+    // Delete all existing tools for this app
+    if (currentToolCount > 0) {
+      const { error: deleteError } = await c.db
+        .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
+        .delete()
+        .eq("app_id", appId);
+
+      if (deleteError) throw deleteError;
+    }
+
+    // Insert all fresh tools
+    const now = new Date().toISOString();
+    await Promise.all(
+      tools.map((tool) =>
+        c.db.from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE).insert({
+          // @ts-expect-error - this is a valid field
+          app_id: appId,
+          name: tool.name,
+          description: tool.description || null,
+          input_schema: tool.inputSchema || null,
+          output_schema: tool.outputSchema || null,
+          metadata: null,
+          updated_at: now,
+        }),
+      ),
+    );
+
+    return {
+      appId,
+      toolsCount: tools.length,
+      deletedCount: currentToolCount,
+      upsertedCount: tools.length,
+    };
+  },
+});

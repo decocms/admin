@@ -9,9 +9,6 @@
     "vite": "^7.2.1",
     "@cloudflare/vite-plugin": "^1.13.4"
   },
-  "devDependencies": {
-    "tsup": "^8.5.0"
-  },
   "publishConfig": {
     "access": "public"
   }

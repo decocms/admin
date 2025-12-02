@@ -1,14 +1,13 @@
 /* oxlint-disable no-explicit-any */
 import { z } from "zod";
 import type { MCPConnection } from "../connection.ts";
-import { createPrivateTool, createStreamableTool } from "../tools.ts";
 import {
   createMCPFetchStub,
   type MCPClientFetchStub,
   type ToolBinder,
 } from "../mcp.ts";
+import { createPrivateTool, createStreamableTool } from "../tools.ts";
 import { CHANNEL_BINDING } from "./channels.ts";
-import { VIEW_BINDING } from "./views.ts";
 
 // ToolLike is a simplified version of the Tool interface that matches what we need for bindings
 export interface ToolLike<
@@ -93,8 +92,6 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   ReturnType<T["forConnection"]>;
 
 export const ChannelBinding = bindingClient(CHANNEL_BINDING);
-export const ViewBinding = bindingClient(VIEW_BINDING);
-
 export type { Callbacks } from "./channels.ts";
 
 export const impl = <TBinder extends Binder>(

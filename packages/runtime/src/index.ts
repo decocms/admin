@@ -2,20 +2,7 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
-import {
-  getReqToken,
-  handleAuthCallback,
-  handleLogout,
-  StateParser,
-} from "./auth.ts";
-import {
-  createContractBinding,
-  createIntegrationBinding,
-  workspaceClient,
-} from "./bindings.ts";
-import { DeconfigResource } from "./bindings/deconfig/index.ts";
-import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
-import { MCPClient, type QueryResult } from "./mcp.ts";
+import { createContractBinding, createIntegrationBinding } from "./bindings.ts";
 import { State } from "./state.ts";
 import {
   createMCPServer,
@@ -29,28 +16,15 @@ export {
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-export interface DatabaseBinding {
-  query: (params: {
-    sql: string;
-    params: string[];
-  }) => Promise<{ result: QueryResult[] }>;
-}
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
-  DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
-  DECO_APP_NAME: string;
-  DECO_APP_SLUG: string;
-  DECO_APP_ENTRYPOINT: string;
-  DECO_API_URL?: string;
-  DECO_WORKSPACE: string;
-  DECO_API_JWT_PUBLIC_KEY: string;
-  DECO_APP_DEPLOYMENT_ID: string;
-  DECO_BINDINGS: string;
-  DECO_API_TOKEN: string;
-  DECO_WORKSPACE_DB: DatabaseBinding & {
-    forContext: (ctx: RequestContext) => DatabaseBinding;
-  };
+  MESH_REQUEST_CONTEXT: RequestContext<TSchema>;
+  MESH_BINDINGS: string;
+  MESH_APP_DEPLOYMENT_ID: string;
   IS_LOCAL: boolean;
+  MESH_URL?: string;
+  MESH_RUNTIME_TOKEN?: string;
+  MESH_APP_NAME?: string;
   [key: string]: unknown;
 }
 
@@ -58,7 +32,7 @@ export interface BindingsObject {
   bindings?: Binding[];
 }
 
-export const WorkersMCPBindings = {
+export const MCPBindings = {
   parse: (bindings?: string): Binding[] => {
     if (!bindings) return [];
     try {
@@ -105,12 +79,12 @@ export interface User {
 export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
-  meshUrl?: string;
+  meshUrl: string;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
   callerApp?: string;
-  integrationId?: string;
+  connectionId?: string;
 }
 
 // 2. Map binding type to its creator function
@@ -130,26 +104,12 @@ const creatorByType: CreatorByType = {
 const withDefaultBindings = ({
   env,
   server,
-  ctx,
   url,
 }: {
   env: DefaultEnv;
   server: MCPServer<any, any>;
-  ctx: RequestContext;
   url?: string;
 }) => {
-  const client = workspaceClient(ctx, env.DECO_API_URL);
-  const createDBBinding = (ctx: RequestContext): DatabaseBinding => {
-    const client = workspaceClient(ctx, env.DECO_API_URL);
-    return {
-      query: ({ sql, params }) => {
-        return client.DATABASES_RUN_SQL({
-          sql,
-          params,
-        });
-      },
-    };
-  };
   env["SELF"] = new Proxy(
     {},
     {
@@ -168,15 +128,6 @@ const withDefaultBindings = ({
     },
   );
 
-  const dbBinding = {
-    ...createDBBinding(ctx),
-    forContext: createDBBinding,
-  };
-
-  env["DECO_API"] = MCPClient;
-  env["DECO_WORKSPACE_API"] = client;
-  env["DECO_WORKSPACE_DB"] = dbBinding;
-
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
       url?.startsWith("http://127.0.0.1")) ??
@@ -193,9 +144,6 @@ export class UnauthorizedError extends Error {
   }
 }
 
-const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
-const AUTH_START_ENDPOINT = "/oauth/start";
-const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
 const AUTHENTICATED = (user?: unknown) => () => {
   return {
     ...((user as User) ?? {}),
@@ -206,13 +154,11 @@ export const withBindings = <TEnv>({
   env: _env,
   server,
   tokenOrContext,
-  origin,
   url,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
   tokenOrContext?: string | RequestContext;
-  origin?: string | null;
   url?: string;
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
@@ -220,27 +166,38 @@ export const withBindings = <TEnv>({
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
+    const metadata = decoded.metadata as {
+      state: Record<string, unknown>;
+      meshUrl: string;
+      connectionId: string;
+    };
 
     context = {
-      state: decoded.state as Record<string, unknown>,
+      state: metadata.state,
       token: tokenOrContext,
-      integrationId: decoded.integrationId as string,
+      meshUrl: metadata.meshUrl,
+      connectionId: metadata.connectionId,
       ensureAuthenticated: AUTHENTICATED(decoded.user),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
+    const metadata = decoded.metadata as {
+      state: Record<string, unknown>;
+      meshUrl: string;
+      connectionId: string;
+    };
     const appName = decoded.appName as string | undefined;
     context.callerApp = appName;
-    context.integrationId ??= decoded.integrationId as string;
+    context.connectionId ??= metadata.connectionId;
     context.ensureAuthenticated = AUTHENTICATED(decoded.user);
   } else {
     // should not reach here
     throw new Error("Invalid token or context");
   }
 
-  env.DECO_REQUEST_CONTEXT = context;
-  const bindings = WorkersMCPBindings.parse(env.DECO_BINDINGS);
+  env.MESH_REQUEST_CONTEXT = context;
+  const bindings = MCPBindings.parse(env.MESH_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](binding as any, env);
@@ -249,7 +206,6 @@ export const withBindings = <TEnv>({
   withDefaultBindings({
     env,
     server,
-    ctx: env.DECO_REQUEST_CONTEXT,
     url,
   });
 
@@ -266,21 +222,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     ctx: ExecutionContext,
   ) => {
     const url = new URL(req.url);
-    if (url.pathname === AUTH_CALLBACK_ENDPOINT) {
-      return handleAuthCallback(req, {
-        apiUrl: env.DECO_API_URL,
-        appName: env.DECO_APP_NAME,
-      });
-    }
-    if (url.pathname === AUTH_START_ENDPOINT) {
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
-      const redirectTo = new URL("/", url);
-      const next = url.searchParams.get("next");
-      return Response.redirect(next ?? redirectTo, 302);
-    }
-    if (url.pathname === AUTH_LOGOUT_ENDPOINT) {
-      return handleLogout(req);
-    }
     if (url.pathname === "/mcp") {
       return server.fetch(req, env, ctx);
     }
@@ -307,9 +248,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       });
     }
 
-    if (url.pathname.startsWith(DeconfigResource.WatchPathNameBase)) {
-      return DeconfigResource.watchAPI(req, env);
-    }
     return (
       userFns.fetch?.(req, env, ctx) ||
       new Response("Not found", { status: 404 })
@@ -321,38 +259,16 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
-      const referer = req.headers.get("referer");
-      const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER);
-
-      try {
-        const bindings = withBindings({
-          env,
-          server,
-          tokenOrContext: await getReqToken(req, env),
-          origin:
-            referer ?? req.headers.get("origin") ?? new URL(req.url).origin,
-          url: req.url,
-        });
-        return await State.run(
-          { req, env: bindings, ctx },
-          async () => await fetcher(req, bindings, ctx),
-        );
-      } catch (error) {
-        if (error instanceof UnauthorizedError) {
-          if (!isFetchRequest) {
-            const url = new URL(req.url);
-            error.redirectTo.searchParams.set(
-              "state",
-              StateParser.stringify({
-                next: url.searchParams.get("next") ?? referer ?? req.url,
-              }),
-            );
-            return Response.redirect(error.redirectTo, 302);
-          }
-          return new Response(null, { status: 401 });
-        }
-        throw error;
-      }
+      const bindings = withBindings({
+        env,
+        server,
+        tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,
+        url: req.url,
+      });
+      return await State.run(
+        { req, env: bindings, ctx },
+        async () => await fetcher(req, bindings, ctx),
+      );
     },
   };
 };

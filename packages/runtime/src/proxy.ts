@@ -1,17 +1,8 @@
 /* oxlint-disable no-explicit-any */
-import type { ToolExecutionContext as _ToolExecutionContext } from "@mastra/core";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { MCPConnection } from "./connection.ts";
 import { createServerClient } from "./mcp-client.ts";
 import type { CreateStubAPIOptions } from "./mcp.ts";
-import { WELL_KNOWN_API_HOSTNAMES } from "./well-known.ts";
-
-const getWorkspace = (workspace?: string) => {
-  if (workspace && workspace.length > 0 && !workspace.includes("/")) {
-    return `/shared/${workspace}`;
-  }
-  return workspace ?? "";
-};
 
 const safeParse = (content: string) => {
   try {
@@ -34,35 +25,12 @@ const toolsMap = new Map<
 >();
 
 /**
- * Determines if a given URL supports tool names in the path.
- * Our APIs (api.decocms.com, api.deco.chat, localhost) support /tool/${toolName} routing.
- * Third-party APIs typically don't support this pattern.
- */
-function supportsToolNameInPath(url: string): boolean {
-  try {
-    // Our main APIs that support /tool/${toolName} routing
-    return WELL_KNOWN_API_HOSTNAMES.includes(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
-
-/**
  * The base fetcher used to fetch the MCP from API.
  */
 export function createMCPClientProxy<T extends Record<string, unknown>>(
-  options?: CreateStubAPIOptions,
+  options: CreateStubAPIOptions,
 ): T {
-  const mcpPath = options?.mcpPath ?? "/mcp";
-
-  const connection: MCPConnection = options?.connection || {
-    type: "HTTP",
-    token: options?.token,
-    url: new URL(
-      `${getWorkspace(options?.workspace)}${mcpPath}`,
-      options?.decoCmsApiUrl ?? `https://api.decocms.com`,
-    ).href,
-  };
+  const connection: MCPConnection = options.connection;
 
   return new Proxy<T>({} as T, {
     get(_, name) {
@@ -81,28 +49,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         // Create a connection with the tool name in the URL path for better logging
         // Only modify connections that have a URL property (HTTP, SSE, Websocket)
         // Use automatic detection based on URL, with optional override
-        let toolConnection = connection;
-        const shouldAddToolName =
-          options?.supportsToolName ??
-          ("url" in connection &&
-            typeof connection.url === "string" &&
-            supportsToolNameInPath(connection.url));
-
-        if (
-          shouldAddToolName &&
-          "url" in connection &&
-          typeof connection.url === "string"
-        ) {
-          toolConnection = {
-            ...connection,
-            url: connection.url.endsWith("/")
-              ? `${connection.url}tool/${String(name)}`
-              : `${connection.url}/tool/${String(name)}`,
-          };
-        }
 
         const { client, callStreamableTool } = await createServerClient(
-          { connection: toolConnection },
+          { connection },
           undefined,
           extraHeaders,
         );

@@ -124,7 +124,7 @@ export interface CreateMCPServerOptions<
   TSchema extends z.ZodTypeAny = never,
 > {
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
-  oauth?: {
+  configuration?: {
     state?: TSchema;
     scopes?: string[];
   };
@@ -158,7 +158,7 @@ export interface AppContext<TEnv = any> {
 const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
   state: schema,
   scopes,
-}: CreateMCPServerOptions<any, TSchema>["oauth"] = {}): ReturnType<
+}: CreateMCPServerOptions<any, TSchema>["configuration"] = {}): ReturnType<
   typeof createTool<any, any>
 >[] => {
   const jsonSchema = schema
@@ -228,7 +228,7 @@ export const createMCPServer = <
           };
     const tools = await toolsFn(bindings);
 
-    tools.push(...decoChatOAuthToolsFor<TSchema>(options.oauth));
+    tools.push(...decoChatOAuthToolsFor<TSchema>(options.configuration));
 
     for (const tool of tools) {
       server.registerTool(

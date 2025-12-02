@@ -43,14 +43,17 @@
     "suppressImplicitAnyIndexErrors": false,
     "keyofStringsOnly": false,
     // Library files (adapted for Node.js instead of Deno)
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     // Path resolution
     "baseUrl": ".",
     "paths": {
-      "@deco/*": ["packages/*/src"],
-      "@decocms/runtime": ["packages/runtime/src/index.ts"],
-      "@decocms/runtime/*": ["packages/runtime/src/*"],
-      "@decocms/runtime/d1": ["packages/runtime/src/d1-store.ts"]
+      "@deco/*": [
+        "packages/*/src"
+      ]
     },
     // Experimental decorators for compatibility
     "experimentalDecorators": true,
@@ -64,7 +67,11 @@
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },
-  "include": ["apps/**/*", "packages/**/*", "plugins/**/*"],
+  "include": [
+    "apps/**/*",
+    "packages/**/*",
+    "plugins/**/*"
+  ],
   "exclude": [
     "apps/mesh/**",
     "node_modules",

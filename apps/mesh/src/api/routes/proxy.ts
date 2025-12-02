@@ -176,6 +176,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
           metadata: {
             state: connection.configuration_state,
             meshUrl: ctx.baseUrl, // Include mesh URL so receivers know where mesh is running
+            connectionId,
           },
           expiresIn: 60 * 5, // 5 minutes - short lived
         },

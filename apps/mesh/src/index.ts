@@ -13,12 +13,16 @@ import app from "./api";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 // Log startup info
+const dim = "\x1b[2m";
+const reset = "\x1b[0m";
+
 console.log("✅ MCP Mesh starting...");
 console.log("");
-console.log(`📋 Health check:  http://0.0.0.0:${port}/health`);
-console.log(`🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*`);
-console.log(`🔧 MCP endpoint:   http://0.0.0.0:${port}/mcp`);
-console.log(`🌐 Listening on:   0.0.0.0:${port}`);
+console.log(`${dim}📋 Health check:  http://0.0.0.0:${port}/health${reset}`);
+console.log(
+  `${dim}🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*${reset}`,
+);
+console.log(`${dim}🔧 MCP endpoint:   http://0.0.0.0:${port}/mcp${reset}`);
 console.log("");
 
 Bun.serve({

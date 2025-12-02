@@ -43,6 +43,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     if (!listResults) return [];
 
     // Helper function to transform a single item with flexible field mapping
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformItem = (item: any, idx: number): RegistryItem => ({
       id: item.id || item.uuid || `item-${idx}`,
       name:

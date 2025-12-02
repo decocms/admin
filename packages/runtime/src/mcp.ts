@@ -2,7 +2,6 @@
 import type { ToolBinder } from "@decocms/bindings";
 export {
   createMCPFetchStub,
-  isStreamableToolBinder,
   MCPClient,
   type CreateStubAPIOptions,
   type MCPClientFetchStub,

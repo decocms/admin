@@ -3,7 +3,7 @@ import { type PropsWithChildren, useMemo } from "react";
 import { cn } from "../lib/utils.ts";
 import { Metadata } from "../types/chat-metadata.ts";
 import { Avatar } from "./avatar.tsx";
-import { ChatReasoningPart } from "./chat/parts/chat-reasoning-part.tsx";
+import { DecoChatMessageReasoningPart } from "./chat/parts/deco-chat-message-reasoning-part.tsx";
 import { DecoChatMessageTextPart } from "./chat/parts/deco-chat-message-text-part.tsx";
 
 export interface DecoChatMessageProps<T extends Metadata> {
@@ -140,11 +140,10 @@ export function DecoChatMessageAssistant<T extends Metadata>({
               }
               if (part.type === "reasoning") {
                 return (
-                  <ChatReasoningPart
+                  <DecoChatMessageReasoningPart
                     key={`${id}-${index}`}
                     part={part}
-                    index={index}
-                    messageId={id}
+                    id={id}
                   />
                 );
               }

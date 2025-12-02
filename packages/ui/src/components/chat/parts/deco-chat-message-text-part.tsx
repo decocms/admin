@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useCopy } from "../../../hooks/use-copy.ts";
 import { Button } from "../../button.tsx";
 import { MemoizedMarkdown } from "../chat-markdown.tsx";
@@ -16,9 +16,12 @@ export function DecoChatMessageTextPart({
   copyable = false,
 }: DecoChatMessageTextPartProps) {
   const { handleCopy } = useCopy();
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleCopyMessage = useCallback(async () => {
     await handleCopy(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, [text, handleCopy]);
 
   return (
@@ -33,8 +36,17 @@ export function DecoChatMessageTextPart({
               size="sm"
               className="text-muted-foreground hover:text-foreground px-2 py-1 h-auto whitespace-nowrap"
             >
-              <Icon name="content_copy" className="mr-1 text-sm" />
-              Copy message
+              {isCopied ? (
+                <>
+                  <Icon name="check" className="mr-1 text-sm" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Icon name="content_copy" className="mr-1 text-sm" />
+                  Copy message
+                </>
+              )}
             </Button>
           </div>
         </div>

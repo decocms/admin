@@ -1,46 +1,57 @@
-import { Icon } from "../../icon.tsx";
+import { ReasoningUIPart } from "ai";
+import { useEffect, useReducer } from "react";
 import { cn } from "../../../lib/utils.ts";
-import { useEffect, useState } from "react";
+import { Icon } from "../../icon.tsx";
 import { MemoizedMarkdown } from "../chat-markdown.tsx";
 
 interface ReasoningPartProps {
-  part: {
-    type: "reasoning";
-    text: string;
-    state?: "streaming" | "done";
-    details?: Array<{
-      type: "text";
-      text: string;
-    }>;
-  };
-  messageId: string;
-  index: number;
+  part: ReasoningUIPart;
+  id: string;
 }
 
-export function ChatReasoningPart({
-  part,
-  index,
-  messageId,
-}: ReasoningPartProps) {
-  const { state } = part;
-  const isPartStreaming = state === "streaming";
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [wasManuallyExpanded, setWasManuallyExpanded] = useState(false);
+interface State {
+  isExpanded: boolean;
+  wasManuallyToggled: boolean;
+}
+
+type Action = { type: "TOGGLE" } | { type: "SET_EXPANDED"; payload: boolean };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "TOGGLE":
+      return {
+        isExpanded: !state.isExpanded,
+        wasManuallyToggled: true,
+      };
+    case "SET_EXPANDED":
+      if (state.wasManuallyToggled) {
+        return state;
+      }
+      return {
+        ...state,
+        isExpanded: action.payload,
+      };
+    default:
+      return state;
+  }
+}
+
+export function DecoChatMessageReasoningPart({ part, id }: ReasoningPartProps) {
+  const { state: partState } = part;
+  const isPartStreaming = partState === "streaming";
+
+  const [{ isExpanded }, dispatch] = useReducer(reducer, {
+    isExpanded: false,
+    wasManuallyToggled: false,
+  });
 
   // Handle automatic expansion/collapse based on streaming states
   useEffect(() => {
-    if (wasManuallyExpanded) return; // Don't auto-collapse if user manually expanded
-
-    if (isPartStreaming) {
-      setIsExpanded(true);
-    } else {
-      setIsExpanded(false);
-    }
-  }, [isPartStreaming, wasManuallyExpanded]);
+    dispatch({ type: "SET_EXPANDED", payload: isPartStreaming });
+  }, [isPartStreaming]);
 
   const handleToggle = () => {
-    setIsExpanded(!isExpanded);
-    setWasManuallyExpanded(!isExpanded);
+    dispatch({ type: "TOGGLE" });
   };
 
   return (
@@ -90,15 +101,7 @@ export function ChatReasoningPart({
           )}
         >
           <div className={cn("text-muted-foreground markdown-sm pb-2")}>
-            <MemoizedMarkdown
-              key={index}
-              id={`${messageId}-${index}-reasoning`}
-              text={
-                "details" in part && Array.isArray(part.details)
-                  ? part.details[0].text
-                  : part.text
-              }
-            />
+            <MemoizedMarkdown id={id} text={part.text} />
           </div>
         </div>
       </div>

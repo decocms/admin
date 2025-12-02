@@ -6,7 +6,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface RegistryItemCardProps {
-  id: string;
   name: string;
   description?: string;
   icon?: string;
@@ -23,7 +22,6 @@ function getInitials(name: string): string {
 }
 
 export function RegistryItemCard({
-  id,
   name,
   description,
   icon,

@@ -1,5 +1,4 @@
 interface RegistryItemListCardProps {
-  id: string;
   name: string;
   description?: string;
   icon?: string;
@@ -16,7 +15,6 @@ function getInitials(name: string): string {
 }
 
 export function RegistryItemListCard({
-  id,
   name,
   description,
   icon,

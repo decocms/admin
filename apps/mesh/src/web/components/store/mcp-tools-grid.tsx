@@ -1,9 +1,8 @@
-import type { MCP } from "@/web/hooks/collections/use-registry-mcps";
-import { MCPToolCard } from "./mcp-tool-card";
+import { MCPToolCard, type MCPApp } from "./mcp-tool-card";
 
 interface MCPToolsGridProps {
-  tools: MCP[];
-  onCardClick: (tool: MCP) => void;
+  tools: MCPApp[];
+  onCardClick: (app: MCPApp) => void;
   title?: string;
   subtitle?: string;
 }
@@ -27,10 +26,10 @@ export function MCPToolsGrid({
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {tools.map((tool) => (
+        {tools.map((app) => (
           <MCPToolCard
-            key={tool.id}
-            tool={tool}
+            key={app.id}
+            app={app}
             onCardClick={onCardClick}
           />
         ))}

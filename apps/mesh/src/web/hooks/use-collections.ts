@@ -13,13 +13,10 @@ import {
   type CollectionUpdateOutput,
 } from "@decocms/bindings/collections";
 import {
-  and,
   type Collection,
   createCollection,
   eq,
-  like,
   type OperationType,
-  or,
 } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { createToolCaller, type ToolCaller } from "../../tools/client";
@@ -369,8 +366,6 @@ export function useCollectionList<T extends CollectionEntity>(
     filters,
     sortKey,
     sortDirection,
-    searchFields = ["title", "description"] as (keyof T)[],
-    defaultSortKey = "updated_at" as keyof T,
   } = options;
 
   // Use live query for reactive data with all filtering and sorting in the query

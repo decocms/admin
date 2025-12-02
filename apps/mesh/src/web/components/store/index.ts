@@ -19,10 +19,11 @@ export { RegistryItemListCard } from "./registry-item-list-card";
 export { RegistryItemsSection } from "./registry-items-section";
 export type { RegistryItem } from "./registry-items-section";
 
-// Legacy components (kept for backwards compatibility)
-export { MCPGrid } from "./mcp-grid";
-export { MCPCard } from "./mcp-card";
+// MCP Apps components
 export { MCPToolCard } from "./mcp-tool-card";
+export type { MCPApp } from "./mcp-tool-card";
+
+// Legacy components (kept for backwards compatibility)
 export { MCPToolsGrid } from "./mcp-tools-grid";
 export { MCPResultsView } from "./mcp-results-view";
 

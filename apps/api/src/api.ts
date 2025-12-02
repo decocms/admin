@@ -38,6 +38,7 @@ import {
   getRegistryApp,
   getWorkspaceBucketName,
   GLOBAL_TOOLS,
+  REGISTRY_PUBLIC_TOOLS,
   type IntegrationWithTools,
   documentViews as legacyDocumentViews,
   viewViews as legacyViewViews,
@@ -1237,6 +1238,98 @@ app.post("/:org/:project/triggers/:id", handleTrigger);
 Object.entries(loginRoutes).forEach(([route, honoApp]) => {
   app.route(route, honoApp);
 });
+
+// Public Registry MCP Endpoint
+// Exposes COLLECTION_REGISTRY_LIST and COLLECTION_REGISTRY_GET
+// No authentication required
+
+// Custom handler for registry MCP endpoint
+const createRegistryMcpHandler = () => {
+  return async (c: Context<AppEnv>) => {
+    const server = new McpServer(
+      {
+        name: "Deco MCP Registry",
+        version: "1.0.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    // Register all public registry tools
+    const registeredTools = new Set<string>();
+    for (const tool of REGISTRY_PUBLIC_TOOLS) {
+      if (registeredTools.has(tool.name)) {
+        continue;
+      }
+
+      registeredTools.add(tool.name);
+
+      const evalInputSchema =
+        tool.inputSchema instanceof z.ZodLazy
+          ? tool.inputSchema.schema
+          : tool.inputSchema;
+
+      const evalOutputSchema =
+        tool.outputSchema instanceof z.ZodLazy
+          ? tool.outputSchema.schema
+          : tool.outputSchema;
+
+      // Unwrap ZodEffects (from .refine(), .transform(), etc.) to get the base schema
+      const unwrapSchema = (schema: z.ZodTypeAny): z.ZodTypeAny => {
+        if (schema instanceof z.ZodEffects) {
+          return unwrapSchema(schema.innerType());
+        }
+        return schema;
+      };
+
+      const baseInputSchema = unwrapSchema(evalInputSchema);
+      const baseOutputSchema = unwrapSchema(evalOutputSchema);
+
+      server.registerTool(
+        tool.name,
+        {
+          annotations: tool.annotations,
+          description: tool.description,
+          inputSchema:
+            "shape" in baseInputSchema
+              ? (baseInputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
+          outputSchema:
+            baseOutputSchema && "shape" in baseOutputSchema
+              ? (baseOutputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
+        },
+        // @ts-expect-error: zod shape is not typed
+        withMCPErrorHandling(tool.handler, tool.name),
+      );
+    }
+
+    const transport = new HttpServerTransport();
+    await server.connect(transport);
+
+    const currentContext = honoCtxToAppCtx(c);
+    return State.run(
+      currentContext,
+      transport.handleMessage.bind(transport),
+      c.req.raw,
+    );
+  };
+};
+
+const registryPublicMcpHandler = createRegistryMcpHandler();
+
+// GET /registry/mcp - Returns registry metadata (our custom extension)
+// POST /registry/mcp - Standard MCP protocol
+app.get("/registry/mcp", (c) => {
+  return c.json({
+    ...DECO_REGISTRY_INFO,
+    tools: ["COLLECTION_REGISTRY_LIST", "COLLECTION_REGISTRY_GET"],
+  });
+});
+app.post("/registry/mcp", registryPublicMcpHandler);
 
 app.get("/files/:org/:project/:path{.+}", async (c) => {
   const org = c.req.param("org");

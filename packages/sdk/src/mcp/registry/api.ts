@@ -1,4 +1,10 @@
 import { listToolsByConnectionType } from "@deco/ai/mcp";
+import {
+  CollectionGetInputSchema,
+  CollectionListInputSchema,
+  type OrderByExpression,
+  type WhereExpression,
+} from "@decocms/bindings/collections";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { AppName } from "../../common/index.ts";
@@ -14,13 +20,23 @@ import {
   workspaceOrProjectIdConditions,
 } from "../projects/util.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
-import { RegistryAppSchema, RegistryScopeSchema } from "./schemas.ts";
+import {
+  RegistryAppSchema,
+  RegistryScopeSchema,
+  MCPRegistryListResponseSchema,
+  MCPRegistryGetResponseSchema,
+  type MCPRegistryServer,
+  type MCPRegistryGetResponse,
+} from "./schemas.ts";
 
 export type { RegistryApp } from "./schemas.ts";
 
 const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
 const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
   "deco_chat_apps_registry_tools" as const;
+
+// Deco Registry namespace in MCP Registry Spec
+const DECO_REGISTRY_NAMESPACE = "cx.decocms.registry" as const;
 
 // Apps to omit from marketplace/discover
 const OMITTED_APPS = [
@@ -85,6 +101,183 @@ const Filters = {
       : {};
   },
 };
+
+/**
+ * Map DbApp to RegistryAppCollectionEntity with title = friendlyName
+ * 
+ * Important: The timestamps (created_at, updated_at) from the database may be in various formats.
+ * We convert them to valid ISO 8601 strings.
+ * Database format: "2025-11-21 00:27:52.990737+00" needs conversion to ISO format
+ */
+const mapAppToCollectionEntity = (app: DbApp) => {
+  // Ensure timestamps are valid ISO 8601 strings
+  const ensureIsoString = (timestamp: unknown): string => {
+    if (typeof timestamp === 'string') {
+      // Try to parse and convert to ISO string
+      try {
+        const date = new Date(timestamp);
+        // Check if it's a valid date
+        if (isNaN(date.getTime())) {
+          // If parsing failed, return current time
+          return new Date().toISOString();
+        }
+        return date.toISOString();
+      } catch {
+        return new Date().toISOString();
+      }
+    }
+    if (timestamp instanceof Date) {
+      return timestamp.toISOString();
+    }
+    if (typeof timestamp === 'number') {
+      return new Date(timestamp).toISOString();
+    }
+    return new Date().toISOString();
+  };
+
+  return {
+    id: app.id,
+    title: app.friendly_name ?? app.name ?? AppName.build(app.scope.scope_name, app.name),
+    created_at: ensureIsoString(app.created_at),
+    updated_at: ensureIsoString(app.updated_at),
+    created_by: undefined,
+    updated_by: undefined,
+    workspace: app.workspace,
+    scopeId: app.scope_id,
+    scopeName: app.scope.scope_name,
+    appName: AppName.build(app.scope.scope_name, app.name),
+    name: app.name,
+    description: app.description ?? undefined,
+    icon: app.icon ?? undefined,
+    connection: app.connection,
+    unlisted: app.unlisted,
+    friendlyName: app.friendly_name ?? undefined,
+    verified: app.verified ?? false,
+    metadata: app.metadata ?? undefined,
+    tools: app.tools.map((tool) => ({
+      id: tool.id,
+      name: tool.name,
+      description: tool.description ?? undefined,
+      inputSchema: tool.input_schema ?? {},
+      outputSchema: tool.output_schema ?? undefined,
+      metadata: tool.metadata ?? undefined,
+    })),
+    projectId: app.project_id ?? undefined,
+  };
+};
+
+/**
+ * Evaluate a where expression against a registry app
+ */
+function evaluateWhereExpression(
+  app: ReturnType<typeof mapAppToCollectionEntity>,
+  where: WhereExpression,
+): boolean {
+  if ("conditions" in where) {
+    // Logical operator
+    const { operator, conditions } = where;
+    switch (operator) {
+      case "and":
+        return conditions.every((c) => evaluateWhereExpression(app, c));
+      case "or":
+        return conditions.some((c) => evaluateWhereExpression(app, c));
+      case "not":
+        return !conditions.every((c) => evaluateWhereExpression(app, c));
+      default:
+        return true;
+    }
+  }
+
+  // Comparison expression
+  const { field, operator, value } = where;
+  const fieldPath = field.join(".");
+  const fieldValue = getFieldValue(app, fieldPath);
+
+  switch (operator) {
+    case "eq":
+      return fieldValue === value;
+    case "gt":
+      return (fieldValue as number | string) > (value as number | string);
+    case "gte":
+      return (fieldValue as number | string) >= (value as number | string);
+    case "lt":
+      return (fieldValue as number | string) < (value as number | string);
+    case "lte":
+      return (fieldValue as number | string) <= (value as number | string);
+    case "in":
+      return Array.isArray(value) && value.includes(fieldValue);
+    case "like":
+      if (typeof fieldValue !== "string" || typeof value !== "string")
+        return false;
+      if (value.length > 100) return false;
+      const pattern = value
+        .split("")
+        .map((char) => {
+          if (char === "%") return ".*";
+          if (char === "_") return ".";
+          if (/[.*+?^${}()|[\]\\]/.test(char)) return "\\" + char;
+          return char;
+        })
+        .join("");
+      return new RegExp(`^${pattern}$`, "i").test(fieldValue);
+    case "contains":
+      if (typeof fieldValue !== "string" || typeof value !== "string")
+        return false;
+      return fieldValue.toLowerCase().includes(value.toLowerCase());
+    default:
+      return true;
+  }
+}
+
+/**
+ * Get a field value from a registry app, handling nested paths
+ */
+function getFieldValue(app: ReturnType<typeof mapAppToCollectionEntity>, fieldPath: string): unknown {
+  const parts = fieldPath.split(".");
+  let value: unknown = app;
+  for (const part of parts) {
+    if (value == null || typeof value !== "object") return undefined;
+    value = (value as Record<string, unknown>)[part];
+  }
+  return value;
+}
+
+/**
+ * Apply orderBy expressions to sort apps
+ */
+function applyOrderBy(
+  apps: ReturnType<typeof mapAppToCollectionEntity>[],
+  orderBy: OrderByExpression[],
+): ReturnType<typeof mapAppToCollectionEntity>[] {
+  return [...apps].sort((a, b) => {
+    for (const order of orderBy) {
+      const fieldPath = order.field.join(".");
+      const aValue = getFieldValue(a, fieldPath);
+      const bValue = getFieldValue(b, fieldPath);
+
+      let comparison = 0;
+
+      // Handle nulls
+      if (aValue == null && bValue == null) continue;
+      if (aValue == null) {
+        comparison = order.nulls === "first" ? -1 : 1;
+      } else if (bValue == null) {
+        comparison = order.nulls === "first" ? 1 : -1;
+      } else if (typeof aValue === "string" && typeof bValue === "string") {
+        comparison = aValue.localeCompare(bValue);
+      } else if (typeof aValue === "number" && typeof bValue === "number") {
+        comparison = aValue - bValue;
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue));
+      }
+
+      if (comparison !== 0) {
+        return order.direction === "desc" ? -comparison : comparison;
+      }
+    }
+    return 0;
+  });
+}
 
 const createTool = createToolGroup("Registry", {
   name: "App Registry",
@@ -540,3 +733,268 @@ export const publishApp = createTool({
     return Mappers.mapApp(data);
   },
 });
+
+/**
+ * PUBLIC COLLECTION TOOLS
+ *
+ * These tools expose public (unlisted: false) registry apps via the Collection pattern.
+ * Used for external consumption via /registry/mcp public endpoint.
+ */
+
+/**
+ * Get MIME type for icon URL based on file extension
+ */
+function getIconMimeType(url: string): string {
+  if (url.endsWith(".svg")) return "image/svg+xml";
+  if (url.endsWith(".png")) return "image/png";
+  if (url.endsWith(".jpg") || url.endsWith(".jpeg")) return "image/jpeg";
+  if (url.endsWith(".webp")) return "image/webp";
+  return "image/png";
+}
+
+/**
+ * Extract remote URL from connection object
+ */
+function getRemoteUrl(connection: ReturnType<typeof mapAppToCollectionEntity>["connection"]): string {
+  if ("url" in connection && typeof connection.url === "string") {
+    return connection.url;
+  }
+  return "http://localhost";
+}
+
+/**
+ * Map connection type to MCP transport type
+ */
+function getTransportType(connectionType: string): "http" | "sse" | "websocket" {
+  if (connectionType === "SSE") return "sse";
+  if (connectionType === "Websocket") return "websocket";
+  return "http";
+}
+
+/**
+ * Build Deco registry metadata for _meta.cx.decocms.registry
+ */
+function buildDecoRegistryMeta(app: ReturnType<typeof mapAppToCollectionEntity>) {
+  return {
+    id: app.id,
+    scopeId: app.scopeId,
+    scopeName: app.scopeName,
+    workspace: app.workspace,
+    projectId: app.projectId,
+    verified: app.verified,
+    publishedAt: app.created_at,
+    updatedAt: app.updated_at,
+    tools: app.tools,
+  };
+}
+
+/**
+ * Map app to MCP Registry Spec Server format
+ */
+function mapAppToMCPRegistryServer(
+  app: ReturnType<typeof mapAppToCollectionEntity>,
+): MCPRegistryServer {
+  return {
+    $schema:
+      "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+    name: app.appName,
+    title: app.title,
+    description: app.description,
+    version: "1.0.0",
+    icons: app.icon
+      ? [{ src: app.icon, mimeType: getIconMimeType(app.icon) }]
+      : undefined,
+    remotes: [
+      {
+        type: getTransportType(app.connection.type),
+        url: getRemoteUrl(app.connection),
+      },
+    ],
+    _meta: {
+      [DECO_REGISTRY_NAMESPACE]: buildDecoRegistryMeta(app),
+    },
+  };
+}
+
+/**
+ * COLLECTION_REGISTRY_LIST
+ *
+ * List all public apps in the MCP registry with filtering, sorting, and pagination.
+ * Only returns apps where unlisted: false (public apps).
+ * Filters out apps in OMITTED_APPS list.
+ * Returns apps in MCP Registry Spec format.
+ */
+export const COLLECTION_REGISTRY_LIST = createTool({
+  name: "COLLECTION_REGISTRY_LIST",
+  description: "List all public apps in the MCP registry",
+  inputSchema: CollectionListInputSchema,
+  outputSchema: MCPRegistryListResponseSchema,
+  handler: async (input, c) => {
+    // Public tool - grant access
+    c.resourceAccess.grant();
+
+    // Query all PUBLIC apps (unlisted: false)
+    const apps = await c.drizzle.query.registryApps.findMany({
+      where: {
+        unlisted: false, // Only public apps
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+      orderBy: (a, { desc }) => desc(a.created_at),
+    });
+
+    // Filter out omitted apps
+    let filteredApps = apps.filter((app) => !OMITTED_APPS.includes(app.id));
+
+    // Map to collection entities
+    let collectionApps = filteredApps.map(mapAppToCollectionEntity);
+
+    // Apply where filter if specified
+    if (input.where) {
+      collectionApps = collectionApps.filter((app) =>
+        evaluateWhereExpression(app, input.where!),
+      );
+    }
+
+    // Apply orderBy if specified
+    if (input.orderBy && input.orderBy.length > 0) {
+      collectionApps = applyOrderBy(collectionApps, input.orderBy);
+    }
+
+    // Calculate pagination
+    const totalCount = collectionApps.length;
+    const offset = input.offset ?? 0;
+    // If no limit specified, return all data; otherwise cap at 1000
+    const limit = input.limit === undefined ? totalCount : Math.min(input.limit, 1000);
+    const paginatedApps = collectionApps.slice(offset, offset + limit);
+
+    // Map to MCP Registry Spec format
+    const servers = paginatedApps.map((app) => ({
+      _meta: { [DECO_REGISTRY_NAMESPACE]: buildDecoRegistryMeta(app) },
+      server: mapAppToMCPRegistryServer(app),
+    }));
+
+    return {
+      metadata: {
+        count: paginatedApps.length,
+        nextCursor:
+          offset + limit < totalCount ? (offset + limit).toString() : undefined,
+      },
+      servers,
+    };
+  },
+});
+
+/**
+ * COLLECTION_REGISTRY_GET
+ *
+ * Get a single public app from the registry by ID in MCP Registry Spec GET format.
+ * Only returns apps where unlisted: false (public apps).
+ * Returns item: null if app is not found or if it's private (unlisted: true).
+ */
+export const COLLECTION_REGISTRY_GET = createTool({
+  name: "COLLECTION_REGISTRY_GET",
+  description: "Get a public app from the MCP registry by ID",
+  inputSchema: CollectionGetInputSchema,
+  outputSchema: z.object({
+    item: MCPRegistryGetResponseSchema.nullable(),
+  }),
+  handler: async (input, c) => {
+    // Public tool - grant access
+    c.resourceAccess.grant();
+
+    // Query by id with public filter (unlisted: false)
+    const app = await c.drizzle.query.registryApps.findFirst({
+      where: {
+        id: input.id,
+        unlisted: false, // Only return public apps
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+    });
+
+    if (!app) {
+      return { item: null };
+    }
+
+    // Double-check it's public (extra security measure)
+    if (app.unlisted) {
+      return { item: null };
+    }
+
+    // Map to collection entity
+    const collectionApp = mapAppToCollectionEntity(app);
+
+    // Map to MCP Registry Spec GET format
+    const response: MCPRegistryGetResponse = {
+      _meta: {
+        [DECO_REGISTRY_NAMESPACE]: {
+          isLatest: true,
+          publishedAt: collectionApp.created_at,
+          updatedAt: collectionApp.updated_at,
+          status: "active",
+        },
+      },
+      server: {
+        ...mapAppToMCPRegistryServer(collectionApp),
+        _meta: { [DECO_REGISTRY_NAMESPACE]: buildDecoRegistryMeta(collectionApp) },
+      },
+    };
+
+    return { item: response };
+  },
+});
+
+// Deco MCP Registry metadata
+const DECO_REGISTRY_INFO = {
+  name: "Deco MCP Registry",
+  version: "1.0.0",
+  icon: "https://assets.decocache.com/decocms/c6af6b61-bb6d-4601-8003-708d62d5fb7a/logo-tiny.svg",
+  publisher: {
+    name: "decocms",
+    url: "https://deco.cx",
+  },
+} as const;
+
+/**
+ * COLLECTION_REGISTRY_INFO
+ *
+ * Returns information about the Deco MCP Registry publisher.
+ * Public tool - no authentication required.
+ */
+export const COLLECTION_REGISTRY_INFO = createTool({
+  name: "COLLECTION_REGISTRY_INFO",
+  description: "Get information about the Deco MCP Registry publisher",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    name: z.string().describe("Registry name"),
+    version: z.string().describe("Registry version"),
+    icon: z.string().describe("Registry icon URL"),
+    publisher: z.object({
+      name: z.string().describe("Publisher name"),
+      url: z.string().describe("Publisher URL"),
+    }),
+  }),
+  handler: async (_input, c) => {
+    // Public tool - grant access
+    c.resourceAccess.grant();
+
+    return DECO_REGISTRY_INFO;
+  },
+});
+
+/**
+ * REGISTRY_PUBLIC_TOOLS
+ *
+ * Array of public registry tools exposed via the /registry/mcp endpoint.
+ * These tools can be accessed without authentication.
+ */
+export const REGISTRY_PUBLIC_TOOLS = [
+  COLLECTION_REGISTRY_LIST,
+  COLLECTION_REGISTRY_GET,
+  COLLECTION_REGISTRY_INFO,
+] as const;

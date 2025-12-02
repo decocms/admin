@@ -60,7 +60,7 @@ export {
 } from "./integrations/api.ts";
 export * from "./middlewares.ts";
 export * from "./models/llm-vault.ts";
-export { getRegistryApp } from "./registry/api.ts";
+export { getRegistryApp, REGISTRY_PUBLIC_TOOLS } from "./registry/api.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export const DECONFIG_TOOLS = [

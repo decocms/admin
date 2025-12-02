@@ -87,6 +87,12 @@ const orgSettingsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/settings.tsx")),
 });
 
+const orgStoreRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/store",
+  component: lazyRouteComponent(() => import("./routes/orgs/store.tsx")),
+});
+
 const connectionLayoutRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/mcps/$connectionId",
@@ -115,6 +121,7 @@ const shellRouteTree = shellLayout.addChildren([
   orgMembersRoute,
   orgConnectionsRoute,
   orgSettingsRoute,
+  orgStoreRoute,
   connectionLayoutRoute,
   collectionDetailsRoute,
 ]);

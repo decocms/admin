@@ -1,6 +1,6 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.10",
   "type": "module",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",

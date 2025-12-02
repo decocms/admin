@@ -24,7 +24,8 @@
     "./client": "./src/client.ts",
     "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
-    "./asset-server": "./src/asset-server/index.ts"
+    "./asset-server": "./src/asset-server/index.ts",
+    "./tools": "./src/tools.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",

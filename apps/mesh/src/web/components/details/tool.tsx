@@ -75,12 +75,12 @@ export function ToolDetailsView({
 
   useEffect(() => {
     console.log("MCP State:", mcp.state);
-    console.log("MCP Client:", mcp.client ? "Ready" : "Not Ready");
+    console.log("MCP Ready:", mcp.state === "ready" ? "Yes" : "No");
     console.log("Connection URL:", normalizedUrl);
     if (mcp.error) {
       console.error("MCP Error:", mcp.error);
     }
-  }, [mcp.state, mcp.client, mcp.error, normalizedUrl]);
+  }, [mcp.state, mcp.error, normalizedUrl]);
 
   // Find the tool definition
   const tool = useMemo(() => {
@@ -189,7 +189,7 @@ export function ToolDetailsView({
         <div className="flex items-center gap-4 py-2">
           {/* MCP Status */}
           <div className="flex items-center gap-2">
-            {mcp.state === "connected" || mcp.state === "ready" ? (
+            {mcp.state === "ready" ? (
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             ) : mcp.state === "connecting" || mcp.state === "authenticating" ? (
               <Loader2 className="h-3 w-3 animate-spin text-yellow-500" />
@@ -405,7 +405,7 @@ export function ToolDetailsView({
                 </div>
               )}
 
-              {executionResult && (
+              {executionResult ? (
                 <div className="absolute top-4 right-4 flex gap-2">
                   <Button
                     size="icon"
@@ -421,7 +421,7 @@ export function ToolDetailsView({
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

@@ -28,8 +28,8 @@ export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
 export const ToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  inputSchema: z.record(z.unknown()),
-  outputSchema: z.record(z.unknown()).optional(),
+  inputSchema: z.record(z.string(), z.unknown()),
+  outputSchema: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
@@ -70,7 +70,7 @@ export const ConnectionEntitySchema = z.object({
     .describe("Custom headers"),
 
   oauth_config: OAuthConfigSchema.nullable().describe("OAuth configuration"),
-  metadata: z.record(z.unknown()).nullable().describe("Additional metadata"),
+  metadata: z.record(z.string(), z.unknown()).nullable().describe("Additional metadata"),
   tools: z
     .array(ToolDefinitionSchema)
     .nullable()

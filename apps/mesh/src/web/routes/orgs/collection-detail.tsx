@@ -84,21 +84,33 @@ export default function CollectionDetails() {
   const WellKnownViews: Record<
     string,
     React.ComponentType<{
-      item: unknown;
+      item: Record<string, unknown>;
       onBack: () => void;
       onUpdate: (updates: Record<string, unknown>) => Promise<void>;
     }>
   > = {
-    agents: AgentDetailsView,
-    agent: AgentDetailsView,
+    agents: AgentDetailsView as React.ComponentType<{
+      item: Record<string, unknown>;
+      onBack: () => void;
+      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+    }>,
+    agent: AgentDetailsView as React.ComponentType<{
+      item: Record<string, unknown>;
+      onBack: () => void;
+      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+    }>,
   };
 
   const ViewComponent =
     normalizedCollectionName && WellKnownViews[normalizedCollectionName];
 
-  if (ViewComponent) {
+  if (ViewComponent && item) {
     return (
-      <ViewComponent item={item} onBack={handleBack} onUpdate={handleUpdate} />
+      <ViewComponent
+        item={item as Record<string, unknown>}
+        onBack={handleBack}
+        onUpdate={handleUpdate}
+      />
     );
   }
 

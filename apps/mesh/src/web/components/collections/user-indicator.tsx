@@ -8,7 +8,7 @@ import {
 
 interface UserIndicatorProps {
   userId?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "base" | "lg";
 }
 
 export function UserIndicator({ userId, size = "sm" }: UserIndicatorProps) {

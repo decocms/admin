@@ -1,6 +1,6 @@
 import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
-import { AgentDetailsView } from "@/web/components/views/agent-details-view.tsx";
-import { ToolDetailsView } from "@/web/components/views/tool-details-view.tsx";
+import { AgentDetailsView } from "@/web/components/details/agent.tsx";
+import { ToolDetailsView } from "@/web/components/details/tool.tsx";
 import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
@@ -84,21 +84,33 @@ export default function McpItemDetails() {
   const WellKnownViews: Record<
     string,
     React.ComponentType<{
-      item: unknown;
+      item: Record<string, unknown>;
       onBack: () => void;
       onUpdate: (updates: Record<string, unknown>) => Promise<void>;
     }>
   > = {
-    agents: AgentDetailsView,
-    agent: AgentDetailsView,
+    agents: AgentDetailsView as React.ComponentType<{
+      item: Record<string, unknown>;
+      onBack: () => void;
+      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+    }>,
+    agent: AgentDetailsView as React.ComponentType<{
+      item: Record<string, unknown>;
+      onBack: () => void;
+      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+    }>,
   };
 
   const ViewComponent =
     normalizedCollectionName && WellKnownViews[normalizedCollectionName];
 
-  if (ViewComponent) {
+  if (ViewComponent && item) {
     return (
-      <ViewComponent item={item} onBack={handleBack} onUpdate={handleUpdate} />
+      <ViewComponent
+        item={item as Record<string, unknown>}
+        onBack={handleBack}
+        onUpdate={handleUpdate}
+      />
     );
   }
 

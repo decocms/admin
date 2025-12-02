@@ -93,6 +93,11 @@ const connectionLayoutRoute = createRoute({
   component: lazyRouteComponent(
     () => import("./routes/orgs/connection-detail.tsx"),
   ),
+  validateSearch: z.lazy(() =>
+    z.object({
+      tab: z.string().optional(),
+    }),
+  ),
 });
 
 const collectionDetailsRoute = createRoute({

@@ -131,7 +131,10 @@ function extractCollectionSchema(
   const createTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_CREATE`,
   );
-  if (createTool?.inputSchema?.properties?.data) {
+  if (
+    hasProperties(createTool?.inputSchema) &&
+    createTool.inputSchema.properties.data
+  ) {
     return createTool.inputSchema.properties.data as Record<string, unknown>;
   }
 
@@ -139,7 +142,10 @@ function extractCollectionSchema(
   const updateTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_UPDATE`,
   );
-  if (updateTool?.inputSchema?.properties?.data) {
+  if (
+    hasProperties(updateTool?.inputSchema) &&
+    updateTool.inputSchema.properties.data
+  ) {
     // Update usually has partial data, but might still be useful
     return updateTool.inputSchema.properties.data as Record<string, unknown>;
   }
@@ -148,7 +154,10 @@ function extractCollectionSchema(
   const listTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_LIST`,
   );
-  if (listTool?.outputSchema?.properties?.items) {
+  if (
+    hasProperties(listTool?.outputSchema) &&
+    listTool.outputSchema.properties.items
+  ) {
     const itemsSchema = listTool.outputSchema.properties.items as Record<
       string,
       unknown
@@ -240,5 +249,17 @@ export function useCollectionBindings(
   return useMemo(
     () => detectCollections(connection?.tools ?? null),
     [connection?.tools],
+  );
+}
+
+function hasProperties(
+  schema: Record<string, unknown> | undefined,
+): schema is { properties: Record<string, unknown> } {
+  return (
+    schema !== undefined &&
+    typeof schema === "object" &&
+    "properties" in schema &&
+    typeof schema.properties === "object" &&
+    schema.properties !== null
   );
 }

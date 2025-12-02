@@ -19,7 +19,7 @@ function ThreadListItem({
   isActive: boolean;
 }) {
   const { switchToThread, hideThread } = useChatThreads();
-  const { setOpen } = useDecoChatOpen();
+  const [, setOpenStorage] = useDecoChatOpen();
 
   // Generate a simple title from the thread's creation date
   const threadTitle = `Chat ${new Date(thread.createdAt).toLocaleDateString(
@@ -40,7 +40,7 @@ function ThreadListItem({
         }`}
         onClick={() => {
           switchToThread(thread.id);
-          setOpen(true); // Ensure chat is open when switching threads
+          setOpenStorage(true); // Ensure chat is open when switching threads
         }}
       >
         <div className="flex-1 min-w-0 flex flex-col items-start">

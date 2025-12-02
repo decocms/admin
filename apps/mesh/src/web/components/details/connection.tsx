@@ -43,7 +43,7 @@ import { z } from "zod";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
   // We can use search params for active tab if we want persistent tabs
   const search = useSearch({ strict: false }) as { tab?: string };
   const [activeTabId, setActiveTabId] = useState<string>(search.tab || "tools");
@@ -244,7 +244,7 @@ export default function ConnectionInspectorView() {
   const handleTabChange = (tabId: string) => {
     setActiveTabId(tabId);
     navigate({
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: tabId }),
+      search: (prev) => ({ ...prev, tab: tabId }),
       replace: true,
     });
   };
@@ -637,7 +637,7 @@ function CollectionContent({
     () =>
       jsonSchema
         ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (jsonSchemaToZod(jsonSchema as any) as z.AnyZodObject)
+          (jsonSchemaToZod(jsonSchema as any) as z.ZodObject<any>)
         : undefined,
     [jsonSchema],
   );

@@ -38,11 +38,11 @@ function convertLikeToRegex(likePattern: string): string {
       result.push(".*");
     } else if (char === "_") {
       result.push(".");
-    } else if (/[.*+?^${}()|[\]\\]/.test(char)) {
+    } else if (char && /[.*+?^${}()|[\]\\]/.test(char)) {
       // Escape regex special characters
       result.push("\\" + char);
     } else {
-      result.push(char);
+      result.push(char ?? "");
     }
     i++;
   }
@@ -81,13 +81,13 @@ function evaluateWhereExpression(
     case "eq":
       return fieldValue === value;
     case "gt":
-      return fieldValue > (value as number | string);
+      return fieldValue != null && fieldValue > (value as number | string);
     case "gte":
-      return fieldValue >= (value as number | string);
+      return fieldValue != null && fieldValue >= (value as number | string);
     case "lt":
-      return fieldValue < (value as number | string);
+      return fieldValue != null && fieldValue < (value as number | string);
     case "lte":
-      return fieldValue <= (value as number | string);
+      return fieldValue != null && fieldValue <= (value as number | string);
     case "in":
       return Array.isArray(value) && value.includes(fieldValue);
     case "like":

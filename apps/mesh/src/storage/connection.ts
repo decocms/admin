@@ -5,7 +5,7 @@
  * All connections are organization-scoped.
  */
 
-import type { Kysely } from "kysely";
+import type { Insertable, Kysely, Updateable } from "kysely";
 import { nanoid } from "nanoid";
 import type { CredentialVault } from "../encryption/credential-vault";
 import type { ConnectionStoragePort } from "./ports";
@@ -66,7 +66,10 @@ export class ConnectionStorage implements ConnectionStoragePort {
       updated_at: now,
     });
 
-    await this.db.insertInto("connections").values(serialized).execute();
+    await this.db
+      .insertInto("connections")
+      .values(serialized as unknown as Insertable<Database["connections"]>)
+      .execute();
 
     const connection = await this.findById(id);
     if (!connection) {
@@ -115,7 +118,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
     await this.db
       .updateTable("connections")
-      .set(serialized)
+      .set(serialized as unknown as Updateable<Database["connections"]>)
       .where("id", "=", id)
       .execute();
 
@@ -219,6 +222,9 @@ export class ConnectionStorage implements ConnectionStoragePort {
       return value as T;
     };
 
+    const createdAt = row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at;
+    const updatedAt = row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at;
+
     return {
       id: row.id,
       organization_id: row.organization_id,
@@ -239,8 +245,8 @@ export class ConnectionStorage implements ConnectionStoragePort {
       tools: parseJson<ToolDefinition[]>(row.tools),
       bindings: parseJson<string[]>(row.bindings),
       status: row.status,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      created_at: createdAt,
+      updated_at: updatedAt,
     };
   }
 }

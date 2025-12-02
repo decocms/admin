@@ -95,9 +95,9 @@ export function AgentDetailsView({
     formState: { isDirty },
   } = useForm<Agent>({
     defaultValues: {
-      title: item.title || item.name || "",
+      title: item.title || "",
       description: item.description || "",
-      instructions: item.instructions || item.content || "",
+      instructions: item.instructions || "",
       avatar: item.avatar || "",
     },
   });
@@ -108,9 +108,9 @@ export function AgentDetailsView({
   useEffect(() => {
     if (item) {
       reset({
-        title: item.title || item.name || "",
+        title: item.title || "",
         description: item.description || "",
-        instructions: item.instructions || item.content || "",
+        instructions: item.instructions || "",
         avatar: item.avatar || "",
       });
     }

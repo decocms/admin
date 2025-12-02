@@ -31,7 +31,7 @@ export default function DatabaseStudio() {
   const studioUrl = `${DECO_CMS_API_URL}/${org}/${project}/${integrationId}/studio`;
 
   return (
-    <div className="h-[calc(100vh-48px)] w-full">
+    <div className="h-full w-full">
       <PreviewIframe
         key={refreshKey}
         src={studioUrl}

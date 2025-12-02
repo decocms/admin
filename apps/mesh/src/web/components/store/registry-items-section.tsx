@@ -12,7 +12,6 @@ interface RegistryItemsSectionProps {
   title: string;
   subtitle?: string;
   onItemClick: (item: RegistryItem) => void;
-  onToolCall?: (toolName: string, itemId: string) => Promise<void>;
 }
 
 export function RegistryItemsSection({
@@ -20,7 +19,6 @@ export function RegistryItemsSection({
   title,
   subtitle,
   onItemClick,
-  onToolCall,
 }: RegistryItemsSectionProps) {
   if (items.length === 0) {
     return null;
@@ -38,7 +36,6 @@ export function RegistryItemsSection({
             key={item.id}
             {...item}
             onClick={() => onItemClick(item)}
-            onToolCall={onToolCall}
           />
         ))}
       </div>

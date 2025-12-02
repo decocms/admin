@@ -42,16 +42,39 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const items: RegistryItem[] = useMemo(() => {
     if (!listResults) return [];
 
+    // Helper function to transform a single item
+    const transformItem = (item: any, idx: number): RegistryItem => ({
+      id: item.id || item.uuid || `item-${idx}`,
+      name:
+        item.name ||
+        item.title ||
+        item.displayName ||
+        item.friendlyName ||
+        `Item ${idx + 1}`,
+      description:
+        item.description ||
+        item.summary ||
+        item.subtitle ||
+        item.shortDescription ||
+        undefined,
+      icon:
+        item.icon ||
+        item.image ||
+        item.logo ||
+        item.iconUrl ||
+        item.imageUrl ||
+        undefined,
+    });
+
     // Handle different response structures
     if (Array.isArray(listResults)) {
-      return listResults.map((item: any, idx: number) => ({
-        id: item.id || `item-${idx}`,
-        name: item.name || item.title || `Item ${idx + 1}`,
-        description: item.description || item.summary || undefined,
-      }));
+      return listResults.map((item: any, idx: number) =>
+        transformItem(item, idx)
+      );
     }
 
     if (typeof listResults === "object" && listResults !== null) {
+      // Try to find an array in the response
       const itemsKey = Object.keys(listResults).find(
         (key) => Array.isArray(listResults[key as keyof typeof listResults])
       );
@@ -60,11 +83,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
         const itemsArray = listResults[
           itemsKey as keyof typeof listResults
         ] as any[];
-        return itemsArray.map((item, idx) => ({
-          id: item.id || `item-${idx}`,
-          name: item.name || item.title || `Item ${idx + 1}`,
-          description: item.description || item.summary || undefined,
-        }));
+        return itemsArray.map((item, idx) => transformItem(item, idx));
       }
     }
 

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z, type ZodType } from "zod";
 import type { ToolBinder } from "../core/binder";
 
 /**
@@ -23,6 +23,7 @@ import type { ToolBinder } from "../core/binder";
 export const BaseCollectionEntitySchema = z.object({
   id: z.string().describe("Unique identifier for the entity"),
   title: z.string().describe("Human-readable title for the entity"),
+  description: z.string().nullish().describe("Description of the entity"),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   created_by: z.string().optional(),
@@ -251,7 +252,7 @@ export interface CollectionBindingOptions {
  * ```
  */
 export function createCollectionBindings<
-  TEntitySchema extends BaseCollectionEntitySchemaType,
+  TEntitySchema extends z.AnyZodObject,
   TName extends string,
 >(
   collectionName: TName,
@@ -265,16 +266,12 @@ export function createCollectionBindings<
     {
       name: `COLLECTION_${upperName}_LIST` as const,
       inputSchema: CollectionListInputSchema,
-      outputSchema: createCollectionListOutputSchema(entitySchema) as z.ZodType<
-        CollectionListOutput<z.infer<TEntitySchema>>
-      >,
+      outputSchema: createCollectionListOutputSchema(entitySchema),
     },
     {
       name: `COLLECTION_${upperName}_GET` as const,
       inputSchema: CollectionGetInputSchema,
-      outputSchema: createCollectionGetOutputSchema(entitySchema) as z.ZodType<
-        CollectionGetOutput<z.infer<TEntitySchema>>
-      >,
+      outputSchema: createCollectionGetOutputSchema(entitySchema),
     },
   ];
 
@@ -283,108 +280,86 @@ export function createCollectionBindings<
     bindings.push(
       {
         name: `COLLECTION_${upperName}_CREATE` as const,
-        inputSchema: createCollectionInsertInputSchema(
-          entitySchema,
-        ) as unknown as z.ZodType<
-          CollectionInsertInput<z.infer<TEntitySchema>>
-        >,
-        outputSchema: createCollectionInsertOutputSchema(
-          entitySchema,
-        ) as unknown as z.ZodType<
-          CollectionInsertOutput<z.infer<TEntitySchema>>
-        >,
+        inputSchema: createCollectionInsertInputSchema(entitySchema),
+        outputSchema: createCollectionInsertOutputSchema(entitySchema),
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_UPDATE` as const,
-        inputSchema: createCollectionUpdateInputSchema(
-          entitySchema,
-        ) as unknown as z.ZodType<
-          CollectionUpdateInput<z.infer<TEntitySchema>>
-        >,
-        outputSchema: createCollectionUpdateOutputSchema(
-          entitySchema,
-        ) as unknown as z.ZodType<
-          CollectionUpdateOutput<z.infer<TEntitySchema>>
-        >,
+        inputSchema: createCollectionUpdateInputSchema(entitySchema),
+        outputSchema: createCollectionUpdateOutputSchema(entitySchema),
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_DELETE` as const,
         inputSchema: CollectionDeleteInputSchema,
-        outputSchema: createCollectionDeleteOutputSchema(
-          entitySchema,
-        ) as unknown as z.ZodType<
-          CollectionDeleteOutput<z.infer<TEntitySchema>>
-        >,
+        outputSchema: createCollectionDeleteOutputSchema(entitySchema),
         opt: true,
       },
     );
   }
 
-  return bindings as unknown as readonly CollectionBinding<
+  return bindings as unknown as CollectionBinding<
     TEntitySchema,
     Uppercase<TName>
-  >[number][];
+  >;
 }
 
-export type ReadOnlyCollectionBinding<
-  TEntitySchema extends BaseCollectionEntitySchemaType,
-  TUpperName extends Uppercase<string> = Uppercase<string>,
-> = [
-  {
-    name: `COLLECTION_${TUpperName}_LIST`;
-    inputSchema: typeof CollectionListInputSchema;
-    outputSchema: z.ZodType<CollectionListOutput<z.infer<TEntitySchema>>>;
-  },
-  {
-    name: `COLLECTION_${TUpperName}_GET`;
-    inputSchema: typeof CollectionGetInputSchema;
-    outputSchema: z.ZodType<CollectionGetOutput<z.infer<TEntitySchema>>>;
-  },
-];
+// Helper type for tool definition
+type ToolBinding<
+  Name extends string,
+  Input,
+  Output,
+  Opt extends boolean = false,
+> = {
+  name: Name;
+  inputSchema: ZodType<Input>;
+  outputSchema: ZodType<Output>;
+} & (Opt extends true ? { opt: true } : unknown);
+
 /**
  * Type helper to extract the collection binding type
  */
 export type CollectionBinding<
-  TEntitySchema extends BaseCollectionEntitySchemaType,
+  TEntitySchema extends z.AnyZodObject,
   TUpperName extends Uppercase<string> = Uppercase<string>,
+  TEntity = z.infer<TEntitySchema>,
 > = [
-  {
-    name: `COLLECTION_${TUpperName}_LIST`;
-    inputSchema: typeof CollectionListInputSchema;
-    outputSchema: z.ZodType<CollectionListOutput<z.infer<TEntitySchema>>>;
-  },
-  {
-    name: `COLLECTION_${TUpperName}_GET`;
-    inputSchema: typeof CollectionGetInputSchema;
-    outputSchema: z.ZodType<CollectionGetOutput<z.infer<TEntitySchema>>>;
-  },
-  {
-    name: `COLLECTION_${TUpperName}_CREATE`;
-    inputSchema: z.ZodType<CollectionInsertInput<z.infer<TEntitySchema>>>;
-    outputSchema: z.ZodType<CollectionInsertOutput<z.infer<TEntitySchema>>>;
-    opt: true;
-  },
-  {
-    name: `COLLECTION_${TUpperName}_UPDATE`;
-    inputSchema: z.ZodType<CollectionUpdateInput<z.infer<TEntitySchema>>>;
-    outputSchema: z.ZodType<CollectionUpdateOutput<z.infer<TEntitySchema>>>;
-    opt: true;
-  },
-  {
-    name: `COLLECTION_${TUpperName}_DELETE`;
-    inputSchema: typeof CollectionDeleteInputSchema;
-    outputSchema: z.ZodType<CollectionDeleteOutput<z.infer<TEntitySchema>>>;
-    opt: true;
-  },
+  ToolBinding<
+    `COLLECTION_${TUpperName}_LIST`,
+    CollectionListInput,
+    CollectionListOutput<TEntity>
+  >,
+  ToolBinding<
+    `COLLECTION_${TUpperName}_GET`,
+    CollectionGetInput,
+    CollectionGetOutput<TEntity>
+  >,
+  ToolBinding<
+    `COLLECTION_${TUpperName}_CREATE`,
+    CollectionInsertInput<TEntity>,
+    CollectionInsertOutput<TEntity>,
+    true
+  >,
+  ToolBinding<
+    `COLLECTION_${TUpperName}_UPDATE`,
+    CollectionUpdateInput<TEntity>,
+    CollectionUpdateOutput<TEntity>,
+    true
+  >,
+  ToolBinding<
+    `COLLECTION_${TUpperName}_DELETE`,
+    CollectionDeleteInput,
+    CollectionDeleteOutput<TEntity>,
+    true
+  >,
 ];
 
 /**
  * Type helper to extract tool names from a collection binding
  */
 export type CollectionTools<
-  TEntitySchema extends BaseCollectionEntitySchemaType,
+  TEntitySchema extends z.AnyZodObject,
   TUpperName extends Uppercase<string> = Uppercase<string>,
 > = CollectionBinding<TEntitySchema, TUpperName>[number]["name"];
 

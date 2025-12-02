@@ -5,7 +5,7 @@
  * Supports filtering, sorting, and pagination.
  */
 
-import { createBindingChecker, type Binder } from "@decocms/bindings";
+import { type Binder, createBindingChecker } from "@decocms/bindings";
 import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import {
   CollectionListInputSchema,
@@ -17,7 +17,7 @@ import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
-import { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
+import { type ConnectionEntity, ConnectionEntitySchema } from "./schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
   LLM: LANGUAGE_MODEL_BINDING,
@@ -33,7 +33,7 @@ function convertLikeToRegex(likePattern: string): string {
   let i = 0;
 
   while (i < likePattern.length) {
-    const char = likePattern[i];
+    const char = likePattern[i] as string;
     if (char === "%") {
       result.push(".*");
     } else if (char === "_") {
@@ -48,6 +48,10 @@ function convertLikeToRegex(likePattern: string): string {
   }
 
   return result.join("");
+}
+
+function isStringOrValue(value: unknown): value is string | number {
+  return typeof value === "string" || typeof value === "number";
 }
 
 /**
@@ -81,26 +85,44 @@ function evaluateWhereExpression(
     case "eq":
       return fieldValue === value;
     case "gt":
-      return fieldValue > (value as number | string);
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue > value
+      );
     case "gte":
-      return fieldValue >= (value as number | string);
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue >= value
+      );
     case "lt":
-      return fieldValue < (value as number | string);
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue < value
+      );
     case "lte":
-      return fieldValue <= (value as number | string);
+      return (
+        isStringOrValue(fieldValue) &&
+        isStringOrValue(value) &&
+        fieldValue <= value
+      );
     case "in":
       return Array.isArray(value) && value.includes(fieldValue);
     case "like":
-      if (typeof fieldValue !== "string" || typeof value !== "string")
+      if (typeof fieldValue !== "string" || typeof value !== "string") {
         return false;
+      }
       // Limit pattern length to prevent ReDoS
       if (value.length > 100) return false;
       // Convert SQL LIKE pattern to regex by tokenizing and escaping
       const pattern = convertLikeToRegex(value);
       return new RegExp(`^${pattern}$`, "i").test(fieldValue);
     case "contains":
-      if (typeof fieldValue !== "string" || typeof value !== "string")
+      if (typeof fieldValue !== "string" || typeof value !== "string") {
         return false;
+      }
       return fieldValue.toLowerCase().includes(value.toLowerCase());
     default:
       return true;

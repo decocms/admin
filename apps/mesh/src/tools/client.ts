@@ -34,44 +34,6 @@ const parseSSEResponseAsJson = async (response: Response) => {
   return json;
 };
 
-export const fetcher = new Proxy({} as MeshClient, {
-  get(_, prop) {
-    return async (params: Record<string, unknown>, init?: RequestInit) => {
-      const tool = prop;
-
-      if (typeof tool !== "string") {
-        throw new Error("Tool name must be a string");
-      }
-
-      const response = await fetch(`/mcp`, {
-        method: "POST",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "tools/call",
-          params: {
-            name: tool,
-            arguments: params,
-          },
-        }),
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json, text/event-stream",
-        },
-        ...init,
-      });
-
-      const json = await parseSSEResponseAsJson(response);
-
-      if (json.result.isError) {
-        throw new Error(json.result.content[0].text);
-      }
-
-      return json.result.structuredContent;
-    };
-  },
-}) as MeshClient;
-
 /**
  * Type for a generic tool caller function
  */
@@ -93,7 +55,10 @@ export function createToolCaller(connectionId?: string): ToolCaller {
 
   const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
 
-  return async (toolName: string, args: unknown) => {
+  return async <T extends Record<string, unknown> = Record<string, unknown>>(
+    toolName: string,
+    args: unknown,
+  ): Promise<T> => {
     const response = await fetch(endpoint, {
       method: "POST",
       body: JSON.stringify({

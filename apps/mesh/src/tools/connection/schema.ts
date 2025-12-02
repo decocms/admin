@@ -10,7 +10,7 @@ import { z } from "zod";
 /**
  * OAuth configuration schema for downstream MCP
  */
-export const OAuthConfigSchema = z.object({
+const OAuthConfigSchema = z.object({
   authorizationEndpoint: z.string().url(),
   tokenEndpoint: z.string().url(),
   introspectionEndpoint: z.string().url().optional(),
@@ -25,7 +25,7 @@ export type OAuthConfig = z.infer<typeof OAuthConfigSchema>;
 /**
  * Tool definition schema from MCP discovery
  */
-export const ToolDefinitionSchema = z.object({
+const ToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   inputSchema: z.record(z.unknown()),

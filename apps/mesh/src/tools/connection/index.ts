@@ -17,8 +17,4 @@ export { CONNECTION_TEST } from "./test";
 // Connection configuration tool
 export { CONNECTION_CONFIGURE } from "./configure";
 
-// Schema exports
-export { ConnectionEntitySchema, type ConnectionEntity } from "./schema";
-
 // Utility exports
-export { fetchToolsFromMCP } from "./fetch-tools";

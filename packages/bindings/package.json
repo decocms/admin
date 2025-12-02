@@ -14,7 +14,6 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./models": "./src/well-known/models.ts",
     "./collections": "./src/well-known/collections.ts",
     "./llm": "./src/well-known/language-model.ts",
     "./connection": "./src/core/connection.ts",

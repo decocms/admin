@@ -19,7 +19,7 @@ function ThreadListItem({
   isActive: boolean;
 }) {
   const { switchToThread, hideThread } = useChatThreads();
-  const { setOpen } = useDecoChatOpen();
+  const [, setOpen] = useDecoChatOpen();
 
   // Generate a simple title from the thread's creation date
   const threadTitle = `Chat ${new Date(thread.createdAt).toLocaleDateString(

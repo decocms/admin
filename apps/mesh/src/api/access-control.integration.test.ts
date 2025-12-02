@@ -203,24 +203,24 @@ describe("Access Control Integration Tests", () => {
       .insertInto("connections")
       .values({
         id: connection.id,
-        organizationId: connection.organizationId,
-        createdById: userId,
-        name: connection.name,
+        organization_id: connection.organizationId,
+        created_by: userId,
+        title: connection.name,
         description: null,
         icon: null,
-        appName: null,
-        appId: null,
-        connectionType: "HTTP",
-        connectionUrl: connection.url,
-        connectionToken: null,
-        connectionHeaders: null,
-        oauthConfig: null,
+        app_name: null,
+        app_id: null,
+        connection_type: "HTTP",
+        connection_url: connection.url,
+        connection_token: null,
+        connection_headers: null,
+        oauth_config: null,
         metadata: null,
         tools: null,
         bindings: null,
         status: "active",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .execute();
 
@@ -641,18 +641,18 @@ describe("Access Control Integration Tests", () => {
         .selectFrom("connections")
         .selectAll()
         .where("id", "=", connectionA.id)
-        .where("organizationId", "=", orgA.id)
+        .where("organization_id", "=", orgA.id)
         .execute();
 
       expect(connectionsA.length).toBe(1);
-      expect(connectionsA[0]?.organizationId).toBe(orgA.id);
+      expect(connectionsA[0]?.organization_id).toBe(orgA.id);
 
       // Connection B should not be accessible from org A context
       const connectionsB = await db
         .selectFrom("connections")
         .selectAll()
         .where("id", "=", connectionB.id)
-        .where("organizationId", "=", orgA.id) // Wrong org!
+        .where("organization_id", "=", orgA.id) // Wrong org!
         .execute();
 
       expect(connectionsB.length).toBe(0); // Not found in org A

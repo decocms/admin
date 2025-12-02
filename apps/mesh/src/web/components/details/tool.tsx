@@ -1,4 +1,4 @@
-import { createToolCaller } from "@/tools/client";
+import { createToolCaller, UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import { useConnection } from "@/web/hooks/collections/use-connection";
 import {
   Alert,
@@ -9,6 +9,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
   Box,
@@ -37,19 +38,24 @@ const normalizeUrl = (url: string) => {
 };
 
 export interface ToolDetailsViewProps {
-  connectionId: string;
-  toolName: string;
+  itemId: string;
   onBack: () => void;
+  onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }
 
 export function ToolDetailsView({
-  connectionId,
-  toolName,
+  itemId: toolName,
   onBack,
 }: ToolDetailsViewProps) {
+  const params = useParams({ strict: false });
+  const connectionId = params.connectionId ?? UNKNOWN_CONNECTION_ID;
+
   const { data: connection } = useConnection(connectionId);
   const [inputParams, setInputParams] = useState<Record<string, unknown>>({});
-  const [executionResult, setExecutionResult] = useState<unknown>(null);
+  const [executionResult, setExecutionResult] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [stats, setStats] = useState<{
@@ -74,13 +80,10 @@ export function ToolDetailsView({
   });
 
   useEffect(() => {
-    console.log("MCP State:", mcp.state);
-    console.log("MCP Client:", mcp.client ? "Ready" : "Not Ready");
-    console.log("Connection URL:", normalizedUrl);
     if (mcp.error) {
       console.error("MCP Error:", mcp.error);
     }
-  }, [mcp.state, mcp.client, mcp.error, normalizedUrl]);
+  }, [mcp.error]);
 
   // Find the tool definition
   const tool = useMemo(() => {
@@ -137,7 +140,7 @@ export function ToolDetailsView({
       const endTime = performance.now();
       const durationMs = Math.round(endTime - startTime);
 
-      setExecutionResult(result);
+      setExecutionResult(result as Record<string, unknown>);
 
       // Calculate mocked stats based on result size
       const resultStr = JSON.stringify(result);
@@ -189,7 +192,7 @@ export function ToolDetailsView({
         <div className="flex items-center gap-4 py-2">
           {/* MCP Status */}
           <div className="flex items-center gap-2">
-            {mcp.state === "connected" || mcp.state === "ready" ? (
+            {mcp.state === "ready" ? (
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             ) : mcp.state === "connecting" || mcp.state === "authenticating" ? (
               <Loader2 className="h-3 w-3 animate-spin text-yellow-500" />

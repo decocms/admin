@@ -309,7 +309,7 @@ function isObjectSubset(a: JSONSchema, b: JSONSchema): boolean {
   for (const key of Object.keys(bProps)) {
     if (key in aProps) {
       // Both have the property, check recursively
-      if (!isSubset(aProps[key], bProps[key])) {
+      if (!isSubset(aProps[key]!, bProps[key]!)) {
         return false;
       }
     } else {
@@ -327,7 +327,7 @@ function isObjectSubset(a: JSONSchema, b: JSONSchema): boolean {
         // A is open, check if additionalProperties schema satisfies B's property
         const aAdditional = a.additionalProperties;
         if (aAdditional && typeof aAdditional === "object") {
-          if (!isSubset(aAdditional, bProps[key])) {
+          if (!isSubset(aAdditional, bProps[key]!)) {
             return false;
           }
         }
@@ -351,7 +351,7 @@ function isObjectSubset(a: JSONSchema, b: JSONSchema): boolean {
         typeof b.additionalProperties === "object"
       ) {
         // B has a schema for additional properties, check compatibility
-        if (!isSubset(aProps[key], b.additionalProperties)) {
+        if (!isSubset(aProps[key]!, b.additionalProperties)) {
           return false;
         }
       }

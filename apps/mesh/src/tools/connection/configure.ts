@@ -35,6 +35,20 @@ const ConfigureOutputSchema = z.object({
   configuredScopes: z.array(z.string()).describe("Scopes that were configured"),
 });
 
+function parseScope(scope: string): [string, string] {
+  const parts = scope.split("::");
+  if (
+    parts.length !== 2 ||
+    typeof parts[0] !== "string" ||
+    typeof parts[1] !== "string"
+  ) {
+    throw new Error(
+      `Invalid scope format: ${scope}. Expected format: "KEY::SCOPE"`,
+    );
+  }
+  return parts as [string, string];
+}
+
 export const CONNECTION_CONFIGURE = defineTool({
   name: "CONNECTION_CONFIGURE",
   description:
@@ -74,14 +88,7 @@ export const CONNECTION_CONFIGURE = defineTool({
 
     for (const scope of scopes) {
       // Parse scope format: "KEY::SCOPE"
-      const parts = scope.split("::");
-      if (parts.length !== 2) {
-        throw new Error(
-          `Invalid scope format: ${scope}. Expected format: "KEY::SCOPE"`,
-        );
-      }
-
-      const [key] = parts;
+      const [key] = parseScope(scope);
 
       // Check if this key exists in state
       if (!(key in state)) {
@@ -127,7 +134,9 @@ export const CONNECTION_CONFIGURE = defineTool({
         await ctx.access.check(refConnectionId);
       } catch (error) {
         throw new Error(
-          `Access denied to referenced connection: ${refConnectionId}. ${(error as Error).message}`,
+          `Access denied to referenced connection: ${refConnectionId}. ${
+            (error as Error).message
+          }`,
         );
       }
     }

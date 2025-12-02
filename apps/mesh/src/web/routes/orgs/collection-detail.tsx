@@ -1,11 +1,25 @@
 import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/details/agent.tsx";
 import { ToolDetailsView } from "@/web/components/details/tool.tsx";
-import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
+import type { ComponentType } from "react";
+
+interface CollectionDetailsProps {
+  itemId: string;
+  onBack: () => void;
+  onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+}
+
+// Map of well-known views by collection name
+const WELL_KNOWN_VIEW_DETAILS: Record<
+  string,
+  ComponentType<CollectionDetailsProps>
+> = {
+  agent: AgentDetailsView,
+};
 
 export default function CollectionDetails() {
   const params = useParams({
@@ -28,8 +42,6 @@ export default function CollectionDetails() {
     connectionId ?? UNKNOWN_CONNECTION_ID,
     !isTools && collectionName ? collectionName : "",
   );
-
-  const { data: item } = useCollectionItem(collection, itemId);
 
   const handleBack = () => {
     window.history.back();
@@ -54,25 +66,14 @@ export default function CollectionDetails() {
     }
   };
 
-  // Simple loading check: if we have an ID but no item yet, and it's not tools
-  const isLoading = !item && !isTools;
-
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Spinner />
-      </div>
-    );
-  }
-
   // Special handling for Tools - we might want to show the tool invocation UI here
   // For now, let's just show a placeholder or redirect back if we can't handle it yet
   if (isTools) {
     return (
       <ToolDetailsView
-        connectionId={connectionId ?? UNKNOWN_CONNECTION_ID}
-        toolName={itemId ?? ""}
+        itemId={itemId ?? ""}
         onBack={handleBack}
+        onUpdate={handleUpdate}
       />
     );
   }
@@ -80,25 +81,17 @@ export default function CollectionDetails() {
   // Check for well-known collections (case insensitive, singular/plural)
   const normalizedCollectionName = collectionName?.toLowerCase();
 
-  // Map of well-known views by collection name
-  const WellKnownViews: Record<
-    string,
-    React.ComponentType<{
-      item: unknown;
-      onBack: () => void;
-      onUpdate: (updates: Record<string, unknown>) => Promise<void>;
-    }>
-  > = {
-    agents: AgentDetailsView,
-    agent: AgentDetailsView,
-  };
-
   const ViewComponent =
-    normalizedCollectionName && WellKnownViews[normalizedCollectionName];
+    normalizedCollectionName &&
+    WELL_KNOWN_VIEW_DETAILS[normalizedCollectionName];
 
   if (ViewComponent) {
     return (
-      <ViewComponent item={item} onBack={handleBack} onUpdate={handleUpdate} />
+      <ViewComponent
+        itemId={itemId ?? ""}
+        onBack={handleBack}
+        onUpdate={handleUpdate}
+      />
     );
   }
 

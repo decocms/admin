@@ -1,3 +1,4 @@
+import type { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import type { HTTPConnection } from "@decocms/bindings/connection";
 import { LanguageModelBinding } from "@decocms/bindings/llm";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -15,15 +16,13 @@ import type { MeshContext } from "../../core/mesh-context";
 import { ConnectionTools } from "../../tools";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import { createLLMProvider } from "../llm-provider";
-import type { Metadata } from "@deco/ui/types/chat-metadata.ts";
 
 // Default values
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_MEMORY = 50; // last N messages to keep
 
 // System prompt for AI assistant with MCP connections
-const BASE_SYSTEM_PROMPT =
-  `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
+const BASE_SYSTEM_PROMPT = `You are a helpful AI assistant with access to Model Context Protocol (MCP) connections.
 
 **Your Capabilities:**
 - Access to various MCP integrations and their tools
@@ -141,6 +140,7 @@ const StreamRequestSchema = z.object({
         .optional()
         .nullable(),
     })
+    .passthrough()
     .optional(),
   agent: z
     .object({
@@ -150,6 +150,7 @@ const StreamRequestSchema = z.object({
       avatar: z.string().optional(),
       name: z.string().optional(),
     })
+    .passthrough()
     .optional(),
   stream: z.boolean().optional(),
   temperature: z.number().optional(),
@@ -241,8 +242,8 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
         }
 
         try {
-          const result = await ConnectionTools.COLLECTION_CONNECTIONS_GET
-            .execute(
+          const result =
+            await ConnectionTools.COLLECTION_CONNECTIONS_GET.execute(
               { id },
               ctx,
             );
@@ -253,7 +254,7 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
             // If allowedTools is empty array, allow all tools for this connection
             if (allowedTools.size > 0) {
               result.item.tools = result.item.tools.filter((t) =>
-                allowedTools.has(t.name)
+                allowedTools.has(t.name),
               );
             }
           }
@@ -296,8 +297,7 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
               content: [
                 {
                   type: "text",
-                  text:
-                    `Connection ${connectionId} is not available for this agent`,
+                  text: `Connection ${connectionId} is not available for this agent`,
                 },
               ],
             };
@@ -310,8 +310,7 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
               content: [
                 {
                   type: "text",
-                  text:
-                    `Tool ${toolName} is not available for this agent on connection ${connectionId}`,
+                  text: `Tool ${toolName} is not available for this agent on connection ${connectionId}`,
                 },
               ],
             };
@@ -505,10 +504,9 @@ app.post("/:org/models/stream", async (c) => {
       messageMetadata: ({ part }): Metadata => {
         if (part.type === "start") {
           return {
-            agent: {
-              title: agentConfig?.name,
-              avatar: agentConfig?.avatar,
-            },
+            agent: agentConfig,
+            model: modelConfig,
+            created_at: new Date(),
           };
         }
         return {};

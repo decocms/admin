@@ -1,7 +1,7 @@
-import { Icon } from "../icon.tsx";
-import { cn } from "../../lib/utils.ts";
+import { Icon } from "../../icon.tsx";
+import { cn } from "../../../lib/utils.ts";
 import { useEffect, useState } from "react";
-import { MemoizedMarkdown } from "./chat-markdown.tsx";
+import { MemoizedMarkdown } from "../chat-markdown.tsx";
 
 interface ReasoningPartProps {
   part: {
@@ -92,11 +92,11 @@ export function ChatReasoningPart({
           <div className={cn("text-muted-foreground markdown-sm pb-2")}>
             <MemoizedMarkdown
               key={index}
-              messageId={`${messageId}-${index}-reasoning`}
-              part={
+              id={`${messageId}-${index}-reasoning`}
+              text={
                 "details" in part && Array.isArray(part.details)
-                  ? part.details[0]
-                  : { type: "text", text: part.text }
+                  ? part.details[0].text
+                  : part.text
               }
             />
           </div>

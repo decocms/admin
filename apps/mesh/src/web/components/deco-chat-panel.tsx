@@ -1,5 +1,4 @@
 import { EmptyState } from "@/web/components/empty-state";
-import { authClient } from "@/web/lib/auth-client";
 import { useAgentsFromConnection } from "@/web/hooks/collections/use-agent";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useLLMsFromConnection } from "@/web/hooks/collections/use-llm";
@@ -7,6 +6,7 @@ import { useBindingConnections } from "@/web/hooks/use-binding";
 import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { authClient } from "@/web/lib/auth-client";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useChat } from "@ai-sdk/react";
@@ -15,16 +15,20 @@ import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selec
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
+import {
+  DecoChatMessageAssistant,
+  DecoChatMessageFooter,
+  DecoChatMessageUser,
+} from "@deco/ui/components/deco-chat-message.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
+import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -138,11 +142,11 @@ export function DecoChatPanel() {
 
   // Persist selected model (including connectionId) per organization in localStorage
   const [selectedModelState, setSelectedModelState] = useLocalStorage<{
-    modelId: string;
+    id: string;
     connectionId: string;
   } | null>(
     LOCALSTORAGE_KEYS.chatSelectedModel(locator),
-    (existing) => existing as { modelId: string; connectionId: string } | null,
+    (existing) => existing ?? null,
   );
 
   // Persist selected agent per organization in localStorage
@@ -156,10 +160,7 @@ export function DecoChatPanel() {
     if (models.length > 0 && !selectedModelState) {
       const firstModel = models[0];
       if (firstModel) {
-        setSelectedModelState({
-          modelId: firstModel.id,
-          connectionId: firstModel.connectionId,
-        });
+        setSelectedModelState(firstModel);
       }
     }
   }, [models, selectedModelState, setSelectedModelState]);
@@ -182,7 +183,7 @@ export function DecoChatPanel() {
     () =>
       models.find(
         (m) =>
-          m.id === selectedModelState?.modelId &&
+          m.id === selectedModelState?.id &&
           m.connectionId === selectedModelState?.connectionId,
       ),
     [models, selectedModelState],
@@ -226,22 +227,6 @@ export function DecoChatPanel() {
 
             // Add UIMessage directly to thread (without id, it will be generated)
             const { id: _id, ...messageWithoutId } = msg;
-
-            // Attach metadata to assistant messages if missing
-            if (msg.role === "assistant") {
-              const meta = (messageWithoutId as any).metadata || {};
-              if (!meta.agent?.avatar && selectedAgent?.avatar) {
-                meta.agent = { ...meta.agent, avatar: selectedAgent.avatar };
-              }
-              if (!meta.agent?.name && selectedAgent?.title) {
-                meta.agent = { ...meta.agent, name: selectedAgent.title };
-              }
-              if (!meta.created_at) {
-                meta.created_at = new Date().toISOString();
-              }
-              // oxlint-disable-next-line no-explicit-any
-              (messageWithoutId as any).metadata = meta;
-            }
 
             addMessage(messageWithoutId);
           });
@@ -288,16 +273,13 @@ export function DecoChatPanel() {
 
       // Prepare metadata with model and agent configuration
       const metadata: Metadata = {
-        model: {
-          id: selectedModelState.modelId,
-          connectionId: selectedModelState.connectionId,
-          provider: selectedModel.provider,
-        },
-        agent: selectedAgent,
+        model: selectedModelState ?? undefined,
+        agent: selectedAgent ?? undefined,
         user: {
           avatar: user?.image ?? undefined,
-          name: user?.name,
+          name: user?.name ?? "you",
         },
+        created_at: new Date().toISOString(),
       };
 
       return await chat.sendMessage(message, { metadata });
@@ -318,13 +300,6 @@ export function DecoChatPanel() {
         id: crypto.randomUUID(),
         role: "user",
         parts: [{ type: "text", text: input }],
-        metadata: {
-          user: {
-            avatar: user?.image || undefined,
-            name: user?.name || undefined,
-          },
-          created_at: new Date().toISOString(),
-        },
       };
 
       setInput("");
@@ -473,18 +448,25 @@ export function DecoChatPanel() {
             avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
           />
         ) : (
-          <DecoChatMessages>
-            {chat.messages.map((message: UIMessage<Metadata>) => {
-              return (
-                <DecoChatMessage
+          <DecoChatMessages minHeightOffset={264}>
+            {chat.messages.map((message) =>
+              message.role === "user" ? (
+                <DecoChatMessageUser
                   key={message.id}
                   message={message}
                   status={status}
                 />
-              );
-            })}
-            {/* Sentinel element for smooth scrolling to bottom */}
-            <div ref={sentinelRef} className="h-0" />
+              ) : message.role === "assistant" ? (
+                <DecoChatMessageAssistant
+                  key={message.id}
+                  message={message}
+                  status={status}
+                />
+              ) : null,
+            )}
+            <DecoChatMessageFooter>
+              <div ref={sentinelRef} className="h-0" />
+            </DecoChatMessageFooter>
           </DecoChatMessages>
         )}
       </DecoChatAside.Content>
@@ -528,13 +510,13 @@ export function DecoChatPanel() {
               {models.length > 0 && (
                 <DecoChatModelSelectorRich
                   models={models}
-                  selectedModelId={selectedModelState?.modelId}
+                  selectedModelId={selectedModelState?.id}
                   onModelChange={(modelId) => {
                     if (!modelId) return;
                     const model = models.find((m) => m.id === modelId);
                     if (model) {
                       setSelectedModelState({
-                        modelId: model.id,
+                        id: model.id,
                         connectionId: model.connectionId,
                       });
                     }

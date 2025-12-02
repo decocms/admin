@@ -4,10 +4,10 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { FileUIPart, ToolUIPart } from "ai";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useCopy } from "../../hooks/use-copy.ts";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
-import { useCopy } from "../../hooks/use-copy.ts";
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -105,7 +105,7 @@ export const ChatMessage = memo(function ChatMessage({
 
         <div
           className={cn(
-            "w-full min-w-0 not-only:rounded-2xl text-[0.9375rem] break-words overflow-wrap-anywhere",
+            "w-full min-w-0 not-only:rounded-2xl text-[0.9375rem] overflow-wrap-anywhere",
             isUser ? "bg-muted px-4 py-3" : "bg-transparent",
           )}
         >
@@ -336,7 +336,7 @@ function TextPreviewCard({
   return (
     <div className="relative group p-2 bg-muted rounded-lg border border-border hover:bg-muted/50 transition-colors w-full max-w-[480px]">
       <div className="flex items-start gap-2">
-        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
+        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-muted">
           <Icon name="description" className="text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
@@ -384,7 +384,7 @@ function TextPreviewCard({
               {text ? (
                 <pre
                   className={cn(
-                    "text-xs whitespace-pre-wrap break-words overflow-auto",
+                    "text-xs whitespace-pre-wrap overflow-auto",
                     "max-h-[500px]",
                   )}
                 >

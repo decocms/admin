@@ -6,13 +6,11 @@ export interface ChatModelConfig {
 
 export interface ChatAgentConfig {
   id?: string;
+  title?: string;
+  avatar?: string;
+  description?: string;
   instructions?: string;
   tool_set?: Record<string, string[]>;
-  avatar?: string;
-  title?: string;
-  description?: string | null;
-  connectionId?: string;
-  connectionName?: string;
 }
 
 export interface ChatUserConfig {

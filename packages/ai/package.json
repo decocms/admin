@@ -19,7 +19,7 @@
     "@decocms/runtime": "^0.24.0",
     "@mastra/cloudflare-d1": "^0.13.4",
     "@mastra/core": "^0.20.2",
-    "@modelcontextprotocol/sdk": "^1.19.1",
+    "@modelcontextprotocol/sdk": "1.20.2",
     "@openrouter/ai-sdk-provider": "^1.2.0",
     "ai": "^5.0.61",
     "croner": "^9.0.0",

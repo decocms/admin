@@ -1,25 +1,32 @@
-import { cn } from "../lib/utils.ts";
-import { memo, useCallback, useMemo } from "react";
-import { MemoizedMarkdown } from "./chat/chat-markdown.tsx";
-import { Button } from "./button.tsx";
-import { Icon } from "./icon.tsx";
-import { useCopy } from "../hooks/use-copy.ts";
 import type { UIMessage } from "ai";
+import { memo, useCallback, useMemo } from "react";
+import { useCopy } from "../hooks/use-copy.ts";
+import { cn } from "../lib/utils.ts";
+import { Avatar } from "./avatar.tsx";
+import { Button } from "./button.tsx";
+import { MemoizedMarkdown } from "./chat/chat-markdown.tsx";
+import { Icon } from "./icon.tsx";
+import { Metadata } from "../types/chat-metadata.ts";
 
-export interface DecoChatMessageProps {
-  message: UIMessage;
-  isStreaming?: boolean;
+export interface DecoChatMessageProps<T extends Metadata> {
+  message: UIMessage<T>;
+  status?: "streaming" | "submitted" | "ready" | "error";
   className?: string;
-  timestamp?: string;
 }
 
-export const DecoChatMessage = memo(function DecoChatMessage({
-  message,
-  isStreaming,
-  className,
-  timestamp,
-}: DecoChatMessageProps) {
-  const { id, role } = message;
+export const DecoChatMessage = memo(function DecoChatMessage<
+  T extends Metadata,
+>({ message, status, className }: DecoChatMessageProps<T>) {
+  const {
+    id,
+    role,
+    metadata: { user, agent, created_at } = {},
+  } = message;
+
+  const user_avatar = user?.avatar;
+  const user_name = user?.name;
+  const agent_avatar = agent?.avatar;
+  const agent_name = agent?.title;
 
   // Extract content from either content field or parts array
   const content = useMemo(() => {
@@ -28,8 +35,9 @@ export const DecoChatMessage = memo(function DecoChatMessage({
     }
     return (
       message.parts
-        ?.map((p: { type: string; text?: string }) =>
-          p.type === "text" ? p.text : "",
+        ?.map(
+          (p: { type: string; text?: string }) =>
+            (p.type === "text" ? p.text : "") ?? "",
         )
         .join("") ?? ""
     );
@@ -38,20 +46,20 @@ export const DecoChatMessage = memo(function DecoChatMessage({
   const isUser = role === "user";
 
   const formattedTimestamp = useMemo(() => {
-    if (!timestamp)
-      return new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    return new Date(timestamp).toLocaleTimeString([], {
+    const date = created_at ? new Date(created_at) : new Date();
+    return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
-  }, [timestamp]);
+  }, [created_at]);
 
   const handleCopyMessage = useCallback(async () => {
     await handleCopy(content);
   }, [content, handleCopy]);
+
+  const isStreaming = status === "streaming";
+  const isSubmitted = status === "submitted";
+  const isLoading = isStreaming || isSubmitted;
 
   return (
     <div
@@ -61,19 +69,30 @@ export const DecoChatMessage = memo(function DecoChatMessage({
         className,
       )}
     >
+      <Avatar
+        url={isUser ? user_avatar : agent_avatar}
+        fallback={isUser ? user_name || "U" : agent_name || "A"}
+        shape={isUser ? "circle" : "square"}
+        size="sm"
+        className="mt-0.5 shrink-0"
+      />
+
       <div
         className={cn(
           "flex flex-col gap-2 min-w-0",
-          isUser ? "items-end max-w-3/4 ml-auto" : "w-full items-start",
+          isUser ? "items-end max-w-3/4" : "w-full items-start",
         )}
       >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {isUser ? user_name || "You" : agent_name || "Agent"}
+          </span>
           <span>{formattedTimestamp}</span>
         </div>
 
         <div
           className={cn(
-            "w-full min-w-0 not-only:rounded-2xl text-[0.9375rem] break-words overflow-wrap-anywhere",
+            "w-full min-w-0 not-only:rounded-2xl text-[0.9375rem] wrap-break-word overflow-wrap-anywhere",
             isUser ? "bg-muted px-4 py-3" : "bg-transparent",
           )}
         >
@@ -90,7 +109,7 @@ export const DecoChatMessage = memo(function DecoChatMessage({
                 }}
               />
             )
-          ) : !isUser && isStreaming ? (
+          ) : !isUser && isLoading ? (
             <TypingIndicator />
           ) : (
             <span className="text-muted-foreground">Thinking...</span>

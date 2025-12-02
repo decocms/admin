@@ -1,4 +1,5 @@
 import { EmptyState } from "@/web/components/empty-state";
+import { authClient } from "@/web/lib/auth-client";
 import { useAgentsFromConnection } from "@/web/hooks/collections/use-agent";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useLLMsFromConnection } from "@/web/hooks/collections/use-llm";
@@ -23,6 +24,7 @@ import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -31,7 +33,7 @@ const CAPYBARA_AVATAR_URL =
 // Create transport for models stream API (stable across model changes)
 function createModelsTransport(
   orgSlug: string,
-): DefaultChatTransport<UIMessage> {
+): DefaultChatTransport<UIMessage<Metadata>> {
   return new DefaultChatTransport({
     api: `/api/${orgSlug}/models/stream`,
     credentials: "include",
@@ -39,7 +41,7 @@ function createModelsTransport(
       messages,
       requestMetadata,
     }: {
-      messages: UIMessage[];
+      messages: UIMessage<Metadata>[];
       requestMetadata?: unknown;
     }) => {
       // oxlint-disable-next-line no-explicit-any
@@ -58,6 +60,8 @@ function createModelsTransport(
 }
 
 export function DecoChatPanel() {
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
   const { locator, org } = useProjectContext();
   const { organization } = useCurrentOrganization();
   const orgSlug = organization?.slug || "";
@@ -72,8 +76,8 @@ export function DecoChatPanel() {
   } = useChatThreads();
 
   // Thread messages are already in UIMessage format
-  const initialMessages = useMemo<UIMessage[]>(
-    () => threadMessages,
+  const initialMessages = useMemo<UIMessage<Metadata>[]>(
+    () => threadMessages as UIMessage<Metadata>[],
     [threadMessages],
   );
 
@@ -210,7 +214,7 @@ export function DecoChatPanel() {
         const newMessages = result.messages.slice(initialLength);
 
         if (newMessages.length > 0) {
-          newMessages.forEach((msg: UIMessage) => {
+          newMessages.forEach((msg: UIMessage<Metadata>) => {
             // Skip non-chat roles (data messages)
             if (
               msg.role !== "user" &&
@@ -222,6 +226,23 @@ export function DecoChatPanel() {
 
             // Add UIMessage directly to thread (without id, it will be generated)
             const { id: _id, ...messageWithoutId } = msg;
+
+            // Attach metadata to assistant messages if missing
+            if (msg.role === "assistant") {
+              const meta = (messageWithoutId as any).metadata || {};
+              if (!meta.agent?.avatar && selectedAgent?.avatar) {
+                meta.agent = { ...meta.agent, avatar: selectedAgent.avatar };
+              }
+              if (!meta.agent?.name && selectedAgent?.title) {
+                meta.agent = { ...meta.agent, name: selectedAgent.title };
+              }
+              if (!meta.created_at) {
+                meta.created_at = new Date().toISOString();
+              }
+              // oxlint-disable-next-line no-explicit-any
+              (messageWithoutId as any).metadata = meta;
+            }
+
             addMessage(messageWithoutId);
           });
         }
@@ -232,8 +253,7 @@ export function DecoChatPanel() {
     },
   });
 
-  // Derive loading state from chat status
-  const isLoading = chat.status === "submitted" || chat.status === "streaming";
+  const { status } = chat;
 
   const isEmpty = chat.messages.length === 0;
 
@@ -257,30 +277,9 @@ export function DecoChatPanel() {
     }));
   }, [agents]);
 
-  // Transform models to selector options
-  // We ensure the structure matches ModelInfo expected by the rich selector
-  const modelSelectorOptions = useMemo(() => {
-    return models.map((model) => ({
-      ...model,
-      // Ensure we have a unique ID for selection if needed, or just use model.id
-      // The selector will use this ID for value
-      // If we need composite ID for models too, we might need to adjust.
-      // For now assuming model.id is sufficient or we are handling it via state.
-      // Wait, we need to handle selection correctly.
-      // The current selection state uses { modelId, connectionId }.
-      // We can pass a composite ID to the selector or just use model.id if unique within the list.
-      // Let's use model.id for now as the list is derived from modelsData which implies one connection for now?
-      // No, modelsData comes from `useLLMsFromConnection(modelsConnection?.id)`.
-      // So all models are from the same connection.
-      // But if we had multiple connections, we'd need composite IDs.
-      // The selector uses `value` prop to match item ID.
-      id: model.id,
-    }));
-  }, [models]);
-
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
-    async (message: UIMessage) => {
+    async (message: UIMessage<Metadata>) => {
       if (!selectedModelState || !selectedModel) {
         // Console error kept for critical missing configuration
         console.error("No model configured");
@@ -288,29 +287,18 @@ export function DecoChatPanel() {
       }
 
       // Prepare metadata with model and agent configuration
-      const metadata: {
-        model: { id: string; connectionId: string; provider?: string | null };
-        agent?: {
-          id: string;
-          instructions: string;
-          tool_set: Record<string, string[]>;
-        };
-      } = {
+      const metadata: Metadata = {
         model: {
           id: selectedModelState.modelId,
           connectionId: selectedModelState.connectionId,
           provider: selectedModel.provider,
         },
+        agent: selectedAgent,
+        user: {
+          avatar: user?.image ?? undefined,
+          name: user?.name,
+        },
       };
-
-      // Add agent if selected
-      if (selectedAgent) {
-        metadata.agent = {
-          id: selectedAgent.id,
-          instructions: selectedAgent.instructions,
-          tool_set: selectedAgent.tool_set,
-        };
-      }
 
       return await chat.sendMessage(message, { metadata });
     },
@@ -321,22 +309,29 @@ export function DecoChatPanel() {
     async (e?: React.FormEvent) => {
       e?.preventDefault();
 
-      if (!input?.trim() || isLoading) {
+      if (!input?.trim() || status === "submitted" || status === "streaming") {
         return;
       }
 
       // Create and send message with metadata
-      const userMessage: UIMessage = {
+      const userMessage: UIMessage<Metadata> = {
         id: crypto.randomUUID(),
         role: "user",
         parts: [{ type: "text", text: input }],
+        metadata: {
+          user: {
+            avatar: user?.image || undefined,
+            name: user?.name || undefined,
+          },
+          created_at: new Date().toISOString(),
+        },
       };
 
       setInput("");
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, isLoading, wrappedSendMessage],
+    [input, status, wrappedSendMessage, user],
   );
 
   const handleStop = useCallback(() => {
@@ -479,14 +474,15 @@ export function DecoChatPanel() {
           />
         ) : (
           <DecoChatMessages>
-            {chat.messages.map((message: UIMessage, index: number) => (
-              <DecoChatMessage
-                key={message.id}
-                message={message}
-                timestamp={new Date().toISOString()}
-                isStreaming={isLoading && index === chat.messages.length - 1}
-              />
-            ))}
+            {chat.messages.map((message: UIMessage<Metadata>) => {
+              return (
+                <DecoChatMessage
+                  key={message.id}
+                  message={message}
+                  status={status}
+                />
+              );
+            })}
             {/* Sentinel element for smooth scrolling to bottom */}
             <div ref={sentinelRef} className="h-0" />
           </DecoChatMessages>
@@ -500,7 +496,7 @@ export function DecoChatPanel() {
           onSubmit={handleSendMessage}
           onStop={handleStop}
           disabled={models.length === 0 || !selectedModelState}
-          isStreaming={isLoading}
+          isStreaming={status === "submitted" || status === "streaming"}
           placeholder={
             models.length === 0
               ? "Add an LLM binding connection to start chatting"
@@ -531,7 +527,7 @@ export function DecoChatPanel() {
               {/* Model Selector - Rich style */}
               {models.length > 0 && (
                 <DecoChatModelSelectorRich
-                  models={modelSelectorOptions}
+                  models={models}
                   selectedModelId={selectedModelState?.modelId}
                   onModelChange={(modelId) => {
                     if (!modelId) return;

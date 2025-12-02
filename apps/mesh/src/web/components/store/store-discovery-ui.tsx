@@ -13,6 +13,7 @@ interface StoreDiscoveryUIProps {
   isLoading: boolean;
   error: Error | null;
   onItemClick: (item: RegistryItem) => void;
+  onToolCall?: (toolName: string, itemId: string) => Promise<void>;
 }
 
 export function StoreDiscoveryUI({
@@ -20,6 +21,7 @@ export function StoreDiscoveryUI({
   isLoading,
   error,
   onItemClick,
+  onToolCall,
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
@@ -189,6 +191,7 @@ export function StoreDiscoveryUI({
                     title="Featured Items"
                     subtitle={`${featuredItems.length} available`}
                     onItemClick={handleItemClick}
+                    onToolCall={onToolCall}
                   />
                 )}
 
@@ -198,6 +201,7 @@ export function StoreDiscoveryUI({
                     title="All Items"
                     subtitle={`${allItems.length} available`}
                     onItemClick={handleItemClick}
+                    onToolCall={onToolCall}
                   />
                 )}
               </div>

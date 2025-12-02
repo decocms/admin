@@ -61,6 +61,7 @@ export {
 export * from "./middlewares.ts";
 export * from "./models/llm-vault.ts";
 export { getRegistryApp } from "./registry/api.ts";
+export { publicRegistryTools } from "./registry/public-api.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export const DECONFIG_TOOLS = [

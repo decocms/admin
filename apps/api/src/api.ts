@@ -45,6 +45,7 @@ import {
   ListToolsMiddleware,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
+  publicRegistryTools,
   ReadOutput,
   runTool,
   SearchOutput,
@@ -675,6 +676,12 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
 const globalMcpHandler = createMCPHandlerFor(GLOBAL_TOOLS);
 app.all("/mcp", globalMcpHandler);
 app.all("/mcp/tool/:toolName", globalMcpHandler);
+
+// Public Registry MCP endpoint - NO authentication required
+// Exposes only: COLLECTION_REGISTRY_APP_LIST and COLLECTION_REGISTRY_APP_GET
+const publicRegistryMcpHandler = createMCPHandlerFor(publicRegistryTools);
+app.all("/registry/mcp", publicRegistryMcpHandler);
+app.all("/registry/mcp/tool/:toolName", publicRegistryMcpHandler);
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());

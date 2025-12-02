@@ -21,15 +21,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
-    "./admin": "./src/admin.ts",
     "./client": "./src/client.ts",
-    "./mastra": "./src/mastra.ts",
-    "./drizzle": "./src/drizzle.ts",
-    "./resources": "./src/resources.ts",
-    "./views": "./src/views.ts",
     "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
-    "./deconfig": "./src/bindings/deconfig/index.ts",
     "./asset-server": "./src/asset-server/index.ts"
   },
   "devDependencies": {

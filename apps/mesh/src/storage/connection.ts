@@ -5,7 +5,7 @@
  * All connections are organization-scoped.
  */
 
-import type { Kysely } from "kysely";
+import type { Kysely, Insertable, Updateable } from "kysely";
 import { nanoid } from "nanoid";
 import type { CredentialVault } from "../encryption/credential-vault";
 import type { ConnectionStoragePort } from "./ports";
@@ -69,7 +69,10 @@ export class ConnectionStorage implements ConnectionStoragePort {
       updated_at: now,
     });
 
-    await this.db.insertInto("connections").values(serialized).execute();
+    await this.db
+      .insertInto("connections")
+      .values(serialized as Insertable<Database["connections"]>)
+      .execute();
 
     const connection = await this.findById(id);
     if (!connection) {
@@ -179,7 +182,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
    */
   private async serializeConnection(
     data: Partial<ConnectionEntity>,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Updateable<Database["connections"]>> {
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(data)) {
@@ -198,7 +201,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
       }
     }
 
-    return result;
+    return result as Updateable<Database["connections"]>;
   }
 
   /**

@@ -371,8 +371,6 @@ export function DecoChatPanel() {
       description = "Connect to an agents provider to use AI assistants.";
     }
 
-    const action = agents.length === 0 ? "create" : "select";
-
     return (
       <DecoChatAside className="h-full">
         <DecoChatAside.Header>
@@ -410,7 +408,7 @@ export function DecoChatPanel() {
                   navigate({
                     to: "/$org/mcps",
                     params: { org },
-                    search: { action },
+                    search: { action: "create" },
                   })
                 }
               >

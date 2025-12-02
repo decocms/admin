@@ -8,12 +8,10 @@ import {
     FormMessage,
   } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.js";
-import { useNavigate } from "@tanstack/react-router";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Dispatch, useEffect } from "react";
-import { DialogAction, EditingConnection } from "../routes/orgs/connections";
+import { useEffect } from "react";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@deco/ui/components/select.js";
 import { Button } from "@deco/ui/components/button.js";
@@ -21,12 +19,14 @@ import { Textarea } from "@deco/ui/components/textarea.js";
 import { toast } from "sonner";
 import type { useConnectionsCollection } from "../hooks/collections/use-connection";
 import type { authClient } from "../lib/auth-client";
+import type { ConnectionEntity } from "@/tools/connection/schema";
+
+export type EditingConnection = ConnectionEntity | null;
 
 interface ConnectMCPModalProps {
     open: boolean;
+    onOpenChange: (open: boolean) => void;
     editingConnection: EditingConnection;
-    isCreating: boolean;
-    dispatch: Dispatch<DialogAction>;
     org: string;
     collection: ReturnType<typeof useConnectionsCollection>;
     session: ReturnType<typeof authClient.useSession>["data"];
@@ -46,9 +46,7 @@ const connectionFormSchema = ConnectionEntitySchema.pick({
   
   export type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
-export function ConnectMCPModal({ open, isCreating, editingConnection, dispatch, org, collection, session }: ConnectMCPModalProps) {
-    const navigate = useNavigate();
-
+export function ConnectMCPModal({ open, onOpenChange, editingConnection, org, collection, session }: ConnectMCPModalProps) {
     const form = useForm<ConnectionFormData>({
         resolver: zodResolver(connectionFormSchema),
         defaultValues: {
@@ -79,21 +77,9 @@ export function ConnectMCPModal({ open, isCreating, editingConnection, dispatch,
           });
         }
       }, [editingConnection, form]);
-
-    const closeCreateDialog = (org: string) => {
-        navigate({ to: "/$org/mcps", params: { org }, search: {} });
-      };
     
     const onSubmit = async (data: ConnectionFormData) => {
         try {
-          // Close dialog based on mode
-          if (isCreating) {
-            closeCreateDialog(org);
-          } else {
-            dispatch({ type: "close" });
-          }
-          form.reset();
-    
           if (editingConnection) {
             // Update existing connection
             const tx = collection.update(editingConnection.id, (draft) => {
@@ -133,30 +119,19 @@ export function ConnectMCPModal({ open, isCreating, editingConnection, dispatch,
             });
             await tx.isPersisted.promise;
           }
+          form.reset();
+          onOpenChange(false);
         } catch (error) {
           toast.error(
             error instanceof Error ? error.message : "Failed to save connection",
           );
         }
       };
-    
-      const handleDialogClose = (open: boolean) => {
-        if (!open) {
-          if (isCreating) {
-            closeCreateDialog(org);
-            console.log("closeCreateDialog", org);
-          } else {
-            dispatch({ type: "close" });
-            console.log("dispatch close");
-          }
-          form.reset();
-        }
-      };
 
     return (
         <Dialog
         open={open}
-        onOpenChange={handleDialogClose}
+        onOpenChange={onOpenChange}
       >
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -272,7 +247,7 @@ export function ConnectMCPModal({ open, isCreating, editingConnection, dispatch,
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleDialogClose(false)}
+                  onClick={() => onOpenChange(false)}
                 >
                   Cancel
                 </Button>

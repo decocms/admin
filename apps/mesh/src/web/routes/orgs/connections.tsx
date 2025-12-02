@@ -1,6 +1,7 @@
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
-import { ConnectMCPModal } from "@/web/components/connect-mcp-modal";
+import { ConnectMCPModal, type EditingConnection } from "@/web/components/connect-mcp-modal";
+import { SelectMCPsModal } from "@/web/components/select-mcps-modal";
 import {
   useConnections,
   useConnectionsCollection,
@@ -69,8 +70,6 @@ function getStatusBadgeVariant(status: string) {
   }
 }
 
-export type EditingConnection = ConnectionEntity | null;
-
 export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
@@ -99,6 +98,26 @@ export default function OrgMcps() {
       params: { org },
       search: { action: "create" },
     });
+  };
+
+  const closeDialog = () => {
+    navigate({ to: "/$org/mcps", params: { org }, search: {} });
+  };
+
+  const handleConnectMCPOpenChange = (open: boolean) => {
+    if (!open) {
+      if (isCreating) {
+        closeDialog();
+      } else {
+        dispatch({ type: "close" });
+      }
+    }
+  };
+
+  const handleSelectMCPs = (selectedIds: string[]) => {
+    // TODO: Implement the logic to add selected MCPs to the project context
+    toast.success(`Added ${selectedIds.length} MCP(s) to project`);
+    closeDialog();
   };
 
   // Reset form when editing connection changes
@@ -241,13 +260,27 @@ export default function OrgMcps() {
 
       <ConnectMCPModal
         open={isCreating || dialogState.mode === "editing"}
+        onOpenChange={handleConnectMCPOpenChange}
         editingConnection={editingConnection}
-        isCreating={isCreating}
-        dispatch={dispatch}
         org={org}
         collection={collection}
         session={session}
       />
+
+      {/* Select MCPs Modal */}
+      <SelectMCPsModal
+        open={isSelecting}
+        onOpenChange={(open) => !open && closeDialog()}
+        connections={connections ?? []}
+        initialSelected={[]}
+        onConfirm={handleSelectMCPs}
+        onBack={closeDialog}
+        onSeeStore={() => {
+          // TODO: Navigate to MCP store
+          closeDialog();
+        }}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={dialogState.mode === "deleting"}

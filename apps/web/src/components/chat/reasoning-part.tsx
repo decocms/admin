@@ -87,9 +87,9 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
               id={`${messageId}-${index}-reasoning`}
               text={
                 "details" in part &&
-                  Array.isArray(part.details) &&
-                  part.details[0] &&
-                  "text" in part.details[0]
+                Array.isArray(part.details) &&
+                part.details[0] &&
+                "text" in part.details[0]
                   ? (part.details[0] as { text: string }).text
                   : part.text
               }

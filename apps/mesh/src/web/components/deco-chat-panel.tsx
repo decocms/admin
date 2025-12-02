@@ -451,13 +451,14 @@ export function DecoChatPanel() {
           <DecoChatMessages minHeightOffset={264}>
             {chat.messages.map((message, index) =>
               message.role === "user" ? (
-                <DecoChatMessageUser key={message.id} message={message}
-                />
+                <DecoChatMessageUser key={message.id} message={message} />
               ) : message.role === "assistant" ? (
                 <DecoChatMessageAssistant
                   key={message.id}
                   message={message}
-                  status={index === chat.messages.length - 1 ? status : undefined}
+                  status={
+                    index === chat.messages.length - 1 ? status : undefined
+                  }
                 />
               ) : null,
             )}

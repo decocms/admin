@@ -192,6 +192,7 @@ export function PromptDetail() {
                           hideMentionsLabel
                           excludeIds={[form.getValues("id")]}
                           {...field}
+                          value={field.value ?? ""}
                         />
                       </FormControl>
                       <FormMessage />

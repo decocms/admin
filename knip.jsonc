@@ -17,8 +17,7 @@
       "ignoreDependencies": ["cloudflare"]
     },
     "packages/runtime": {
-      "entry": ["scripts/generate-json-schema.ts"],
-      "ignoreDependencies": ["cloudflare"]
+      "entry": ["scripts/generate-json-schema.ts"]
     },
     "packages/ui": {
       "ignore": ["src/styles/global.css"]

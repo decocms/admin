@@ -192,7 +192,7 @@ export function getDatabaseUrl(): string {
 /**
  * Parse database URL and extract configuration
  */
-export function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
+function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
   let url = databaseUrl || "file:./data/mesh.db";
 
   // Handle special case: ":memory:" without protocol
@@ -235,7 +235,7 @@ export function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
 /**
  * Get the database implementation for a given type
  */
-export function getDatabaseImpl(type: DatabaseType): SupportedDatabase {
+function getDatabaseImpl(type: DatabaseType): SupportedDatabase {
   return DATABASES[type];
 }
 

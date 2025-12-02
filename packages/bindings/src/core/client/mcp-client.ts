@@ -93,7 +93,7 @@ export const createServerClient = async (
   };
 };
 
-export const createTransport = (
+const createTransport = (
   connection: MCPConnection,
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>,

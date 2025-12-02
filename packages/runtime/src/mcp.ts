@@ -105,11 +105,6 @@ export const MCPClient = new Proxy(
 
 export type { ToolBinder };
 
-export const isStreamableToolBinder = (
-  toolBinder: ToolBinder,
-): toolBinder is ToolBinder<string, any, any, true> => {
-  return toolBinder.streamable === true;
-};
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     string,

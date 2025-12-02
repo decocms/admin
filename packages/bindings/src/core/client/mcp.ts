@@ -9,39 +9,9 @@ export interface FetchOptions extends RequestInit {
 }
 
 // Default fetcher instance with API_SERVER_URL and API_HEADERS
-export const MCPClient = new Proxy(
-  {} as {
-    forConnection: <TDefinition extends readonly ToolBinder[]>(
-      connection: MCPConnection,
-    ) => MCPClientFetchStub<TDefinition>;
-  },
-  {
-    get(_, name) {
-      if (name === "toJSON") {
-        return null;
-      }
-
-      if (name === "forConnection") {
-        return <TDefinition extends readonly ToolBinder[]>(
-          connection: MCPConnection,
-        ) =>
-          createMCPFetchStub<TDefinition>({
-            connection,
-          });
-      }
-      return global[name as keyof typeof global];
-    },
-  },
-);
-
 import type { ToolBinder } from "../binder";
 export type { ToolBinder };
 
-export const isStreamableToolBinder = (
-  toolBinder: ToolBinder,
-): toolBinder is ToolBinder<string, any, any, true> => {
-  return toolBinder.streamable === true;
-};
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     string,

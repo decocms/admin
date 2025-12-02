@@ -32,7 +32,7 @@ function isZodSchema(value: unknown): value is ZodType<unknown> {
  * @param schema - A Zod schema or JSON schema
  * @returns The JSON schema representation, or null if input is null/undefined
  */
-export function normalizeToJsonSchema(
+function normalizeToJsonSchema(
   schema: ZodType<unknown> | JsonSchema | null | undefined,
 ): JsonSchema | null {
   if (schema == null) {

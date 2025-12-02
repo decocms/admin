@@ -16,6 +16,10 @@ function customServerMessage(): Plugin {
           const bold = "\x1b[1m";
           const dim = "\x1b[2m";
 
+          const configuredPort = server.config.server?.port;
+          const port =
+            typeof configuredPort === "number" ? configuredPort : 3000;
+
           console.log("");
           console.log(
             `${bold}${green}  Powered by DecoCMS${reset} ${dim}→ https://decocms.com${reset}`,
@@ -23,7 +27,7 @@ function customServerMessage(): Plugin {
           console.log("");
           console.log(`  ${bold}🚀 MCP Mesh Client${reset}`);
           console.log(
-            `  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://localhost:3000/${reset}`,
+            `  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://0.0.0.0:${port}/${reset}`,
           );
           console.log("");
         }, 200);

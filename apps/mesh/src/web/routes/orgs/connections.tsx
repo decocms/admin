@@ -1,6 +1,6 @@
 import type { ConnectionEntity } from "@/tools/connection/schema";
-import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
+import { ConnectMCPModal } from "@/web/components/connect-mcp-modal";
 import {
   useConnections,
   useConnectionsCollection,
@@ -22,69 +22,25 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@deco/ui/components/form.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
 import { type TableColumn } from "@deco/ui/components/resource-table.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { MoreVertical, Plus, Search } from "lucide-react";
-import { useEffect, useReducer } from "react";
-import { useForm } from "react-hook-form";
+import { useReducer } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
-// Form validation schema derived from ConnectionEntitySchema
-// Pick the relevant fields and adapt for form use
-const connectionFormSchema = ConnectionEntitySchema.pick({
-  title: true,
-  description: true,
-  connection_type: true,
-  connection_url: true,
-  connection_token: true,
-}).partial({
-  // These are optional for form input
-  description: true,
-  connection_token: true,
-});
-
-type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
 type DialogState =
   | { mode: "idle" }
   | { mode: "editing"; connection: ConnectionEntity }
   | { mode: "deleting"; connection: ConnectionEntity };
 
-type DialogAction =
+export type DialogAction =
   | { type: "edit"; connection: ConnectionEntity }
   | { type: "delete"; connection: ConnectionEntity }
   | { type: "close" };
@@ -113,10 +69,12 @@ function getStatusBadgeVariant(status: string) {
   }
 }
 
+export type EditingConnection = ConnectionEntity | null;
+
 export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { action?: "create" };
+  const search = useSearch({ strict: false }) as { action?: "create" | "select" };
   const { data: session } = authClient.useSession();
 
   // Consolidated list UI state (search, filters, sorting, view mode)
@@ -133,6 +91,7 @@ export default function OrgMcps() {
 
   // Create dialog state is derived from search params
   const isCreating = search.action === "create";
+  const isSelecting = search.action === "select";
 
   const openCreateDialog = () => {
     navigate({
@@ -142,45 +101,9 @@ export default function OrgMcps() {
     });
   };
 
-  const closeCreateDialog = () => {
-    navigate({ to: "/$org/mcps", params: { org }, search: {} });
-  };
-
-  // React Hook Form setup
-  const form = useForm<ConnectionFormData>({
-    resolver: zodResolver(connectionFormSchema),
-    defaultValues: {
-      title: "",
-      description: null,
-      connection_type: "HTTP",
-      connection_url: "",
-      connection_token: null,
-    },
-  });
-
   // Reset form when editing connection changes
-  const editingConnection =
+  const editingConnection: EditingConnection =
     dialogState.mode === "editing" ? dialogState.connection : null;
-
-  useEffect(() => {
-    if (editingConnection) {
-      form.reset({
-        title: editingConnection.title,
-        description: editingConnection.description,
-        connection_type: editingConnection.connection_type,
-        connection_url: editingConnection.connection_url,
-        connection_token: null, // Don't pre-fill token for security
-      });
-    } else {
-      form.reset({
-        title: "",
-        description: null,
-        connection_type: "HTTP",
-        connection_url: "",
-        connection_token: null,
-      });
-    }
-  }, [editingConnection, form]);
 
   const errorMessage = isError ? "Failed to load connections." : null;
 
@@ -203,73 +126,6 @@ export default function OrgMcps() {
         error instanceof Error ? error.message : "Failed to delete connection",
       );
     });
-  };
-
-  const onSubmit = async (data: ConnectionFormData) => {
-    try {
-      // Close dialog based on mode
-      if (isCreating) {
-        closeCreateDialog();
-      } else {
-        dispatch({ type: "close" });
-      }
-      form.reset();
-
-      if (editingConnection) {
-        // Update existing connection
-        const tx = collection.update(editingConnection.id, (draft) => {
-          draft.title = data.title;
-          draft.description = data.description || null;
-          draft.connection_type = data.connection_type;
-          draft.connection_url = data.connection_url;
-          if (data.connection_token) {
-            draft.connection_token = data.connection_token;
-          }
-        });
-        await tx.isPersisted.promise;
-      } else {
-        // Create new connection - cast through unknown because the insert API
-        // accepts ConnectionCreateInput but the collection is typed as ConnectionEntity
-        const tx = collection.insert({
-          id: crypto.randomUUID(),
-          title: data.title,
-          description: data.description || null,
-          connection_type: data.connection_type,
-          connection_url: data.connection_url,
-          connection_token: data.connection_token || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: "inactive",
-          organization_id: org,
-          created_by: session?.user?.id ?? "unknown",
-          icon: null,
-          app_name: null,
-          app_id: null,
-          connection_headers: null,
-          oauth_config: null,
-          configuration_state: null,
-          metadata: null,
-          tools: null,
-          bindings: null,
-        });
-        await tx.isPersisted.promise;
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save connection",
-      );
-    }
-  };
-
-  const handleDialogClose = (open: boolean) => {
-    if (!open) {
-      if (isCreating) {
-        closeCreateDialog();
-      } else {
-        dispatch({ type: "close" });
-      }
-      form.reset();
-    }
   };
 
   const columns: TableColumn<ConnectionEntity>[] = [
@@ -382,139 +238,16 @@ export default function OrgMcps() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <Dialog
+
+      <ConnectMCPModal
         open={isCreating || dialogState.mode === "editing"}
-        onOpenChange={handleDialogClose}
-      >
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingConnection ? "Edit Connection" : "Create New Connection"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingConnection
-                ? "Update the connection details below."
-                : "Add a new connection to your organization. Fill in the details below."}
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="My Connection" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="A brief description of this connection"
-                          rows={3}
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type *</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="SSE">SSE</SelectItem>
-                          <SelectItem value="Websocket">Websocket</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/mcp"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_token"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Token (optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Bearer token or API key"
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleDialogClose(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingConnection
-                    ? "Update Connection"
-                    : "Create Connection"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
+        editingConnection={editingConnection}
+        isCreating={isCreating}
+        dispatch={dispatch}
+        org={org}
+        collection={collection}
+        session={session}
+      />
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={dialogState.mode === "deleting"}

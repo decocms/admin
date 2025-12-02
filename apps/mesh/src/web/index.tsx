@@ -76,7 +76,7 @@ const orgConnectionsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/connections.tsx")),
   validateSearch: z.lazy(() =>
     z.object({
-      action: z.enum(["create"]).optional(),
+      action: z.enum(["create", "select"]).optional(),
     }),
   ),
 });

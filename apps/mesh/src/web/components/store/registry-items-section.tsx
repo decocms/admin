@@ -24,6 +24,10 @@ export function RegistryItemsSection({
     return null;
   }
 
+  console.log(items);
+  console.log(title, subtitle);
+  console.log(onItemClick);
+
   return (
     <div className="flex flex-col gap-4">
       <div>

@@ -13,17 +13,11 @@ export type { StoreDiscoveryUI as StoreDiscoveryUIComponent } from "./store-disc
 
 // Item card components
 export { RegistryItemCard } from "./registry-item-card";
-export { RegistryItemListCard } from "./registry-item-list-card";
 
 // Section components
 export { RegistryItemsSection } from "./registry-items-section";
 export type { RegistryItem } from "./registry-items-section";
 
-// MCP Apps components
-export { MCPToolCard } from "./mcp-tool-card";
-export type { MCPApp } from "./mcp-tool-card";
-
 // Legacy components (kept for backwards compatibility)
-export { MCPToolsGrid } from "./mcp-tools-grid";
 export { MCPResultsView } from "./mcp-results-view";
 

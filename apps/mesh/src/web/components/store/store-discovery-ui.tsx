@@ -2,11 +2,11 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { RegistryItemListCard } from "./registry-item-list-card";
 import {
   RegistryItemsSection,
   type RegistryItem,
 } from "./registry-items-section";
+import { RegistryItemCard } from "./registry-item-card";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -144,7 +144,7 @@ export function StoreDiscoveryUI({
             {search && searchResults.length > 0 && (
               <div className="z-20 p-2 bg-popover w-full absolute left-0 top-[calc(100%+8px)] rounded-xl border border-border shadow-lg max-h-96 overflow-y-auto">
                 {searchResults.map((item) => (
-                  <RegistryItemListCard
+                  <RegistryItemCard
                     key={item.id}
                     {...item}
                     onClick={() => handleItemClick(item)}

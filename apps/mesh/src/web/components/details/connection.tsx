@@ -51,12 +51,11 @@ import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
+
   // We can use search params for active tab if we want persistent tabs
   const search = useSearch({ strict: false }) as { tab?: string };
-  const [activeTabId, setActiveTabId] = useState<string>(
-    search.tab || "settings",
-  );
+  const activeTabId = search.tab || "settings";
 
   const { data: connection } = useConnection(connectionId);
   const connectionsCollection = useConnectionsCollection();
@@ -257,7 +256,6 @@ export default function ConnectionInspectorView() {
   ];
 
   const handleTabChange = (tabId: string) => {
-    setActiveTabId(tabId);
     navigate({ search: (prev) => ({ ...prev, tab: tabId }), replace: true });
   };
 
@@ -298,7 +296,13 @@ export default function ConnectionInspectorView() {
               />
             ) : activeTabId === "tools" ? (
               <ToolsList
-                tools={mcp.tools}
+                tools={(mcp.tools || []).map((t) => ({
+                  ...t,
+                  id: t.name,
+                  title: t.name,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                }))}
                 connectionId={connectionId as string}
                 org={org as string}
               />
@@ -307,7 +311,6 @@ export default function ConnectionInspectorView() {
                 connection={connection}
                 onUpdate={handleUpdateConnection}
                 hasMcpBinding={hasMcpBinding}
-                connectionId={connectionId as string}
               />
             ) : (
               <CollectionContent
@@ -342,14 +345,12 @@ interface SettingsTabProps {
   connection: ConnectionEntity;
   onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
   hasMcpBinding: boolean;
-  connectionId: string;
 }
 
 function SettingsTab({
   connection,
   onUpdate,
   hasMcpBinding,
-  connectionId,
 }: SettingsTabProps) {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -364,10 +365,7 @@ function SettingsTab({
         <div className="space-y-4">
           <h3 className="text-lg font-medium">MCP Configuration</h3>
           <div className="border border-border rounded-lg p-6 bg-card">
-            <McpConfigurationForm
-              connectionId={connectionId}
-              connection={connection}
-            />
+            <McpConfigurationForm connection={connection} />
           </div>
         </div>
       )}
@@ -564,15 +562,13 @@ function ConnectionSettingsForm({
 }
 
 function McpConfigurationForm({
-  connectionId,
   connection,
 }: {
-  connectionId: string;
   connection: ConnectionEntity;
 }) {
   const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
+    () => createToolCaller(connection.id),
+    [connection.id],
   );
 
   const {
@@ -608,7 +604,7 @@ function McpConfigurationForm({
     try {
       const meshToolCaller = createToolCaller();
       await meshToolCaller("CONNECTION_CONFIGURE", {
-        connectionId,
+        connectionId: connection.id,
         scopes: selectedScopes,
         state: data.formData,
       });
@@ -692,7 +688,7 @@ function ToolsList({
   connectionId,
   org,
 }: {
-  tools: { name: string; description?: string }[];
+  tools: (BaseCollectionEntity & { description?: string })[];
   connectionId: string;
   org: string;
 }) {
@@ -703,21 +699,19 @@ function ToolsList({
   const filteredTools = useMemo(() => {
     if (!search.trim()) return tools;
     const searchLower = search.toLowerCase();
-    return tools
-      .filter(
-        (t) =>
-          t.name.toLowerCase().includes(searchLower) ||
-          (t.description && t.description.toLowerCase().includes(searchLower)),
-      )
-      .map((t) => ({ ...t, id: t.name })); // Ensure ID exists
+    return tools.filter(
+      (t) =>
+        t.title.toLowerCase().includes(searchLower) ||
+        (t.description && t.description.toLowerCase().includes(searchLower)),
+    );
   }, [tools, search]);
 
   const columns = [
     {
-      id: "name",
+      id: "title",
       header: "NAME",
-      render: (tool: { name: string }) => (
-        <div className="font-medium font-mono text-sm">{tool.name}</div>
+      render: (tool: BaseCollectionEntity) => (
+        <div className="font-medium font-mono text-sm">{tool.title}</div>
       ),
       sortable: true,
     },
@@ -742,12 +736,12 @@ function ToolsList({
       columns={columns}
       onItemClick={(tool) => {
         navigate({
-          to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+          to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.title)}`,
         });
       }}
       renderCard={(tool) => (
         <Card className="p-4">
-          <div className="font-medium">{tool.name}</div>
+          <div className="font-medium">{tool.title}</div>
           <div className="text-sm text-muted-foreground">
             {tool.description}
           </div>

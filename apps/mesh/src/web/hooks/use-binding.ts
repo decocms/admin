@@ -69,8 +69,8 @@ export function useBindingConnections(
       !connections || !binding
         ? []
         : connections.filter((conn) =>
-            connectionImplementsBinding(conn, binding),
-          ),
+          connectionImplementsBinding(conn, binding)
+        ),
     [connections, binding],
   );
 }
@@ -133,28 +133,37 @@ function extractCollectionSchema(
   const createTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_CREATE`,
   );
-  if (createTool?.inputSchema?.properties?.data) {
-    return createTool.inputSchema.properties.data as Record<string, unknown>;
+  const createToolProperties = createTool?.inputSchema?.properties;
+  if (
+    createToolProperties && typeof createToolProperties === "object" &&
+    "data" in createToolProperties
+  ) {
+    return createToolProperties.data as Record<string, unknown>;
   }
 
   // Try to get schema from UPDATE tool
   const updateTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_UPDATE`,
   );
-  if (updateTool?.inputSchema?.properties?.data) {
+  const updateToolProperties = updateTool?.inputSchema?.properties;
+  if (
+    updateToolProperties && typeof updateToolProperties === "object" &&
+    "data" in updateToolProperties
+  ) {
     // Update usually has partial data, but might still be useful
-    return updateTool.inputSchema.properties.data as Record<string, unknown>;
+    return updateToolProperties.data as Record<string, unknown>;
   }
 
   // Try to get schema from LIST tool (output)
   const listTool = tools.find(
     (t) => t.name === `COLLECTION_${collectionName}_LIST`,
   );
-  if (listTool?.outputSchema?.properties?.items) {
-    const itemsSchema = listTool.outputSchema.properties.items as Record<
-      string,
-      unknown
-    >;
+  const listToolProperties = listTool?.outputSchema?.properties;
+  if (
+    listToolProperties && typeof listToolProperties === "object" &&
+    "items" in listToolProperties
+  ) {
+    const itemsSchema = listToolProperties.items as Record<string, unknown>;
     if (itemsSchema.items) {
       return itemsSchema.items as Record<string, unknown>;
     }
@@ -167,11 +176,13 @@ function extractCollectionSchema(
  * Detects and validates collection bindings from tools
  */
 function detectCollections(
-  tools: Array<{
-    name: string;
-    inputSchema?: Record<string, unknown>;
-    outputSchema?: Record<string, unknown>;
-  }> | null,
+  tools:
+    | Array<{
+      name: string;
+      inputSchema?: Record<string, unknown>;
+      outputSchema?: Record<string, unknown>;
+    }>
+    | null,
 ): ValidatedCollection[] {
   if (!tools || tools.length === 0) {
     return [];

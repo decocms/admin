@@ -1,3 +1,5 @@
+import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
+import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -8,11 +10,13 @@ import { useForm } from "react-hook-form";
 import { AgentSchema } from "@decocms/bindings/agent";
 import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
+import { useParams } from "@tanstack/react-router";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 export type Agent = z.infer<typeof AgentSchema>;
 
 export interface AgentDetailsViewProps {
-  item: Agent;
+  itemId: string;
   onBack: () => void;
   onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }
@@ -80,11 +84,22 @@ function SmartAvatarUpload({
 }
 
 export function AgentDetailsView({
-  item,
+  itemId,
   onBack,
   onUpdate,
 }: AgentDetailsViewProps) {
   const [isSaving, setIsSaving] = useState(false);
+
+  const { connectionId } = useParams({
+    strict: false,
+  });
+
+  const collection = useCollection<Agent>(
+    connectionId ?? UNKNOWN_CONNECTION_ID,
+    "agent",
+  );
+
+  const { data: item } = useCollectionItem(collection, itemId);
 
   const {
     register,
@@ -95,10 +110,10 @@ export function AgentDetailsView({
     formState: { isDirty },
   } = useForm<Agent>({
     defaultValues: {
-      title: item.title || item.name || "",
-      description: item.description || "",
-      instructions: item.instructions || item.content || "",
-      avatar: item.avatar || "",
+      title: "",
+      description: "",
+      instructions: "",
+      avatar: "",
     },
   });
 
@@ -108,10 +123,10 @@ export function AgentDetailsView({
   useEffect(() => {
     if (item) {
       reset({
-        title: item.title || item.name || "",
-        description: item.description || "",
-        instructions: item.instructions || item.content || "",
-        avatar: item.avatar || "",
+        title: item.title ?? "",
+        description: item.description ?? "",
+        instructions: item.instructions ?? "",
+        avatar: item.avatar ?? "",
       });
     }
   }, [item, reset]);
@@ -124,6 +139,14 @@ export function AgentDetailsView({
       setIsSaving(false);
     }
   };
+
+  if (!item) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <ViewLayout onBack={onBack}>

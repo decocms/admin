@@ -8,11 +8,23 @@ import {
 
 interface UserIndicatorProps {
   userId?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?:
+    | "3xs"
+    | "2xs"
+    | "xs"
+    | "sm"
+    | "base"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "3xl";
 }
 
 export function UserIndicator({ userId, size = "sm" }: UserIndicatorProps) {
   if (!userId) return null;
+
+  const avatarSize = size === "md" ? "base" : size;
 
   // TODO: Fetch user details (name, image) using userId
   // For now, use the ID as fallback and maybe a deterministic color if Avatar supports it,
@@ -25,7 +37,7 @@ export function UserIndicator({ userId, size = "sm" }: UserIndicatorProps) {
           <div className="flex items-center gap-2">
             <Avatar
               fallback={userId.substring(0, 2).toUpperCase()}
-              size={size}
+              size={avatarSize}
               className="cursor-help"
             />
             <span className="text-xs text-muted-foreground truncate max-w-[100px]">

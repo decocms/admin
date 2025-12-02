@@ -8,8 +8,7 @@ export type MCPClient<
   [K in TDefinition[number] as K["name"]]: K extends ToolBinder<
     infer TInput,
     infer TReturn
-  >
-    ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
+  > ? (params: z.infer<TInput>, init?: RequestInit) => Promise<z.infer<TReturn>>
     : never;
 };
 
@@ -93,7 +92,10 @@ export function createToolCaller(connectionId?: string): ToolCaller {
 
   const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
 
-  return async (toolName: string, args: unknown) => {
+  return async <T extends Record<string, unknown> = Record<string, unknown>>(
+    toolName: string,
+    args: unknown,
+  ): Promise<T> => {
     const response = await fetch(endpoint, {
       method: "POST",
       body: JSON.stringify({

@@ -21,10 +21,8 @@ export interface ChatUserConfig {
 }
 
 export interface Metadata {
-  created_at?: string | Date;
-
-  // Request configuration & Identity
   model?: ChatModelConfig;
   agent?: ChatAgentConfig;
   user?: ChatUserConfig;
+  created_at?: string | Date;
 }

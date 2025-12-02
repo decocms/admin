@@ -123,6 +123,75 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     throw new Error(`Connection inactive: ${connection.status}`);
   }
 
+  // Issue configuration JWT if connection has configuration state
+  let configurationToken: string | undefined;
+  if (
+    connection.configuration_state &&
+    connection.configuration_scopes &&
+    connection.configuration_scopes.length > 0
+  ) {
+    // Parse scopes to build permissions object
+    // Format: "KEY::SCOPE" where KEY is in state and state[KEY].value is a connection ID
+    // Result: { [connectionId]: [scopes...] }
+    const permissions: Record<string, string[]> = {};
+
+    for (const scope of connection.configuration_scopes) {
+      const parts = scope.split("::");
+      if (parts.length === 2) {
+        const [key, scopeName] = parts;
+        if (!key || !scopeName) continue; // Skip invalid parts
+
+        const stateValue: unknown = connection.configuration_state[key];
+
+        if (
+          typeof stateValue === "object" &&
+          stateValue !== null &&
+          "value" in stateValue
+        ) {
+          const connectionIdRef = (stateValue as { value: unknown }).value;
+          if (typeof connectionIdRef === "string") {
+            // Add scope to this connection's permissions
+            if (!permissions[connectionIdRef]) {
+              permissions[connectionIdRef] = [];
+            }
+            permissions[connectionIdRef].push(scopeName);
+          }
+        }
+      }
+    }
+
+    // Issue short-lived API key with configuration permissions
+    // Using Better Auth API Key plugin
+    const userId = ctx.auth.user?.id ?? ctx.auth.apiKey?.userId;
+    if (!userId) {
+      throw new Error("User ID required to issue configuration token");
+    }
+
+    try {
+      const apiKeyResult = await ctx.authInstance.api.createApiKey({
+        body: {
+          userId,
+          name: `mesh-config-${connectionId}-${Date.now()}`,
+          permissions,
+          metadata: {
+            state: connection.configuration_state,
+            meshUrl: ctx.baseUrl, // Include mesh URL so receivers know where mesh is running
+          },
+          expiresIn: 60 * 5, // 5 minutes - short lived
+        },
+      });
+
+      // Extract the generated token from result
+      // Better Auth returns the key directly in the result
+      if (apiKeyResult && "key" in apiKeyResult) {
+        configurationToken = apiKeyResult.key;
+      }
+    } catch (error) {
+      console.error("Failed to issue configuration token:", error);
+      // Continue without configuration token - downstream will fail if it requires it
+    }
+  }
+
   // Create client factory for downstream MCP
   const createClient = async () => {
     // Prepare headers
@@ -131,6 +200,11 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     // Add connection token (already decrypted by storage layer)
     if (connection.connection_token) {
       headers["Authorization"] = `Bearer ${connection.connection_token}`;
+    }
+
+    // Add configuration token if issued
+    if (configurationToken) {
+      headers["x-mesh-token"] = `Bearer ${configurationToken}`;
     }
 
     // Add custom headers

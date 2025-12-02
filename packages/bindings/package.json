@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "1.0.1-alpha.3",
+  "version": "1.0.1-alpha.4",
   "type": "module",
   "scripts": {
     "test": "vitest run",
@@ -19,6 +19,7 @@
     "./llm": "./src/well-known/language-model.ts",
     "./connection": "./src/core/connection.ts",
     "./client": "./src/core/client/index.ts",
+    "./mcp": "./src/well-known/mcp.ts",
     "./agent": "./src/well-known/agent.ts"
   },
   "devDependencies": {

@@ -42,7 +42,7 @@ describe("MCP Integration", () => {
               "COLLECTION_CONNECTIONS_LIST",
               "COLLECTION_CONNECTIONS_GET",
               "COLLECTION_CONNECTIONS_DELETE",
-              "COLLECTION_CONNECTIONS_TEST",
+              "CONNECTION_TEST",
             ],
           },
           metadata: {
@@ -121,7 +121,7 @@ describe("MCP Integration", () => {
         "COLLECTION_CONNECTIONS_LIST",
         "COLLECTION_CONNECTIONS_GET",
         "COLLECTION_CONNECTIONS_DELETE",
-        "COLLECTION_CONNECTIONS_TEST",
+        "CONNECTION_TEST",
       ];
 
       expect(result.tools.length).toBe(expectedTools.length);

@@ -1,15 +1,19 @@
-import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
+import { ConnectionEntitySchema } from "@/tools/connection/schema";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
-import { ViewLayout, ViewTabs } from "./layout";
 import {
   useConnection,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
-import { useCollectionBindings } from "@/web/hooks/use-binding";
+import {
+  useBindingConnections,
+  useCollectionBindings,
+} from "@/web/hooks/use-binding";
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
+import { useToolCall } from "@/web/hooks/use-tool-call";
 import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
@@ -30,8 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { zodResolver } from "@hookform/resolvers/zod";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
+import { zodResolver } from "@hookform/resolvers/zod";
+import RJSForm from "@rjsf/shadcn";
+import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle2, Globe, Loader2, Lock } from "lucide-react";
@@ -40,19 +46,30 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
+import { ViewLayout, ViewTabs } from "./layout";
+import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
   const navigate = useNavigate();
   // We can use search params for active tab if we want persistent tabs
   const search = useSearch({ strict: false }) as { tab?: string };
-  const [activeTabId, setActiveTabId] = useState<string>(search.tab || "tools");
+  const [activeTabId, setActiveTabId] = useState<string>(
+    search.tab || "settings",
+  );
 
   const { data: connection } = useConnection(connectionId);
   const connectionsCollection = useConnectionsCollection();
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
+
+  // Detect MCP binding
+  const mcpBindingConnections = useBindingConnections(
+    connection ? [connection] : [],
+    "MCP",
+  );
+  const hasMcpBinding = mcpBindingConnections.length > 0;
 
   // Update connection handler
   const handleUpdateConnection = async (
@@ -234,19 +251,14 @@ export default function ConnectionInspectorView() {
   }
 
   const tabs = [
+    { id: "settings", label: "Settings" },
     { id: "tools", label: "Tools", count: mcp.tools?.length ?? 0 },
-    ...(collections || []).map((c) => ({
-      id: c.name,
-      label: c.displayName,
-    })),
+    ...(collections || []).map((c) => ({ id: c.name, label: c.displayName })),
   ];
 
   const handleTabChange = (tabId: string) => {
     setActiveTabId(tabId);
-    navigate({
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: tabId }),
-      replace: true,
-    });
+    navigate({ search: (prev) => ({ ...prev, tab: tabId }), replace: true });
   };
 
   const activeCollection = collections.find((c) => c.name === activeTabId);
@@ -261,8 +273,6 @@ export default function ConnectionInspectorView() {
         />
       </ViewTabs>
       <div className="flex h-full w-full bg-background overflow-hidden">
-        <Sidebar connection={connection} onUpdate={handleUpdateConnection} />
-
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
           <div className="flex-1 p-6">
             {mcp.state === "pending_auth" || mcp.state === "authenticating" ? (
@@ -291,6 +301,13 @@ export default function ConnectionInspectorView() {
                 tools={mcp.tools}
                 connectionId={connectionId as string}
                 org={org as string}
+              />
+            ) : activeTabId === "settings" ? (
+              <SettingsTab
+                connection={connection}
+                onUpdate={handleUpdateConnection}
+                hasMcpBinding={hasMcpBinding}
+                connectionId={connectionId as string}
               />
             ) : (
               <CollectionContent
@@ -321,12 +338,50 @@ const connectionFormSchema = ConnectionEntitySchema.pick({
 
 type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
-interface ConnectionDetailsSidebarProps {
+interface SettingsTabProps {
   connection: ConnectionEntity;
-  onUpdate?: (connection: Partial<ConnectionEntity>) => Promise<void>;
+  onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
+  hasMcpBinding: boolean;
+  connectionId: string;
 }
 
-function Sidebar({ connection, onUpdate }: ConnectionDetailsSidebarProps) {
+function SettingsTab({
+  connection,
+  onUpdate,
+  hasMcpBinding,
+  connectionId,
+}: SettingsTabProps) {
+  return (
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Connection Settings</h3>
+        <div className="border border-border rounded-lg p-6 bg-card">
+          <ConnectionSettingsForm connection={connection} onUpdate={onUpdate} />
+        </div>
+      </div>
+
+      {hasMcpBinding && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">MCP Configuration</h3>
+          <div className="border border-border rounded-lg p-6 bg-card">
+            <McpConfigurationForm
+              connectionId={connectionId}
+              connection={connection}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConnectionSettingsForm({
+  connection,
+  onUpdate,
+}: {
+  connection: ConnectionEntity;
+  onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
+}) {
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<ConnectionFormData>({
@@ -352,7 +407,6 @@ function Sidebar({ connection, onUpdate }: ConnectionDetailsSidebarProps) {
   }, [connection, form]);
 
   const onSubmit = async (data: ConnectionFormData) => {
-    if (!onUpdate) return;
     setIsSaving(true);
     try {
       await onUpdate({
@@ -367,127 +421,43 @@ function Sidebar({ connection, onUpdate }: ConnectionDetailsSidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-full border-r border-border w-[320px] bg-background shrink-0">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col flex-1 min-h-0"
-        >
-          <div className="p-6 border-b border-border flex flex-col gap-4">
-            <div className="h-16 w-16 rounded-2xl border border-border/50 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-              <Globe className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem className="w-full space-y-0">
-                    <div className="flex items-center gap-2">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          className="h-auto text-xl font-semibold px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all p-0"
-                          placeholder="Connection Name"
-                        />
-                      </FormControl>
-                      <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="w-full space-y-0">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl border border-border/50 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+            <Globe className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem className="w-full space-y-0">
+                  <div className="flex items-center gap-2">
                     <FormControl>
                       <Input
                         {...field}
-                        value={field.value || ""}
-                        className="h-auto text-sm text-muted-foreground px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
-                        placeholder="Add a description..."
+                        className="h-auto text-xl font-semibold px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all p-0"
+                        placeholder="Connection Name"
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="p-6 flex flex-col gap-4 border-b border-border flex-1 overflow-y-auto">
-            <div className="flex flex-col gap-2">
-              <FormLabel>Connection</FormLabel>
-              <div className="flex rounded-md shadow-sm">
-                <FormField
-                  control={form.control}
-                  name="connection_type"
-                  render={({ field }) => (
-                    <FormItem className="space-y-0">
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-[100px] rounded-r-none border-r-0 bg-muted/50 focus:ring-0 focus:ring-offset-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="SSE">SSE</SelectItem>
-                          <SelectItem value="Websocket">Websocket</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="connection_url"
-                  render={({ field }) => (
-                    <FormItem className="flex-1 space-y-0">
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/mcp"
-                          {...field}
-                          className="rounded-l-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="connection_type"
-                render={() => <FormMessage />}
-              />
-              <FormField
-                control={form.control}
-                name="connection_url"
-                render={() => <FormMessage />}
-              />
-            </div>
-
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
-              name="connection_token"
+              name="description"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Token</FormLabel>
+                <FormItem className="w-full space-y-0">
                   <FormControl>
                     <Input
-                      type="password"
-                      placeholder={
-                        connection.connection_token
-                          ? "••••••••"
-                          : "No token set"
-                      }
                       {...field}
                       value={field.value || ""}
+                      className="h-auto text-sm text-muted-foreground px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
+                      placeholder="Add a description..."
                     />
                   </FormControl>
                   <FormMessage />
@@ -495,28 +465,224 @@ function Sidebar({ connection, onUpdate }: ConnectionDetailsSidebarProps) {
               )}
             />
           </div>
+        </div>
 
-          <div className="p-6 mt-auto bg-muted/5 space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Last Updated</span>
-              <span className="font-mono uppercase text-muted-foreground">
-                {connection.updated_at
-                  ? formatDistanceToNow(new Date(connection.updated_at), {
-                      addSuffix: true,
-                    })
-                  : "Unknown"}
-              </span>
+        <div className="grid gap-4 pt-4 border-t border-border">
+          <div className="flex flex-col gap-2">
+            <FormLabel>Connection</FormLabel>
+            <div className="flex rounded-md shadow-sm">
+              <FormField
+                control={form.control}
+                name="connection_type"
+                render={({ field }) => (
+                  <FormItem className="space-y-0">
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-[100px] rounded-r-none border-r-0 bg-muted/50 focus:ring-0 focus:ring-offset-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="HTTP">HTTP</SelectItem>
+                        <SelectItem value="SSE">SSE</SelectItem>
+                        <SelectItem value="Websocket">Websocket</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="connection_url"
+                render={({ field }) => (
+                  <FormItem className="flex-1 space-y-0">
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com/mcp"
+                        {...field}
+                        className="rounded-l-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
-
-            {form.formState.isDirty && (
-              <Button type="submit" className="w-full" disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            )}
+            <FormField
+              control={form.control}
+              name="connection_type"
+              render={() => <FormMessage />}
+            />
+            <FormField
+              control={form.control}
+              name="connection_url"
+              render={() => <FormMessage />}
+            />
           </div>
-        </form>
-      </Form>
+
+          <FormField
+            control={form.control}
+            name="connection_token"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Token</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder={
+                      connection.connection_token ? "••••••••" : "No token set"
+                    }
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="flex justify-between items-center pt-4 border-t border-border">
+          <div className="text-sm">
+            <span className="text-muted-foreground mr-2">Last Updated:</span>
+            <span className="font-mono uppercase text-muted-foreground">
+              {connection.updated_at
+                ? formatDistanceToNow(new Date(connection.updated_at), {
+                    addSuffix: true,
+                  })
+                : "Unknown"}
+            </span>
+          </div>
+
+          <Button type="submit" disabled={!form.formState.isDirty || isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
+function McpConfigurationForm({
+  connectionId,
+  connection,
+}: {
+  connectionId: string;
+  connection: ConnectionEntity;
+}) {
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId),
+    [connectionId],
+  );
+
+  const {
+    data: config,
+    isLoading,
+    error,
+  } = useToolCall({
+    toolCaller,
+    toolName: "MCP_CONFIGURATION",
+    toolInputParams: {},
+  });
+
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(
+    connection.configuration_scopes ?? [],
+  );
+  const [formState, setFormState] = useState<Record<string, unknown>>(
+    connection.configuration_state ?? {},
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize scopes from data if needed
+  useEffect(() => {
+    if (connection.configuration_scopes) {
+      setSelectedScopes(connection.configuration_scopes);
+    }
+    if (connection.configuration_state) {
+      setFormState(connection.configuration_state);
+    }
+  }, [connection]);
+
+  const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
+    setIsSaving(true);
+    try {
+      const meshToolCaller = createToolCaller();
+      await meshToolCaller("CONNECTION_CONFIGURE", {
+        connectionId,
+        scopes: selectedScopes,
+        state: data.formData,
+      });
+      toast.success("Configuration saved successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save configuration: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-20 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-20 items-center justify-center text-muted-foreground">
+        Failed to load configuration: {(error as Error).message}
+      </div>
+    );
+  }
+
+  const { scopes, stateSchema } = config as {
+    scopes: string[];
+    stateSchema: Record<string, unknown>;
+  };
+
+  return (
+    <div className="space-y-6">
+      {scopes && scopes.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-muted-foreground">Scopes</h4>
+          <ul className="list-disc list-inside space-y-1">
+            {scopes.map((scope) => (
+              <li key={scope} className="text-sm text-muted-foreground">
+                {scope}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-muted-foreground">
+          Configuration
+        </h4>
+        <RJSForm
+          schema={stateSchema}
+          validator={validator}
+          formData={formState}
+          onChange={(e) => setFormState(e.formData)}
+          onSubmit={handleSubmit}
+          disabled={isSaving}
+          uiSchema={{
+            // Optional: Custom UI options
+            "ui:submitButtonOptions": {
+              norender: true,
+            },
+          }}
+        >
+          <div className="flex justify-end pt-4 border-t border-border">
+            <Button type="submit" disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Configuration
+            </Button>
+          </div>
+        </RJSForm>
+      </div>
     </div>
   );
 }
@@ -568,8 +734,7 @@ function ToolsList({
 
   return (
     <CollectionsList
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data={filteredTools as any[]}
+      data={filteredTools}
       viewMode={viewMode}
       onViewModeChange={setViewMode}
       search={search}
@@ -659,6 +824,8 @@ function CollectionContent({
         }
         break;
       case "duplicate": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const itemAny = item as any;
         const {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           id: _id,
@@ -671,14 +838,12 @@ function CollectionContent({
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           updated_by: _updated_by,
           ...rest
-        } = item as unknown as Record<string, unknown>;
+        } = itemAny;
 
         await collection.insert({
           ...rest,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          title: `${(rest as any).title} (Copy)`,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+          title: `${rest.title} (Copy)`,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         toast.success("Item duplicated");
         break;
       }

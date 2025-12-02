@@ -261,45 +261,71 @@ export function createCollectionBindings<
   const upperName = collectionName.toUpperCase() as Uppercase<TName>;
   const readOnly = options?.readOnly ?? false;
 
-  const bindings: CollectionBinding<TEntitySchema, Uppercase<TName>>[number][] =
-    [
-      {
-        name: `COLLECTION_${upperName}_LIST` as const,
-        inputSchema: CollectionListInputSchema,
-        outputSchema: createCollectionListOutputSchema(entitySchema),
-      },
-      {
-        name: `COLLECTION_${upperName}_GET` as const,
-        inputSchema: CollectionGetInputSchema,
-        outputSchema: createCollectionGetOutputSchema(entitySchema),
-      },
-    ];
+  const bindings: ToolBinder[] = [
+    {
+      name: `COLLECTION_${upperName}_LIST` as const,
+      inputSchema: CollectionListInputSchema,
+      outputSchema: createCollectionListOutputSchema(entitySchema) as z.ZodType<
+        CollectionListOutput<z.infer<TEntitySchema>>
+      >,
+    },
+    {
+      name: `COLLECTION_${upperName}_GET` as const,
+      inputSchema: CollectionGetInputSchema,
+      outputSchema: createCollectionGetOutputSchema(entitySchema) as z.ZodType<
+        CollectionGetOutput<z.infer<TEntitySchema>>
+      >,
+    },
+  ];
 
   // Only include mutation operations if not read-only
   if (!readOnly) {
     bindings.push(
       {
         name: `COLLECTION_${upperName}_CREATE` as const,
-        inputSchema: createCollectionInsertInputSchema(entitySchema),
-        outputSchema: createCollectionInsertOutputSchema(entitySchema),
+        inputSchema: createCollectionInsertInputSchema(
+          entitySchema,
+        ) as unknown as z.ZodType<
+          CollectionInsertInput<z.infer<TEntitySchema>>
+        >,
+        outputSchema: createCollectionInsertOutputSchema(
+          entitySchema,
+        ) as unknown as z.ZodType<
+          CollectionInsertOutput<z.infer<TEntitySchema>>
+        >,
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_UPDATE` as const,
-        inputSchema: createCollectionUpdateInputSchema(entitySchema),
-        outputSchema: createCollectionUpdateOutputSchema(entitySchema),
+        inputSchema: createCollectionUpdateInputSchema(
+          entitySchema,
+        ) as unknown as z.ZodType<
+          CollectionUpdateInput<z.infer<TEntitySchema>>
+        >,
+        outputSchema: createCollectionUpdateOutputSchema(
+          entitySchema,
+        ) as unknown as z.ZodType<
+          CollectionUpdateOutput<z.infer<TEntitySchema>>
+        >,
         opt: true,
       },
       {
         name: `COLLECTION_${upperName}_DELETE` as const,
         inputSchema: CollectionDeleteInputSchema,
-        outputSchema: createCollectionDeleteOutputSchema(entitySchema),
+        outputSchema: createCollectionDeleteOutputSchema(
+          entitySchema,
+        ) as unknown as z.ZodType<
+          CollectionDeleteOutput<z.infer<TEntitySchema>>
+        >,
         opt: true,
       },
     );
   }
 
-  return bindings satisfies readonly ToolBinder[];
+  return bindings as unknown as readonly CollectionBinding<
+    TEntitySchema,
+    Uppercase<TName>
+  >[number][];
 }
 
 export type ReadOnlyCollectionBinding<
@@ -309,16 +335,12 @@ export type ReadOnlyCollectionBinding<
   {
     name: `COLLECTION_${TUpperName}_LIST`;
     inputSchema: typeof CollectionListInputSchema;
-    outputSchema: ReturnType<
-      typeof createCollectionListOutputSchema<TEntitySchema>
-    >;
+    outputSchema: z.ZodType<CollectionListOutput<z.infer<TEntitySchema>>>;
   },
   {
     name: `COLLECTION_${TUpperName}_GET`;
     inputSchema: typeof CollectionGetInputSchema;
-    outputSchema: ReturnType<
-      typeof createCollectionGetOutputSchema<TEntitySchema>
-    >;
+    outputSchema: z.ZodType<CollectionGetOutput<z.infer<TEntitySchema>>>;
   },
 ];
 /**
@@ -328,33 +350,32 @@ export type CollectionBinding<
   TEntitySchema extends BaseCollectionEntitySchemaType,
   TUpperName extends Uppercase<string> = Uppercase<string>,
 > = [
-  ...ReadOnlyCollectionBinding<TEntitySchema, TUpperName>,
+  {
+    name: `COLLECTION_${TUpperName}_LIST`;
+    inputSchema: typeof CollectionListInputSchema;
+    outputSchema: z.ZodType<CollectionListOutput<z.infer<TEntitySchema>>>;
+  },
+  {
+    name: `COLLECTION_${TUpperName}_GET`;
+    inputSchema: typeof CollectionGetInputSchema;
+    outputSchema: z.ZodType<CollectionGetOutput<z.infer<TEntitySchema>>>;
+  },
   {
     name: `COLLECTION_${TUpperName}_CREATE`;
-    inputSchema: ReturnType<
-      typeof createCollectionInsertInputSchema<TEntitySchema>
-    >;
-    outputSchema: ReturnType<
-      typeof createCollectionInsertOutputSchema<TEntitySchema>
-    >;
+    inputSchema: z.ZodType<CollectionInsertInput<z.infer<TEntitySchema>>>;
+    outputSchema: z.ZodType<CollectionInsertOutput<z.infer<TEntitySchema>>>;
     opt: true;
   },
   {
     name: `COLLECTION_${TUpperName}_UPDATE`;
-    inputSchema: ReturnType<
-      typeof createCollectionUpdateInputSchema<TEntitySchema>
-    >;
-    outputSchema: ReturnType<
-      typeof createCollectionUpdateOutputSchema<TEntitySchema>
-    >;
+    inputSchema: z.ZodType<CollectionUpdateInput<z.infer<TEntitySchema>>>;
+    outputSchema: z.ZodType<CollectionUpdateOutput<z.infer<TEntitySchema>>>;
     opt: true;
   },
   {
     name: `COLLECTION_${TUpperName}_DELETE`;
     inputSchema: typeof CollectionDeleteInputSchema;
-    outputSchema: ReturnType<
-      typeof createCollectionDeleteOutputSchema<TEntitySchema>
-    >;
+    outputSchema: z.ZodType<CollectionDeleteOutput<z.infer<TEntitySchema>>>;
     opt: true;
   },
 ];
@@ -372,6 +393,21 @@ export type CollectionListInput = z.infer<typeof CollectionListInputSchema>;
 export type CollectionGetInput = z.infer<typeof CollectionGetInputSchema>;
 export type CollectionDeleteInput = z.infer<typeof CollectionDeleteInputSchema>;
 export type OrderByExpression = z.infer<typeof OrderByExpressionSchema>;
+
+/**
+ * Type helper for insert input with generic item type
+ */
+export type CollectionInsertInput<T> = {
+  data: T;
+};
+
+/**
+ * Type helper for update input with generic item type
+ */
+export type CollectionUpdateInput<T> = {
+  id: string;
+  data: Partial<T>;
+};
 
 /**
  * Type helper for list output with generic item type

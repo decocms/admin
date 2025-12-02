@@ -43,7 +43,8 @@ const TOOL_CATEGORIES: Record<
   COLLECTION_CONNECTIONS_GET: { category: "Connections" },
   COLLECTION_CONNECTIONS_UPDATE: { category: "Connections" },
   COLLECTION_CONNECTIONS_DELETE: { category: "Connections", dangerous: true },
-  COLLECTION_CONNECTIONS_TEST: { category: "Connections" },
+  CONNECTION_TEST: { category: "Connections" },
+  CONNECTION_CONFIGURE: { category: "Connections" },
 };
 
 /**

@@ -6,6 +6,7 @@
  * - Connection tokens
  * - OAuth client secrets
  * - Downstream MCP tokens
+ * - Connection configuration state (may contain secrets)
  */
 
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";

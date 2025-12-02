@@ -6,6 +6,7 @@ import {
 } from "@decocms/bindings/collections";
 import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
+import { MCP_BINDING } from "@decocms/bindings/mcp";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 
 /**
@@ -14,12 +15,13 @@ import type { ConnectionEntity } from "@/tools/connection/schema";
 const BUILTIN_BINDINGS: Record<string, Binder> = {
   LLMS: LANGUAGE_MODEL_BINDING,
   AGENTS: AGENTS_BINDING,
+  MCP: MCP_BINDING,
 };
 
 /**
  * Checks if a connection implements a binding by validating its tools
  */
-function connectionImplementsBinding(
+export function connectionImplementsBinding(
   connection: ConnectionEntity,
   binding: Binder,
 ): boolean {

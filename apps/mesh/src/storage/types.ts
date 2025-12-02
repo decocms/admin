@@ -129,6 +129,10 @@ export interface MCPConnectionTable {
   // OAuth config for downstream MCP (if MCP supports OAuth)
   oauth_config: JsonObject<OAuthConfig> | null;
 
+  // Configuration state (for MESH_CONFIGURATION feature)
+  configuration_state: string | null; // Encrypted JSON state
+  configuration_scopes: JsonArray<string[]> | null; // Array of scope strings
+
   // Metadata and discovery
   metadata: JsonObject<Record<string, unknown>> | null;
   tools: JsonArray<ToolDefinition[]> | null; // Discovered tools from MCP

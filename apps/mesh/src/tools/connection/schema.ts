@@ -70,10 +70,19 @@ export const ConnectionEntitySchema = z.object({
     .describe("Custom headers"),
 
   oauth_config: OAuthConfigSchema.nullable().describe("OAuth configuration"),
-  metadata: z
-    .record(z.string(), z.unknown())
+
+  // New configuration fields (snake_case)
+  configuration_state: z
+    .record(z.unknown())
     .nullable()
-    .describe("Additional metadata"),
+    .describe("Configuration state (decrypted)"),
+  configuration_scopes: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe("Configuration scopes"),
+
+  metadata: z.record(z.unknown()).nullable().describe("Additional metadata"),
   tools: z
     .array(ToolDefinitionSchema)
     .nullable()
@@ -109,6 +118,8 @@ export const ConnectionCreateDataSchema = ConnectionEntitySchema.omit({
   connection_token: true,
   connection_headers: true,
   oauth_config: true,
+  configuration_state: true,
+  configuration_scopes: true,
   metadata: true,
 });
 

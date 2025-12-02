@@ -20,6 +20,7 @@ import type {
 const JSON_FIELDS = [
   "connection_headers",
   "oauth_config",
+  "configuration_scopes", // Added
   "metadata",
   "tools",
   "bindings",
@@ -40,6 +41,8 @@ type RawConnectionRow = {
   connection_token: string | null;
   connection_headers: string | Record<string, string> | null;
   oauth_config: string | OAuthConfig | null;
+  configuration_state: string | null; // Encrypted
+  configuration_scopes: string | string[] | null;
   metadata: string | Record<string, unknown> | null;
   tools: string | ToolDefinition[] | null;
   bindings: string | string[] | null;
@@ -136,6 +139,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
   async testConnection(
     id: string,
+    headers?: Record<string, string>,
   ): Promise<{ healthy: boolean; latencyMs: number }> {
     const connection = await this.findById(id);
     if (!connection) {
@@ -152,6 +156,7 @@ export class ConnectionStorage implements ConnectionStoragePort {
           ...(connection.connection_token && {
             Authorization: `Bearer ${connection.connection_token}`,
           }),
+          ...headers,
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -185,6 +190,10 @@ export class ConnectionStorage implements ConnectionStoragePort {
 
       if (key === "connection_token" && value) {
         result[key] = await this.vault.encrypt(value as string);
+      } else if (key === "configuration_state" && value) {
+        // Encrypt configuration state
+        const stateJson = JSON.stringify(value);
+        result[key] = await this.vault.encrypt(stateJson);
       } else if (JSON_FIELDS.includes(key as (typeof JSON_FIELDS)[number])) {
         result[key] = value ? JSON.stringify(value) : null;
       } else {
@@ -207,6 +216,17 @@ export class ConnectionStorage implements ConnectionStoragePort {
         decryptedToken = await this.vault.decrypt(row.connection_token);
       } catch (error) {
         console.error("Failed to decrypt connection token:", error);
+      }
+    }
+
+    // Decrypt configuration state
+    let decryptedConfigState: Record<string, unknown> | null = null;
+    if (row.configuration_state) {
+      try {
+        const decryptedJson = await this.vault.decrypt(row.configuration_state);
+        decryptedConfigState = JSON.parse(decryptedJson);
+      } catch (error) {
+        console.error("Failed to decrypt configuration state:", error);
       }
     }
 
@@ -247,6 +267,8 @@ export class ConnectionStorage implements ConnectionStoragePort {
         row.connection_headers,
       ),
       oauth_config: parseJson<OAuthConfig>(row.oauth_config),
+      configuration_state: decryptedConfigState,
+      configuration_scopes: parseJson<string[]>(row.configuration_scopes),
       metadata: parseJson<Record<string, unknown>>(row.metadata),
       tools: parseJson<ToolDefinition[]>(row.tools),
       bindings: parseJson<string[]>(row.bindings),

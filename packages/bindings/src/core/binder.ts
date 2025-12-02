@@ -16,8 +16,7 @@ type JsonSchema = Record<string, unknown>;
 /**
  * Checks if a value is a Zod schema by looking for the _def property
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isZodSchema(value: unknown): value is ZodType<any> {
+function isZodSchema(value: unknown): value is ZodType<unknown> {
   return (
     value !== null &&
     typeof value === "object" &&
@@ -34,15 +33,15 @@ function isZodSchema(value: unknown): value is ZodType<any> {
  * @returns The JSON schema representation, or null if input is null/undefined
  */
 export function normalizeToJsonSchema(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: ZodType<any> | JsonSchema | null | undefined,
+  schema: ZodType<unknown> | JsonSchema | null | undefined,
 ): JsonSchema | null {
   if (schema == null) {
     return null;
   }
 
   if (isZodSchema(schema)) {
-    return zodToJsonSchema(schema) as JsonSchema;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return zodToJsonSchema(schema as any) as JsonSchema;
   }
 
   // Already a JSON schema

@@ -1,7 +1,7 @@
+import { MemoizedMarkdown } from "@deco/ui/components/chat/chat-markdown.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useState } from "react";
-import { MemoizedMarkdown } from "./chat-markdown.tsx";
 
 interface ReasoningPartProps {
   part: {
@@ -84,11 +84,14 @@ export function ReasoningPart({ part, index, messageId }: ReasoningPartProps) {
           <div className={cn("text-muted-foreground markdown-sm pb-2")}>
             <MemoizedMarkdown
               key={index}
-              messageId={`${messageId}-${index}-reasoning`}
-              part={
-                "details" in part && Array.isArray(part.details)
-                  ? part.details[0]
-                  : { type: "text", text: part.text }
+              id={`${messageId}-${index}-reasoning`}
+              text={
+                "details" in part &&
+                Array.isArray(part.details) &&
+                part.details[0] &&
+                "text" in part.details[0]
+                  ? (part.details[0] as { text: string }).text
+                  : part.text
               }
             />
           </div>

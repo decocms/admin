@@ -5,7 +5,9 @@ import { lazy, memo, Suspense, useMemo, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useCopy } from "../../hooks/use-copy.ts";
 
-const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
+const LazyHighlighter = lazy(
+  () => import("@deco/ui/components/chat/lazy-highlighter.tsx"),
+);
 
 const MAX_TREE_DEPTH = 10;
 

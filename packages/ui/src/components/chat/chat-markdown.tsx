@@ -1,11 +1,11 @@
 import { marked } from "marked";
 import React, {
+  lazy,
   memo,
   Suspense,
   useCallback,
   useMemo,
   useRef,
-  lazy,
   useState,
 } from "react";
 import ReactMarkdown from "react-markdown";
@@ -279,19 +279,13 @@ function CodeBlock({
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
-export const MemoizedMarkdown = ({
-  messageId: id,
-  part,
-}: {
-  messageId: string;
-  part: {
-    type: "text";
-    text: string;
-    state?: "streaming" | "done";
-  };
-}) => {
-  const { text: content = "" } = part;
-  const blocks = useMemo(() => marked.lexer(content), [content]);
+interface MemoizedMarkdownProps {
+  id: string;
+  text: string;
+}
+
+export const MemoizedMarkdown = ({ id, text }: MemoizedMarkdownProps) => {
+  const blocks = useMemo(() => marked.lexer(text), [text]);
 
   return blocks.map((block, index) => {
     if (block.type === "code") {

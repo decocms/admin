@@ -242,6 +242,16 @@ export function DecoChatPanel() {
 
   const isEmpty = chat.messages.length === 0;
 
+  const lastAssistantId = useMemo(() => {
+    for (let i = chat.messages.length - 1; i >= 0; i--) {
+      const message = chat.messages[i];
+      if (message?.role === "assistant") {
+        return message.id;
+      }
+    }
+    return null;
+  }, [chat.messages]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (sentinelRef.current && chat.messages.length > 0) {
@@ -460,7 +470,9 @@ export function DecoChatPanel() {
                 <DecoChatMessageAssistant
                   key={message.id}
                   message={message}
-                  status={status}
+                  status={
+                    message.id === lastAssistantId ? status : undefined
+                  }
                 />
               ) : null,
             )}

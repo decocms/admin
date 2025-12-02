@@ -5,7 +5,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import type { FileUIPart, ToolUIPart } from "ai";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useCopy } from "../../hooks/use-copy.ts";
-import { MemoizedMarkdown } from "./chat-markdown.tsx";
+import { MemoizedMarkdown } from "@deco/ui/components/chat/chat-markdown.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
 import { ToolMessage } from "./tool-message.tsx";
 
@@ -125,8 +125,8 @@ export const ChatMessage = memo(function ChatMessage({
                   return (
                     <MemoizedMarkdown
                       key={index}
-                      part={part}
-                      messageId={message.id}
+                      id={message.id}
+                      text={part.text}
                     />
                   );
                 } else if (
@@ -148,14 +148,12 @@ export const ChatMessage = memo(function ChatMessage({
             </div>
           ) : (
             <MemoizedMarkdown
-              messageId={message.id}
-              part={{
-                type: "text",
-                text:
-                  "content" in message && typeof message.content === "string"
-                    ? message.content || ""
-                    : "",
-              }}
+              id={message.id}
+              text={
+                "content" in message && typeof message.content === "string"
+                  ? message.content || ""
+                  : ""
+              }
             />
           )}
 

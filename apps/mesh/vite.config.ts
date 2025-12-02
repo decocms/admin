@@ -41,7 +41,7 @@ export default defineConfig({
     port: 4000,
   },
   clearScreen: false,
-  logLevel: "warn", // Mostra warnings e errors, mas esconde mensagens info (como servidor pronto)
+  logLevel: "warn",
   plugins: [
     customServerMessage(),
     react(),

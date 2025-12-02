@@ -736,7 +736,13 @@ function ToolsList({
       columns={columns}
       onItemClick={(tool) => {
         navigate({
-          to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.title)}`,
+          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+          params: {
+            org,
+            connectionId,
+            collectionName: "tools",
+            itemId: encodeURIComponent(tool.id),
+          },
         });
       }}
       renderCard={(tool) => (

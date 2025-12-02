@@ -1,18 +1,9 @@
 {
   "name": "@decocms/vite-plugin",
-  "module": "index.ts",
   "version": "1.0.0-alpha.1",
   "type": "module",
-  "scripts": {
-    "build": "tsup",
-    "prepublishOnly": "npm run build"
-  },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "source": "./index.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./index.ts"
   },
   "dependencies": {
     "vite": "^7.2.1",
@@ -20,5 +11,12 @@
   },
   "devDependencies": {
     "tsup": "^8.5.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

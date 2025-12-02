@@ -1,7 +1,4 @@
 /* oxlint-disable no-explicit-any */
-import { z } from "zod";
-import type { MCPConnection } from "./connection.ts";
-import { createMCPClientProxy } from "./proxy.ts";
 import type { ToolBinder } from "@decocms/bindings";
 export {
   createMCPFetchStub,

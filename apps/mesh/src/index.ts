@@ -19,7 +19,9 @@ const reset = "\x1b[0m";
 console.log("✅ MCP Mesh starting...");
 console.log("");
 console.log(`${dim}📋 Health check:  http://0.0.0.0:${port}/health${reset}`);
-console.log(`${dim}🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*${reset}`);
+console.log(
+  `${dim}🔐 Auth endpoints: http://0.0.0.0:${port}/api/auth/*${reset}`,
+);
 console.log(`${dim}🔧 MCP endpoint:   http://0.0.0.0:${port}/mcp${reset}`);
 console.log("");
 

@@ -16,10 +16,14 @@ function customServerMessage(): Plugin {
           const bold = "\x1b[1m";
           const dim = "\x1b[2m";
           console.log("");
-          console.log(`${bold}${green}  Powered by DecoCMS${reset} ${dim}→ https://decocms.com${reset}`);
+          console.log(
+            `${bold}${green}  Powered by DecoCMS${reset} ${dim}→ https://decocms.com${reset}`,
+          );
           console.log("");
           console.log(`  ${bold}🚀 MCP Mesh Client${reset}`);
-          console.log(`  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://0.0.0.0:3000/${reset}`);
+          console.log(
+            `  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://0.0.0.0:3000/${reset}`,
+          );
           console.log("");
         }, 200);
       });

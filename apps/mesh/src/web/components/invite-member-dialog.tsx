@@ -158,7 +158,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
                 <FormItem>
                   <FormControl>
                     <EmailTagsInput
-                      emails={field.value}
+                      emails={field.value ?? []}
                       onEmailsChange={field.onChange}
                       disabled={inviteMutation.isPending}
                       placeholder="Emails, comma separated"

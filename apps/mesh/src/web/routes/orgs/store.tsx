@@ -1,6 +1,6 @@
 import { StoreRegistrySelect } from "@/web/components/store-registry-select";
 import { EmptyState } from "@/web/components/empty-state";
-import { StoreDiscovery } from "@/web/components/store/store-discovery";
+import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";

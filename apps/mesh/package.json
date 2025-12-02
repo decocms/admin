@@ -22,7 +22,7 @@
     "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/react": "^2.0.59",
     "@ai-sdk/xai": "^2.0.34",
-    "@better-auth/sso": "^1.4.1",
+    "@better-auth/sso": "^1.4.4",
     "@daveyplate/better-auth-ui": "^3.2.7",
     "@deco/ui": "workspace:*",
     "@decocms/bindings": "workspace:*",
@@ -75,7 +75,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.17",
     "use-mcp": "^0.0.21",
-    "zod": "3.25.76"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@better-auth/cli": "1.4.1",

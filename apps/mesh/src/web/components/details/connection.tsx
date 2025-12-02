@@ -116,8 +116,15 @@ export default function ConnectionInspectorView() {
     ? normalizeUrl(connection.connection_url)
     : "";
 
+  // Use proxy URL when connection has a token (OAuth completed)
+  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
+  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
+  const connectionUrl = connection?.connection_token
+    ? mcpProxyUrl.href
+    : normalizedUrl;
+
   const mcp = useMcp({
-    url: normalizedUrl,
+    url: connectionUrl,
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,
@@ -273,7 +280,9 @@ export default function ConnectionInspectorView() {
       <div className="flex h-full w-full bg-background overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
           <div className="flex-1 p-6">
-            {mcp.state === "pending_auth" || mcp.state === "authenticating" ? (
+            {mcp.state === "pending_auth" ||
+            mcp.state === "authenticating" ||
+            (!connection.connection_token && mcp.state === "failed") ? (
               <EmptyState
                 image={
                   <div className="bg-muted p-4 rounded-full">

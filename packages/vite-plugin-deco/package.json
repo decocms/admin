@@ -9,13 +9,6 @@
     "vite": "^7.2.1",
     "@cloudflare/vite-plugin": "^1.13.4"
   },
-  "devDependencies": {
-    "tsup": "^8.5.0"
-  },
-  "scripts": {
-    "build": "tsup",
-    "prepublishOnly": "npm run build"
-  },
   "publishConfig": {
     "access": "public"
   }

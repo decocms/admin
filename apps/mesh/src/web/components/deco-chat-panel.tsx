@@ -470,9 +470,7 @@ export function DecoChatPanel() {
                 <DecoChatMessageAssistant
                   key={message.id}
                   message={message}
-                  status={
-                    message.id === lastAssistantId ? status : undefined
-                  }
+                  status={message.id === lastAssistantId ? status : undefined}
                 />
               ) : null,
             )}

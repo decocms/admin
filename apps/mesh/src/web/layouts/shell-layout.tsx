@@ -28,7 +28,6 @@ import { DecoChatPanel } from "@/web/components/deco-chat-panel";
 import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
 
-// Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
@@ -55,14 +54,19 @@ function Topbar({
       </AppTopbar.Left>
       <AppTopbar.Right className="gap-3">
         {showDecoChat && onToggleChat && (
-          <Button size="sm" variant="default" onClick={onToggleChat}>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={onToggleChat}
+            className="size-8 p-0 md:w-auto md:px-3"
+          >
             <Avatar
               url={CAPYBARA_AVATAR_URL}
               fallback="DC"
               size="2xs"
               className="rounded-sm"
             />
-            deco chat
+            <span className="hidden md:inline">deco chat</span>
           </Button>
         )}
         <MeshUserMenu />
@@ -143,7 +147,7 @@ export default function ShellLayout() {
                     }
                   >
                     <MeshSidebar />
-                    <SidebarInset className="pt-12">
+                    <SidebarInset className="pt-[47px]">
                       <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel className="bg-background">
                           <Outlet />
@@ -172,7 +176,7 @@ export default function ShellLayout() {
         ) : (
           <div className="min-h-screen bg-background">
             <Topbar />
-            <div className="pt-12">
+            <div className="pt-[47px]">
               <Outlet />
             </div>
           </div>

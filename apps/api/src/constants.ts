@@ -30,10 +30,10 @@ export const MCP_REGISTRY_SCHEMA_URL =
   "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json";
 
 /** MCP Registry DecoCMS metadata key */
-export const MCP_REGISTRY_DECOCMS_KEY = "io.decocms";
+export const MCP_REGISTRY_DECOCMS_KEY = "mcp.mesh";
 
 /** MCP Registry publisher-provided metadata key */
-export const MCP_REGISTRY_PUBLISHER_KEY = "io.decocms/publisher-provided";
+export const MCP_REGISTRY_PUBLISHER_KEY = "mcp.mesh/publisher-provided";
 
 /** MCP Registry server type */
 export const MCP_REGISTRY_SERVER_TYPE = "http" as const;

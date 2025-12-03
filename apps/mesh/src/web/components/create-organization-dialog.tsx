@@ -1,4 +1,5 @@
 import { authClient } from "@/web/lib/auth-client";
+import { createToolCaller } from "@/tools/client";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -33,6 +34,44 @@ function slugify(input: string): string {
     .replace(/[^a-z0-9\s_-]+/g, "")
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+// Deco Store configuration
+const DECO_STORE_CONFIG = {
+  title: "Deco Store",
+  description: "Official deco MCP registry with curated integrations",
+  connection_type: "HTTP",
+  connection_url: "https://api.decocms.com/mcp/registry",
+  icon: "https://assets.decocache.com/decocms/00ccf6c3-9e13-4517-83b0-75ab84554bb9/596364c63320075ca58483660156b6d9de9b526e.png",
+  app_name: "deco-registry",
+  app_id: null,
+  connection_token: null,
+  connection_headers: null,
+  oauth_config: null,
+  configuration_state: null,
+  configuration_scopes: null,
+  metadata: { isDefault: true, type: "registry" },
+};
+
+async function installDecoStore(): Promise<void> {
+  try {
+    console.log("📦 [CreateOrgDialog] Installing Deco Store...");
+
+    const toolCaller = createToolCaller();
+    const result = await toolCaller("COLLECTION_CONNECTIONS_CREATE", {
+      data: DECO_STORE_CONFIG,
+    });
+
+    if (result) {
+      console.log("✅ [CreateOrgDialog] Deco Store installed successfully");
+    }
+  } catch (error) {
+    console.error(
+      "⚠️  [CreateOrgDialog] Failed to install Deco Store (non-blocking):",
+      error,
+    );
+    // Don't throw - we don't want to block organization creation
+  }
 }
 
 const createOrgSchema = z.object({
@@ -84,6 +123,14 @@ export function CreateOrganizationDialog({
       });
 
       if (result?.data?.slug) {
+        console.log(
+          "🎯 [CreateOrgDialog] Organization created:",
+          result.data.slug,
+        );
+
+        // Install Deco Store after organization creation
+        await installDecoStore();
+
         // Navigate to the new organization
         navigate({ to: "/$org", params: { org: result.data.slug } });
         onOpenChange(false);

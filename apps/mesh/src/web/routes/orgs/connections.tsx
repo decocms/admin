@@ -150,6 +150,7 @@ export default function OrgMcps() {
   const editingConnection =
     dialogState.mode === "editing" ? dialogState.connection : null;
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (editingConnection) {
       form.reset({

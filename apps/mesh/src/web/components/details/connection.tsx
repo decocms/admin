@@ -394,6 +394,7 @@ function ConnectionSettingsForm({
   });
 
   // Reset form when connection changes (external update)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     form.reset({
       title: connection.title,
@@ -590,6 +591,7 @@ function McpConfigurationForm({
   const [isSaving, setIsSaving] = useState(false);
 
   // Initialize scopes from data if needed
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (connection.configuration_scopes) {
       setSelectedScopes(connection.configuration_scopes);
@@ -600,6 +602,7 @@ function McpConfigurationForm({
   }, [connection]);
 
   // Default to all scopes when config is loaded if none are configured
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (config && !connection.configuration_scopes?.length) {
       const { scopes } = config as { scopes: string[] };

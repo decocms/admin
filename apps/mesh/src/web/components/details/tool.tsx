@@ -69,6 +69,7 @@ export function ToolDetailsView({
     autoRetry: 5000,
   });
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (mcp.error) {
       console.error("MCP Error:", mcp.error);
@@ -80,7 +81,7 @@ export function ToolDetailsView({
     return mcp.tools?.find((t) => t.name === toolName);
   }, [mcp.tools, toolName]);
 
-  // Initialize inputs based on schema (if available and empty)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (
       tool?.inputSchema?.properties &&

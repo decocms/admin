@@ -13,6 +13,7 @@ interface PortalProps {
 function usePortal(id: string) {
   const [element, setElement] = useState<HTMLElement | null>(null);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     setElement(document.getElementById(id));
   }, [id]);

@@ -31,6 +31,10 @@ export interface MCPRegistryServerMeta {
       name: string;
       description?: string | null;
     }>;
+    models?: unknown[];
+    emails?: unknown[];
+    analytics?: unknown;
+    cdn?: unknown;
   };
   [key: string]: unknown;
 }
@@ -56,8 +60,22 @@ export interface MCPRegistryServer {
   };
 }
 
+/**
+ * Props for RegistryItemCard - accepts any item with compatible shape.
+ * This allows both MCPRegistryServer and RegistryItem types.
+ */
 interface RegistryItemCardProps {
-  item: MCPRegistryServer;
+  item: {
+    id: string;
+    title?: string;
+    _meta?: MCPRegistryServerMeta;
+    server?: {
+      title?: string;
+      description?: string;
+      icons?: Array<{ src: string }>;
+      _meta?: MCPRegistryServerMeta;
+    };
+  };
   onClick: () => void;
 }
 

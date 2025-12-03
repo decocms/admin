@@ -239,7 +239,10 @@ export const mcpServerTools = async (
   return response;
 };
 
-const handleMCPResponse = async (client: Client) => {
+const handleMCPResponse = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: Client<any, any, any>,
+) => {
   const result = await client.listTools();
   const instructions = client.getInstructions();
   const capabilities = client.getServerCapabilities();
@@ -258,7 +261,8 @@ export const swrMCPMetadata = (
       undefined,
       ignoreCache ? { "x-domain-swr-ignore-cache": "true" } : undefined,
     );
-    return handleMCPResponse(client).finally(() => client.close());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return handleMCPResponse(client as any).finally(() => client.close());
   };
   if ("url" in mcpServer.connection && !ignoreCache) {
     return swr.cache(fetch, mcpServer.connection.url);

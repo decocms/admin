@@ -2,15 +2,11 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
 import {
   RegistryItemsSection,
   type RegistryItem,
 } from "./registry-items-section";
-import { RegistryItemCard, type MCPRegistryServer } from "./registry-item-card";
-import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
-import { useProjectContext } from "@/web/providers/project-context-provider";
+import { RegistryItemCard } from "./registry-item-card";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -20,8 +16,8 @@ interface StoreDiscoveryUIProps {
 
 /** Helper to extract data from different JSON structures */
 function extractItemData(item: RegistryItem) {
-  const publisherMeta = item.server?._meta?.["io.decocms/publisher-provided"];
-  const decoMeta = item._meta?.["io.decocms"];
+  const publisherMeta = item.server?._meta?.["mcp.mesh/publisher-provided"];
+  const decoMeta = item._meta?.["mcp.mesh"];
 
   return {
     name: item.name || item.title || item.server?.title || "Unnamed Item",
@@ -39,53 +35,6 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
-function extractConnectionData(
-  item: RegistryItem | MCPRegistryServer,
-  organizationId: string,
-) {
-  const decoMeta = item._meta?.["io.decocms"];
-  const remote = item.server?.remotes?.[0];
-
-  // Map remote type to connection type
-  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
-    http: "HTTP",
-    sse: "SSE",
-    websocket: "Websocket",
-  };
-
-  const connectionType = remote?.type
-    ? connectionTypeMap[remote.type] || "HTTP"
-    : "HTTP";
-
-  const now = new Date().toISOString();
-
-  return {
-    // Local id for optimistic updates - server will generate a new id (conn_${nanoid()})
-    id: crypto.randomUUID(),
-    title:
-      item.title || item.server?.title || item.server?.name || "Unnamed App",
-    description: item.server?.description || null,
-    icon: item.server?.icons?.[0]?.src || null,
-    app_name: decoMeta?.appName || item.server?.name || null,
-    app_id: decoMeta?.id || item.id || null,
-    connection_type: connectionType,
-    connection_url: remote?.url || "",
-    connection_token: null,
-    connection_headers: null,
-    oauth_config: null,
-    configuration_state: null,
-    configuration_scopes: null,
-    metadata: { source: "store", registry_item_id: item.id },
-    created_at: now,
-    updated_at: now,
-    created_by: "system", // Will be replaced by the server with actual user ID
-    organization_id: organizationId,
-    tools: null,
-    bindings: null,
-    status: "inactive" as const,
-  };
-}
-
 export function StoreDiscoveryUI({
   items,
   isLoading,
@@ -93,59 +42,14 @@ export function StoreDiscoveryUI({
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
-  const [isInstalling, setIsInstalling] = useState(false);
-
-  const { org } = useProjectContext();
-  const navigate = useNavigate();
-  const connectionsCollection = useConnectionsCollection();
-
-  const handleInstall = async () => {
-    if (!selectedItem || !org) return;
-
-    const connectionData = extractConnectionData(selectedItem, org);
-
-    if (!connectionData.connection_url) {
-      toast.error("This app cannot be installed: no connection URL available");
-      return;
-    }
-
-    setIsInstalling(true);
-    try {
-      const tx = await connectionsCollection.insert(connectionData);
-      await tx.isPersisted.promise;
-
-      toast.success(`${connectionData.title} installed successfully`);
-
-      const registryItemId = selectedItem.id;
-      const newConnection = [...connectionsCollection.state.values()].find(
-        (conn) =>
-          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
-          registryItemId,
-      );
-
-      if (newConnection?.id && org) {
-        navigate({
-          to: "/$org/mcps/$connectionId",
-          params: { org, connectionId: newConnection.id },
-        });
-      } else {
-        setSelectedItem(null);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(`Failed to install app: ${message}`);
-    } finally {
-      setIsInstalling(false);
-    }
-  };
 
   // Verified items
   const verifiedItems = useMemo(() => {
     return items.filter(
       (item) =>
         item.verified === true ||
-        item._meta?.["io.decocms"]?.verified === true ||
-        item.meta?.verified === true,
+        item._meta?.["mcp.mesh"]?.verified === true ||
+        item.server?._meta?.["mcp.mesh"]?.verified === true,
     );
   }, [items]);
 
@@ -241,22 +145,9 @@ export function StoreDiscoveryUI({
                         {data.publisher}
                       </p>
                     </div>
-                    <button
-                      onClick={handleInstall}
-                      disabled={isInstalling}
-                      className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      {isInstalling ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Installing...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="add" size={20} />
-                          Install App
-                        </>
-                      )}
+                    <button className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] text-black font-medium rounded-lg transition-colors flex items-center gap-2">
+                      <Icon name="add" size={20} />
+                      Install App
                     </button>
                   </div>
                   {data.description && (
@@ -302,21 +193,24 @@ export function StoreDiscoveryUI({
                   <div>
                     <h2 className="text-lg font-medium mb-3">Tools</h2>
                     <div className="space-y-2">
-                      {data.tools.slice(0, 5).map((tool: any, idx: number) => (
-                        <div
-                          key={tool.id || idx}
-                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm">
-                              {tool.name || `Tool ${idx + 1}`}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {tool.description || "No description available"}
+                      {(data.tools as Array<Record<string, unknown>>)
+                        .slice(0, 5)
+                        .map((tool: Record<string, unknown>, idx: number) => (
+                          <div
+                            key={(tool.id as string | number) || idx}
+                            className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">
+                                {(tool.name as string) || `Tool ${idx + 1}`}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {(tool.description as string) ||
+                                  "No description available"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 )}

@@ -5,7 +5,7 @@
  * This allows MCPs to declare their configuration needs and reference other connections.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 
@@ -113,6 +113,9 @@ export const CONNECTION_CONFIGURE = defineTool({
 
     // Validate all referenced connections
     for (const refConnectionId of referencedConnections) {
+      if (refConnectionId === "self") {
+        continue;
+      }
       // Verify connection exists
       const refConnection =
         await ctx.storage.connections.findById(refConnectionId);

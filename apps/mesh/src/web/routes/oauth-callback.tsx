@@ -11,6 +11,7 @@ import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 export default function OAuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     const handleCallback = async () => {
       try {

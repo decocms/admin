@@ -11,6 +11,7 @@
 
 import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from "jose";
 import { randomBytes } from "crypto";
+import { authConfig } from "./index";
 
 // JWT signing secret - loaded from env or generated
 let jwtSecret: Uint8Array | null = null;
@@ -23,7 +24,7 @@ function getSecret(): Uint8Array {
     return jwtSecret;
   }
 
-  const envSecret = process.env.MESH_JWT_SECRET;
+  const envSecret = process.env.MESH_JWT_SECRET ?? authConfig.jwt?.secret;
   if (envSecret) {
     jwtSecret = new TextEncoder().encode(envSecret);
   } else {
@@ -43,6 +44,8 @@ function getSecret(): Uint8Array {
 export interface MeshTokenPayload {
   /** User ID who initiated the request */
   sub: string;
+  /** User */
+  user?: { id: string };
   /** Metadata */
   metadata?: {
     /** Configuration state */

@@ -12,7 +12,6 @@
  */
 
 import { z } from "zod";
-import { bindingClient, type ToolBinder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,
   createCollectionBindings,
@@ -21,15 +20,13 @@ import {
 /**
  * Tool definition schema from registry
  */
-export const RegistryToolSchema = z.object({
+const RegistryToolSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
   inputSchema: z.record(z.unknown()),
   outputSchema: z.record(z.unknown()).optional(),
 });
-
-export type RegistryTool = z.infer<typeof RegistryToolSchema>;
 
 /**
  * MCP Registry Server schema extending Collection Entity base
@@ -129,7 +126,3 @@ const REGISTRY_APP_COLLECTION_BINDING = createCollectionBindings(
  * - COLLECTION_REGISTRY_APP_GET: Get a single app by ID
  */
 export const REGISTRY_APP_BINDING = REGISTRY_APP_COLLECTION_BINDING;
-
-export const RegistryAppBinding = bindingClient(
-  REGISTRY_APP_BINDING as ToolBinder[],
-);

@@ -40,6 +40,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { IChangeEvent } from "@rjsf/core";
 import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -51,7 +52,6 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
@@ -120,15 +120,8 @@ export default function ConnectionInspectorView() {
     ? normalizeUrl(connection.connection_url)
     : "";
 
-  // Use proxy URL when connection has a token (OAuth completed)
-  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
-  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
-  const connectionUrl = connection?.connection_token
-    ? mcpProxyUrl.href
-    : normalizedUrl;
-
   const mcp = useMcp({
-    url: connectionUrl,
+    url: normalizedUrl,
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,
@@ -401,6 +394,7 @@ function ConnectionSettingsForm({
   });
 
   // Reset form when connection changes (external update)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     form.reset({
       title: connection.title,
@@ -597,6 +591,7 @@ function McpConfigurationForm({
   const [isSaving, setIsSaving] = useState(false);
 
   // Initialize scopes from data if needed
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (connection.configuration_scopes) {
       setSelectedScopes(connection.configuration_scopes);
@@ -605,6 +600,17 @@ function McpConfigurationForm({
       setFormState(connection.configuration_state);
     }
   }, [connection]);
+
+  // Default to all scopes when config is loaded if none are configured
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    if (config && !connection.configuration_scopes?.length) {
+      const { scopes } = config as { scopes: string[] };
+      if (scopes && scopes.length > 0) {
+        setSelectedScopes(scopes);
+      }
+    }
+  }, [config, connection.configuration_scopes]);
 
   const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
     setIsSaving(true);
@@ -820,7 +826,13 @@ function ToolsList({
                     className="cursor-pointer transition-colors"
                     onClick={() =>
                       navigate({
-                        to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                        params: {
+                          org: org ?? "",
+                          connectionId: connectionId ?? "",
+                          collectionName: "tools",
+                          itemId: encodeURIComponent(tool.name),
+                        },
                       })
                     }
                   >
@@ -855,7 +867,13 @@ function ToolsList({
             onSort={handleSort}
             onRowClick={(tool: { name: string; description?: string }) =>
               navigate({
-                to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                params: {
+                  org: org ?? "",
+                  connectionId: connectionId ?? "",
+                  collectionName: "tools",
+                  itemId: encodeURIComponent(tool.name),
+                },
               })
             }
             emptyState={
@@ -911,6 +929,8 @@ function CollectionContent({
     sortKey,
     sortDirection,
   });
+
+  console.log({ items });
 
   const schema = useMemo(
     () =>

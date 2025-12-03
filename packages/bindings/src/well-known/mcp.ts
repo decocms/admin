@@ -4,7 +4,7 @@
  * Defines the interface for retrieving MCP configuration.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import type { Binder } from "../core/binder";
 
 /**

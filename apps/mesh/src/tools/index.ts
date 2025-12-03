@@ -5,6 +5,7 @@
  */
 
 import * as ConnectionTools from "./connection";
+import * as DatabaseTools from "./database";
 import * as OrganizationTools from "./organization";
 export { ConnectionTools };
 
@@ -30,6 +31,9 @@ export const ALL_TOOLS = [
   ConnectionTools.COLLECTION_CONNECTIONS_DELETE,
   ConnectionTools.CONNECTION_TEST,
   ConnectionTools.CONNECTION_CONFIGURE,
+
+  // Database tools
+  DatabaseTools.DATABASES_RUN_SQL,
 ] as const;
 
 export type MCPMeshTools = typeof ALL_TOOLS;

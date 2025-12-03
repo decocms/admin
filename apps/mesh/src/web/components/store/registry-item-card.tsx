@@ -5,8 +5,6 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
-export { Icon };
-
 /**
  * MCP Registry Server structure from LIST response
  */
@@ -18,19 +16,23 @@ export interface MCPRegistryServerIcon {
 }
 
 export interface MCPRegistryServerMeta {
-  "io.decocms"?: {
+  "mcp.mesh"?: {
     id: string;
     verified?: boolean;
     scopeName?: string;
     appName?: string;
   };
-  "io.decocms/publisher-provided"?: {
+  "mcp.mesh/publisher-provided"?: {
     friendlyName?: string | null;
     tools?: Array<{
       id: string;
       name: string;
       description?: string | null;
     }>;
+    models?: unknown[];
+    emails?: unknown[];
+    analytics?: unknown;
+    cdn?: unknown;
   };
   [key: string]: unknown;
 }
@@ -56,8 +58,22 @@ export interface MCPRegistryServer {
   };
 }
 
+/**
+ * Props for RegistryItemCard - accepts any item with compatible shape.
+ * This allows both MCPRegistryServer and RegistryItem types.
+ */
 interface RegistryItemCardProps {
-  item: MCPRegistryServer;
+  item: {
+    id: string;
+    title?: string;
+    _meta?: MCPRegistryServerMeta;
+    server?: {
+      title?: string;
+      description?: string;
+      icons?: Array<{ src: string }>;
+      _meta?: MCPRegistryServerMeta;
+    };
+  };
   onClick: () => void;
 }
 
@@ -76,10 +92,10 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
   const description = item.server?.description;
   const icon = item.server?.icons?.[0]?.src;
   const initials = getInitials(name);
-  const isVerified = item._meta?.["io.decocms"]?.verified ?? false;
-  const scopeName = item._meta?.["io.decocms"]?.scopeName;
+  const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
+  const scopeName = item._meta?.["mcp.mesh"]?.scopeName;
   const toolsCount =
-    item.server?._meta?.["io.decocms/publisher-provided"]?.tools?.length ?? 0;
+    item.server?._meta?.["mcp.mesh/publisher-provided"]?.tools?.length ?? 0;
 
   return (
     <div

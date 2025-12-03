@@ -2,23 +2,48 @@ import { StoreRegistrySelect } from "@/web/components/store-registry-select";
 import { EmptyState } from "@/web/components/empty-state";
 import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
+import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 
 export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: connections = [] } = useConnections();
+  const { data: allConnections, isLoading, isError } = useConnections();
 
-  // Auto-select if only one registry exists
-  useEffect(() => {
-    const firstConnection = connections[0];
-    if (connections.length === 1 && !selectedRegistry && firstConnection) {
-      setSelectedRegistry(firstConnection.id);
-    }
-  }, [connections, selectedRegistry]);
+  // Filter to only show registry connections (those with collections)
+  const registryConnections = useRegistryConnections(allConnections);
+
+  const registryOptions = useMemo(
+    () =>
+      registryConnections.map((c) => ({
+        id: c.id,
+        name: c.title,
+        icon: c.icon || undefined,
+      })),
+    [registryConnections],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        Loading stores...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="h-full flex items-center justify-center text-destructive">
+        Failed to load stores
+      </div>
+    );
+  }
+
+  const effectiveRegistry =
+    selectedRegistry || registryConnections[0]?.id || "";
 
   const handleAddNewRegistry = () => {
     navigate({
@@ -40,12 +65,8 @@ export default function StorePage() {
               </div>
               <div className="shrink-0">
                 <StoreRegistrySelect
-                  registries={connections.map((c) => ({
-                    id: c.id,
-                    name: c.title,
-                    icon: c.icon || undefined,
-                  }))}
-                  value={selectedRegistry}
+                  registries={registryOptions}
+                  value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}
                   placeholder="Select store..."
@@ -58,8 +79,8 @@ export default function StorePage() {
 
       {/* Content Section */}
       <div className="h-full flex flex-col overflow-hidden">
-        {selectedRegistry ? (
-          <StoreDiscovery registryId={selectedRegistry} />
+        {effectiveRegistry ? (
+          <StoreDiscovery registryId={effectiveRegistry} />
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
             <EmptyState
@@ -76,12 +97,8 @@ export default function StorePage() {
               description="Connect to a store to discover and install MCPs from the community."
               actions={
                 <StoreRegistrySelect
-                  registries={connections.map((c) => ({
-                    id: c.id,
-                    name: c.title,
-                    icon: c.icon || undefined,
-                  }))}
-                  value={selectedRegistry}
+                  registries={registryOptions}
+                  value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}
                   placeholder="Select store..."

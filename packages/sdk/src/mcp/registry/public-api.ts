@@ -12,6 +12,10 @@
 import { z } from "zod";
 import { createToolGroup } from "../context.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
+<<<<<<< HEAD
+=======
+import { mapAppToPublic } from "./api.ts";
+>>>>>>> f7e5838a (feat: update MCP registry and bindings API)
 
 type DbTool = typeof registryTools.$inferSelect;
 type DbApp = typeof registryApps.$inferSelect & { tools: DbTool[] } & {
@@ -181,6 +185,21 @@ const MCPRegistryServerSchema = z.object({
   }),
 });
 
+<<<<<<< HEAD
+=======
+const MCPRegistryListOutputSchema = z.object({
+  metadata: z.object({
+    count: z.number().int().min(0),
+    nextCursor: z.string().nullable(),
+  }),
+  servers: z.array(MCPRegistryServerSchema),
+});
+
+const MCPRegistryGetOutputSchema = z.object({
+  server: MCPRegistryServerSchema.nullable(),
+});
+
+>>>>>>> f7e5838a (feat: update MCP registry and bindings API)
 const createPublicTool = createToolGroup("Registry", {
   name: "App Registry (Public)",
   description: "Discover published apps in the registry.",
@@ -234,8 +253,18 @@ export const listPublicRegistryApps = createPublicTool({
       throw new Error("Database context not available");
     }
 
+<<<<<<< HEAD
     const limit = Math.max(1, Math.min(1000, Number(input?.limit) || 50));
     const offset = Math.max(0, Number(input?.offset) || 0);
+=======
+    // Parse and validate pagination inputs with fallbacks
+    const limit = Math.max(1, Math.min(1000, Number(input?.limit) || 50));
+    const offset = Math.max(0, Number(input?.offset) || 0);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const where = input?.where;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const orderBy = input?.orderBy;
+>>>>>>> f7e5838a (feat: update MCP registry and bindings API)
 
     // Query only public apps (unlisted: false)
     const apps = await drizzle.query.registryApps.findMany({
@@ -253,10 +282,20 @@ export const listPublicRegistryApps = createPublicTool({
     });
 
     // Filter out omitted apps
+<<<<<<< HEAD
     const filteredApps = apps.filter(
       (app: DbApp) => !OMITTED_APPS.includes(app.id),
     );
 
+=======
+    let filteredApps = apps.filter(
+      (app: DbApp) => !OMITTED_APPS.includes(app.id),
+    );
+
+    // TODO: Apply where filters if provided (currently filtering only by unlisted=false)
+    // TODO: Apply orderBy sorting if provided (currently sorting by created_at descending)
+
+>>>>>>> f7e5838a (feat: update MCP registry and bindings API)
     // Apply pagination
     const totalCount = filteredApps.length;
     const paginated = filteredApps.slice(offset, offset + limit);

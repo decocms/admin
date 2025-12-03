@@ -16,7 +16,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const listToolName = useMemo(() => {
     if (!registryConnection?.tools) return "";
     const listTool = registryConnection.tools.find((tool) =>
-      tool.name.endsWith("_LIST")
+      tool.name.endsWith("_LIST"),
     );
     return listTool?.name || "";
   }, [registryConnection?.tools]);
@@ -46,22 +46,18 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     // Object with nested array
     if (typeof listResults === "object" && listResults !== null) {
       const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults])
+        Array.isArray(listResults[key as keyof typeof listResults]),
       );
 
       if (itemsKey) {
-        return listResults[itemsKey as keyof typeof listResults] as RegistryItem[];
+        return listResults[
+          itemsKey as keyof typeof listResults
+        ] as RegistryItem[];
       }
     }
 
     return [];
   }, [listResults]);
 
-  return (
-    <StoreDiscoveryUI
-      items={items}
-      isLoading={isLoading}
-      error={error}
-    />
-  );
+  return <StoreDiscoveryUI items={items} isLoading={isLoading} error={error} />;
 }

@@ -744,7 +744,10 @@ const mapAppToMCPRegistryServer = (app: any): any => {
         },
       ],
       version: app.updated_at
-        ? new Date(app.updated_at).toISOString().split("T")[0].replace(/-/g, ".")
+        ? new Date(app.updated_at)
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, ".")
         : MCP_REGISTRY_DEFAULT_VERSION,
     },
   };
@@ -823,7 +826,10 @@ const listPublicRegistryApps = createPublicRegistryTools({
     z.object({
       where: z.unknown().optional().describe("Filter expression"),
       orderBy: z.unknown().optional().describe("Sort expressions"),
-      limit: z.unknown().optional().describe("Maximum number of items to return"),
+      limit: z
+        .unknown()
+        .optional()
+        .describe("Maximum number of items to return"),
       offset: z.unknown().optional().describe("Number of items to skip"),
     }),
   ),

@@ -6,4 +6,3 @@ import { useConnection } from "./use-connection";
 export function useRegistryMCPs(registryId: string | undefined) {
   return useConnection(registryId);
 }
-

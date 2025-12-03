@@ -73,16 +73,20 @@ const REGISTRY_TOOLS = [
 ];
 
 export async function up(db: Kysely<unknown>): Promise<void> {
-  // Get all organizations
-  const organizations = await sql<{
-    id: string;
-    createdBy: string | null;
-  }>`SELECT id, "createdBy" FROM organization`.execute(db);
+	// Get all organizations with their owner's userId
+	const organizations = await sql<{
+		id: string;
+		userId: string | null;
+	}>`
+    SELECT o.id, m.userId 
+    FROM organization o
+    LEFT JOIN member m ON m.organizationId = o.id AND m.role = 'owner'
+  `.execute(db);
 
-  console.log(`Found ${organizations.rows.length} organizations`);
+	console.log(`Found ${organizations.rows.length} organizations`);
 
-  // Add default registry for each organization that doesn't have it
-  for (const org of organizations.rows) {
+	// Add default registry for each organization that doesn't have it
+	for (const org of organizations.rows) {
     // Check if organization already has the registry
     const existing = await sql<{
       count: number;
@@ -106,7 +110,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
         ) VALUES (
           ${connectionId},
           ${org.id},
-          ${org.createdBy || "system"},
+          ${org.userId || "system"},
           ${"Deco Store"},
           ${"Official deco MCP registry with curated integrations"},
           ${"https://assets.decocache.com/decocms/00ccf6c3-9e13-4517-83b0-75ab84554bb9/596364c63320075ca58483660156b6d9de9b526e.png"},

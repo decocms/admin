@@ -1,13 +1,5 @@
 import { Card } from "@deco/ui/components/card.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { UserIndicator } from "./user-indicator.tsx";
+import { IntegrationIcon } from "../integration-icon.tsx";
 import type { z } from "zod";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { ZodString } from "zod";
@@ -72,10 +64,8 @@ function findImageField(
 export function CollectionCard<T extends BaseCollectionEntity>({
   item,
   schema,
-  readOnly,
-  onAction,
 }: CollectionCardProps<T>) {
-  const imageUrl = findImageField(schema, item);
+  const iconUrl = findImageField(schema, item);
   const description =
     item &&
     typeof item === "object" &&
@@ -85,82 +75,21 @@ export function CollectionCard<T extends BaseCollectionEntity>({
       : undefined;
 
   return (
-    <Card className="group relative flex flex-col overflow-hidden hover:shadow-md transition-shadow bg-card border-border/50">
-      {imageUrl && (
-        <div className="aspect-video w-full overflow-hidden bg-muted/20 border-b border-border/50">
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-      )}
-
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h3
-              className="font-semibold text-base leading-tight truncate"
-              title={item.title}
-            >
-              {item.title}
-            </h3>
-            {description && (
-              <p
-                className="text-sm text-muted-foreground line-clamp-2 mt-1"
-                title={description}
-              >
-                {description}
-              </p>
-            )}
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 -mr-2 -mt-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Icon name="more_vert" size={16} />
-                <span className="sr-only">Actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onAction("open", item)}>
-                <Icon name="visibility" className="mr-2 h-4 w-4" />
-                Open
-              </DropdownMenuItem>
-              {!readOnly && (
-                <>
-                  <DropdownMenuItem onClick={() => onAction("duplicate", item)}>
-                    <Icon name="content_copy" className="mr-2 h-4 w-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onAction("delete", item)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Icon name="delete" className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="mt-auto flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground">
-          <UserIndicator userId={item.updated_by || item.created_by} />
-          <span>
-            {new Date(item.updated_at || item.created_at).toLocaleDateString(
-              undefined,
-              {
-                month: "short",
-                day: "numeric",
-              },
-            )}
-          </span>
+    <Card className="cursor-pointer transition-colors">
+      <div className="flex flex-col gap-4 p-6">
+        <IntegrationIcon
+          icon={iconUrl}
+          name={item.title}
+          size="md"
+          className="shrink-0 shadow-sm"
+        />
+        <div className="flex flex-col gap-0">
+          <h3 className="text-base font-medium text-foreground truncate">
+            {item.title}
+          </h3>
+          <p className="text-base text-muted-foreground line-clamp-2">
+            {description || "No description"}
+          </p>
         </div>
       </div>
     </Card>

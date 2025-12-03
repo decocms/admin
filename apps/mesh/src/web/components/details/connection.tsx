@@ -1,8 +1,13 @@
 import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
 import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
+import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
+import { CollectionDisplayButton } from "@/web/components/collections/collection-display-button.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
+import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import {
   useConnection,
   useConnectionsCollection,
@@ -14,7 +19,6 @@ import {
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useToolCall } from "@/web/hooks/use-tool-call";
-import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -46,7 +50,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
-import { ViewLayout, ViewTabs } from "./layout";
+import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
@@ -279,58 +283,52 @@ export default function ConnectionInspectorView() {
       </ViewTabs>
       <div className="flex h-full w-full bg-background overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
-          <div className="flex-1 p-6">
-            {mcp.state === "pending_auth" ||
-            mcp.state === "authenticating" ||
-            (!connection.connection_token && mcp.state === "failed") ? (
-              <EmptyState
-                image={
-                  <div className="bg-muted p-4 rounded-full">
-                    <Lock className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                }
-                title="Authorization Required"
-                description="This connection requires authorization to access tools and resources."
-                actions={
-                  <Button
-                    onClick={() => mcp.authenticate()}
-                    disabled={mcp.state === "authenticating"}
-                  >
-                    {mcp.state === "authenticating"
-                      ? "Authorizing..."
-                      : "Authorize"}
-                  </Button>
-                }
-                className="h-full"
-              />
-            ) : activeTabId === "tools" ? (
-              <ToolsList
-                tools={(mcp.tools || []).map((t) => ({
-                  ...t,
-                  id: t.name,
-                  title: t.name,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                }))}
-                connectionId={connectionId as string}
-                org={org as string}
-              />
-            ) : activeTabId === "settings" ? (
+          {mcp.state === "pending_auth" ||
+          mcp.state === "authenticating" ||
+          (!connection.connection_token && mcp.state === "failed") ? (
+            <EmptyState
+              image={
+                <div className="bg-muted p-4 rounded-full">
+                  <Lock className="w-8 h-8 text-muted-foreground" />
+                </div>
+              }
+              title="Authorization Required"
+              description="This connection requires authorization to access tools and resources."
+              actions={
+                <Button
+                  onClick={() => mcp.authenticate()}
+                  disabled={mcp.state === "authenticating"}
+                >
+                  {mcp.state === "authenticating"
+                    ? "Authorizing..."
+                    : "Authorize"}
+                </Button>
+              }
+              className="h-full"
+            />
+          ) : activeTabId === "tools" ? (
+            <ToolsList
+              tools={mcp.tools}
+              connectionId={connectionId as string}
+              org={org as string}
+            />
+          ) : activeTabId === "settings" ? (
+            <div className="flex-1 p-6">
               <SettingsTab
                 connection={connection}
                 onUpdate={handleUpdateConnection}
                 hasMcpBinding={hasMcpBinding}
               />
-            ) : (
-              <CollectionContent
-                key={activeTabId}
-                connectionId={connectionId as string}
-                collectionName={activeTabId}
-                org={org as string}
-                schema={activeCollection?.schema}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <CollectionContent
+              key={activeTabId}
+              connectionId={connectionId as string}
+              collectionName={activeTabId}
+              org={org as string}
+              schema={activeCollection?.schema}
+            />
+          )}
         </div>
       </div>
     </ViewLayout>
@@ -697,77 +695,184 @@ function ToolsList({
   connectionId,
   org,
 }: {
-  tools: (BaseCollectionEntity & { description?: string })[];
+  tools: Array<{ name: string; description?: string }> | undefined;
   connectionId: string;
   org: string;
 }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [sortKey, setSortKey] = useState<string | undefined>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
+    "asc",
+  );
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDirection((prev) =>
+        prev === "asc" ? "desc" : prev === "desc" ? null : "asc",
+      );
+      if (sortDirection === "desc") setSortKey(undefined);
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  };
 
   const filteredTools = useMemo(() => {
+    if (!tools || tools.length === 0) return [];
     if (!search.trim()) return tools;
     const searchLower = search.toLowerCase();
     return tools.filter(
       (t) =>
-        t.title.toLowerCase().includes(searchLower) ||
+        t.name.toLowerCase().includes(searchLower) ||
         (t.description && t.description.toLowerCase().includes(searchLower)),
     );
   }, [tools, search]);
 
+  const sortedTools = useMemo(() => {
+    if (!sortKey || !sortDirection) return filteredTools;
+
+    return [...filteredTools].sort((a, b) => {
+      const aVal = (a as unknown as Record<string, unknown>)[sortKey] || "";
+      const bVal = (b as unknown as Record<string, unknown>)[sortKey] || "";
+      const comparison = String(aVal).localeCompare(String(bVal));
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredTools, sortKey, sortDirection]);
+
   const columns = [
     {
-      id: "title",
-      header: "NAME",
-      render: (tool: BaseCollectionEntity) => (
-        <div className="font-medium font-mono text-sm">{tool.title}</div>
+      id: "name",
+      header: "Name",
+      render: (tool: { name: string }) => (
+        <span className="text-sm font-medium font-mono text-foreground">
+          {tool.name}
+        </span>
       ),
       sortable: true,
     },
     {
       id: "description",
-      header: "DESCRIPTION",
+      header: "Description",
       render: (tool: { description?: string }) => (
-        <div className="text-muted-foreground text-sm line-clamp-1">
-          {tool.description}
-        </div>
+        <span className="text-sm text-foreground">
+          {tool.description || "—"}
+        </span>
       ),
+      cellClassName: "flex-1",
+      sortable: true,
     },
   ];
 
+  const sortOptions = columns
+    .filter((col) => col.sortable)
+    .map((col) => ({
+      id: col.id,
+      label: typeof col.header === "string" ? col.header : col.id,
+    }));
+
   return (
-    <CollectionsList
-      data={filteredTools}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-      search={search}
-      onSearchChange={setSearch}
-      columns={columns}
-      onItemClick={(tool) => {
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName: "tools",
-            itemId: encodeURIComponent(tool.id),
-          },
-        });
-      }}
-      renderCard={(tool) => (
-        <Card className="p-4">
-          <div className="font-medium">{tool.title}</div>
-          <div className="text-sm text-muted-foreground">
-            {tool.description}
+    <>
+      <ViewActions>
+        <CollectionDisplayButton
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          sortOptions={sortOptions}
+        />
+      </ViewActions>
+
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Search */}
+        <CollectionSearch
+          value={search}
+          onChange={setSearch}
+          placeholder="Search tools..."
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setSearch("");
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+        />
+
+        {/* Content: Cards or Table */}
+        {viewMode === "cards" ? (
+          <div className="flex-1 overflow-auto p-5">
+            {sortedTools.length === 0 ? (
+              <EmptyState
+                image={null}
+                title={search ? "No tools found" : "No tools available"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This connection doesn't have any tools yet."
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {sortedTools.map((tool) => (
+                  <Card
+                    key={tool.name}
+                    className="cursor-pointer transition-colors"
+                    onClick={() =>
+                      navigate({
+                        to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                      })
+                    }
+                  >
+                    <div className="flex flex-col gap-4 p-6">
+                      <IntegrationIcon
+                        icon={null}
+                        name={tool.name}
+                        size="lg"
+                        className="shrink-0 shadow-sm"
+                      />
+                      <div className="flex flex-col gap-0">
+                        <h3 className="text-base font-medium text-foreground truncate">
+                          {tool.name}
+                        </h3>
+                        <p className="text-base text-muted-foreground line-clamp-2">
+                          {tool.description || "No description"}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        </Card>
-      )}
-      emptyState={
-        <div className="text-center py-12 text-muted-foreground">
-          {search ? "No tools found matching search" : "No tools available"}
-        </div>
-      }
-    />
+        ) : (
+          <CollectionTableWrapper
+            columns={columns}
+            data={sortedTools}
+            isLoading={false}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onRowClick={(tool: { name: string; description?: string }) =>
+              navigate({
+                to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+              })
+            }
+            emptyState={
+              <EmptyState
+                image={null}
+                title={search ? "No tools found" : "No tools available"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This connection doesn't have any tools yet."
+                }
+              />
+            }
+          />
+        )}
+      </div>
+    </>
   );
 }
 
@@ -863,7 +968,6 @@ function CollectionContent({
         break;
       }
       case "edit":
-        // Default edit is same as open for now if we don't have inline edit
         navigate({
           to: "/$org/mcps/$connectionId/$collectionName/$itemId",
           params: {
@@ -877,25 +981,82 @@ function CollectionContent({
     }
   };
 
+  // Generate sort options from schema
+  const sortOptions = schema
+    ? Object.keys(schema.shape)
+        .filter(
+          (key) =>
+            ![
+              "id",
+              "created_at",
+              "updated_at",
+              "created_by",
+              "updated_by",
+            ].includes(key),
+        )
+        .map((key) => ({
+          id: key,
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
+        }))
+    : [];
+
   return (
-    <CollectionsList
-      data={items ?? []}
-      schema={schema}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-      search={search}
-      onSearchChange={setSearch}
-      sortKey={sortKey as string}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onAction={handleAction}
-      onItemClick={(item) => handleAction("open", item)}
-      isLoading={isLoading}
-      emptyState={
-        <div className="text-center py-12 text-muted-foreground">
-          {search ? "No items found matching search" : "No items found"}
+    <>
+      <ViewActions>
+        <CollectionDisplayButton
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortKey={sortKey as string}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          sortOptions={sortOptions}
+        />
+      </ViewActions>
+
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Search */}
+        <CollectionSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={`Search ${collectionName}...`}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setSearch("");
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+        />
+
+        {/* Collections List with schema-based rendering */}
+        <div className="flex-1 overflow-auto">
+          <CollectionsList
+            data={items ?? []}
+            schema={schema}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            search={search}
+            onSearchChange={setSearch}
+            sortKey={sortKey as string}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onAction={handleAction}
+            onItemClick={(item) => handleAction("open", item)}
+            isLoading={isLoading}
+            emptyState={
+              <EmptyState
+                image={null}
+                title={search ? "No items found" : "No items found"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This collection doesn't have any items yet."
+                }
+              />
+            }
+            hideToolbar={true}
+          />
         </div>
-      }
-    />
+      </div>
+    </>
   );
 }

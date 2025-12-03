@@ -370,6 +370,8 @@ export function useCollectionList<T extends CollectionEntity>(
     defaultSortKey = "updated_at" as keyof T,
   } = options;
 
+  const trimmedSearchTerm = searchTerm?.trim();
+
   // Use live query for reactive data with all filtering and sorting in the query
   // See: https://tanstack.com/db/latest/docs/guides/live-queries#functional-select
   return useLiveQuery(
@@ -383,7 +385,7 @@ export function useCollectionList<T extends CollectionEntity>(
         );
 
       // Check if we need .where() (TanStack DB doesn't support returning plain `true`)
-      const hasSearch = !!searchTerm?.trim();
+      const hasSearch = !!trimmedSearchTerm;
       const hasFilters = filters && filters.length > 0;
 
       if (hasSearch || hasFilters) {
@@ -395,12 +397,11 @@ export function useCollectionList<T extends CollectionEntity>(
           const conditions: unknown[] = [];
 
           // Text search (searches configured fields)
-          const search = searchTerm?.trim();
-          if (search) {
+          if (trimmedSearchTerm) {
             const searchConditions = searchFields
-              .filter((field) => field in item)
+              .filter((field) => item[field])
               .map((field) =>
-                like((item[field] as string) ?? "", `%${search}%`),
+                like(item[field] as string, `%${trimmedSearchTerm}%`),
               );
 
             if (searchConditions.length > 0) {
@@ -415,10 +416,9 @@ export function useCollectionList<T extends CollectionEntity>(
           // Field filters
           if (filters && filters.length > 0) {
             for (const filter of filters) {
+              if (!item[filter.column as keyof T]) continue;
               // Column must match an entity property
-              if (!(filter.column in item)) continue;
-              const field =
-                (item as Record<string, unknown>)[filter.column] ?? "";
+              const field = item[filter.column as keyof T] ?? "";
               conditions.push(eq(field as string, filter.value));
             }
           }
@@ -432,7 +432,7 @@ export function useCollectionList<T extends CollectionEntity>(
 
       return query;
     },
-    [searchTerm, filters, sortKey, sortDirection, collection],
+    [trimmedSearchTerm, filters, sortKey, sortDirection, collection],
   );
 }
 

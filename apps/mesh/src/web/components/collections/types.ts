@@ -2,7 +2,7 @@ import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import type { z } from "zod";
 import type { ReactNode } from "react";
 import type { Filter } from "@deco/ui/components/filter-bar.tsx";
-import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
+import type { TableColumn } from "@deco/ui/components/collection-table.tsx";
 
 export interface CollectionsListProps<T extends BaseCollectionEntity> {
   /**
@@ -110,6 +110,13 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
    * Useful if the parent component handles these controls.
    */
   hideToolbar?: boolean;
+
+  /**
+   * List of field names that should be sortable.
+   * If not provided, most fields will be sortable by default.
+   * Set to empty array to disable sorting.
+   */
+  sortableFields?: string[];
 
   /**
    * Default number of items per page

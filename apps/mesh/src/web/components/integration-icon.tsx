@@ -1,0 +1,59 @@
+import { cn } from "@deco/ui/lib/utils.ts";
+import { Icon } from "@deco/ui/components/icon.tsx";
+
+interface IntegrationIconProps {
+  icon: string | null | undefined;
+  name: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+export function IntegrationIcon({
+  icon,
+  name,
+  size = "md",
+  className,
+}: IntegrationIconProps) {
+  const sizeClasses = {
+    sm: "h-8 w-8",
+    md: "h-12 w-12",
+    lg: "h-16 w-16",
+  };
+
+  const iconSizes = {
+    sm: 16,
+    md: 24,
+    lg: 32,
+  };
+
+  if (icon) {
+    return (
+      <img
+        src={icon}
+        alt={name}
+        className={cn(
+          "rounded-lg object-cover border border-border",
+          sizeClasses[size],
+          className,
+        )}
+      />
+    );
+  }
+
+  // Fallback: muted icon with connection symbol
+  return (
+    <div
+      className={cn(
+        "rounded-lg flex items-center justify-center bg-muted border border-border",
+        sizeClasses[size],
+        className,
+      )}
+    >
+      <Icon
+        name="cable"
+        size={iconSizes[size]}
+        className="text-muted-foreground"
+      />
+    </div>
+  );
+}

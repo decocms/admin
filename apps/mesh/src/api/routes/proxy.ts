@@ -109,7 +109,7 @@ function withConnectionAuthorization(
  *
  * Single server approach - tools from downstream are dynamically fetched and registered
  */
-async function createMCPProxy(connectionId: string, ctx: MeshContext) {
+export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Get connection details
   const connection = await ctx.storage.connections.findById(connectionId);
   if (!connection) {
@@ -222,6 +222,98 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   // Compose middlewares
   const callToolPipeline = compose(authMiddleware);
 
+  // Core tool execution logic - shared between fetch and callTool
+  const executeToolCall = async (
+    request: CallToolRequest,
+  ): Promise<CallToolResult> => {
+    return callToolPipeline(request, async (): Promise<CallToolResult> => {
+      const client = await createClient();
+      const startTime = Date.now();
+
+      // Start span for tracing
+      return await ctx.tracer.startActiveSpan(
+        "mcp.proxy.callTool",
+        {
+          attributes: {
+            "connection.id": connectionId,
+            "tool.name": request.params.name,
+          },
+        },
+        async (span) => {
+          try {
+            const result = await client.callTool(request.params);
+            const duration = Date.now() - startTime;
+
+            // Record duration histogram
+            ctx.meter
+              .createHistogram("connection.proxy.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "success",
+              });
+
+            // Record success counter
+            ctx.meter.createCounter("connection.proxy.requests").add(1, {
+              "connection.id": connectionId,
+              "tool.name": request.params.name,
+              status: "success",
+            });
+
+            span.end();
+            return result as CallToolResult;
+          } catch (error) {
+            const err = error as Error;
+            const duration = Date.now() - startTime;
+
+            // Record duration histogram even on error
+            ctx.meter
+              .createHistogram("connection.proxy.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "error",
+              });
+
+            // Record error counter
+            ctx.meter.createCounter("connection.proxy.errors").add(1, {
+              "connection.id": connectionId,
+              "tool.name": request.params.name,
+              error: err.message,
+            });
+
+            span.recordException(err);
+            span.end();
+
+            throw error;
+          }
+        },
+      );
+    });
+  };
+
+  // Programmatic tool call function
+  const callTool = async <TResponse = unknown>(
+    name: string,
+    args?: Record<string, unknown>,
+  ): Promise<TResponse> => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name,
+        arguments: args,
+      },
+    };
+    const { structuredContent, isError, content } =
+      await executeToolCall(request);
+
+    if (isError) {
+      throw new Error(JSON.stringify(content));
+    }
+
+    return structuredContent as TResponse;
+  };
+
   // Create fetch function that handles MCP protocol
   const fetch = async (req: Request) => {
     // Create MCP server for this proxy
@@ -250,81 +342,14 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       },
     );
 
-    // Set up call tool handler with middleware
-    server.server.setRequestHandler(
-      CallToolRequestSchema,
-      (request: CallToolRequest) =>
-        callToolPipeline(request, async (): Promise<CallToolResult> => {
-          const client = await createClient();
-          const startTime = Date.now();
-
-          // Start span for tracing
-          return await ctx.tracer.startActiveSpan(
-            "mcp.proxy.callTool",
-            {
-              attributes: {
-                "connection.id": connectionId,
-                "tool.name": request.params.name,
-              },
-            },
-            async (span) => {
-              try {
-                const result = await client.callTool(request.params);
-                const duration = Date.now() - startTime;
-
-                // Record duration histogram
-                ctx.meter
-                  .createHistogram("connection.proxy.duration")
-                  .record(duration, {
-                    "connection.id": connectionId,
-                    "tool.name": request.params.name,
-                    status: "success",
-                  });
-
-                // Record success counter
-                ctx.meter.createCounter("connection.proxy.requests").add(1, {
-                  "connection.id": connectionId,
-                  "tool.name": request.params.name,
-                  status: "success",
-                });
-
-                span.end();
-                return result as CallToolResult;
-              } catch (error) {
-                const err = error as Error;
-                const duration = Date.now() - startTime;
-
-                // Record duration histogram even on error
-                ctx.meter
-                  .createHistogram("connection.proxy.duration")
-                  .record(duration, {
-                    "connection.id": connectionId,
-                    "tool.name": request.params.name,
-                    status: "error",
-                  });
-
-                // Record error counter
-                ctx.meter.createCounter("connection.proxy.errors").add(1, {
-                  "connection.id": connectionId,
-                  "tool.name": request.params.name,
-                  error: err.message,
-                });
-
-                span.recordException(err);
-                span.end();
-
-                throw error;
-              }
-            },
-          );
-        }),
-    );
+    // Set up call tool handler with middleware - reuses executeToolCall
+    server.server.setRequestHandler(CallToolRequestSchema, executeToolCall);
 
     // Handle the incoming message
     return await transport.handleMessage(req);
   };
 
-  return { fetch };
+  return { fetch, callTool };
 }
 
 // ============================================================================

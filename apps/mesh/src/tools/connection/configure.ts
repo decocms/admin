@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { createMCPProxy } from "../../api/routes/proxy";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 
@@ -149,6 +150,15 @@ export const CONNECTION_CONFIGURE = defineTool({
       configuration_state: state,
       configuration_scopes: scopes,
     });
+
+    // Invoke ON_MCP_CONFIGURE callback on the connection
+    // Ignore errors but await for the response before responding
+    try {
+      const proxy = await createMCPProxy(connectionId, ctx);
+      await proxy.callTool("ON_MCP_CONFIGURE", { state, scopes });
+    } catch {
+      // Silently ignore callback errors
+    }
 
     return {
       success: true,

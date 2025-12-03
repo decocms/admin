@@ -4,15 +4,42 @@ import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: connections = [] } = useConnections();
+  const { data: connections, isLoading, isError } = useConnections();
 
-  const effectiveRegistry = selectedRegistry || connections[0]?.id || "";
+  const registryOptions = useMemo(
+    () =>
+      (connections ?? []).map((c) => ({
+        id: c.id,
+        name: c.title,
+        icon: c.icon || undefined,
+      })),
+    [connections],
+  );
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        Loading stores...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="h-full flex items-center justify-center text-destructive">
+        Failed to load stores
+      </div>
+    );
+  }
+
+  const safeConnections = connections ?? [];
+  const effectiveRegistry = selectedRegistry || safeConnections[0]?.id || "";
 
   const handleAddNewRegistry = () => {
     navigate({
@@ -34,11 +61,7 @@ export default function StorePage() {
               </div>
               <div className="shrink-0">
                 <StoreRegistrySelect
-                  registries={connections.map((c) => ({
-                    id: c.id,
-                    name: c.title,
-                    icon: c.icon || undefined,
-                  }))}
+                  registries={registryOptions}
                   value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}
@@ -70,11 +93,7 @@ export default function StorePage() {
               description="Connect to a store to discover and install MCPs from the community."
               actions={
                 <StoreRegistrySelect
-                  registries={connections.map((c) => ({
-                    id: c.id,
-                    name: c.title,
-                    icon: c.icon || undefined,
-                  }))}
+                  registries={registryOptions}
                   value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}

@@ -10,12 +10,14 @@ import {
   MCPServer,
 } from "./tools.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
+import { type CORSOptions, handlePreflight, withCORS } from "./cors.ts";
 export { proxyConnectionForId } from "./bindings.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
+export { type CORSOptions, type CORSOrigin } from "./cors.ts";
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   MESH_REQUEST_CONTEXT: RequestContext<TSchema>;
@@ -56,6 +58,11 @@ export interface UserDefaultExport<
     env: TEnv,
     ctx: ExecutionContext,
   ) => Promise<Response> | Response;
+  /**
+   * CORS configuration options.
+   * Set to `false` to disable CORS handling entirely.
+   */
+  cors?: CORSOptions | false;
 }
 
 // 1. Map binding type to its interface
@@ -197,8 +204,15 @@ export const withBindings = <TEnv>({
       (decoded.connectionId as string) ?? metadata.connectionId;
     context.ensureAuthenticated = AUTHENTICATED(decoded.user ?? decoded.sub);
   } else {
-    // should not reach here
-    throw new Error("Invalid token or context");
+    context = {
+      state: {},
+      token: undefined,
+      meshUrl: undefined,
+      connectionId: undefined,
+      ensureAuthenticated: () => {
+        throw new Error("Unauthorized");
+      },
+    } as unknown as RequestContext<any>;
   }
 
   env.MESH_REQUEST_CONTEXT = context;
@@ -221,6 +235,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
 ): ExportedHandler<TEnv & DefaultEnv<TSchema>> => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
+  const corsOptions = userFns.cors;
+
   const fetcher = async (
     req: Request,
     env: TEnv & DefaultEnv<TSchema>,
@@ -258,22 +274,38 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       new Response("Not found", { status: 404 })
     );
   };
+
   return {
     fetch: async (
       req: Request,
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
+      // Handle CORS preflight (OPTIONS) requests
+      if (corsOptions !== false && req.method === "OPTIONS") {
+        const options = corsOptions ?? {};
+        return handlePreflight(req, options);
+      }
+
       const bindings = withBindings({
         env,
         server,
         tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,
         url: req.url,
       });
-      return await State.run(
+
+      const response = await State.run(
         { req, env: bindings, ctx },
         async () => await fetcher(req, bindings, ctx),
       );
+
+      // Add CORS headers to response
+      if (corsOptions !== false) {
+        const options = corsOptions ?? {};
+        return withCORS(response, req, options);
+      }
+
+      return response;
     },
   };
 };

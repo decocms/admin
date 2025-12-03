@@ -193,21 +193,24 @@ export function StoreDiscoveryUI({
                   <div>
                     <h2 className="text-lg font-medium mb-3">Tools</h2>
                     <div className="space-y-2">
-                      {data.tools.slice(0, 5).map((tool: any, idx: number) => (
-                        <div
-                          key={tool.id || idx}
-                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm">
-                              {tool.name || `Tool ${idx + 1}`}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {tool.description || "No description available"}
+                      {data.tools
+                        .slice(0, 5)
+                        .map((tool: Record<string, unknown>, idx: number) => (
+                          <div
+                            key={(tool.id as string | number) || idx}
+                            className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">
+                                {(tool.name as string) || `Tool ${idx + 1}`}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {(tool.description as string) ||
+                                  "No description available"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 )}

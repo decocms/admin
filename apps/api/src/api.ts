@@ -697,19 +697,21 @@ const ensureISOString = (date: unknown): string => {
   return new Date().toISOString();
 };
 
-const mapAppToMCPRegistryServer = (app: any): any => {
-  const serverName = `io.decocms/${app.scope.scope_name}/${app.name}`;
+const mapAppToMCPRegistryServer = (
+  app: Record<string, unknown>,
+): Record<string, unknown> => {
+  const serverName = `io.decocms/${(app.scope as Record<string, unknown>).scope_name}/${app.name}`;
 
   return {
     id: app.id,
     title: app.friendly_name || app.name,
-    created_at: ensureISOString(app.created_at),
-    updated_at: ensureISOString(app.updated_at),
+    created_at: ensureISOString(app.created_at as string),
+    updated_at: ensureISOString(app.updated_at as string),
     _meta: {
       [MCP_REGISTRY_DECOCMS_KEY]: {
         id: app.id,
-        verified: app.verified ?? false,
-        scopeName: app.scope.scope_name,
+        verified: (app.verified as boolean | undefined) ?? false,
+        scopeName: (app.scope as Record<string, unknown>).scope_name,
         appName: app.name,
       },
     },
@@ -719,16 +721,16 @@ const mapAppToMCPRegistryServer = (app: any): any => {
         [MCP_REGISTRY_PUBLISHER_KEY]: {
           friendlyName: app.friendly_name ?? null,
           metadata: app.metadata ?? null,
-          tools: app.tools.map((tool: any) => ({
+          tools: (app.tools as Array<Record<string, unknown>>).map((tool) => ({
             id: tool.id,
             name: tool.name,
-            description: tool.description ?? null,
+            description: (tool.description as string | undefined) ?? null,
           })),
         },
       },
       name: serverName,
       title: app.friendly_name || app.name,
-      description: app.description ?? undefined,
+      description: (app.description as string | undefined) ?? undefined,
       icons: app.icon
         ? [
             {
@@ -740,11 +742,11 @@ const mapAppToMCPRegistryServer = (app: any): any => {
       remotes: [
         {
           type: MCP_REGISTRY_SERVER_TYPE,
-          url: `${DECO_MCP_BASE_URL}/${app.scope.scope_name}/${app.name}/mcp`,
+          url: `${DECO_MCP_BASE_URL}/${(app.scope as Record<string, unknown>).scope_name}/${app.name}/mcp`,
         },
       ],
       version: app.updated_at
-        ? new Date(app.updated_at)
+        ? new Date(app.updated_at as string)
             .toISOString()
             .split("T")[0]
             .replace(/-/g, ".")
@@ -753,19 +755,24 @@ const mapAppToMCPRegistryServer = (app: any): any => {
   };
 };
 
-const mapAppToMCPRegistryServerDetail = (app: any): any => {
+const mapAppToMCPRegistryServerDetail = (
+  app: Record<string, unknown>,
+): Record<string, unknown> => {
   const base = mapAppToMCPRegistryServer(app);
+  const baseMetaDecocms = (base._meta as Record<string, unknown>)[
+    MCP_REGISTRY_DECOCMS_KEY
+  ] as Record<string, unknown>;
   return {
     ...base,
     _meta: {
       ...base._meta,
       [MCP_REGISTRY_DECOCMS_KEY]: {
-        ...base._meta[MCP_REGISTRY_DECOCMS_KEY],
+        ...baseMetaDecocms,
         publishedAt: app.created_at
-          ? new Date(app.created_at).toISOString()
+          ? new Date(app.created_at as string).toISOString()
           : undefined,
         updatedAt: app.updated_at
-          ? new Date(app.updated_at).toISOString()
+          ? new Date(app.updated_at as string).toISOString()
           : undefined,
       },
     },
@@ -877,14 +884,16 @@ const listPublicRegistryApps = createPublicRegistryTools({
     });
 
     const filteredApps = apps.filter(
-      (app: any) => !REGISTRY_OMITTED_APPS.includes(app.id),
+      (app: Record<string, unknown>) => !REGISTRY_OMITTED_APPS.includes(app.id as string),
     );
 
     const totalCount = filteredApps.length;
     const paginated = filteredApps.slice(offset, offset + limit);
     const hasMore = filteredApps.length > offset + limit;
 
-    const servers = paginated.map((app: any) => mapAppToMCPRegistryServer(app));
+    const servers = paginated.map((app: Record<string, unknown>) =>
+      mapAppToMCPRegistryServer(app),
+    );
 
     return {
       items: servers,
@@ -938,7 +947,9 @@ const getPublicRegistryApp = createPublicRegistryTools({
       };
     }
 
-    const serverData = mapAppToMCPRegistryServerDetail(app as any);
+    const serverData = mapAppToMCPRegistryServerDetail(
+      app as Record<string, unknown>,
+    );
 
     return {
       item: serverData,

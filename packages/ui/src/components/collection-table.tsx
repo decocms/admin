@@ -56,7 +56,7 @@ export function CollectionTable<T = Record<string, unknown>>({
 
   function getHeaderClass(idx: number, total: number) {
     let base =
-      "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-xs h-9 uppercase tracking-wide";
+      "px-4 py-2 text-left font-mono font-normal text-muted-foreground text-xs h-9 uppercase tracking-wide";
     if (idx === total - 1) base += " w-8";
     return base;
   }
@@ -109,7 +109,7 @@ export function CollectionTable<T = Record<string, unknown>>({
                   <TableCell
                     key={col.id}
                     className={cn(
-                      "px-3 py-4 h-16 align-middle min-w-0 text-sm text-foreground",
+                      "px-5 py-4 h-16 align-middle min-w-0 text-sm text-foreground",
                       col.cellClassName,
                       col.wrap
                         ? "whitespace-normal wrap-break-word"

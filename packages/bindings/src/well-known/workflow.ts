@@ -1,9 +1,9 @@
 /**
- * Agents Well-Known Binding
+ * Workflows Well-Known Binding
  *
- * Defines the interface for AI agent providers.
- * Any MCP that implements this binding can provide configurable AI agents
- * with custom instructions and tool access controls.
+ * Defines the interface for workflow providers.
+ * Any MCP that implements this binding can expose configurable workflows,
+ * executions, step results, and events via collection bindings.
  *
  * This binding uses collection bindings for LIST and GET operations (read-only).
  */

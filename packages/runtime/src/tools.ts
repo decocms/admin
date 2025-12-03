@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { DefaultEnv } from "./index.ts";
 import { State } from "./state.ts";
+import { Binding } from "./wrangler.ts";
 
 export const createRuntimeContext = (prev?: AppContext) => {
   const store = State.getStore();
@@ -153,6 +154,7 @@ export interface CreateMCPServerOptions<
     state?: TSchema;
     scopes?: string[];
   };
+  bindings?: Binding[];
   tools?:
     | Array<
         (

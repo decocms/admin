@@ -30,7 +30,10 @@ const noUseEffectRule = {
 
       MemberExpression(node) {
         // Verify property is an Identifier before accessing .name
-        if (node.property.type !== "Identifier" || node.property.name !== "useEffect") {
+        if (
+          node.property.type !== "Identifier" ||
+          node.property.name !== "useEffect"
+        ) {
           return;
         }
 

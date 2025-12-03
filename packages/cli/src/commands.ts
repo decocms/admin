@@ -1142,7 +1142,10 @@ const registryPublish = new Command("publish")
   .description(
     "Publish an app to the registry from a JSON config file or stdin.",
   )
-  .option("-f, --file <file>", "Path to JSON config file (reads from stdin if not provided)")
+  .option(
+    "-f, --file <file>",
+    "Path to JSON config file (reads from stdin if not provided)",
+  )
   .option("-w, --workspace <workspace>", "Workspace name")
   .option("-y, --yes", "Skip confirmation")
   .action(async (options) => {

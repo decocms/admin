@@ -56,10 +56,7 @@ async function pruneNodeModules(): Promise<Set<string>> {
   // Resolve from mesh app root where kysely-bun-worker is a dependency
   let migrateEntryPointPath: string;
   try {
-    migrateEntryPointPath = Bun.resolveSync(
-      MIGRATE_ENTRY_POINT,
-      MESH_APP_ROOT,
-    );
+    migrateEntryPointPath = Bun.resolveSync(MIGRATE_ENTRY_POINT, MESH_APP_ROOT);
   } catch (error) {
     console.error(`❌ Failed to resolve ${MIGRATE_ENTRY_POINT}:`, error);
     process.exit(1);

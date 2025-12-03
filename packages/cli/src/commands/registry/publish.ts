@@ -37,7 +37,9 @@ async function readStdin(): Promise<string> {
 
     // Check if stdin is a TTY (interactive terminal)
     if (process.stdin.isTTY) {
-      reject(new Error("No input provided. Use -f <file> or pipe JSON via stdin."));
+      reject(
+        new Error("No input provided. Use -f <file> or pipe JSON via stdin."),
+      );
       return;
     }
 
@@ -200,4 +202,3 @@ export async function publishApp({
   }
   console.log();
 }
-

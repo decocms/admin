@@ -1,3 +1,5 @@
+import { MCPToolCard, type MCPApp } from "./mcp-tool-card";
+
 interface MCPToolsGridProps {
   tools: MCPApp[];
   onCardClick: (app: MCPApp) => void;

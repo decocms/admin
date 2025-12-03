@@ -97,13 +97,13 @@ function OrgContextSetter({
     }
 
     setOrgMutation.mutate(org, {
-      onSettled: () => {
+      onSuccess: () => {
         // Invalidate all tool call cache to refresh data for new org
         console.log(
           "🔄 [OrgContextSetter] Invalidating tool call cache for org:",
           org,
         );
-        queryClient.invalidateQueries({
+        queryClient.removeQueries({
           queryKey: ["tool-call"],
         });
         setIsReady(true);

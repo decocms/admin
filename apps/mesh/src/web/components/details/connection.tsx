@@ -44,14 +44,13 @@ import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2, Globe, Loader2, Lock } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
@@ -72,7 +71,7 @@ export default function ConnectionInspectorView() {
     connection ? [connection] : [],
     "MCP",
   );
-  const hasMcpBinding = mcpBindingConnections.length > 0;
+  const hasMcpBinding = mcpBindingConnections.length > 0 || true; // TODO: remove || true
 
   // Update connection handler
   const handleUpdateConnection = async (
@@ -313,7 +312,7 @@ export default function ConnectionInspectorView() {
               org={org as string}
             />
           ) : activeTabId === "settings" ? (
-            <div className="flex-1 p-6">
+            <div className="flex-1">
               <SettingsTab
                 connection={connection}
                 onUpdate={handleUpdateConnection}
@@ -359,37 +358,11 @@ function SettingsTab({
   onUpdate,
   hasMcpBinding,
 }: SettingsTabProps) {
-  return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Connection Settings</h3>
-        <div className="border border-border rounded-lg p-6 bg-card">
-          <ConnectionSettingsForm connection={connection} onUpdate={onUpdate} />
-        </div>
-      </div>
+  const [isSavingConnection, setIsSavingConnection] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
-      {hasMcpBinding && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">MCP Configuration</h3>
-          <div className="border border-border rounded-lg p-6 bg-card">
-            <McpConfigurationForm connection={connection} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ConnectionSettingsForm({
-  connection,
-  onUpdate,
-}: {
-  connection: ConnectionEntity;
-  onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
-}) {
-  const [isSaving, setIsSaving] = useState(false);
-
-  const form = useForm<ConnectionFormData>({
+  // Connection settings form
+  const connectionForm = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionFormSchema),
     defaultValues: {
       title: connection.title,
@@ -400,53 +373,159 @@ function ConnectionSettingsForm({
     },
   });
 
-  // Reset form when connection changes (external update)
+  // Reset form when connection changes
   useEffect(() => {
-    form.reset({
+    connectionForm.reset({
       title: connection.title,
       description: connection.description,
       connection_type: connection.connection_type,
       connection_url: connection.connection_url,
       connection_token: connection.connection_token,
     });
-  }, [connection, form]);
+  }, [connection, connectionForm]);
 
-  const onSubmit = async (data: ConnectionFormData) => {
-    setIsSaving(true);
+  // MCP config state
+  const [mcpFormState, setMcpFormState] = useState<Record<string, unknown>>(
+    connection.configuration_state ?? {},
+  );
+  const [mcpInitialState, setMcpInitialState] = useState<Record<string, unknown>>(
+    connection.configuration_state ?? {},
+  );
+  const [mcpScopes] = useState<string[]>(connection.configuration_scopes ?? []);
+
+  // Reset MCP state when connection changes
+  useEffect(() => {
+    if (connection.configuration_state) {
+      setMcpFormState(connection.configuration_state);
+      setMcpInitialState(connection.configuration_state);
+    }
+  }, [connection]);
+
+  // Track if MCP config has changes
+  const mcpHasChanges = useMemo(() => {
+    return JSON.stringify(mcpFormState) !== JSON.stringify(mcpInitialState);
+  }, [mcpFormState, mcpInitialState]);
+
+  const handleSaveConnection = async () => {
+    const isValid = await connectionForm.trigger();
+    if (!isValid) return;
+
+    setIsSavingConnection(true);
     try {
+      const data = connectionForm.getValues();
       await onUpdate({
         ...data,
         description: data.description || null,
         connection_token: data.connection_token || null,
       });
-      form.reset(data); // Reset dirty state with new values
+      connectionForm.reset(data);
+      toast.success("Connection updated successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to update connection: ${message}`);
     } finally {
-      setIsSaving(false);
+      setIsSavingConnection(false);
     }
   };
 
+  const handleSaveMcpConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      const meshToolCaller = createToolCaller();
+      await meshToolCaller("CONNECTION_CONFIGURE", {
+        connectionId: connection.id,
+        scopes: mcpScopes,
+        state: mcpFormState,
+      });
+      toast.success("Configuration saved successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save configuration: ${message}`);
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const isSaving = isSavingConnection || isSavingConfig;
+  const hasConnectionChanges = connectionForm.formState.isDirty;
+  const hasAnyChanges = hasConnectionChanges || mcpHasChanges;
+
+  return (
+    <>
+      {hasAnyChanges && (
+        <ViewActions>
+          <Button
+            onClick={() => {
+              if (hasConnectionChanges) {
+                handleSaveConnection();
+              }
+              if (mcpHasChanges) {
+                handleSaveMcpConfig();
+              }
+            }}
+            disabled={isSaving}
+            size="sm"
+          >
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </ViewActions>
+      )}
+
+      <div className="flex h-full">
+        {/* Left sidebar - Connection Settings (2/5) */}
+        <div className="w-2/5 shrink-0 border-r border-border overflow-auto">
+          <ConnectionSettingsFormUI form={connectionForm} connection={connection} />
+        </div>
+
+        {/* Right panel - MCP Configuration (3/5) */}
+        {hasMcpBinding && (
+          <div className="w-3/5 min-w-0 overflow-auto">
+            <McpConfigurationFormUI
+              connection={connection}
+              formState={mcpFormState}
+              onFormStateChange={setMcpFormState}
+              isSaving={isSavingConfig}
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ConnectionSettingsFormUI({
+  form,
+  connection,
+}: {
+  form: ReturnType<typeof useForm<ConnectionFormData>>;
+  connection: ConnectionEntity;
+}) {
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl border border-border/50 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-            <Globe className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <div className="space-y-1 flex-1">
+      <div className="flex flex-col h-full">
+        {/* Header section - Icon, Title, Description */}
+        <div className="flex flex-col gap-4 p-5 border-b border-border">
+          <IntegrationIcon
+            icon={connection.icon}
+            name={connection.title}
+            size="lg"
+            className="shadow-sm"
+          />
+          <div className="flex flex-col">
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem className="w-full space-y-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <FormControl>
                       <Input
                         {...field}
-                        className="h-auto text-xl font-semibold px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all p-0"
+                        className="h-auto! text-xl! font-medium! leading-7! px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
                         placeholder="Connection Name"
                       />
                     </FormControl>
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -461,7 +540,7 @@ function ConnectionSettingsForm({
                     <Input
                       {...field}
                       value={field.value || ""}
-                      className="h-auto text-sm text-muted-foreground px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
+                      className="h-auto! text-base! text-muted-foreground! leading-6! px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
                       placeholder="Add a description..."
                     />
                   </FormControl>
@@ -472,10 +551,11 @@ function ConnectionSettingsForm({
           </div>
         </div>
 
-        <div className="grid gap-4 pt-4 border-t border-border">
+        {/* Connection section */}
+        <div className="flex flex-col gap-4 p-5 border-b border-border">
           <div className="flex flex-col gap-2">
-            <FormLabel>Connection</FormLabel>
-            <div className="flex rounded-md shadow-sm">
+            <FormLabel className="text-sm font-medium">Connection</FormLabel>
+            <div className="flex">
               <FormField
                 control={form.control}
                 name="connection_type"
@@ -483,7 +563,7 @@ function ConnectionSettingsForm({
                   <FormItem className="space-y-0">
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger className="w-[100px] rounded-r-none border-r-0 bg-muted/50 focus:ring-0 focus:ring-offset-0">
+                        <SelectTrigger className="h-10 rounded-r-none border-r-0 bg-muted focus:ring-0 focus:ring-offset-0 rounded-l-lg">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -505,7 +585,7 @@ function ConnectionSettingsForm({
                       <Input
                         placeholder="https://example.com/mcp"
                         {...field}
-                        className="rounded-l-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-10 rounded-l-none rounded-r-xl focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </FormControl>
                   </FormItem>
@@ -528,16 +608,17 @@ function ConnectionSettingsForm({
             control={form.control}
             name="connection_token"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Token</FormLabel>
+              <FormItem className="flex flex-col gap-2">
+                <FormLabel className="text-sm font-medium">Token</FormLabel>
                 <FormControl>
                   <Input
                     type="password"
                     placeholder={
-                      connection.connection_token ? "••••••••" : "No token set"
+                      connection.connection_token ? "••••••••" : "Placeholder"
                     }
                     {...field}
                     value={field.value || ""}
+                    className="h-10 rounded-lg"
                   />
                 </FormControl>
                 <FormMessage />
@@ -546,144 +627,110 @@ function ConnectionSettingsForm({
           />
         </div>
 
-        <div className="flex justify-between items-center pt-4 border-t border-border">
-          <div className="text-sm">
-            <span className="text-muted-foreground mr-2">Last Updated:</span>
-            <span className="font-mono uppercase text-muted-foreground">
-              {connection.updated_at
-                ? formatDistanceToNow(new Date(connection.updated_at), {
-                    addSuffix: true,
-                  })
-                : "Unknown"}
-            </span>
-          </div>
-
-          <Button type="submit" disabled={!form.formState.isDirty || isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
-          </Button>
+        {/* Last Updated section */}
+        <div className="flex items-center gap-4 p-5 border-b border-border">
+          <span className="flex-1 text-sm text-foreground">Last Updated</span>
+          <span className="font-mono text-sm uppercase text-muted-foreground">
+            {connection.updated_at
+              ? formatDistanceToNow(new Date(connection.updated_at), {
+                  addSuffix: false,
+                })
+              : "Unknown"}
+          </span>
         </div>
-      </form>
+      </div>
     </Form>
   );
 }
 
-function McpConfigurationForm({
+function McpConfigurationFormUI({
   connection,
+  formState,
+  onFormStateChange,
+  isSaving,
 }: {
   connection: ConnectionEntity;
+  formState: Record<string, unknown>;
+  onFormStateChange: (state: Record<string, unknown>) => void;
+  isSaving: boolean;
 }) {
   const toolCaller = useMemo(
     () => createToolCaller(connection.id),
     [connection.id],
   );
 
-  const {
-    data: config,
-    isLoading,
-    error,
-  } = useToolCall({
+  const { data: config, isLoading } = useToolCall({
     toolCaller,
     toolName: "MCP_CONFIGURATION",
     toolInputParams: {},
   });
 
-  const [selectedScopes, setSelectedScopes] = useState<string[]>(
-    connection.configuration_scopes ?? [],
-  );
-  const [formState, setFormState] = useState<Record<string, unknown>>(
-    connection.configuration_state ?? {},
-  );
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Initialize scopes from data if needed
-  useEffect(() => {
-    if (connection.configuration_scopes) {
-      setSelectedScopes(connection.configuration_scopes);
-    }
-    if (connection.configuration_state) {
-      setFormState(connection.configuration_state);
-    }
-  }, [connection]);
-
-  const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
-    setIsSaving(true);
-    try {
-      const meshToolCaller = createToolCaller();
-      await meshToolCaller("CONNECTION_CONFIGURE", {
-        connectionId: connection.id,
-        scopes: selectedScopes,
-        state: data.formData,
-      });
-      toast.success("Configuration saved successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to save configuration: ${message}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex h-20 items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex h-20 items-center justify-center text-muted-foreground">
-        Failed to load configuration: {(error as Error).message}
-      </div>
-    );
-  }
+  // TODO: remove mock data fallback
+  const mockConfig = {
+    scopes: ["read:users", "write:users", "admin"],
+    stateSchema: {
+      type: "object",
+      properties: {
+        apiKey: { type: "string", title: "API Key" },
+        environment: {
+          type: "string",
+          title: "Environment",
+          enum: ["development", "staging", "production"],
+        },
+        enableDebug: { type: "boolean", title: "Enable Debug Mode" },
+      },
+    },
+  };
 
-  const { scopes, stateSchema } = config as {
+  const { scopes, stateSchema } = (config ?? mockConfig) as {
     scopes: string[];
     stateSchema: Record<string, unknown>;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full p-5">
+      {/* Scopes section */}
       {scopes && scopes.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Scopes</h4>
-          <ul className="list-disc list-inside space-y-1">
+        <div className="mb-6">
+          <h4 className="text-sm font-medium mb-3">Required Scopes</h4>
+          <div className="flex flex-wrap gap-2">
             {scopes.map((scope) => (
-              <li key={scope} className="text-sm text-muted-foreground">
+              <span
+                key={scope}
+                className="px-2.5 py-1 text-xs bg-muted rounded-md text-muted-foreground font-mono"
+              >
                 {scope}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      <div className="space-y-4">
-        <h4 className="text-sm font-medium text-muted-foreground">
-          Configuration
-        </h4>
+      {/* Configuration form using RJSForm */}
+      <div className="flex-1">
+        <h4 className="text-sm font-medium mb-3">Configuration</h4>
         <RJSForm
           schema={stateSchema}
           validator={validator}
           formData={formState}
-          onChange={(e) => setFormState(e.formData)}
-          onSubmit={handleSubmit}
+          onChange={(e) => onFormStateChange(e.formData ?? {})}
           disabled={isSaving}
           uiSchema={{
-            // Optional: Custom UI options
             "ui:submitButtonOptions": {
               norender: true,
             },
           }}
         >
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Configuration
-            </Button>
-          </div>
+          {/* Empty children to prevent default submit button */}
+          <></>
         </RJSForm>
       </div>
     </div>

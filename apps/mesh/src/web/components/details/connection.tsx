@@ -602,6 +602,7 @@ function McpConfigurationForm({
   }, [connection]);
 
   // Default to all scopes when config is loaded if none are configured
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (config && !connection.configuration_scopes?.length) {
       const { scopes } = config as { scopes: string[] };

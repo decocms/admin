@@ -16,8 +16,8 @@ interface StoreDiscoveryUIProps {
 
 /** Helper to extract data from different JSON structures */
 function extractItemData(item: RegistryItem) {
-  const publisherMeta = item.server?._meta?.["io.decocms/publisher-provided"];
-  const decoMeta = item._meta?.["io.decocms"];
+  const publisherMeta = item.server?._meta?.["mcp.mesh/publisher-provided"];
+  const decoMeta = item._meta?.["mcp.mesh"];
 
   return {
     name: item.name || item.title || item.server?.title || "Unnamed Item",
@@ -48,8 +48,8 @@ export function StoreDiscoveryUI({
     return items.filter(
       (item) =>
         item.verified === true ||
-        item._meta?.["io.decocms"]?.verified === true ||
-        item.meta?.verified === true,
+        item._meta?.["mcp.mesh"]?.verified === true ||
+        item.server?._meta?.["mcp.mesh"]?.verified === true,
     );
   }, [items]);
 

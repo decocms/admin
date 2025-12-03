@@ -33,7 +33,7 @@ export function MCPResultsView({
               <Icon name="arrow_back" size={20} />
             </Button>
             <div className="flex-1">
-              <h1 className="text-lg font-medium">{tool.name}</h1>
+              <h1 className="text-lg font-medium">{tool.title}</h1>
               {tool.description && (
                 <p className="text-sm text-muted-foreground">
                   {tool.description}

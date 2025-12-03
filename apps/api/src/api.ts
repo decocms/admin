@@ -884,7 +884,8 @@ const listPublicRegistryApps = createPublicRegistryTools({
     });
 
     const filteredApps = apps.filter(
-      (app: Record<string, unknown>) => !REGISTRY_OMITTED_APPS.includes(app.id as string),
+      (app: Record<string, unknown>) =>
+        !REGISTRY_OMITTED_APPS.includes(app.id as string),
     );
 
     const totalCount = filteredApps.length;

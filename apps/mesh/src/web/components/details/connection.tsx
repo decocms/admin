@@ -798,9 +798,6 @@ function CollectionContent({
     sortDirection,
   });
 
-  console.log(items)
-
-
   const schema = useMemo(
     () =>
       jsonSchema

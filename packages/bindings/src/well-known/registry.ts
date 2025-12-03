@@ -97,7 +97,9 @@ export const MCPRegistryServerSchema = BaseCollectionEntitySchema.extend({
   }),
 });
 
-export type RegistryAppCollectionEntity = z.infer<typeof MCPRegistryServerSchema>;
+export type RegistryAppCollectionEntity = z.infer<
+  typeof MCPRegistryServerSchema
+>;
 
 /**
  * Registry App Collection Binding (read-only)
@@ -105,7 +107,7 @@ export type RegistryAppCollectionEntity = z.infer<typeof MCPRegistryServerSchema
  * Collection bindings for registry apps (read-only).
  * Provides LIST and GET operations for public apps.
  * Only includes public apps (unlisted: false).
- * 
+ *
  * Returns servers in MCP Registry Spec format with:
  * - _meta: DecoCMS-specific metadata (id, verified, tools, etc.)
  * - server: MCP Registry Spec compliant server definition

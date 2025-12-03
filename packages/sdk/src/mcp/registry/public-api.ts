@@ -111,7 +111,10 @@ const mapAppToMCPRegistryServer = (app: DbApp) => {
       ],
       // Version info (using updated_at as proxy for version)
       version: app.updated_at
-        ? new Date(app.updated_at).toISOString().split("T")[0].replace(/-/g, ".")
+        ? new Date(app.updated_at)
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, ".")
         : "1.0.0",
     },
   };
@@ -214,7 +217,10 @@ export const listPublicRegistryApps = createPublicTool({
     z.object({
       where: z.unknown().optional().describe("Filter expression"),
       orderBy: z.unknown().optional().describe("Sort expressions"),
-      limit: z.unknown().optional().describe("Maximum number of items to return"),
+      limit: z
+        .unknown()
+        .optional()
+        .describe("Maximum number of items to return"),
       offset: z.unknown().optional().describe("Number of items to skip"),
     }),
   ),
@@ -284,7 +290,9 @@ export const listPublicRegistryApps = createPublicTool({
     const hasMore = filteredApps.length > offset + limit;
 
     // Map to MCP Registry Spec format (includes all public metadata)
-    const servers = paginated.map((app: DbApp) => mapAppToMCPRegistryServer(app));
+    const servers = paginated.map((app: DbApp) =>
+      mapAppToMCPRegistryServer(app),
+    );
 
     return {
       items: servers,

@@ -44,4 +44,3 @@ export function useRegistryMCPs(registryId: string | undefined) {
     ...rest,
   };
 }
-

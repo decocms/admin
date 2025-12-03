@@ -35,7 +35,9 @@ export function MCPResultsView({
             <div className="flex-1">
               <h1 className="text-lg font-medium">{tool.name}</h1>
               {tool.description && (
-                <p className="text-sm text-muted-foreground">{tool.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {tool.description}
+                </p>
               )}
             </div>
           </div>
@@ -49,14 +51,24 @@ export function MCPResultsView({
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">Loading results...</p>
+                <p className="text-sm text-muted-foreground">
+                  Loading results...
+                </p>
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Icon name="error" size={48} className="text-destructive mb-4" />
-                <h3 className="text-lg font-medium mb-2">Error loading results</h3>
+                <Icon
+                  name="error"
+                  size={48}
+                  className="text-destructive mb-4"
+                />
+                <h3 className="text-lg font-medium mb-2">
+                  Error loading results
+                </h3>
                 <p className="text-muted-foreground max-w-md">
-                  {error instanceof Error ? error.message : "Unknown error occurred"}
+                  {error instanceof Error
+                    ? error.message
+                    : "Unknown error occurred"}
                 </p>
                 <Button variant="outline" onClick={onBack} className="mt-4">
                   Go back
@@ -64,7 +76,11 @@ export function MCPResultsView({
               </div>
             ) : !data ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Icon name="inbox" size={48} className="text-muted-foreground mb-4" />
+                <Icon
+                  name="inbox"
+                  size={48}
+                  className="text-muted-foreground mb-4"
+                />
                 <h3 className="text-lg font-medium mb-2">No results</h3>
                 <p className="text-muted-foreground">
                   The tool returned no results.
@@ -83,4 +99,3 @@ export function MCPResultsView({
     </div>
   );
 }
-

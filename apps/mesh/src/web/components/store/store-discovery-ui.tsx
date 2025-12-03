@@ -25,18 +25,19 @@ function extractItemData(item: RegistryItem) {
 
   return {
     name: item.name || item.title || item.server?.title || "Unnamed Item",
-    description: item.description || item.summary || item.server?.description || "",
+    description:
+      item.description || item.summary || item.server?.description || "",
     icon: item.icon || item.image || item.logo || item.server?.icons?.[0]?.src,
     verified: item.verified || decoMeta?.verified,
     publisher: item.publisher || decoMeta?.scopeName || "Unknown",
     tools: item.tools || item.server?.tools || publisherMeta?.tools || [],
     models: item.models || item.server?.models || publisherMeta?.models || [],
     emails: item.emails || item.server?.emails || publisherMeta?.emails || [],
-    analytics: item.analytics || item.server?.analytics || publisherMeta?.analytics,
+    analytics:
+      item.analytics || item.server?.analytics || publisherMeta?.analytics,
     cdn: item.cdn || item.server?.cdn || publisherMeta?.cdn,
   };
 }
-
 
 function extractConnectionData(
   item: RegistryItem | MCPRegistryServer,
@@ -61,7 +62,8 @@ function extractConnectionData(
   return {
     // Local id for optimistic updates - server will generate a new id (conn_${nanoid()})
     id: crypto.randomUUID(),
-    title: item.title || item.server?.title || item.server?.name || "Unnamed App",
+    title:
+      item.title || item.server?.title || item.server?.name || "Unnamed App",
     description: item.server?.description || null,
     icon: item.server?.icons?.[0]?.src || null,
     app_name: decoMeta?.appName || item.server?.name || null,
@@ -143,7 +145,7 @@ export function StoreDiscoveryUI({
       (item) =>
         item.verified === true ||
         item._meta?.["io.decocms"]?.verified === true ||
-        item.meta?.verified === true
+        item.meta?.verified === true,
     );
   }, [items]);
 
@@ -156,14 +158,14 @@ export function StoreDiscoveryUI({
         (item.name || item.title || "").toLowerCase().includes(searchLower) ||
         (item.description || item.server?.description || "")
           .toLowerCase()
-          .includes(searchLower)
+          .includes(searchLower),
     );
   }, [items, search]);
 
   // Non-verified items
   const allItems = useMemo(() => {
     return filteredItems.filter(
-      (item) => !verifiedItems.find((v) => v.id === item.id)
+      (item) => !verifiedItems.find((v) => v.id === item.id),
     );
   }, [filteredItems, verifiedItems]);
 
@@ -231,7 +233,9 @@ export function StoreDiscoveryUI({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1 min-w-0">
-                      <h1 className="text-2xl font-semibold mb-1">{data.name}</h1>
+                      <h1 className="text-2xl font-semibold mb-1">
+                        {data.name}
+                      </h1>
                       <p className="text-sm text-muted-foreground">
                         {data.verified && "✓ Verified • "}
                         {data.publisher}
@@ -256,7 +260,9 @@ export function StoreDiscoveryUI({
                     </button>
                   </div>
                   {data.description && (
-                    <p className="text-muted-foreground mt-4">{data.description}</p>
+                    <p className="text-muted-foreground mt-4">
+                      {data.description}
+                    </p>
                   )}
                 </div>
               </div>
@@ -410,7 +416,11 @@ export function StoreDiscoveryUI({
           <div className="max-w-6xl mx-auto">
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Icon name="inbox" size={48} className="text-muted-foreground mb-4" />
+                <Icon
+                  name="inbox"
+                  size={48}
+                  className="text-muted-foreground mb-4"
+                />
                 <h3 className="text-lg font-medium mb-2">No items available</h3>
                 <p className="text-muted-foreground">
                   This store doesn't have any available items yet.
@@ -418,7 +428,11 @@ export function StoreDiscoveryUI({
               </div>
             ) : search && filteredItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Icon name="search" size={48} className="text-muted-foreground mb-4" />
+                <Icon
+                  name="search"
+                  size={48}
+                  className="text-muted-foreground mb-4"
+                />
                 <h3 className="text-lg font-medium mb-2">No results found</h3>
                 <p className="text-muted-foreground">
                   Try adjusting your search terms.

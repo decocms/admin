@@ -66,23 +66,13 @@ export interface SupportedDatabase {
 // PostgreSQL Implementation
 // ============================================================================
 
-// postgresql://postgres:password-with-invalid:xxxx@host:5432/mcpmesh
-const encodePassword = (connectionString: string) => {
-  const withoutProtocol = connectionString.replace("postgresql://", "");
-  const [userPass] = withoutProtocol.split("@");
-  const [__, password] = userPass?.split(":", 1) ?? [];
-  if (!password) {
-    return connectionString;
-  }
-  return connectionString.replace(password, encodeURIComponent(password));
-};
 class PostgresDatabase implements SupportedDatabase {
   readonly type: DatabaseType = "postgres";
 
   createDialect(config: DatabaseConfig): Dialect {
     return new PostgresDialect({
       pool: new Pool({
-        connectionString: encodePassword(config.connectionString),
+        connectionString: config.connectionString,
         max: config.options?.maxConnections || 10,
         ssl: process.env.DATABASE_PG_SSL === "true" ? true : false,
       }),
@@ -216,8 +206,8 @@ function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
   // Add file:// prefix for absolute paths
   url = url.startsWith("/") ? `file://${url}` : url;
 
-  const parsed = new URL(url);
-  const protocol = parsed.protocol.replace(":", "");
+  const parsed = URL.canParse(url) ? new URL(url) : null;
+  const protocol = parsed?.protocol.replace(":", "") ?? url.split("://")[0];
 
   switch (protocol) {
     case "postgres":
@@ -229,6 +219,9 @@ function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
 
     case "sqlite":
     case "file":
+      if (!parsed?.pathname) {
+        throw new Error("Invalid database URL: " + url);
+      }
       return {
         type: "sqlite",
         connectionString: parsed.pathname,

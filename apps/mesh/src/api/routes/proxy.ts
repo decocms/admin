@@ -166,6 +166,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
   try {
     configurationToken = await issueMeshToken({
       sub: userId,
+      user: { id: userId },
       metadata: {
         state: connection.configuration_state ?? undefined,
         meshUrl: ctx.baseUrl,

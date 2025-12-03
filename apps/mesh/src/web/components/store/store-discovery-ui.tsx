@@ -193,7 +193,7 @@ export function StoreDiscoveryUI({
                   <div>
                     <h2 className="text-lg font-medium mb-3">Tools</h2>
                     <div className="space-y-2">
-                      {data.tools
+                      {(data.tools as Array<Record<string, unknown>>)
                         .slice(0, 5)
                         .map((tool: Record<string, unknown>, idx: number) => (
                           <div

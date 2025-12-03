@@ -145,12 +145,17 @@ export function isStreamableTool(
   return tool && "streamable" in tool && tool.streamable === true;
 }
 
+export interface OnChangeCallback<TSchema extends z.ZodTypeAny = never> {
+  state: z.infer<TSchema>;
+  scopes: string[];
+}
 export interface CreateMCPServerOptions<
   Env = unknown,
   TSchema extends z.ZodTypeAny = never,
 > {
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
   configuration?: {
+    onChange?: (cb: OnChangeCallback<TSchema>) => Promise<void>;
     state?: TSchema;
     scopes?: string[];
   };
@@ -182,9 +187,10 @@ export interface AppContext<TEnv extends DefaultEnv = DefaultEnv> {
   req?: Request;
 }
 
-const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
+const configurationToolsFor = <TSchema extends z.ZodTypeAny = never>({
   state: schema,
   scopes,
+  onChange,
 }: CreateMCPServerOptions<
   unknown,
   TSchema
@@ -193,7 +199,30 @@ const decoChatOAuthToolsFor = <TSchema extends z.ZodTypeAny = never>({
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
   return [
-    // MESH API support
+    ...(onChange
+      ? [
+          createTool({
+            id: "ON_MCP_CONFIGURATION",
+            description: "MCP Configuration On Change",
+            inputSchema: z.object({
+              state: schema ?? z.unknown(),
+              scopes: z
+                .array(z.string())
+                .describe(
+                  "Array of scopes in format 'KEY::SCOPE' (e.g., 'GMAIL::GetCurrentUser')",
+                ),
+            }),
+            outputSchema: z.object({}),
+            execute: async (input) => {
+              await onChange({
+                state: input.context.state,
+                scopes: input.context.scopes,
+              });
+              return Promise.resolve({});
+            },
+          }),
+        ]
+      : []),
     createTool({
       id: "MCP_CONFIGURATION",
       description: "MCP Configuration",
@@ -256,7 +285,7 @@ export const createMCPServer = <
           };
     const tools = await toolsFn(bindings);
 
-    tools.push(...decoChatOAuthToolsFor<TSchema>(options.configuration));
+    tools.push(...configurationToolsFor<TSchema>(options.configuration));
 
     for (const tool of tools) {
       server.registerTool(

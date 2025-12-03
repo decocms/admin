@@ -155,7 +155,10 @@ export interface CreateMCPServerOptions<
 > {
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
   configuration?: {
-    onChange?: (cb: OnChangeCallback<TSchema>) => Promise<void>;
+    onChange?: (
+      env: Env & DefaultEnv<TSchema>,
+      cb: OnChangeCallback<TSchema>,
+    ) => Promise<void>;
     state?: TSchema;
     scopes?: string[];
   };
@@ -214,7 +217,7 @@ const configurationToolsFor = <TSchema extends z.ZodTypeAny = never>({
             }),
             outputSchema: z.object({}),
             execute: async (input) => {
-              await onChange({
+              await onChange(input.runtimeContext.env, {
                 state: input.context.state,
                 scopes: input.context.scopes,
               });

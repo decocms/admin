@@ -5,7 +5,7 @@
  * This allows MCPs to declare their configuration needs and reference other connections.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 

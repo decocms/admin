@@ -53,7 +53,7 @@ function Topbar({
           </Suspense>
         )}
       </AppTopbar.Left>
-      <AppTopbar.Right className="gap-3">
+      <AppTopbar.Right className="gap-2">
         {showDecoChat && onToggleChat && (
           <Button size="sm" variant="default" onClick={onToggleChat}>
             <Avatar

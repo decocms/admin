@@ -113,6 +113,9 @@ export const CONNECTION_CONFIGURE = defineTool({
 
     // Validate all referenced connections
     for (const refConnectionId of referencedConnections) {
+      if (refConnectionId === "self") {
+        continue;
+      }
       // Verify connection exists
       const refConnection =
         await ctx.storage.connections.findById(refConnectionId);

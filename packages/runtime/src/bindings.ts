@@ -61,7 +61,7 @@ function mcpClientFromState(
       : undefined;
   if (typeof connectionId !== "string" && "app_name" in binding) {
     // in case of a binding to an app name, we need to use the new apps/mcp endpoint which will proxy the request to the app but without any token
-    throw new Error("Binding to an app name is not supported");
+    return undefined;
   }
   return mcpClientForConnectionId(connectionId, ctx);
 }

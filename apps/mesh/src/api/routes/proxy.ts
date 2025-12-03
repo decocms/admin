@@ -23,8 +23,8 @@ import {
   type ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
-import { AccessControl } from "../../core/access-control";
 import { issueMeshToken } from "../../auth/jwt";
+import { AccessControl } from "../../core/access-control";
 import type { MeshContext } from "../../core/mesh-context";
 import { HttpServerTransport } from "../http-server-transport";
 import { compose } from "../utils/compose";
@@ -190,7 +190,7 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
 
     // Add configuration token if issued
     if (configurationToken) {
-      headers["x-mesh-token"] = `Bearer ${configurationToken}`;
+      headers["x-mesh-token"] = configurationToken;
     }
 
     // Add custom headers

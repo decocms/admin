@@ -32,10 +32,12 @@ export const DATABASES_RUN_SQL = defineTool({
 
     // Check authorization
     await ctx.access.check();
+    console.log({ input });
     let sqlQuery = input.sql;
     for (let i = 0; i < (input.params?.length ?? 0); i++) {
       sqlQuery = sqlQuery.replace(`?`, input.params?.[i]);
     }
+    console.log({ sqlQuery });
     const result = await sql`${sqlQuery}`.execute(ctx.db);
     // Get user ID
     return {

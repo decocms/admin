@@ -604,6 +604,16 @@ function McpConfigurationForm({
     }
   }, [connection]);
 
+  // Default to all scopes when config is loaded if none are configured
+  useEffect(() => {
+    if (config && !connection.configuration_scopes?.length) {
+      const { scopes } = config as { scopes: string[] };
+      if (scopes && scopes.length > 0) {
+        setSelectedScopes(scopes);
+      }
+    }
+  }, [config, connection.configuration_scopes]);
+
   const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
     setIsSaving(true);
     try {

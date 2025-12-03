@@ -15,7 +15,7 @@ WORKDIR /app
 USER bunuser
 
 # Copy package.json files recursively to preserve monorepo structure
-COPY --chown=bunuser:bunapp package.json bun.lockb .npmrc ./
+COPY --chown=bunuser:bunapp package.json bun.lock .npmrc ./
 COPY --chown=bunuser:bunapp --parents packages/**/package.json ./
 COPY --chown=bunuser:bunapp --parents apps/**/package.json ./
 

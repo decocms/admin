@@ -8,9 +8,6 @@
 // MCP Registry Constants
 // ============================================================================
 
-/** MCP Registry API base URL for DecoCMS */
-export const DECO_MCP_BASE_URL = "https://mcp.decocms.com";
-
 /** Apps to omit from marketplace/discover */
 export const REGISTRY_OMITTED_APPS = [
   "9cecc7d6-d114-44b4-96e3-d4d06faf2c2f",

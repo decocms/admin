@@ -96,11 +96,6 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
   readOnly?: boolean;
 
   /**
-   * Custom card renderer. If not provided, uses CollectionCard with schema.
-   */
-  renderCard?: (item: T) => ReactNode;
-
-  /**
    * Custom table columns. If not provided, generated from schema.
    */
   columns?: TableColumn<T>[];

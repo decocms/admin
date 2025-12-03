@@ -12,21 +12,20 @@ export function CollectionsList<T extends BaseCollectionEntity>({
   data,
   schema,
   viewMode,
-  onViewModeChange,
+  onViewModeChange = () => {},
   search,
   sortKey,
-  sortDirection,
-  onSort,
-  onAction,
-  onItemClick,
-  headerActions,
-  isLoading,
-  emptyState,
-  readOnly,
-  renderCard,
-  columns,
-  hideToolbar,
-  sortableFields,
+  sortDirection = "asc",
+  onSort = () => {},
+  onAction = () => {},
+  onItemClick = () => {},
+  headerActions = null,
+  isLoading = false,
+  emptyState = null,
+  readOnly = false,
+  columns = [],
+  hideToolbar = false,
+  sortableFields = [],
 }: CollectionsListProps<T>) {
   const handleAction = (
     action: "open" | "delete" | "duplicate" | "edit",
@@ -123,11 +122,9 @@ export function CollectionsList<T extends BaseCollectionEntity>({
                 <div
                   key={item.id}
                   onClick={() => onItemClick?.(item)}
-                  className={onItemClick ? "cursor-pointer" : ""}
+                  className="cursor-pointer"
                 >
-                  {renderCard ? (
-                    renderCard(item)
-                  ) : schema ? (
+                  {schema ? (
                     <CollectionCard
                       item={item}
                       schema={schema}

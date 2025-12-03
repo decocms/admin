@@ -484,6 +484,7 @@ function SettingsTab({
               formState={mcpFormState}
               onFormStateChange={setMcpFormState}
               isSaving={isSavingConfig}
+              setIsSaving={setIsSavingConfig}
             />
           </div>
         )}
@@ -644,11 +645,13 @@ function McpConfigurationFormUI({
   formState,
   onFormStateChange,
   isSaving,
+  setIsSaving,
 }: {
   connection: ConnectionEntity;
   formState: Record<string, unknown>;
   onFormStateChange: (state: Record<string, unknown>) => void;
   isSaving: boolean;
+  setIsSaving: (isSaving: boolean) => void;
 }) {
   const toolCaller = useMemo(
     () => createToolCaller(connection.id),
@@ -664,10 +667,6 @@ function McpConfigurationFormUI({
   const [selectedScopes, setSelectedScopes] = useState<string[]>(
     connection.configuration_scopes ?? [],
   );
-  const [formState, setFormState] = useState<Record<string, unknown>>(
-    connection.configuration_state ?? {},
-  );
-  const [isSaving, setIsSaving] = useState(false);
 
   // Initialize scopes from data if needed
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
@@ -676,7 +675,7 @@ function McpConfigurationFormUI({
       setSelectedScopes(connection.configuration_scopes);
     }
     if (connection.configuration_state) {
-      setFormState(connection.configuration_state);
+      onFormStateChange(connection.configuration_state);
     }
   }, [connection]);
 

@@ -56,18 +56,31 @@ const DECO_STORE_CONFIG = {
 async function installDecoStore(): Promise<void> {
   try {
     console.log("📦 [CreateOrgDialog] Installing Deco Store...");
+    console.log(
+      "📦 [CreateOrgDialog] Config:",
+      JSON.stringify(DECO_STORE_CONFIG, null, 2),
+    );
 
     const toolCaller = createToolCaller();
+    console.log("📦 [CreateOrgDialog] Tool caller created");
+
     const result = await toolCaller("COLLECTION_CONNECTIONS_CREATE", {
       data: DECO_STORE_CONFIG,
     });
 
+    console.log("📦 [CreateOrgDialog] Tool result:", result);
+
     if (result) {
-      console.log("✅ [CreateOrgDialog] Deco Store installed successfully");
+      console.log(
+        "✅ [CreateOrgDialog] Deco Store installed successfully:",
+        result,
+      );
+    } else {
+      console.warn("⚠️  [CreateOrgDialog] Tool returned empty result");
     }
   } catch (error) {
     console.error(
-      "⚠️  [CreateOrgDialog] Failed to install Deco Store (non-blocking):",
+      "❌ [CreateOrgDialog] Failed to install Deco Store (non-blocking):",
       error,
     );
     // Don't throw - we don't want to block organization creation
@@ -123,16 +136,29 @@ export function CreateOrganizationDialog({
       });
 
       if (result?.data?.slug) {
+        const orgSlug = result.data.slug;
+        const orgId = result.data.id;
         console.log(
-          "🎯 [CreateOrgDialog] Organization created:",
-          result.data.slug,
+          "🎯 [CreateOrgDialog] Organization created - slug:",
+          orgSlug,
+          "id:",
+          orgId,
         );
 
         // Install Deco Store after organization creation
+        console.log(
+          "🎯 [CreateOrgDialog] Starting Deco Store installation for org:",
+          orgSlug,
+        );
         await installDecoStore();
+        console.log("🎯 [CreateOrgDialog] Deco Store installation completed");
 
         // Navigate to the new organization
-        navigate({ to: "/$org", params: { org: result.data.slug } });
+        console.log(
+          "🎯 [CreateOrgDialog] Navigating to organization:",
+          orgSlug,
+        );
+        navigate({ to: "/$org", params: { org: orgSlug } });
         onOpenChange(false);
         form.reset();
       } else {

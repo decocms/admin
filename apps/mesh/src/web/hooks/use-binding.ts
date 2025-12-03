@@ -256,3 +256,29 @@ export function useCollectionBindings(
     [connection?.tools],
   );
 }
+
+/**
+ * Check if a connection has any collections (registry capability)
+ * A registry connection is one that exposes collections via COLLECTION_{NAME}_LIST tools
+ */
+function hasCollections(connection: ConnectionEntity): boolean {
+  const collectionNames = extractCollectionNames(connection.tools);
+  return collectionNames.length > 0;
+}
+
+/**
+ * Hook to filter connections that have registry/store capabilities
+ * Returns only connections that expose collections
+ *
+ * @param connections - Array of connections to filter
+ * @returns Filtered array of connections that have collections (registries)
+ */
+export function useRegistryConnections(
+  connections: ConnectionEntity[] | undefined,
+): ConnectionEntity[] {
+  return useMemo(
+    () =>
+      !connections ? [] : connections.filter((conn) => hasCollections(conn)),
+    [connections],
+  );
+}

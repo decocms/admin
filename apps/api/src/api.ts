@@ -45,7 +45,6 @@ import {
   ListToolsMiddleware,
   PrincipalExecutionContext,
   PROJECT_TOOLS,
-  publicRegistryTools,
   ReadOutput,
   runTool,
   SearchOutput,
@@ -59,6 +58,7 @@ import {
   WithTool,
   WorkflowBindingImplOptions,
   wrapToolFn,
+  createToolGroup,
 } from "@deco/sdk/mcp";
 import { getApps, getGroupByAppName } from "@deco/sdk/mcp/groups";
 import { executeTool } from "@deco/sdk/mcp/tools/api";
@@ -78,6 +78,16 @@ import { studio } from "outerbase-browsable-do-enforced";
 import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
+import {
+  DECO_MCP_BASE_URL,
+  MCP_REGISTRY_DECOCMS_KEY,
+  MCP_REGISTRY_DEFAULT_VERSION,
+  MCP_REGISTRY_ICON_MIME_TYPE,
+  MCP_REGISTRY_PUBLISHER_KEY,
+  MCP_REGISTRY_SCHEMA_URL,
+  MCP_REGISTRY_SERVER_TYPE,
+  REGISTRY_OMITTED_APPS,
+} from "./constants.ts";
 import { handleDecopilotStream } from "./decopilot-stream.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
@@ -638,7 +648,7 @@ app.use(withContextMiddleware);
 app.use(setUserMiddleware);
 app.use(withActorsStubMiddleware);
 
-// copy immutable responses to allow workerd to change its headers.
+// copy  responses to allow workerd to change its headers.
 app.use(async (c, next) => {
   await next();
 
@@ -673,15 +683,272 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   });
 });
 
+const ensureISOString = (date: unknown): string => {
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+  if (typeof date === "string") {
+    try {
+      return new Date(date).toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  }
+  return new Date().toISOString();
+};
+
+const mapAppToMCPRegistryServer = (app: any): any => {
+  const serverName = `io.decocms/${app.scope.scope_name}/${app.name}`;
+
+  return {
+    id: app.id,
+    title: app.friendly_name || app.name,
+    created_at: ensureISOString(app.created_at),
+    updated_at: ensureISOString(app.updated_at),
+    _meta: {
+      [MCP_REGISTRY_DECOCMS_KEY]: {
+        id: app.id,
+        verified: app.verified ?? false,
+        scopeName: app.scope.scope_name,
+        appName: app.name,
+      },
+    },
+    server: {
+      $schema: MCP_REGISTRY_SCHEMA_URL,
+      _meta: {
+        [MCP_REGISTRY_PUBLISHER_KEY]: {
+          friendlyName: app.friendly_name ?? null,
+          metadata: app.metadata ?? null,
+          tools: app.tools.map((tool: any) => ({
+            id: tool.id,
+            name: tool.name,
+            description: tool.description ?? null,
+          })),
+        },
+      },
+      name: serverName,
+      title: app.friendly_name || app.name,
+      description: app.description ?? undefined,
+      icons: app.icon
+        ? [
+            {
+              src: app.icon,
+              mimeType: MCP_REGISTRY_ICON_MIME_TYPE,
+            },
+          ]
+        : undefined,
+      remotes: [
+        {
+          type: MCP_REGISTRY_SERVER_TYPE,
+          url: `${DECO_MCP_BASE_URL}/${app.scope.scope_name}/${app.name}/mcp`,
+        },
+      ],
+      version: app.updated_at
+        ? new Date(app.updated_at).toISOString().split("T")[0].replace(/-/g, ".")
+        : MCP_REGISTRY_DEFAULT_VERSION,
+    },
+  };
+};
+
+const mapAppToMCPRegistryServerDetail = (app: any): any => {
+  const base = mapAppToMCPRegistryServer(app);
+  return {
+    ...base,
+    _meta: {
+      ...base._meta,
+      [MCP_REGISTRY_DECOCMS_KEY]: {
+        ...base._meta[MCP_REGISTRY_DECOCMS_KEY],
+        publishedAt: app.created_at
+          ? new Date(app.created_at).toISOString()
+          : undefined,
+        updatedAt: app.updated_at
+          ? new Date(app.updated_at).toISOString()
+          : undefined,
+      },
+    },
+  };
+};
+
+const MCPRegistryServerSchema = z.object({
+  _meta: z.record(z.unknown()).optional(),
+  server: z.object({
+    $schema: z.string().optional(),
+    _meta: z.record(z.unknown()).optional(),
+    name: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    icons: z
+      .array(
+        z.object({
+          src: z.string(),
+          mimeType: z.string().optional(),
+          sizes: z.array(z.string()).optional(),
+          theme: z.enum(["light", "dark"]).optional(),
+        }),
+      )
+      .optional(),
+    remotes: z
+      .array(
+        z.object({
+          type: z.enum(["http", "stdio", "sse"]),
+          url: z.string().optional(),
+          headers: z.array(z.unknown()).optional(),
+        }),
+      )
+      .optional(),
+    packages: z.array(z.unknown()).optional(),
+    repository: z
+      .object({
+        url: z.string(),
+        source: z.string().optional(),
+        subfolder: z.string().optional(),
+      })
+      .optional(),
+    version: z.string().optional(),
+    websiteUrl: z.string().optional(),
+  }),
+});
+
+const createPublicRegistryTools = createToolGroup("Registry", {
+  name: "App Registry (Public)",
+  description: "Discover published apps in the registry.",
+  icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+});
+
+const listPublicRegistryApps = createPublicRegistryTools({
+  name: "COLLECTION_REGISTRY_APP_LIST",
+  description:
+    "List all public apps in the registry with filtering, sorting, and pagination support",
+  inputSchema: z.lazy(() =>
+    z.object({
+      where: z.unknown().optional().describe("Filter expression"),
+      orderBy: z.unknown().optional().describe("Sort expressions"),
+      limit: z.unknown().optional().describe("Maximum number of items to return"),
+      offset: z.unknown().optional().describe("Number of items to skip"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      items: z.array(MCPRegistryServerSchema),
+      totalCount: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Total number of matching items"),
+      hasMore: z
+        .boolean()
+        .optional()
+        .describe("Whether there are more items available"),
+    }),
+  ),
+  handler: async (
+    input, // eslint-disable-line @typescript-eslint/no-unused-vars
+    c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) => {
+    c.resourceAccess.grant();
+
+    const drizzle = c.drizzle;
+    if (!drizzle) {
+      throw new Error("Database context not available");
+    }
+
+    const limit = Math.max(1, Math.min(1000, Number(input?.limit) || 50));
+    const offset = Math.max(0, Number(input?.offset) || 0);
+
+    const apps = await drizzle.query.registryApps.findMany({
+      where: {
+        unlisted: false,
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+      orderBy: (
+        a: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        { desc: descFn }: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      ) => descFn(a.created_at),
+    });
+
+    const filteredApps = apps.filter(
+      (app: any) => !REGISTRY_OMITTED_APPS.includes(app.id),
+    );
+
+    const totalCount = filteredApps.length;
+    const paginated = filteredApps.slice(offset, offset + limit);
+    const hasMore = filteredApps.length > offset + limit;
+
+    const servers = paginated.map((app: any) => mapAppToMCPRegistryServer(app));
+
+    return {
+      items: servers,
+      totalCount,
+      hasMore,
+    };
+  },
+});
+
+const getPublicRegistryApp = createPublicRegistryTools({
+  name: "COLLECTION_REGISTRY_APP_GET",
+  description: "Get a public app from the registry by ID",
+  inputSchema: z.lazy(() =>
+    z.object({
+      id: z.string().describe("The ID of the app to get"),
+    }),
+  ),
+  outputSchema: z.lazy(() =>
+    z.object({
+      item: MCPRegistryServerSchema.nullable().describe(
+        "The retrieved server in MCP Registry Spec format, or null if not found or not public",
+      ),
+    }),
+  ),
+  handler: async (
+    { id },
+    c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) => {
+    c.resourceAccess.grant();
+
+    const drizzle = c.drizzle;
+    if (!drizzle) {
+      throw new Error("Database context not available");
+    }
+
+    // Query for the app by ID
+    const app = await drizzle.query.registryApps.findFirst({
+      where: {
+        id,
+        unlisted: false,
+      },
+      with: {
+        tools: true,
+        scope: { columns: { scope_name: true } },
+      },
+    });
+
+    if (!app || REGISTRY_OMITTED_APPS.includes(app.id)) {
+      return {
+        item: null,
+      };
+    }
+
+    const serverData = mapAppToMCPRegistryServerDetail(app as any);
+
+    return {
+      item: serverData,
+    };
+  },
+});
+
+// Export public registry tools
+const publicRegistryTools = [
+  listPublicRegistryApps,
+  getPublicRegistryApp,
+] as const;
+
 const globalMcpHandler = createMCPHandlerFor(GLOBAL_TOOLS);
 app.all("/mcp", globalMcpHandler);
 app.all("/mcp/tool/:toolName", globalMcpHandler);
-
-// Public Registry MCP endpoint - NO authentication required
-// Exposes only: COLLECTION_REGISTRY_APP_LIST and COLLECTION_REGISTRY_APP_GET
-const publicRegistryMcpHandler = createMCPHandlerFor(publicRegistryTools);
-app.all("/registry/mcp", publicRegistryMcpHandler);
-app.all("/registry/mcp/tool/:toolName", publicRegistryMcpHandler);
 
 app.get("/mcp/groups", (ctx) => {
   return ctx.json(getApps());
@@ -805,8 +1072,14 @@ app.all(
   "/mcp/:group",
   createMCPHandlerFor(async (ctx) => {
     const group = getGroupByAppName(ctx.req.param("group"));
-    const tools = await projectTools(ctx);
 
+    // For public registry, use public tools (no authentication required)
+    if (group === WellKnownMcpGroups.Registry) {
+      return publicRegistryTools;
+    }
+
+    // For other groups, use project tools first, then global tools
+    const tools = await projectTools(ctx);
     const found = tools.filter((tool) => tool.group === group);
     if (found.length > 0) {
       return found;

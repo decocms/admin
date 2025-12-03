@@ -4,7 +4,7 @@ import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function StorePage() {
   const { org } = useProjectContext();
@@ -12,13 +12,7 @@ export default function StorePage() {
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
   const { data: connections = [] } = useConnections();
 
-  // Auto-select if only one registry exists
-  useEffect(() => {
-    const firstConnection = connections[0];
-    if (connections.length === 1 && !selectedRegistry && firstConnection) {
-      setSelectedRegistry(firstConnection.id);
-    }
-  }, [connections, selectedRegistry]);
+  const effectiveRegistry = selectedRegistry || connections[0]?.id || "";
 
   const handleAddNewRegistry = () => {
     navigate({
@@ -45,7 +39,7 @@ export default function StorePage() {
                     name: c.title,
                     icon: c.icon || undefined,
                   }))}
-                  value={selectedRegistry}
+                  value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}
                   placeholder="Select store..."
@@ -58,8 +52,8 @@ export default function StorePage() {
 
       {/* Content Section */}
       <div className="h-full flex flex-col overflow-hidden">
-        {selectedRegistry ? (
-          <StoreDiscovery registryId={selectedRegistry} />
+        {effectiveRegistry ? (
+          <StoreDiscovery registryId={effectiveRegistry} />
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
             <EmptyState
@@ -81,7 +75,7 @@ export default function StorePage() {
                     name: c.title,
                     icon: c.icon || undefined,
                   }))}
-                  value={selectedRegistry}
+                  value={effectiveRegistry}
                   onValueChange={setSelectedRegistry}
                   onAddNew={handleAddNewRegistry}
                   placeholder="Select store..."

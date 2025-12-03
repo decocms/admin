@@ -11,6 +11,7 @@ import {
 import { RegistryItemCard, type MCPRegistryServer } from "./registry-item-card";
 import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
+import { authClient } from "@/web/lib/auth-client";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -42,6 +43,7 @@ function extractItemData(item: RegistryItem) {
 function extractConnectionData(
   item: RegistryItem | MCPRegistryServer,
   organizationId: string,
+  userId: string,
 ) {
   // Cast server to access MCP-specific properties
   const server = item.server as MCPRegistryServer["server"] | undefined;
@@ -81,7 +83,7 @@ function extractConnectionData(
     metadata: { source: "store", registry_item_id: item.id },
     created_at: now,
     updated_at: now,
-    created_by: "system", // Will be replaced by the server with actual user ID
+    created_by: userId,
     organization_id: organizationId,
     tools: null,
     bindings: null,
@@ -101,11 +103,12 @@ export function StoreDiscoveryUI({
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const connectionsCollection = useConnectionsCollection();
+  const { data: session } = authClient.useSession();
 
   const handleInstall = async () => {
-    if (!selectedItem || !org) return;
+    if (!selectedItem || !org || !session?.user?.id) return;
 
-    const connectionData = extractConnectionData(selectedItem, org);
+    const connectionData = extractConnectionData(selectedItem, org, session.user.id);
 
     if (!connectionData.connection_url) {
       toast.error("This app cannot be installed: no connection URL available");

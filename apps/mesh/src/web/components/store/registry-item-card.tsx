@@ -5,8 +5,6 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
-export { Icon };
-
 /**
  * MCP Registry Server structure from LIST response
  */

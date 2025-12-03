@@ -73,47 +73,6 @@ const Mappers = {
   }),
 };
 
-/**
- * Helper to ensure date is ISO string
- */
-const ensureISOString = (date: unknown): string => {
-  if (date instanceof Date) {
-    return date.toISOString();
-  }
-  if (typeof date === "string") {
-    // Validate it's a valid ISO string, if not try to parse and re-serialize
-    try {
-      return new Date(date).toISOString();
-    } catch {
-      return new Date().toISOString();
-    }
-  }
-  return new Date().toISOString();
-};
-
-/**
- * Maps a database app to public representation
- * Removes sensitive fields like connection, workspace, and unlisted status
- * Used by public registry tools
- */
-export const mapAppToPublic = (app: DbApp) => ({
-  id: app.id,
-  title: app.friendly_name || app.name, // Use friendly_name as title, fallback to name
-  scopeName: app.scope.scope_name,
-  appName: app.name,
-  description: app.description ?? null,
-  icon: app.icon ?? null,
-  verified: app.verified ?? false,
-  friendlyName: app.friendly_name ?? null,
-  tools: app.tools.map(Mappers.mapTool),
-  metadata: app.metadata ?? null,
-  // Audit fields - ensure proper ISO string format
-  created_at: ensureISOString(app.created_at),
-  updated_at: ensureISOString(app.updated_at),
-  created_by: undefined, // Not tracked in current schema
-  updated_by: undefined, // Not tracked in current schema
-});
-
 const Filters = {
   searchApp: (query?: string) => {
     return query

@@ -10,8 +10,8 @@
 import { existsSync, mkdirSync } from "fs";
 import { type Dialect, Kysely, PostgresDialect, sql } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
-import { Pool } from "pg";
 import * as path from "path";
+import { Pool } from "pg";
 import type { Database as DatabaseSchema } from "../storage/types";
 
 // ============================================================================
@@ -66,13 +66,23 @@ export interface SupportedDatabase {
 // PostgreSQL Implementation
 // ============================================================================
 
+// postgresql://postgres:password-with-invalid:xxxx@host:5432/mcpmesh
+const encodePassword = (connectionString: string) => {
+  const withoutProtocol = connectionString.replace("postgresql://", "");
+  const [userPass] = withoutProtocol.split("@");
+  const [__, password] = userPass?.split(":", 1) ?? [];
+  if (!password) {
+    return connectionString;
+  }
+  return connectionString.replace(password, encodeURIComponent(password));
+};
 class PostgresDatabase implements SupportedDatabase {
   readonly type: DatabaseType = "postgres";
 
   createDialect(config: DatabaseConfig): Dialect {
     return new PostgresDialect({
       pool: new Pool({
-        connectionString: config.connectionString,
+        connectionString: encodePassword(config.connectionString),
         max: config.options?.maxConnections || 10,
         ssl: process.env.DATABASE_PG_SSL === "true" ? true : false,
       }),

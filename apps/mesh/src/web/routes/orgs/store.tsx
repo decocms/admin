@@ -4,13 +4,21 @@ import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
   const { data: connections = [] } = useConnections();
+
+  // Auto-select if only one registry exists
+  useEffect(() => {
+    const firstConnection = connections[0];
+    if (connections.length === 1 && !selectedRegistry && firstConnection) {
+      setSelectedRegistry(firstConnection.id);
+    }
+  }, [connections, selectedRegistry]);
 
   const handleAddNewRegistry = () => {
     // Navega para a página de connections com a ação de criar

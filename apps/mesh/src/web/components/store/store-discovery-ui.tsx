@@ -12,43 +12,66 @@ interface StoreDiscoveryUIProps {
   items: RegistryItem[];
   isLoading: boolean;
   error: Error | null;
-  onItemClick: (item: RegistryItem) => void;
+}
+
+/** Helper to extract data from different JSON structures */
+function extractItemData(item: RegistryItem) {
+  const publisherMeta = item.server?._meta?.["io.decocms/publisher-provided"];
+  const decoMeta = item._meta?.["io.decocms"];
+
+  return {
+    name: item.name || item.title || item.server?.title || "Unnamed Item",
+    description: item.description || item.summary || item.server?.description || "",
+    icon: item.icon || item.image || item.logo || item.server?.icons?.[0]?.src,
+    verified: item.verified || decoMeta?.verified,
+    publisher: item.publisher || decoMeta?.scopeName || "Unknown",
+    tools: item.tools || item.server?.tools || publisherMeta?.tools || [],
+    models: item.models || item.server?.models || publisherMeta?.models || [],
+    emails: item.emails || item.server?.emails || publisherMeta?.emails || [],
+    analytics: item.analytics || item.server?.analytics || publisherMeta?.analytics,
+    cdn: item.cdn || item.server?.cdn || publisherMeta?.cdn,
+  };
 }
 
 export function StoreDiscoveryUI({
   items,
   isLoading,
   error,
-  onItemClick,
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
 
-  // Featured items (first 3)
-  const featuredItems = useMemo(() => {
-    return items.slice(0, 3);
+  // Verified items
+  const verifiedItems = useMemo(() => {
+    return items.filter(
+      (item) =>
+        item.verified === true ||
+        item._meta?.["io.decocms"]?.verified === true ||
+        item.meta?.verified === true
+    );
   }, [items]);
 
   // Filtered items based on search
   const filteredItems = useMemo(() => {
     if (!search) return items;
-
     const searchLower = search.toLowerCase();
     return items.filter(
       (item) =>
-        item.name.toLowerCase().includes(searchLower) ||
-        (item.description?.toLowerCase() ?? "").includes(searchLower)
+        (item.name || item.title || "").toLowerCase().includes(searchLower) ||
+        (item.description || item.server?.description || "")
+          .toLowerCase()
+          .includes(searchLower)
     );
   }, [items, search]);
 
-  // Items for "All" section (excluding featured)
+  // Non-verified items
   const allItems = useMemo(() => {
     return filteredItems.filter(
-      (item) => !featuredItems.find((f) => f.id === item.id)
+      (item) => !verifiedItems.find((v) => v.id === item.id)
     );
-  }, [filteredItems, featuredItems]);
+  }, [filteredItems, verifiedItems]);
 
-  // Search results (limited to 7)
+  // Search results (limited)
   const searchResults = useMemo(() => {
     if (!search) return [];
     return filteredItems.slice(0, 7);
@@ -56,43 +79,158 @@ export function StoreDiscoveryUI({
 
   const handleItemClick = (item: RegistryItem) => {
     setSelectedItem(item);
-    onItemClick(item);
   };
 
-  // Show selected item details when clicked
+  // Detail view
   if (selectedItem) {
+    const data = extractItemData(selectedItem);
+
+    const availableTabs = [
+      { id: "overview", label: "Overview", visible: true },
+      { id: "tools", label: "Tools", visible: data.tools.length > 0 },
+      { id: "models", label: "Models", visible: data.models.length > 0 },
+      { id: "emails", label: "Emails", visible: data.emails.length > 0 },
+      { id: "analytics", label: "Analytics", visible: !!data.analytics },
+      { id: "cdn", label: "CDN", visible: !!data.cdn },
+    ].filter((tab) => tab.visible);
+
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="shrink-0 bg-background border-b border-border p-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="h-10 w-10 rounded-lg hover:bg-muted flex items-center justify-center"
-              >
-                <Icon name="arrow_back" size={20} />
-              </button>
-              <div className="flex-1">
-                <h1 className="text-lg font-medium">{selectedItem.name}</h1>
-                {selectedItem.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {selectedItem.description}
-                  </p>
-                )}
-              </div>
-            </div>
+        <div className="shrink-0 bg-background border-b border-border px-4 py-3">
+          <div className="max-w-4xl mx-auto">
+            <button
+              onClick={() => setSelectedItem(null)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Icon name="arrow_back" size={20} />
+              Back
+            </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="bg-muted rounded-lg p-4">
-                <pre className="text-xs overflow-x-auto">
-                  {JSON.stringify(selectedItem, null, 2)}
-                </pre>
+          <div className="px-4 py-8">
+            <div className="max-w-4xl mx-auto">
+              {/* Hero */}
+              <div className="flex items-start gap-6 mb-8">
+                <div className="shrink-0 w-24 h-24 rounded-2xl bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center text-3xl font-bold text-primary relative">
+                  {data.icon ? (
+                    <img
+                      src={data.icon}
+                      alt={data.name}
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
+                  ) : (
+                    data.name.substring(0, 2).toUpperCase()
+                  )}
+                  {data.verified && (
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                      <Icon name="check" size={16} className="text-white" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-2xl font-semibold mb-1">{data.name}</h1>
+                      <p className="text-sm text-muted-foreground">
+                        {data.verified && "✓ Verified • "}
+                        {data.publisher}
+                      </p>
+                    </div>
+                    <button className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] text-black font-medium rounded-lg transition-colors flex items-center gap-2">
+                      <Icon name="add" size={20} />
+                      Install App
+                    </button>
+                  </div>
+                  {data.description && (
+                    <p className="text-muted-foreground mt-4">{data.description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabs */}
+              {availableTabs.length > 1 && (
+                <div className="border-b border-border mb-6">
+                  <div className="flex gap-6">
+                    {availableTabs.map((tab, idx) => (
+                      <button
+                        key={tab.id}
+                        className={`px-1 py-3 border-b-2 text-sm font-medium ${
+                          idx === 0
+                            ? "border-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Content sections */}
+              <div className="space-y-8">
+                {data.description && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Overview</h2>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {data.description}
+                    </p>
+                  </div>
+                )}
+
+                {data.tools.length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-medium mb-3">Tools</h2>
+                    <div className="space-y-2">
+                      {data.tools.slice(0, 5).map((tool: any, idx: number) => (
+                        <div
+                          key={tool.id || idx}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">
+                              {tool.name || `Tool ${idx + 1}`}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {tool.description || "No description available"}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <h2 className="text-lg font-medium mb-3">Publisher</h2>
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                      {data.publisher.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium">{data.publisher}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {data.verified ? "Verified Publisher" : "Publisher"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <details className="group">
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                    View raw data
+                  </summary>
+                  <div className="mt-2 bg-muted rounded-lg p-4">
+                    <pre className="text-xs overflow-x-auto">
+                      {JSON.stringify(selectedItem, null, 2)}
+                    </pre>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
@@ -124,9 +262,10 @@ export function StoreDiscoveryUI({
     );
   }
 
+  // Main list view
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky header with search */}
+      {/* Search header */}
       <div className="sticky top-0 z-20 bg-background border-b border-border p-4">
         <div className="max-w-6xl mx-auto">
           <div className="relative">
@@ -146,22 +285,17 @@ export function StoreDiscoveryUI({
                 {searchResults.map((item) => (
                   <RegistryItemCard
                     key={item.id}
-                    {...item}
+                    item={item}
                     onClick={() => handleItemClick(item)}
                   />
                 ))}
-                {searchResults.length === 0 && (
-                  <div className="text-sm text-muted-foreground p-2">
-                    No items found
-                  </div>
-                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Content Section */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
           <div className="max-w-6xl mx-auto">
@@ -183,11 +317,11 @@ export function StoreDiscoveryUI({
               </div>
             ) : (
               <div className="flex flex-col gap-8">
-                {featuredItems.length > 0 && (
+                {verifiedItems.length > 0 && (
                   <RegistryItemsSection
-                    items={featuredItems}
-                    title="Featured Items"
-                    subtitle={`${featuredItems.length} available`}
+                    items={verifiedItems}
+                    title="Verified by Deco"
+                    subtitle={`${verifiedItems.length} verified`}
                     onItemClick={handleItemClick}
                   />
                 )}
@@ -208,4 +342,3 @@ export function StoreDiscoveryUI({
     </div>
   );
 }
-

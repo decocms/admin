@@ -5,15 +5,65 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
+export { Icon };
+
+/**
+ * MCP Registry Server structure from LIST response
+ */
+export interface MCPRegistryServerIcon {
+  src: string;
+  mimeType?: string;
+  sizes?: string[];
+  theme?: "light" | "dark";
+}
+
+export interface MCPRegistryServerMeta {
+  "io.decocms"?: {
+    id: string;
+    verified?: boolean;
+    scopeName?: string;
+    appName?: string;
+  };
+  "io.decocms/publisher-provided"?: {
+    friendlyName?: string | null;
+    tools?: Array<{
+      id: string;
+      name: string;
+      description?: string | null;
+    }>;
+  };
+  [key: string]: unknown;
+}
+
+export interface MCPRegistryServer {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  _meta?: MCPRegistryServerMeta;
+  server: {
+    $schema?: string;
+    _meta?: MCPRegistryServerMeta;
+    name: string;
+    title?: string;
+    description?: string;
+    icons?: MCPRegistryServerIcon[];
+    remotes?: Array<{
+      type: "http" | "stdio" | "sse";
+      url?: string;
+    }>;
+    version?: string;
+  };
+}
+
 interface RegistryItemCardProps {
-  name: string;
-  description?: string;
-  icon?: string;
+  item: MCPRegistryServer;
   onClick: () => void;
 }
 
-function getInitials(name: string): string {
-  return name
+function getInitials(nameStr: string): string {
+  if (!nameStr || typeof nameStr !== "string") return "?";
+  return nameStr
     .split(/[\s\-_]/)
     .map((word) => word[0])
     .join("")
@@ -21,34 +71,56 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function RegistryItemCard({
-  name,
-  description,
-  icon,
-  onClick,
-}: RegistryItemCardProps) {
+export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
+  const name = item.title || item.server?.title || item.id || "Unnamed Item";
+  const description = item.server?.description;
+  const icon = item.server?.icons?.[0]?.src;
   const initials = getInitials(name);
+  const isVerified = item._meta?.["io.decocms"]?.verified ?? false;
+  const scopeName = item._meta?.["io.decocms"]?.scopeName;
+  const toolsCount =
+    item.server?._meta?.["io.decocms/publisher-provided"]?.tools?.length ?? 0;
 
   return (
     <div
       onClick={onClick}
-      className="flex flex-col gap-2 p-4 bg-card rounded-2xl cursor-pointer overflow-hidden border border-border hover:shadow-md transition-shadow h-[116px]"
+      className="flex flex-col gap-2 p-4 bg-card rounded-2xl cursor-pointer overflow-hidden border border-border hover:shadow-md transition-shadow h-[176px] w-[259px]"
     >
       <div className="grid grid-cols-[min-content_1fr] gap-4 h-full">
-        <div className="h-10 w-10 rounded flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary shrink-0">
+        {/* Icon */}
+        <div className="h-10 w-10 rounded flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary shrink-0 overflow-hidden">
           {icon ? (
             <img
               src={icon}
               alt={name}
               className="h-full w-full object-cover rounded"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           ) : (
-            initials
+            <span>{initials}</span>
           )}
         </div>
+
+        {/* Content */}
         <div className="grid grid-cols-1 gap-1 min-w-0">
           <div className="flex items-start gap-1">
             <div className="text-sm font-semibold truncate">{name}</div>
+            {isVerified && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Icon
+                    name="verified"
+                    size={14}
+                    className="text-green-500 shrink-0"
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Verified App</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Icon
@@ -58,16 +130,20 @@ export function RegistryItemCard({
                 />
               </TooltipTrigger>
               <TooltipContent>
-                <p>Registry Item</p>
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold">Registry Item</p>
+                  {scopeName && <p>Scope: {scopeName}</p>}
+                  {toolsCount > 0 && <p>Tools: {toolsCount}</p>}
+                </div>
               </TooltipContent>
             </Tooltip>
           </div>
+
           <div className="text-sm text-muted-foreground line-clamp-2">
-            {description || "No description avASDASDAailable"}
+            {description || "No description available"}
           </div>
         </div>
       </div>
     </div>
   );
 }
-

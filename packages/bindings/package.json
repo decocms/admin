@@ -19,7 +19,8 @@
     "./connection": "./src/core/connection.ts",
     "./client": "./src/core/client/index.ts",
     "./mcp": "./src/well-known/mcp.ts",
-    "./agent": "./src/well-known/agent.ts"
+    "./agent": "./src/well-known/agent.ts",
+    "./workflow": "./src/well-known/workflow.ts"
   },
   "devDependencies": {
     "vitest": "3.2.4"

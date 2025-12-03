@@ -36,8 +36,7 @@ import {
 } from "./email-providers";
 import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 import { createSSOConfig, SSOConfig } from "./sso";
-import { getDatabaseUrl, getDbDialect, getDb } from "../database";
-import { addDefaultRegistry } from "./organization-hooks";
+import { getDatabaseUrl, getDbDialect } from "../database";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -147,46 +146,6 @@ const plugins = [
       owner,
     },
     sendInvitationEmail,
-    // Hooks to auto-provision resources when organizations are created
-    hooks: {
-      create: {
-        after: async (organization) => {
-          console.log("🎯 [HOOK] Organization created:", organization.id);
-
-          try {
-            // Get the creator's user ID from the organization members
-            const db = getDb();
-            console.log(
-              "🔍 [HOOK] Getting owner for organization:",
-              organization.id,
-            );
-
-            const member = await db
-              .selectFrom("member")
-              .select("userId")
-              .where("organizationId", "=", organization.id)
-              .where("role", "=", "owner")
-              .executeTakeFirst();
-
-            console.log("👤 [HOOK] Found owner:", member?.userId || "none");
-
-            if (member?.userId) {
-              console.log("🚀 [HOOK] Adding Deco Store...");
-              // Add default Deco Store registry
-              await addDefaultRegistry(organization.id, member.userId);
-              console.log("✅ [HOOK] Deco Store added successfully");
-            } else {
-              console.warn("⚠️  [HOOK] No owner found for organization");
-            }
-          } catch (error) {
-            console.error(
-              "❌ [HOOK] Error in organization.create.after:",
-              error,
-            );
-          }
-        },
-      },
-    },
   }),
 
   // MCP plugin for OAuth 2.1 server

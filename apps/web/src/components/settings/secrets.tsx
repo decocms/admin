@@ -37,7 +37,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";

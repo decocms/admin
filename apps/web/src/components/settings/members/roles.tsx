@@ -51,7 +51,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { useParams } from "react-router";
 import { UserAvatar } from "../../common/avatar/user.tsx";
 import { useUser } from "../../../hooks/use-user.ts";

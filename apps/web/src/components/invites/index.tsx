@@ -16,7 +16,7 @@ import { timeAgo } from "../../utils/time-ago.ts";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { TopbarLayout } from "../layout/home.tsx";

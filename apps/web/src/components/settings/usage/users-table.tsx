@@ -4,7 +4,7 @@ import { UserAvatar } from "../../common/avatar/user.tsx";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { color } from "./util.ts";
 
 export function UsersTable({

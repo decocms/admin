@@ -49,7 +49,7 @@ import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import { useThread } from "../decopilot/thread-provider.tsx";
 import {

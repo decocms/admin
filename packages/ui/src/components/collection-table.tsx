@@ -10,7 +10,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import type { ReactNode } from "react";
 
-export interface ResourceTableColumn<T> {
+export interface CollectionTableColumn<T> {
   id: string;
   header: ReactNode;
   accessor?: (row: T) => ReactNode;
@@ -21,8 +21,8 @@ export interface ResourceTableColumn<T> {
   wrap?: boolean;
 }
 
-export interface ResourceTableProps<T = Record<string, unknown>> {
-  columns: ResourceTableColumn<T>[];
+export interface CollectionTableProps<T = Record<string, unknown>> {
+  columns: CollectionTableColumn<T>[];
   data: T[];
   sortKey?: string;
   sortDirection?: "asc" | "desc" | null;
@@ -31,7 +31,7 @@ export interface ResourceTableProps<T = Record<string, unknown>> {
   rowClassName?: (row: T) => string | undefined;
 }
 
-export function ResourceTable<T = Record<string, unknown>>({
+export function CollectionTable<T = Record<string, unknown>>({
   columns,
   data,
   sortKey,
@@ -39,24 +39,24 @@ export function ResourceTable<T = Record<string, unknown>>({
   onSort,
   onRowClick,
   rowClassName,
-}: ResourceTableProps<T>) {
+}: CollectionTableProps<T>) {
   function renderSortIcon(_key: string, isActive: boolean) {
-    if (!isActive || !sortDirection) {
-      return null;
-    }
-
     return (
-      <Icon
-        name={sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
-        size={16}
-        className="text-muted-foreground transition-colors"
-      />
+      <div className="w-4 flex items-center justify-center">
+        {isActive && sortDirection && (
+          <Icon
+            name={sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
+            size={16}
+            className="text-muted-foreground transition-colors"
+          />
+        )}
+      </div>
     );
   }
 
   function getHeaderClass(idx: number, total: number) {
     let base =
-      "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-sm h-10 uppercase";
+      "px-3 py-2 text-left font-mono font-normal text-muted-foreground text-xs h-9 uppercase tracking-wide";
     if (idx === total - 1) base += " w-8";
     return base;
   }
@@ -64,8 +64,8 @@ export function ResourceTable<T = Record<string, unknown>>({
   return (
     <div className="w-full bg-background">
       <UITable className="w-full border-collapse">
-        <TableHeader className="sticky top-0 z-10 border-b border-border bg-background">
-          <TableRow className="h-10 !hover:bg-transparent">
+        <TableHeader className="sticky top-0 z-10 border-b-0 bg-muted/30">
+          <TableRow className="h-9 hover:bg-transparent border-b border-border">
             {columns.map((col, idx) => {
               const isActiveSort = sortKey === col.id;
               return (
@@ -73,11 +73,10 @@ export function ResourceTable<T = Record<string, unknown>>({
                   key={col.id}
                   className={cn(
                     getHeaderClass(idx, columns.length),
-                    "group transition-colors",
-                    col.sortable && "hover:bg-accent/50",
+                    "group transition-colors select-none",
+                    col.sortable && "hover:bg-accent cursor-pointer",
                     col.rowClassName,
                   )}
-                  style={{ cursor: col.sortable ? "pointer" : undefined }}
                   onClick={
                     col.sortable && onSort ? () => onSort(col.id) : undefined
                   }
@@ -100,7 +99,7 @@ export function ResourceTable<T = Record<string, unknown>>({
                 key={i}
                 data-row-index={i}
                 className={cn(
-                  "group/data-row transition-colors border-b border-border/50 last:border-b-0 hover:bg-accent/50",
+                  "group/data-row transition-colors border-b-0 hover:bg-accent/50",
                   onRowClick ? "cursor-pointer" : "",
                   extraClasses,
                 )}
@@ -110,10 +109,10 @@ export function ResourceTable<T = Record<string, unknown>>({
                   <TableCell
                     key={col.id}
                     className={cn(
-                      "p-2 h-[36px] align-middle min-w-0 text-sm text-foreground",
+                      "px-3 py-4 h-16 align-middle min-w-0 text-sm text-foreground",
                       col.cellClassName,
                       col.wrap
-                        ? "whitespace-normal break-words"
+                        ? "whitespace-normal wrap-break-word"
                         : "truncate overflow-hidden whitespace-nowrap",
                     )}
                   >
@@ -133,5 +132,5 @@ export function ResourceTable<T = Record<string, unknown>>({
   );
 }
 
-export type { ResourceTableColumn as TableColumn };
-export { ResourceTable as Table };
+export type { CollectionTableColumn as TableColumn };
+export { CollectionTable as Table };

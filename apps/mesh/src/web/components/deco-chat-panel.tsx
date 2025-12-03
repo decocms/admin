@@ -156,6 +156,7 @@ export function DecoChatPanel() {
   } | null>(`${locator}:selected-agent`, () => null);
 
   // Initialize with first model
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (models.length > 0 && !selectedModelState) {
       const firstModel = models[0];
@@ -166,6 +167,7 @@ export function DecoChatPanel() {
   }, [models, selectedModelState, setSelectedModelState]);
 
   // Initialize with first agent
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (agents.length > 0 && !selectedAgentState) {
       const firstAgent = agents[0];
@@ -243,6 +245,7 @@ export function DecoChatPanel() {
   const isEmpty = chat.messages.length === 0;
 
   // Auto-scroll to bottom when messages change
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (sentinelRef.current && chat.messages.length > 0) {
       sentinelRef.current.scrollIntoView({

@@ -13,3 +13,10 @@ export {
   type ToolBinder,
   type ToolWithSchemas,
 } from "./core/binder";
+
+// Re-export registry binding types
+export {
+  MCPRegistryServerSchema,
+  type RegistryAppCollectionEntity,
+  REGISTRY_APP_BINDING,
+} from "./well-known/registry";

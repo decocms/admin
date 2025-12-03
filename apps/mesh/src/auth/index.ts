@@ -93,6 +93,7 @@ export const authConfig: Partial<BetterAuthOptions> & {
   magicLinkConfig?: MagicLinkConfig;
   emailProviders?: EmailProviderConfig[];
   inviteEmailProviderId?: string;
+  jwt?: { secret?: string };
 } = loadAuthConfig();
 
 let sendInvitationEmail: OrganizationOptions["sendInvitationEmail"] = undefined;

@@ -1,32 +1,33 @@
-import { Outlet, useParams } from "@tanstack/react-router";
+import { DecoChatPanel } from "@/web/components/deco-chat-panel";
+import { MeshSidebar } from "@/web/components/mesh-sidebar";
+import { MeshOrgSwitcher } from "@/web/components/org-switcher";
+import { SplashScreen } from "@/web/components/splash-screen";
+import { MeshUserMenu } from "@/web/components/user-menu";
+import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
+import { authClient } from "@/web/lib/auth-client";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
+import { Locator } from "@/web/lib/locator";
+import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
+import { ProjectContextProvider } from "@/web/providers/project-context-provider";
 import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
-import {
-  SidebarInset,
-  SidebarLayout,
-  SidebarProvider,
-} from "@deco/ui/components/sidebar.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@deco/ui/components/resizable.tsx";
 import { SidebarToggleButton } from "@deco/ui/components/sidebar-toggle-button.tsx";
-import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
-import { MeshUserMenu } from "@/web/components/user-menu";
-import { authClient } from "@/web/lib/auth-client";
+import {
+  SidebarInset,
+  SidebarLayout,
+  SidebarProvider,
+} from "@deco/ui/components/sidebar.tsx";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState, Suspense, useCallback } from "react";
-import { SplashScreen } from "@/web/components/splash-screen";
-import { MeshSidebar } from "@/web/components/mesh-sidebar";
-import { MeshOrgSwitcher } from "@/web/components/org-switcher";
-import { ProjectContextProvider } from "@/web/providers/project-context-provider";
-import { Locator } from "@/web/lib/locator";
-import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
-import { DecoChatPanel } from "@/web/components/deco-chat-panel";
-import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
-import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { Outlet, useParams } from "@tanstack/react-router";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -87,6 +88,7 @@ function OrgContextSetter({
     },
   });
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (!org) {
       setIsReady(true);
@@ -115,6 +117,10 @@ export default function ShellLayout() {
   const toggleChat = useCallback(
     () => setChatOpen((prev) => !prev),
     [setChatOpen],
+  );
+  const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
+    LOCALSTORAGE_KEYS.decoChatPanelWidth(),
+    30,
   );
   const hasOrg = !!org;
 
@@ -152,9 +158,10 @@ export default function ShellLayout() {
                           <>
                             <ResizableHandle withHandle />
                             <ResizablePanel
-                              defaultSize={30}
+                              defaultSize={chatPanelWidth}
                               minSize={20}
                               className="min-w-0"
+                              onResize={setChatPanelWidth}
                             >
                               <Suspense fallback={<div>Loading chat...</div>}>
                                 <DecoChatPanel />

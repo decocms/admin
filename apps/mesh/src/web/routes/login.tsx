@@ -12,6 +12,7 @@ function RunSSO({
   providerId: string;
   callbackURL: string;
 }) {
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     (async () => {
       await authClient.signIn.sso({

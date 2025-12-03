@@ -40,6 +40,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { IChangeEvent } from "@rjsf/core";
 import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -119,15 +120,8 @@ export default function ConnectionInspectorView() {
     ? normalizeUrl(connection.connection_url)
     : "";
 
-  // Use proxy URL when connection has a token (OAuth completed)
-  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
-  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
-  const connectionUrl = connection?.connection_token
-    ? mcpProxyUrl.href
-    : normalizedUrl;
-
   const mcp = useMcp({
-    url: connectionUrl,
+    url: normalizedUrl,
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,
@@ -373,7 +367,8 @@ function SettingsTab({
     },
   });
 
-  // Reset form when connection changes
+  // Reset form when connection changes (external update)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     connectionForm.reset({
       title: connection.title,
@@ -666,6 +661,54 @@ function McpConfigurationFormUI({
     toolInputParams: {},
   });
 
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(
+    connection.configuration_scopes ?? [],
+  );
+  const [formState, setFormState] = useState<Record<string, unknown>>(
+    connection.configuration_state ?? {},
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize scopes from data if needed
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    if (connection.configuration_scopes) {
+      setSelectedScopes(connection.configuration_scopes);
+    }
+    if (connection.configuration_state) {
+      setFormState(connection.configuration_state);
+    }
+  }, [connection]);
+
+  // Default to all scopes when config is loaded if none are configured
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    if (config && !connection.configuration_scopes?.length) {
+      const { scopes } = config as { scopes: string[] };
+      if (scopes && scopes.length > 0) {
+        setSelectedScopes(scopes);
+      }
+    }
+  }, [config, connection.configuration_scopes]);
+
+  const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
+    setIsSaving(true);
+    try {
+      const meshToolCaller = createToolCaller();
+      await meshToolCaller("CONNECTION_CONFIGURE", {
+        connectionId: connection.id,
+        scopes: selectedScopes,
+        state: data.formData,
+      });
+      toast.success("Configuration saved successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save configuration: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -859,7 +902,13 @@ function ToolsList({
                     className="cursor-pointer transition-colors"
                     onClick={() =>
                       navigate({
-                        to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                        params: {
+                          org: org ?? "",
+                          connectionId: connectionId ?? "",
+                          collectionName: "tools",
+                          itemId: encodeURIComponent(tool.name),
+                        },
                       })
                     }
                   >
@@ -894,7 +943,13 @@ function ToolsList({
             onSort={handleSort}
             onRowClick={(tool: { name: string; description?: string }) =>
               navigate({
-                to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                params: {
+                  org: org ?? "",
+                  connectionId: connectionId ?? "",
+                  collectionName: "tools",
+                  itemId: encodeURIComponent(tool.name),
+                },
               })
             }
             emptyState={

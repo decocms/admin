@@ -237,8 +237,6 @@ export default function ConnectionInspectorView() {
     },
   });
 
-  console.log({ mcp });
-
   if (!connection && connectionId) {
     return (
       <div className="flex h-full items-center justify-center bg-background">

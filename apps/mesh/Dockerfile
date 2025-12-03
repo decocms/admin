@@ -31,10 +31,6 @@ WORKDIR /app
 # Copy the rest of the files (.dockerignore excludes node_modules)
 COPY --chown=bunuser:bunapp . .
 
-# Build packages/bindings first (workspace dependency)
-WORKDIR /app/packages/bindings
-RUN bun run build
-
 # Build mesh app (client and server - includes migrate)
 WORKDIR /app/apps/mesh
 RUN bun run build:client

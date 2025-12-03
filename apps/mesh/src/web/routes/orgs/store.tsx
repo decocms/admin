@@ -2,6 +2,7 @@ import { StoreRegistrySelect } from "@/web/components/store-registry-select";
 import { EmptyState } from "@/web/components/empty-state";
 import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
+import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -10,16 +11,19 @@ export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: connections, isLoading, isError } = useConnections();
+  const { data: allConnections, isLoading, isError } = useConnections();
+
+  // Filter to only show registry connections (those with collections)
+  const registryConnections = useRegistryConnections(allConnections);
 
   const registryOptions = useMemo(
     () =>
-      (connections ?? []).map((c) => ({
+      registryConnections.map((c) => ({
         id: c.id,
         name: c.title,
         icon: c.icon || undefined,
       })),
-    [connections],
+    [registryConnections],
   );
 
   if (isLoading) {
@@ -38,8 +42,8 @@ export default function StorePage() {
     );
   }
 
-  const safeConnections = connections ?? [];
-  const effectiveRegistry = selectedRegistry || safeConnections[0]?.id || "";
+  const effectiveRegistry =
+    selectedRegistry || registryConnections[0]?.id || "";
 
   const handleAddNewRegistry = () => {
     navigate({

@@ -10,6 +10,7 @@ import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import {
   useConnection,
+  useConnections,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
@@ -18,7 +19,6 @@ import {
 } from "@/web/hooks/use-binding";
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
-import { useToolCall } from "@/web/hooks/use-tool-call";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -40,9 +40,6 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { IChangeEvent } from "@rjsf/core";
-import RJSForm from "@rjsf/shadcn";
-import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, Lock } from "lucide-react";
@@ -68,11 +65,10 @@ export default function ConnectionInspectorView() {
   const collections = useCollectionBindings(connection);
 
   // Detect MCP binding
-  const mcpBindingConnections = useBindingConnections(
+  useBindingConnections(
     connection ? [connection] : [],
     "MCP",
   );
-  const hasMcpBinding = mcpBindingConnections.length > 0;
 
   // Update connection handler
   const handleUpdateConnection = async (
@@ -310,7 +306,6 @@ export default function ConnectionInspectorView() {
               <SettingsTab
                 connection={connection}
                 onUpdate={handleUpdateConnection}
-                hasMcpBinding={hasMcpBinding}
               />
             </div>
           ) : (
@@ -344,13 +339,11 @@ type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 interface SettingsTabProps {
   connection: ConnectionEntity;
   onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
-  hasMcpBinding: boolean;
 }
 
 function SettingsTab({
   connection,
   onUpdate,
-  hasMcpBinding,
 }: SettingsTabProps) {
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -477,14 +470,13 @@ function SettingsTab({
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
-        {hasMcpBinding && (
+        {true && (
           <div className="w-3/5 min-w-0 overflow-auto">
             <McpConfigurationFormUI
               connection={connection}
               formState={mcpFormState}
               onFormStateChange={setMcpFormState}
               isSaving={isSavingConfig}
-              setIsSaving={setIsSavingConfig}
             />
           </div>
         )}
@@ -640,83 +632,144 @@ function ConnectionSettingsFormUI({
   );
 }
 
+/**
+ * Parsed configuration field from schema
+ */
+interface ConfigField {
+  id: string;
+  label: string;
+  type: "string" | "binding";
+  bindingType?: string; // e.g., "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254"
+  value: string;
+}
+
+/**
+ * Parse the stateSchema to extract configuration fields
+ */
+function parseSchemaToFields(
+  schema: Record<string, unknown>,
+  formState: Record<string, unknown>,
+): ConfigField[] {
+  const fields: ConfigField[] = [];
+  const properties = schema.properties as Record<string, unknown> | undefined;
+
+  if (!properties) return fields;
+
+  for (const [key, propSchema] of Object.entries(properties)) {
+    const prop = propSchema as Record<string, unknown>;
+    const propProperties = prop.properties as Record<string, unknown> | undefined;
+
+    // Get current value from formState
+    const stateValue = formState[key] as Record<string, unknown> | undefined;
+    const currentValue = (stateValue?.value as string) || "";
+
+    // Check if this field has a __type (binding) property
+    const typeProperty = propProperties?.__type as Record<string, unknown> | undefined;
+    const bindingType = typeProperty?.const as string | undefined;
+
+    fields.push({
+      id: key,
+      label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      type: bindingType ? "binding" : "string",
+      bindingType,
+      value: currentValue,
+    });
+  }
+
+  return fields;
+}
+
 function McpConfigurationFormUI({
-  connection,
   formState,
   onFormStateChange,
   isSaving,
-  setIsSaving,
 }: {
   connection: ConnectionEntity;
   formState: Record<string, unknown>;
   onFormStateChange: (state: Record<string, unknown>) => void;
   isSaving: boolean;
-  setIsSaving: (isSaving: boolean) => void;
 }) {
-  const toolCaller = useMemo(
-    () => createToolCaller(connection.id),
-    [connection.id],
-  );
+  // Fetch all connections to use for binding dropdowns
+  const { data: allConnections } = useConnections();
 
-  const { data: config, isLoading } = useToolCall({
-    toolCaller,
-    toolName: "MCP_CONFIGURATION",
-    toolInputParams: {},
-  });
-
-  const [selectedScopes, setSelectedScopes] = useState<string[]>(
-    connection.configuration_scopes ?? [],
-  );
-
-  // Initialize scopes from data if needed
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    if (connection.configuration_scopes) {
-      setSelectedScopes(connection.configuration_scopes);
-    }
-    if (connection.configuration_state) {
-      onFormStateChange(connection.configuration_state);
-    }
-  }, [connection]);
-
-  // Default to all scopes when config is loaded if none are configured
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    if (config && !connection.configuration_scopes?.length) {
-      const { scopes } = config as { scopes: string[] };
-      if (scopes && scopes.length > 0) {
-        setSelectedScopes(scopes);
-      }
-    }
-  }, [config, connection.configuration_scopes]);
-
-  const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
-    setIsSaving(true);
-    try {
-      const meshToolCaller = createToolCaller();
-      await meshToolCaller("CONNECTION_CONFIGURE", {
-        connectionId: connection.id,
-        scopes: selectedScopes,
-        state: data.formData,
-      });
-      toast.success("Configuration saved successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to save configuration: ${message}`);
-    } finally {
-      setIsSaving(false);
-    }
+  // Mock stateSchema - in real implementation this would come from MCP_CONFIGURATION tool
+  const stateSchema: Record<string, unknown> = {
+    type: "object",
+    properties: {
+      VEO3_CONTRACT: {
+        type: "object",
+        properties: {
+          value: { type: "string" },
+          __type: {
+            type: "string",
+            const: "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254",
+            default: "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254",
+          },
+        },
+        required: ["value"],
+        additionalProperties: false,
+      },
+      FILE_SYSTEM: {
+        type: "object",
+        properties: {
+          value: { type: "string" },
+          __type: {
+            type: "string",
+            const: "@deco/file-system",
+            default: "@deco/file-system",
+          },
+        },
+        required: ["value"],
+        additionalProperties: false,
+      },
+      API_KEY: {
+        type: "object",
+        properties: {
+          value: { type: "string" },
+        },
+        required: ["value"],
+        additionalProperties: false,
+      },
+    },
+    required: ["VEO3_CONTRACT", "FILE_SYSTEM", "API_KEY"],
+    additionalProperties: false,
+    $schema: "http://json-schema.org/draft-07/schema#",
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  // Parse schema to get field definitions
+  const fields = useMemo(
+    () => parseSchemaToFields(stateSchema, formState),
+    [formState],
+  );
 
-  if (!config) {
+  // Get available options for a binding type
+  const getBindingOptions = (_bindingType: string) => {
+    // TODO: Filter connections that match this binding type
+    // For now, return all connections - in real implementation,
+    // you would filter by connections that implement the binding
+    return (allConnections || []).map((conn) => ({
+      value: conn.id,
+      label: conn.title,
+      icon: conn.icon,
+    }));
+  };
+
+  const handleValueChange = (fieldId: string, newValue: string) => {
+    const currentItem = formState[fieldId] as Record<string, unknown> | undefined;
+    // Find the field to get the __type
+    const field = fields.find((f) => f.id === fieldId);
+
+    onFormStateChange({
+      ...formState,
+      [fieldId]: {
+        ...currentItem,
+        value: newValue,
+        ...(field?.bindingType && { __type: field.bindingType }),
+      },
+    });
+  };
+
+  if (fields.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
         No configuration available
@@ -724,49 +777,74 @@ function McpConfigurationFormUI({
     );
   }
 
-  const { scopes, stateSchema } = config as {
-    scopes: string[];
-    stateSchema: Record<string, unknown>;
-  };
-
   return (
-    <div className="flex flex-col h-full p-5">
-      {/* Scopes section */}
-      {scopes && scopes.length > 0 && (
-        <div className="mb-6">
-          <h4 className="text-sm font-medium mb-3">Required Scopes</h4>
-          <div className="flex flex-wrap gap-2">
-            {scopes.map((scope) => (
-              <span
-                key={scope}
-                className="px-2.5 py-1 text-xs bg-muted rounded-md text-muted-foreground font-mono"
-              >
-                {scope}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Configuration form using RJSForm */}
-      <div className="flex-1">
-        <h4 className="text-sm font-medium mb-3">Configuration</h4>
-        <RJSForm
-          schema={stateSchema}
-          validator={validator}
-          formData={formState}
-          onChange={(e) => onFormStateChange(e.formData ?? {})}
-          disabled={isSaving}
-          uiSchema={{
-            "ui:submitButtonOptions": {
-              norender: true,
-            },
-          }}
+    <div className="flex flex-col h-full">
+      {fields.map((field, index) => (
+        <div
+          key={field.id}
+          className={`flex items-center gap-3 p-5 ${
+            index < fields.length - 1 ? "border-b border-border" : ""
+          }`}
         >
-          {/* Empty children to prevent default submit button */}
-          <></>
-        </RJSForm>
-      </div>
+          {/* Integration Icon */}
+          <IntegrationIcon
+            icon={null}
+            name={field.label}
+            size="sm"
+            className="shrink-0"
+          />
+
+          {/* Label */}
+          <span className="flex-1 text-sm text-foreground truncate">
+            {field.label}
+          </span>
+
+          {/* Dynamic Input based on field type */}
+          {field.type === "binding" ? (
+            // Binding field - Show Select dropdown with available connections
+            <Select
+              value={field.value}
+              onValueChange={(value) => handleValueChange(field.id, value)}
+              disabled={isSaving}
+            >
+              <SelectTrigger className="w-[200px] h-8 rounded-lg border-input bg-background">
+                <SelectValue placeholder="Select connection..." />
+              </SelectTrigger>
+              <SelectContent>
+                {getBindingOptions(field.bindingType!).length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No connections available
+                  </SelectItem>
+                ) : (
+                  getBindingOptions(field.bindingType!).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        {option.icon && (
+                          <img
+                            src={option.icon}
+                            alt=""
+                            className="w-4 h-4 rounded"
+                          />
+                        )}
+                        <span className="truncate">{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          ) : (
+            // String field - Show Input
+            <Input
+              value={field.value}
+              onChange={(e) => handleValueChange(field.id, e.target.value)}
+              disabled={isSaving}
+              placeholder="Enter value..."
+              className="w-[200px] h-8 rounded-lg"
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 }

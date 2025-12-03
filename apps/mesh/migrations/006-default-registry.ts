@@ -43,7 +43,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
           ${connectionId},
           ${org.id},
           ${org.createdBy || "system"},
-          ${""},
+          ${"Deco Store"},
           ${"Official deco MCP registry with curated integrations"},
           ${"https://assets.decocache.com/decocms/00ccf6c3-9e13-4517-83b0-75ab84554bb9/596364c63320075ca58483660156b6d9de9b526e.png"},
           ${"deco-registry"},

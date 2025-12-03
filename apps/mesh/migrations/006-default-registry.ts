@@ -8,6 +8,70 @@
 import { type Kysely, sql } from "kysely";
 import { nanoid } from "nanoid";
 
+// Registry tools discovered from https://api.decocms.com/mcp/registry
+const REGISTRY_TOOLS = [
+	{
+		name: "COLLECTION_REGISTRY_APP_LIST",
+		description:
+			"List all public apps in the registry with filtering, sorting, and pagination support",
+		inputSchema: {
+			type: "object",
+			properties: {
+				where: { description: "Filter expression" },
+				orderBy: { description: "Sort expressions" },
+				limit: { description: "Maximum number of items to return" },
+				offset: { description: "Number of items to skip" },
+			},
+			additionalProperties: false,
+			$schema: "http://json-schema.org/draft-07/schema#",
+		},
+		outputSchema: {
+			type: "object",
+			properties: {
+				items: { type: "array", items: { type: "object" } },
+				totalCount: {
+					type: "integer",
+					minimum: 0,
+					description: "Total number of matching items",
+				},
+				hasMore: {
+					type: "boolean",
+					description: "Whether there are more items available",
+				},
+			},
+			required: ["items"],
+			additionalProperties: false,
+			$schema: "http://json-schema.org/draft-07/schema#",
+		},
+	},
+	{
+		name: "COLLECTION_REGISTRY_APP_GET",
+		description: "Get a public app from the registry by ID",
+		inputSchema: {
+			type: "object",
+			properties: {
+				id: { type: "string", description: "The ID of the app to get" },
+			},
+			required: ["id"],
+			additionalProperties: false,
+			$schema: "http://json-schema.org/draft-07/schema#",
+		},
+		outputSchema: {
+			type: "object",
+			properties: {
+				item: {
+					anyOf: [{ type: "object" }, { type: "null" }],
+					description:
+						"The retrieved server in MCP Registry Spec format, or null if not found or not public",
+				},
+			},
+			required: ["item"],
+			additionalProperties: false,
+			$schema: "http://json-schema.org/draft-07/schema#",
+		},
+	},
+];
+
 export async function up(db: Kysely<unknown>): Promise<void> {
   // Get all organizations
   const organizations = await sql<{
@@ -56,7 +120,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
           ${null},
           ${null},
           ${JSON.stringify({ isDefault: true, type: "registry" })},
-          ${null},
+          ${JSON.stringify(REGISTRY_TOOLS)},
           ${null},
           ${"active"},
           ${now},

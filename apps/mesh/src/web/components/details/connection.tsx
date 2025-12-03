@@ -123,7 +123,7 @@ export default function ConnectionInspectorView() {
   // Use proxy URL when connection has a token (OAuth completed)
   // Use normalizedUrl directly when no token (OAuth flow needs direct access)
   const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
-  const connectionUrl = mcpProxyUrl.href;
+  const connectionUrl = normalizedUrl; // mcpProxyUrl.href;
 
   const mcp = useMcp({
     url: connectionUrl,
@@ -241,6 +241,8 @@ export default function ConnectionInspectorView() {
       );
     },
   });
+
+  console.log({ mcp });
 
   if (!connection && connectionId) {
     return (

@@ -32,7 +32,6 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     toolName: listToolName,
     toolInputParams: {},
     enabled: !!listToolName,
-    connectionId: registryId,
   });
 
   // Extract items from results without transformation

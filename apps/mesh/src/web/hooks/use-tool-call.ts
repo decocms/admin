@@ -24,8 +24,6 @@ export interface UseToolCallOptions<TInput, _TOutput> {
   enabled?: boolean;
   /** Cache time in milliseconds */
   staleTime?: number;
-  /** Connection ID for cache isolation (prevents cache collisions when switching connections) */
-  connectionId?: string;
 }
 
 /**
@@ -52,7 +50,6 @@ export function useToolCall<TInput, TOutput>(
     toolInputParams,
     enabled = true,
     staleTime = 60_000,
-    connectionId,
   } = options;
 
   // Memoize the input params to prevent unnecessary re-fetches
@@ -61,10 +58,8 @@ export function useToolCall<TInput, TOutput>(
     [toolInputParams],
   );
 
-  const queryKey = KEYS.toolCall(toolName, paramsKey, connectionId);
-
   return useQuery({
-    queryKey,
+    queryKey: KEYS.toolCall(toolName, paramsKey),
     queryFn: async () => {
       const result = await toolCaller(toolName, toolInputParams);
       return result as TOutput;

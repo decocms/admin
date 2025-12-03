@@ -88,6 +88,7 @@ function OrgContextSetter({
     },
   });
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (!org) {
       setIsReady(true);

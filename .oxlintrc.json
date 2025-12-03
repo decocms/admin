@@ -1,7 +1,8 @@
 {
   "jsPlugins": [
     "./plugins/enforce-kebab-case-file-names.js",
-    "./plugins/enforce-query-key-constants.js"
+    "./plugins/enforce-query-key-constants.js",
+    "./plugins/ban-use-effect.js"
   ],
   "ignorePatterns": [
     "scripts/migrate-project-entity-table.ts",
@@ -14,6 +15,7 @@
     "no-explicit-any": "warn",
     "enforce-kebab-case-file-names/kebab-case": "warn",
     "ban-types": "warn",
-    "enforce-query-key-constants/enforce-query-key-constants": "warn"
+    "enforce-query-key-constants/enforce-query-key-constants": "warn",
+    "ban-use-effect/ban-use-effect": "error"
   }
 }

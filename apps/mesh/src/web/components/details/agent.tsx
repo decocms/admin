@@ -120,6 +120,7 @@ export function AgentDetailsView({
   const avatarValue = watch("avatar");
 
   // Reset form when item changes (e.g. first load)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (item) {
       reset({

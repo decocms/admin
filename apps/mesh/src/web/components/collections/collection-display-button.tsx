@@ -45,6 +45,7 @@ export function CollectionDisplayButton({
   };
 
   // Initialize indicator position based on current viewMode
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     const ref = viewMode === "table" ? tableRef : cardsRef;
     updateIndicator(ref);

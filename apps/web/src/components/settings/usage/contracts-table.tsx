@@ -10,7 +10,7 @@ import { MicroDollar } from "@deco/sdk/mcp/wallet";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import {
   Dialog,
   DialogContent,

@@ -40,9 +40,11 @@ export function EmptyState({
       )}
     >
       {/* Image/Illustration */}
-      <div className="flex items-center justify-center">
-        {image ?? <StackedCardsIllustration />}
-      </div>
+      {image !== null && (
+        <div className="flex items-center justify-center">
+          {image ?? <StackedCardsIllustration />}
+        </div>
+      )}
 
       {/* Text content */}
       <div className="flex flex-col items-center gap-4">

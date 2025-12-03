@@ -3,7 +3,7 @@ import type { Agent, Member, Thread, ThreadUsage } from "@deco/sdk";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { color } from "./util.ts";
 import { UserAvatar } from "../../common/avatar/user.tsx";

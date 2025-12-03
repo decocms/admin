@@ -1,5 +1,5 @@
 import type { ViewWithStatus } from "./toggle-pin.tsx";
-import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
+import type { TableColumn } from "@deco/ui/components/collection-table.tsx";
 import { TimeAgoCell } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

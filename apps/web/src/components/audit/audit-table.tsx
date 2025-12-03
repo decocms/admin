@@ -1,7 +1,7 @@
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import {
   AgentInfo,
   DateTimeCell,

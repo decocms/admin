@@ -36,7 +36,7 @@ import { Input } from "@deco/ui/components/input.tsx";
 import {
   Table,
   type TableColumn,
-} from "@deco/ui/components/resource-table.tsx";
+} from "@deco/ui/components/collection-table.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import {
   Select,

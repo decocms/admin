@@ -1,12 +1,16 @@
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
-import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
+import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
+import { CollectionHeader } from "@/web/components/collections/collection-header.tsx";
+import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
+import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
+import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   useConnections,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
-import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
   AlertDialog,
@@ -20,7 +24,6 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +38,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { EmptyState } from "@/web/components/empty-state.tsx";
 import {
   Form,
   FormControl,
@@ -45,8 +49,7 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { ResourceHeader } from "@deco/ui/components/resource-header.tsx";
-import { type TableColumn } from "@deco/ui/components/resource-table.tsx";
+import { type TableColumn } from "@deco/ui/components/collection-table.tsx";
 import {
   Select,
   SelectContent,
@@ -57,7 +60,6 @@ import {
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { MoreVertical, Plus, Search } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -100,24 +102,10 @@ function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   }
 }
 
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case "active":
-      return "default";
-    case "inactive":
-      return "secondary";
-    case "error":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
-
 export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { action?: "create" };
-  const { data: session } = authClient.useSession();
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
@@ -127,7 +115,7 @@ export default function OrgMcps() {
 
   // Fetch connections with filtering and sorting applied
   const collection = useConnectionsCollection();
-  const { data: connections, isLoading, isError } = useConnections(listState);
+  const { data: connections, isLoading } = useConnections(listState);
 
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
@@ -182,27 +170,19 @@ export default function OrgMcps() {
     }
   }, [editingConnection, form]);
 
-  const errorMessage = isError ? "Failed to load connections." : null;
-
-  const handleEdit = (connection: ConnectionEntity) => {
-    dispatch({ type: "edit", connection });
-  };
-
-  const handleDelete = (connection: ConnectionEntity) => {
-    dispatch({ type: "delete", connection });
-  };
-
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (dialogState.mode !== "deleting") return;
 
     const id = dialogState.connection.id;
     dispatch({ type: "close" });
 
-    collection.delete(id).isPersisted.promise.catch((error) => {
+    try {
+      await collection.delete(id).isPersisted.promise;
+    } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete connection",
       );
-    });
+    }
   };
 
   const onSubmit = async (data: ConnectionFormData) => {
@@ -228,8 +208,7 @@ export default function OrgMcps() {
         });
         await tx.isPersisted.promise;
       } else {
-        // Create new connection - cast through unknown because the insert API
-        // accepts ConnectionCreateInput but the collection is typed as ConnectionEntity
+        // Create new connection
         const tx = collection.insert({
           id: crypto.randomUUID(),
           title: data.title,
@@ -239,9 +218,8 @@ export default function OrgMcps() {
           connection_token: data.connection_token || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          status: "inactive",
+          created_by: "system", // TODO: Get actual user ID
           organization_id: org,
-          created_by: session?.user?.id ?? "unknown",
           icon: null,
           app_name: null,
           app_id: null,
@@ -251,6 +229,7 @@ export default function OrgMcps() {
           metadata: null,
           tools: null,
           bindings: null,
+          status: "inactive",
         });
         await tx.isPersisted.promise;
       }
@@ -274,19 +253,38 @@ export default function OrgMcps() {
 
   const columns: TableColumn<ConnectionEntity>[] = [
     {
+      id: "icon",
+      header: "",
+      render: (connection) => (
+        <div className="flex items-center justify-center">
+          <IntegrationIcon
+            icon={connection.icon}
+            name={connection.title}
+            size="sm"
+          />
+        </div>
+      ),
+      cellClassName: "w-[72px]",
+    },
+    {
       id: "title",
       header: "Name",
       render: (connection) => (
-        <div>
-          <div className="font-medium">{connection.title}</div>
-          {connection.description && (
-            <div className="text-sm text-muted-foreground">
-              {connection.description}
-            </div>
-          )}
-        </div>
+        <span className="text-sm font-medium text-foreground">
+          {connection.title}
+        </span>
       ),
-      cellClassName: "max-w-md",
+      sortable: true,
+    },
+    {
+      id: "description",
+      header: "Description",
+      render: (connection) => (
+        <span className="text-sm text-foreground">
+          {connection.description || "—"}
+        </span>
+      ),
+      cellClassName: "flex-1",
       sortable: true,
     },
     {
@@ -315,7 +313,7 @@ export default function OrgMcps() {
       id: "status",
       header: "Status",
       render: (connection) => (
-        <Badge variant={getStatusBadgeVariant(connection.status)}>
+        <Badge variant={connection.status === "active" ? "default" : "outline"}>
           {connection.status}
         </Badge>
       ),
@@ -330,58 +328,54 @@ export default function OrgMcps() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              onClick={(event) => event.stopPropagation()}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Icon name="more_vert" size={20} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem
-              onClick={(event) => {
-                event.stopPropagation();
+              onClick={(e) => {
+                e.stopPropagation();
                 navigate({
-                  to: "/$org/mcps/$connectionId",
-                  params: { org, connectionId: connection.id },
+                  to: `/${org}/mcps/${connection.id}`,
                 });
               }}
             >
-              <Search className="mr-2 h-4 w-4" />
+              <Icon name="visibility" size={16} />
               Inspect
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={(event) => {
-                event.stopPropagation();
-                handleEdit(connection);
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch({ type: "delete", connection });
               }}
             >
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleDelete(connection);
-              }}
-            >
+              <Icon name="delete" size={16} />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
-      cellClassName: "w-[80px]",
+      cellClassName: "w-[60px]",
     },
   ];
 
   const ctaButton = (
-    <Button onClick={openCreateDialog} size="sm" className="rounded-xl">
-      <Plus className="mr-2 h-4 w-4" />
-      New Connection
+    <Button
+      onClick={openCreateDialog}
+      size="sm"
+      className="h-7 px-3 rounded-lg text-sm font-medium"
+    >
+      Add MCP
     </Button>
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <CollectionPage>
       <Dialog
         open={isCreating || dialogState.mode === "editing"}
         onOpenChange={handleDialogClose}
@@ -544,167 +538,140 @@ export default function OrgMcps() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="shrink-0 bg-background">
-        <div className="px-8 py-6">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight">Connections</h1>
-              <p className="text-muted-foreground">
-                Manage your organization connections
-              </p>
-            </div>
-            <ResourceHeader
-              tabs={[{ id: "all", label: "All" }]}
-              activeTab="all"
-              searchValue={listState.search}
-              onSearchChange={listState.setSearch}
-              onSearchKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  listState.setSearch("");
-                  (event.target as HTMLInputElement).blur();
-                }
-              }}
-              onFilterClick={listState.toggleFilterBar}
-              viewMode={listState.viewMode}
-              onViewModeChange={listState.setViewMode}
-              sortKey={listState.sortKey}
-              sortDirection={listState.sortDirection}
-              onSort={listState.handleSort}
-              filterBarVisible={listState.filterBarVisible}
-              filters={listState.filters}
-              onFiltersChange={listState.setFilters}
-              availableUsers={[]}
-              ctaButton={ctaButton}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Collection Header */}
+      <CollectionHeader
+        title="MCPs"
+        viewMode={listState.viewMode}
+        onViewModeChange={listState.setViewMode}
+        sortKey={listState.sortKey}
+        sortDirection={listState.sortDirection}
+        onSort={listState.handleSort}
+        sortOptions={[
+          { id: "title", label: "Name" },
+          { id: "description", label: "Description" },
+          { id: "connection_type", label: "Type" },
+          { id: "status", label: "Status" },
+        ]}
+        ctaButton={ctaButton}
+      />
 
-      <div className="flex-1 overflow-auto">
-        <div className="px-8 py-2">
-          <div className="max-w-6xl mx-auto space-y-6">
-            {errorMessage ? (
-              <Card className="border-destructive/30 bg-destructive/10">
-                <div className="p-4 text-sm text-destructive">
-                  {errorMessage}
-                </div>
-              </Card>
-            ) : (
-              <CollectionsList
-                data={connections}
-                viewMode={listState.viewMode}
-                onViewModeChange={listState.setViewMode}
-                search={listState.search}
-                onSearchChange={listState.setSearch}
-                columns={columns}
-                isLoading={isLoading}
-                sortKey={listState.sortKey}
-                sortDirection={listState.sortDirection}
-                onSort={listState.handleSort}
-                onItemClick={(connection) =>
-                  navigate({
-                    to: "/$org/mcps/$connectionId",
-                    params: { org, connectionId: connection.id },
-                  })
-                }
-                emptyState={
-                  <EmptyState
-                    icon="cable"
-                    title="No connections found"
-                    description="Create a connection to get started."
-                    buttonProps={{
-                      onClick: openCreateDialog,
-                      children: "New Connection",
-                    }}
+      {/* Search Bar */}
+      <CollectionSearch
+        value={listState.search}
+        onChange={listState.setSearch}
+        placeholder="Search for a MCP..."
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            listState.setSearch("");
+            (event.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+
+      {/* Content: Cards or Table */}
+      {listState.viewMode === "cards" ? (
+        <div className="flex-1 overflow-auto p-5">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-muted-foreground">Loading...</div>
+            </div>
+          ) : connections.length === 0 ? (
+            <EmptyState
+              image={
+                <img
+                  src="/emptystate-mcp.svg"
+                  alt=""
+                  width={500}
+                  height={223}
+                  aria-hidden="true"
+                />
+              }
+              title={listState.search ? "No MCPs found" : "No MCPs found"}
+              description={
+                listState.search
+                  ? `No MCPs match "${listState.search}"`
+                  : "Create a connection to get started."
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {connections.map((connection) => (
+                <Card
+                  key={connection.id}
+                  className="cursor-pointer transition-colors"
+                  onClick={() =>
+                    navigate({
+                      to: `/${org}/mcps/${connection.id}`,
+                    })
+                  }
+                >
+                  <div className="flex flex-col gap-4 p-6">
+                    <IntegrationIcon
+                      icon={connection.icon}
+                      name={connection.title}
+                      size="md"
+                      className="shrink-0 shadow-sm"
+                    />
+                    <div className="flex flex-col gap-0">
+                      <h3 className="text-base font-medium text-foreground truncate">
+                        {connection.title}
+                      </h3>
+                      <p className="text-base text-muted-foreground line-clamp-2">
+                        {connection.description || "No description"}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <CollectionTableWrapper
+          columns={columns}
+          data={connections}
+          isLoading={isLoading}
+          sortKey={listState.sortKey}
+          sortDirection={listState.sortDirection}
+          onSort={listState.handleSort}
+          onRowClick={(connection) =>
+            navigate({
+              to: `/${org}/mcps/${connection.id}`,
+            })
+          }
+          emptyState={
+            listState.search ? (
+              <EmptyState
+                image={
+                  <img
+                    src="/emptystate-mcp.svg"
+                    alt=""
+                    width={500}
+                    height={223}
+                    aria-hidden="true"
                   />
                 }
-                renderCard={(connection) => (
-                  <Card className="p-4 rounded-xl border-border transition-colors hover:border-primary cursor-pointer h-full">
-                    <div className="flex flex-col gap-3 h-full">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-foreground">
-                            {connection.title}
-                          </div>
-                          {connection.description && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {connection.description}
-                            </div>
-                          )}
-                        </div>
-                        <Badge
-                          variant={getStatusBadgeVariant(connection.status)}
-                        >
-                          {connection.status}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground wrap-break-word">
-                        {connection.connection_url}
-                      </div>
-                      <div className="flex items-center justify-between gap-2 mt-auto">
-                        <span className="text-xs font-medium uppercase text-muted-foreground">
-                          {connection.connection_type}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              navigate({
-                                to: "/$org/mcps/$connectionId",
-                                params: { org, connectionId: connection.id },
-                              });
-                            }}
-                          >
-                            Inspect
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleEdit(connection);
-                                }}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                Test Connection
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleDelete(connection);
-                                }}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-                hideToolbar={true}
+                title="No MCPs found"
+                description={`No MCPs match "${listState.search}"`}
               />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+            ) : (
+              <EmptyState
+                image={
+                  <img
+                    src="/emptystate-mcp.svg"
+                    alt=""
+                    width={500}
+                    height={223}
+                    aria-hidden="true"
+                  />
+                }
+                title="No MCPs found"
+                description="Create a connection to get started."
+              />
+            )
+          }
+        />
+      )}
+    </CollectionPage>
   );
 }

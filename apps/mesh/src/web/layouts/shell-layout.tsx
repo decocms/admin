@@ -99,13 +99,27 @@ function OrgContextSetter({
     setOrgMutation.mutate(org, {
       onSuccess: () => {
         // Invalidate all tool call cache to refresh data for new org
+        console.log("🔄 [OrgContextSetter] Organization changed to:", org);
         console.log(
-          "🔄 [OrgContextSetter] Invalidating tool call cache for org:",
-          org,
+          "📊 [OrgContextSetter] Queries before removal:",
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .map((q) => q.queryKey),
         );
+
         queryClient.removeQueries({
           queryKey: ["tool-call"],
         });
+
+        console.log(
+          "📊 [OrgContextSetter] Queries after removal:",
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .map((q) => q.queryKey),
+        );
+
         setIsReady(true);
       },
     });

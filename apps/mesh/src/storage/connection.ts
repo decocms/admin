@@ -50,7 +50,6 @@ type RawConnectionRow = {
   created_at: Date | string;
   updated_at: Date | string;
 };
-
 export class ConnectionStorage implements ConnectionStoragePort {
   constructor(
     private db: Kysely<Database>,
@@ -68,7 +67,6 @@ export class ConnectionStorage implements ConnectionStoragePort {
       created_at: now,
       updated_at: now,
     });
-
     await this.db
       .insertInto("connections")
       .values(serialized as Insertable<Database["connections"]>)

@@ -40,6 +40,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { IChangeEvent } from "@rjsf/core";
 import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -51,7 +52,6 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import type { IChangeEvent } from "@rjsf/core";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
@@ -120,13 +120,8 @@ export default function ConnectionInspectorView() {
     ? normalizeUrl(connection.connection_url)
     : "";
 
-  // Use proxy URL when connection has a token (OAuth completed)
-  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
-  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
-  const connectionUrl = normalizedUrl; // mcpProxyUrl.href;
-
   const mcp = useMcp({
-    url: connectionUrl,
+    url: normalizedUrl,
     clientName: "MCP Mesh Inspector",
     clientUri: window.location.origin,
     callbackUrl: `${window.location.origin}/oauth/callback`,

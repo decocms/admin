@@ -759,13 +759,15 @@ const mapAppToMCPRegistryServerDetail = (
   app: Record<string, unknown>,
 ): Record<string, unknown> => {
   const base = mapAppToMCPRegistryServer(app);
-  const baseMetaDecocms = (base._meta as Record<string, unknown>)[
-    MCP_REGISTRY_DECOCMS_KEY
-  ] as Record<string, unknown>;
+  const baseMeta = base._meta as Record<string, unknown>;
+  const baseMetaDecocms = baseMeta[MCP_REGISTRY_DECOCMS_KEY] as Record<
+    string,
+    unknown
+  >;
   return {
     ...base,
     _meta: {
-      ...base._meta,
+      ...(baseMeta ?? {}),
       [MCP_REGISTRY_DECOCMS_KEY]: {
         ...baseMetaDecocms,
         publishedAt: app.created_at

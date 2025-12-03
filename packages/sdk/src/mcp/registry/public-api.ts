@@ -12,7 +12,6 @@
 import { z } from "zod";
 import { createToolGroup } from "../context.ts";
 import { registryApps, registryScopes, registryTools } from "../schema.ts";
-import { mapAppToPublic } from "./api.ts";
 
 type DbTool = typeof registryTools.$inferSelect;
 type DbApp = typeof registryApps.$inferSelect & { tools: DbTool[] } & {
@@ -182,18 +181,6 @@ const MCPRegistryServerSchema = z.object({
   }),
 });
 
-const MCPRegistryListOutputSchema = z.object({
-  metadata: z.object({
-    count: z.number().int().min(0),
-    nextCursor: z.string().nullable(),
-  }),
-  servers: z.array(MCPRegistryServerSchema),
-});
-
-const MCPRegistryGetOutputSchema = z.object({
-  server: MCPRegistryServerSchema.nullable(),
-});
-
 const createPublicTool = createToolGroup("Registry", {
   name: "App Registry (Public)",
   description: "Discover published apps in the registry.",
@@ -247,13 +234,8 @@ export const listPublicRegistryApps = createPublicTool({
       throw new Error("Database context not available");
     }
 
-    // Parse and validate pagination inputs with fallbacks
     const limit = Math.max(1, Math.min(1000, Number(input?.limit) || 50));
     const offset = Math.max(0, Number(input?.offset) || 0);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const where = input?.where;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const orderBy = input?.orderBy;
 
     // Query only public apps (unlisted: false)
     const apps = await drizzle.query.registryApps.findMany({
@@ -271,12 +253,9 @@ export const listPublicRegistryApps = createPublicTool({
     });
 
     // Filter out omitted apps
-    let filteredApps = apps.filter(
+    const filteredApps = apps.filter(
       (app: DbApp) => !OMITTED_APPS.includes(app.id),
     );
-
-    // TODO: Apply where filters if provided (currently filtering only by unlisted=false)
-    // TODO: Apply orderBy sorting if provided (currently sorting by created_at descending)
 
     // Apply pagination
     const totalCount = filteredApps.length;

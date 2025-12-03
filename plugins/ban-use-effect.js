@@ -16,7 +16,11 @@ const noUseEffectRule = {
           // Skip if this identifier is part of an import declaration
           let parent = node.parent;
           while (parent) {
-            if (parent.type === "ImportSpecifier" || parent.type === "ImportDefaultSpecifier" || parent.type === "ImportNamespaceSpecifier") {
+            if (
+              parent.type === "ImportSpecifier" ||
+              parent.type === "ImportDefaultSpecifier" ||
+              parent.type === "ImportNamespaceSpecifier"
+            ) {
               return; // Allow imports
             }
             parent = parent.parent;
@@ -24,7 +28,8 @@ const noUseEffectRule = {
 
           context.report({
             node,
-            message: "useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
+            message:
+              "useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
           });
         }
       },
@@ -42,7 +47,8 @@ const noUseEffectRule = {
         ) {
           context.report({
             node,
-            message: "React.useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
+            message:
+              "React.useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
           });
         }
       },
@@ -60,4 +66,3 @@ const plugin = {
 };
 
 export default plugin;
-

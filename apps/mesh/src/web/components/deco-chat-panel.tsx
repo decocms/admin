@@ -153,7 +153,7 @@ export function DecoChatPanel() {
   const [selectedAgentState, setSelectedAgentState] = useLocalStorage<{
     agentId: string;
     connectionId: string;
-  } | null>(`${locator}:selected-agent`, () => null  );
+  } | null>(`${locator}:selected-agent`, () => null);
 
   // Initialize with first model
   // oxlint-disable-next-line ban-use-effect/ban-use-effect

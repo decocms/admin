@@ -36,8 +36,14 @@ export const KEYS = {
     [connectionId, "collections", "discovery"] as const,
 
   // Tool call results (generic caching for MCP tool calls)
-  toolCall: (toolName: string, paramsKey: string) =>
-    ["tool-call", toolName, paramsKey] as const,
+  // Includes connectionId to prevent cache collisions when switching connections/registries
+  toolCall: (toolName: string, paramsKey: string, connectionId?: string) => {
+    const key: (string | undefined)[] = ["tool-call", toolName, paramsKey];
+    if (connectionId) {
+      key.push(connectionId);
+    }
+    return key as const;
+  },
 
   // Collection items (scoped by connection and collection name)
   collectionItems: (connectionId: string, collectionName: string) =>

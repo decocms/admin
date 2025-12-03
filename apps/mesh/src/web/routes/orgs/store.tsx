@@ -11,7 +11,7 @@ export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: allConnections, isLoading, isError } = useConnections();
+  const { data: allConnections, isLoading, isError } = useConnections(org);
 
   // Filter to only show registry connections (those with collections)
   const registryConnections = useRegistryConnections(allConnections);

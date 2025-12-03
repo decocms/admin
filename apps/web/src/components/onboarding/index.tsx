@@ -42,6 +42,7 @@ import {
 import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { ErrorBoundary } from "../../error-boundary";
 import { useCreateProjectWithRetry } from "../../hooks/use-create-project-with-retry.ts";
 import { useUser } from "../../hooks/use-user.ts";
@@ -506,6 +507,12 @@ function CreateOrg() {
         }
 
         if (team) {
+          // Track org creation/join
+          trackEvent("lp_org_selected", {
+            org_slug: team.slug,
+            selection_type: "created",
+          });
+
           // If initialInput exists, create a project with random name
           if (initialInput) {
             try {
@@ -715,6 +722,12 @@ function SelectOrg() {
 
   const handleSelectOrg = useCallback(
     async (orgSlug: string) => {
+      // Track org selection
+      trackEvent("lp_org_selected", {
+        org_slug: orgSlug,
+        selection_type: "existing",
+      });
+
       try {
         // Create project with retry logic for name/slug collisions
         const project = await createWithRetry(orgSlug);
@@ -820,11 +833,23 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const teams = useOrganizations({});
   const onboardingStatus = useOnboardingAnswers();
+  const loginTrackedRef = useRef(false);
 
   // Check conditions
   const hasInitialInput = searchParams.has("initialInput");
   const hasOrgs = teams.data.length > 0;
   const hasCompletedQuestionnaire = !!onboardingStatus.data?.completed;
+
+  // Track login_completed event when user arrives with initialInput (from generate flow)
+  useEffect(() => {
+    if (hasInitialInput && !loginTrackedRef.current) {
+      loginTrackedRef.current = true;
+      trackEvent("lp_login_completed", {
+        has_orgs: hasOrgs,
+        has_completed_questionnaire: hasCompletedQuestionnaire,
+      });
+    }
+  }, [hasInitialInput, hasOrgs, hasCompletedQuestionnaire]);
 
   // Use reducer to derive state from conditions
   const [state, dispatch] = useReducer(

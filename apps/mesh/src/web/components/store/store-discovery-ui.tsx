@@ -108,7 +108,11 @@ export function StoreDiscoveryUI({
   const handleInstall = async () => {
     if (!selectedItem || !org || !session?.user?.id) return;
 
-    const connectionData = extractConnectionData(selectedItem, org, session.user.id);
+    const connectionData = extractConnectionData(
+      selectedItem,
+      org,
+      session.user.id,
+    );
 
     if (!connectionData.connection_url) {
       toast.error("This app cannot be installed: no connection URL available");

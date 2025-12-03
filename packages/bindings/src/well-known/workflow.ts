@@ -57,7 +57,7 @@ export const StepActionSchema = z.union([
     "Pure TypeScript data transformation (deterministic, replayable)",
   ),
   SleepActionSchema.describe("Wait for time"),
-  WaitForSignalActionSchema.describe("Wait for external signal)"),
+  WaitForSignalActionSchema.describe("Wait for external signal"),
 ]);
 export type StepAction = z.infer<typeof StepActionSchema>;
 /**
@@ -144,10 +144,9 @@ export const WorkflowExecutionSchema = BaseCollectionEntitySchema.extend({
   status: WorkflowExecutionStatusEnum,
   input: z.record(z.unknown()).optional(),
   output: z.unknown().optional(),
-  parent_execution_id: z.string().nullish().nullish(),
-  started_at_epoch_ms: z.number().nullish(),
+  parent_execution_id: z.string().nullish(),
   completed_at_epoch_ms: z.number().nullish(),
-  locked_until_epoch_ms_epoch_ms: z.number().nullish(),
+  locked_until_epoch_ms: z.number().nullish(),
   lock_id: z.string().nullish(),
   retry_count: z.number().default(0),
   max_retries: z.number().default(10),
@@ -168,7 +167,6 @@ export const WorkflowExecutionStepResultSchema =
     input: z.record(z.unknown()).nullish(),
     output: z.unknown().nullish(), // Can be object or array (forEach steps produce arrays)
     error: z.string().nullish(),
-    started_at_epoch_ms: z.number().nullish(),
     completed_at_epoch_ms: z.number().nullish(),
   });
 export type WorkflowExecutionStepResult = z.infer<
@@ -259,17 +257,26 @@ export const WORKFLOWS_COLLECTION_BINDING = createCollectionBindings(
 export const WORKFLOW_EXECUTIONS_COLLECTION_BINDING = createCollectionBindings(
   "workflow_execution",
   WorkflowExecutionSchema,
+  {
+    readOnly: true,
+  },
 );
 
 export const WORKFLOW_STEP_RESULTS_COLLECTION_BINDING =
   createCollectionBindings(
     "workflow_execution_step_results",
     WorkflowExecutionStepResultSchema,
+    {
+      readOnly: true,
+    },
   );
 
 export const WORKFLOW_EVENTS_COLLECTION_BINDING = createCollectionBindings(
   "workflow_events",
   WorkflowEventSchema,
+  {
+    readOnly: true,
+  },
 );
 
 /**

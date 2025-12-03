@@ -69,11 +69,17 @@ async function installDecoStore(): Promise<void> {
     });
 
     console.log("📦 [CreateOrgDialog] Tool result:", result);
+    console.log("📦 [CreateOrgDialog] Tool result item:", result?.item);
+    console.log("📦 [CreateOrgDialog] Tool result item id:", result?.item?.id);
+    console.log(
+      "📦 [CreateOrgDialog] Tool result item title:",
+      result?.item?.title,
+    );
 
     if (result) {
       console.log(
         "✅ [CreateOrgDialog] Deco Store installed successfully:",
-        result,
+        JSON.stringify(result, null, 2),
       );
     } else {
       console.warn("⚠️  [CreateOrgDialog] Tool returned empty result");

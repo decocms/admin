@@ -10,8 +10,6 @@ interface StoreDiscoveryProps {
 }
 
 export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
-  console.log("🏪 [StoreDiscovery] Mount/Update with registryId:", registryId);
-
   const { data: registryConnection } = useConnection(registryId);
 
   // Find the LIST tool from the registry connection
@@ -20,24 +18,10 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     const listTool = registryConnection.tools.find((tool) =>
       tool.name.endsWith("_LIST"),
     );
-    const tool = listTool?.name || "";
-    console.log(
-      "🔍 [StoreDiscovery] List tool found:",
-      tool,
-      "from",
-      registryConnection.tools.length,
-      "tools",
-    );
-    return tool;
+    return listTool?.name || "";
   }, [registryConnection?.tools]);
 
-  const toolCaller = useMemo(() => {
-    console.log(
-      "🔧 [StoreDiscovery] Creating tool caller for registryId:",
-      registryId,
-    );
-    return createToolCaller(registryId);
-  }, [registryId]);
+  const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
 
   const {
     data: listResults,

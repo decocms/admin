@@ -63,26 +63,10 @@ export function useToolCall<TInput, TOutput>(
 
   const queryKey = KEYS.toolCall(toolName, paramsKey, connectionId);
 
-  console.log(
-    "🔍 [useToolCall] Query key generated:",
-    JSON.stringify(queryKey),
-    "| Tool:",
-    toolName,
-    "| ConnectionId:",
-    connectionId,
-  );
-
   return useQuery({
     queryKey,
     queryFn: async () => {
-      console.log(
-        "📡 [useToolCall] Fetching tool:",
-        toolName,
-        "with connectionId:",
-        connectionId,
-      );
       const result = await toolCaller(toolName, toolInputParams);
-      console.log("✅ [useToolCall] Tool result received for:", toolName);
       return result as TOutput;
     },
     enabled,

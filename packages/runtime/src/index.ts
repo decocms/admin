@@ -162,11 +162,13 @@ export const withBindings = <TEnv>({
   server,
   tokenOrContext,
   url,
+  bindings: inlineBindings,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
   tokenOrContext?: string | RequestContext;
   url?: string;
+  bindings?: Binding[];
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
 
@@ -216,7 +218,7 @@ export const withBindings = <TEnv>({
   }
 
   env.MESH_REQUEST_CONTEXT = context;
-  const bindings = MCPBindings.parse(env.MESH_BINDINGS);
+  const bindings = inlineBindings ?? MCPBindings.parse(env.MESH_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](binding as any, env);
@@ -290,6 +292,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       const bindings = withBindings({
         env,
         server,
+        bindings: userFns.bindings,
         tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,
         url: req.url,
       });

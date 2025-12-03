@@ -71,7 +71,7 @@ export default function ConnectionInspectorView() {
     connection ? [connection] : [],
     "MCP",
   );
-  const hasMcpBinding = mcpBindingConnections.length > 0 || true; // TODO: remove || true
+  const hasMcpBinding = mcpBindingConnections.length > 0;
 
   // Update connection handler
   const handleUpdateConnection = async (
@@ -388,9 +388,9 @@ function SettingsTab({
   const [mcpFormState, setMcpFormState] = useState<Record<string, unknown>>(
     connection.configuration_state ?? {},
   );
-  const [mcpInitialState, setMcpInitialState] = useState<Record<string, unknown>>(
-    connection.configuration_state ?? {},
-  );
+  const [mcpInitialState, setMcpInitialState] = useState<
+    Record<string, unknown>
+  >(connection.configuration_state ?? {});
   const [mcpScopes] = useState<string[]>(connection.configuration_scopes ?? []);
 
   // Reset MCP state when connection changes
@@ -475,7 +475,10 @@ function SettingsTab({
       <div className="flex h-full">
         {/* Left sidebar - Connection Settings (2/5) */}
         <div className="w-2/5 shrink-0 border-r border-border overflow-auto">
-          <ConnectionSettingsFormUI form={connectionForm} connection={connection} />
+          <ConnectionSettingsFormUI
+            form={connectionForm}
+            connection={connection}
+          />
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
@@ -613,9 +616,7 @@ function ConnectionSettingsFormUI({
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder={
-                      connection.connection_token ? "••••••••" : "Placeholder"
-                    }
+                    placeholder={connection.connection_token ? "••••••••" : ""}
                     {...field}
                     value={field.value || ""}
                     className="h-10 rounded-lg"
@@ -673,24 +674,15 @@ function McpConfigurationFormUI({
     );
   }
 
-  // TODO: remove mock data fallback
-  const mockConfig = {
-    scopes: ["read:users", "write:users", "admin"],
-    stateSchema: {
-      type: "object",
-      properties: {
-        apiKey: { type: "string", title: "API Key" },
-        environment: {
-          type: "string",
-          title: "Environment",
-          enum: ["development", "staging", "production"],
-        },
-        enableDebug: { type: "boolean", title: "Enable Debug Mode" },
-      },
-    },
-  };
+  if (!config) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        No configuration available
+      </div>
+    );
+  }
 
-  const { scopes, stateSchema } = (config ?? mockConfig) as {
+  const { scopes, stateSchema } = config as {
     scopes: string[];
     stateSchema: Record<string, unknown>;
   };

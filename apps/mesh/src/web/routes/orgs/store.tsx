@@ -21,7 +21,6 @@ export default function StorePage() {
   }, [connections, selectedRegistry]);
 
   const handleAddNewRegistry = () => {
-    // Navega para a página de connections com a ação de criar
     navigate({
       to: "/$org/mcps",
       params: { org },

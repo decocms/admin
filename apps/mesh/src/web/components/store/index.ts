@@ -20,8 +20,5 @@ export type {
 export { RegistryItemsSection } from "./registry-items-section";
 export type { RegistryItem } from "./registry-items-section";
 
-// Utilities
-export { extractConnectionData } from "./utils";
-
 // Legacy (backwards compatibility)
 export { MCPResultsView } from "./mcp-results-view";

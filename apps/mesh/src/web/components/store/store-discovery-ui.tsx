@@ -39,7 +39,6 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
-
 function extractConnectionData(
   item: RegistryItem | MCPRegistryServer,
   organizationId: string,

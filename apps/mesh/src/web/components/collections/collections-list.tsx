@@ -23,7 +23,7 @@ export function CollectionsList<T extends BaseCollectionEntity>({
   isLoading = false,
   emptyState = null,
   readOnly = false,
-  columns = [],
+  columns = undefined,
   hideToolbar = false,
   sortableFields = [],
 }: CollectionsListProps<T>) {

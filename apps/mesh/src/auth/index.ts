@@ -36,7 +36,8 @@ import {
 } from "./email-providers";
 import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
 import { createSSOConfig, SSOConfig } from "./sso";
-import { getDatabaseUrl, getDbDialect } from "../database";
+import { getDatabaseUrl, getDbDialect, getDatabase } from "../database";
+import { addDefaultRegistry } from "./organization-hooks";
 
 const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
   emailAndPassword: {
@@ -243,6 +244,29 @@ export const auth = betterAuth({
   ...authConfig,
 
   plugins,
+
+  // Hooks to auto-provision resources when organizations are created
+  hooks: {
+    organization: {
+      create: {
+        after: async (organization) => {
+          // Get the creator's user ID from the organization members
+          const db = getDatabase();
+          const member = await db
+            .selectFrom("member")
+            .select("userId")
+            .where("organizationId", "=", organization.id)
+            .where("role", "=", "owner")
+            .executeTakeFirst();
+
+          if (member?.userId) {
+            // Add default Deco Store registry
+            await addDefaultRegistry(organization.id, member.userId);
+          }
+        },
+      },
+    },
+  },
 });
 
 export type BetterAuthInstance = typeof auth;

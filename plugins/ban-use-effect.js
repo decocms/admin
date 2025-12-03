@@ -1,17 +1,11 @@
 /**
- * Lint plugin to ban usages of useEffect in .tsx files within the apps/mesh project.
+ * Lint plugin to ban usages of useEffect.
  */
 
 const noUseEffectRule = {
   create(context) {
     return {
       Identifier(node) {
-        const filename = context.filename || "";
-        // Only apply to .tsx files inside apps/mesh
-        if (!filename.includes("apps/mesh") || !filename.endsWith(".tsx")) {
-          return;
-        }
-
         if (node.name === "useEffect") {
           // Skip if this identifier is part of an import declaration
           let parent = node.parent;
@@ -29,26 +23,29 @@ const noUseEffectRule = {
           context.report({
             node,
             message:
-              "useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
+              "useEffect is not allowed. Please use alternative approaches.",
           });
         }
       },
 
       MemberExpression(node) {
-        const filename = context.filename || "";
-        // Only apply to .tsx files inside apps/mesh
-        if (!filename.includes("apps/mesh") || !filename.endsWith(".tsx")) {
+        // Verify property is an Identifier before accessing .name
+        if (node.property.type !== "Identifier" || node.property.name !== "useEffect") {
           return;
         }
 
-        if (
-          node.object.name === "React" &&
-          node.property.name === "useEffect"
-        ) {
+        // Walk nested MemberExpressions to find the left-most object
+        let object = node.object;
+        while (object.type === "MemberExpression") {
+          object = object.object;
+        }
+
+        // Verify the final object is an Identifier with name === 'React'
+        if (object.type === "Identifier" && object.name === "React") {
           context.report({
             node,
             message:
-              "React.useEffect is not allowed in @mesh .tsx files. Please use alternative approaches.",
+              "React.useEffect is not allowed. Please use alternative approaches.",
           });
         }
       },

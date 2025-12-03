@@ -2,11 +2,15 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import {
   RegistryItemsSection,
   type RegistryItem,
 } from "./registry-items-section";
-import { RegistryItemCard } from "./registry-item-card";
+import { RegistryItemCard, type MCPRegistryServer } from "./registry-item-card";
+import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -35,6 +39,57 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
+
+function extractConnectionData(
+  item: RegistryItem | MCPRegistryServer,
+  organizationId: string,
+) {
+  // Cast server to access MCP-specific properties
+  const server = item.server as MCPRegistryServer["server"] | undefined;
+  const decoMeta = item._meta?.["io.decocms"] as
+    | { id?: string; appName?: string }
+    | undefined;
+  const remote = server?.remotes?.[0];
+
+  // Map remote type to connection type
+  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
+    http: "HTTP",
+    sse: "SSE",
+    websocket: "Websocket",
+  };
+
+  const connectionType = remote?.type
+    ? connectionTypeMap[remote.type] || "HTTP"
+    : "HTTP";
+
+  const now = new Date().toISOString();
+
+  return {
+    // Local id for optimistic updates - server will generate a new id (conn_${nanoid()})
+    id: crypto.randomUUID(),
+    title: item.title || server?.title || server?.name || "Unnamed App",
+    description: server?.description || null,
+    icon: server?.icons?.[0]?.src || null,
+    app_name: decoMeta?.appName || server?.name || null,
+    app_id: decoMeta?.id || item.id || null,
+    connection_type: connectionType,
+    connection_url: remote?.url || "",
+    connection_token: null,
+    connection_headers: null,
+    oauth_config: null,
+    configuration_state: null,
+    configuration_scopes: null,
+    metadata: { source: "store", registry_item_id: item.id },
+    created_at: now,
+    updated_at: now,
+    created_by: "system", // Will be replaced by the server with actual user ID
+    organization_id: organizationId,
+    tools: null,
+    bindings: null,
+    status: "inactive" as const,
+  };
+}
+
 export function StoreDiscoveryUI({
   items,
   isLoading,
@@ -42,6 +97,51 @@ export function StoreDiscoveryUI({
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const { org } = useProjectContext();
+  const navigate = useNavigate();
+  const connectionsCollection = useConnectionsCollection();
+
+  const handleInstall = async () => {
+    if (!selectedItem || !org) return;
+
+    const connectionData = extractConnectionData(selectedItem, org);
+
+    if (!connectionData.connection_url) {
+      toast.error("This app cannot be installed: no connection URL available");
+      return;
+    }
+
+    setIsInstalling(true);
+    try {
+      const tx = await connectionsCollection.insert(connectionData);
+      await tx.isPersisted.promise;
+
+      toast.success(`${connectionData.title} installed successfully`);
+
+      const registryItemId = selectedItem.id;
+      const newConnection = [...connectionsCollection.state.values()].find(
+        (conn) =>
+          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
+          registryItemId,
+      );
+
+      if (newConnection?.id && org) {
+        navigate({
+          to: "/$org/mcps/$connectionId",
+          params: { org, connectionId: newConnection.id },
+        });
+      } else {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to install app: ${message}`);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   // Verified items
   const verifiedItems = useMemo(() => {
@@ -145,9 +245,22 @@ export function StoreDiscoveryUI({
                         {data.publisher}
                       </p>
                     </div>
-                    <button className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] text-black font-medium rounded-lg transition-colors flex items-center gap-2">
-                      <Icon name="add" size={20} />
-                      Install App
+                    <button
+                      onClick={handleInstall}
+                      disabled={isInstalling}
+                      className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {isInstalling ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Installing...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="add" size={20} />
+                          Install App
+                        </>
+                      )}
                     </button>
                   </div>
                   {data.description && (

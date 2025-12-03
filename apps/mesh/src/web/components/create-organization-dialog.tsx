@@ -25,6 +25,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "@tanstack/react-router";
+import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
 
 // Simple slugify function for client-side use
 function slugify(input: string): string {
@@ -53,7 +54,9 @@ const DECO_STORE_CONFIG = {
   metadata: { isDefault: true, type: "registry" },
 };
 
-async function installDecoStore(): Promise<void> {
+async function installDecoStore(
+  connectionsCollection: ReturnType<typeof useConnectionsCollection>,
+): Promise<void> {
   try {
     console.log("📦 [CreateOrgDialog] Installing Deco Store...");
     console.log(
@@ -80,6 +83,15 @@ async function installDecoStore(): Promise<void> {
       console.log(
         "✅ [CreateOrgDialog] Deco Store installed successfully:",
         JSON.stringify(result, null, 2),
+      );
+
+      // Refresh connections collection cache
+      console.log(
+        "🔄 [CreateOrgDialog] Refreshing connections collection cache...",
+      );
+      await connectionsCollection.load();
+      console.log(
+        "✅ [CreateOrgDialog] Connections collection cache refreshed",
       );
     } else {
       console.warn("⚠️  [CreateOrgDialog] Tool returned empty result");
@@ -109,6 +121,7 @@ export function CreateOrganizationDialog({
   onOpenChange,
 }: CreateOrganizationDialogProps) {
   const navigate = useNavigate();
+  const connectionsCollection = useConnectionsCollection();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -156,7 +169,7 @@ export function CreateOrganizationDialog({
           "🎯 [CreateOrgDialog] Starting Deco Store installation for org:",
           orgSlug,
         );
-        await installDecoStore();
+        await installDecoStore(connectionsCollection);
         console.log("🎯 [CreateOrgDialog] Deco Store installation completed");
 
         // Navigate to the new organization

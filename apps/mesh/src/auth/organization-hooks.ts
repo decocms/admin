@@ -6,7 +6,7 @@
  */
 
 import { nanoid } from "nanoid";
-import { getDatabase } from "../database";
+import { getDb } from "../database";
 
 // Registry tools discovered from https://api.decocms.com/mcp/registry
 const REGISTRY_TOOLS = [
@@ -80,7 +80,7 @@ export async function addDefaultRegistry(
   userId: string,
 ): Promise<void> {
   try {
-    const db = getDatabase();
+    const db = getDb();
 
     // Check if organization already has the registry
     const existing = await db

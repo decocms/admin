@@ -566,6 +566,8 @@ export function AgenticChatProvider({
   // Track READ checkpoints by resource URI to create a pre-update version
   const readCheckpointRef = useRef<Map<string, string>>(new Map());
   const autoSendCompletedRef = useRef(false);
+  // Track if we're waiting for auto-send prompt result (for funnel analytics)
+  const isAutoSendInProgressRef = useRef(false);
   const addVersion = useAddVersion();
 
   const mergedUiOptions = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
@@ -723,11 +725,30 @@ export function AgenticChatProvider({
           handleUpdateOrCreateFromPart(info, toolDeps);
         }
       }
+
+      // Track prompt_success for auto-send (funnel from decocms.com)
+      if (isAutoSendInProgressRef.current) {
+        isAutoSendInProgressRef.current = false;
+        trackEvent("lp_prompt_success", {
+          agent_id: agentId,
+          thread_id: threadId,
+        });
+      }
     },
     onError: (error) => {
       console.error("Chat error:", error);
       setIsLoading(false);
       setFinishReason(null);
+
+      // Track prompt_error for auto-send (funnel from decocms.com)
+      if (isAutoSendInProgressRef.current) {
+        isAutoSendInProgressRef.current = false;
+        trackEvent("lp_prompt_error", {
+          agent_id: agentId,
+          thread_id: threadId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     },
     onToolCall: ({ toolCall }) => {
       // Trigger all registered tool call listeners
@@ -989,6 +1010,8 @@ export function AgenticChatProvider({
     }
 
     autoSendCompletedRef.current = true;
+    // Mark that we're waiting for auto-send result (for funnel analytics)
+    isAutoSendInProgressRef.current = true;
 
     queueMicrotask(() => {
       wrappedSendMessage({

@@ -820,7 +820,13 @@ function ToolsList({
                     className="cursor-pointer transition-colors"
                     onClick={() =>
                       navigate({
-                        to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                        params: {
+                          org: org ?? "",
+                          connectionId: connectionId ?? "",
+                          collectionName: "tools",
+                          itemId: encodeURIComponent(tool.name),
+                        },
                       })
                     }
                   >
@@ -855,7 +861,13 @@ function ToolsList({
             onSort={handleSort}
             onRowClick={(tool: { name: string; description?: string }) =>
               navigate({
-                to: `/${org}/mcps/${connectionId}/tools/${encodeURIComponent(tool.name)}`,
+                to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                params: {
+                  org: org ?? "",
+                  connectionId: connectionId ?? "",
+                  collectionName: "tools",
+                  itemId: encodeURIComponent(tool.name),
+                },
               })
             }
             emptyState={

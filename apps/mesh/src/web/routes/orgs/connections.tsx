@@ -340,7 +340,8 @@ export default function OrgMcps() {
               onClick={(e) => {
                 e.stopPropagation();
                 navigate({
-                  to: `/${org}/mcps/${connection.id}`,
+                  to: "/$org/mcps/$connectionId",
+                  params: { org, connectionId: connection.id },
                 });
               }}
             >
@@ -601,7 +602,8 @@ export default function OrgMcps() {
                   className="cursor-pointer transition-colors"
                   onClick={() =>
                     navigate({
-                      to: `/${org}/mcps/${connection.id}`,
+                      to: "/$org/mcps/$connectionId",
+                      params: { org, connectionId: connection.id },
                     })
                   }
                 >
@@ -636,7 +638,8 @@ export default function OrgMcps() {
           onSort={listState.handleSort}
           onRowClick={(connection) =>
             navigate({
-              to: `/${org}/mcps/${connection.id}`,
+              to: "/$org/mcps/$connectionId",
+              params: { org, connectionId: connection.id },
             })
           }
           emptyState={

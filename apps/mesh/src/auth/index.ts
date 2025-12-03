@@ -248,20 +248,40 @@ export const auth = betterAuth({
   // Hooks to auto-provision resources when organizations are created
   hooks: {
     organization: {
-			create: {
-				after: async (organization) => {
-					// Get the creator's user ID from the organization members
-					const db = getDb();
-					const member = await db
-            .selectFrom("member")
-            .select("userId")
-            .where("organizationId", "=", organization.id)
-            .where("role", "=", "owner")
-            .executeTakeFirst();
+      create: {
+        after: async (organization) => {
+          console.log("🎯 [HOOK] Organization created:", organization.id);
 
-          if (member?.userId) {
-            // Add default Deco Store registry
-            await addDefaultRegistry(organization.id, member.userId);
+          try {
+            // Get the creator's user ID from the organization members
+            const db = getDb();
+            console.log(
+              "🔍 [HOOK] Getting owner for organization:",
+              organization.id,
+            );
+
+            const member = await db
+              .selectFrom("member")
+              .select("userId")
+              .where("organizationId", "=", organization.id)
+              .where("role", "=", "owner")
+              .executeTakeFirst();
+
+            console.log("👤 [HOOK] Found owner:", member?.userId || "none");
+
+            if (member?.userId) {
+              console.log("🚀 [HOOK] Adding Deco Store...");
+              // Add default Deco Store registry
+              await addDefaultRegistry(organization.id, member.userId);
+              console.log("✅ [HOOK] Deco Store added successfully");
+            } else {
+              console.warn("⚠️  [HOOK] No owner found for organization");
+            }
+          } catch (error) {
+            console.error(
+              "❌ [HOOK] Error in organization.create.after:",
+              error,
+            );
           }
         },
       },

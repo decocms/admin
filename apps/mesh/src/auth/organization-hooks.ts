@@ -79,10 +79,18 @@ export async function addDefaultRegistry(
   organizationId: string,
   userId: string,
 ): Promise<void> {
+  console.log(
+    `📦 [addDefaultRegistry] Starting for org: ${organizationId}, user: ${userId}`,
+  );
+
   try {
     const db = getDb();
+    console.log("✅ [addDefaultRegistry] Got database connection");
 
     // Check if organization already has the registry
+    console.log(
+      "🔍 [addDefaultRegistry] Checking if registry already exists...",
+    );
     const existing = await db
       .selectFrom("connections")
       .select("id")
@@ -91,13 +99,23 @@ export async function addDefaultRegistry(
       .executeTakeFirst();
 
     if (existing) {
-      console.log(`⏭️  Organization ${organizationId} already has Deco Store`);
+      console.log(
+        `⏭️  [addDefaultRegistry] Organization ${organizationId} already has Deco Store`,
+      );
       return;
     }
+
+    console.log(
+      "➕ [addDefaultRegistry] No existing registry found, adding new one...",
+    );
 
     // Add the Deco Store
     const connectionId = nanoid();
     const now = new Date().toISOString();
+
+    console.log(
+      `🔑 [addDefaultRegistry] Generated connection ID: ${connectionId}`,
+    );
 
     await db
       .insertInto("connections")
@@ -126,10 +144,12 @@ export async function addDefaultRegistry(
       })
       .execute();
 
-    console.log(`✅ Added Deco Store to organization ${organizationId}`);
+    console.log(
+      `✅ [addDefaultRegistry] Successfully added Deco Store to organization ${organizationId}`,
+    );
   } catch (error) {
     console.error(
-      `❌ Failed to add Deco Store to organization ${organizationId}:`,
+      `❌ [addDefaultRegistry] Failed to add Deco Store to organization ${organizationId}:`,
       error,
     );
     // Don't throw - we don't want to block organization creation

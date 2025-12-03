@@ -25,7 +25,7 @@ import {
   SidebarLayout,
   SidebarProvider,
 } from "@deco/ui/components/sidebar.tsx";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
@@ -80,6 +80,7 @@ function OrgContextSetter({
   fallback: React.ReactNode;
 }) {
   const { org } = useParams({ strict: false });
+  const queryClient = useQueryClient();
   const [isReady, setIsReady] = useState(false);
 
   const setOrgMutation = useMutation({
@@ -96,9 +97,19 @@ function OrgContextSetter({
     }
 
     setOrgMutation.mutate(org, {
-      onSettled: () => setIsReady(true),
+      onSettled: () => {
+        // Invalidate all tool call cache to refresh data for new org
+        console.log(
+          "🔄 [OrgContextSetter] Invalidating tool call cache for org:",
+          org,
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["tool-call"],
+        });
+        setIsReady(true);
+      },
     });
-  }, [org]);
+  }, [org, setOrgMutation, queryClient]);
 
   if (!isReady) {
     return <>{fallback}</>;

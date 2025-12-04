@@ -40,6 +40,7 @@ function parseArgs() {
 // Find the workspace root (where node_modules is located)
 // Script is at apps/mesh/scripts, so we need to go up three levels to the repo root
 const WORKSPACE_ROOT = resolve(SCRIPT_DIR, "../../..");
+const MESH_APP_ROOT = resolve(SCRIPT_DIR, "..");
 const NODE_MODULES_DIR = join(WORKSPACE_ROOT, "node_modules");
 
 // Get dist path from args or use default
@@ -52,12 +53,10 @@ async function pruneNodeModules(): Promise<Set<string>> {
   console.log(`🔍 Tracing dependencies for server and migration scripts...`);
 
   // Find the migration entry point file
+  // Resolve from mesh app root where kysely-bun-worker is a dependency
   let migrateEntryPointPath: string;
   try {
-    migrateEntryPointPath = Bun.resolveSync(
-      MIGRATE_ENTRY_POINT,
-      WORKSPACE_ROOT,
-    );
+    migrateEntryPointPath = Bun.resolveSync(MIGRATE_ENTRY_POINT, MESH_APP_ROOT);
   } catch (error) {
     console.error(`❌ Failed to resolve ${MIGRATE_ENTRY_POINT}:`, error);
     process.exit(1);

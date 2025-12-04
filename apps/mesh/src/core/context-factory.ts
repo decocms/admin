@@ -312,7 +312,7 @@ export function createMeshContextFactory(
 
     // Derive base URL from request
     const url = new URL(c.req.url);
-    const baseUrl = `${url.protocol}//${url.host}`;
+    const baseUrl = process.env.BASE_URL ?? `${url.protocol}//${url.host}`;
 
     // Create AccessControl instance with unified permissions
     const access = new AccessControl(

@@ -1,12 +1,22 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import {
-  RegistryItemsSection,
   type RegistryItem,
+  RegistryItemsSection,
 } from "./registry-items-section";
-import { RegistryItemCard } from "./registry-item-card";
+import { CollectionSearch } from "../collections/collection-search";
+import {
+  MCP_REGISTRY_DECOCMS_KEY,
+  MCP_REGISTRY_PUBLISHER_KEY,
+} from "@/web/utils/constants";
+import { MCPRegistryServer } from "./registry-item-card";
+import { OAuthConfig } from "@/tools/connection/schema";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
+import { authClient } from "@/web/lib/auth-client";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -35,6 +45,107 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
+function extractConnectionData(
+  item: RegistryItem,
+  organizationId: string,
+  userId: string,
+) {
+  const server = item.server as MCPRegistryServer["server"] | undefined;
+
+  const meshMeta =
+    item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ??
+    server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
+  const publisherMeta =
+    item._meta?.[MCP_REGISTRY_PUBLISHER_KEY] ??
+    server?._meta?.[MCP_REGISTRY_PUBLISHER_KEY];
+
+  const appMetadata = publisherMeta?.metadata as
+    | Record<string, unknown>
+    | null
+    | undefined;
+
+  const remote = server?.remotes?.[0];
+
+  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
+    http: "HTTP",
+    sse: "SSE",
+    websocket: "Websocket",
+  };
+
+  const connectionType = remote?.type
+    ? connectionTypeMap[remote.type] || "HTTP"
+    : "HTTP";
+
+  const now = new Date().toISOString();
+
+  const title =
+    publisherMeta?.friendlyName ||
+    item.title ||
+    server?.title ||
+    server?.name ||
+    "Unnamed App";
+
+  const description = server?.description || null;
+
+  const icon = server?.icons?.[0]?.src || null;
+
+  const rawOauthConfig = appMetadata?.oauth_config as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const oauthConfig: OAuthConfig | null =
+    rawOauthConfig &&
+    typeof rawOauthConfig.authorizationEndpoint === "string" &&
+    typeof rawOauthConfig.tokenEndpoint === "string" &&
+    typeof rawOauthConfig.clientId === "string" &&
+    Array.isArray(rawOauthConfig.scopes) &&
+    (rawOauthConfig.grantType === "authorization_code" ||
+      rawOauthConfig.grantType === "client_credentials")
+      ? (rawOauthConfig as unknown as OAuthConfig)
+      : null;
+
+  const configState = appMetadata?.configuration_state as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const configScopes = appMetadata?.configuration_scopes as
+    | string[]
+    | null
+    | undefined;
+
+  return {
+    id: crypto.randomUUID(),
+    title,
+    description,
+    icon,
+    app_name: meshMeta?.appName || server?.name || null,
+    app_id: meshMeta?.id || item.id || null,
+    connection_type: connectionType,
+    connection_url: remote?.url || "",
+    connection_token: null,
+    connection_headers: null,
+    oauth_config: oauthConfig,
+    configuration_state: configState ?? null,
+    configuration_scopes: configScopes ?? null,
+    metadata: {
+      source: "store",
+      registry_item_id: item.id,
+      verified: meshMeta?.verified ?? false,
+      scopeName: meshMeta?.scopeName ?? null,
+      toolsCount: publisherMeta?.tools?.length ?? 0,
+      publishedAt: meshMeta?.publishedAt ?? null,
+      ...appMetadata,
+    },
+    created_at: now,
+    updated_at: now,
+    created_by: userId,
+    organization_id: organizationId,
+    tools: null,
+    bindings: null,
+    status: "inactive" as const,
+  };
+}
+
 export function StoreDiscoveryUI({
   items,
   isLoading,
@@ -42,16 +153,56 @@ export function StoreDiscoveryUI({
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
 
-  // Verified items
-  const verifiedItems = useMemo(() => {
-    return items.filter(
-      (item) =>
-        item.verified === true ||
-        item._meta?.["mcp.mesh"]?.verified === true ||
-        item.server?._meta?.["mcp.mesh"]?.verified === true,
+  const { org } = useProjectContext();
+  const navigate = useNavigate();
+  const connectionsCollection = useConnectionsCollection();
+  const { data: session } = authClient.useSession();
+
+  const handleInstall = async () => {
+    if (!selectedItem || !org || !session?.user?.id) return;
+
+    const connectionData = extractConnectionData(
+      selectedItem,
+      org,
+      session.user.id,
     );
-  }, [items]);
+
+    if (!connectionData.connection_url) {
+      toast.error("This app cannot be installed: no connection URL available");
+      return;
+    }
+
+    setIsInstalling(true);
+    try {
+      const tx = await connectionsCollection.insert(connectionData);
+      await tx.isPersisted.promise;
+
+      toast.success(`${connectionData.title} installed successfully`);
+
+      const registryItemId = selectedItem.id;
+      const newConnection = [...connectionsCollection.state.values()].find(
+        (conn) =>
+          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
+          registryItemId,
+      );
+
+      if (newConnection?.id && org) {
+        navigate({
+          to: "/$org/mcps/$connectionId",
+          params: { org, connectionId: newConnection.id },
+        });
+      } else {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to install app: ${message}`);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   // Filtered items based on search
   const filteredItems = useMemo(() => {
@@ -66,18 +217,22 @@ export function StoreDiscoveryUI({
     );
   }, [items, search]);
 
+  // Verified items
+  const verifiedItems = useMemo(() => {
+    return filteredItems.filter(
+      (item) =>
+        item.verified === true ||
+        item._meta?.["mcp.mesh"]?.verified === true ||
+        item.server?._meta?.["mcp.mesh"]?.verified === true,
+    );
+  }, [filteredItems]);
+
   // Non-verified items
   const allItems = useMemo(() => {
     return filteredItems.filter(
       (item) => !verifiedItems.find((v) => v.id === item.id),
     );
   }, [filteredItems, verifiedItems]);
-
-  // Search results (limited)
-  const searchResults = useMemo(() => {
-    if (!search) return [];
-    return filteredItems.slice(0, 7);
-  }, [filteredItems, search]);
 
   const handleItemClick = (item: RegistryItem) => {
     setSelectedItem(item);
@@ -145,9 +300,22 @@ export function StoreDiscoveryUI({
                         {data.publisher}
                       </p>
                     </div>
-                    <button className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] text-black font-medium rounded-lg transition-colors flex items-center gap-2">
-                      <Icon name="add" size={20} />
-                      Install App
+                    <button
+                      onClick={handleInstall}
+                      disabled={isInstalling}
+                      className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {isInstalling ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Installing...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="add" size={20} />
+                          Install App
+                        </>
+                      )}
                     </button>
                   </div>
                   {data.description && (
@@ -274,40 +442,21 @@ export function StoreDiscoveryUI({
   // Main list view
   return (
     <div className="flex flex-col h-full">
-      {/* Search header */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="relative">
-            <Icon
-              name="search"
-              size={20}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
-            />
-            <Input
-              placeholder="Search items..."
-              className="w-full pl-12"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && searchResults.length > 0 && (
-              <div className="z-20 p-2 bg-popover w-full absolute left-0 top-[calc(100%+8px)] rounded-xl border border-border shadow-lg max-h-96 overflow-y-auto">
-                {searchResults.map((item) => (
-                  <RegistryItemCard
-                    key={item.id}
-                    item={item}
-                    onClick={() => handleItemClick(item)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <CollectionSearch
+        value={search}
+        onChange={setSearch}
+        placeholder="Search for a MCP..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            setSearch(e.currentTarget.value);
+          }
+        }}
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
-          <div className="max-w-6xl mx-auto">
+          <div>
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Icon
@@ -337,8 +486,7 @@ export function StoreDiscoveryUI({
                 {verifiedItems.length > 0 && (
                   <RegistryItemsSection
                     items={verifiedItems}
-                    title="Verified by Deco"
-                    subtitle={`${verifiedItems.length} verified`}
+                    title="Verified"
                     onItemClick={handleItemClick}
                   />
                 )}
@@ -346,8 +494,7 @@ export function StoreDiscoveryUI({
                 {allItems.length > 0 && (
                   <RegistryItemsSection
                     items={allItems}
-                    title="All Items"
-                    subtitle={`${allItems.length} available`}
+                    title="All"
                     onItemClick={handleItemClick}
                   />
                 )}

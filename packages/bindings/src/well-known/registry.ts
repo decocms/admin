@@ -59,7 +59,7 @@ export const MCPRegistryServerSchema = BaseCollectionEntitySchema.extend({
   server: z.object({
     $schema: z.string().optional(),
     _meta: z.record(z.unknown()).optional(),
-    name: z.string().describe("The server name (io.decocms/scope/app)"),
+    name: z.string().describe("The server name (scope/app)"),
     title: z.string().optional().describe("User-friendly title"),
     description: z.string().optional().describe("Server description"),
     icons: z

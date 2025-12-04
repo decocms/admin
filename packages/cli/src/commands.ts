@@ -82,6 +82,7 @@ import {
   watchCommand,
 } from "./commands/deconfig/index.js";
 import { exportCommand, importCommand } from "./commands/projects/index.js";
+import { publishApp } from "./commands/registry/publish.js";
 import { detectRuntime } from "./lib/runtime.js";
 import { packageInfo as packageJson } from "./lib/package-info.js";
 
@@ -1136,6 +1137,49 @@ const project = new Command("project")
   .addCommand(projectExport)
   .addCommand(projectImport);
 
+// Registry publish command
+const registryPublish = new Command("publish")
+  .description(
+    "Publish an app to the registry from a JSON config file or stdin.",
+  )
+  .option(
+    "-f, --file <file>",
+    "Path to JSON config file (reads from stdin if not provided)",
+  )
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .option("-y, --yes", "Skip confirmation")
+  .action(async (options) => {
+    try {
+      const session = await readSession();
+      const workspace = options.workspace || session?.workspace;
+
+      if (!workspace) {
+        console.error(
+          "❌ No workspace specified. Use -w flag or run 'deco configure' first.",
+        );
+        process.exit(1);
+      }
+
+      await publishApp({
+        file: options.file,
+        workspace,
+        local: getLocal(),
+        skipConfirmation: options.yes,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Publish failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
+// Registry parent command
+const registry = new Command("registry")
+  .description("Manage apps in the registry.")
+  .addCommand(registryPublish);
+
 // Main CLI program
 export const program = new Command()
   .name(packageJson.name)
@@ -1191,5 +1235,6 @@ export const program = new Command()
   .addCommand(create)
   .addCommand(deconfig)
   .addCommand(project)
+  .addCommand(registry)
   .addCommand(completion)
   .addCommand(installCompletion);

@@ -15,12 +15,12 @@ WORKDIR /app
 USER bunuser
 
 # Copy package.json files recursively to preserve monorepo structure
-COPY --chown=bunuser:bunapp package.json bun.lockb .npmrc ./
+COPY --chown=bunuser:bunapp package.json .npmrc ./
 COPY --chown=bunuser:bunapp --parents packages/**/package.json ./
 COPY --chown=bunuser:bunapp --parents apps/**/package.json ./
 
-# Install all dependencies (including dev) with frozen lockfile
-RUN bun install --frozen-lockfile
+# Install all dependencies (including dev)
+RUN bun install
 
 # Build stage - builds packages that will be used later in the build process
 FROM deps AS builder
@@ -30,10 +30,6 @@ WORKDIR /app
 
 # Copy the rest of the files (.dockerignore excludes node_modules)
 COPY --chown=bunuser:bunapp . .
-
-# Build packages/bindings first (workspace dependency)
-WORKDIR /app/packages/bindings
-RUN bun run build
 
 # Build mesh app (client and server - includes migrate)
 WORKDIR /app/apps/mesh

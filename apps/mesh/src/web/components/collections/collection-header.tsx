@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 interface CollectionHeaderProps {
   title: string;
-  viewMode: "table" | "cards";
-  onViewModeChange: (mode: "table" | "cards") => void;
+  viewMode?: "table" | "cards";
+  onViewModeChange?: (mode: "table" | "cards") => void;
   sortKey?: string;
   sortDirection?: "asc" | "desc" | null;
   onSort?: (key: string) => void;
@@ -27,14 +27,16 @@ export function CollectionHeader({
       <div className="flex items-center justify-between gap-3 h-12 px-4">
         <h1 className="text-lg font-semibold text-foreground">{title}</h1>
         <div className="flex items-center gap-2">
-          <CollectionDisplayButton
-            viewMode={viewMode}
-            onViewModeChange={onViewModeChange}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={onSort}
-            sortOptions={sortOptions}
-          />
+          {viewMode && onViewModeChange && (
+            <CollectionDisplayButton
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={onSort}
+              sortOptions={sortOptions}
+            />
+          )}
           {ctaButton}
         </div>
       </div>

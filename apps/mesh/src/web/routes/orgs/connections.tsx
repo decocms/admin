@@ -64,6 +64,7 @@ import { useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { authClient } from "@/web/lib/auth-client";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
@@ -106,6 +107,7 @@ export default function OrgMcps() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { action?: "create" };
+  const { data: session } = authClient.useSession();
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
@@ -219,7 +221,7 @@ export default function OrgMcps() {
           connection_token: data.connection_token || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          created_by: "system", // TODO: Get actual user ID
+          created_by: session?.user?.id || "system",
           organization_id: org,
           icon: null,
           app_name: null,
@@ -262,6 +264,7 @@ export default function OrgMcps() {
             icon={connection.icon}
             name={connection.title}
             size="sm"
+            className="shadow-sm"
           />
         </div>
       ),

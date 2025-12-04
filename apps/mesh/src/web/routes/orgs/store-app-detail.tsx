@@ -1,5 +1,6 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState } from "react";
+import { Button } from "@deco/ui/components/button.tsx";
+import { useMemo, useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -110,13 +111,13 @@ function extractConnectionData(
     configuration_state: configState ?? null,
     configuration_scopes: configScopes ?? null,
     metadata: {
+      ...appMetadata,
       source: "store",
       registry_item_id: item.id,
       verified: meshMeta?.verified ?? false,
       scopeName: meshMeta?.scopeName ?? null,
       toolsCount: publisherMeta?.tools?.length ?? 0,
       publishedAt: meshMeta?.publishedAt ?? null,
-      ...appMetadata,
     },
     created_at: now,
     updated_at: now,
@@ -334,7 +335,7 @@ export default function StoreAppDetail() {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
-    enabled: !!listToolName,
+    enabled: !!listToolName && !!effectiveRegistryId,
   });
 
   // Extract items from results without transformation
@@ -406,12 +407,8 @@ export default function StoreAppDetail() {
 
       toast.success(`${connectionData.title} installed successfully`);
 
-      const registryItemId = selectedItem.id;
-      const newConnection = [...connectionsCollection.state.values()].find(
-        (conn) =>
-          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
-          registryItemId,
-      );
+      // Use the deterministic ID to directly look up the connection
+      const newConnection = connectionsCollection.get(connectionData.id);
 
       if (newConnection?.id && org) {
         navigate({
@@ -490,37 +487,22 @@ export default function StoreAppDetail() {
     );
   }
 
-  const availableTabs = [
-    { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
-  ].filter((tab) => tab.visible);
+  if (!data) {
+    return null;
+  }
+
+  const availableTabs = useMemo(() => {
+    return [
+      { id: "tools", label: "Tools", visible: (data.tools?.length || 0) > 0 },
+    ].filter((tab) => tab.visible);
+  }, [data.tools?.length]);
 
   // Set initial active tab if it's not in available tabs
-  if (data && !availableTabs.find((t) => t.id === activeTabId)) {
-    setActiveTabId(availableTabs[0]?.id || "overview");
-  }
-
-  // Not found state
-  if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Icon
-          name="search_off"
-          size={48}
-          className="text-muted-foreground mb-4"
-        />
-        <h3 className="text-lg font-medium mb-2">App not found</h3>
-        <p className="text-muted-foreground max-w-md text-center">
-          The app you're looking for doesn't exist in this store.
-        </p>
-        <button
-          onClick={handleBackClick}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          Go Back to Store
-        </button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (data && !availableTabs.find((t) => t.id === activeTabId)) {
+      setActiveTabId(availableTabs[0]?.id || "overview");
+    }
+  }, [activeTabId, availableTabs]);
 
   return (
     <div className="flex flex-col h-full border-l border-border">
@@ -573,10 +555,11 @@ export default function StoreAppDetail() {
                     </p>
                   )}
                 </div>
-                <button
+                <Button
+                  variant="brand"
                   onClick={handleInstall}
                   disabled={isInstalling}
-                  className="shrink-0 px-6 py-2.5 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="shrink-0"
                 >
                   {isInstalling ? (
                     <>
@@ -589,7 +572,7 @@ export default function StoreAppDetail() {
                       Install App
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -650,7 +633,7 @@ export default function StoreAppDetail() {
 
                 {/* Last Updated */}
                 <div className="px-5 py-5 text-sm flex justify-between items-center border-b border-border">
-                  <span className=" text-foreground text-sm">Last Updated</span>
+                  <span className="text-foreground text-sm">Last Updated</span>
                   <span className="text-muted-foreground uppercase text-xs">
                     {formatLastUpdated(selectedItem.updated_at)}
                   </span>

@@ -8,7 +8,10 @@ import {
   RegistryItemsSection,
 } from "./registry-items-section";
 import { CollectionSearch } from "../collections/collection-search";
-import { MCP_REGISTRY_DECOCMS_KEY, MCP_REGISTRY_PUBLISHER_KEY } from "@/web/utils/constants";
+import {
+  MCP_REGISTRY_DECOCMS_KEY,
+  MCP_REGISTRY_PUBLISHER_KEY,
+} from "@/web/utils/constants";
 import { MCPRegistryServer } from "./registry-item-card";
 import { OAuthConfig } from "@/tools/connection/schema";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -49,12 +52,17 @@ function extractConnectionData(
 ) {
   const server = item.server as MCPRegistryServer["server"] | undefined;
 
-  const meshMeta = item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ?? server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
+  const meshMeta =
+    item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ??
+    server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
   const publisherMeta =
     item._meta?.[MCP_REGISTRY_PUBLISHER_KEY] ??
     server?._meta?.[MCP_REGISTRY_PUBLISHER_KEY];
 
-  const appMetadata = publisherMeta?.metadata as Record<string, unknown> | null | undefined;
+  const appMetadata = publisherMeta?.metadata as
+    | Record<string, unknown>
+    | null
+    | undefined;
 
   const remote = server?.remotes?.[0];
 
@@ -81,19 +89,29 @@ function extractConnectionData(
 
   const icon = server?.icons?.[0]?.src || null;
 
-  const rawOauthConfig = appMetadata?.oauth_config as Record<string, unknown> | null | undefined;
+  const rawOauthConfig = appMetadata?.oauth_config as
+    | Record<string, unknown>
+    | null
+    | undefined;
   const oauthConfig: OAuthConfig | null =
     rawOauthConfig &&
     typeof rawOauthConfig.authorizationEndpoint === "string" &&
     typeof rawOauthConfig.tokenEndpoint === "string" &&
     typeof rawOauthConfig.clientId === "string" &&
     Array.isArray(rawOauthConfig.scopes) &&
-    (rawOauthConfig.grantType === "authorization_code" || rawOauthConfig.grantType === "client_credentials")
+    (rawOauthConfig.grantType === "authorization_code" ||
+      rawOauthConfig.grantType === "client_credentials")
       ? (rawOauthConfig as unknown as OAuthConfig)
       : null;
 
-  const configState = appMetadata?.configuration_state as Record<string, unknown> | null | undefined;
-  const configScopes = appMetadata?.configuration_scopes as string[] | null | undefined;
+  const configState = appMetadata?.configuration_state as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const configScopes = appMetadata?.configuration_scopes as
+    | string[]
+    | null
+    | undefined;
 
   return {
     id: crypto.randomUUID(),

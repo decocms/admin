@@ -262,7 +262,7 @@ export default function OrgMcps() {
             icon={connection.icon}
             name={connection.title}
             size="sm"
-            className="shadow-sm"
+            className="shrink-0 shadow-sm"
           />
         </div>
       ),
@@ -601,7 +601,7 @@ export default function OrgMcps() {
               {connections.map((connection) => (
                 <Card
                   key={connection.id}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors group"
                   onClick={() =>
                     navigate({
                       to: "/$org/mcps/$connectionId",
@@ -609,7 +609,46 @@ export default function OrgMcps() {
                     })
                   }
                 >
-                  <div className="flex flex-col gap-4 p-6">
+                  <div className="flex flex-col gap-4 p-6 relative">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Icon name="more_vert" size={20} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate({
+                              to: "/$org/mcps/$connectionId",
+                              params: { org, connectionId: connection.id },
+                            });
+                          }}
+                        >
+                          <Icon name="visibility" size={16} />
+                          Inspect
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch({ type: "delete", connection });
+                          }}
+                        >
+                          <Icon name="delete" size={16} />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <IntegrationIcon
                       icon={connection.icon}
                       name={connection.title}

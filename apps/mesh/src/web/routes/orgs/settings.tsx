@@ -361,6 +361,13 @@ export default function OrgSettings() {
                                 placeholder="my-organization"
                                 {...field}
                                 disabled={isSaving}
+                                onChange={(e) => {
+                                  // Convert to lowercase and remove invalid chars
+                                  const sanitized = e.target.value
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9-]/g, "");
+                                  field.onChange(sanitized);
+                                }}
                               />
                             </FormControl>
                             <FormDescription>

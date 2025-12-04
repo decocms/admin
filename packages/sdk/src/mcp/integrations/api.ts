@@ -1,8 +1,8 @@
 import {
   createServerClient as createMcpServerClient,
-  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
+  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
@@ -107,7 +107,7 @@ const mapIntegration = (
     id: formatId("i", integration.id),
   };
 };
-export const idEqual = (id1: string, id2: string) => {
+const idEqual = (id1: string, id2: string) => {
   const { type: type1, uuid: uuid1 } = parseId(id1);
   const { type: type2, uuid: uuid2 } = parseId(id2);
   return type1 === type2 && uuid1 === uuid2;

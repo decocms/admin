@@ -131,7 +131,9 @@ export const createLLMProvider = (binding: LLMBindingClient): LLMProvider => {
         supportedUrls,
         doGenerate: async (options: LanguageModelV2CallOptions) => {
           const response = await binding.LLM_DO_GENERATE({
-            callOptions: options,
+            callOptions: options as Parameters<
+              LLMBindingClient["LLM_DO_GENERATE"]
+            >[0]["callOptions"],
             modelId,
           });
           return {
@@ -146,7 +148,9 @@ export const createLLMProvider = (binding: LLMBindingClient): LLMProvider => {
         },
         doStream: async (options: LanguageModelV2CallOptions) => {
           const response = await binding.LLM_DO_STREAM({
-            callOptions: options,
+            callOptions: options as Parameters<
+              LLMBindingClient["LLM_DO_STREAM"]
+            >[0]["callOptions"],
             modelId,
           });
 

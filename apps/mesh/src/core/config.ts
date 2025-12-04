@@ -19,8 +19,6 @@ export interface Config {
   };
 }
 
-export const config = loadConfig();
-
 const configPath = "./config.json";
 const authConfigPath = "./auth-config.json";
 /**
@@ -47,3 +45,5 @@ function loadConfig(): Config {
 
   return { auth: DEFAULT_AUTH_CONFIG };
 }
+
+export const config = loadConfig();

@@ -156,7 +156,7 @@ const StreamRequestSchema = z.object({
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
   maxWindowSize: z.number().optional(),
-  threadId: z.string().optional(),
+  thread_id: z.string().optional(),
 });
 
 export type StreamRequest = z.infer<typeof StreamRequestSchema>;
@@ -433,7 +433,7 @@ app.post("/:org/models/stream", async (c) => {
       temperature,
       maxOutputTokens = DEFAULT_MAX_TOKENS,
       maxWindowSize = DEFAULT_MEMORY,
-      threadId,
+      thread_id: threadId,
     } = payload;
 
     // Get the model provider connection

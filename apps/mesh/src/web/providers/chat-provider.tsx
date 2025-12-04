@@ -34,10 +34,8 @@ function createModelsTransport(
       return {
         body: {
           messages,
-          threadId: metadata?.thread_id,
-          model: metadata?.model,
-          agent: metadata?.agent,
           stream: true,
+          ...metadata,
         },
       };
     },

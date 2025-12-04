@@ -11,6 +11,7 @@ import {
   contractRegister,
   contractSettle,
   oauthStart,
+  mcpConfiguration,
 } from "./contracts/api.ts";
 import * as databasesAPI from "./databases/api.ts";
 import * as deconfigAPI from "./deconfig/api.ts";
@@ -72,6 +73,7 @@ export const CONTRACTS_TOOLS = [
   contractAuthorize,
   contractSettle,
   oauthStart,
+  mcpConfiguration,
 ] as const;
 
 // Register tools for each API handler

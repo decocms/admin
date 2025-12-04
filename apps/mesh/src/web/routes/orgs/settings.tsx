@@ -191,8 +191,9 @@ export default function OrgSettings() {
         slug: data.slug,
       };
 
-      if (data.logo) {
-        updateData.logo = data.logo;
+      // Always include logo to allow clearing it with empty string
+      if (data.logo !== undefined) {
+        updateData.logo = data.logo || null;
       }
 
       const result = await authClient.organization.update({

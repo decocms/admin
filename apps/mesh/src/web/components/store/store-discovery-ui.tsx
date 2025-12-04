@@ -1,12 +1,11 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
-  RegistryItemsSection,
   type RegistryItem,
+  RegistryItemsSection,
 } from "./registry-items-section";
-import { RegistryItemCard } from "./registry-item-card";
+import { CollectionSearch } from "../collections/collection-search";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -43,16 +42,6 @@ export function StoreDiscoveryUI({
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
 
-  // Verified items
-  const verifiedItems = useMemo(() => {
-    return items.filter(
-      (item) =>
-        item.verified === true ||
-        item._meta?.["mcp.mesh"]?.verified === true ||
-        item.server?._meta?.["mcp.mesh"]?.verified === true,
-    );
-  }, [items]);
-
   // Filtered items based on search
   const filteredItems = useMemo(() => {
     if (!search) return items;
@@ -66,18 +55,22 @@ export function StoreDiscoveryUI({
     );
   }, [items, search]);
 
+  // Verified items
+  const verifiedItems = useMemo(() => {
+    return filteredItems.filter(
+      (item) =>
+        item.verified === true ||
+        item._meta?.["mcp.mesh"]?.verified === true ||
+        item.server?._meta?.["mcp.mesh"]?.verified === true,
+    );
+  }, [filteredItems]);
+
   // Non-verified items
   const allItems = useMemo(() => {
     return filteredItems.filter(
       (item) => !verifiedItems.find((v) => v.id === item.id),
     );
   }, [filteredItems, verifiedItems]);
-
-  // Search results (limited)
-  const searchResults = useMemo(() => {
-    if (!search) return [];
-    return filteredItems.slice(0, 7);
-  }, [filteredItems, search]);
 
   const handleItemClick = (item: RegistryItem) => {
     setSelectedItem(item);
@@ -274,40 +267,21 @@ export function StoreDiscoveryUI({
   // Main list view
   return (
     <div className="flex flex-col h-full">
-      {/* Search header */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="relative">
-            <Icon
-              name="search"
-              size={20}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
-            />
-            <Input
-              placeholder="Search items..."
-              className="w-full pl-12"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && searchResults.length > 0 && (
-              <div className="z-20 p-2 bg-popover w-full absolute left-0 top-[calc(100%+8px)] rounded-xl border border-border shadow-lg max-h-96 overflow-y-auto">
-                {searchResults.map((item) => (
-                  <RegistryItemCard
-                    key={item.id}
-                    item={item}
-                    onClick={() => handleItemClick(item)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <CollectionSearch
+        value={search}
+        onChange={setSearch}
+        placeholder="Search for a MCP..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            setSearch(e.currentTarget.value);
+          }
+        }}
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
-          <div className="max-w-6xl mx-auto">
+          <div>
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Icon
@@ -337,8 +311,7 @@ export function StoreDiscoveryUI({
                 {verifiedItems.length > 0 && (
                   <RegistryItemsSection
                     items={verifiedItems}
-                    title="Verified by Deco"
-                    subtitle={`${verifiedItems.length} verified`}
+                    title="Verified"
                     onItemClick={handleItemClick}
                   />
                 )}
@@ -346,8 +319,7 @@ export function StoreDiscoveryUI({
                 {allItems.length > 0 && (
                   <RegistryItemsSection
                     items={allItems}
-                    title="All Items"
-                    subtitle={`${allItems.length} available`}
+                    title="All"
                     onItemClick={handleItemClick}
                   />
                 )}

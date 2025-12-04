@@ -4,6 +4,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Card } from "@deco/ui/components/card.js";
 
 /**
  * MCP Registry Server structure from LIST response
@@ -94,72 +95,57 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
   const initials = getInitials(name);
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
   const scopeName = item._meta?.["mcp.mesh"]?.scopeName;
-  const toolsCount =
-    item.server?._meta?.["mcp.mesh/publisher-provided"]?.tools?.length ?? 0;
 
   return (
-    <div
-      onClick={onClick}
-      className="flex flex-col gap-2 p-4 bg-card rounded-2xl cursor-pointer overflow-hidden border border-border hover:shadow-md transition-shadow h-[176px] w-[259px]"
-    >
-      <div className="grid grid-cols-[min-content_1fr] gap-4 h-full">
-        {/* Icon */}
-        <div className="h-10 w-10 rounded flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary shrink-0 overflow-hidden">
-          {icon ? (
-            <img
-              src={icon}
-              alt={name}
-              className="h-full w-full object-cover rounded"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-          ) : (
-            <span>{initials}</span>
-          )}
+    <Card className="p-6" onClick={onClick}>
+      <div className="flex flex-col gap-4 h-full relative">
+        <div className="flex gap-3">
+          {/* Icon */}
+          <div className="h-10 w-10 rounded flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary shrink-0 overflow-hidden">
+            {icon ? (
+              <img
+                src={icon}
+                alt={name}
+                className="h-full w-full object-cover rounded"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <span>{initials}</span>
+            )}
+          </div>
+          <div className="flex gap-2 items-start">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold truncate">
+                {name}
+                {isVerified && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Icon
+                        name="verified"
+                        size={14}
+                        className="text-green-500 shrink-0"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Verified App</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              {scopeName && <p className="text-xs">Scope: {scopeName}</p>}
+            </div>
+          </div>
         </div>
 
         {/* Content */}
         <div className="grid grid-cols-1 gap-1 min-w-0">
-          <div className="flex items-start gap-1">
-            <div className="text-sm font-semibold truncate">{name}</div>
-            {isVerified && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Icon
-                    name="verified"
-                    size={14}
-                    className="text-green-500 shrink-0"
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Verified App</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Icon
-                  name="info"
-                  size={14}
-                  className="text-muted-foreground shrink-0"
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs space-y-1">
-                  <p className="font-semibold">Registry Item</p>
-                  {scopeName && <p>Scope: {scopeName}</p>}
-                  {toolsCount > 0 && <p>Tools: {toolsCount}</p>}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
           <div className="text-sm text-muted-foreground line-clamp-2">
             {description || "No description available"}
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

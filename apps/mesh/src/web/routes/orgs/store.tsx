@@ -6,6 +6,7 @@ import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { CollectionHeader } from "@/web/components/collections/collection-header";
 
 export default function StorePage() {
   const { org } = useProjectContext();
@@ -55,27 +56,18 @@ export default function StorePage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header Section - Title and Registry Select */}
-      <div className="shrink-0 bg-background border-b border-border">
-        <div className="px-4 py-3">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between ">
-              <div>
-                <h1 className="text-base font-light tracking-tight">Store</h1>
-              </div>
-              <div className="shrink-0">
-                <StoreRegistrySelect
-                  registries={registryOptions}
-                  value={effectiveRegistry}
-                  onValueChange={setSelectedRegistry}
-                  onAddNew={handleAddNewRegistry}
-                  placeholder="Select store..."
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CollectionHeader
+        title="Store"
+        ctaButton={
+          <StoreRegistrySelect
+            registries={registryOptions}
+            value={effectiveRegistry}
+            onValueChange={setSelectedRegistry}
+            onAddNew={handleAddNewRegistry}
+            placeholder="Select store..."
+          />
+        }
+      />
 
       {/* Content Section */}
       <div className="h-full flex flex-col overflow-hidden">

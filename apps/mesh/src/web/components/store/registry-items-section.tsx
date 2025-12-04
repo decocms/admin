@@ -71,20 +71,19 @@ interface RegistryItemsSectionProps {
 export function RegistryItemsSection({
   items,
   title,
-  subtitle,
   onItemClick,
 }: RegistryItemsSectionProps) {
   if (items.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="flex items-center justify-between w-max gap-2">
         <h2 className="text-lg font-medium">{title}</h2>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
+        <span className="block text-xs text-muted-foreground">
+          {items.length} items
+        </span>
       </div>
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(259px,1fr))] gap-4">
         {items.map((item) => (
           <RegistryItemCard
             key={item.id}

@@ -59,5 +59,12 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     return [];
   }, [listResults]);
 
-  return <StoreDiscoveryUI items={items} isLoading={isLoading} error={error} />;
+  return (
+    <StoreDiscoveryUI
+      items={items}
+      isLoading={isLoading}
+      error={error}
+      registryId={registryId}
+    />
+  );
 }

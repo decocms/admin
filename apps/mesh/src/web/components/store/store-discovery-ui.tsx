@@ -280,7 +280,7 @@ export function StoreDiscoveryUI({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4">
+        <div className="p-5">
           <div>
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -264,6 +264,7 @@ export default function OrgMcps() {
             icon={connection.icon}
             name={connection.title}
             size="sm"
+            className="shadow-sm"
           />
         </div>
       ),

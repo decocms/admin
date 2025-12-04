@@ -10,8 +10,8 @@
 import { existsSync, mkdirSync } from "fs";
 import { type Dialect, Kysely, PostgresDialect, sql } from "kysely";
 import { BunWorkerDialect } from "kysely-bun-worker";
-import { Pool } from "pg";
 import * as path from "path";
+import { Pool } from "pg";
 import type { Database as DatabaseSchema } from "../storage/types";
 
 // ============================================================================
@@ -74,7 +74,7 @@ class PostgresDatabase implements SupportedDatabase {
       pool: new Pool({
         connectionString: config.connectionString,
         max: config.options?.maxConnections || 10,
-        ssl: false,
+        ssl: process.env.DATABASE_PG_SSL === "true" ? true : false,
       }),
     });
   }
@@ -206,8 +206,8 @@ function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
   // Add file:// prefix for absolute paths
   url = url.startsWith("/") ? `file://${url}` : url;
 
-  const parsed = new URL(url);
-  const protocol = parsed.protocol.replace(":", "");
+  const parsed = URL.canParse(url) ? new URL(url) : null;
+  const protocol = parsed?.protocol.replace(":", "") ?? url.split("://")[0];
 
   switch (protocol) {
     case "postgres":
@@ -219,6 +219,9 @@ function parseDatabaseUrl(databaseUrl?: string): DatabaseConfig {
 
     case "sqlite":
     case "file":
+      if (!parsed?.pathname) {
+        throw new Error("Invalid database URL: " + url);
+      }
       return {
         type: "sqlite",
         connectionString: parsed.pathname,

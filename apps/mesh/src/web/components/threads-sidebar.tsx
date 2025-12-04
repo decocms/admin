@@ -26,7 +26,7 @@ function ThreadListItem({
   // Generate a simple title from the thread's creation date or use the title if available
   const threadTitle =
     thread.title ||
-    `Chat ${new Date(thread.created_at).toLocaleDateString("en-US", {
+    `Chat ${new Date(thread.created_at).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",

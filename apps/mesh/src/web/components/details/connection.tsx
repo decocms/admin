@@ -958,8 +958,6 @@ function CollectionContent({
       sortDirection,
     }) ?? [];
 
-  console.log({ items });
-
   const schema = useMemo(
     () =>
       jsonSchema
@@ -1090,6 +1088,7 @@ function CollectionContent({
             onSort={handleSort}
             onAction={handleAction}
             onItemClick={(item) => handleAction("open", item)}
+            isLoading={items === undefined}
             emptyState={
               <EmptyState
                 image={null}

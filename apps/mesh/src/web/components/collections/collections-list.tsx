@@ -37,6 +37,7 @@ export function CollectionsList<T extends BaseCollectionEntity>({
   columns = undefined,
   hideToolbar = false,
   sortableFields = [],
+  isLoading = false,
 }: CollectionsListProps<T>) {
   const handleAction = (
     action: "open" | "delete" | "duplicate" | "edit",
@@ -109,7 +110,9 @@ export function CollectionsList<T extends BaseCollectionEntity>({
       )}
 
       {/* Content: Cards or Table */}
-      {viewMode === "cards" ? (
+      {isLoading ? (
+        <CollectionsListFallback />
+      ) : viewMode === "cards" ? (
         <div className="flex-1 overflow-auto p-5">
           {data.length === 0 ? (
             <div className="flex items-center justify-center h-full">
@@ -155,7 +158,7 @@ export function CollectionsList<T extends BaseCollectionEntity>({
             (schema ? generateColumnsFromSchema(schema, sortableFields) : [])
           }
           data={data}
-          isLoading={false}
+          isLoading={isLoading}
           sortKey={sortKey}
           sortDirection={sortDirection}
           onSort={onSort}

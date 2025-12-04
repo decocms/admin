@@ -54,6 +54,20 @@ function isStringOrValue(value: unknown): value is string | number {
   return typeof value === "string" || typeof value === "number";
 }
 
+const BindingSchema = z.object({
+  name: z.string(),
+  inputSchema: z.object({}).optional(),
+  outputSchema: z.object({}).optional(),
+});
+
+function convertBindingToBinder(binding: z.infer<typeof BindingSchema>[]): Binder {
+  return binding.map((binding) => ({
+    name: binding.name,
+    inputSchema: binding.inputSchema as z.ZodType<any>,
+    outputSchema: binding.outputSchema as z.ZodType<any>,
+  }));
+}
+
 /**
  * Evaluate a where expression against a connection entity
  */
@@ -187,7 +201,7 @@ function applyOrderBy(
  * Extended input schema with optional binding parameter
  */
 const ConnectionListInputSchema = CollectionListInputSchema.extend({
-  binding: z.union([z.object({}).passthrough(), z.string()]).optional(),
+  binding: z.union([z.array(BindingSchema), z.string()]).optional(),
 });
 
 /**
@@ -221,7 +235,7 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
             }
             return wellKnownBinding;
           })()
-        : (input.binding as unknown as Binder)
+        : convertBindingToBinder(input.binding)
       : undefined;
 
     // Create binding checker from the binding definition

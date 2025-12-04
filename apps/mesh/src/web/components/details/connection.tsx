@@ -10,7 +10,6 @@ import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import {
   useConnection,
-  useConnections,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
@@ -19,6 +18,7 @@ import {
 } from "@/web/hooks/use-binding";
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
+import { useToolCall } from "@/web/hooks/use-tool-call";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
+import { BindingSelector } from "../binding-selector";
 
 export default function ConnectionInspectorView() {
   const { connectionId, org } = useParams({ strict: false });
@@ -635,11 +636,18 @@ function ConnectionSettingsFormUI({
 /**
  * Parsed configuration field from schema
  */
+interface BindingToolSchema {
+  name: string;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+}
+
 interface ConfigField {
   id: string;
   label: string;
   type: "string" | "binding";
   bindingType?: string; // e.g., "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254"
+  bindingSchema?: BindingToolSchema[]; // Array of tool definitions for filtering
   value: string;
 }
 
@@ -667,11 +675,16 @@ function parseSchemaToFields(
     const typeProperty = propProperties?.__type as Record<string, unknown> | undefined;
     const bindingType = typeProperty?.const as string | undefined;
 
+    // Check if this field has a __binding (binding schema) property
+    const bindingProperty = propProperties?.__binding as Record<string, unknown> | undefined;
+    const bindingSchema = bindingProperty?.const as BindingToolSchema[] | undefined;
+
     fields.push({
       id: key,
       label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-      type: bindingType ? "binding" : "string",
+      type: bindingType || bindingSchema ? "binding" : "string",
       bindingType,
+      bindingSchema,
       value: currentValue,
     });
   }
@@ -679,80 +692,44 @@ function parseSchemaToFields(
   return fields;
 }
 
+interface McpConfigurationResult {
+  stateSchema: Record<string, unknown>;
+  scopes?: string[];
+}
+
 function McpConfigurationFormUI({
+  connection,
   formState,
   onFormStateChange,
-  isSaving,
 }: {
   connection: ConnectionEntity;
   formState: Record<string, unknown>;
   onFormStateChange: (state: Record<string, unknown>) => void;
   isSaving: boolean;
 }) {
-  // Fetch all connections to use for binding dropdowns
-  const { data: allConnections } = useConnections();
+  // Fetch stateSchema from the MCP's MCP_CONFIGURATION tool
+  const toolCaller = useMemo(
+    () => createToolCaller(connection.id),
+    [connection.id],
+  );
 
-  // Mock stateSchema - in real implementation this would come from MCP_CONFIGURATION tool
-  const stateSchema: Record<string, unknown> = {
-    type: "object",
-    properties: {
-      VEO3_CONTRACT: {
-        type: "object",
-        properties: {
-          value: { type: "string" },
-          __type: {
-            type: "string",
-            const: "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254",
-            default: "@deco/veo3-bb8709c4fa8fe081f2cf27d8364ec254",
-          },
-        },
-        required: ["value"],
-        additionalProperties: false,
-      },
-      FILE_SYSTEM: {
-        type: "object",
-        properties: {
-          value: { type: "string" },
-          __type: {
-            type: "string",
-            const: "@deco/file-system",
-            default: "@deco/file-system",
-          },
-        },
-        required: ["value"],
-        additionalProperties: false,
-      },
-      API_KEY: {
-        type: "object",
-        properties: {
-          value: { type: "string" },
-        },
-        required: ["value"],
-        additionalProperties: false,
-      },
-    },
-    required: ["VEO3_CONTRACT", "FILE_SYSTEM", "API_KEY"],
-    additionalProperties: false,
-    $schema: "http://json-schema.org/draft-07/schema#",
-  };
+  const { data: configResult, isLoading: isLoadingSchema } = useToolCall<
+    Record<string, never>,
+    McpConfigurationResult
+  >({
+    toolCaller,
+    toolName: "MCP_CONFIGURATION",
+    toolInputParams: {},
+    enabled: !!connection.id,
+  });
+
+  const stateSchema = configResult?.stateSchema ?? { type: "object", properties: {} };
 
   // Parse schema to get field definitions
   const fields = useMemo(
     () => parseSchemaToFields(stateSchema, formState),
-    [formState],
+    [stateSchema, formState],
   );
-
-  // Get available options for a binding type
-  const getBindingOptions = (_bindingType: string) => {
-    // TODO: Filter connections that match this binding type
-    // For now, return all connections - in real implementation,
-    // you would filter by connections that implement the binding
-    return (allConnections || []).map((conn) => ({
-      value: conn.id,
-      label: conn.title,
-      icon: conn.icon,
-    }));
-  };
 
   const handleValueChange = (fieldId: string, newValue: string) => {
     const currentItem = formState[fieldId] as Record<string, unknown> | undefined;
@@ -768,6 +745,14 @@ function McpConfigurationFormUI({
       },
     });
   };
+
+  if (isLoadingSchema) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        Loading configuration...
+      </div>
+    );
+  }
 
   if (fields.length === 0) {
     return (
@@ -799,50 +784,13 @@ function McpConfigurationFormUI({
             {field.label}
           </span>
 
-          {/* Dynamic Input based on field type */}
-          {field.type === "binding" ? (
-            // Binding field - Show Select dropdown with available connections
-            <Select
-              value={field.value}
-              onValueChange={(value) => handleValueChange(field.id, value)}
-              disabled={isSaving}
-            >
-              <SelectTrigger className="w-[200px] h-8 rounded-lg border-input bg-background">
-                <SelectValue placeholder="Select connection..." />
-              </SelectTrigger>
-              <SelectContent>
-                {getBindingOptions(field.bindingType!).length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    No connections available
-                  </SelectItem>
-                ) : (
-                  getBindingOptions(field.bindingType!).map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center gap-2">
-                        {option.icon && (
-                          <img
-                            src={option.icon}
-                            alt=""
-                            className="w-4 h-4 rounded"
-                          />
-                        )}
-                        <span className="truncate">{option.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          ) : (
-            // String field - Show Input
-            <Input
-              value={field.value}
-              onChange={(e) => handleValueChange(field.id, e.target.value)}
-              disabled={isSaving}
-              placeholder="Enter value..."
-              className="w-[200px] h-8 rounded-lg"
-            />
-          )}
+          <BindingSelector
+            value={field.value}
+            onValueChange={(newValue) => handleValueChange(field.id, newValue)}
+            placeholder={`Select ${field.label.toLowerCase()}...`}
+            binding={field.bindingSchema ?? field.bindingType}
+            onAddNew={() => {}}
+          />
         </div>
       ))}
     </div>

@@ -1,31 +1,31 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-import {
-  useConnection,
-  useConnectionsCollection,
-} from "@/web/hooks/collections/use-connection";
-import { useConnections } from "@/web/hooks/collections/use-connection";
-import { useRegistryConnections } from "@/web/hooks/use-binding";
-import { useToolCall } from "@/web/hooks/use-tool-call";
-import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
 import { createToolCaller } from "@/tools/client";
-import { slugify } from "@/web/utils/slugify";
+import { OAuthConfig } from "@/tools/connection/schema";
 import { CollectionSearch } from "@/web/components/collections/collection-search";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper";
 import { EmptyState } from "@/web/components/empty-state";
-import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import type { MCPRegistryServer } from "@/web/components/store/registry-item-card";
-import { OAuthConfig } from "@/tools/connection/schema";
+import type { RegistryItem } from "@/web/components/store/registry-items-section";
+import {
+  CONNECTIONS_COLLECTION,
+  useConnection,
+  useConnections,
+} from "@/web/hooks/collections/use-connection";
+import { useRegistryConnections } from "@/web/hooks/use-binding";
+import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
+import { useToolCall } from "@/web/hooks/use-tool-call";
+import { authClient } from "@/web/lib/auth-client";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_PUBLISHER_KEY,
 } from "@/web/utils/constants";
-import { authClient } from "@/web/lib/auth-client";
+import { slugify } from "@/web/utils/slugify";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 /** Extract connection data from a registry item for installation */
 function extractConnectionData(
@@ -302,8 +302,7 @@ export default function StoreAppDetail() {
   );
   const [isInstalling, setIsInstalling] = useState(false);
 
-  const { data: allConnections } = useConnections();
-  const connectionsCollection = useConnectionsCollection();
+  const allConnections = useConnections();
   const { data: session } = authClient.useSession();
   const registryConnections = useRegistryConnections(allConnections);
 
@@ -311,7 +310,7 @@ export default function StoreAppDetail() {
   const effectiveRegistryId =
     registryIdParam || registryConnections[0]?.id || "";
 
-  const { data: registryConnection } = useConnection(effectiveRegistryId);
+  const registryConnection = useConnection(effectiveRegistryId);
 
   // Find the LIST tool from the registry connection
   const listToolName = useMemo(() => {
@@ -402,13 +401,13 @@ export default function StoreAppDetail() {
 
     setIsInstalling(true);
     try {
-      const tx = await connectionsCollection.insert(connectionData);
+      const tx = await CONNECTIONS_COLLECTION.insert(connectionData);
       await tx.isPersisted.promise;
 
       toast.success(`${connectionData.title} installed successfully`);
 
       // Use the deterministic ID to directly look up the connection
-      const newConnection = connectionsCollection.get(connectionData.id);
+      const newConnection = CONNECTIONS_COLLECTION.get(connectionData.id);
 
       if (newConnection?.id && org) {
         navigate({

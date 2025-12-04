@@ -1,23 +1,14 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { slugify } from "@/web/utils/slugify";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CollectionSearch } from "../collections/collection-search";
 import {
   type RegistryItem,
   RegistryItemsSection,
 } from "./registry-items-section";
-import { CollectionSearch } from "../collections/collection-search";
-import {
-  MCP_REGISTRY_DECOCMS_KEY,
-  MCP_REGISTRY_PUBLISHER_KEY,
-} from "@/web/utils/constants";
-import { MCPRegistryServer } from "./registry-item-card";
-import { OAuthConfig } from "@/tools/connection/schema";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-import { CONNECTIONS_COLLECTION } from "@/web/hooks/collections/use-connection";
-import { authClient } from "@/web/lib/auth-client";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];

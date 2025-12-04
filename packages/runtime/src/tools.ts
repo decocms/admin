@@ -181,7 +181,7 @@ export interface CreateMCPServerOptions<
 export type Fetch<TEnv = unknown> = (
   req: Request,
   env: TEnv,
-  ctx: ExecutionContext,
+  ctx: any,
 ) => Promise<Response> | Response;
 
 export interface AppContext<TEnv extends DefaultEnv = DefaultEnv> {

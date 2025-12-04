@@ -26,7 +26,7 @@ const authConfigPath = "./auth-config.json";
 /**
  * Load optional auth configuration from file
  */
-export function loadConfig(): Config {
+function loadConfig(): Config {
   if (existsSync(configPath)) {
     try {
       const content = readFileSync(configPath, "utf-8");

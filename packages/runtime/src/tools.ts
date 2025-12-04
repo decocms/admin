@@ -335,11 +335,7 @@ export const createMCPServer = <
     return { server, tools };
   };
 
-  const fetch = async (
-    req: Request,
-    env: TEnv & DefaultEnv<TSchema>,
-    _ctx: ExecutionContext,
-  ) => {
+  const fetch = async (req: Request, env: TEnv & DefaultEnv<TSchema>) => {
     const { server } = await createServer(env);
     const transport = new HttpServerTransport();
 

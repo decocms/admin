@@ -63,6 +63,77 @@ function getRoleBadgeVariant(role: string) {
   }
 }
 
+interface MemberActionsDropdownProps {
+  member: {
+    id: string;
+    role: string;
+  };
+  onChangeRole: (memberId: string, role: string) => void;
+  onRemove: (memberId: string) => void;
+  isUpdating?: boolean;
+}
+
+function MemberActionsDropdown({
+  member,
+  onChangeRole,
+  onRemove,
+  isUpdating = false,
+}: MemberActionsDropdownProps) {
+  const isOwner = member.role === "owner";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          disabled={isOwner}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon name="more_vert" size={20} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        {member.role === "admin" ? (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onChangeRole(member.id, "member");
+            }}
+            disabled={isUpdating}
+          >
+            <Icon name="person" size={16} />
+            Change to Member
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onChangeRole(member.id, "admin");
+            }}
+            disabled={isUpdating}
+          >
+            <Icon name="admin_panel_settings" size={16} />
+            Change to Admin
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(member.id);
+          }}
+        >
+          <Icon name="delete" size={16} />
+          Remove Member
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function OrgMembers() {
   const { data, isLoading } = useMembers();
   const queryClient = useQueryClient();
@@ -241,69 +312,16 @@ export default function OrgMembers() {
     {
       id: "actions",
       header: "",
-      render: (member) => {
-        const isOwner = member.role === "owner";
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={isOwner}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Icon name="more_vert" size={20} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {member.role === "admin" ? (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateRoleMutation.mutate({
-                      memberId: member.id,
-                      role: "member",
-                    });
-                  }}
-                  disabled={updateRoleMutation.isPending}
-                >
-                  <Icon name="person" size={16} />
-                  Change to Member
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateRoleMutation.mutate({
-                      memberId: member.id,
-                      role: "admin",
-                    });
-                  }}
-                  disabled={updateRoleMutation.isPending}
-                >
-                  <Icon name="admin_panel_settings" size={16} />
-                  Change to Admin
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMemberToRemove(member.id);
-                }}
-              >
-                <Icon name="delete" size={16} />
-                Remove Member
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+      render: (member) => (
+        <MemberActionsDropdown
+          member={member}
+          onChangeRole={(memberId, role) =>
+            updateRoleMutation.mutate({ memberId, role })
+          }
+          onRemove={setMemberToRemove}
+          isUpdating={updateRoleMutation.isPending}
+        />
+      ),
       cellClassName: "w-[60px]",
     },
   ];
@@ -392,7 +410,17 @@ export default function OrgMembers() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredAndSortedMembers.map((member) => (
-                <Card key={member.id} className="transition-colors">
+                <Card key={member.id} className="transition-colors relative">
+                  <div className="absolute top-4 right-4 z-10">
+                    <MemberActionsDropdown
+                      member={member}
+                      onChangeRole={(memberId, role) =>
+                        updateRoleMutation.mutate({ memberId, role })
+                      }
+                      onRemove={setMemberToRemove}
+                      isUpdating={updateRoleMutation.isPending}
+                    />
+                  </div>
                   <div className="flex flex-col gap-4 p-6">
                     <Avatar
                       url={member.user?.image ?? undefined}

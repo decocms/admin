@@ -11,6 +11,9 @@ export const KEYS = {
   // Auth-related queries
   authConfig: () => ["authConfig"] as const,
 
+  // Organizations list
+  organizations: () => ["organizations"] as const,
+
   // Organization members (scoped by org)
   members: (locator: ProjectLocator) => [locator, "members"] as const,
 

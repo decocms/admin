@@ -181,7 +181,7 @@ export interface CreateMCPServerOptions<
 export type Fetch<TEnv = unknown> = (
   req: Request,
   env: TEnv,
-  ctx: ExecutionContext,
+  ctx: any,
 ) => Promise<Response> | Response;
 
 export interface AppContext<TEnv extends DefaultEnv = DefaultEnv> {
@@ -195,7 +195,7 @@ const configurationToolsFor = <TSchema extends z.ZodTypeAny = never>({
   scopes,
   onChange,
 }: CreateMCPServerOptions<
-  unknown,
+  any,
   TSchema
 >["configuration"] = {}): CreatedTool[] => {
   const jsonSchema = schema
@@ -335,11 +335,7 @@ export const createMCPServer = <
     return { server, tools };
   };
 
-  const fetch = async (
-    req: Request,
-    env: TEnv & DefaultEnv<TSchema>,
-    _ctx: ExecutionContext,
-  ) => {
+  const fetch = async (req: Request, env: TEnv & DefaultEnv<TSchema>) => {
     const { server } = await createServer(env);
     const transport = new HttpServerTransport();
 

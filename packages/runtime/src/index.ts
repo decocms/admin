@@ -1,8 +1,8 @@
 /* oxlint-disable no-explicit-any */
-import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
 import { createContractBinding, createIntegrationBinding } from "./bindings.ts";
+import { type CORSOptions, handlePreflight, withCORS } from "./cors.ts";
 import { State } from "./state.ts";
 import {
   createMCPServer,
@@ -10,14 +10,13 @@ import {
   MCPServer,
 } from "./tools.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
-import { type CORSOptions, handlePreflight, withCORS } from "./cors.ts";
 export { proxyConnectionForId } from "./bindings.ts";
+export { type CORSOptions, type CORSOrigin } from "./cors.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-export { type CORSOptions, type CORSOrigin } from "./cors.ts";
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   MESH_REQUEST_CONTEXT: RequestContext<TSchema>;
@@ -53,11 +52,7 @@ export interface UserDefaultExport<
   TSchema extends z.ZodTypeAny = never,
   TEnv = TUserEnv & DefaultEnv<TSchema>,
 > extends CreateMCPServerOptions<TEnv, TSchema> {
-  fetch?: (
-    req: Request,
-    env: TEnv,
-    ctx: ExecutionContext,
-  ) => Promise<Response> | Response;
+  fetch?: (req: Request, env: TEnv, ctx: any) => Promise<Response> | Response;
   /**
    * CORS configuration options.
    * Set to `false` to disable CORS handling entirely.
@@ -235,14 +230,14 @@ export const withBindings = <TEnv>({
 
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
-): ExportedHandler<TEnv & DefaultEnv<TSchema>> => {
+) => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
   const corsOptions = userFns.cors;
 
   const fetcher = async (
     req: Request,
     env: TEnv & DefaultEnv<TSchema>,
-    ctx: ExecutionContext,
+    ctx: any,
   ) => {
     const url = new URL(req.url);
     if (url.pathname === "/mcp") {
@@ -278,11 +273,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   };
 
   return {
-    fetch: async (
-      req: Request,
-      env: TEnv & DefaultEnv<TSchema>,
-      ctx: ExecutionContext,
-    ) => {
+    fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx: any) => {
       // Handle CORS preflight (OPTIONS) requests
       if (corsOptions !== false && req.method === "OPTIONS") {
         const options = corsOptions ?? {};

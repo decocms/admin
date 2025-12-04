@@ -9,6 +9,15 @@ import {
   RegistryItemsSection,
 } from "./registry-items-section";
 import { CollectionSearch } from "../collections/collection-search";
+import {
+  MCP_REGISTRY_DECOCMS_KEY,
+  MCP_REGISTRY_PUBLISHER_KEY,
+} from "@/web/utils/constants";
+import { MCPRegistryServer } from "./registry-item-card";
+import { OAuthConfig } from "@/tools/connection/schema";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import { CONNECTIONS_COLLECTION } from "@/web/hooks/collections/use-connection";
+import { authClient } from "@/web/lib/auth-client";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -26,6 +35,52 @@ export function StoreDiscoveryUI({
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { org } = useProjectContext();
+
+  const { data: session } = authClient.useSession();
+
+  const handleInstall = async () => {
+    if (!selectedItem || !org || !session?.user?.id) return;
+
+    const connectionData = extractConnectionData(
+      selectedItem,
+      org,
+      session.user.id,
+    );
+
+    if (!connectionData.connection_url) {
+      toast.error("This app cannot be installed: no connection URL available");
+      return;
+    }
+
+    setIsInstalling(true);
+    try {
+      const tx = CONNECTIONS_COLLECTION.insert(connectionData);
+      await tx.isPersisted.promise;
+
+      toast.success(`${connectionData.title} installed successfully`);
+
+      const registryItemId = selectedItem.id;
+      const newConnection = [...CONNECTIONS_COLLECTION.state.values()].find(
+        (conn) =>
+          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
+          registryItemId,
+      );
+
+      if (newConnection?.id && org) {
+        navigate({
+          to: "/$org/mcps/$connectionId",
+          params: { org, connectionId: newConnection.id },
+        });
+      } else {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to install app: ${message}`);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   // Filtered items based on search
   const filteredItems = useMemo(() => {

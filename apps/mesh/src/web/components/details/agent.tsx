@@ -99,7 +99,7 @@ export function AgentDetailsView({
     "agent",
   );
 
-  const { data: item } = useCollectionItem(collection, itemId);
+  const item = useCollectionItem(collection, itemId);
 
   const {
     register,

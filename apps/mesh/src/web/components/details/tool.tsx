@@ -40,7 +40,7 @@ export function ToolDetailsView({
   const params = useParams({ strict: false });
   const connectionId = params.connectionId ?? UNKNOWN_CONNECTION_ID;
 
-  const { data: connection } = useConnection(connectionId);
+  const connection = useConnection(connectionId);
   const [inputParams, setInputParams] = useState<Record<string, unknown>>({});
   const [executionResult, setExecutionResult] = useState<Record<
     string,

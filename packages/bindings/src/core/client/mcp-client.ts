@@ -83,7 +83,10 @@ export const createServerClient = async (
         headers.set(key, value);
       }
 
-      return fetch(mcpServer.connection.url + `/call-tool/${tool}`, {
+      const url = new URL(mcpServer.connection.url);
+      url.pathname = url.pathname + `/call-tool/${tool}`;
+
+      return fetch(url.href, {
         method: "POST",
         redirect: "manual",
         body: JSON.stringify(args),

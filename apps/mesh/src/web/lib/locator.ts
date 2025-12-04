@@ -23,9 +23,6 @@ export const Locator = {
   },
   parse(locator: ProjectLocator): LocatorStructured {
     if (locator.startsWith("/")) {
-      console.warn(
-        `Using locator starting with / being ignored. Please remove the leading slash.`,
-      );
       locator = locator.slice(1) as ProjectLocator;
     }
     const [org, project] = locator.split("/");

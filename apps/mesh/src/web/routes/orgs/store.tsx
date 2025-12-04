@@ -12,7 +12,7 @@ export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: allConnections, isLoading, isError } = useConnections();
+  const allConnections = useConnections();
 
   // Check if we're viewing a child route (app detail)
   const routerState = useRouterState();
@@ -32,22 +32,6 @@ export default function StorePage() {
       })),
     [registryConnections],
   );
-
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        Loading stores...
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="h-full flex items-center justify-center text-destructive">
-        Failed to load stores
-      </div>
-    );
-  }
 
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";

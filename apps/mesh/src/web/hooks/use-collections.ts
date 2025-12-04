@@ -18,21 +18,11 @@ import {
   createCollection,
   eq,
   like,
-  type OperationType,
   or,
 } from "@tanstack/db";
-import { useLiveQuery } from "@tanstack/react-db";
+import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import { createToolCaller, type ToolCaller } from "../../tools/client";
-
-/**
- * Custom event type for sync mutations
- */
-interface SyncMutationEventDetail<T> {
-  type: OperationType;
-  item: T;
-}
-
-type SyncMutationEvent<T> = CustomEvent<SyncMutationEventDetail<T>>;
+import { createCollectionWithSync } from "./create-collection-with-sync";
 
 /**
  * Collection entity base type that matches the collection binding pattern
@@ -139,13 +129,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
     return allItems;
   }
 
-  // EventTarget for centralized sync mutation handling
-  const syncEventTarget = new EventTarget();
-
-  // Use closure pattern to allow access to collection from within sync callback
-  let collection: Collection<T, string>;
-
-  collection = createCollection<T, string>({
+  const collectionConfig = createCollectionWithSync<T, string>({
     id: `collection-${collectionName.toLowerCase()}`,
     getKey: (item: T) => item.id,
 
@@ -154,50 +138,13 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
       sync: ({ begin, write, commit, markReady }) => {
         let isActive = true;
 
-        // Queue for sequential processing of mutations
-        let queue = Promise.resolve();
-
-        const enqueue = (cb: () => Promise<void>) => {
-          queue = queue.then(cb).catch(console.error);
-        };
-
-        // Centralized handler for sync mutations with timestamp comparison
-        const handleMutation = (e: Event) => {
-          const { type, item } = (e as SyncMutationEvent<T>).detail;
-
-          enqueue(async () => {
-            if (!isActive) return;
-
-            // Check current state via closure
-            const current = collection.get(item.id);
-
-            // Only update if:
-            // - Item doesn't exist in collection (new insert), OR
-            // - Incoming data is newer than current data
-            if (
-              current &&
-              new Date(current.updated_at) > new Date(item.updated_at)
-            ) {
-              // Current data is same or newer, skip
-              console.warn(
-                `Skipping mutation for ${collectionName} ${item.id} because it is the same or newer than the current data`,
-              );
-              return;
-            }
-
-            begin();
-            write({ type, value: item });
-            commit();
-          });
-        };
-
-        syncEventTarget.addEventListener("mutation", handleMutation);
-
         async function initialSync() {
           try {
             const items = await fetchAllPages();
 
-            if (!isActive) return;
+            if (!isActive) {
+              return;
+            }
 
             begin();
             for (const item of items) {
@@ -216,7 +163,6 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
         // Return cleanup function
         return () => {
           isActive = false;
-          syncEventTarget.removeEventListener("mutation", handleMutation);
         };
       },
     },
@@ -225,67 +171,46 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
     onInsert: async ({ transaction }) => {
       const results = await Promise.all(
         transaction.mutations.map(
-          (mutation) =>
-            toolCaller(createToolName, {
-              data: mutation.modified,
-            }) as Promise<CollectionInsertOutput<T>>,
+          ({ modified: data }) =>
+            toolCaller(createToolName, { data }) as Promise<
+              CollectionInsertOutput<T>
+            >,
         ),
       );
 
-      // Dispatch events with server-returned data
-      for (const result of results) {
-        syncEventTarget.dispatchEvent(
-          new CustomEvent("mutation", {
-            detail: { type: "insert" as const, item: result.item },
-          }),
-        );
-      }
+      return results.map((r) => r.item);
     },
 
     // Persistence handler for updates
     onUpdate: async ({ transaction }) => {
       const results = await Promise.all(
         transaction.mutations.map(
-          (mutation) =>
-            toolCaller(updateToolName, {
-              id: mutation.key,
-              data: mutation.modified,
-            }) as Promise<CollectionUpdateOutput<T>>,
+          ({ key: id, modified: data }) =>
+            toolCaller(updateToolName, { id, data }) as Promise<
+              CollectionUpdateOutput<T>
+            >,
         ),
       );
 
-      // Dispatch events with server-returned data
-      for (const result of results) {
-        syncEventTarget.dispatchEvent(
-          new CustomEvent("mutation", {
-            detail: { type: "update" as const, item: result.item },
-          }),
-        );
-      }
+      return results.map((r) => r.item);
     },
 
     // Persistence handler for deletes
     onDelete: async ({ transaction }) => {
       const results = await Promise.all(
         transaction.mutations.map(
-          (mutation) =>
-            toolCaller(deleteToolName, {
-              id: mutation.key,
-              data: mutation.modified,
-            }) as Promise<CollectionDeleteOutput<T>>,
+          ({ key: id }) =>
+            toolCaller(deleteToolName, { id }) as Promise<
+              CollectionDeleteOutput<T>
+            >,
         ),
       );
 
-      // Dispatch events with server-returned data
-      for (const result of results) {
-        syncEventTarget.dispatchEvent(
-          new CustomEvent("mutation", {
-            detail: { type: "delete" as const, item: result.item },
-          }),
-        );
-      }
+      return results.map((r) => r.item);
     },
   });
+
+  const collection = createCollection<T, string>(collectionConfig);
 
   return collection;
 }
@@ -374,7 +299,7 @@ export function useCollectionList<T extends CollectionEntity>(
 
   // Use live query for reactive data with all filtering and sorting in the query
   // See: https://tanstack.com/db/latest/docs/guides/live-queries#functional-select
-  return useLiveQuery(
+  const { data } = useLiveSuspenseQuery(
     (q) => {
       // Start with base query and sorting
       let query = q
@@ -434,6 +359,8 @@ export function useCollectionList<T extends CollectionEntity>(
     },
     [trimmedSearchTerm, filters, sortKey, sortDirection, collection],
   );
+
+  return data;
 }
 
 /**
@@ -447,7 +374,7 @@ export function useCollectionItem<T extends CollectionEntity>(
   collection: Collection<T, string>,
   itemId: string | undefined,
 ) {
-  return useLiveQuery(
+  const { data } = useLiveSuspenseQuery(
     (q) => {
       let query = q.from({ item: collection });
 
@@ -462,4 +389,6 @@ export function useCollectionItem<T extends CollectionEntity>(
     },
     [itemId, collection],
   );
+
+  return data;
 }

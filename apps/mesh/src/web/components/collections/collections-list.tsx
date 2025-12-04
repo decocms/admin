@@ -6,7 +6,19 @@ import { CollectionDisplayButton } from "./collection-display-button.tsx";
 import type { CollectionsListProps } from "./types";
 import type { TableColumn } from "@deco/ui/components/collection-table.tsx";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
+import { Loader2 } from "lucide-react";
 import { z } from "zod";
+
+function CollectionsListFallback() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <div>Loading...</div>
+      </div>
+    </div>
+  );
+}
 
 export function CollectionsList<T extends BaseCollectionEntity>({
   data,
@@ -20,7 +32,6 @@ export function CollectionsList<T extends BaseCollectionEntity>({
   onAction = () => {},
   onItemClick = () => {},
   headerActions = null,
-  isLoading = false,
   emptyState = null,
   readOnly = false,
   columns = undefined,
@@ -100,11 +111,7 @@ export function CollectionsList<T extends BaseCollectionEntity>({
       {/* Content: Cards or Table */}
       {viewMode === "cards" ? (
         <div className="flex-1 overflow-auto p-5">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">Loading...</div>
-            </div>
-          ) : data.length === 0 ? (
+          {data.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               {emptyState || (
                 <EmptyState
@@ -148,7 +155,7 @@ export function CollectionsList<T extends BaseCollectionEntity>({
             (schema ? generateColumnsFromSchema(schema, sortableFields) : [])
           }
           data={data}
-          isLoading={isLoading}
+          isLoading={false}
           sortKey={sortKey}
           sortDirection={sortDirection}
           onSort={onSort}
@@ -169,6 +176,8 @@ export function CollectionsList<T extends BaseCollectionEntity>({
     </div>
   );
 }
+
+CollectionsList.Fallback = CollectionsListFallback;
 
 // Helper to generate columns from schema
 function generateColumnsFromSchema<T extends BaseCollectionEntity>(

@@ -610,7 +610,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   public get _thread(): ThreadLocator {
-    const threadId = this.metadata?.threadId ?? crypto.randomUUID(); // private thread with the given resource
+    const threadId = this.metadata?.thread_id ?? crypto.randomUUID(); // private thread with the given resource
     return {
       threadId,
       resourceId:
@@ -1123,7 +1123,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   public get thread(): { threadId: string; resourceId: string } {
-    const threadId = this.metadata?.threadId ?? crypto.randomUUID(); // private thread with the given resource
+    const threadId = this.metadata?.thread_id ?? crypto.randomUUID(); // private thread with the given resource
     return {
       threadId,
       resourceId:
@@ -1596,7 +1596,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         lastMessages: requestMetadata.lastMessages,
         maxTokens: requestMetadata.maxTokens,
         context: requestMetadata.context,
-        threadId: threadId ?? this.metadata?.threadId,
+        threadId: threadId ?? this.metadata?.thread_id,
         resourceId: resourceId ?? this.metadata?.resourceId,
       };
 

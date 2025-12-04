@@ -211,10 +211,10 @@ app.use("*", async (c, next) => {
   } catch (error) {
     const err = error as Error;
 
-    if (err.name === "UnauthorizedError") {
+    if (err?.name === "UnauthorizedError") {
       return c.json({ error: err.message }, 401);
     }
-    if (err.name === "NotFoundError") {
+    if (err?.name === "NotFoundError") {
       return c.json({ error: err.message }, 404);
     }
 

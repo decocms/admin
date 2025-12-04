@@ -65,10 +65,27 @@ function LogoUpload({
       }
 
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        onChange(result);
+
+      reader.onerror = () => {
+        const error = reader.error;
+        console.error("FileReader error:", error);
+        toast.error(
+          error?.message || "Failed to read image file. Please try again.",
+        );
+        // Clear the file input so user can retry with the same file
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       };
+
+      reader.onloadend = () => {
+        // Only call onChange if the read was successful (result is a valid data URL)
+        if (reader.readyState === FileReader.DONE && reader.result) {
+          const result = reader.result as string;
+          onChange(result);
+        }
+      };
+
       reader.readAsDataURL(file);
     }
   };
@@ -260,7 +277,7 @@ export default function OrgSettings() {
     );
   }
 
-  if (organizationsLoading || !currentOrganization) {
+  if (organizationsLoading) {
     return (
       <CollectionPage>
         <CollectionHeader title="Settings" />
@@ -272,6 +289,28 @@ export default function OrgSettings() {
             <div className="flex-1 p-8">
               <Skeleton className="h-48 w-full max-w-2xl" />
             </div>
+          </div>
+        </div>
+      </CollectionPage>
+    );
+  }
+
+  if (!currentOrganization) {
+    return (
+      <CollectionPage>
+        <CollectionHeader title="Settings" />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="text-center py-12">
+            <h2 className="text-lg font-semibold text-foreground mb-2">
+              Organization not found
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              The organization "{org}" doesn't exist or you don't have access to
+              it.
+            </p>
+            <Button variant="outline" onClick={() => navigate({ to: "/" })}>
+              Go to home
+            </Button>
           </div>
         </div>
       </CollectionPage>

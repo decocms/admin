@@ -35,7 +35,7 @@ function isZodSchema(value: unknown): value is ZodType<unknown> {
  * @param schema - A Zod schema or JSON schema
  * @returns The JSON schema representation, or null if input is null/undefined
  */
-function normalizeToJsonSchema(
+function _normalizeToJsonSchema(
   schema: ZodType<unknown> | JsonSchema | null | undefined,
 ): JsonSchema | null {
   if (schema == null) {
@@ -203,6 +203,8 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
           return false;
         }
         return true;
+
+        // FIXME @mcandeia Zod to JSONSchema converstion is creating inconsistent schemas
 
         // ignore input/output schema for now
         // === INPUT SCHEMA VALIDATION ===

@@ -83,6 +83,7 @@ export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
   meshUrl: string;
+  authorization?: string | null;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
@@ -159,14 +160,19 @@ export const withBindings = <TEnv>({
   tokenOrContext,
   url,
   bindings: inlineBindings,
+  authToken,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
+  // token is x-mesh-token
   tokenOrContext?: string | RequestContext;
+  // authToken is the authorization header
+  authToken?: string | null;
   url?: string;
   bindings?: Binding[];
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
+  const authorization = authToken ? authToken.split(" ")[1] : undefined;
 
   let context;
   if (typeof tokenOrContext === "string") {
@@ -180,6 +186,7 @@ export const withBindings = <TEnv>({
       }) ?? {};
 
     context = {
+      authorization,
       state: decoded.state ?? metadata.state,
       token: tokenOrContext,
       meshUrl: (decoded.meshUrl as string) ?? metadata.meshUrl,
@@ -197,6 +204,7 @@ export const withBindings = <TEnv>({
         connectionId?: string;
       }) ?? {};
     const appName = decoded.appName as string | undefined;
+    context.authorization ??= authorization;
     context.callerApp = appName;
     context.connectionId ??=
       (decoded.connectionId as string) ?? metadata.connectionId;
@@ -204,6 +212,7 @@ export const withBindings = <TEnv>({
   } else {
     context = {
       state: {},
+      authorization,
       token: undefined,
       meshUrl: undefined,
       connectionId: undefined,
@@ -330,6 +339,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       }
 
       const bindings = withBindings({
+        authToken: req.headers.get("authorization") ?? null,
         env,
         server,
         bindings: userFns.bindings,

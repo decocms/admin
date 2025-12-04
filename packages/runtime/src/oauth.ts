@@ -127,14 +127,20 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
     // Validate required params
     if (!redirectUri) {
       return Response.json(
-        { error: "invalid_request", error_description: "redirect_uri required" },
+        {
+          error: "invalid_request",
+          error_description: "redirect_uri required",
+        },
         { status: 400 },
       );
     }
 
     if (responseType !== "code") {
       return Response.json(
-        { error: "unsupported_response_type", error_description: "Only 'code' is supported" },
+        {
+          error: "unsupported_response_type",
+          error_description: "Only 'code' is supported",
+        },
         { status: 400 },
       );
     }
@@ -170,23 +176,33 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
     const error = url.searchParams.get("error");
 
     // Decode state
-    const pending = encodedState ? decodeState<PendingAuthState>(encodedState) : null;
+    const pending = encodedState
+      ? decodeState<PendingAuthState>(encodedState)
+      : null;
 
     if (error) {
-      const errorDescription = url.searchParams.get("error_description") ?? "Authorization failed";
+      const errorDescription =
+        url.searchParams.get("error_description") ?? "Authorization failed";
       if (pending?.redirectUri) {
         const redirectUrl = new URL(pending.redirectUri);
         redirectUrl.searchParams.set("error", error);
         redirectUrl.searchParams.set("error_description", errorDescription);
-        if (pending.clientState) redirectUrl.searchParams.set("state", pending.clientState);
+        if (pending.clientState)
+          redirectUrl.searchParams.set("state", pending.clientState);
         return Response.redirect(redirectUrl.toString(), 302);
       }
-      return Response.json({ error, error_description: errorDescription }, { status: 400 });
+      return Response.json(
+        { error, error_description: errorDescription },
+        { status: 400 },
+      );
     }
 
     if (!code || !pending) {
       return Response.json(
-        { error: "invalid_request", error_description: "Missing code or state" },
+        {
+          error: "invalid_request",
+          error_description: "Missing code or state",
+        },
         { status: 400 },
       );
     }
@@ -219,8 +235,12 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       // Redirect back to client with error
       const redirectUrl = new URL(pending.redirectUri);
       redirectUrl.searchParams.set("error", "server_error");
-      redirectUrl.searchParams.set("error_description", "Failed to exchange authorization code");
-      if (pending.clientState) redirectUrl.searchParams.set("state", pending.clientState);
+      redirectUrl.searchParams.set(
+        "error_description",
+        "Failed to exchange authorization code",
+      );
+      if (pending.clientState)
+        redirectUrl.searchParams.set("state", pending.clientState);
 
       return Response.redirect(redirectUrl.toString(), 302);
     }
@@ -246,7 +266,10 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
 
       if (grant_type !== "authorization_code") {
         return Response.json(
-          { error: "unsupported_grant_type", error_description: "Only authorization_code supported" },
+          {
+            error: "unsupported_grant_type",
+            error_description: "Only authorization_code supported",
+          },
           { status: 400 },
         );
       }
@@ -262,7 +285,10 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       const payload = decodeState<CodePayload>(code);
       if (!payload || !payload.accessToken) {
         return Response.json(
-          { error: "invalid_grant", error_description: "Invalid or expired code" },
+          {
+            error: "invalid_grant",
+            error_description: "Invalid or expired code",
+          },
           { status: 400 },
         );
       }
@@ -271,7 +297,10 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       if (payload.codeChallenge) {
         if (!code_verifier) {
           return Response.json(
-            { error: "invalid_grant", error_description: "code_verifier required" },
+            {
+              error: "invalid_grant",
+              error_description: "code_verifier required",
+            },
             { status: 400 },
           );
         }
@@ -292,7 +321,10 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
 
         if (computedChallenge !== payload.codeChallenge) {
           return Response.json(
-            { error: "invalid_grant", error_description: "Invalid code_verifier" },
+            {
+              error: "invalid_grant",
+              error_description: "Invalid code_verifier",
+            },
             { status: 400 },
           );
         }
@@ -314,7 +346,10 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
     } catch (err) {
       console.error("Token exchange error:", err);
       return Response.json(
-        { error: "server_error", error_description: "Failed to process token request" },
+        {
+          error: "server_error",
+          error_description: "Failed to process token request",
+        },
         { status: 500 },
       );
     }

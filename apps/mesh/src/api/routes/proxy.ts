@@ -159,17 +159,18 @@ function withStreamableConnectionAuthorization(
  * Single server approach - tools from downstream are dynamically fetched and registered
  */
 export async function createMCPProxy(
-  connectionId: string | ConnectionEntity,
+  connectionIdOrConnection: string | ConnectionEntity,
   ctx: MeshContext,
 ) {
   // Get connection details
   const connection =
-    typeof connectionId === "string"
-      ? await ctx.storage.connections.findById(connectionId)
-      : connectionId;
+    typeof connectionIdOrConnection === "string"
+      ? await ctx.storage.connections.findById(connectionIdOrConnection)
+      : connectionIdOrConnection;
   if (!connection) {
     throw new Error("Connection not found");
   }
+  const connectionId = connection?.id;
 
   if (ctx.organization && connection.organization_id !== ctx.organization.id) {
     throw new Error("Connection does not belong to the active organization");

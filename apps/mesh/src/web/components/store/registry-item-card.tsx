@@ -90,7 +90,10 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
   const scopeName = `${item._meta?.["mcp.mesh"]?.scopeName}/${item._meta?.["mcp.mesh"]?.appName}`;
 
   return (
-    <Card className="p-6 cursor-pointer" onClick={onClick}>
+    <Card
+      className="p-6 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onClick}
+    >
       <div className="flex flex-col gap-4 h-full relative">
         <div className="flex gap-3">
           {/* Icon */}

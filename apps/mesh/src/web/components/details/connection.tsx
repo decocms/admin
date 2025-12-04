@@ -840,8 +840,8 @@ function ToolsList({
                       <IntegrationIcon
                         icon={null}
                         name={tool.name}
-                        size="lg"
-                        className="shrink-0 shadow-lg"
+                        size="md"
+                        className="shrink-0 shadow-sm"
                       />
                       <div className="flex flex-col gap-0">
                         <h3 className="text-base font-medium text-foreground truncate">

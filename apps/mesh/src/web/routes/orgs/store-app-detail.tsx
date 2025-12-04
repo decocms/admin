@@ -1,6 +1,6 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -497,11 +497,12 @@ export default function StoreAppDetail() {
     ].filter((tab) => tab.visible);
   }, [data.tools?.length]);
 
-  // Set initial active tab if it's not in available tabs
-  useEffect(() => {
-    if (data && !availableTabs.find((t) => t.id === activeTabId)) {
-      setActiveTabId(availableTabs[0]?.id || "overview");
+  // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
+  const effectiveActiveTabId = useMemo(() => {
+    if (availableTabs.find((t) => t.id === activeTabId)) {
+      return activeTabId;
     }
+    return availableTabs[0]?.id || "overview";
   }, [activeTabId, availableTabs]);
 
   return (
@@ -650,7 +651,7 @@ export default function StoreAppDetail() {
                         key={tab.id}
                         onClick={() => setActiveTabId(tab.id)}
                         className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium px-3 py-1.5 h-8 rounded-lg border transition-colors ${
-                          activeTabId === tab.id
+                          effectiveActiveTabId === tab.id
                             ? "bg-muted border-input text-foreground"
                             : "bg-transparent border-transparent text-muted-foreground hover:bg-muted"
                         }`}
@@ -662,7 +663,7 @@ export default function StoreAppDetail() {
                 )}
 
                 {/* Tools Tab Content */}
-                {activeTabId === "tools" && data.tools.length > 0 && (
+                {effectiveActiveTabId === "tools" && data.tools.length > 0 && (
                   <div className="flex flex-col">
                     {/* Search Section */}
                     <div className="border-b border-border bg-background">
@@ -707,7 +708,7 @@ export default function StoreAppDetail() {
                 )}
 
                 {/* Overview Tab Content */}
-                {activeTabId === "overview" && (
+                {effectiveActiveTabId === "overview" && (
                   <div className="p-4 bg-background">
                     <p className="text-muted-foreground leading-relaxed">
                       {data.description || "No overview available"}
@@ -716,21 +717,21 @@ export default function StoreAppDetail() {
                 )}
 
                 {/* Models Tab Content */}
-                {activeTabId === "models" && data.models && (
+                {effectiveActiveTabId === "models" && data.models && (
                   <div className="p-4 bg-background text-muted-foreground">
                     <p>Models information</p>
                   </div>
                 )}
 
                 {/* Emails Tab Content */}
-                {activeTabId === "emails" && data.emails && (
+                {effectiveActiveTabId === "emails" && data.emails && (
                   <div className="p-4 bg-background text-muted-foreground">
                     <p>Email configuration available</p>
                   </div>
                 )}
 
                 {/* Analytics Tab Content */}
-                {activeTabId === "analytics" &&
+                {effectiveActiveTabId === "analytics" &&
                   (data.analytics as unknown) != null && (
                     <div className="p-4 bg-background text-muted-foreground">
                       <p>Analytics configuration available</p>
@@ -738,11 +739,12 @@ export default function StoreAppDetail() {
                   )}
 
                 {/* CDN Tab Content */}
-                {activeTabId === "cdn" && (data.cdn as unknown) != null && (
-                  <div className="p-4 bg-background text-muted-foreground">
-                    <p>CDN configuration available</p>
-                  </div>
-                )}
+                {effectiveActiveTabId === "cdn" &&
+                  (data.cdn as unknown) != null && (
+                    <div className="p-4 bg-background text-muted-foreground">
+                      <p>CDN configuration available</p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

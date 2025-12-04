@@ -700,7 +700,7 @@ const ensureISOString = (date: unknown): string => {
 const mapAppToMCPRegistryServer = (
   app: Record<string, unknown>,
 ): Record<string, unknown> => {
-  const serverName = `io.decocms/${(app.scope as Record<string, unknown>).scope_name}/${app.name}`;
+  const serverName = `${(app.scope as Record<string, unknown>).scope_name}/${app.name}`;
 
   return {
     id: app.id,

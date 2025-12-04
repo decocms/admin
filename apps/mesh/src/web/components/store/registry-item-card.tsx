@@ -94,7 +94,7 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
   const icon = item.server?.icons?.[0]?.src;
   const initials = getInitials(name);
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
-  const scopeName = item._meta?.["mcp.mesh"]?.scopeName;
+  const scopeName = `${item._meta?.["mcp.mesh"]?.scopeName}/${item._meta?.["mcp.mesh"]?.appName}`;
 
   return (
     <Card className="p-6" onClick={onClick}>
@@ -134,7 +134,7 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
                   </Tooltip>
                 )}
               </div>
-              {scopeName && <p className="text-xs">Scope: {scopeName}</p>}
+              {scopeName && <p className="text-xs">{scopeName}</p>}
             </div>
           </div>
         </div>

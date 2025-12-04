@@ -42,6 +42,7 @@ export interface FetchOptions extends RequestInit {
 
 // Default fetcher instance with API_SERVER_URL and API_HEADERS
 import type { ToolBinder } from "../binder";
+import { ServerClient } from "./mcp-client";
 export type { ToolBinder };
 
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
@@ -80,6 +81,11 @@ export interface CreateStubAPIOptions {
   connection: MCPConnection;
   streamable?: Record<string, boolean>;
   debugId?: () => string;
+  createServerClient?: (
+    mcpServer: { connection: MCPConnection; name?: string },
+    signal?: AbortSignal,
+    extraHeaders?: Record<string, string>,
+  ) => ServerClient;
   getErrorByStatusCode?: (
     statusCode: number,
     message?: string,

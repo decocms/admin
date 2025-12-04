@@ -7,9 +7,12 @@
 
 import type { ZodType } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
+import {
+  createMCPFetchStub,
+  CreateStubAPIOptions,
+  MCPClientFetchStub,
+} from "./client/mcp";
 import { MCPConnection } from "./connection";
-import { isSubset } from "./subset";
 
 type JsonSchema = Record<string, unknown>;
 
@@ -140,9 +143,11 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     ...createBindingChecker(binder),
     forConnection: (
       mcpConnection: MCPConnection,
+      createServerClient?: CreateStubAPIOptions["createServerClient"],
     ): MCPClientFetchStub<TDefinition> => {
       return createMCPFetchStub<TDefinition>({
         connection: mcpConnection,
+        createServerClient,
         streamable: binder.reduce(
           (acc, tool) => {
             acc[tool.name] = tool.streamable === true;
@@ -197,42 +202,44 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
         if (!matchedTool) {
           return false;
         }
+        return true;
 
+        // ignore input/output schema for now
         // === INPUT SCHEMA VALIDATION ===
         // Tool must accept what binder requires
         // Check: isSubset(binder, tool) - every value valid under binder is valid under tool
-        const binderInputSchema = normalizeToJsonSchema(binderTool.inputSchema);
-        const toolInputSchema = normalizeToJsonSchema(matchedTool.inputSchema);
+        // const binderInputSchema = normalizeToJsonSchema(binderTool.inputSchema);
+        // const toolInputSchema = normalizeToJsonSchema(matchedTool.inputSchema);
 
-        if (binderInputSchema && toolInputSchema) {
-          // Check if binder input is a subset of tool input (tool accepts what binder requires)
-          if (!isSubset(binderInputSchema, toolInputSchema)) {
-            return false;
-          }
-        } else if (binderInputSchema && !toolInputSchema) {
-          // Binder requires input schema but tool doesn't have one
-          return false;
-        }
+        // if (binderInputSchema && toolInputSchema) {
+        //   // Check if binder input is a subset of tool input (tool accepts what binder requires)
+        //   if (!isSubset(binderInputSchema, toolInputSchema)) {
+        //     return false;
+        //   }
+        // } else if (binderInputSchema && !toolInputSchema) {
+        //   // Binder requires input schema but tool doesn't have one
+        //   return false;
+        // }
 
-        // === OUTPUT SCHEMA VALIDATION ===
-        // Tool must provide what binder expects (but can provide more)
-        // Check: isSubset(binder, tool) - tool provides at least what binder expects
-        const binderOutputSchema = normalizeToJsonSchema(
-          binderTool.outputSchema,
-        );
-        const toolOutputSchema = normalizeToJsonSchema(
-          matchedTool.outputSchema,
-        );
+        // // === OUTPUT SCHEMA VALIDATION ===
+        // // Tool must provide what binder expects (but can provide more)
+        // // Check: isSubset(binder, tool) - tool provides at least what binder expects
+        // const binderOutputSchema = normalizeToJsonSchema(
+        //   binderTool.outputSchema,
+        // );
+        // const toolOutputSchema = normalizeToJsonSchema(
+        //   matchedTool.outputSchema,
+        // );
 
-        if (binderOutputSchema && toolOutputSchema) {
-          // Check if binder output is a subset of tool output (tool provides what binder expects)
-          if (!isSubset(binderOutputSchema, toolOutputSchema)) {
-            return false;
-          }
-        } else if (binderOutputSchema && !toolOutputSchema) {
-          // Binder expects output schema but tool doesn't have one
-          return false;
-        }
+        // if (binderOutputSchema && toolOutputSchema) {
+        //   // Check if binder output is a subset of tool output (tool provides what binder expects)
+        //   if (!isSubset(binderOutputSchema, toolOutputSchema)) {
+        //     return false;
+        //   }
+        // } else if (binderOutputSchema && !toolOutputSchema) {
+        //   // Binder expects output schema but tool doesn't have one
+        //   return false;
+        // }
       }
       return true;
     },

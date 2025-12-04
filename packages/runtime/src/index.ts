@@ -254,13 +254,31 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         return oauthHandlers.handleProtectedResourceMetadata(req);
       }
 
+      // Authorization server metadata (RFC8414)
+      if (url.pathname === "/.well-known/oauth-authorization-server") {
+        return oauthHandlers.handleAuthorizationServerMetadata(req);
+      }
+
+      // Authorization endpoint - redirects to external OAuth provider
+      if (url.pathname === "/authorize") {
+        return oauthHandlers.handleAuthorize(req);
+      }
+
       // OAuth callback - receives code from external OAuth provider
       if (url.pathname === "/oauth/callback") {
         return oauthHandlers.handleOAuthCallback(req);
       }
 
+      // Token endpoint - exchanges code for tokens
+      if (url.pathname === "/token" && req.method === "POST") {
+        return oauthHandlers.handleToken(req);
+      }
+
       // Dynamic client registration (RFC7591)
-      if (url.pathname === "/mcp/register" && req.method === "POST") {
+      if (
+        (url.pathname === "/register" || url.pathname === "/mcp/register") &&
+        req.method === "POST"
+      ) {
         return oauthHandlers.handleClientRegistration(req);
       }
     }

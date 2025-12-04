@@ -43,7 +43,7 @@ class Client extends BaseClient {
 }
 
 export interface ServerClient {
-  client: Client;
+  client: Pick<Client, "callTool" | "listTools">;
   callStreamableTool: (tool: string, args: unknown) => Promise<Response>;
 }
 export const createServerClient = async (

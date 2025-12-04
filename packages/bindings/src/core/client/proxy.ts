@@ -43,11 +43,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           ? { "x-trace-debug-id": debugId }
           : undefined;
 
-        const { client, callStreamableTool } = await createServerClient(
-          { connection: options.connection },
-          undefined,
-          extraHeaders,
-        );
+        const { client, callStreamableTool } = await (
+          options.createServerClient ?? createServerClient
+        )({ connection: options.connection }, undefined, extraHeaders);
 
         if (options?.streamable?.[String(name)]) {
           return callStreamableTool(String(name), args);

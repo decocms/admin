@@ -16,6 +16,7 @@ import type { MeshContext } from "../../core/mesh-context";
 import { ConnectionTools } from "../../tools";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import { createLLMProvider } from "../llm-provider";
+import { createMCPProxy } from "./proxy";
 
 // Default values
 const DEFAULT_MAX_TOKENS = 4096;
@@ -469,7 +470,45 @@ app.post("/:org/models/stream", async (c) => {
 
     // Create provider using the LanguageModelBinding
     const mcpConnection = connectionToMCPConnection(connection);
-    const llmBinding = LanguageModelBinding.forConnection(mcpConnection);
+    const proxy = await createMCPProxy(connection, ctx);
+
+    const llmBinding = LanguageModelBinding.forConnection(mcpConnection, () => {
+      return {
+        client: {
+          callTool: async (params) => {
+            return await proxy
+              .callTool(params.name, params.arguments)
+              .then((r) => ({
+                structuredContent: r,
+              }))
+              .catch((err) => {
+                return {
+                  isError: true,
+                  content: [
+                    {
+                      type: "text",
+                      text:
+                        err instanceof Error ? err.message : "Unknown error",
+                    },
+                  ],
+                };
+              });
+          },
+          listTools: async () => {
+            return await proxy.listTools();
+          },
+        },
+        callStreamableTool: async (tool, args) => {
+          return await proxy.callStreamableTool({
+            method: "tools/call",
+            params: {
+              name: tool,
+              arguments: args as Record<string, unknown>,
+            },
+          });
+        },
+      };
+    });
     const provider = createLLMProvider(llmBinding).languageModel(
       modelConfig.id,
     );

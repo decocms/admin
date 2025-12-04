@@ -195,7 +195,7 @@ const configurationToolsFor = <TSchema extends z.ZodTypeAny = never>({
   scopes,
   onChange,
 }: CreateMCPServerOptions<
-  unknown,
+  any,
   TSchema
 >["configuration"] = {}): CreatedTool[] => {
   const jsonSchema = schema

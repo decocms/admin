@@ -107,6 +107,11 @@ const mapIntegration = (
     id: formatId("i", integration.id),
   };
 };
+export const idEqual = (id1: string, id2: string) => {
+  const { type: type1, uuid: uuid1 } = parseId(id1);
+  const { type: type2, uuid: uuid2 } = parseId(id2);
+  return type1 === type2 && uuid1 === uuid2;
+};
 export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
@@ -838,9 +843,10 @@ export const getIntegration = createIntegrationManagementTool({
 
     const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
 
-    if (virtualIntegrations.some((i) => i.id === id)) {
+    const integration = virtualIntegrations.find((i) => idEqual(i.id, id));
+    if (integration) {
       const baseIntegration = IntegrationSchema.parse({
-        ...virtualIntegrations.find((i) => i.id === id),
+        ...integration,
         id: formatId(type, id),
       });
       return {

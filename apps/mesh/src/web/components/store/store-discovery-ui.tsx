@@ -1,11 +1,22 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 import {
   type RegistryItem,
   RegistryItemsSection,
 } from "./registry-items-section";
 import { CollectionSearch } from "../collections/collection-search";
+import {
+  MCP_REGISTRY_DECOCMS_KEY,
+  MCP_REGISTRY_PUBLISHER_KEY,
+} from "@/web/utils/constants";
+import { MCPRegistryServer } from "./registry-item-card";
+import { OAuthConfig } from "@/tools/connection/schema";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
+import { authClient } from "@/web/lib/auth-client";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -34,6 +45,107 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
+function extractConnectionData(
+  item: RegistryItem,
+  organizationId: string,
+  userId: string,
+) {
+  const server = item.server as MCPRegistryServer["server"] | undefined;
+
+  const meshMeta =
+    item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ??
+    server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
+  const publisherMeta =
+    item._meta?.[MCP_REGISTRY_PUBLISHER_KEY] ??
+    server?._meta?.[MCP_REGISTRY_PUBLISHER_KEY];
+
+  const appMetadata = publisherMeta?.metadata as
+    | Record<string, unknown>
+    | null
+    | undefined;
+
+  const remote = server?.remotes?.[0];
+
+  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
+    http: "HTTP",
+    sse: "SSE",
+    websocket: "Websocket",
+  };
+
+  const connectionType = remote?.type
+    ? connectionTypeMap[remote.type] || "HTTP"
+    : "HTTP";
+
+  const now = new Date().toISOString();
+
+  const title =
+    publisherMeta?.friendlyName ||
+    item.title ||
+    server?.title ||
+    server?.name ||
+    "Unnamed App";
+
+  const description = server?.description || null;
+
+  const icon = server?.icons?.[0]?.src || null;
+
+  const rawOauthConfig = appMetadata?.oauth_config as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const oauthConfig: OAuthConfig | null =
+    rawOauthConfig &&
+    typeof rawOauthConfig.authorizationEndpoint === "string" &&
+    typeof rawOauthConfig.tokenEndpoint === "string" &&
+    typeof rawOauthConfig.clientId === "string" &&
+    Array.isArray(rawOauthConfig.scopes) &&
+    (rawOauthConfig.grantType === "authorization_code" ||
+      rawOauthConfig.grantType === "client_credentials")
+      ? (rawOauthConfig as unknown as OAuthConfig)
+      : null;
+
+  const configState = appMetadata?.configuration_state as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  const configScopes = appMetadata?.configuration_scopes as
+    | string[]
+    | null
+    | undefined;
+
+  return {
+    id: crypto.randomUUID(),
+    title,
+    description,
+    icon,
+    app_name: meshMeta?.appName || server?.name || null,
+    app_id: meshMeta?.id || item.id || null,
+    connection_type: connectionType,
+    connection_url: remote?.url || "",
+    connection_token: null,
+    connection_headers: null,
+    oauth_config: oauthConfig,
+    configuration_state: configState ?? null,
+    configuration_scopes: configScopes ?? null,
+    metadata: {
+      source: "store",
+      registry_item_id: item.id,
+      verified: meshMeta?.verified ?? false,
+      scopeName: meshMeta?.scopeName ?? null,
+      toolsCount: publisherMeta?.tools?.length ?? 0,
+      publishedAt: meshMeta?.publishedAt ?? null,
+      ...appMetadata,
+    },
+    created_at: now,
+    updated_at: now,
+    created_by: userId,
+    organization_id: organizationId,
+    tools: null,
+    bindings: null,
+    status: "inactive" as const,
+  };
+}
+
 export function StoreDiscoveryUI({
   items,
   isLoading,
@@ -41,6 +153,56 @@ export function StoreDiscoveryUI({
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<RegistryItem | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const { org } = useProjectContext();
+  const navigate = useNavigate();
+  const connectionsCollection = useConnectionsCollection();
+  const { data: session } = authClient.useSession();
+
+  const handleInstall = async () => {
+    if (!selectedItem || !org || !session?.user?.id) return;
+
+    const connectionData = extractConnectionData(
+      selectedItem,
+      org,
+      session.user.id,
+    );
+
+    if (!connectionData.connection_url) {
+      toast.error("This app cannot be installed: no connection URL available");
+      return;
+    }
+
+    setIsInstalling(true);
+    try {
+      const tx = await connectionsCollection.insert(connectionData);
+      await tx.isPersisted.promise;
+
+      toast.success(`${connectionData.title} installed successfully`);
+
+      const registryItemId = selectedItem.id;
+      const newConnection = [...connectionsCollection.state.values()].find(
+        (conn) =>
+          (conn.metadata as Record<string, unknown>)?.registry_item_id ===
+          registryItemId,
+      );
+
+      if (newConnection?.id && org) {
+        navigate({
+          to: "/$org/mcps/$connectionId",
+          params: { org, connectionId: newConnection.id },
+        });
+      } else {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to install app: ${message}`);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   // Filtered items based on search
   const filteredItems = useMemo(() => {
@@ -138,9 +300,22 @@ export function StoreDiscoveryUI({
                         {data.publisher}
                       </p>
                     </div>
-                    <button className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] text-black font-medium rounded-lg transition-colors flex items-center gap-2">
-                      <Icon name="add" size={20} />
-                      Install App
+                    <button
+                      onClick={handleInstall}
+                      disabled={isInstalling}
+                      className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {isInstalling ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Installing...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="add" size={20} />
+                          Install App
+                        </>
+                      )}
                     </button>
                   </div>
                   {data.description && (

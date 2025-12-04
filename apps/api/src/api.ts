@@ -79,7 +79,6 @@ import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import {
-  DECO_MCP_BASE_URL,
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_DEFAULT_VERSION,
   MCP_REGISTRY_ICON_MIME_TYPE,
@@ -742,7 +741,7 @@ const mapAppToMCPRegistryServer = (
       remotes: [
         {
           type: MCP_REGISTRY_SERVER_TYPE,
-          url: `${DECO_MCP_BASE_URL}/${(app.scope as Record<string, unknown>).scope_name}/${app.name}/mcp`,
+          url: (app.connection as Record<string, unknown>).url,
         },
       ],
       version: app.updated_at

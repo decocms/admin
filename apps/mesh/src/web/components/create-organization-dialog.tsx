@@ -65,7 +65,7 @@ async function installDecoStore(
 
     if (result) {
       // Refresh connections collection cache
-      await connectionsCollection.load();
+      await connectionsCollection.refetch();
     }
   } catch {
     // Don't throw - we don't want to block organization creation

@@ -4,7 +4,10 @@ import { Loader2 } from "lucide-react";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import { useConnection, useConnectionsCollection } from "@/web/hooks/collections/use-connection";
+import {
+  useConnection,
+  useConnectionsCollection,
+} from "@/web/hooks/collections/use-connection";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useToolCall } from "@/web/hooks/use-tool-call";

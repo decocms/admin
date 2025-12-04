@@ -58,49 +58,16 @@ async function installDecoStore(
   connectionsCollection: ReturnType<typeof useConnectionsCollection>,
 ): Promise<void> {
   try {
-    console.log("📦 [CreateOrgDialog] Installing Deco Store...");
-    console.log(
-      "📦 [CreateOrgDialog] Config:",
-      JSON.stringify(DECO_STORE_CONFIG, null, 2),
-    );
-
     const toolCaller = createToolCaller();
-    console.log("📦 [CreateOrgDialog] Tool caller created");
-
     const result = await toolCaller("COLLECTION_CONNECTIONS_CREATE", {
       data: DECO_STORE_CONFIG,
     });
 
-    console.log("📦 [CreateOrgDialog] Tool result:", result);
-    console.log("📦 [CreateOrgDialog] Tool result item:", result?.item);
-    console.log("📦 [CreateOrgDialog] Tool result item id:", result?.item?.id);
-    console.log(
-      "📦 [CreateOrgDialog] Tool result item title:",
-      result?.item?.title,
-    );
-
     if (result) {
-      console.log(
-        "✅ [CreateOrgDialog] Deco Store installed successfully:",
-        JSON.stringify(result, null, 2),
-      );
-
       // Refresh connections collection cache
-      console.log(
-        "🔄 [CreateOrgDialog] Refreshing connections collection cache...",
-      );
       await connectionsCollection.load();
-      console.log(
-        "✅ [CreateOrgDialog] Connections collection cache refreshed",
-      );
-    } else {
-      console.warn("⚠️  [CreateOrgDialog] Tool returned empty result");
     }
-  } catch (error) {
-    console.error(
-      "❌ [CreateOrgDialog] Failed to install Deco Store (non-blocking):",
-      error,
-    );
+  } catch {
     // Don't throw - we don't want to block organization creation
   }
 }
@@ -156,27 +123,11 @@ export function CreateOrganizationDialog({
 
       if (result?.data?.slug) {
         const orgSlug = result.data.slug;
-        const orgId = result.data.id;
-        console.log(
-          "🎯 [CreateOrgDialog] Organization created - slug:",
-          orgSlug,
-          "id:",
-          orgId,
-        );
 
         // Install Deco Store after organization creation
-        console.log(
-          "🎯 [CreateOrgDialog] Starting Deco Store installation for org:",
-          orgSlug,
-        );
         await installDecoStore(connectionsCollection);
-        console.log("🎯 [CreateOrgDialog] Deco Store installation completed");
 
         // Navigate to the new organization
-        console.log(
-          "🎯 [CreateOrgDialog] Navigating to organization:",
-          orgSlug,
-        );
         navigate({ to: "/$org", params: { org: orgSlug } });
         onOpenChange(false);
         form.reset();

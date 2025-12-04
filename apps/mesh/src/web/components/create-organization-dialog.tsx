@@ -1,4 +1,5 @@
 import { authClient } from "@/web/lib/auth-client";
+import { createToolCaller } from "@/tools/client";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -25,6 +26,26 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useNavigate } from "@tanstack/react-router";
 
+// Deco Store configuration
+const DECO_STORE_CONFIG = {
+  title: "Deco Store",
+  description: "Official deco MCP registry with curated integrations",
+  connection_type: "HTTP",
+  connection_url: "https://api.decocms.com/mcp/registry",
+  icon: "https://assets.decocache.com/decocms/00ccf6c3-9e13-4517-83b0-75ab84554bb9/596364c63320075ca58483660156b6d9de9b526e.png",
+  app_name: "deco-registry",
+  app_id: null,
+  connection_token: null,
+  connection_headers: null,
+  oauth_config: null,
+  configuration_state: null,
+  configuration_scopes: null,
+  metadata: {
+    isDefault: true,
+    type: "registry",
+  },
+};
+
 // Simple slugify function for client-side use
 function slugify(input: string): string {
   return input
@@ -40,6 +61,18 @@ const createOrgSchema = z.object({
 });
 
 type CreateOrgFormData = z.infer<typeof createOrgSchema>;
+
+// Install Deco Store for the new organization
+async function installDecoStore(): Promise<void> {
+  try {
+    const toolCaller = createToolCaller();
+    await toolCaller("COLLECTION_CONNECTIONS_CREATE", {
+      data: DECO_STORE_CONFIG,
+    });
+  } catch {
+    // Non-blocking: don't interrupt org creation if store install fails
+  }
+}
 
 interface CreateOrganizationDialogProps {
   open: boolean;
@@ -84,8 +117,13 @@ export function CreateOrganizationDialog({
       });
 
       if (result?.data?.slug) {
+        const orgSlug = result.data.slug;
+
+        // Install Deco Store after organization creation
+        await installDecoStore();
+
         // Navigate to the new organization
-        navigate({ to: "/$org", params: { org: result.data.slug } });
+        navigate({ to: "/$org", params: { org: orgSlug } });
         onOpenChange(false);
         form.reset();
       } else {

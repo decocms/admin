@@ -149,11 +149,76 @@ export interface OnChangeCallback<TSchema extends z.ZodTypeAny = never> {
   state: z.infer<TSchema>;
   scopes: string[];
 }
+
+export interface OAuthParams {
+  code: string;
+  code_verifier?: string;
+  code_challenge_method?: "S256" | "plain";
+}
+
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * OAuth client for dynamic client registration (RFC7591)
+ */
+export interface OAuthClient {
+  client_id: string;
+  client_secret?: string;
+  client_name?: string;
+  redirect_uris: string[];
+  grant_types?: string[];
+  response_types?: string[];
+  token_endpoint_auth_method?: string;
+  scope?: string;
+  client_id_issued_at?: number;
+  client_secret_expires_at?: number;
+}
+
+/**
+ * OAuth configuration for MCP servers implementing PKCE flow
+ * Per MCP Authorization spec: https://modelcontextprotocol.io/specification/draft/basic/authorization
+ */
+export interface OAuthConfig {
+  mode: "PKCE";
+  /**
+   * The external authorization server URL (e.g., "https://openrouter.ai")
+   * Used in protected resource metadata to indicate where clients should authenticate
+   */
+  authorizationServer: string;
+  /**
+   * Generates the authorization URL where users should be redirected
+   * @param callbackUrl - The URL the OAuth provider will redirect back to with the code
+   * @returns The full authorization URL to redirect the user to
+   */
+  authorizationUrl: (callbackUrl: string) => string;
+  /**
+   * Exchanges the authorization code for access tokens
+   * Called when the OAuth callback is received with a code
+   */
+  exchangeCode: (oauthParams: OAuthParams) => Promise<OAuthTokenResponse>;
+  /**
+   * Optional: persistence for dynamic client registration (RFC7591)
+   * If not provided, clients are accepted without validation
+   */
+  persistence?: {
+    getClient: (clientId: string) => Promise<OAuthClient | null>;
+    saveClient: (client: OAuthClient) => Promise<void>;
+  };
+}
+
 export interface CreateMCPServerOptions<
   Env = unknown,
   TSchema extends z.ZodTypeAny = never,
 > {
   before?: (env: Env & DefaultEnv<TSchema>) => Promise<void> | void;
+  oauth?: OAuthConfig;
   configuration?: {
     onChange?: (
       env: Env & DefaultEnv<TSchema>,

@@ -576,7 +576,7 @@ export default function StoreAppDetail() {
                 <button
                   onClick={handleInstall}
                   disabled={isInstalling}
-                  className="shrink-0 px-6 py-2.5 bg-[#bef264] hover:bg-[#a3e635] disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="shrink-0 px-6 py-2.5 bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   {isInstalling ? (
                     <>

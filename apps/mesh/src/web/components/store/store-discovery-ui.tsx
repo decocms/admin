@@ -12,6 +12,8 @@ import { RegistryItemCard, type MCPRegistryServer } from "./registry-item-card";
 import { useConnectionsCollection } from "@/web/hooks/collections/use-connection";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { authClient } from "@/web/lib/auth-client";
+import { MCP_REGISTRY_DECOCMS_KEY, MCP_REGISTRY_PUBLISHER_KEY } from "@/web/utils/constants";
+import type { OAuthConfig } from "@/tools/connection/schema";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
@@ -41,18 +43,21 @@ function extractItemData(item: RegistryItem) {
 }
 
 function extractConnectionData(
-  item: RegistryItem | MCPRegistryServer,
+  item: RegistryItem,
   organizationId: string,
   userId: string,
 ) {
-  // Cast server to access MCP-specific properties
   const server = item.server as MCPRegistryServer["server"] | undefined;
-  const decoMeta = item._meta?.["io.decocms"] as
-    | { id?: string; appName?: string }
-    | undefined;
+
+  const meshMeta = item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ?? server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
+  const publisherMeta =
+    item._meta?.[MCP_REGISTRY_PUBLISHER_KEY] ??
+    server?._meta?.[MCP_REGISTRY_PUBLISHER_KEY];
+
+  const appMetadata = publisherMeta?.metadata as Record<string, unknown> | null | undefined;
+
   const remote = server?.remotes?.[0];
 
-  // Map remote type to connection type
   const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
     http: "HTTP",
     sse: "SSE",
@@ -65,22 +70,54 @@ function extractConnectionData(
 
   const now = new Date().toISOString();
 
+  const title =
+    publisherMeta?.friendlyName ||
+    item.title ||
+    server?.title ||
+    server?.name ||
+    "Unnamed App";
+
+  const description = server?.description || null;
+
+  const icon = server?.icons?.[0]?.src || null;
+
+  const rawOauthConfig = appMetadata?.oauth_config as Record<string, unknown> | null | undefined;
+  const oauthConfig: OAuthConfig | null =
+    rawOauthConfig &&
+    typeof rawOauthConfig.authorizationEndpoint === "string" &&
+    typeof rawOauthConfig.tokenEndpoint === "string" &&
+    typeof rawOauthConfig.clientId === "string" &&
+    Array.isArray(rawOauthConfig.scopes) &&
+    (rawOauthConfig.grantType === "authorization_code" || rawOauthConfig.grantType === "client_credentials")
+      ? (rawOauthConfig as unknown as OAuthConfig)
+      : null;
+
+  const configState = appMetadata?.configuration_state as Record<string, unknown> | null | undefined;
+  const configScopes = appMetadata?.configuration_scopes as string[] | null | undefined;
+
   return {
-    // Local id for optimistic updates - server will generate a new id (conn_${nanoid()})
     id: crypto.randomUUID(),
-    title: item.title || server?.title || server?.name || "Unnamed App",
-    description: server?.description || null,
-    icon: server?.icons?.[0]?.src || null,
-    app_name: decoMeta?.appName || server?.name || null,
-    app_id: decoMeta?.id || item.id || null,
+    title,
+    description,
+    icon,
+    app_name: meshMeta?.appName || server?.name || null,
+    app_id: meshMeta?.id || item.id || null,
     connection_type: connectionType,
     connection_url: remote?.url || "",
     connection_token: null,
     connection_headers: null,
-    oauth_config: null,
-    configuration_state: null,
-    configuration_scopes: null,
-    metadata: { source: "store", registry_item_id: item.id },
+    oauth_config: oauthConfig,
+    configuration_state: configState ?? null,
+    configuration_scopes: configScopes ?? null,
+    metadata: {
+      source: "store",
+      registry_item_id: item.id,
+      verified: meshMeta?.verified ?? false,
+      scopeName: meshMeta?.scopeName ?? null,
+      toolsCount: publisherMeta?.tools?.length ?? 0,
+      publishedAt: meshMeta?.publishedAt ?? null,
+      ...appMetadata,
+    },
     created_at: now,
     updated_at: now,
     created_by: userId,

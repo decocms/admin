@@ -21,9 +21,12 @@ export interface MCPRegistryServerMeta {
     verified?: boolean;
     scopeName?: string;
     appName?: string;
+    publishedAt?: string;
+    updatedAt?: string;
   };
   "mcp.mesh/publisher-provided"?: {
     friendlyName?: string | null;
+    metadata?: Record<string, unknown> | null;
     tools?: Array<{
       id: string;
       name: string;

@@ -826,6 +826,13 @@ const createPublicRegistryTools = createToolGroup("Registry", {
   icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
 });
 
+const hasMCPConfigurationTool = (
+  tools: Array<Record<string, unknown>> | null | undefined,
+): boolean => {
+  if (!Array.isArray(tools)) return false;
+  return tools.some((tool) => tool.name === "MCP_CONFIGURATION");
+};
+
 const listPublicRegistryApps = createPublicRegistryTools({
   name: "COLLECTION_REGISTRY_APP_LIST",
   description:
@@ -884,9 +891,13 @@ const listPublicRegistryApps = createPublicRegistryTools({
       ) => descFn(a.created_at),
     });
 
-    const filteredApps = apps.filter(
+    let filteredApps = apps.filter(
       (app: Record<string, unknown>) =>
         !REGISTRY_OMITTED_APPS.includes(app.id as string),
+    );
+
+    filteredApps = filteredApps.filter((app: Record<string, unknown>) =>
+      hasMCPConfigurationTool(app.tools as Array<Record<string, unknown>>),
     );
 
     const totalCount = filteredApps.length;

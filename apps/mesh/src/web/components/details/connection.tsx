@@ -1035,7 +1035,29 @@ function CollectionContent({
     ...(hasDeleteTool && { delete: handleDelete }),
   };
 
-  const handleCreate = async () => {
+  const [itemToDelete, setItemToDelete] = useState<BaseCollectionEntity | null>(
+    null,
+  );
+
+  const handleDelete = (item: BaseCollectionEntity) => {
+    setItemToDelete(item);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    collection.delete(itemToDelete.id);
+    toast.success("Item deleted");
+    setItemToDelete(null);
+  };
+
+  // Build actions object with only available actions
+  const actions: Record<string, (item: BaseCollectionEntity) => void> = {
+    edit: handleEdit,
+    ...(hasCreateTool && { duplicate: handleDuplicate }),
+    ...(hasDeleteTool && { delete: handleDelete }),
+  };
+
+  const handleCreate = () => {
     if (!hasCreateTool) {
       toast.error("Create operation is not available for this collection");
       return;
@@ -1050,28 +1072,19 @@ function CollectionContent({
       created_by: userId,
       updated_by: userId,
     };
+    collection.insert(newItem);
 
-    try {
-      const tx = collection.insert(newItem);
-      await tx.isPersisted.promise;
-
-      toast.success("Item created successfully");
-      // Navigate to the new item's detail page
-      navigate({
-        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-        params: {
-          org,
-          connectionId,
-          collectionName,
-          itemId: newItem.id as string,
-        },
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("Failed to create item:", error);
-      toast.error(`Failed to create item: ${message}`);
-      // Do not navigate on error - optimistic update will be rolled back automatically
-    }
+    toast.success("Item created successfully");
+    // Navigate to the new item's detail page
+    navigate({
+      to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+      params: {
+        org,
+        connectionId,
+        collectionName,
+        itemId: newItem.id as string,
+      },
+    });
   };
 
   // Generate sort options from schema

@@ -725,6 +725,12 @@ const mapAppToMCPRegistryServer = (
             id: tool.id,
             name: tool.name,
             description: (tool.description as string | undefined) ?? null,
+            inputSchema:
+              (tool.input_schema as Record<string, unknown> | undefined) ??
+              null,
+            outputSchema:
+              (tool.output_schema as Record<string, unknown> | undefined) ??
+              null,
           })),
         },
       },

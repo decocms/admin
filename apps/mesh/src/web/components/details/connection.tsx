@@ -1021,13 +1021,6 @@ function CollectionContent({
     setItemToDelete(item);
   };
 
-  const confirmDelete = () => {
-    if (!itemToDelete) return;
-    collection.delete(itemToDelete.id);
-    toast.success("Item deleted");
-    setItemToDelete(null);
-  };
-
   // Build actions object with only available actions
   const actions: Record<string, (item: BaseCollectionEntity) => void> = {
     ...(hasUpdateTool && { edit: handleEdit }),
@@ -1035,26 +1028,11 @@ function CollectionContent({
     ...(hasDeleteTool && { delete: handleDelete }),
   };
 
-  const [itemToDelete, setItemToDelete] = useState<BaseCollectionEntity | null>(
-    null,
-  );
-
-  const handleDelete = (item: BaseCollectionEntity) => {
-    setItemToDelete(item);
-  };
-
   const confirmDelete = () => {
     if (!itemToDelete) return;
     collection.delete(itemToDelete.id);
     toast.success("Item deleted");
     setItemToDelete(null);
-  };
-
-  // Build actions object with only available actions
-  const actions: Record<string, (item: BaseCollectionEntity) => void> = {
-    edit: handleEdit,
-    ...(hasCreateTool && { duplicate: handleDuplicate }),
-    ...(hasDeleteTool && { delete: handleDelete }),
   };
 
   const handleCreate = async () => {

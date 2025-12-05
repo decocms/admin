@@ -332,6 +332,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 
   return {
     fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx?: any) => {
+      if (new URL(req.url).pathname === "/_healthcheck") {
+        return new Response("OK", { status: 200 });
+      }
       // Handle CORS preflight (OPTIONS) requests
       if (corsOptions !== false && req.method === "OPTIONS") {
         const options = corsOptions ?? {};
@@ -340,7 +343,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 
       const bindings = withBindings({
         authToken: req.headers.get("authorization") ?? null,
-        env,
+        env: { ...process.env, ...env },
         server,
         bindings: userFns.bindings,
         tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,

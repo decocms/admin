@@ -5,10 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useCallback } from "react";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import type {
-  FieldTemplateProps,
-  ObjectFieldTemplateProps,
-} from "@rjsf/utils";
+import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
 import { BindingSelector } from "../binding-selector";
 
 interface McpConfigurationResult {
@@ -114,9 +111,7 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
         .replace(/_/g, " ")
         .replace(/\b\w/g, (c) => c.toUpperCase());
 
-    const displayTitle = title
-      ? formatTitle(title)
-      : formatTitle(fieldPath);
+    const displayTitle = title ? formatTitle(title) : formatTitle(fieldPath);
 
     return (
       <div className="flex items-center gap-3 justify-between">

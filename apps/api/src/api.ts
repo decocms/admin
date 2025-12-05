@@ -79,6 +79,7 @@ import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import {
+  MCP_CONFIGURATION_TOOL_NAME,
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_DEFAULT_VERSION,
   MCP_REGISTRY_ICON_MIME_TYPE,
@@ -830,7 +831,7 @@ const hasMCPConfigurationTool = (
   tools: Array<Record<string, unknown>> | null | undefined,
 ): boolean => {
   if (!Array.isArray(tools)) return false;
-  return tools.some((tool) => tool.name === "MCP_CONFIGURATION");
+  return tools.some((tool) => tool.name === MCP_CONFIGURATION_TOOL_NAME);
 };
 
 const listPublicRegistryApps = createPublicRegistryTools({

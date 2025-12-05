@@ -1073,7 +1073,7 @@ function CollectionContent({
         created_by: userId,
         updated_by: userId,
       };
-      collection.insert(newItem as BaseCollectionEntity);
+      collection.insert(newItem);
 
       toast.success("Item created successfully");
       // Navigate to the new item's detail page

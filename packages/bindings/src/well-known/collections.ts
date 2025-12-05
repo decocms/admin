@@ -373,7 +373,7 @@ export type OrderByExpression = z.infer<typeof OrderByExpressionSchema>;
  * Type helper for insert input with generic item type
  */
 export type CollectionInsertInput<T> = {
-  data: T;
+  data: Partial<T>;
 };
 
 /**

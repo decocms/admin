@@ -61,11 +61,17 @@ const BindingSchema = z.object({
   outputSchema: z.object({}).passthrough().optional(),
 });
 
-function convertBindingToBinder(bindings: z.infer<typeof BindingSchema>[]): Binder {
+function convertBindingToBinder(
+  bindings: z.infer<typeof BindingSchema>[],
+): Binder {
   return bindings.map((binding) => ({
     name: binding.name,
-    inputSchema: binding.inputSchema ? jsonSchemaToZod(binding.inputSchema) : z.object({}),
-    outputSchema: binding.outputSchema ? jsonSchemaToZod(binding.outputSchema) : z.object({}),
+    inputSchema: binding.inputSchema
+      ? jsonSchemaToZod(binding.inputSchema)
+      : z.object({}),
+    outputSchema: binding.outputSchema
+      ? jsonSchemaToZod(binding.outputSchema)
+      : z.object({}),
   }));
 }
 
@@ -247,7 +253,6 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
     const bindingChecker = bindingDefinition
       ? createBindingChecker(bindingDefinition)
       : undefined;
-
 
     const connections = await ctx.storage.connections.list(organization.id);
 

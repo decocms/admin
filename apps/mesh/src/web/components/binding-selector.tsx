@@ -20,11 +20,13 @@ interface BindingSelectorProps {
    * Binding filter - can be a well-known binding name (e.g., "LLM", "AGENTS")
    * or a custom binding schema array for filtering connections
    */
-  binding?: string | Array<{
-    name: string;
-    inputSchema?: Record<string, unknown>;
-    outputSchema?: Record<string, unknown>;
-  }>;
+  binding?:
+    | string
+    | Array<{
+        name: string;
+        inputSchema?: Record<string, unknown>;
+        outputSchema?: Record<string, unknown>;
+      }>;
   /** Callback when "Create connection" is clicked */
   onAddNew?: () => void;
   /** Optional className for the trigger */

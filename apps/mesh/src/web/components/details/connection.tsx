@@ -7,10 +7,11 @@ import { CollectionTableWrapper } from "@/web/components/collections/collection-
 import { CollectionDisplayButton } from "@/web/components/collections/collection-display-button.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 import {
+  CONNECTIONS_COLLECTION,
   useConnection,
-  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
   useBindingConnections,
@@ -41,8 +42,8 @@ import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, Lock } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Globe, Loader2, Lock } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
@@ -51,7 +52,7 @@ import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import { BindingSelector } from "../binding-selector";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 
-export default function ConnectionInspectorView() {
+function ConnectionInspectorViewContent() {
   const { connectionId, org } = useParams({ strict: false });
   const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
 
@@ -59,8 +60,8 @@ export default function ConnectionInspectorView() {
   const search = useSearch({ strict: false }) as { tab?: string };
   const activeTabId = search.tab || "settings";
 
-  const { data: connection } = useConnection(connectionId);
-  const connectionsCollection = useConnectionsCollection();
+  const connection = useConnection(connectionId);
+  const connectionsCollection = CONNECTIONS_COLLECTION;
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
@@ -310,17 +311,43 @@ export default function ConnectionInspectorView() {
               />
             </div>
           ) : (
-            <CollectionContent
-              key={activeTabId}
-              connectionId={connectionId as string}
-              collectionName={activeTabId}
-              org={org as string}
-              schema={activeCollection?.schema}
-            />
+            <ErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                }
+              >
+                <CollectionContent
+                  key={activeTabId}
+                  connectionId={connectionId as string}
+                  collectionName={activeTabId}
+                  org={org as string}
+                  schema={activeCollection?.schema}
+                />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </div>
       </div>
     </ViewLayout>
+  );
+}
+
+export default function ConnectionInspectorView() {
+  return (
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <ConnectionInspectorViewContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -1068,8 +1095,8 @@ function ToolsList({
                       <IntegrationIcon
                         icon={null}
                         name={tool.name}
-                        size="lg"
-                        className="shrink-0 shadow-lg"
+                        size="md"
+                        className="shrink-0 shadow-sm"
                       />
                       <div className="flex flex-col gap-0">
                         <h3 className="text-base font-medium text-foreground truncate">
@@ -1152,13 +1179,12 @@ function CollectionContent({
     defaultSortKey: "updated_at",
   });
 
-  const { data: items, isLoading } = useCollectionList(collection, {
-    searchTerm,
-    sortKey,
-    sortDirection,
-  });
-
-  console.log({ items });
+  const items =
+    useCollectionList(collection, {
+      searchTerm,
+      sortKey,
+      sortDirection,
+    }) ?? [];
 
   const schema = useMemo(
     () =>
@@ -1278,6 +1304,7 @@ function CollectionContent({
         {/* Collections List with schema-based rendering */}
         <div className="flex-1 overflow-auto">
           <CollectionsList
+            hideToolbar
             data={items ?? []}
             schema={schema}
             viewMode={viewMode}
@@ -1289,7 +1316,7 @@ function CollectionContent({
             onSort={handleSort}
             onAction={handleAction}
             onItemClick={(item) => handleAction("open", item)}
-            isLoading={isLoading}
+            isLoading={items === undefined}
             emptyState={
               <EmptyState
                 image={null}
@@ -1301,7 +1328,6 @@ function CollectionContent({
                 }
               />
             }
-            hideToolbar={true}
           />
         </div>
       </div>

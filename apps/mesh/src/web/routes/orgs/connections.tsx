@@ -1,14 +1,15 @@
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
-import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
 import { CollectionHeader } from "@/web/components/collections/collection-header.tsx";
+import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
 import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
+import { EmptyState } from "@/web/components/empty-state.tsx";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
-import { Card } from "@deco/ui/components/card.tsx";
 import {
+  CONNECTIONS_COLLECTION,
   useConnections,
-  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -24,6 +25,8 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
+import { type TableColumn } from "@deco/ui/components/collection-table.tsx";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +41,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { EmptyState } from "@/web/components/empty-state.tsx";
 import {
   Form,
   FormControl,
@@ -48,8 +49,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { type TableColumn } from "@deco/ui/components/collection-table.tsx";
 import {
   Select,
   SelectContent,
@@ -60,7 +61,8 @@ import {
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useReducer } from "react";
+import { Loader2 } from "lucide-react";
+import { Suspense, useEffect, useReducer } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -103,7 +105,7 @@ function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   }
 }
 
-export default function OrgMcps() {
+function OrgMcpsContent() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { action?: "create" };
@@ -115,9 +117,7 @@ export default function OrgMcps() {
     resource: "connections",
   });
 
-  // Fetch connections with filtering and sorting applied
-  const collection = useConnectionsCollection();
-  const { data: connections, isLoading } = useConnections(listState);
+  const connections = useConnections(listState);
 
   console.log("Connections list:", connections?.map((c) => ({
     id: c.id,
@@ -187,7 +187,7 @@ export default function OrgMcps() {
     dispatch({ type: "close" });
 
     try {
-      await collection.delete(id).isPersisted.promise;
+      await CONNECTIONS_COLLECTION.delete(id).isPersisted.promise;
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete connection",
@@ -207,19 +207,22 @@ export default function OrgMcps() {
 
       if (editingConnection) {
         // Update existing connection
-        const tx = collection.update(editingConnection.id, (draft) => {
-          draft.title = data.title;
-          draft.description = data.description || null;
-          draft.connection_type = data.connection_type;
-          draft.connection_url = data.connection_url;
-          if (data.connection_token) {
-            draft.connection_token = data.connection_token;
-          }
-        });
+        const tx = CONNECTIONS_COLLECTION.update(
+          editingConnection.id,
+          (draft) => {
+            draft.title = data.title;
+            draft.description = data.description || null;
+            draft.connection_type = data.connection_type;
+            draft.connection_url = data.connection_url;
+            if (data.connection_token) {
+              draft.connection_token = data.connection_token;
+            }
+          },
+        );
         await tx.isPersisted.promise;
       } else {
         // Create new connection
-        const tx = collection.insert({
+        const tx = CONNECTIONS_COLLECTION.insert({
           id: crypto.randomUUID(),
           title: data.title,
           description: data.description || null,
@@ -271,7 +274,7 @@ export default function OrgMcps() {
             icon={connection.icon}
             name={connection.title}
             size="sm"
-            className="shadow-sm"
+            className="shrink-0 shadow-sm"
           />
         </div>
       ),
@@ -583,11 +586,7 @@ export default function OrgMcps() {
       {/* Content: Cards or Table */}
       {listState.viewMode === "cards" ? (
         <div className="flex-1 overflow-auto p-5">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">Loading...</div>
-            </div>
-          ) : connections.length === 0 ? (
+          {connections.length === 0 ? (
             <EmptyState
               image={
                 <img
@@ -610,7 +609,7 @@ export default function OrgMcps() {
               {connections.map((connection) => (
                 <Card
                   key={connection.id}
-                  className="cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors group"
                   onClick={() =>
                     navigate({
                       to: "/$org/mcps/$connectionId",
@@ -618,7 +617,46 @@ export default function OrgMcps() {
                     })
                   }
                 >
-                  <div className="flex flex-col gap-4 p-6">
+                  <div className="flex flex-col gap-4 p-6 relative">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Icon name="more_vert" size={20} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate({
+                              to: "/$org/mcps/$connectionId",
+                              params: { org, connectionId: connection.id },
+                            });
+                          }}
+                        >
+                          <Icon name="visibility" size={16} />
+                          Inspect
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch({ type: "delete", connection });
+                          }}
+                        >
+                          <Icon name="delete" size={16} />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <IntegrationIcon
                       icon={connection.icon}
                       name={connection.title}
@@ -643,7 +681,7 @@ export default function OrgMcps() {
         <CollectionTableWrapper
           columns={columns}
           data={connections}
-          isLoading={isLoading}
+          isLoading={false}
           sortKey={listState.sortKey}
           sortDirection={listState.sortDirection}
           onSort={listState.handleSort}
@@ -687,5 +725,21 @@ export default function OrgMcps() {
         />
       )}
     </CollectionPage>
+  );
+}
+
+export default function OrgMcps() {
+  return (
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <OrgMcpsContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

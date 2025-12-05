@@ -83,7 +83,12 @@ export const createServerClient = async (
         headers.set(key, value);
       }
 
-      return fetch(mcpServer.connection.url + `/call-tool/${tool}`, {
+      const url = new URL(mcpServer.connection.url);
+      // Trim trailing slashes from pathname, ensuring it starts with '/'
+      const trimmedPath = url.pathname.replace(/\/+$/, "") || "/";
+      url.pathname = `${trimmedPath}/call-tool/${encodeURIComponent(tool)}`;
+
+      return fetch(url.href, {
         method: "POST",
         redirect: "manual",
         body: JSON.stringify(args),

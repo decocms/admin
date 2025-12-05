@@ -37,7 +37,10 @@ const parseSSEResponseAsJson = async (response: Response) => {
 /**
  * Type for a generic tool caller function
  */
-export type ToolCaller = (toolName: string, args: unknown) => Promise<unknown>;
+export type ToolCaller<TArgs = unknown, TOutput = unknown> = (
+  toolName: string,
+  args: TArgs,
+) => Promise<TOutput>;
 
 /**
  * Create a unified tool caller
@@ -48,17 +51,16 @@ export type ToolCaller = (toolName: string, args: unknown) => Promise<unknown>;
  * This abstracts the routing logic so hooks don't need to know if they're
  * calling mesh tools or connection-specific tools.
  */
-export function createToolCaller(connectionId?: string): ToolCaller {
+export function createToolCaller<TArgs = unknown, TOutput = unknown>(
+  connectionId?: string,
+): ToolCaller<TArgs, TOutput> {
   if (connectionId === UNKNOWN_CONNECTION_ID) {
-    return async () => {};
+    return (async () => {}) as unknown as ToolCaller<TArgs, TOutput>;
   }
 
   const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
 
-  return async <T extends Record<string, unknown> = Record<string, unknown>>(
-    toolName: string,
-    args: unknown,
-  ): Promise<T> => {
+  return async (toolName: string, args: TArgs): Promise<TOutput> => {
     const response = await fetch(endpoint, {
       method: "POST",
       body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { useProjectSidebarItems } from "@/web/hooks/use-project-sidebar-items";
 import { NavigationSidebar } from "@deco/ui/components/navigation-sidebar.tsx";
 import { ThreadsSidebarSection } from "@/web/components/threads-sidebar";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import { Suspense } from "react";
 
 export function MeshSidebar() {
@@ -10,9 +11,11 @@ export function MeshSidebar() {
     <NavigationSidebar
       navigationItems={sidebarItems}
       additionalContent={
-        <Suspense fallback={null}>
-          <ThreadsSidebarSection />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <ThreadsSidebarSection />
+          </Suspense>
+        </ErrorBoundary>
       }
     />
   );

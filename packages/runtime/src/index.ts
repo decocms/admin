@@ -3,6 +3,7 @@ import { decodeJwt } from "jose";
 import type { z } from "zod";
 import { createContractBinding, createIntegrationBinding } from "./bindings.ts";
 import { type CORSOptions, handlePreflight, withCORS } from "./cors.ts";
+import { createOAuthHandlers } from "./oauth.ts";
 import { State } from "./state.ts";
 import {
   createMCPServer,
@@ -233,6 +234,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 ) => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
   const corsOptions = userFns.cors;
+  const oauth = userFns.oauth;
+  const oauthHandlers = oauth ? createOAuthHandlers(oauth) : null;
 
   const fetcher = async (
     req: Request,
@@ -240,7 +243,35 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     ctx: any,
   ) => {
     const url = new URL(req.url);
+
+    // OAuth routes (when configured)
+    if (oauthHandlers) {
+      // Protected resource metadata (RFC9728) - both paths MUST be supported
+      if (
+        url.pathname === "/.well-known/oauth-protected-resource" ||
+        url.pathname === "/mcp/.well-known/oauth-protected-resource"
+      ) {
+        return oauthHandlers.handleProtectedResourceMetadata(req);
+      }
+
+      // OAuth callback - receives code from external OAuth provider
+      if (url.pathname === "/oauth/callback") {
+        return oauthHandlers.handleOAuthCallback(req);
+      }
+
+      // Dynamic client registration (RFC7591)
+      if (url.pathname === "/mcp/register" && req.method === "POST") {
+        return oauthHandlers.handleClientRegistration(req);
+      }
+    }
+
+    // MCP endpoint
     if (url.pathname === "/mcp") {
+      // If OAuth is configured, require authentication
+      if (oauthHandlers && !oauthHandlers.hasAuth(req)) {
+        return oauthHandlers.createUnauthorizedResponse(req);
+      }
+
       return server.fetch(req, env, ctx);
     }
 
@@ -273,7 +304,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   };
 
   return {
-    fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx: any) => {
+    fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx?: any) => {
       // Handle CORS preflight (OPTIONS) requests
       if (corsOptions !== false && req.method === "OPTIONS") {
         const options = corsOptions ?? {};

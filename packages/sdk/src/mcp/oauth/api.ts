@@ -42,15 +42,12 @@ export const oauthCodeCreate = createTool({
       id: integrationId,
     });
     const connection = integration.connection;
-    if (connection.type !== "HTTP" || !connection.token) {
-      throw new Error(
-        "Only authorized HTTP connections are supported for OAuth codes",
-      );
-    }
+    const isProxy = mode === "proxy";
+
     const code = crypto.randomUUID();
     let currentClaims: JWTPayload;
 
-    if (mode === "proxy") {
+    if (isProxy) {
       // authorized through proxy
       assertHasLocator(c);
       currentClaims = {
@@ -74,6 +71,11 @@ export const oauthCodeCreate = createTool({
         ],
       };
     } else {
+      if (connection.type !== "HTTP" || !connection.token) {
+        throw new Error(
+          "Only authorized HTTP connections are supported for OAuth codes",
+        );
+      }
       currentClaims = decodeJwt(connection.token);
     }
 

@@ -1,4 +1,5 @@
 import { DecoChatPanel } from "@/web/components/deco-chat-panel";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import { MeshSidebar } from "@/web/components/mesh-sidebar";
 import { MeshOrgSwitcher } from "@/web/components/org-switcher";
 import { SplashScreen } from "@/web/components/splash-screen";
@@ -9,11 +10,12 @@ import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { authClient } from "@/web/lib/auth-client";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 import { Locator } from "@/web/lib/locator";
-import { LocalStorageChatThreadsProvider } from "@/web/providers/localstorage-chat-threads-provider";
+import { ChatProvider } from "@/web/providers/chat-provider";
 import { ProjectContextProvider } from "@/web/providers/project-context-provider";
 import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -130,7 +132,7 @@ export default function ShellLayout() {
         {hasOrg ? (
           // Should use "project ?? org-admin" when projects are introduced
           <ProjectContextProvider locator={Locator.adminProject(org)}>
-            <LocalStorageChatThreadsProvider>
+            <ChatProvider>
               <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <div className="flex flex-col h-screen">
                   <Topbar
@@ -163,9 +165,11 @@ export default function ShellLayout() {
                               className="min-w-0"
                               onResize={setChatPanelWidth}
                             >
-                              <Suspense fallback={<div>Loading chat...</div>}>
-                                <DecoChatPanel />
-                              </Suspense>
+                              <ErrorBoundary>
+                                <Suspense fallback={<DecoChatSkeleton />}>
+                                  <DecoChatPanel />
+                                </Suspense>
+                              </ErrorBoundary>
                             </ResizablePanel>
                           </>
                         )}
@@ -174,7 +178,7 @@ export default function ShellLayout() {
                   </SidebarLayout>
                 </div>
               </SidebarProvider>
-            </LocalStorageChatThreadsProvider>
+            </ChatProvider>
           </ProjectContextProvider>
         ) : (
           <div className="min-h-screen bg-background">

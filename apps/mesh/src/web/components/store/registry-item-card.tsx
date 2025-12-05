@@ -5,6 +5,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card } from "@deco/ui/components/card.js";
+import { IntegrationIcon } from "../integration-icon.tsx";
 
 /**
  * MCP Registry Server structure from LIST response
@@ -81,54 +82,38 @@ interface RegistryItemCardProps {
   onClick: () => void;
 }
 
-function getInitials(nameStr: string): string {
-  if (!nameStr || typeof nameStr !== "string") return "?";
-  return nameStr
-    .split(/[\s\-_]/)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
   const name = item.title || item.server?.title || item.id || "Unnamed Item";
   const description = item.server?.description;
   const icon = item.server?.icons?.[0]?.src;
-  const initials = getInitials(name);
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
   const scopeName = `${item._meta?.["mcp.mesh"]?.scopeName}/${item._meta?.["mcp.mesh"]?.appName}`;
 
   return (
-    <Card className="p-6" onClick={onClick}>
+    <Card
+      className="p-6 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onClick}
+    >
       <div className="flex flex-col gap-4 h-full relative">
         <div className="flex gap-3">
           {/* Icon */}
-          <div className="h-10 w-10 rounded flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary shrink-0 overflow-hidden">
-            {icon ? (
-              <img
-                src={icon}
-                alt={name}
-                className="h-full w-full object-cover rounded"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <span>{initials}</span>
-            )}
-          </div>
+          <IntegrationIcon
+            icon={icon}
+            name={name}
+            size="md"
+            className="shadow-sm"
+          />
           <div className="flex gap-2 items-start">
             <div>
-              <div className="flex items-center gap-2 text-sm font-semibold truncate">
+              <div className="flex items-center gap-2 text-base font-semibold truncate">
                 {name}
                 {isVerified && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Icon
                         name="verified"
-                        size={14}
-                        className="text-green-500 shrink-0"
+                        size={16}
+                        className="text-success shrink-0"
                       />
                     </TooltipTrigger>
                     <TooltipContent>
@@ -137,14 +122,16 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
                   </Tooltip>
                 )}
               </div>
-              {scopeName && <p className="text-xs">{scopeName}</p>}
+              {scopeName && (
+                <p className="text-sm text-muted-foreground">{scopeName}</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="grid grid-cols-1 gap-1 min-w-0">
-          <div className="text-sm text-muted-foreground line-clamp-2">
+          <div className="text-base text-muted-foreground line-clamp-2">
             {description || "No description available"}
           </div>
         </div>

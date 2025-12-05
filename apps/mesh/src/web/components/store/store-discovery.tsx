@@ -10,7 +10,7 @@ interface StoreDiscoveryProps {
 }
 
 export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
-  const { data: registryConnection } = useConnection(registryId);
+  const registryConnection = useConnection(registryId);
 
   // Find the LIST tool from the registry connection
   const listToolName = useMemo(() => {
@@ -59,5 +59,12 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     return [];
   }, [listResults]);
 
-  return <StoreDiscoveryUI items={items} isLoading={isLoading} error={error} />;
+  return (
+    <StoreDiscoveryUI
+      items={items}
+      isLoading={isLoading}
+      error={error}
+      registryId={registryId}
+    />
+  );
 }

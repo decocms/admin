@@ -140,6 +140,45 @@ export const oauthStart = createTool({
   },
 });
 
+export const mcpConfiguration = createTool({
+  name: "MCP_CONFIGURATION",
+  description: "Start the OAuth flow for the contract app.",
+  inputSchema: z.lazy(() => z.any()),
+  outputSchema: z.lazy(() =>
+    z.object({
+      stateSchema: z.any(),
+      scopes: z.array(z.string()).optional(),
+    }),
+  ),
+  handler: (_, c) => {
+    c.resourceAccess.grant();
+    return {
+      stateSchema: {
+        type: "object",
+        properties: {
+          WALLET: {
+            type: "object",
+            properties: {
+              value: { type: "string" },
+              __type: {
+                type: "string",
+                const: "@deco/wallet",
+                default: "@deco/wallet",
+              },
+            },
+            required: ["value"],
+            additionalProperties: false,
+          },
+        },
+      },
+      scopes: [
+        "WALLET::PRE_AUTHORIZE_AMOUNT",
+        "WALLET::COMMIT_PRE_AUTHORIZED_AMOUNT",
+      ],
+    };
+  },
+});
+
 export const contractRegister = createTool({
   name: "CONTRACT_REGISTER",
   description: "Register a contract with the registry.",

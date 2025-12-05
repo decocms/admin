@@ -4,7 +4,7 @@ import { StoreDiscovery } from "@/web/components/store";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CollectionHeader } from "@/web/components/collections/collection-header";
 
@@ -12,7 +12,13 @@ export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   const [selectedRegistry, setSelectedRegistry] = useState<string>("");
-  const { data: allConnections, isLoading, isError } = useConnections();
+  const allConnections = useConnections();
+
+  // Check if we're viewing a child route (app detail)
+  const routerState = useRouterState();
+  const isViewingAppDetail =
+    routerState.location.pathname.includes("/store/") &&
+    routerState.location.pathname.split("/").length > 3;
 
   // Filter to only show registry connections (those with collections)
   const registryConnections = useRegistryConnections(allConnections);
@@ -27,22 +33,6 @@ export default function StorePage() {
     [registryConnections],
   );
 
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        Loading stores...
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="h-full flex items-center justify-center text-destructive">
-        Failed to load stores
-      </div>
-    );
-  }
-
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";
 
@@ -53,6 +43,11 @@ export default function StorePage() {
       search: { action: "create" },
     });
   };
+
+  // If we're viewing an app detail (child route), render the Outlet
+  if (isViewingAppDetail) {
+    return <Outlet />;
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

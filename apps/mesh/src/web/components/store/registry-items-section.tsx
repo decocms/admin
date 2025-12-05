@@ -26,6 +26,10 @@ export interface RegistryItem {
   verified?: boolean;
   /** Publisher name */
   publisher?: string;
+  /** Publisher logo URL */
+  publisher_logo?: string;
+  /** Number of published apps */
+  published_apps_count?: number;
   /** Available tools */
   tools?: Array<{
     id?: string;
@@ -59,6 +63,8 @@ export interface RegistryItem {
     cdn?: unknown;
     _meta?: MCPRegistryServerMeta;
   };
+  /** When the item was last updated */
+  updated_at?: string | Date;
 }
 
 interface RegistryItemsSectionProps {

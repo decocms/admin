@@ -410,6 +410,7 @@ function SettingsTab({ connection, onUpdate, hasMcpBinding }: SettingsTabProps) 
   const [mcpScopes] = useState<string[]>(connection.configuration_scopes ?? []);
 
   // Reset MCP state when connection changes
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (connection.configuration_state) {
       setMcpFormState(connection.configuration_state);

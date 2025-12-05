@@ -49,7 +49,7 @@ export function BindingSelector({
 }: BindingSelectorProps) {
   const toolCaller = useMemo(() => createToolCaller(), []);
 
-  const { data, isLoading, error } = useToolCall<
+  const { data, isLoading } = useToolCall<
     { binding?: typeof binding },
     ConnectionListResult
   >({

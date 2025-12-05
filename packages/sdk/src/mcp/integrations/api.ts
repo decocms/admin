@@ -166,7 +166,6 @@ export const callTool = createIntegrationManagementTool({
     "Call a tool from an integration. If you have the integration ID (from INTEGRATIONS_LIST or INTEGRATIONS_GET), prefer using 'id' over 'connection'. The ID ensures you're calling the correct configured integration. Use 'connection' only when you need to call a tool from a new or unconfigured integration.",
   inputSchema: z.lazy(() => integrationCallToolInputSchema),
   handler: async (input, c) => {
-    c.resourceAccess.grant();
     const toolCall = input.params;
 
     let connection: MCPConnection | undefined = undefined;
@@ -227,6 +226,7 @@ export const callTool = createIntegrationManagementTool({
     } finally {
       // Always dispose of the client to avoid RPC leaks
       await client.close();
+      c.resourceAccess.grant();
     }
   },
 });

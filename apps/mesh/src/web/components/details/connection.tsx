@@ -43,12 +43,13 @@ import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, Plus } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
+import { authClient } from "@/web/lib/auth-client";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import { McpConfigurationForm } from "./mcp-configuration-form";
 
@@ -327,6 +328,9 @@ function ConnectionInspectorViewContent() {
                   collectionName={activeTabId}
                   org={org as string}
                   schema={activeCollection?.schema}
+                  hasCreateTool={activeCollection?.hasCreateTool ?? false}
+                  hasUpdateTool={activeCollection?.hasUpdateTool ?? false}
+                  hasDeleteTool={activeCollection?.hasDeleteTool ?? false}
                 />
               </Suspense>
             </ErrorBoundary>
@@ -868,13 +872,21 @@ function CollectionContent({
   collectionName,
   org,
   schema: jsonSchema,
+  hasCreateTool,
+  hasUpdateTool,
+  hasDeleteTool,
 }: {
   connectionId: string;
   collectionName: string;
   org: string;
   schema?: Record<string, unknown>;
+  hasCreateTool: boolean;
+  hasUpdateTool: boolean;
+  hasDeleteTool: boolean;
 }) {
   const navigate = useNavigate();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id || "unknown";
 
   const collection = useCollection(connectionId, collectionName);
 
@@ -909,6 +921,9 @@ function CollectionContent({
     [jsonSchema],
   );
 
+  // Collection is read-only if ALL mutation tools are missing
+  const isReadOnly = !hasCreateTool && !hasUpdateTool && !hasDeleteTool;
+
   const handleAction = async (
     action: "open" | "delete" | "duplicate" | "edit",
     item: BaseCollectionEntity,
@@ -926,12 +941,20 @@ function CollectionContent({
         });
         break;
       case "delete":
+        if (!hasDeleteTool) {
+          toast.error("Delete operation is not available for this collection");
+          return;
+        }
         if (confirm("Are you sure you want to delete this item?")) {
           await collection.delete(item.id);
           toast.success("Item deleted");
         }
         break;
       case "duplicate": {
+        if (!hasCreateTool) {
+          toast.error("Create operation is not available for this collection");
+          return;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const itemAny = item as any;
         const {
@@ -956,6 +979,10 @@ function CollectionContent({
         break;
       }
       case "edit":
+        if (!hasUpdateTool) {
+          toast.error("Update operation is not available for this collection");
+          return;
+        }
         navigate({
           to: "/$org/mcps/$connectionId/$collectionName/$itemId",
           params: {
@@ -966,6 +993,46 @@ function CollectionContent({
           },
         });
         break;
+    }
+  };
+
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (!hasCreateTool) {
+      toast.error("Create operation is not available for this collection");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const now = new Date().toISOString();
+      const newItem: BaseCollectionEntity = {
+        id: crypto.randomUUID(),
+        title: "New Item",
+        created_at: now,
+        updated_at: now,
+        created_by: userId,
+        updated_by: userId,
+      };
+      collection.insert(newItem);
+
+      toast.success("Item created successfully");
+      // Navigate to the new item's detail page
+      navigate({
+        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+        params: {
+          org,
+          connectionId,
+          collectionName,
+          itemId: newItem.id as string,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to create item: ${message}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -988,6 +1055,26 @@ function CollectionContent({
         }))
     : [];
 
+  const hasItems = (items?.length ?? 0) > 0;
+  const showCreateInToolbar = hasCreateTool && hasItems;
+  const showCreateInEmptyState = hasCreateTool && !hasItems && !search;
+
+  const createButton = hasCreateTool ? (
+    <Button onClick={handleCreate} disabled={isCreating} size="sm">
+      {isCreating ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Creating...
+        </>
+      ) : (
+        <>
+          <Plus className="mr-2 h-4 w-4" />
+          Create
+        </>
+      )}
+    </Button>
+  ) : null;
+
   return (
     <>
       <ViewActions>
@@ -999,6 +1086,7 @@ function CollectionContent({
           onSort={handleSort}
           sortOptions={sortOptions}
         />
+        {showCreateInToolbar && createButton}
       </ViewActions>
 
       <div className="flex flex-col h-full overflow-hidden">
@@ -1031,6 +1119,7 @@ function CollectionContent({
             onAction={handleAction}
             onItemClick={(item) => handleAction("open", item)}
             isLoading={items === undefined}
+            readOnly={isReadOnly}
             emptyState={
               <EmptyState
                 image={null}
@@ -1040,6 +1129,7 @@ function CollectionContent({
                     ? "Try adjusting your search terms"
                     : "This collection doesn't have any items yet."
                 }
+                actions={showCreateInEmptyState ? createButton : undefined}
               />
             }
           />

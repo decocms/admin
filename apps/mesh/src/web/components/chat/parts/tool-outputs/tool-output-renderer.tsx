@@ -118,15 +118,50 @@ function ConnectionRenderer({
 }
 
 function CopyButton({ text }: { text: string }) {
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard");
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+    } catch (err) {
+      try {
+        // Fallback method
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+
+        // Ensure it's not visible but part of the DOM
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+
+        textArea.focus();
+        textArea.select();
+
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+
+        if (successful) {
+          toast.success("Copied to clipboard");
+        } else {
+          throw new Error("Fallback copy failed");
+        }
+      } catch (fallbackErr) {
+        console.error("Copy failed", err, fallbackErr);
+        toast.error("Failed to copy to clipboard");
+      }
+    }
+  };
+
   return (
     <Button
       size="icon"
       variant="ghost"
       className="h-5 w-5 hover:bg-background/50"
-      onClick={() => {
-        navigator.clipboard.writeText(text);
-        toast.success("Copied to clipboard");
-      }}
+      onClick={handleCopy}
     >
       <Icon name="content_copy" size={12} />
     </Button>

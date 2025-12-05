@@ -119,13 +119,6 @@ function OrgMcpsContent() {
 
   const connections = useConnections(listState);
 
-  console.log("Connections list:", connections?.map((c) => ({
-    id: c.id,
-    title: c.title,
-    bindings: c.bindings,
-    tools: c.tools?.map((t) => ({ name: t.name, inputSchema: t.inputSchema })),
-  })));
-
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
 
   // Create dialog state is derived from search params

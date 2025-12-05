@@ -47,7 +47,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       if (typeof name !== "string") {
         throw new Error("Name must be a string");
       }
-      async function callToolFn(args: unknown) {
+      async function callToolFn(args: Record<string, unknown>) {
         const debugId = options?.debugId?.();
         const extraHeaders = debugId
           ? { "x-trace-debug-id": debugId }
@@ -59,16 +59,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return callStreamableTool(String(name), args);
         }
 
-        const { structuredContent, isError, content } = await client.callTool(
-          {
-            name: String(name),
-            arguments: args as Record<string, unknown>,
-          },
-          undefined,
-          {
-            timeout: 3000000,
-          },
-        );
+        const { structuredContent, isError, content } = await client.callTool({
+          name: String(name),
+          arguments: args as Record<string, unknown>,
+        });
 
         if (isError) {
           const maybeErrorMessage = (content as { text: string }[])?.[0]?.text;

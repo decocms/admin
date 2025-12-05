@@ -118,7 +118,6 @@ export function CollectionTable<T = Record<string, unknown>>({
                     <div
                       className={cn(
                         "min-w-0 w-full",
-                        col.cellClassName && !col.wrap,
                         !col.wrap &&
                           "truncate overflow-hidden whitespace-nowrap",
                       )}

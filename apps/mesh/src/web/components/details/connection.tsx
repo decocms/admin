@@ -1030,12 +1030,12 @@ function CollectionContent({
 
   // Build actions object with only available actions
   const actions: Record<string, (item: BaseCollectionEntity) => void> = {
-    edit: handleEdit,
+    ...(hasUpdateTool && { edit: handleEdit }),
     ...(hasCreateTool && { duplicate: handleDuplicate }),
     ...(hasDeleteTool && { delete: handleDelete }),
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!hasCreateTool) {
       toast.error("Create operation is not available for this collection");
       return;
@@ -1050,19 +1050,28 @@ function CollectionContent({
       created_by: userId,
       updated_by: userId,
     };
-    collection.insert(newItem);
 
-    toast.success("Item created successfully");
-    // Navigate to the new item's detail page
-    navigate({
-      to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-      params: {
-        org,
-        connectionId,
-        collectionName,
-        itemId: newItem.id as string,
-      },
-    });
+    try {
+      const tx = collection.insert(newItem);
+      await tx.isPersisted.promise;
+
+      toast.success("Item created successfully");
+      // Navigate to the new item's detail page
+      navigate({
+        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+        params: {
+          org,
+          connectionId,
+          collectionName,
+          itemId: newItem.id as string,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to create item:", error);
+      toast.error(`Failed to create item: ${message}`);
+      // Do not navigate on error - optimistic update will be rolled back automatically
+    }
   };
 
   // Generate sort options from schema

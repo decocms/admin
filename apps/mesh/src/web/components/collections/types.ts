@@ -13,7 +13,6 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
   /**
    * The JSON Schema defining the entity structure.
    * Used for rendering default cards and table columns.
-   * If not provided, BaseCollectionJsonSchema will be used as fallback.
    */
   schema: JsonSchema;
 

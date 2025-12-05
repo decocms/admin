@@ -30,9 +30,9 @@ import {
 import { Button } from "@deco/ui/components/button.js";
 import { Textarea } from "@deco/ui/components/textarea.js";
 import { toast } from "sonner";
-import type { useConnectionsCollection } from "../hooks/collections/use-connection";
 import type { authClient } from "../lib/auth-client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
+import { CONNECTIONS_COLLECTION } from "../hooks/collections/use-connection";
 
 export type EditingConnection = ConnectionEntity | null;
 
@@ -41,7 +41,7 @@ interface ConnectMCPModalProps {
   onOpenChange: (open: boolean) => void;
   editingConnection: EditingConnection;
   org: string;
-  collection: ReturnType<typeof useConnectionsCollection>;
+  collection: typeof CONNECTIONS_COLLECTION;
   session: ReturnType<typeof authClient.useSession>["data"];
 }
 

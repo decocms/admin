@@ -29,11 +29,6 @@ import { Card } from "@deco/ui/components/card.tsx";
 import { type TableColumn } from "@deco/ui/components/collection-table.tsx";
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import {
   DropdownMenu,
@@ -41,24 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
@@ -67,6 +45,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
+import { ConnectMCPModal } from "@/web/components/connect-mcp-modal";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use
@@ -388,133 +367,14 @@ function OrgMcpsContent() {
         open={isCreating || dialogState.mode === "editing"}
         onOpenChange={handleDialogClose}
       >
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingConnection ? "Edit Connection" : "Create New Connection"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingConnection
-                ? "Update the connection details below."
-                : "Add a new connection to your organization. Fill in the details below."}
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="My Connection" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="A brief description of this connection"
-                          rows={3}
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type *</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                          <SelectItem value="SSE">SSE</SelectItem>
-                          <SelectItem value="Websocket">Websocket</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://example.com/mcp"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="connection_token"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Token (optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Bearer token or API key"
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleDialogClose(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingConnection
-                    ? "Update Connection"
-                    : "Create Connection"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
+        <ConnectMCPModal
+          open={isCreating || dialogState.mode === "editing"}
+          onOpenChange={handleDialogClose}
+          editingConnection={editingConnection}
+          org={org}
+          collection={CONNECTIONS_COLLECTION}
+          session={session}
+        />
       </Dialog>
 
       {/* Delete Confirmation Dialog */}

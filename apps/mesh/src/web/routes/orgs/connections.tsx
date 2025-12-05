@@ -27,9 +27,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { type TableColumn } from "@deco/ui/components/collection-table.tsx";
-import {
-  Dialog,
-} from "@deco/ui/components/dialog.tsx";
+import { Dialog } from "@deco/ui/components/dialog.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -374,6 +372,7 @@ function OrgMcpsContent() {
           org={org}
           collection={CONNECTIONS_COLLECTION}
           session={session}
+          onSubmit={onSubmit}
         />
       </Dialog>
 

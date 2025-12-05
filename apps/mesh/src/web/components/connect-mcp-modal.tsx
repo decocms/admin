@@ -29,7 +29,6 @@ import {
 } from "@deco/ui/components/select.js";
 import { Button } from "@deco/ui/components/button.js";
 import { Textarea } from "@deco/ui/components/textarea.js";
-import { toast } from "sonner";
 import type { authClient } from "../lib/auth-client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { CONNECTIONS_COLLECTION } from "../hooks/collections/use-connection";
@@ -43,6 +42,7 @@ interface ConnectMCPModalProps {
   org: string;
   collection: typeof CONNECTIONS_COLLECTION;
   session: ReturnType<typeof authClient.useSession>["data"];
+  onSubmit: (data: ConnectionFormData) => void;
 }
 
 const connectionFormSchema = ConnectionEntitySchema.pick({
@@ -63,9 +63,7 @@ export function ConnectMCPModal({
   open,
   onOpenChange,
   editingConnection,
-  org,
-  collection,
-  session,
+  onSubmit,
 }: ConnectMCPModalProps) {
   const form = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionFormSchema),
@@ -78,6 +76,7 @@ export function ConnectMCPModal({
     },
   });
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (editingConnection) {
       form.reset({
@@ -97,56 +96,6 @@ export function ConnectMCPModal({
       });
     }
   }, [editingConnection, form]);
-
-  const onSubmit = async (data: ConnectionFormData) => {
-    try {
-      if (editingConnection) {
-        // Update existing connection
-        const tx = collection.update(editingConnection.id, (draft) => {
-          draft.title = data.title;
-          draft.description = data.description || null;
-          draft.connection_type = data.connection_type;
-          draft.connection_url = data.connection_url;
-          if (data.connection_token) {
-            draft.connection_token = data.connection_token;
-          }
-        });
-        await tx.isPersisted.promise;
-      } else {
-        // Create new connection - cast through unknown because the insert API
-        // accepts ConnectionCreateInput but the collection is typed as ConnectionEntity
-        const tx = collection.insert({
-          id: crypto.randomUUID(),
-          title: data.title,
-          description: data.description || null,
-          connection_type: data.connection_type,
-          connection_url: data.connection_url,
-          connection_token: data.connection_token || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: "inactive",
-          organization_id: org,
-          created_by: session?.user?.id ?? "unknown",
-          icon: null,
-          app_name: null,
-          app_id: null,
-          connection_headers: null,
-          oauth_config: null,
-          configuration_state: null,
-          metadata: null,
-          tools: null,
-          bindings: null,
-        });
-        await tx.isPersisted.promise;
-      }
-      form.reset();
-      onOpenChange(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save connection",
-      );
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

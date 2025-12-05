@@ -158,9 +158,9 @@ export const CONNECTION_CONFIGURE = defineTool({
       await proxy.client.callTool({
         name: "ON_MCP_CONFIGURATION",
         arguments: { state, scopes },
+      });
     } catch (error) {
       console.error("Failed to invoke ON_MCP_CONFIGURATION callback", error);
-      });
     }
 
     return {

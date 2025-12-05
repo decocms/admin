@@ -67,9 +67,11 @@ function utf8ToBase64(str: string): string {
   // Use TextEncoder to convert string to UTF-8 bytes
   const encoder = new TextEncoder();
   const bytes = encoder.encode(str);
-  
+
   // Convert bytes to binary string, then to base64
-  const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+    "",
+  );
   return btoa(binary);
 }
 

@@ -1,38 +1,43 @@
-import { Children, isValidElement, type ReactNode } from "react";
-import { cn } from "../lib/utils.ts";
 import {
-  DecoChatMessageAssistant,
-  DecoChatMessageFooter,
-  DecoChatMessageUser,
-} from "./deco-chat-message.tsx";
+  Children,
+  isValidElement,
+  type ReactNode,
+  PropsWithChildren,
+} from "react";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { MessageAssistant } from "./message-assistant.tsx";
+import { MessageUser } from "./message-user.tsx";
 
-interface DecoChatMessagesProps {
+export function MessageFooter({ children }: PropsWithChildren) {
+  return <>{children}</>;
+}
+
+interface MessageListProps {
   children: ReactNode;
   className?: string;
   minHeightOffset?: number;
 }
 
-export function DecoChatMessages({
+export function MessageList({
   children,
   className,
   minHeightOffset,
-}: DecoChatMessagesProps) {
+}: MessageListProps) {
   const [maybeFooter, maybeAssistant, maybeUser, ...rest] =
     Children.toArray(children).toReversed();
 
   const footer =
-    isValidElement(maybeFooter) && maybeFooter.type === DecoChatMessageFooter
+    isValidElement(maybeFooter) && maybeFooter.type === MessageFooter
       ? maybeFooter
       : null;
 
   const assistant =
-    isValidElement(maybeAssistant) &&
-    maybeAssistant.type === DecoChatMessageAssistant
+    isValidElement(maybeAssistant) && maybeAssistant.type === MessageAssistant
       ? maybeAssistant
       : null;
 
   const user =
-    isValidElement(maybeUser) && maybeUser.type === DecoChatMessageUser
+    isValidElement(maybeUser) && maybeUser.type === MessageUser
       ? maybeUser
       : null;
 

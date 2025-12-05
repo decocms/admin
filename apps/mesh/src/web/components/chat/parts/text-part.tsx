@@ -1,20 +1,20 @@
 import { useCallback, useState } from "react";
-import { useCopy } from "../../../hooks/use-copy.ts";
-import { Button } from "../../button.tsx";
-import { MemoizedMarkdown } from "../chat-markdown.tsx";
-import { Icon } from "../../icon.tsx";
+import { useCopy } from "@deco/ui/hooks/use-copy.ts";
+import { Button } from "@deco/ui/components/button.tsx";
+import { MemoizedMarkdown } from "@deco/ui/components/chat/chat-markdown.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
-interface DecoChatMessageTextPartProps {
+interface MessageTextPartProps {
   id: string;
   text: string;
   copyable?: boolean;
 }
 
-export function DecoChatMessageTextPart({
+export function MessageTextPart({
   id,
   text,
   copyable = false,
-}: DecoChatMessageTextPartProps) {
+}: MessageTextPartProps) {
   const { handleCopy } = useCopy();
   const [isCopied, setIsCopied] = useState(false);
 

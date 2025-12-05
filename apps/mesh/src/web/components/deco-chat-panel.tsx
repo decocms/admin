@@ -11,12 +11,9 @@ import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selec
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import {
-  DecoChatMessageAssistant,
-  DecoChatMessageFooter,
-  DecoChatMessageUser,
-} from "@deco/ui/components/deco-chat-message.tsx";
-import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
+import { MessageAssistant } from "./chat/message-assistant.tsx";
+import { MessageList, MessageFooter } from "./chat/message-list.tsx";
+import { MessageUser } from "./chat/message-user.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
@@ -366,15 +363,15 @@ export function DecoChatPanel() {
             }
           />
         ) : (
-          <DecoChatMessages minHeightOffset={264}>
+          <MessageList minHeightOffset={264}>
             {chat.messages.map((message, index) =>
               message.role === "user" ? (
-                <DecoChatMessageUser
+                <MessageUser
                   key={message.id}
                   message={message as UIMessage<Metadata>}
                 />
               ) : message.role === "assistant" ? (
-                <DecoChatMessageAssistant
+                <MessageAssistant
                   key={message.id}
                   message={message as UIMessage<Metadata>}
                   status={
@@ -383,10 +380,10 @@ export function DecoChatPanel() {
                 />
               ) : null,
             )}
-            <DecoChatMessageFooter>
+            <MessageFooter>
               <div ref={sentinelRef} className="h-0" />
-            </DecoChatMessageFooter>
-          </DecoChatMessages>
+            </MessageFooter>
+          </MessageList>
         )}
       </DecoChatAside.Content>
 

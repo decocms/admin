@@ -18,7 +18,6 @@
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
     "./client": "./src/client.ts",
-    "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
     "./asset-server": "./src/asset-server/index.ts",
     "./tools": "./src/tools.ts"

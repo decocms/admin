@@ -12,6 +12,9 @@ export const isStreamableToolBinder = (
 // Default fetcher instance with API_SERVER_URL and API_HEADERS
 export const MCPClient = new Proxy(
   {} as {
+    forClient: <TDefinition extends readonly ToolBinder[]>(
+      client: ServerClient,
+    ) => MCPClientFetchStub<TDefinition>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnection,
     ) => MCPClientFetchStub<TDefinition>;
@@ -77,7 +80,20 @@ export interface MCPClientRaw {
   >;
 }
 export type JSONSchemaToZodConverter = (jsonSchema: any) => z.ZodTypeAny;
-export interface CreateStubAPIOptions {
+
+export interface CreateStubForClientAPIOptions {
+  client: ServerClient;
+  streamable?: Record<string, boolean>;
+  debugId?: () => string;
+  getErrorByStatusCode?: (
+    statusCode: number,
+    message?: string,
+    traceId?: string,
+    errorObject?: unknown,
+  ) => Error;
+}
+
+export interface CreateStubForConnectionAPIOptions {
   connection: MCPConnection;
   streamable?: Record<string, boolean>;
   debugId?: () => string;
@@ -93,6 +109,9 @@ export interface CreateStubAPIOptions {
     errorObject?: unknown,
   ) => Error;
 }
+export type CreateStubAPIOptions =
+  | CreateStubForClientAPIOptions
+  | CreateStubForConnectionAPIOptions;
 
 export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
   options: CreateStubAPIOptions,

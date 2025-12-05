@@ -11,6 +11,7 @@
  * - Supports StreamableHTTP transport
  */
 
+import { ConnectionEntity } from "@/tools/connection/schema";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -28,7 +29,6 @@ import { AccessControl } from "../../core/access-control";
 import type { MeshContext } from "../../core/mesh-context";
 import { HttpServerTransport } from "../http-server-transport";
 import { compose } from "../utils/compose";
-import { ConnectionEntity } from "@/tools/connection/schema";
 
 // Define Hono variables type
 type Variables = {
@@ -359,28 +359,6 @@ export async function createMCPProxy(
     });
   };
 
-  // Programmatic tool call function
-  const callTool = async <TResponse = unknown>(
-    name: string,
-    args?: Record<string, unknown>,
-  ): Promise<TResponse> => {
-    const request: CallToolRequest = {
-      method: "tools/call",
-      params: {
-        name,
-        arguments: args,
-      },
-    };
-    const { structuredContent, isError, content } =
-      await executeToolCall(request);
-
-    if (isError) {
-      throw new Error(JSON.stringify(content));
-    }
-
-    return structuredContent as TResponse;
-  };
-
   // List tools from downstream connection
   const listTools = async (): Promise<ListToolsResult> => {
     const client = await createClient();
@@ -390,8 +368,13 @@ export async function createMCPProxy(
   // Call tool using fetch directly for streaming support
   // Inspired by @deco/api proxy callStreamableTool
   const callStreamableTool = async (
-    request: CallToolRequest,
+    name: string,
+    args: Record<string, unknown>,
   ): Promise<Response> => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: { name, arguments: args },
+    };
     return callStreamableToolPipeline(request, async (): Promise<Response> => {
       const headers = buildRequestHeaders();
 
@@ -508,7 +491,19 @@ export async function createMCPProxy(
     return await transport.handleMessage(req);
   };
 
-  return { fetch: handleMcpRequest, callTool, listTools, callStreamableTool };
+  return {
+    fetch: handleMcpRequest,
+    client: {
+      callTool: (args: CallToolRequest["params"]) => {
+        return executeToolCall({
+          method: "tools/call",
+          params: args,
+        });
+      },
+      listTools,
+    },
+    callStreamableTool,
+  };
 }
 
 // ============================================================================

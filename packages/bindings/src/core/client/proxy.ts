@@ -29,6 +29,16 @@ const toolsMap = new Map<
 export function createMCPClientProxy<T extends Record<string, unknown>>(
   options: CreateStubAPIOptions,
 ): T {
+  const createClient = (extraHeaders?: Record<string, string>) => {
+    if ("connection" in options) {
+      return createServerClient(
+        { connection: options.connection },
+        undefined,
+        extraHeaders,
+      );
+    }
+    return options.client;
+  };
   return new Proxy<T>({} as T, {
     get(_, name) {
       if (name === "toJSON") {
@@ -43,9 +53,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           ? { "x-trace-debug-id": debugId }
           : undefined;
 
-        const { client, callStreamableTool } = await (
-          options.createServerClient ?? createServerClient
-        )({ connection: options.connection }, undefined, extraHeaders);
+        const { client, callStreamableTool } = await createClient(extraHeaders);
 
         if (options?.streamable?.[String(name)]) {
           return callStreamableTool(String(name), args);
@@ -92,9 +100,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const { client } = await createServerClient({
-          connection: options.connection,
-        });
+        const { client } = await createClient();
         const { tools } = await client.listTools();
 
         return tools as {
@@ -106,6 +112,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       };
 
       async function listToolsOnce() {
+        if (!("connection" in options)) {
+          return listToolsFn();
+        }
         const conn = options.connection;
         const key = JSON.stringify(conn);
 

@@ -6,11 +6,8 @@
  */
 
 import type { ZodType } from "zod";
-import {
-  createMCPFetchStub,
-  CreateStubAPIOptions,
-  MCPClientFetchStub,
-} from "./client/mcp";
+import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
+import { ServerClient } from "./client/mcp-client";
 import { MCPConnection } from "./connection";
 
 /**
@@ -103,13 +100,16 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 ) => {
   return {
     ...createBindingChecker(binder),
+    forClient: (client: ServerClient): MCPClientFetchStub<TDefinition> => {
+      return createMCPFetchStub<TDefinition>({
+        client,
+      });
+    },
     forConnection: (
       mcpConnection: MCPConnection,
-      createServerClient?: CreateStubAPIOptions["createServerClient"],
     ): MCPClientFetchStub<TDefinition> => {
       return createMCPFetchStub<TDefinition>({
         connection: mcpConnection,
-        createServerClient,
         streamable: binder.reduce(
           (acc, tool) => {
             acc[tool.name] = tool.streamable === true;

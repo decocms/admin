@@ -1,6 +1,7 @@
 import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
+import { AddToCursorButton } from "@/web/components/add-to-cursor-button.tsx";
 import { CollectionDisplayButton } from "@/web/components/collections/collection-display-button.tsx";
 import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
@@ -405,6 +406,14 @@ function SettingsTab({
         </div>
       </div>
 
+      {/* External Connection Section - Always visible */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">External Connection</h3>
+        <div className="border border-border rounded-lg p-6 bg-card">
+          <CursorIDEIntegration connection={connection} />
+        </div>
+      </div>
+
       {hasMcpBinding && (
         <div className="space-y-4">
           <h3 className="text-lg font-medium">MCP Configuration</h3>
@@ -603,6 +612,44 @@ function ConnectionSettingsForm({
         </div>
       </form>
     </Form>
+  );
+}
+
+function CursorIDEIntegration({
+  connection,
+}: {
+  connection: ConnectionEntity;
+}) {
+  // Generate MCP config for Cursor - uses Mesh proxy URL
+  const mcpConfig = useMemo(() => {
+    // Get the base URL (current window origin)
+    const baseUrl = window.location.origin;
+
+    // Build the Mesh proxy URL: {baseUrl}/mcp/{connectionId}
+    const proxyUrl = `${baseUrl}/mcp/${connection.id}`;
+
+    return {
+      url: proxyUrl,
+    };
+  }, [connection.id]);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="text-sm font-medium text-foreground mb-1">
+          Install in Cursor IDE
+        </h4>
+        <p className="text-sm text-muted-foreground">
+          Add this MCP server to Cursor via the Mesh HTTP proxy. Authentication
+          and permissions are handled automatically through Mesh.
+        </p>
+      </div>
+      <AddToCursorButton
+        serverName={connection.title || `mcp-${connection.id.slice(0, 8)}`}
+        config={mcpConfig}
+        variant="default"
+      />
+    </div>
   );
 }
 

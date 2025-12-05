@@ -65,6 +65,15 @@ interface CodePayload {
   codeChallengeMethod?: string;
 }
 
+const forceHttps = (url: URL) => {
+  const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (!isLocal) {
+    // force http if not local
+    url.protocol = "https:";
+  }
+  return url;
+};
+
 /**
  * Create OAuth endpoint handlers for MCP servers
  * The MCP server acts as an OAuth Authorization Server proxy
@@ -77,7 +86,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
    * Points to THIS server as the authorization server
    */
   const handleProtectedResourceMetadata = (req: Request): Response => {
-    const url = new URL(req.url);
+    const url = forceHttps(new URL(req.url));
     const resourceUrl = `${url.origin}/mcp`;
 
     return Response.json({
@@ -95,7 +104,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
    * Exposes our endpoints for authorization, token exchange, and registration
    */
   const handleAuthorizationServerMetadata = (req: Request): Response => {
-    const url = new URL(req.url);
+    const url = forceHttps(new URL(req.url));
     const baseUrl = url.origin;
 
     return Response.json({
@@ -117,7 +126,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
    * Stateless: encodes all needed info in the state parameter
    */
   const handleAuthorize = (req: Request): Response => {
-    const url = new URL(req.url);
+    const url = forceHttps(new URL(req.url));
     const redirectUri = url.searchParams.get("redirect_uri");
     const responseType = url.searchParams.get("response_type");
     const clientState = url.searchParams.get("state");
@@ -155,7 +164,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
     const encodedState = encodeState(pendingState);
 
     // Build callback URL pointing to our internal callback
-    const callbackUrl = new URL(`${url.origin}/oauth/callback`);
+    const callbackUrl = forceHttps(new URL(`${url.origin}/oauth/callback`));
     callbackUrl.searchParams.set("state", encodedState);
 
     // Get the external authorization URL from the config
@@ -170,7 +179,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
    * Stateless: decodes state to get redirect info, encodes token in code
    */
   const handleOAuthCallback = async (req: Request): Promise<Response> => {
-    const url = new URL(req.url);
+    const url = forceHttps(new URL(req.url));
     const code = url.searchParams.get("code");
     const encodedState = url.searchParams.get("state");
     const error = url.searchParams.get("error");
@@ -184,7 +193,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       const errorDescription =
         url.searchParams.get("error_description") ?? "Authorization failed";
       if (pending?.redirectUri) {
-        const redirectUrl = new URL(pending.redirectUri);
+        const redirectUrl = forceHttps(new URL(pending.redirectUri));
         redirectUrl.searchParams.set("error", error);
         redirectUrl.searchParams.set("error_description", errorDescription);
         if (pending.clientState)
@@ -222,7 +231,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       const ourCode = encodeState(codePayload);
 
       // Redirect back to client with our code
-      const redirectUrl = new URL(pending.redirectUri);
+      const redirectUrl = forceHttps(new URL(pending.redirectUri));
       redirectUrl.searchParams.set("code", ourCode);
       if (pending.clientState) {
         redirectUrl.searchParams.set("state", pending.clientState);
@@ -233,7 +242,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
       console.error("OAuth callback error:", err);
 
       // Redirect back to client with error
-      const redirectUrl = new URL(pending.redirectUri);
+      const redirectUrl = forceHttps(new URL(pending.redirectUri));
       redirectUrl.searchParams.set("error", "server_error");
       redirectUrl.searchParams.set(
         "error_description",
@@ -445,7 +454,7 @@ export function createOAuthHandlers(oauth: OAuthConfig) {
    * Per MCP spec: MUST include resource_metadata URL
    */
   const createUnauthorizedResponse = (req: Request): Response => {
-    const url = new URL(req.url);
+    const url = forceHttps(new URL(req.url));
     const resourceMetadataUrl = `${url.origin}/.well-known/oauth-protected-resource`;
     const wwwAuthenticateValue = `Bearer resource_metadata="${resourceMetadataUrl}", scope="*"`;
 

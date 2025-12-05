@@ -57,8 +57,8 @@ export function ToolCallPart({ part }: ToolCallPartProps) {
 
         {state === "output-error" && (
           <div className="text-xs font-mono bg-destructive/10 text-destructive p-2 rounded border border-destructive/20">
-            {"errorText" in part && typeof (part as any).errorText === "string"
-              ? (part as any).errorText
+            {"errorText" in part && typeof part.errorText === "string"
+              ? part.errorText
               : "An unknown error occurred"}
           </div>
         )}

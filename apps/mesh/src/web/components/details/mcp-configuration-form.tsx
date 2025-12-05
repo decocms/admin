@@ -176,10 +176,11 @@ export function McpConfigurationForm({
     () => createToolCaller(connection.id),
     [connection.id],
   );
-  const { data: configResult, isLoading, error } = useToolCall<
-    Record<string, never>,
-    McpConfigurationResult
-  >({
+  const {
+    data: configResult,
+    isLoading,
+    error,
+  } = useToolCall<Record<string, never>, McpConfigurationResult>({
     toolCaller,
     toolName: "MCP_CONFIGURATION",
     toolInputParams: {},
@@ -355,4 +356,3 @@ export function McpConfigurationForm({
     </div>
   );
 }
-

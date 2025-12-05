@@ -372,7 +372,11 @@ interface SettingsTabProps {
   hasMcpBinding: boolean;
 }
 
-function SettingsTab({ connection, onUpdate, hasMcpBinding }: SettingsTabProps) {
+function SettingsTab({
+  connection,
+  onUpdate,
+  hasMcpBinding,
+}: SettingsTabProps) {
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
@@ -660,7 +664,6 @@ function ConnectionSettingsFormUI({
     </Form>
   );
 }
-
 
 function ToolsList({
   tools,

@@ -82,6 +82,9 @@ export interface ValidatedCollection {
   name: string;
   displayName: string;
   schema?: Record<string, unknown>;
+  hasCreateTool: boolean;
+  hasUpdateTool: boolean;
+  hasDeleteTool: boolean;
 }
 
 /**
@@ -176,6 +179,31 @@ function extractCollectionSchema(
 }
 
 /**
+ * Detects CRUD capabilities for a collection
+ */
+function detectCrudCapabilities(
+  tools: Array<{ name: string }>,
+  collectionName: string,
+): {
+  hasCreateTool: boolean;
+  hasUpdateTool: boolean;
+  hasDeleteTool: boolean;
+} {
+  const upperCollectionName = collectionName.toUpperCase();
+  return {
+    hasCreateTool: tools.some(
+      (t) => t.name === `COLLECTION_${upperCollectionName}_CREATE`,
+    ),
+    hasUpdateTool: tools.some(
+      (t) => t.name === `COLLECTION_${upperCollectionName}_UPDATE`,
+    ),
+    hasDeleteTool: tools.some(
+      (t) => t.name === `COLLECTION_${upperCollectionName}_DELETE`,
+    ),
+  };
+}
+
+/**
  * Detects and validates collection bindings from tools
  */
 function detectCollections(
@@ -227,10 +255,12 @@ function detectCollections(
       const isValid = checker.isImplementedBy(toolsForChecker);
 
       if (isValid) {
+        const crudCapabilities = detectCrudCapabilities(tools, collectionName);
         validatedCollections.push({
           name: collectionName,
           displayName: formatCollectionName(collectionName),
           schema: extractCollectionSchema(tools, collectionName),
+          ...crudCapabilities,
         });
       }
     } catch {

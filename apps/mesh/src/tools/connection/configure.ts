@@ -152,12 +152,12 @@ export const CONNECTION_CONFIGURE = defineTool({
     });
 
     // Invoke ON_MCP_CONFIGURATION callback on the connection
-    // Ignore errors but await for the response before responding
+    // Ignore errors but await for the respse before responding
     try {
       const proxy = await createMCPProxy(connectionId, ctx);
       await proxy.callTool("ON_MCP_CONFIGURATION", { state, scopes });
-    } catch {
-      // Silently ignore callback errors
+    } catch (error) {
+      console.error("Failed to invoke ON_MCP_CONFIGURATION callback", error);
     }
 
     return {

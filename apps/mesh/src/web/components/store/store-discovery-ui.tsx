@@ -1,14 +1,14 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { slugify } from "@/web/utils/slugify";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CollectionSearch } from "../collections/collection-search";
 import {
   type RegistryItem,
   RegistryItemsSection,
 } from "./registry-items-section";
-import { CollectionSearch } from "../collections/collection-search";
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];

@@ -17,39 +17,11 @@ import {
 } from "../use-collections";
 
 // Module-level singleton to store the collection instance
-let connectionsCollectionSingleton: ReturnType<
-  typeof createCollectionFromToolCaller<ConnectionEntity>
-> | null = null;
-
-/**
- * Get or create the connections collection singleton.
- * This is at module scope to ensure true singleton behavior.
- */
-function getOrCreateConnectionsCollection() {
-  connectionsCollectionSingleton ??=
-    createCollectionFromToolCaller<ConnectionEntity>({
-      toolCaller: createToolCaller(),
-      collectionName: "CONNECTIONS",
-    });
-
-  return connectionsCollectionSingleton;
-}
-
-/**
- * Hook to get the connections collection
- *
- * Uses createToolCaller() (no connectionId) to route to the mesh API.
- * The collection is a singleton shared across all components.
- *
- * @returns The connections collection with CRUD operations
- */
-export function useConnectionsCollection() {
-  const collection = getOrCreateConnectionsCollection();
-  if (!collection) {
-    throw new Error("Failed to initialize connections collection");
-  }
-  return collection;
-}
+export const CONNECTIONS_COLLECTION =
+  createCollectionFromToolCaller<ConnectionEntity>({
+    toolCaller: createToolCaller(),
+    collectionName: "CONNECTIONS",
+  });
 
 /**
  * Filter definition for connections (matches @deco/ui Filter shape)
@@ -68,8 +40,7 @@ export type UseConnectionsOptions = UseCollectionListOptions<ConnectionEntity>;
  * @returns Live query result with connections as ConnectionEntity, plus the original collection for mutations
  */
 export function useConnections(options: UseConnectionsOptions = {}) {
-  const collection = useConnectionsCollection();
-  return useCollectionList(collection, options);
+  return useCollectionList(CONNECTIONS_COLLECTION, options);
 }
 
 /**
@@ -79,8 +50,7 @@ export function useConnections(options: UseConnectionsOptions = {}) {
  * @returns Live query result with the connection as ConnectionEntity, plus the original collection for mutations
  */
 export function useConnection(connectionId: string | undefined) {
-  const collection = useConnectionsCollection();
-  return useCollectionItem(collection, connectionId);
+  return useCollectionItem(CONNECTIONS_COLLECTION, connectionId);
 }
 
 /**

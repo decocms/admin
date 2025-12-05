@@ -68,11 +68,6 @@ export default function OAuthCallback() {
               },
               window.location.origin,
             );
-            console.log(
-              "[OAuth Callback] Sent completion message to parent window",
-            );
-          } else {
-            console.warn("[OAuth Callback] Parent window not available");
           }
         }
       } catch (err) {

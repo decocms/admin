@@ -4,9 +4,11 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
+import { useChat } from "../providers/chat-provider";
+import { useThreads } from "../hooks/use-chat-store";
 import { Suspense } from "react";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import type { Thread } from "../types/chat-threads";
 
 /**
  * Individual thread item with title
@@ -15,31 +17,30 @@ function ThreadListItem({
   thread,
   isActive,
 }: {
-  thread: { id: string; createdAt: number };
+  thread: Thread;
   isActive: boolean;
 }) {
-  const { switchToThread, hideThread } = useChatThreads();
+  const { setActiveThreadId, hideThread } = useChat();
   const [, setOpen] = useDecoChatOpen();
 
-  // Generate a simple title from the thread's creation date
-  const threadTitle = `Chat ${new Date(thread.createdAt).toLocaleDateString(
-    "en-US",
-    {
+  // Generate a simple title from the thread's creation date or use the title if available
+  const threadTitle =
+    thread.title ||
+    `Chat ${new Date(thread.created_at).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    },
-  )}`;
+    })}`;
 
   return (
-    <SidebarMenuItem key={thread.id}>
+    <SidebarMenuItem>
       <SidebarMenuButton
         className={`w-full pr-2 group/thread relative cursor-pointer ${
           isActive ? "bg-accent" : ""
         }`}
         onClick={() => {
-          switchToThread(thread.id);
+          setActiveThreadId(thread.id);
           setOpen(true); // Ensure chat is open when switching threads
         }}
       >
@@ -67,12 +68,18 @@ function ThreadListItem({
  * Renders the list of recent chat threads
  */
 function RecentThreadsList() {
-  const { getAllThreads, activeThreadId } = useChatThreads();
-  const threads = getAllThreads();
+  const { activeThreadId } = useChat();
+  const threads = useThreads() ?? [];
   const maxThreads = 5; // Show up to 5 recent threads
 
-  // Get the most recent threads (limited)
-  const recentThreads = threads.slice(0, maxThreads);
+  // Get the most recent threads (limited, filtered and sorted)
+  const recentThreads = threads
+    .filter((t) => !t.hidden)
+    .sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+    )
+    .slice(0, maxThreads);
 
   if (recentThreads.length === 0) {
     return (

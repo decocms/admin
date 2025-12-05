@@ -23,4 +23,5 @@ export interface Metadata {
   agent?: ChatAgentConfig;
   user?: ChatUserConfig;
   created_at?: string | Date;
+  thread_id?: string;
 }

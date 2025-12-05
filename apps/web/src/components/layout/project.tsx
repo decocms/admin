@@ -178,7 +178,11 @@ const ToggleDecopilotButton = () => {
         className="rounded-sm border-none"
         url={WELL_KNOWN_AGENTS.decopilotAgent.avatar}
         fallback={
-          <img src="/img/logo-tiny.svg" alt="Deco" className="w-4 h-4" />
+          <img
+            src="https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png"
+            alt="Deco"
+            className="w-4 h-4"
+          />
         }
         size="2xs"
       />

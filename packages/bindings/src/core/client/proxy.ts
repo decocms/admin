@@ -29,6 +29,16 @@ const toolsMap = new Map<
 export function createMCPClientProxy<T extends Record<string, unknown>>(
   options: CreateStubAPIOptions,
 ): T {
+  const createClient = (extraHeaders?: Record<string, string>) => {
+    if ("connection" in options) {
+      return createServerClient(
+        { connection: options.connection },
+        undefined,
+        extraHeaders,
+      );
+    }
+    return options.client;
+  };
   return new Proxy<T>({} as T, {
     get(_, name) {
       if (name === "toJSON") {
@@ -37,32 +47,22 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       if (typeof name !== "string") {
         throw new Error("Name must be a string");
       }
-      async function callToolFn(args: unknown) {
+      async function callToolFn(args: Record<string, unknown>) {
         const debugId = options?.debugId?.();
         const extraHeaders = debugId
           ? { "x-trace-debug-id": debugId }
           : undefined;
 
-        const { client, callStreamableTool } = await createServerClient(
-          { connection: options.connection },
-          undefined,
-          extraHeaders,
-        );
+        const { client, callStreamableTool } = await createClient(extraHeaders);
 
         if (options?.streamable?.[String(name)]) {
           return callStreamableTool(String(name), args);
         }
 
-        const { structuredContent, isError, content } = await client.callTool(
-          {
-            name: String(name),
-            arguments: args as Record<string, unknown>,
-          },
-          undefined,
-          {
-            timeout: 3000000,
-          },
-        );
+        const { structuredContent, isError, content } = await client.callTool({
+          name: String(name),
+          arguments: args as Record<string, unknown>,
+        });
 
         if (isError) {
           const maybeErrorMessage = (content as { text: string }[])?.[0]?.text;
@@ -94,9 +94,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       }
 
       const listToolsFn = async () => {
-        const { client } = await createServerClient({
-          connection: options.connection,
-        });
+        const { client } = await createClient();
         const { tools } = await client.listTools();
 
         return tools as {
@@ -108,6 +106,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
       };
 
       async function listToolsOnce() {
+        if (!("connection" in options)) {
+          return listToolsFn();
+        }
         const conn = options.connection;
         const key = JSON.stringify(conn);
 

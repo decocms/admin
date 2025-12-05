@@ -11,4 +11,5 @@ export const LOCALSTORAGE_KEYS = {
     `mesh:thread-manager-state:${locator}`,
   chatSelectedModel: (locator: ProjectLocator) =>
     `mesh:chat:selectedModel:${locator}`,
+  decoChatPanelWidth: () => `mesh:decochat:panel-width`,
 } as const;

@@ -2,20 +2,20 @@ export interface BindingBase {
   name: string;
 }
 
-export interface MCPIntegrationIdBinding extends BindingBase {
+export interface MCPConnectionBinding extends BindingBase {
   type: "mcp";
   /**
    * If not provided, will return a function that takes the integration id and return the binding implementation..
    */
-  integration_id: string;
+  connection_id: string;
 }
 
-export interface MCPIntegrationNameBinding extends BindingBase {
+export interface MCPAppBinding extends BindingBase {
   type: "mcp";
   /**
    * The name of the integration to bind.
    */
-  integration_name: string;
+  app_name: string;
 }
 export interface ContractClause {
   id: string;
@@ -36,7 +36,7 @@ export interface ContractBinding extends BindingBase {
   contract: Contract;
 }
 
-export type MCPBinding = MCPIntegrationIdBinding | MCPIntegrationNameBinding;
+export type MCPBinding = MCPConnectionBinding | MCPAppBinding;
 
 export type Binding = MCPBinding | ContractBinding;
 

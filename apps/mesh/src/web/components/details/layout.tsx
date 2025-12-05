@@ -13,6 +13,7 @@ interface PortalProps {
 function usePortal(id: string) {
   const [element, setElement] = useState<HTMLElement | null>(null);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     setElement(document.getElementById(id));
   }, [id]);
@@ -41,24 +42,30 @@ export function ViewLayout({ children, onBack }: ViewLayoutProps) {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center h-12 border-b border-border shrink-0">
+        {/* Back Button */}
+        <div className="flex h-full px-2 border-r items-center">
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-muted-foreground"
+            size="icon"
+            className="items-center size-8 text-muted-foreground"
             onClick={onBack}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft />
           </Button>
-          <div className="h-6 w-px bg-border mx-2" />
-          {/* Tabs Slot */}
-          <div id={TABS_PORTAL_ID} className="flex items-center gap-2" />
         </div>
 
-        {/* Actions Slot */}
-        <div id={ACTIONS_PORTAL_ID} className="flex items-center gap-2" />
+        {/* Tabs and Actions */}
+        <div className="flex justify-between px-4 items-center gap-4 flex-1">
+          {/* Tabs Slot */}
+          <div id={TABS_PORTAL_ID} className="flex items-center gap-2" />
+
+          {/* Actions Slot */}
+          <div
+            id={ACTIONS_PORTAL_ID}
+            className="flex items-center gap-2 ml-auto"
+          />
+        </div>
       </div>
 
       {/* Main Content */}

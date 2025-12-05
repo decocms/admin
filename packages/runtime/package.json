@@ -1,36 +1,25 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.27",
   "type": "module",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@decocms/bindings": "*",
-    "@mastra/core": "^0.20.2",
-    "@modelcontextprotocol/sdk": "^1.19.1",
+    "@decocms/bindings": "1.0.1-alpha.16",
+    "@modelcontextprotocol/sdk": "1.20.2",
     "@ai-sdk/provider": "^2.0.0",
-    "bidc": "0.0.3",
-    "drizzle-orm": "^0.44.5",
     "hono": "^4.10.7",
     "jose": "^6.0.11",
-    "mime-db": "1.52.0",
     "zod": "^3.25.76",
-    "zod-from-json-schema": "^0.0.5",
     "zod-to-json-schema": "3.25.0"
   },
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
-    "./admin": "./src/admin.ts",
     "./client": "./src/client.ts",
-    "./mastra": "./src/mastra.ts",
-    "./drizzle": "./src/drizzle.ts",
-    "./resources": "./src/resources.ts",
-    "./views": "./src/views.ts",
-    "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
-    "./deconfig": "./src/bindings/deconfig/index.ts",
-    "./asset-server": "./src/asset-server/index.ts"
+    "./asset-server": "./src/asset-server/index.ts",
+    "./tools": "./src/tools.ts"
   },
   "devDependencies": {
     "@types/mime-db": "^1.43.6",

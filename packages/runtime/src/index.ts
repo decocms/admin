@@ -1,56 +1,32 @@
 /* oxlint-disable no-explicit-any */
-import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
-import {
-  getReqToken,
-  handleAuthCallback,
-  handleLogout,
-  StateParser,
-} from "./auth.ts";
-import {
-  createContractBinding,
-  createIntegrationBinding,
-  workspaceClient,
-} from "./bindings.ts";
-import { DeconfigResource } from "./bindings/deconfig/index.ts";
-import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import { createContractBinding, createIntegrationBinding } from "./bindings.ts";
+import { type CORSOptions, handlePreflight, withCORS } from "./cors.ts";
+import { createOAuthHandlers } from "./oauth.ts";
+import { State } from "./state.ts";
 import {
   createMCPServer,
   type CreateMCPServerOptions,
   MCPServer,
-} from "./mastra.ts";
-import { MCPClient, type QueryResult } from "./mcp.ts";
-import { State } from "./state.ts";
+} from "./tools.ts";
 import type { Binding, ContractBinding, MCPBinding } from "./wrangler.ts";
 export { proxyConnectionForId } from "./bindings.ts";
+export { type CORSOptions, type CORSOrigin } from "./cors.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-export interface WorkspaceDB {
-  query: (params: {
-    sql: string;
-    params: string[];
-  }) => Promise<{ result: QueryResult[] }>;
-}
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
-  DECO_REQUEST_CONTEXT: RequestContext<TSchema>;
-  DECO_APP_NAME: string;
-  DECO_APP_SLUG: string;
-  DECO_APP_ENTRYPOINT: string;
-  DECO_API_URL?: string;
-  DECO_WORKSPACE: string;
-  DECO_API_JWT_PUBLIC_KEY: string;
-  DECO_APP_DEPLOYMENT_ID: string;
-  DECO_BINDINGS: string;
-  DECO_API_TOKEN: string;
-  DECO_WORKSPACE_DB: WorkspaceDB & {
-    forContext: (ctx: RequestContext) => WorkspaceDB;
-  };
+  MESH_REQUEST_CONTEXT: RequestContext<TSchema>;
+  MESH_BINDINGS: string;
+  MESH_APP_DEPLOYMENT_ID: string;
   IS_LOCAL: boolean;
+  MESH_URL?: string;
+  MESH_RUNTIME_TOKEN?: string;
+  MESH_APP_NAME?: string;
   [key: string]: unknown;
 }
 
@@ -58,7 +34,7 @@ export interface BindingsObject {
   bindings?: Binding[];
 }
 
-export const WorkersMCPBindings = {
+export const MCPBindings = {
   parse: (bindings?: string): Binding[] => {
     if (!bindings) return [];
     try {
@@ -77,11 +53,12 @@ export interface UserDefaultExport<
   TSchema extends z.ZodTypeAny = never,
   TEnv = TUserEnv & DefaultEnv<TSchema>,
 > extends CreateMCPServerOptions<TEnv, TSchema> {
-  fetch?: (
-    req: Request,
-    env: TEnv,
-    ctx: ExecutionContext,
-  ) => Promise<Response> | Response;
+  fetch?: (req: Request, env: TEnv, ctx: any) => Promise<Response> | Response;
+  /**
+   * CORS configuration options.
+   * Set to `false` to disable CORS handling entirely.
+   */
+  cors?: CORSOptions | false;
 }
 
 // 1. Map binding type to its interface
@@ -104,14 +81,14 @@ export interface User {
 
 export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
-  branch?: string;
   token: string;
-  workspace: string;
+  meshUrl: string;
+  authorization?: string | null;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
   callerApp?: string;
-  integrationId?: string;
+  connectionId?: string;
 }
 
 // 2. Map binding type to its creator function
@@ -131,26 +108,12 @@ const creatorByType: CreatorByType = {
 const withDefaultBindings = ({
   env,
   server,
-  ctx,
   url,
 }: {
   env: DefaultEnv;
   server: MCPServer<any, any>;
-  ctx: RequestContext;
   url?: string;
 }) => {
-  const client = workspaceClient(ctx, env.DECO_API_URL);
-  const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
-    const client = workspaceClient(ctx, env.DECO_API_URL);
-    return {
-      query: ({ sql, params }) => {
-        return client.DATABASES_RUN_SQL({
-          sql,
-          params,
-        });
-      },
-    };
-  };
   env["SELF"] = new Proxy(
     {},
     {
@@ -169,15 +132,6 @@ const withDefaultBindings = ({
     },
   );
 
-  const workspaceDbBinding = {
-    ...createWorkspaceDB(ctx),
-    forContext: createWorkspaceDB,
-  };
-
-  env["DECO_API"] = MCPClient;
-  env["DECO_WORKSPACE_API"] = client;
-  env["DECO_WORKSPACE_DB"] = workspaceDbBinding;
-
   env["IS_LOCAL"] =
     (url?.startsWith("http://localhost") ||
       url?.startsWith("http://127.0.0.1")) ??
@@ -194,13 +148,9 @@ export class UnauthorizedError extends Error {
   }
 }
 
-const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
-const AUTH_START_ENDPOINT = "/oauth/start";
-const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
-const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
+const AUTHENTICATED = (user?: unknown) => () => {
   return {
     ...((user as User) ?? {}),
-    workspace,
   } as User;
 };
 
@@ -208,66 +158,72 @@ export const withBindings = <TEnv>({
   env: _env,
   server,
   tokenOrContext,
-  origin,
   url,
-  branch,
+  bindings: inlineBindings,
+  authToken,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
+  // token is x-mesh-token
   tokenOrContext?: string | RequestContext;
-  origin?: string | null;
+  // authToken is the authorization header
+  authToken?: string | null;
   url?: string;
-  branch?: string | null;
+  bindings?: Binding[];
 }): TEnv => {
-  branch ??= undefined;
   const env = _env as DefaultEnv<any>;
+  const authorization = authToken ? authToken.split(" ")[1] : undefined;
 
-  const apiUrl = env.DECO_API_URL ?? "https://api.decocms.com";
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
-    const workspace = decoded.aud as string;
+    // Support both new JWT format (fields directly on payload) and legacy format (nested in metadata)
+    const metadata =
+      (decoded.metadata as {
+        state?: Record<string, unknown>;
+        meshUrl?: string;
+        connectionId?: string;
+      }) ?? {};
 
     context = {
-      state: decoded.state as Record<string, unknown>,
+      authorization,
+      state: decoded.state ?? metadata.state,
       token: tokenOrContext,
-      integrationId: decoded.integrationId as string,
-      workspace,
-      ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
-      branch,
+      meshUrl: (decoded.meshUrl as string) ?? metadata.meshUrl,
+      connectionId: (decoded.connectionId as string) ?? metadata.connectionId,
+      ensureAuthenticated: AUTHENTICATED(decoded.user ?? decoded.sub),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
-    const workspace = decoded.aud as string;
+    // Support both new JWT format (fields directly on payload) and legacy format (nested in metadata)
+    const metadata =
+      (decoded.metadata as {
+        state?: Record<string, unknown>;
+        meshUrl?: string;
+        connectionId?: string;
+      }) ?? {};
     const appName = decoded.appName as string | undefined;
+    context.authorization ??= authorization;
     context.callerApp = appName;
-    context.integrationId ??= decoded.integrationId as string;
-    context.ensureAuthenticated = AUTHENTICATED(decoded.user, workspace);
+    context.connectionId ??=
+      (decoded.connectionId as string) ?? metadata.connectionId;
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user ?? decoded.sub);
   } else {
     context = {
-      state: undefined,
-      token: env.DECO_API_TOKEN,
-      workspace: env.DECO_WORKSPACE,
-      branch,
-      ensureAuthenticated: (options?: { workspaceHint?: string }) => {
-        const workspaceHint = options?.workspaceHint ?? env.DECO_WORKSPACE;
-        const authUri = new URL("/apps/oauth", apiUrl);
-        authUri.searchParams.set("client_id", env.DECO_APP_NAME);
-        authUri.searchParams.set(
-          "redirect_uri",
-          new URL(AUTH_CALLBACK_ENDPOINT, origin ?? env.DECO_APP_ENTRYPOINT)
-            .href,
-        );
-        workspaceHint &&
-          authUri.searchParams.set("workspace_hint", workspaceHint);
-        throw new UnauthorizedError("Unauthorized", authUri);
+      state: {},
+      authorization,
+      token: undefined,
+      meshUrl: undefined,
+      connectionId: undefined,
+      ensureAuthenticated: () => {
+        throw new Error("Unauthorized");
       },
-    };
+    } as unknown as RequestContext<any>;
   }
 
-  env.DECO_REQUEST_CONTEXT = context;
-  const bindings = WorkersMCPBindings.parse(env.DECO_BINDINGS);
+  env.MESH_REQUEST_CONTEXT = context;
+  const bindings = inlineBindings ?? MCPBindings.parse(env.MESH_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](binding as any, env);
@@ -276,39 +232,87 @@ export const withBindings = <TEnv>({
   withDefaultBindings({
     env,
     server,
-    ctx: env.DECO_REQUEST_CONTEXT,
     url,
   });
 
   return env as TEnv;
 };
 
+const DEFAULT_CORS_OPTIONS = {
+  origin: (origin: string) => {
+    // Allow localhost and configured origins
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return origin;
+    }
+    // TODO: Configure allowed origins from environment
+    return origin;
+  },
+  credentials: true,
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
+};
+
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
-): ExportedHandler<TEnv & DefaultEnv<TSchema>> => {
+) => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
+  const corsOptions = userFns.cors ?? DEFAULT_CORS_OPTIONS;
+  const oauth = userFns.oauth;
+  const oauthHandlers = oauth ? createOAuthHandlers(oauth) : null;
+
   const fetcher = async (
     req: Request,
     env: TEnv & DefaultEnv<TSchema>,
-    ctx: ExecutionContext,
+    ctx: any,
   ) => {
     const url = new URL(req.url);
-    if (url.pathname === AUTH_CALLBACK_ENDPOINT) {
-      return handleAuthCallback(req, {
-        apiUrl: env.DECO_API_URL,
-        appName: env.DECO_APP_NAME,
-      });
+
+    // OAuth routes (when configured)
+    if (oauthHandlers) {
+      // Protected resource metadata (RFC9728) - both paths MUST be supported
+      if (
+        url.pathname === "/.well-known/oauth-protected-resource" ||
+        url.pathname === "/mcp/.well-known/oauth-protected-resource"
+      ) {
+        return oauthHandlers.handleProtectedResourceMetadata(req);
+      }
+
+      // Authorization server metadata (RFC8414)
+      if (url.pathname === "/.well-known/oauth-authorization-server") {
+        return oauthHandlers.handleAuthorizationServerMetadata(req);
+      }
+
+      // Authorization endpoint - redirects to external OAuth provider
+      if (url.pathname === "/authorize") {
+        return oauthHandlers.handleAuthorize(req);
+      }
+
+      // OAuth callback - receives code from external OAuth provider
+      if (url.pathname === "/oauth/callback") {
+        return oauthHandlers.handleOAuthCallback(req);
+      }
+
+      // Token endpoint - exchanges code for tokens
+      if (url.pathname === "/token" && req.method === "POST") {
+        return oauthHandlers.handleToken(req);
+      }
+
+      // Dynamic client registration (RFC7591)
+      if (
+        (url.pathname === "/register" || url.pathname === "/mcp/register") &&
+        req.method === "POST"
+      ) {
+        return oauthHandlers.handleClientRegistration(req);
+      }
     }
-    if (url.pathname === AUTH_START_ENDPOINT) {
-      env.DECO_REQUEST_CONTEXT.ensureAuthenticated();
-      const redirectTo = new URL("/", url);
-      const next = url.searchParams.get("next");
-      return Response.redirect(next ?? redirectTo, 302);
-    }
-    if (url.pathname === AUTH_LOGOUT_ENDPOINT) {
-      return handleLogout(req);
-    }
+
+    // MCP endpoint
     if (url.pathname === "/mcp") {
+      // If OAuth is configured, require authentication
+      if (oauthHandlers && !oauthHandlers.hasAuth(req)) {
+        return oauthHandlers.createUnauthorizedResponse(req);
+      }
+
       return server.fetch(req, env, ctx);
     }
 
@@ -334,55 +338,44 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       });
     }
 
-    if (url.pathname.startsWith(DeconfigResource.WatchPathNameBase)) {
-      return DeconfigResource.watchAPI(req, env);
-    }
     return (
       userFns.fetch?.(req, env, ctx) ||
       new Response("Not found", { status: 404 })
     );
   };
-  return {
-    fetch: async (
-      req: Request,
-      env: TEnv & DefaultEnv<TSchema>,
-      ctx: ExecutionContext,
-    ) => {
-      const referer = req.headers.get("referer");
-      const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER);
 
-      try {
-        const bindings = withBindings({
-          env,
-          server,
-          branch:
-            req.headers.get("x-deco-branch") ??
-            new URL(req.url).searchParams.get("__b"),
-          tokenOrContext: await getReqToken(req, env),
-          origin:
-            referer ?? req.headers.get("origin") ?? new URL(req.url).origin,
-          url: req.url,
-        });
-        return await State.run(
-          { req, env: bindings, ctx },
-          async () => await fetcher(req, bindings, ctx),
-        );
-      } catch (error) {
-        if (error instanceof UnauthorizedError) {
-          if (!isFetchRequest) {
-            const url = new URL(req.url);
-            error.redirectTo.searchParams.set(
-              "state",
-              StateParser.stringify({
-                next: url.searchParams.get("next") ?? referer ?? req.url,
-              }),
-            );
-            return Response.redirect(error.redirectTo, 302);
-          }
-          return new Response(null, { status: 401 });
-        }
-        throw error;
+  return {
+    fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx?: any) => {
+      if (new URL(req.url).pathname === "/_healthcheck") {
+        return new Response("OK", { status: 200 });
       }
+      // Handle CORS preflight (OPTIONS) requests
+      if (corsOptions !== false && req.method === "OPTIONS") {
+        const options = corsOptions ?? {};
+        return handlePreflight(req, options);
+      }
+
+      const bindings = withBindings({
+        authToken: req.headers.get("authorization") ?? null,
+        env: { ...process.env, ...env },
+        server,
+        bindings: userFns.bindings,
+        tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,
+        url: req.url,
+      });
+
+      const response = await State.run(
+        { req, env: bindings, ctx },
+        async () => await fetcher(req, bindings, ctx),
+      );
+
+      // Add CORS headers to response
+      if (corsOptions !== false) {
+        const options = corsOptions ?? {};
+        return withCORS(response, req, options);
+      }
+
+      return response;
     },
   };
 };

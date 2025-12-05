@@ -26,7 +26,7 @@ const SELF_DOMAINS: string[] = [
   // @ts-expect-error env is not typed
   ...(env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS]),
   // @ts-expect-error env is not typed
-  `localhost:${env.PORT || 8000}`,
+  `localhost:${env.PORT || 3001}`,
 ];
 
 // Patch fetch globally

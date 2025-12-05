@@ -1,11 +1,19 @@
 import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
-import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
-import { EmptyState } from "@/web/components/empty-state.tsx";
+import { CollectionDisplayButton } from "@/web/components/collections/collection-display-button.tsx";
+import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
+import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
 import {
+  CollectionsList,
+  generateSortOptionsFromSchema,
+} from "@/web/components/collections/collections-list.tsx";
+import { EmptyState } from "@/web/components/empty-state.tsx";
+import { ErrorBoundary } from "@/web/components/error-boundary";
+import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import {
+  CONNECTIONS_COLLECTION,
   useConnection,
-  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
   useBindingConnections,
@@ -14,7 +22,18 @@ import {
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useToolCall } from "@/web/hooks/use-tool-call";
-import { jsonSchemaToZod } from "@/web/utils/schema-converter";
+import { authClient } from "@/web/lib/auth-client";
+import { BaseCollectionJsonSchema } from "@/web/utils/constants";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -36,20 +55,20 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { IChangeEvent } from "@rjsf/core";
 import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2, Globe, Loader2, Lock } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Globe, Loader2, Lock, Plus } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
-import { ViewLayout, ViewTabs } from "./layout";
-import type { IChangeEvent } from "@rjsf/core";
+import { ViewActions, ViewLayout, ViewTabs } from "./layout";
 
-export default function ConnectionInspectorView() {
+function ConnectionInspectorViewContent() {
   const { connectionId, org } = useParams({ strict: false });
   const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
 
@@ -57,8 +76,8 @@ export default function ConnectionInspectorView() {
   const search = useSearch({ strict: false }) as { tab?: string };
   const activeTabId = search.tab || "settings";
 
-  const { data: connection } = useConnection(connectionId);
-  const connectionsCollection = useConnectionsCollection();
+  const connection = useConnection(connectionId);
+  const connectionsCollection = CONNECTIONS_COLLECTION;
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
@@ -272,59 +291,84 @@ export default function ConnectionInspectorView() {
       </ViewTabs>
       <div className="flex h-full w-full bg-background overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
-          <div className="flex-1 p-6">
-            {mcp.state === "pending_auth" || mcp.state === "authenticating" ? (
-              <EmptyState
-                image={
-                  <div className="bg-muted p-4 rounded-full">
-                    <Lock className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                }
-                title="Authorization Required"
-                description="This connection requires authorization to access tools and resources."
-                actions={
-                  <Button
-                    onClick={() => mcp.authenticate()}
-                    disabled={mcp.state === "authenticating"}
-                  >
-                    {mcp.state === "authenticating"
-                      ? "Authorizing..."
-                      : "Authorize"}
-                  </Button>
-                }
-                className="h-full"
-              />
-            ) : activeTabId === "tools" ? (
-              <ToolsList
-                tools={(mcp.tools || []).map((t) => ({
-                  ...t,
-                  id: t.name,
-                  title: t.name,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                }))}
-                connectionId={connectionId as string}
-                org={org as string}
-              />
-            ) : activeTabId === "settings" ? (
+          {mcp.state === "pending_auth" ||
+          mcp.state === "authenticating" ||
+          (!connection.connection_token && mcp.state === "failed") ? (
+            <EmptyState
+              image={
+                <div className="bg-muted p-4 rounded-full">
+                  <Lock className="w-8 h-8 text-muted-foreground" />
+                </div>
+              }
+              title="Authorization Required"
+              description="This connection requires authorization to access tools and resources."
+              actions={
+                <Button
+                  onClick={() => mcp.authenticate()}
+                  disabled={mcp.state === "authenticating"}
+                >
+                  {mcp.state === "authenticating"
+                    ? "Authorizing..."
+                    : "Authorize"}
+                </Button>
+              }
+              className="h-full"
+            />
+          ) : activeTabId === "tools" ? (
+            <ToolsList
+              tools={mcp.tools}
+              connectionId={connectionId as string}
+              org={org as string}
+            />
+          ) : activeTabId === "settings" ? (
+            <div className="flex-1 p-6">
               <SettingsTab
                 connection={connection}
                 onUpdate={handleUpdateConnection}
                 hasMcpBinding={hasMcpBinding}
               />
-            ) : (
-              <CollectionContent
-                key={activeTabId}
-                connectionId={connectionId as string}
-                collectionName={activeTabId}
-                org={org as string}
-                schema={activeCollection?.schema}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <ErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                }
+              >
+                <CollectionContent
+                  key={activeTabId}
+                  connectionId={connectionId as string}
+                  collectionName={activeTabId}
+                  org={org as string}
+                  schema={activeCollection?.schema}
+                  hasCreateTool={activeCollection?.hasCreateTool ?? false}
+                  hasUpdateTool={activeCollection?.hasUpdateTool ?? false}
+                  hasDeleteTool={activeCollection?.hasDeleteTool ?? false}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          )}
         </div>
       </div>
     </ViewLayout>
+  );
+}
+
+export default function ConnectionInspectorView() {
+  return (
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <ConnectionInspectorViewContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -394,6 +438,7 @@ function ConnectionSettingsForm({
   });
 
   // Reset form when connection changes (external update)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     form.reset({
       title: connection.title,
@@ -590,6 +635,7 @@ function McpConfigurationForm({
   const [isSaving, setIsSaving] = useState(false);
 
   // Initialize scopes from data if needed
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (connection.configuration_scopes) {
       setSelectedScopes(connection.configuration_scopes);
@@ -598,6 +644,17 @@ function McpConfigurationForm({
       setFormState(connection.configuration_state);
     }
   }, [connection]);
+
+  // Default to all scopes when config is loaded if none are configured
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    if (config && !connection.configuration_scopes?.length) {
+      const { scopes } = config as { scopes: string[] };
+      if (scopes && scopes.length > 0) {
+        setSelectedScopes(scopes);
+      }
+    }
+  }, [config, connection.configuration_scopes]);
 
   const handleSubmit = async (data: IChangeEvent<Record<string, unknown>>) => {
     setIsSaving(true);
@@ -688,77 +745,196 @@ function ToolsList({
   connectionId,
   org,
 }: {
-  tools: (BaseCollectionEntity & { description?: string })[];
+  tools: Array<{ name: string; description?: string }> | undefined;
   connectionId: string;
   org: string;
 }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [sortKey, setSortKey] = useState<string | undefined>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
+    "asc",
+  );
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDirection((prev) =>
+        prev === "asc" ? "desc" : prev === "desc" ? null : "asc",
+      );
+      if (sortDirection === "desc") setSortKey(undefined);
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  };
 
   const filteredTools = useMemo(() => {
+    if (!tools || tools.length === 0) return [];
     if (!search.trim()) return tools;
     const searchLower = search.toLowerCase();
     return tools.filter(
       (t) =>
-        t.title.toLowerCase().includes(searchLower) ||
+        t.name.toLowerCase().includes(searchLower) ||
         (t.description && t.description.toLowerCase().includes(searchLower)),
     );
   }, [tools, search]);
 
+  const sortedTools = useMemo(() => {
+    if (!sortKey || !sortDirection) return filteredTools;
+
+    return [...filteredTools].sort((a, b) => {
+      const aVal = (a as unknown as Record<string, unknown>)[sortKey] || "";
+      const bVal = (b as unknown as Record<string, unknown>)[sortKey] || "";
+      const comparison = String(aVal).localeCompare(String(bVal));
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredTools, sortKey, sortDirection]);
+
   const columns = [
     {
-      id: "title",
-      header: "NAME",
-      render: (tool: BaseCollectionEntity) => (
-        <div className="font-medium font-mono text-sm">{tool.title}</div>
+      id: "name",
+      header: "Name",
+      render: (tool: { name: string }) => (
+        <span className="text-sm font-medium font-mono text-foreground">
+          {tool.name}
+        </span>
       ),
       sortable: true,
     },
     {
       id: "description",
-      header: "DESCRIPTION",
+      header: "Description",
       render: (tool: { description?: string }) => (
-        <div className="text-muted-foreground text-sm line-clamp-1">
-          {tool.description}
-        </div>
+        <span className="text-sm text-foreground">
+          {tool.description || "—"}
+        </span>
       ),
+      cellClassName: "flex-1",
+      sortable: true,
     },
   ];
 
+  const sortOptions = columns
+    .filter((col) => col.sortable)
+    .map((col) => ({
+      id: col.id,
+      label: typeof col.header === "string" ? col.header : col.id,
+    }));
+
   return (
-    <CollectionsList
-      data={filteredTools}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-      search={search}
-      onSearchChange={setSearch}
-      columns={columns}
-      onItemClick={(tool) => {
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName: "tools",
-            itemId: encodeURIComponent(tool.id),
-          },
-        });
-      }}
-      renderCard={(tool) => (
-        <Card className="p-4">
-          <div className="font-medium">{tool.title}</div>
-          <div className="text-sm text-muted-foreground">
-            {tool.description}
+    <>
+      <ViewActions>
+        <CollectionDisplayButton
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          sortOptions={sortOptions}
+        />
+      </ViewActions>
+
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Search */}
+        <CollectionSearch
+          value={search}
+          onChange={setSearch}
+          placeholder="Search tools..."
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setSearch("");
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+        />
+
+        {/* Content: Cards or Table */}
+        {viewMode === "cards" ? (
+          <div className="flex-1 overflow-auto p-5">
+            {sortedTools.length === 0 ? (
+              <EmptyState
+                image={null}
+                title={search ? "No tools found" : "No tools available"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This connection doesn't have any tools yet."
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {sortedTools.map((tool) => (
+                  <Card
+                    key={tool.name}
+                    className="cursor-pointer transition-colors"
+                    onClick={() =>
+                      navigate({
+                        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                        params: {
+                          org: org ?? "",
+                          connectionId: connectionId ?? "",
+                          collectionName: "tools",
+                          itemId: encodeURIComponent(tool.name),
+                        },
+                      })
+                    }
+                  >
+                    <div className="flex flex-col gap-4 p-6">
+                      <IntegrationIcon
+                        icon={null}
+                        name={tool.name}
+                        size="md"
+                        className="shrink-0 shadow-sm"
+                      />
+                      <div className="flex flex-col gap-0">
+                        <h3 className="text-base font-medium text-foreground truncate">
+                          {tool.name}
+                        </h3>
+                        <p className="text-base text-muted-foreground line-clamp-2">
+                          {tool.description || "No description"}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        </Card>
-      )}
-      emptyState={
-        <div className="text-center py-12 text-muted-foreground">
-          {search ? "No tools found matching search" : "No tools available"}
-        </div>
-      }
-    />
+        ) : (
+          <CollectionTableWrapper
+            columns={columns}
+            data={sortedTools}
+            isLoading={false}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onRowClick={(tool: { name: string; description?: string }) =>
+              navigate({
+                to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+                params: {
+                  org: org ?? "",
+                  connectionId: connectionId ?? "",
+                  collectionName: "tools",
+                  itemId: encodeURIComponent(tool.name),
+                },
+              })
+            }
+            emptyState={
+              <EmptyState
+                image={null}
+                title={search ? "No tools found" : "No tools available"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This connection doesn't have any tools yet."
+                }
+              />
+            }
+          />
+        )}
+      </div>
+    </>
   );
 }
 
@@ -766,14 +942,22 @@ function CollectionContent({
   connectionId,
   collectionName,
   org,
-  schema: jsonSchema,
+  schema = BaseCollectionJsonSchema,
+  hasCreateTool,
+  hasUpdateTool,
+  hasDeleteTool,
 }: {
   connectionId: string;
   collectionName: string;
   org: string;
   schema?: Record<string, unknown>;
+  hasCreateTool: boolean;
+  hasUpdateTool: boolean;
+  hasDeleteTool: boolean;
 }) {
   const navigate = useNavigate();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id || "unknown";
 
   const collection = useCollection(connectionId, collectionName);
 
@@ -792,101 +976,206 @@ function CollectionContent({
     defaultSortKey: "updated_at",
   });
 
-  const { data: items, isLoading } = useCollectionList(collection, {
-    searchTerm,
-    sortKey,
-    sortDirection,
-  });
+  const items =
+    useCollectionList(collection, {
+      searchTerm,
+      sortKey,
+      sortDirection,
+    }) ?? [];
 
-  const schema = useMemo(
-    () =>
-      jsonSchema
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (jsonSchemaToZod(jsonSchema as any) as z.AnyZodObject)
-        : undefined,
-    [jsonSchema],
+  // Collection is read-only if ALL mutation tools are missing
+  const isReadOnly = !hasCreateTool && !hasUpdateTool && !hasDeleteTool;
+
+  // Create action handlers
+  const handleEdit = (item: BaseCollectionEntity) => {
+    navigate({
+      to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+      params: {
+        org,
+        connectionId,
+        collectionName,
+        itemId: item.id,
+      },
+    });
+  };
+
+  const handleDuplicate = (item: BaseCollectionEntity) => {
+    const now = new Date().toISOString();
+    collection.insert({
+      ...item,
+      id: crypto.randomUUID(),
+      title: `${item.title} (Copy)`,
+      created_at: now,
+      updated_at: now,
+      created_by: userId,
+      updated_by: userId,
+    });
+    toast.success("Item duplicated");
+  };
+
+  const [itemToDelete, setItemToDelete] = useState<BaseCollectionEntity | null>(
+    null,
   );
 
-  const handleAction = async (
-    action: "open" | "delete" | "duplicate" | "edit",
-    item: BaseCollectionEntity,
-  ) => {
-    switch (action) {
-      case "open":
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName,
-            itemId: item.id,
-          },
-        });
-        break;
-      case "delete":
-        if (confirm("Are you sure you want to delete this item?")) {
-          await collection.delete(item.id);
-          toast.success("Item deleted");
-        }
-        break;
-      case "duplicate": {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const itemAny = item as any;
-        const {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          id: _id,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          created_at: _created_at,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          updated_at: _updated_at,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          created_by: _created_by,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          updated_by: _updated_by,
-          ...rest
-        } = itemAny;
+  const handleDelete = (item: BaseCollectionEntity) => {
+    setItemToDelete(item);
+  };
 
-        await collection.insert({
-          ...rest,
-          title: `${rest.title} (Copy)`,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
-        toast.success("Item duplicated");
-        break;
-      }
-      case "edit":
-        // Default edit is same as open for now if we don't have inline edit
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName,
-            itemId: item.id,
-          },
-        });
-        break;
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    collection.delete(itemToDelete.id);
+    toast.success("Item deleted");
+    setItemToDelete(null);
+  };
+
+  // Build actions object with only available actions
+  const actions: Record<string, (item: BaseCollectionEntity) => void> = {
+    ...(hasUpdateTool && { edit: handleEdit }),
+    ...(hasCreateTool && { duplicate: handleDuplicate }),
+    ...(hasDeleteTool && { delete: handleDelete }),
+  };
+
+  const handleCreate = async () => {
+    if (!hasCreateTool) {
+      toast.error("Create operation is not available for this collection");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const newItem: BaseCollectionEntity = {
+      id: crypto.randomUUID(),
+      title: "New Item",
+      created_at: now,
+      updated_at: now,
+      created_by: userId,
+      updated_by: userId,
+    };
+
+    try {
+      const tx = collection.insert(newItem);
+      await tx.isPersisted.promise;
+
+      toast.success("Item created successfully");
+      // Navigate to the new item's detail page
+      navigate({
+        to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+        params: {
+          org,
+          connectionId,
+          collectionName,
+          itemId: newItem.id as string,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to create item:", error);
+      toast.error(`Failed to create item: ${message}`);
+      // Do not navigate on error - optimistic update will be rolled back automatically
     }
   };
 
+  // Generate sort options from schema
+  const sortOptions = generateSortOptionsFromSchema(schema);
+
+  const hasItems = (items?.length ?? 0) > 0;
+  const showCreateInToolbar = hasCreateTool && hasItems;
+  const showCreateInEmptyState = hasCreateTool && !hasItems && !search;
+
+  const createButton = hasCreateTool ? (
+    <Button onClick={handleCreate} size="sm">
+      <Plus className="mr-2 h-4 w-4" />
+      Create
+    </Button>
+  ) : null;
+
   return (
-    <CollectionsList
-      data={items ?? []}
-      schema={schema}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
-      search={search}
-      onSearchChange={setSearch}
-      sortKey={sortKey as string}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onAction={handleAction}
-      onItemClick={(item) => handleAction("open", item)}
-      isLoading={isLoading}
-      emptyState={
-        <div className="text-center py-12 text-muted-foreground">
-          {search ? "No items found matching search" : "No items found"}
+    <>
+      <ViewActions>
+        <CollectionDisplayButton
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortKey={sortKey as string}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          sortOptions={sortOptions}
+        />
+        {showCreateInToolbar && createButton}
+      </ViewActions>
+
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Search */}
+        <CollectionSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={`Search ${collectionName}...`}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setSearch("");
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+        />
+
+        {/* Collections List with schema-based rendering */}
+        <div className="flex-1 overflow-auto">
+          <CollectionsList
+            hideToolbar
+            data={items ?? []}
+            schema={schema}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            search={search}
+            onSearchChange={setSearch}
+            sortKey={sortKey as string}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            actions={actions}
+            onItemClick={(item) => handleEdit(item)}
+            readOnly={isReadOnly}
+            emptyState={
+              <EmptyState
+                image={null}
+                title={search ? "No items found" : "No items found"}
+                description={
+                  search
+                    ? "Try adjusting your search terms"
+                    : "This collection doesn't have any items yet."
+                }
+                actions={showCreateInEmptyState ? createButton : undefined}
+              />
+            }
+          />
         </div>
-      }
-    />
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setItemToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.title}"? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -3,104 +3,68 @@ import { useAgentsFromConnection } from "@/web/hooks/collections/use-agent";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useLLMsFromConnection } from "@/web/hooks/collections/use-llm";
 import { useBindingConnections } from "@/web/hooks/use-binding";
-import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 import { useDecoChatOpen } from "@/web/hooks/use-deco-chat-open";
-import { useLocalStorage } from "@/web/hooks/use-local-storage";
-import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
+import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import { useChat } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selector.tsx";
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { DecoChatMessage } from "@deco/ui/components/deco-chat-message.tsx";
+import {
+  DecoChatMessageAssistant,
+  DecoChatMessageFooter,
+  DecoChatMessageUser,
+} from "@deco/ui/components/deco-chat-message.tsx";
 import { DecoChatMessages } from "@deco/ui/components/deco-chat-messages.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
-import { DecoChatSkeleton } from "@deco/ui/components/deco-chat-skeleton.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useChatThreads } from "@deco/ui/providers/chat-threads-provider.tsx";
+import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { useNavigate } from "@tanstack/react-router";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type UIMessage } from "ai";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useChat } from "../providers/chat-provider";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
-// Create transport for models stream API (stable across model changes)
-function createModelsTransport(
-  orgSlug: string,
-): DefaultChatTransport<UIMessage> {
-  return new DefaultChatTransport({
-    api: `/api/${orgSlug}/models/stream`,
-    credentials: "include",
-    prepareSendMessagesRequest: ({
-      messages,
-      requestMetadata,
-    }: {
-      messages: UIMessage[];
-      requestMetadata?: unknown;
-    }) => {
-      // oxlint-disable-next-line no-explicit-any
-      const metadata = requestMetadata as any;
-
-      return {
-        body: {
-          messages,
-          model: metadata?.model,
-          agent: metadata?.agent,
-          stream: true,
-        },
-      };
-    },
-  });
-}
-
 export function DecoChatPanel() {
-  const { locator, org } = useProjectContext();
-  const { organization } = useCurrentOrganization();
-  const orgSlug = organization?.slug || "";
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
+  const { org } = useProjectContext();
   const [, setOpen] = useDecoChatOpen();
   const navigate = useNavigate();
 
-  // Use thread management from ChatThreadsProvider
+  // Use chat management from ChatProvider
   const {
-    messages: threadMessages,
-    addMessage,
-    copyThreadTabs,
-  } = useChatThreads();
+    createThread,
+    chat,
+    sentinelRef,
+    activeThreadId,
+    selectedModelState,
+    setSelectedModelState,
+    selectedAgentState,
+    setSelectedAgentState,
+  } = useChat();
 
-  // Thread messages are already in UIMessage format
-  const initialMessages = useMemo<UIMessage[]>(
-    () => threadMessages,
-    [threadMessages],
-  );
+  const { status } = chat;
 
-  // Local state for input (similar to provider.tsx)
+  // Local state for input
   const [input, setInput] = useState("");
 
-  // Sentinel ref for auto-scrolling to bottom
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
   // Get all connections
-  const { data: allConnections } = useConnections();
-  const connectionsLoading = allConnections === undefined;
+  const allConnections = useConnections() ?? [];
 
   // Filter connections by binding type
   const [modelsConnection] = useBindingConnections(allConnections, "LLMS");
   const [agentsConnection] = useBindingConnections(allConnections, "AGENTS");
 
   // Fetch models from the first LLM connection
-  const { data: modelsData } = useLLMsFromConnection(modelsConnection?.id);
-  const modelsLoading = modelsData === undefined;
+  const modelsData = useLLMsFromConnection(modelsConnection?.id) ?? [];
 
   // Fetch agents from the first AGENTS connection
-  const { data: agentsData } = useAgentsFromConnection(agentsConnection?.id);
-  const agentsLoading = agentsData === undefined;
-
-  const isModelsLoading = connectionsLoading || modelsLoading;
-  const isAgentsLoading = connectionsLoading || agentsLoading;
+  const agentsData = useAgentsFromConnection(agentsConnection?.id) ?? [];
 
   // Transform models for UI display
   const models = useMemo(() => {
@@ -132,28 +96,14 @@ export function DecoChatPanel() {
     }));
   }, [agentsData, agentsConnection]);
 
-  // Persist selected model (including connectionId) per organization in localStorage
-  const [selectedModelState, setSelectedModelState] = useLocalStorage<{
-    modelId: string;
-    connectionId: string;
-  } | null>(
-    LOCALSTORAGE_KEYS.chatSelectedModel(locator),
-    (existing) => existing as { modelId: string; connectionId: string } | null,
-  );
-
-  // Persist selected agent per organization in localStorage
-  const [selectedAgentState, setSelectedAgentState] = useLocalStorage<{
-    agentId: string;
-    connectionId: string;
-  } | null>(`${locator}:selected-agent`, () => null);
-
   // Initialize with first model
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (models.length > 0 && !selectedModelState) {
       const firstModel = models[0];
       if (firstModel) {
         setSelectedModelState({
-          modelId: firstModel.id,
+          id: firstModel.id,
           connectionId: firstModel.connectionId,
         });
       }
@@ -161,6 +111,7 @@ export function DecoChatPanel() {
   }, [models, selectedModelState, setSelectedModelState]);
 
   // Initialize with first agent
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (agents.length > 0 && !selectedAgentState) {
       const firstAgent = agents[0];
@@ -178,7 +129,7 @@ export function DecoChatPanel() {
     () =>
       models.find(
         (m) =>
-          m.id === selectedModelState?.modelId &&
+          m.id === selectedModelState?.id &&
           m.connectionId === selectedModelState?.connectionId,
       ),
     [models, selectedModelState],
@@ -195,49 +146,10 @@ export function DecoChatPanel() {
     [agents, selectedAgentState],
   );
 
-  // Create transport (stable, doesn't depend on selected model)
-  const transport = useMemo(() => createModelsTransport(orgSlug), [orgSlug]);
-
-  // Use AI SDK's useChat hook
-  const chat = useChat({
-    id: `mesh-chat-${orgSlug}`,
-    messages: initialMessages,
-    transport: transport ?? undefined,
-    onFinish: (result) => {
-      // Save new messages to thread provider (similar to provider.tsx)
-      if (result?.messages) {
-        const initialLength = initialMessages?.length ?? 0;
-        const newMessages = result.messages.slice(initialLength);
-
-        if (newMessages.length > 0) {
-          newMessages.forEach((msg: UIMessage) => {
-            // Skip non-chat roles (data messages)
-            if (
-              msg.role !== "user" &&
-              msg.role !== "assistant" &&
-              msg.role !== "system"
-            ) {
-              return;
-            }
-
-            // Add UIMessage directly to thread (without id, it will be generated)
-            const { id: _id, ...messageWithoutId } = msg;
-            addMessage(messageWithoutId);
-          });
-        }
-      }
-    },
-    onError: (error: Error) => {
-      console.error("[deco-chat] Chat error:", error);
-    },
-  });
-
-  // Derive loading state from chat status
-  const isLoading = chat.status === "submitted" || chat.status === "streaming";
-
   const isEmpty = chat.messages.length === 0;
 
   // Auto-scroll to bottom when messages change
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (sentinelRef.current && chat.messages.length > 0) {
       sentinelRef.current.scrollIntoView({
@@ -245,7 +157,7 @@ export function DecoChatPanel() {
         block: "end",
       });
     }
-  }, [chat.messages]);
+  }, [chat.messages, sentinelRef]);
 
   // Transform agents to selector options
   const agentSelectorOptions = useMemo(() => {
@@ -257,30 +169,9 @@ export function DecoChatPanel() {
     }));
   }, [agents]);
 
-  // Transform models to selector options
-  // We ensure the structure matches ModelInfo expected by the rich selector
-  const modelSelectorOptions = useMemo(() => {
-    return models.map((model) => ({
-      ...model,
-      // Ensure we have a unique ID for selection if needed, or just use model.id
-      // The selector will use this ID for value
-      // If we need composite ID for models too, we might need to adjust.
-      // For now assuming model.id is sufficient or we are handling it via state.
-      // Wait, we need to handle selection correctly.
-      // The current selection state uses { modelId, connectionId }.
-      // We can pass a composite ID to the selector or just use model.id if unique within the list.
-      // Let's use model.id for now as the list is derived from modelsData which implies one connection for now?
-      // No, modelsData comes from `useLLMsFromConnection(modelsConnection?.id)`.
-      // So all models are from the same connection.
-      // But if we had multiple connections, we'd need composite IDs.
-      // The selector uses `value` prop to match item ID.
-      id: model.id,
-    }));
-  }, [models]);
-
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
   const wrappedSendMessage = useCallback(
-    async (message: UIMessage) => {
+    async (message: UIMessage<Metadata>) => {
       if (!selectedModelState || !selectedModel) {
         // Console error kept for critical missing configuration
         console.error("No model configured");
@@ -288,45 +179,45 @@ export function DecoChatPanel() {
       }
 
       // Prepare metadata with model and agent configuration
-      const metadata: {
-        model: { id: string; connectionId: string; provider?: string | null };
-        agent?: {
-          id: string;
-          instructions: string;
-          tool_set: Record<string, string[]>;
-        };
-      } = {
-        model: {
-          id: selectedModelState.modelId,
-          connectionId: selectedModelState.connectionId,
-          provider: selectedModel.provider,
+      const metadata: Metadata = {
+        model: selectedModelState ?? undefined,
+        agent: selectedAgent ?? undefined,
+        user: {
+          avatar: user?.image ?? undefined,
+          name: user?.name ?? "you",
         },
+        created_at: new Date().toISOString(),
+        thread_id: activeThreadId,
       };
 
-      // Add agent if selected
-      if (selectedAgent) {
-        metadata.agent = {
-          id: selectedAgent.id,
-          instructions: selectedAgent.instructions,
-          tool_set: selectedAgent.tool_set,
-        };
-      }
+      // Set user message's thread_id
+      message.metadata = {
+        ...metadata,
+        thread_id: activeThreadId,
+      };
 
       return await chat.sendMessage(message, { metadata });
     },
-    [chat, selectedModelState, selectedModel, selectedAgent],
+    [
+      chat,
+      selectedModelState,
+      selectedModel,
+      selectedAgent,
+      user,
+      activeThreadId,
+    ],
   );
 
   const handleSendMessage = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
 
-      if (!input?.trim() || isLoading) {
+      if (!input?.trim() || status === "submitted" || status === "streaming") {
         return;
       }
 
       // Create and send message with metadata
-      const userMessage: UIMessage = {
+      const userMessage: UIMessage<Metadata> = {
         id: crypto.randomUUID(),
         role: "user",
         parts: [{ type: "text", text: input }],
@@ -336,17 +227,12 @@ export function DecoChatPanel() {
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, isLoading, wrappedSendMessage],
+    [input, status, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
     chat.stop?.();
   }, [chat]);
-
-  // Show skeleton while loading connections
-  if (isModelsLoading || isAgentsLoading) {
-    return <DecoChatSkeleton />;
-  }
 
   // Check if both required bindings are present
   const hasModelsBinding = !!modelsConnection;
@@ -439,8 +325,7 @@ export function DecoChatPanel() {
             <button
               type="button"
               onClick={() => {
-                // Create new thread (copies tabs from current)
-                copyThreadTabs();
+                createThread();
               }}
               className="flex size-6 items-center justify-center rounded-full p-1 hover:bg-transparent group cursor-pointer"
               title="New chat"
@@ -475,20 +360,32 @@ export function DecoChatPanel() {
               selectedAgent?.description ||
               "Ask anything about configuring model providers or using MCP Mesh."
             }
-            avatar={selectedAgent?.avatar || "/img/logo-tiny.svg"}
+            avatar={
+              selectedAgent?.avatar ||
+              "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png"
+            }
           />
         ) : (
-          <DecoChatMessages>
-            {chat.messages.map((message: UIMessage, index: number) => (
-              <DecoChatMessage
-                key={message.id}
-                message={message}
-                timestamp={new Date().toISOString()}
-                isStreaming={isLoading && index === chat.messages.length - 1}
-              />
-            ))}
-            {/* Sentinel element for smooth scrolling to bottom */}
-            <div ref={sentinelRef} className="h-0" />
+          <DecoChatMessages minHeightOffset={264}>
+            {chat.messages.map((message, index) =>
+              message.role === "user" ? (
+                <DecoChatMessageUser
+                  key={message.id}
+                  message={message as UIMessage<Metadata>}
+                />
+              ) : message.role === "assistant" ? (
+                <DecoChatMessageAssistant
+                  key={message.id}
+                  message={message as UIMessage<Metadata>}
+                  status={
+                    index === chat.messages.length - 1 ? status : undefined
+                  }
+                />
+              ) : null,
+            )}
+            <DecoChatMessageFooter>
+              <div ref={sentinelRef} className="h-0" />
+            </DecoChatMessageFooter>
           </DecoChatMessages>
         )}
       </DecoChatAside.Content>
@@ -500,7 +397,7 @@ export function DecoChatPanel() {
           onSubmit={handleSendMessage}
           onStop={handleStop}
           disabled={models.length === 0 || !selectedModelState}
-          isStreaming={isLoading}
+          isStreaming={status === "submitted" || status === "streaming"}
           placeholder={
             models.length === 0
               ? "Add an LLM binding connection to start chatting"
@@ -531,14 +428,14 @@ export function DecoChatPanel() {
               {/* Model Selector - Rich style */}
               {models.length > 0 && (
                 <DecoChatModelSelectorRich
-                  models={modelSelectorOptions}
-                  selectedModelId={selectedModelState?.modelId}
+                  models={models}
+                  selectedModelId={selectedModelState?.id}
                   onModelChange={(modelId) => {
                     if (!modelId) return;
                     const model = models.find((m) => m.id === modelId);
                     if (model) {
                       setSelectedModelState({
-                        modelId: model.id,
+                        id: model.id,
                         connectionId: model.connectionId,
                       });
                     }

@@ -263,7 +263,7 @@ export function InviteTeamMembersDialog({
                       <FormItem>
                         <FormControl>
                           <EmailTagsInput
-                            emails={field.value}
+                            emails={field.value ?? []}
                             onEmailsChange={field.onChange}
                             disabled={inviteMemberMutation.isPending}
                             placeholder="Emails, comma separated"

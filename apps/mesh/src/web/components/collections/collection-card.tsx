@@ -1,4 +1,7 @@
+import type { JsonSchema } from "@/web/utils/constants";
 import { Card } from "@deco/ui/components/card.tsx";
+import type { BaseCollectionEntity } from "@decocms/bindings/collections";
+import { IntegrationIcon } from "../integration-icon.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,41 +10,30 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { UserIndicator } from "./user-indicator.tsx";
-import type { z } from "zod";
-import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import { ZodString } from "zod";
 
 interface CollectionCardProps<T extends BaseCollectionEntity> {
   item: T;
-  schema: z.AnyZodObject;
+  schema: JsonSchema;
   readOnly?: boolean;
-  onAction: (action: "open" | "delete" | "duplicate", item: T) => void;
+  actions?: Record<string, (item: T) => void | Promise<void>>;
 }
 
-function findImageField(
-  schema: z.AnyZodObject,
-  item: unknown,
-): string | undefined {
-  const shape = schema.shape;
+function findImageField(schema: JsonSchema, item: unknown): string | undefined {
+  const properties = schema.properties || {};
 
-  // 1. Look for ZodString with kind === "url"
-  for (const key in shape) {
-    const fieldSchema = shape[key];
-    if (fieldSchema instanceof ZodString) {
-      // @ts-ignore - accessing internal checks
-      const hasUrlCheck = fieldSchema._def.checks.some(
-        (check: { kind: string }) => check.kind === "url",
-      );
-      if (
-        hasUrlCheck &&
-        item &&
-        typeof item === "object" &&
-        key in item &&
-        (item as Record<string, unknown>)[key]
-      ) {
-        return (item as Record<string, string>)[key];
-      }
+  // 1. Look for string fields with format === "url" or "uri"
+  for (const key in properties) {
+    const fieldSchema = properties[key];
+    if (
+      fieldSchema &&
+      fieldSchema.type === "string" &&
+      (fieldSchema.format === "url" || fieldSchema.format === "uri") &&
+      item &&
+      typeof item === "object" &&
+      key in item &&
+      (item as Record<string, unknown>)[key]
+    ) {
+      return (item as Record<string, string>)[key];
     }
   }
 
@@ -72,10 +64,9 @@ function findImageField(
 export function CollectionCard<T extends BaseCollectionEntity>({
   item,
   schema,
-  readOnly,
-  onAction,
+  actions,
 }: CollectionCardProps<T>) {
-  const imageUrl = findImageField(schema, item);
+  const iconUrl = findImageField(schema, item);
   const description =
     item &&
     typeof item === "object" &&
@@ -84,85 +75,96 @@ export function CollectionCard<T extends BaseCollectionEntity>({
       ? (item as Record<string, string>).description
       : undefined;
 
+  const hasActions = actions && Object.keys(actions).length > 0;
+
   return (
-    <Card className="group relative flex flex-col overflow-hidden hover:shadow-md transition-shadow bg-card border-border/50">
-      {imageUrl && (
-        <div className="aspect-video w-full overflow-hidden bg-muted/20 border-b border-border/50">
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+    <Card className="cursor-pointer transition-colors h-full flex flex-col group relative">
+      <div className="flex flex-col gap-4 p-6 flex-1">
+        <IntegrationIcon
+          icon={iconUrl}
+          name={item.title}
+          size="md"
+          className="shrink-0 shadow-sm"
+        />
+        <div className="flex flex-col gap-0 flex-1">
+          <h3 className="text-base font-medium text-foreground truncate">
+            {item.title}
+          </h3>
+          <p className="text-base text-muted-foreground line-clamp-2">
+            {description || "No description"}
+          </p>
         </div>
-      )}
-
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h3
-              className="font-semibold text-base leading-tight truncate"
-              title={item.title}
-            >
-              {item.title}
-            </h3>
-            {description && (
-              <p
-                className="text-sm text-muted-foreground line-clamp-2 mt-1"
-                title={description}
-              >
-                {description}
-              </p>
-            )}
-          </div>
-
+      </div>
+      {hasActions && (
+        <div
+          className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 -mr-2 -mt-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Icon name="more_vert" size={16} />
-                <span className="sr-only">Actions</span>
+                <Icon name="more_vert" size={20} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onAction("open", item)}>
-                <Icon name="visibility" className="mr-2 h-4 w-4" />
-                Open
-              </DropdownMenuItem>
-              {!readOnly && (
-                <>
-                  <DropdownMenuItem onClick={() => onAction("duplicate", item)}>
-                    <Icon name="content_copy" className="mr-2 h-4 w-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onAction("delete", item)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Icon name="delete" className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {actions.open && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.open?.(item);
+                  }}
+                >
+                  <Icon name="visibility" size={16} />
+                  Open
+                </DropdownMenuItem>
+              )}
+              {actions.edit && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.edit?.(item);
+                  }}
+                >
+                  <Icon name="edit" size={16} />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {actions.duplicate && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.duplicate?.(item);
+                  }}
+                >
+                  <Icon name="content_copy" size={16} />
+                  Duplicate
+                </DropdownMenuItem>
+              )}
+              {actions.delete && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.delete?.(item);
+                  }}
+                >
+                  <Icon name="delete" size={16} />
+                  Delete
+                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        <div className="mt-auto flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground">
-          <UserIndicator userId={item.updated_by || item.created_by} />
-          <span>
-            {new Date(item.updated_at || item.created_at).toLocaleDateString(
-              undefined,
-              {
-                month: "short",
-                day: "numeric",
-              },
-            )}
-          </span>
-        </div>
-      </div>
+      )}
     </Card>
   );
 }

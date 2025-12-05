@@ -27,16 +27,6 @@ import { useMcp } from "use-mcp/react";
 import { ViewLayout } from "./layout";
 
 // Helper to normalize URL for MCP
-const normalizeUrl = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    parsed.pathname = parsed.pathname.replace(/\/i:([a-f0-9-]+)/gi, "/$1");
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-};
-
 export interface ToolDetailsViewProps {
   itemId: string;
   onBack: () => void;
@@ -50,7 +40,7 @@ export function ToolDetailsView({
   const params = useParams({ strict: false });
   const connectionId = params.connectionId ?? UNKNOWN_CONNECTION_ID;
 
-  const { data: connection } = useConnection(connectionId);
+  const connection = useConnection(connectionId);
   const [inputParams, setInputParams] = useState<Record<string, unknown>>({});
   const [executionResult, setExecutionResult] = useState<Record<
     string,
@@ -66,19 +56,20 @@ export function ToolDetailsView({
   } | null>(null);
   const [viewMode, setViewMode] = useState<"json" | "view">("json");
 
-  const normalizedUrl = connection?.connection_url
-    ? normalizeUrl(connection.connection_url)
-    : "";
+  // Use proxy URL when connection has a token (OAuth completed)
+  // Use normalizedUrl directly when no token (OAuth flow needs direct access)
+  const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
 
   // Initialize MCP client
   const mcp = useMcp({
-    url: normalizedUrl,
+    url: mcpProxyUrl.href,
     clientName: "MCP Tool Inspector",
     clientUri: window.location.origin,
     autoReconnect: true,
     autoRetry: 5000,
   });
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (mcp.error) {
       console.error("MCP Error:", mcp.error);
@@ -90,7 +81,7 @@ export function ToolDetailsView({
     return mcp.tools?.find((t) => t.name === toolName);
   }, [mcp.tools, toolName]);
 
-  // Initialize inputs based on schema (if available and empty)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (
       tool?.inputSchema?.properties &&
@@ -262,7 +253,8 @@ export function ToolDetailsView({
             </div>
 
             <div className="p-4 space-y-4">
-              {mcp.state === "pending_auth" && (
+              {(mcp.state === "pending_auth" ||
+                (!connection.connection_token && mcp.state === "failed")) && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Authorization Required</AlertTitle>

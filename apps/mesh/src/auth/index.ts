@@ -11,10 +11,11 @@
 
 import { getToolsByCategory } from "@/tools/registry";
 import { sso } from "@better-auth/sso";
-import { betterAuth, BetterAuthOptions } from "better-auth";
+import { betterAuth } from "better-auth";
 import {
   admin as adminPlugin,
   apiKey,
+  jwt,
   magicLink,
   mcp,
   openAPI,
@@ -26,40 +27,12 @@ import {
   defaultStatements,
 } from "better-auth/plugins/organization/access";
 
+import { config } from "@/core/config";
 import { createAccessControl, Role } from "better-auth/plugins/access";
-import { existsSync, readFileSync } from "fs";
-import {
-  createEmailSender,
-  EmailProviderConfig,
-  findEmailProvider,
-} from "./email-providers";
-import { createMagicLinkConfig, MagicLinkConfig } from "./magic-link";
-import { createSSOConfig, SSOConfig } from "./sso";
 import { getDatabaseUrl, getDbDialect } from "../database";
-
-const DEFAULT_AUTH_CONFIG: Partial<BetterAuthOptions> = {
-  emailAndPassword: {
-    enabled: true,
-  },
-};
-
-/**
- * Load optional auth configuration from file
- */
-function loadAuthConfig(): Partial<BetterAuthOptions> {
-  const configPath = "./auth-config.json";
-
-  if (existsSync(configPath)) {
-    try {
-      const content = readFileSync(configPath, "utf-8");
-      return JSON.parse(content);
-    } catch {
-      return DEFAULT_AUTH_CONFIG;
-    }
-  }
-
-  return DEFAULT_AUTH_CONFIG;
-}
+import { createEmailSender, findEmailProvider } from "./email-providers";
+import { createMagicLinkConfig } from "./magic-link";
+import { createSSOConfig } from "./sso";
 
 const allTools = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => t.name))
@@ -87,12 +60,7 @@ const scopes = Object.values(getToolsByCategory())
   .map((tool) => tool.map((t) => `self:${t.name}`))
   .flat();
 
-export const authConfig: Partial<BetterAuthOptions> & {
-  ssoConfig?: SSOConfig;
-  magicLinkConfig?: MagicLinkConfig;
-  emailProviders?: EmailProviderConfig[];
-  inviteEmailProviderId?: string;
-} = loadAuthConfig();
+export const authConfig = config.auth;
 
 let sendInvitationEmail: OrganizationOptions["sendInvitationEmail"] = undefined;
 
@@ -162,6 +130,11 @@ const plugins = [
   // API Key plugin for direct tool access
   // https://www.better-auth.com/docs/plugins/api-key
   apiKey({
+    enableMetadata: true,
+    maximumNameLength: 64,
+    keyExpiration: {
+      minExpiresIn: 5 / 1440, // 5 minutes in days (default is 1 day)
+    },
     permissions: {
       defaultPermissions: {
         self: [
@@ -185,6 +158,16 @@ const plugins = [
   // OpenAPI plugin for API documentation
   // https://www.better-auth.com/docs/plugins/openAPI
   openAPI(),
+
+  // JWT plugin for issuing tokens with custom payloads
+  // https://www.better-auth.com/docs/plugins/jwt
+  // Used by proxy routes to issue short-lived tokens with connection metadata
+  jwt({
+    jwt: {
+      // Short expiration for proxy tokens (5 minutes)
+      expirationTime: "5m",
+    },
+  }),
 
   sso(authConfig.ssoConfig ? createSSOConfig(authConfig.ssoConfig) : undefined),
 

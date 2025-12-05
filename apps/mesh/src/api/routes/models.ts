@@ -1,8 +1,7 @@
+import type { Metadata } from "@deco/ui/types/chat-metadata.ts";
+import { LanguageModelBinding } from "@decocms/bindings/llm";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { LanguageModelBinding } from "@decocms/bindings/llm";
-import type { HTTPConnection } from "@decocms/bindings/connection";
-import { createLLMProvider } from "../llm-provider";
 import {
   convertToModelMessages,
   pruneMessages,
@@ -13,8 +12,10 @@ import {
 import { Hono } from "hono";
 import { z } from "zod";
 import type { MeshContext } from "../../core/mesh-context";
-import type { ConnectionEntity } from "../../tools/connection/schema";
 import { ConnectionTools } from "../../tools";
+import type { ConnectionEntity } from "../../tools/connection/schema";
+import { createLLMProvider } from "../llm-provider";
+import { createMCPProxy } from "./proxy";
 
 // Default values
 const DEFAULT_MAX_TOKENS = 4096;
@@ -139,18 +140,23 @@ const StreamRequestSchema = z.object({
         .optional()
         .nullable(),
     })
+    .passthrough()
     .optional(),
   agent: z
     .object({
       id: z.string(),
       instructions: z.string(),
       tool_set: z.record(z.string(), z.array(z.string())),
+      avatar: z.string().optional(),
+      name: z.string().optional(),
     })
+    .passthrough()
     .optional(),
   stream: z.boolean().optional(),
   temperature: z.number().optional(),
   maxOutputTokens: z.number().optional(),
   maxWindowSize: z.number().optional(),
+  thread_id: z.string().optional(),
 });
 
 export type StreamRequest = z.infer<typeof StreamRequestSchema>;
@@ -191,25 +197,6 @@ async function getConnectionById(
   }
 
   return connection;
-}
-
-// Helper to convert ConnectionEntity to MCPConnection for LLM binding
-function connectionToMCPConnection(
-  connection: ConnectionEntity,
-): HTTPConnection {
-  const headers: Record<string, string> = {
-    ...(connection.connection_headers ?? {}),
-  };
-
-  if (connection.connection_token) {
-    headers.Authorization = `Bearer ${connection.connection_token}`;
-  }
-
-  return {
-    type: "HTTP",
-    url: connection.connection_url,
-    headers,
-  };
 }
 
 // Create AI SDK tools for connection management
@@ -427,6 +414,7 @@ app.post("/:org/models/stream", async (c) => {
       temperature,
       maxOutputTokens = DEFAULT_MAX_TOKENS,
       maxWindowSize = DEFAULT_MEMORY,
+      thread_id: threadId,
     } = payload;
 
     // Get the model provider connection
@@ -461,12 +449,11 @@ app.post("/:org/models/stream", async (c) => {
     }).slice(-maxWindowSize);
 
     // Create provider using the LanguageModelBinding
-    const mcpConnection = connectionToMCPConnection(connection);
-    const llmBinding = LanguageModelBinding.forConnection(mcpConnection);
+    const proxy = await createMCPProxy(connection, ctx);
+    const llmBinding = LanguageModelBinding.forClient(proxy);
     const provider = createLLMProvider(llmBinding).languageModel(
       modelConfig.id,
     );
-
     // Build system prompt with available connections and optional agent instructions
     const systemPrompt = buildSystemPrompt(
       connections,
@@ -495,7 +482,19 @@ app.post("/:org/models/stream", async (c) => {
     });
 
     // Return the stream using toUIMessageStreamResponse
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      messageMetadata: ({ part }): Metadata => {
+        if (part.type === "start") {
+          return {
+            agent: agentConfig,
+            model: modelConfig,
+            created_at: new Date(),
+            thread_id: threadId,
+          };
+        }
+        return {};
+      },
+    });
   } catch (error) {
     const err = error as Error;
     if (err.name === "AbortError") {

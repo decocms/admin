@@ -96,10 +96,10 @@ export function AgentDetailsView({
 
   const collection = useCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
-    "agent",
+    "AGENT",
   );
 
-  const { data: item } = useCollectionItem(collection, itemId);
+  const item = useCollectionItem(collection, itemId);
 
   const {
     register,
@@ -120,6 +120,7 @@ export function AgentDetailsView({
   const avatarValue = watch("avatar");
 
   // Reset form when item changes (e.g. first load)
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (item) {
       reset({
@@ -186,7 +187,7 @@ export function AgentDetailsView({
 
       <ViewActions>
         <Button
-          className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-7 text-xs font-medium"
+          className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-8 text-xs font-medium"
           onClick={handleSubmit(onSubmit)}
           disabled={!isDirty || isSaving}
         >

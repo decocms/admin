@@ -1,8 +1,8 @@
 import {
   createServerClient as createMcpServerClient,
-  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
+  isApiDecoChatMCPConnection as shouldPatchDecoChatMCPConnection,
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { and, eq, getTableColumns, or } from "drizzle-orm";
@@ -107,6 +107,11 @@ const mapIntegration = (
     id: formatId("i", integration.id),
   };
 };
+const idEqual = (id1: string, id2: string) => {
+  const { type: type1, uuid: uuid1 } = parseId(id1);
+  const { type: type2, uuid: uuid2 } = parseId(id2);
+  return type1 === type2 && uuid1 === uuid2;
+};
 export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
@@ -161,7 +166,6 @@ export const callTool = createIntegrationManagementTool({
     "Call a tool from an integration. If you have the integration ID (from INTEGRATIONS_LIST or INTEGRATIONS_GET), prefer using 'id' over 'connection'. The ID ensures you're calling the correct configured integration. Use 'connection' only when you need to call a tool from a new or unconfigured integration.",
   inputSchema: z.lazy(() => integrationCallToolInputSchema),
   handler: async (input, c) => {
-    c.resourceAccess.grant();
     const toolCall = input.params;
 
     let connection: MCPConnection | undefined = undefined;
@@ -222,6 +226,7 @@ export const callTool = createIntegrationManagementTool({
     } finally {
       // Always dispose of the client to avoid RPC leaks
       await client.close();
+      c.resourceAccess.grant();
     }
   },
 });
@@ -838,9 +843,10 @@ export const getIntegration = createIntegrationManagementTool({
 
     const virtualIntegrations = virtualIntegrationsFor(c, [], c.token);
 
-    if (virtualIntegrations.some((i) => i.id === id)) {
+    const integration = virtualIntegrations.find((i) => idEqual(i.id, id));
+    if (integration) {
       const baseIntegration = IntegrationSchema.parse({
-        ...virtualIntegrations.find((i) => i.id === id),
+        ...integration,
         id: formatId(type, id),
       });
       return {

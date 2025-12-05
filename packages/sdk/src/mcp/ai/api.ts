@@ -436,7 +436,7 @@ export const aiGenerateObject = createTool({
       system:
         "You are a helpful assistant that generates JSON objects based on the user's messages and the schema provided.",
       model: llm,
-      mode: "json",
+      output: "object",
       maxRetries: 1,
       messages: convertMessages(input.messages),
       schema: jsonSchema(input.schema),

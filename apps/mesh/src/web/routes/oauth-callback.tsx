@@ -11,6 +11,7 @@ import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 export default function OAuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     const handleCallback = async () => {
       try {
@@ -67,11 +68,6 @@ export default function OAuthCallback() {
               },
               window.location.origin,
             );
-            console.log(
-              "[OAuth Callback] Sent completion message to parent window",
-            );
-          } else {
-            console.warn("[OAuth Callback] Parent window not available");
           }
         }
       } catch (err) {

@@ -12,7 +12,7 @@ import type { Database } from "./types";
 export async function createTestSchema(db: Kysely<Database>): Promise<void> {
   console.log("Creating test schema...");
 
-  // Users table
+  // Users table - camelCase to match UserTable type
   await db.schema
     .createTable("users")
     .ifNotExists()
@@ -24,29 +24,32 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn("updatedAt", "text", (col) => col.notNull())
     .execute();
 
-  // Connections table (organization-scoped)
+  // Connections table (organization-scoped) - using snake_case to match actual schema
   await db.schema
     .createTable("connections")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("organizationId", "text", (col) => col.notNull())
-    .addColumn("createdById", "text", (col) => col.notNull())
-    .addColumn("name", "text", (col) => col.notNull())
+    .addColumn("organization_id", "text", (col) => col.notNull())
+    .addColumn("created_by", "text", (col) => col.notNull())
+    .addColumn("title", "text", (col) => col.notNull())
     .addColumn("description", "text")
     .addColumn("icon", "text")
-    .addColumn("appName", "text")
-    .addColumn("appId", "text")
-    .addColumn("connectionType", "text", (col) => col.notNull())
-    .addColumn("connectionUrl", "text", (col) => col.notNull())
-    .addColumn("connectionToken", "text")
-    .addColumn("connectionHeaders", "text")
-    .addColumn("oauthConfig", "text")
+    .addColumn("app_name", "text")
+    .addColumn("app_id", "text")
+    .addColumn("connection_type", "text", (col) => col.notNull())
+    .addColumn("connection_url", "text", (col) => col.notNull())
+    .addColumn("connection_token", "text")
+    .addColumn("connection_headers", "text")
+    .addColumn("oauth_config", "text")
     .addColumn("metadata", "text")
     .addColumn("tools", "text")
     .addColumn("bindings", "text")
+    .addColumn("configuration_schema", "text")
+    .addColumn("configuration_state", "text")
+    .addColumn("configuration_scopes", "text")
     .addColumn("status", "text", (col) => col.notNull().defaultTo("active"))
-    .addColumn("createdAt", "text", (col) => col.notNull())
-    .addColumn("updatedAt", "text", (col) => col.notNull())
+    .addColumn("created_at", "text", (col) => col.notNull())
+    .addColumn("updated_at", "text", (col) => col.notNull())
     .execute();
 
   await db.schema
@@ -57,7 +60,7 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn("updatedAt", "text", (col) => col.notNull())
     .execute();
 
-  // API Keys table
+  // API Keys table - camelCase to match ApiKeyTable type
   await db.schema
     .createTable("api_keys")
     .ifNotExists()
@@ -73,7 +76,7 @@ export async function createTestSchema(db: Kysely<Database>): Promise<void> {
     .addColumn("updatedAt", "text", (col) => col.notNull())
     .execute();
 
-  // Audit Logs table
+  // Audit Logs table - camelCase to match AuditLogTable type
   await db.schema
     .createTable("audit_logs")
     .ifNotExists()

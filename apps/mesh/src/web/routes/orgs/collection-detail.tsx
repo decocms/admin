@@ -1,11 +1,13 @@
 import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/details/agent.tsx";
 import { ToolDetailsView } from "@/web/components/details/tool.tsx";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import { useCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { Suspense, type ComponentType } from "react";
 import { toast } from "sonner";
-import type { ComponentType } from "react";
 
 interface CollectionDetailsProps {
   itemId: string;
@@ -21,7 +23,7 @@ const WELL_KNOWN_VIEW_DETAILS: Record<
   agent: AgentDetailsView,
 };
 
-export default function CollectionDetails() {
+function CollectionDetailsContent() {
   const params = useParams({
     strict: false,
   });
@@ -105,5 +107,21 @@ export default function CollectionDetails() {
         children: "Go back",
       }}
     />
+  );
+}
+
+export default function CollectionDetails() {
+  return (
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <CollectionDetailsContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

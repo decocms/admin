@@ -1322,7 +1322,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       system: processedInstructions ?? agentOverrides.instructions,
       messages: allMessages,
       schema: jsonSchema(processedSchema),
-      mode: "json",
+      output: "object",
       maxRetries: 1,
       temperature: this._temperature(options?.temperature),
       maxOutputTokens,

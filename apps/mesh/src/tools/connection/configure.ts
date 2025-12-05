@@ -5,7 +5,8 @@
  * This allows MCPs to declare their configuration needs and reference other connections.
  */
 
-import { z } from "zod/v3";
+import { z } from "zod";
+import { createMCPProxy } from "../../api/routes/proxy";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth, requireOrganization } from "../../core/mesh-context";
 
@@ -113,6 +114,9 @@ export const CONNECTION_CONFIGURE = defineTool({
 
     // Validate all referenced connections
     for (const refConnectionId of referencedConnections) {
+      if (refConnectionId === "self") {
+        continue;
+      }
       // Verify connection exists
       const refConnection =
         await ctx.storage.connections.findById(refConnectionId);
@@ -146,6 +150,18 @@ export const CONNECTION_CONFIGURE = defineTool({
       configuration_state: state,
       configuration_scopes: scopes,
     });
+
+    // Invoke ON_MCP_CONFIGURATION callback on the connection
+    // Ignore errors but await for the response before responding
+    try {
+      const proxy = await createMCPProxy(connectionId, ctx);
+      await proxy.client.callTool({
+        name: "ON_MCP_CONFIGURATION",
+        arguments: { state, scopes },
+      });
+    } catch (error) {
+      console.error("Failed to invoke ON_MCP_CONFIGURATION callback", error);
+    }
 
     return {
       success: true,

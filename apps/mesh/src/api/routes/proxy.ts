@@ -11,6 +11,7 @@
  * - Supports StreamableHTTP transport
  */
 
+import { ConnectionEntity } from "@/tools/connection/schema";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -23,6 +24,7 @@ import {
   type ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
+import { issueMeshToken } from "../../auth/jwt";
 import { AccessControl } from "../../core/access-control";
 import type { MeshContext } from "../../core/mesh-context";
 import { HttpServerTransport } from "../http-server-transport";
@@ -43,6 +45,11 @@ type CallToolMiddleware = (
   request: CallToolRequest,
   next: () => Promise<CallToolResult>,
 ) => Promise<CallToolResult>;
+
+type CallStreamableToolMiddleware = (
+  request: CallToolRequest,
+  next: () => Promise<Response>,
+) => Promise<Response>;
 
 // ============================================================================
 // Authorization Middleware
@@ -98,6 +105,49 @@ function withConnectionAuthorization(
   };
 }
 
+/**
+ * Streamable authorization middleware - checks access to tool on connection
+ * Returns Response instead of CallToolResult for streaming use cases
+ */
+function withStreamableConnectionAuthorization(
+  ctx: MeshContext,
+  connectionId: string,
+): CallStreamableToolMiddleware {
+  return async (request, next) => {
+    if (!ctx.auth.apiKey) {
+      return await next();
+    }
+
+    try {
+      const toolName = request.params.name;
+
+      const connectionAccessControl = new AccessControl(
+        ctx.authInstance,
+        ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
+        toolName,
+        ctx.auth.apiKey?.permissions,
+        ctx.auth.user?.role,
+        connectionId,
+      );
+
+      await connectionAccessControl.check(toolName);
+
+      return await next();
+    } catch (error) {
+      const err = error as Error;
+      return new Response(
+        JSON.stringify({
+          error: `Authorization failed: ${err.message}`,
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  };
+}
+
 // ============================================================================
 // MCP Proxy Factory
 // ============================================================================
@@ -108,12 +158,19 @@ function withConnectionAuthorization(
  *
  * Single server approach - tools from downstream are dynamically fetched and registered
  */
-async function createMCPProxy(connectionId: string, ctx: MeshContext) {
+export async function createMCPProxy(
+  connectionIdOrConnection: string | ConnectionEntity,
+  ctx: MeshContext,
+) {
   // Get connection details
-  const connection = await ctx.storage.connections.findById(connectionId);
+  const connection =
+    typeof connectionIdOrConnection === "string"
+      ? await ctx.storage.connections.findById(connectionIdOrConnection)
+      : connectionIdOrConnection;
   if (!connection) {
     throw new Error("Connection not found");
   }
+  const connectionId = connection?.id;
 
   if (ctx.organization && connection.organization_id !== ctx.organization.id) {
     throw new Error("Connection does not belong to the active organization");
@@ -125,76 +182,61 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
 
   // Issue configuration JWT if connection has configuration state
   let configurationToken: string | undefined;
-  if (
-    connection.configuration_state &&
-    connection.configuration_scopes &&
-    connection.configuration_scopes.length > 0
-  ) {
-    // Parse scopes to build permissions object
-    // Format: "KEY::SCOPE" where KEY is in state and state[KEY].value is a connection ID
-    // Result: { [connectionId]: [scopes...] }
-    const permissions: Record<string, string[]> = {};
+  // Parse scopes to build permissions object
+  // Format: "KEY::SCOPE" where KEY is in state and state[KEY].value is a connection ID
+  // Result: { [connectionId]: [scopes...] }
+  const permissions: Record<string, string[]> = {};
 
-    for (const scope of connection.configuration_scopes) {
-      const parts = scope.split("::");
-      if (parts.length === 2) {
-        const [key, scopeName] = parts;
-        if (!key || !scopeName) continue; // Skip invalid parts
+  for (const scope of connection.configuration_scopes ?? []) {
+    const parts = scope.split("::");
+    if (parts.length === 2) {
+      const [key, scopeName] = parts;
+      if (!key || !scopeName) continue; // Skip invalid parts
 
-        const stateValue: unknown = connection.configuration_state[key];
+      const stateValue: unknown = connection.configuration_state?.[key];
 
-        if (
-          typeof stateValue === "object" &&
-          stateValue !== null &&
-          "value" in stateValue
-        ) {
-          const connectionIdRef = (stateValue as { value: unknown }).value;
-          if (typeof connectionIdRef === "string") {
-            // Add scope to this connection's permissions
-            if (!permissions[connectionIdRef]) {
-              permissions[connectionIdRef] = [];
-            }
-            permissions[connectionIdRef].push(scopeName);
+      if (
+        typeof stateValue === "object" &&
+        stateValue !== null &&
+        "value" in stateValue
+      ) {
+        const connectionIdRef = (stateValue as { value: unknown }).value;
+        if (typeof connectionIdRef === "string") {
+          // Add scope to this connection's permissions
+          if (!permissions[connectionIdRef]) {
+            permissions[connectionIdRef] = [];
           }
+          permissions[connectionIdRef].push(scopeName);
         }
       }
     }
-
-    // Issue short-lived API key with configuration permissions
-    // Using Better Auth API Key plugin
-    const userId = ctx.auth.user?.id ?? ctx.auth.apiKey?.userId;
-    if (!userId) {
-      throw new Error("User ID required to issue configuration token");
-    }
-
-    try {
-      const apiKeyResult = await ctx.authInstance.api.createApiKey({
-        body: {
-          userId,
-          name: `mesh-config-${connectionId}-${Date.now()}`,
-          permissions,
-          metadata: {
-            state: connection.configuration_state,
-            meshUrl: ctx.baseUrl, // Include mesh URL so receivers know where mesh is running
-          },
-          expiresIn: 60 * 5, // 5 minutes - short lived
-        },
-      });
-
-      // Extract the generated token from result
-      // Better Auth returns the key directly in the result
-      if (apiKeyResult && "key" in apiKeyResult) {
-        configurationToken = apiKeyResult.key;
-      }
-    } catch (error) {
-      console.error("Failed to issue configuration token:", error);
-      // Continue without configuration token - downstream will fail if it requires it
-    }
   }
 
-  // Create client factory for downstream MCP
-  const createClient = async () => {
-    // Prepare headers
+  // Issue short-lived JWT with configuration permissions
+  // JWT can be decoded directly by downstream to access payload
+  const userId = ctx.auth.user?.id ?? ctx.auth.apiKey?.userId;
+  if (!userId) {
+    throw new Error("User ID required to issue configuration token");
+  }
+
+  try {
+    configurationToken = await issueMeshToken({
+      sub: userId,
+      user: { id: userId },
+      metadata: {
+        state: connection.configuration_state ?? undefined,
+        meshUrl: ctx.baseUrl,
+        connectionId,
+      },
+      permissions,
+    });
+  } catch (error) {
+    console.error("Failed to issue configuration token:", error);
+    // Continue without configuration token - downstream will fail if it requires it
+  }
+
+  // Build request headers - reusable for both client and direct fetch
+  const buildRequestHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {};
 
     // Add connection token (already decrypted by storage layer)
@@ -204,13 +246,20 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
 
     // Add configuration token if issued
     if (configurationToken) {
-      headers["x-mesh-token"] = `Bearer ${configurationToken}`;
+      headers["x-mesh-token"] = configurationToken;
     }
 
-    // Add custom headers
+    // Add custom headers from connection
     if (connection.connection_headers) {
       Object.assign(headers, connection.connection_headers);
     }
+
+    return headers;
+  };
+
+  // Create client factory for downstream MCP
+  const createClient = async () => {
+    const headers = buildRequestHeaders();
 
     // Create transport to downstream MCP using StreamableHTTP
     const transport = new StreamableHTTPClientTransport(
@@ -229,14 +278,186 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     return client;
   };
 
-  // Create authorization middleware
+  // Create authorization middlewares
   const authMiddleware = withConnectionAuthorization(ctx, connectionId);
+  const streamableAuthMiddleware = withStreamableConnectionAuthorization(
+    ctx,
+    connectionId,
+  );
 
   // Compose middlewares
   const callToolPipeline = compose(authMiddleware);
+  const callStreamableToolPipeline = compose(streamableAuthMiddleware);
+
+  // Core tool execution logic - shared between fetch and callTool
+  const executeToolCall = async (
+    request: CallToolRequest,
+  ): Promise<CallToolResult> => {
+    return callToolPipeline(request, async (): Promise<CallToolResult> => {
+      const client = await createClient();
+      const startTime = Date.now();
+
+      // Start span for tracing
+      return await ctx.tracer.startActiveSpan(
+        "mcp.proxy.callTool",
+        {
+          attributes: {
+            "connection.id": connectionId,
+            "tool.name": request.params.name,
+          },
+        },
+        async (span) => {
+          try {
+            const result = await client.callTool(request.params);
+            const duration = Date.now() - startTime;
+
+            // Record duration histogram
+            ctx.meter
+              .createHistogram("connection.proxy.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "success",
+              });
+
+            // Record success counter
+            ctx.meter.createCounter("connection.proxy.requests").add(1, {
+              "connection.id": connectionId,
+              "tool.name": request.params.name,
+              status: "success",
+            });
+
+            span.end();
+            return result as CallToolResult;
+          } catch (error) {
+            const err = error as Error;
+            const duration = Date.now() - startTime;
+
+            // Record duration histogram even on error
+            ctx.meter
+              .createHistogram("connection.proxy.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "error",
+              });
+
+            // Record error counter
+            ctx.meter.createCounter("connection.proxy.errors").add(1, {
+              "connection.id": connectionId,
+              "tool.name": request.params.name,
+              error: err.message,
+            });
+
+            span.recordException(err);
+            span.end();
+
+            throw error;
+          }
+        },
+      );
+    });
+  };
+
+  // List tools from downstream connection
+  const listTools = async (): Promise<ListToolsResult> => {
+    const client = await createClient();
+    return await client.listTools();
+  };
+
+  // Call tool using fetch directly for streaming support
+  // Inspired by @deco/api proxy callStreamableTool
+  const callStreamableTool = async (
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<Response> => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: { name, arguments: args },
+    };
+    return callStreamableToolPipeline(request, async (): Promise<Response> => {
+      const headers = buildRequestHeaders();
+
+      // Use fetch directly to support streaming responses
+      // Build URL with tool name appended for call-tool endpoint pattern
+      const url = new URL(connection.connection_url);
+      url.pathname =
+        url.pathname.replace(/\/$/, "") + `/call-tool/${request.params.name}`;
+
+      return await ctx.tracer.startActiveSpan(
+        "mcp.proxy.callStreamableTool",
+        {
+          attributes: {
+            "connection.id": connectionId,
+            "tool.name": request.params.name,
+          },
+        },
+        async (span) => {
+          const startTime = Date.now();
+
+          try {
+            const response = await fetch(url.toString(), {
+              method: "POST",
+              redirect: "manual",
+              body: JSON.stringify(request.params.arguments),
+              headers: {
+                ...headers,
+                "Content-Type": "application/json",
+              },
+            });
+
+            const duration = Date.now() - startTime;
+
+            // Record metrics
+            ctx.meter
+              .createHistogram("connection.proxy.streamable.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: response.ok ? "success" : "error",
+              });
+
+            ctx.meter
+              .createCounter("connection.proxy.streamable.requests")
+              .add(1, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: response.ok ? "success" : "error",
+              });
+
+            span.end();
+            return response;
+          } catch (error) {
+            const err = error as Error;
+            const duration = Date.now() - startTime;
+
+            ctx.meter
+              .createHistogram("connection.proxy.streamable.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "error",
+              });
+
+            ctx.meter
+              .createCounter("connection.proxy.streamable.errors")
+              .add(1, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                error: err.message,
+              });
+
+            span.recordException(err);
+            span.end();
+            throw error;
+          }
+        },
+      );
+    });
+  };
 
   // Create fetch function that handles MCP protocol
-  const fetch = async (req: Request) => {
+  const handleMcpRequest = async (req: Request) => {
     // Create MCP server for this proxy
     const server = new McpServer(
       {
@@ -263,81 +484,26 @@ async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       },
     );
 
-    // Set up call tool handler with middleware
-    server.server.setRequestHandler(
-      CallToolRequestSchema,
-      (request: CallToolRequest) =>
-        callToolPipeline(request, async (): Promise<CallToolResult> => {
-          const client = await createClient();
-          const startTime = Date.now();
-
-          // Start span for tracing
-          return await ctx.tracer.startActiveSpan(
-            "mcp.proxy.callTool",
-            {
-              attributes: {
-                "connection.id": connectionId,
-                "tool.name": request.params.name,
-              },
-            },
-            async (span) => {
-              try {
-                const result = await client.callTool(request.params);
-                const duration = Date.now() - startTime;
-
-                // Record duration histogram
-                ctx.meter
-                  .createHistogram("connection.proxy.duration")
-                  .record(duration, {
-                    "connection.id": connectionId,
-                    "tool.name": request.params.name,
-                    status: "success",
-                  });
-
-                // Record success counter
-                ctx.meter.createCounter("connection.proxy.requests").add(1, {
-                  "connection.id": connectionId,
-                  "tool.name": request.params.name,
-                  status: "success",
-                });
-
-                span.end();
-                return result as CallToolResult;
-              } catch (error) {
-                const err = error as Error;
-                const duration = Date.now() - startTime;
-
-                // Record duration histogram even on error
-                ctx.meter
-                  .createHistogram("connection.proxy.duration")
-                  .record(duration, {
-                    "connection.id": connectionId,
-                    "tool.name": request.params.name,
-                    status: "error",
-                  });
-
-                // Record error counter
-                ctx.meter.createCounter("connection.proxy.errors").add(1, {
-                  "connection.id": connectionId,
-                  "tool.name": request.params.name,
-                  error: err.message,
-                });
-
-                span.recordException(err);
-                span.end();
-
-                throw error;
-              }
-            },
-          );
-        }),
-    );
+    // Set up call tool handler with middleware - reuses executeToolCall
+    server.server.setRequestHandler(CallToolRequestSchema, executeToolCall);
 
     // Handle the incoming message
     return await transport.handleMessage(req);
   };
 
-  return { fetch };
+  return {
+    fetch: handleMcpRequest,
+    client: {
+      callTool: (args: CallToolRequest["params"]) => {
+        return executeToolCall({
+          method: "tools/call",
+          params: args,
+        });
+      },
+      listTools,
+    },
+    callStreamableTool,
+  };
 }
 
 // ============================================================================

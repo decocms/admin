@@ -1,7 +1,7 @@
 import type { TriggerOutput } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import type { TableColumn } from "@deco/ui/components/resource-table.tsx";
+import type { TableColumn } from "@deco/ui/components/collection-table.tsx";
 import { TimeAgoCell, UserInfo } from "../common/table/table-cells.tsx";
 import type { CustomRowAction } from "../resources-v2/list.tsx";
 import { buildTriggerUri } from "../decopilot/thread-provider.tsx";

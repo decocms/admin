@@ -47,15 +47,14 @@ export function BindingSelector({
 }: BindingSelectorProps) {
   const toolCaller = useMemo(() => createToolCaller(), []);
 
-  console.log(binding)
-
-  const { data, isLoading } = useToolCall<
+  const { data, isLoading, error } = useToolCall<
     { binding?: typeof binding },
     ConnectionListResult
   >({
     toolCaller,
     toolName: "COLLECTION_CONNECTIONS_LIST",
-    toolInputParams: binding ? { binding } : {},
+    // @ts-ignore
+    toolInputParams: binding ? { inlineBinding: binding } : {},
     enabled: true,
   });
 

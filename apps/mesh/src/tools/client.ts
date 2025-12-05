@@ -83,6 +83,8 @@ export function createToolCaller(connectionId?: string): ToolCaller {
 
     const json = await parseSSEResponseAsJson(response);
 
+    console.log("Tool response:", { toolName, json, result: json.result, structuredContent: json.result?.structuredContent });
+
     if (json.result?.isError) {
       throw new Error(json.result.content?.[0]?.text || "Tool call failed");
     }

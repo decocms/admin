@@ -18,6 +18,7 @@ import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { type ConnectionEntity, ConnectionEntitySchema } from "./schema";
+import { jsonSchemaToZod } from "@/web/utils/schema-converter";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
   LLM: LANGUAGE_MODEL_BINDING,
@@ -56,15 +57,15 @@ function isStringOrValue(value: unknown): value is string | number {
 
 const BindingSchema = z.object({
   name: z.string(),
-  inputSchema: z.object({}).optional(),
-  outputSchema: z.object({}).optional(),
+  inputSchema: z.object({}).passthrough().optional(),
+  outputSchema: z.object({}).passthrough().optional(),
 });
 
-function convertBindingToBinder(binding: z.infer<typeof BindingSchema>[]): Binder {
-  return binding.map((binding) => ({
+function convertBindingToBinder(bindings: z.infer<typeof BindingSchema>[]): Binder {
+  return bindings.map((binding) => ({
     name: binding.name,
-    inputSchema: binding.inputSchema as z.ZodType<any>,
-    outputSchema: binding.outputSchema as z.ZodType<any>,
+    inputSchema: binding.inputSchema ? jsonSchemaToZod(binding.inputSchema) : z.object({}),
+    outputSchema: binding.outputSchema ? jsonSchemaToZod(binding.outputSchema) : z.object({}),
   }));
 }
 
@@ -201,7 +202,8 @@ function applyOrderBy(
  * Extended input schema with optional binding parameter
  */
 const ConnectionListInputSchema = CollectionListInputSchema.extend({
-  binding: z.union([z.array(BindingSchema), z.string()]).optional(),
+  binding: z.string().optional(),
+  inlineBinding: z.array(BindingSchema).optional(),
 });
 
 /**
@@ -224,24 +226,28 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
 
     const organization = requireOrganization(ctx);
 
-    // Determine which binding to use: well-known binding (string) or provided JSON schema (object)
-    const bindingDefinition: Binder | undefined = input.binding
-      ? typeof input.binding === "string"
-        ? (() => {
-            const wellKnownBinding =
-              BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
-            if (!wellKnownBinding) {
-              throw new Error(`Unknown binding: ${input.binding}`);
-            }
-            return wellKnownBinding;
-          })()
-        : convertBindingToBinder(input.binding)
-      : undefined;
+    // Determine which binding to use:
+    // - input.binding: well-known binding name (e.g., "LLM", "AGENTS")
+    // - input.inlineBinding: custom binding schema array
+    let bindingDefinition: Binder | undefined;
+
+    if (input.binding) {
+      // Well-known binding by name
+      const wellKnownBinding =
+        BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
+      if (!wellKnownBinding) {
+        throw new Error(`Unknown binding: ${input.binding}`);
+      }
+      bindingDefinition = wellKnownBinding;
+    } else if (input.inlineBinding && input.inlineBinding.length > 0) {
+      bindingDefinition = convertBindingToBinder(input.inlineBinding);
+    }
 
     // Create binding checker from the binding definition
     const bindingChecker = bindingDefinition
       ? createBindingChecker(bindingDefinition)
       : undefined;
+
 
     const connections = await ctx.storage.connections.list(organization.id);
 

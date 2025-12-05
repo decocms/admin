@@ -49,6 +49,23 @@ function normalizeToJsonSchema(
 }
 
 /**
+ * Checks if a JSON schema is "empty" (has no properties defined).
+ * An empty schema means the binder didn't specify requirements,
+ * so we should skip schema validation and only check tool name.
+ */
+function isEmptySchema(schema: JsonSchema | null): boolean {
+  if (!schema) return true;
+
+  // Check if it's an object schema with no properties
+  if (schema.type === "object") {
+    const props = schema.properties as Record<string, unknown> | undefined;
+    return !props || Object.keys(props).length === 0;
+  }
+
+  return false;
+}
+
+/**
  * ToolBinder defines a single tool within a binding.
  * It specifies the tool name, input/output schemas, and whether it's optional.
  *
@@ -204,14 +221,18 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
         const binderInputSchema = normalizeToJsonSchema(binderTool.inputSchema);
         const toolInputSchema = normalizeToJsonSchema(matchedTool.inputSchema);
 
-        if (binderInputSchema && toolInputSchema) {
-          // Check if binder input is a subset of tool input (tool accepts what binder requires)
-          if (!isSubset(binderInputSchema, toolInputSchema)) {
+        // Skip input schema validation if binder doesn't specify requirements (empty schema)
+        // This allows bindings that only care about tool names, not specific schemas
+        if (!isEmptySchema(binderInputSchema)) {
+          if (binderInputSchema && toolInputSchema) {
+            // Check if binder input is a subset of tool input (tool accepts what binder requires)
+            if (!isSubset(binderInputSchema, toolInputSchema)) {
+              return false;
+            }
+          } else if (binderInputSchema && !toolInputSchema) {
+            // Binder requires input schema but tool doesn't have one
             return false;
           }
-        } else if (binderInputSchema && !toolInputSchema) {
-          // Binder requires input schema but tool doesn't have one
-          return false;
         }
 
         // === OUTPUT SCHEMA VALIDATION ===
@@ -224,14 +245,17 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
           matchedTool.outputSchema,
         );
 
-        if (binderOutputSchema && toolOutputSchema) {
-          // Check if binder output is a subset of tool output (tool provides what binder expects)
-          if (!isSubset(binderOutputSchema, toolOutputSchema)) {
+        // Skip output schema validation if binder doesn't specify requirements (empty schema)
+        if (!isEmptySchema(binderOutputSchema)) {
+          if (binderOutputSchema && toolOutputSchema) {
+            // Check if binder output is a subset of tool output (tool provides what binder expects)
+            if (!isSubset(binderOutputSchema, toolOutputSchema)) {
+              return false;
+            }
+          } else if (binderOutputSchema && !toolOutputSchema) {
+            // Binder expects output schema but tool doesn't have one
             return false;
           }
-        } else if (binderOutputSchema && !toolOutputSchema) {
-          // Binder expects output schema but tool doesn't have one
-          return false;
         }
       }
       return true;

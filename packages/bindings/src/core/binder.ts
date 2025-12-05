@@ -103,6 +103,13 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     forClient: (client: ServerClient): MCPClientFetchStub<TDefinition> => {
       return createMCPFetchStub<TDefinition>({
         client,
+        streamable: binder.reduce(
+          (acc, tool) => {
+            acc[tool.name] = tool.streamable === true;
+            return acc;
+          },
+          {} as Record<string, boolean>,
+        ),
       });
     },
     forConnection: (

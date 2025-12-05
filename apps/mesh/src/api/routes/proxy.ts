@@ -405,7 +405,6 @@ export async function createMCPProxy(
                 "Content-Type": "application/json",
               },
             });
-
             const duration = Date.now() - startTime;
 
             // Record metrics

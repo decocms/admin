@@ -12,8 +12,8 @@ import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import { useParams } from "@tanstack/react-router";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { AgentToolsTab } from "./agent-tools-tab.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { ToolSetSelector } from "@/web/components/tool-set-selector.tsx";
 
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -287,7 +287,7 @@ export function AgentDetailsView({
       )}
 
       {activeTab === "tools" && (
-        <AgentToolsTab
+        <ToolSetSelector
           toolSet={toolSet}
           onToolSetChange={handleToolSetChange}
         />

@@ -1,46 +1,50 @@
-import type { ConnectionEntity } from "@/tools/connection/schema";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useConnections } from "@/web/hooks/collections/use-connection";
 
 export interface ToolSetSelectorProps {
   toolSet: Record<string, string[]>;
   onToolSetChange: (toolSet: Record<string, string[]>) => void;
-  connections: ConnectionEntity[];
-  isLoading?: boolean;
 }
 
 export function ToolSetSelector({
   toolSet,
   onToolSetChange,
-  connections,
-  isLoading = false,
 }: ToolSetSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const initialOrder = useRef<Set<string>>(new Set(Object.keys(toolSet)));
+
+  const connections = useConnections({
+    searchTerm: searchQuery.trim() || undefined,
+  });
+
+  const sortedConnections = useMemo(() => {
+    const toolSet = initialOrder.current;
+
+    // selected first
+    const selected = [...toolSet.values()]
+      .map((id) => connections.find((c) => c.id === id))
+      .filter((c) => c !== undefined);
+
+    // then not selected
+    const notSelected = connections.filter((c) => !toolSet.has(c.id));
+
+    return [...selected, ...notSelected];
+  }, [connections, initialOrder.current]);
+
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
-  >(null);
-
-  // Filter connections by search query
-  const filteredConnections = useMemo(() => {
-    if (!searchQuery.trim()) return connections;
-
-    const query = searchQuery.toLowerCase();
-    return connections.filter(
-      (conn) =>
-        conn.title?.toLowerCase().includes(query) ||
-        conn.description?.toLowerCase().includes(query),
-    );
-  }, [connections, searchQuery]);
+  >(sortedConnections[0]?.id ?? null);
 
   // Get selected connection
   const selectedConnection = useMemo(() => {
     if (!selectedConnectionId) return null;
-    return connections.find((c) => c.id === selectedConnectionId) ?? null;
-  }, [connections, selectedConnectionId]);
+    return sortedConnections.find((c) => c.id === selectedConnectionId) ?? null;
+  }, [sortedConnections, selectedConnectionId]);
 
   // Get tools for selected connection
   const connectionTools = useMemo(() => {
@@ -84,7 +88,7 @@ export function ToolSetSelector({
 
   // Toggle all tools for a connection
   const toggleConnection = (connectionId: string) => {
-    const connection = connections.find((c) => c.id === connectionId);
+    const connection = sortedConnections.find((c) => c.id === connectionId);
     if (!connection?.tools) return;
 
     const currentTools = toolSet[connectionId] ?? [];
@@ -101,6 +105,8 @@ export function ToolSetSelector({
     } else {
       // Select all tools
       newToolSet[connectionId] = allToolNames;
+      // Set this connection as the selected connection
+      setSelectedConnectionId(connectionId);
     }
 
     onToolSetChange(newToolSet);
@@ -126,16 +132,7 @@ export function ToolSetSelector({
 
         {/* Connections List */}
         <div className="flex-1 overflow-auto">
-          {isLoading ? (
-            <div className="p-4 space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-16 bg-muted animate-pulse rounded-lg"
-                />
-              ))}
-            </div>
-          ) : filteredConnections.length === 0 ? (
+          {sortedConnections.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground text-center">
               {searchQuery
                 ? "No connections found"
@@ -143,7 +140,7 @@ export function ToolSetSelector({
             </div>
           ) : (
             <div className="p-2 space-y-1">
-              {filteredConnections.map((connection) => {
+              {sortedConnections.map((connection) => {
                 const isSelected = selectedConnectionId === connection.id;
                 const hasToolsEnabled = isConnectionSelected(connection.id);
 
@@ -286,9 +283,7 @@ export function ToolSetSelector({
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-sm text-muted-foreground text-center">
-              {isLoading
-                ? "Loading connections..."
-                : "Select a connection to view its tools"}
+              Select a connection to view its tools
             </div>
           </div>
         )}

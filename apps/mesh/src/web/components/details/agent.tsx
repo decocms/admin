@@ -12,6 +12,8 @@ import { z } from "zod";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import { useParams } from "@tanstack/react-router";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { AgentToolsTab } from "./agent-tools-tab.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -83,12 +85,15 @@ function SmartAvatarUpload({
   );
 }
 
+type TabId = "profile" | "tools" | "triggers" | "advanced";
+
 export function AgentDetailsView({
   itemId,
   onBack,
   onUpdate,
 }: AgentDetailsViewProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   const { connectionId } = useParams({
     strict: false,
@@ -114,10 +119,12 @@ export function AgentDetailsView({
       description: "",
       instructions: "",
       avatar: "",
+      tool_set: {},
     },
   });
 
   const avatarValue = watch("avatar");
+  const toolSet = watch("tool_set") ?? {};
 
   // Reset form when item changes (e.g. first load)
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
@@ -128,6 +135,7 @@ export function AgentDetailsView({
         description: item.description ?? "",
         instructions: item.instructions ?? "",
         avatar: item.avatar ?? "",
+        tool_set: item.tool_set ?? {},
       });
     }
   }, [item, reset]);
@@ -139,6 +147,10 @@ export function AgentDetailsView({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleToolSetChange = (newToolSet: Record<string, string[]>) => {
+    setValue("tool_set", newToolSet, { shouldDirty: true });
   };
 
   if (!item) {
@@ -153,32 +165,55 @@ export function AgentDetailsView({
     <ViewLayout onBack={onBack}>
       <ViewTabs>
         <Button
-          variant="secondary"
+          variant={activeTab === "profile" ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 bg-muted text-foreground font-normal"
+          className={cn(
+            "h-7 font-normal",
+            activeTab === "profile"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground",
+          )}
+          onClick={() => setActiveTab("profile")}
         >
           Profile
         </Button>
         <Button
-          variant="ghost"
+          variant={activeTab === "tools" ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 text-muted-foreground font-normal"
-          disabled={true}
+          className={cn(
+            "h-7 font-normal",
+            activeTab === "tools"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground",
+          )}
+          onClick={() => setActiveTab("tools")}
         >
           Tools
         </Button>
         <Button
-          variant="ghost"
+          variant={activeTab === "triggers" ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 text-muted-foreground font-normal"
+          className={cn(
+            "h-7 font-normal",
+            activeTab === "triggers"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground",
+          )}
+          onClick={() => setActiveTab("triggers")}
           disabled={true}
         >
           Triggers
         </Button>
         <Button
-          variant="ghost"
+          variant={activeTab === "advanced" ? "secondary" : "ghost"}
           size="sm"
-          className="h-7 text-muted-foreground font-normal"
+          className={cn(
+            "h-7 font-normal",
+            activeTab === "advanced"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground",
+          )}
+          onClick={() => setActiveTab("advanced")}
           disabled={true}
         >
           Advanced
@@ -203,49 +238,76 @@ export function AgentDetailsView({
       </ViewActions>
 
       {/* Main Content */}
-      <div className="p-5">
-        <div className="max-w-3xl mx-auto space-y-6">
-          {/* Agent Identity Header */}
-          <div className="flex gap-4 items-start">
-            <SmartAvatarUpload
-              value={avatarValue}
-              onChange={(val) => setValue("avatar", val, { shouldDirty: true })}
-              alt={watch("title")}
-            />
-            <div className="space-y-3 pt-1 flex-1">
-              <Input
-                {...register("title")}
-                className="text-2xl font-medium text-foreground border-transparent hover:border-input focus:border-input px-0 h-auto bg-transparent shadow-none"
-                placeholder="Agent Name"
+      {activeTab === "profile" && (
+        <div className="p-5">
+          <div className="max-w-3xl mx-auto space-y-6">
+            {/* Agent Identity Header */}
+            <div className="flex gap-4 items-start">
+              <SmartAvatarUpload
+                value={avatarValue}
+                onChange={(val) =>
+                  setValue("avatar", val, { shouldDirty: true })
+                }
+                alt={watch("title")}
               />
-              <Input
-                {...register("description")}
-                className="text-sm text-muted-foreground border-transparent hover:border-input focus:border-input px-0 h-auto bg-transparent shadow-none"
-                placeholder="Brief description"
-              />
+              <div className="space-y-3 pt-1 flex-1">
+                <Input
+                  {...register("title")}
+                  className="text-2xl font-medium text-foreground border-transparent hover:border-input focus:border-input px-0 h-auto bg-transparent shadow-none"
+                  placeholder="Agent Name"
+                />
+                <Input
+                  {...register("description")}
+                  className="text-sm text-muted-foreground border-transparent hover:border-input focus:border-input px-0 h-auto bg-transparent shadow-none"
+                  placeholder="Brief description"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Instructions Section */}
-          <div className="space-y-4">
-            <Badge
-              variant="secondary"
-              className="px-2 py-0.5 h-6 gap-1.5 bg-secondary/50 text-muted-foreground font-normal text-xs hover:bg-secondary/50"
-            >
-              <Info className="h-3.5 w-3.5" />
-              Type @ to add tools and more
-            </Badge>
+            {/* Instructions Section */}
+            <div className="space-y-4">
+              <Badge
+                variant="secondary"
+                className="px-2 py-0.5 h-6 gap-1.5 bg-secondary/50 text-muted-foreground font-normal text-xs hover:bg-secondary/50"
+              >
+                <Info className="h-3.5 w-3.5" />
+                Type @ to add tools and more
+              </Badge>
 
-            <div className="relative">
-              <Textarea
-                {...register("instructions")}
-                className="min-h-[400px] resize-none text-sm leading-relaxed font-normal border-0 focus-visible:ring-0 px-0 py-0 shadow-none"
-                placeholder="Enter agent instructions..."
-              />
+              <div className="relative">
+                <Textarea
+                  {...register("instructions")}
+                  className="min-h-[400px] resize-none text-sm leading-relaxed font-normal border-0 focus-visible:ring-0 px-0 py-0 shadow-none"
+                  placeholder="Enter agent instructions..."
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "tools" && (
+        <AgentToolsTab
+          toolSet={toolSet}
+          onToolSetChange={handleToolSetChange}
+        />
+      )}
+
+      {activeTab === "triggers" && (
+        <div className="p-5">
+          <div className="text-sm text-muted-foreground">
+            Triggers tab coming soon
+          </div>
+        </div>
+      )}
+
+      {activeTab === "advanced" && (
+        <div className="p-5">
+          <div className="text-sm text-muted-foreground">
+            Advanced tab coming soon
+          </div>
+        </div>
+      )}
     </ViewLayout>
   );
 }

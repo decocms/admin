@@ -310,7 +310,18 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     if (url.pathname === "/mcp") {
       // If OAuth is configured, require authentication
       if (oauthHandlers && !oauthHandlers.hasAuth(req)) {
-        return oauthHandlers.createUnauthorizedResponse(req);
+        // Clone request to check method without consuming the original body
+        const clonedReq = req.clone();
+        try {
+          const body = (await clonedReq.json()) as { method?: string };
+          // Allow tools/list to pass without auth
+          if (body?.method !== "tools/list") {
+            return oauthHandlers.createUnauthorizedResponse(req);
+          }
+        } catch {
+          // If body parsing fails, require auth
+          return oauthHandlers.createUnauthorizedResponse(req);
+        }
       }
 
       return server.fetch(req, env, ctx);

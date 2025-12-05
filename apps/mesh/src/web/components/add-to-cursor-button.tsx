@@ -60,18 +60,32 @@ interface AddToCursorButtonProps {
 }
 
 /**
+ * Unicode-safe base64 encoding for browser environments
+ * Converts a string to UTF-8 bytes, then to base64
+ */
+function utf8ToBase64(str: string): string {
+  // Use TextEncoder to convert string to UTF-8 bytes
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  
+  // Convert bytes to binary string, then to base64
+  const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
+  return btoa(binary);
+}
+
+/**
  * Generates a Cursor MCP installation deeplink
  */
 function generateCursorDeeplink(
   serverName: string,
   config: MCPServerConfig,
 ): string {
-  // Convert config to JSON string and encode to base64
+  // Convert config to JSON string and encode to Unicode-safe base64
   const configJson = JSON.stringify(config);
-  const base64Config = btoa(configJson);
+  const base64Config = utf8ToBase64(configJson);
 
-  // Generate the deeplink
-  const deeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(serverName)}&config=${base64Config}`;
+  // Generate the deeplink with properly encoded parameters
+  const deeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(serverName)}&config=${encodeURIComponent(base64Config)}`;
 
   return deeplink;
 }

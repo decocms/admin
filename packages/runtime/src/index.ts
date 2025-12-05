@@ -238,11 +238,25 @@ export const withBindings = <TEnv>({
   return env as TEnv;
 };
 
+const DEFAULT_CORS_OPTIONS = {
+  origin: (origin: string) => {
+    // Allow localhost and configured origins
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return origin;
+    }
+    // TODO: Configure allowed origins from environment
+    return origin;
+  },
+  credentials: true,
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
+};
+
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
 ) => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
-  const corsOptions = userFns.cors;
+  const corsOptions = userFns.cors ?? DEFAULT_CORS_OPTIONS;
   const oauth = userFns.oauth;
   const oauthHandlers = oauth ? createOAuthHandlers(oauth) : null;
 

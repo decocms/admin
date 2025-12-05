@@ -1,12 +1,14 @@
 import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useToolCall } from "@/web/hooks/use-tool-call";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 import { Loader2 } from "lucide-react";
 import { useMemo, useCallback } from "react";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
 import { BindingSelector } from "../binding-selector";
+import { useNavigate } from "@tanstack/react-router";
 
 interface McpConfigurationResult {
   stateSchema: Record<string, unknown>;
@@ -23,6 +25,7 @@ export interface McpConfigurationFormProps {
 interface FormContext {
   onFieldChange: (fieldPath: string, value: unknown) => void;
   formData: Record<string, unknown>;
+  onAddNew: () => void;
 }
 
 /**
@@ -138,7 +141,7 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
                   outputSchema?: Record<string, unknown>;
                 }>) ?? bindingType
           }
-          onAddNew={() => {}}
+          onAddNew={() => formContext?.onAddNew()}
           className="w-[200px] shrink-0"
         />
       </div>
@@ -193,6 +196,8 @@ export function McpConfigurationForm({
   formState,
   onFormStateChange,
 }: McpConfigurationFormProps) {
+  const { org } = useProjectContext();
+  const navigate = useNavigate();
   const toolCaller = useMemo(
     () => createToolCaller(connection.id),
     [connection.id],
@@ -231,12 +236,21 @@ export function McpConfigurationForm({
     [formState, onFormStateChange],
   );
 
+  const handleAddNew = useCallback(() => {
+    navigate({
+      to: "/$org/mcps",
+      params: { org },
+      search: { action: "create" },
+    });
+  }, [navigate, org]);
+
   const formContext: FormContext = useMemo(
     () => ({
       onFieldChange: handleFieldChange,
       formData: formState,
+      onAddNew: handleAddNew,
     }),
-    [handleFieldChange, formState],
+    [handleFieldChange, formState, handleAddNew],
   );
 
   if (isLoading) {

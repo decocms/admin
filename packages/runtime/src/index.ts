@@ -83,6 +83,7 @@ export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
   meshUrl: string;
+  authorization?: string | null;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
@@ -159,14 +160,19 @@ export const withBindings = <TEnv>({
   tokenOrContext,
   url,
   bindings: inlineBindings,
+  authToken,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
+  // token is x-mesh-token
   tokenOrContext?: string | RequestContext;
+  // authToken is the authorization header
+  authToken?: string | null;
   url?: string;
   bindings?: Binding[];
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
+  const authorization = authToken ? authToken.split(" ")[1] : undefined;
 
   let context;
   if (typeof tokenOrContext === "string") {
@@ -180,6 +186,7 @@ export const withBindings = <TEnv>({
       }) ?? {};
 
     context = {
+      authorization,
       state: decoded.state ?? metadata.state,
       token: tokenOrContext,
       meshUrl: (decoded.meshUrl as string) ?? metadata.meshUrl,
@@ -197,6 +204,7 @@ export const withBindings = <TEnv>({
         connectionId?: string;
       }) ?? {};
     const appName = decoded.appName as string | undefined;
+    context.authorization ??= authorization;
     context.callerApp = appName;
     context.connectionId ??=
       (decoded.connectionId as string) ?? metadata.connectionId;
@@ -204,6 +212,7 @@ export const withBindings = <TEnv>({
   } else {
     context = {
       state: {},
+      authorization,
       token: undefined,
       meshUrl: undefined,
       connectionId: undefined,
@@ -254,13 +263,31 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         return oauthHandlers.handleProtectedResourceMetadata(req);
       }
 
+      // Authorization server metadata (RFC8414)
+      if (url.pathname === "/.well-known/oauth-authorization-server") {
+        return oauthHandlers.handleAuthorizationServerMetadata(req);
+      }
+
+      // Authorization endpoint - redirects to external OAuth provider
+      if (url.pathname === "/authorize") {
+        return oauthHandlers.handleAuthorize(req);
+      }
+
       // OAuth callback - receives code from external OAuth provider
       if (url.pathname === "/oauth/callback") {
         return oauthHandlers.handleOAuthCallback(req);
       }
 
+      // Token endpoint - exchanges code for tokens
+      if (url.pathname === "/token" && req.method === "POST") {
+        return oauthHandlers.handleToken(req);
+      }
+
       // Dynamic client registration (RFC7591)
-      if (url.pathname === "/mcp/register" && req.method === "POST") {
+      if (
+        (url.pathname === "/register" || url.pathname === "/mcp/register") &&
+        req.method === "POST"
+      ) {
         return oauthHandlers.handleClientRegistration(req);
       }
     }
@@ -312,6 +339,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       }
 
       const bindings = withBindings({
+        authToken: req.headers.get("authorization") ?? null,
         env,
         server,
         bindings: userFns.bindings,

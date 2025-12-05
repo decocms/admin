@@ -1,5 +1,4 @@
 import type { Metadata } from "@deco/ui/types/chat-metadata.ts";
-import type { HTTPConnection } from "@decocms/bindings/connection";
 import { LanguageModelBinding } from "@decocms/bindings/llm";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -16,6 +15,7 @@ import type { MeshContext } from "../../core/mesh-context";
 import { ConnectionTools } from "../../tools";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 import { createLLMProvider } from "../llm-provider";
+import { createMCPProxy } from "./proxy";
 
 // Default values
 const DEFAULT_MAX_TOKENS = 4096;
@@ -197,25 +197,6 @@ async function getConnectionById(
   }
 
   return connection;
-}
-
-// Helper to convert ConnectionEntity to MCPConnection for LLM binding
-function connectionToMCPConnection(
-  connection: ConnectionEntity,
-): HTTPConnection {
-  const headers: Record<string, string> = {
-    ...(connection.connection_headers ?? {}),
-  };
-
-  if (connection.connection_token) {
-    headers.Authorization = `Bearer ${connection.connection_token}`;
-  }
-
-  return {
-    type: "HTTP",
-    url: connection.connection_url,
-    headers,
-  };
 }
 
 // Create AI SDK tools for connection management
@@ -468,12 +449,11 @@ app.post("/:org/models/stream", async (c) => {
     }).slice(-maxWindowSize);
 
     // Create provider using the LanguageModelBinding
-    const mcpConnection = connectionToMCPConnection(connection);
-    const llmBinding = LanguageModelBinding.forConnection(mcpConnection);
+    const proxy = await createMCPProxy(connection, ctx);
+    const llmBinding = LanguageModelBinding.forClient(proxy);
     const provider = createLLMProvider(llmBinding).languageModel(
       modelConfig.id,
     );
-
     // Build system prompt with available connections and optional agent instructions
     const systemPrompt = buildSystemPrompt(
       connections,

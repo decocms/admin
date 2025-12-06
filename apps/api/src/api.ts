@@ -1481,7 +1481,8 @@ withOAuth({
   buildMcpUrl: (baseUrl, { appName }) =>
     `${baseUrl}/apps/mcp${appName ? `?appName=${appName}` : ""}`,
   // Issuer URL is the auth server base (without /mcp suffix)
-  buildIssuerUrl: (baseUrl) => `${baseUrl}/apps`,
+  buildIssuerUrl: (baseUrl, { appName }) =>
+    `${baseUrl}/apps${appName ? `?appName=${appName}` : ""}`,
 });
 
 withOAuth({

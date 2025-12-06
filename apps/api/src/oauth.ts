@@ -245,14 +245,16 @@ export const withOAuth = ({
     baseUrl: string,
     params: OAuthParams,
   ) => {
-    const issuerUrl = buildIssuerUrl(baseUrl, params);
-    const mcpUrl = buildMcpUrl(baseUrl, params);
+    const issuerUrl = new URL(buildIssuerUrl(baseUrl, params));
+    const mcpUrl = new URL(buildMcpUrl(baseUrl, params));
     return {
-      issuer: issuerUrl,
-      authorization_endpoint: `${mcpUrl}/authorize`,
+      issuer: issuerUrl.href,
+      authorization_endpoint: new URL(`${mcpUrl.pathname}/authorize`, mcpUrl)
+        .href,
       token_endpoint: `${baseUrl}/apps/code-exchange`,
       jwks_uri: `${baseUrl}/.well-known/jwks.json`,
-      registration_endpoint: `${mcpUrl}/register`,
+      registration_endpoint: new URL(`${mcpUrl.pathname}/register`, mcpUrl)
+        .href,
       ...COMMON_METADATA,
     };
   };
@@ -264,11 +266,11 @@ export const withOAuth = ({
     baseUrl: string,
     params: OAuthParams,
   ) => {
-    const issuerUrl = buildIssuerUrl(baseUrl, params);
-    const mcpUrl = buildMcpUrl(baseUrl, params);
+    const issuerUrl = new URL(buildIssuerUrl(baseUrl, params));
+    const mcpUrl = new URL(buildMcpUrl(baseUrl, params));
     return {
-      resource: mcpUrl,
-      authorization_servers: [issuerUrl],
+      resource: mcpUrl.href,
+      authorization_servers: [issuerUrl.href],
       jwks_uri: `${baseUrl}/.well-known/jwks.json`,
       scopes_supported: ["*"],
       bearer_methods_supported: ["header"],

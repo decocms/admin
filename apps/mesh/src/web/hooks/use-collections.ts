@@ -11,6 +11,7 @@ import {
   type CollectionInsertOutput,
   type CollectionListOutput,
   type CollectionUpdateOutput,
+  type WhereExpression,
 } from "@decocms/bindings/collections";
 import {
   and,
@@ -21,7 +22,7 @@ import {
   or,
 } from "@tanstack/db";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import { type ToolCaller } from "../../tools/client";
+import { createToolCaller, type ToolCaller } from "../../tools/client";
 import { createCollectionWithSync } from "./create-collection-with-sync";
 
 /**
@@ -39,6 +40,8 @@ export interface CreateCollectionOptions {
   collectionName: string;
   /** Default page size for pagination (default: 100) */
   pageSize?: number;
+  /** Skip initial sync - useful for collections that require filters (default: false) */
+  skipInitialSync?: boolean;
 }
 
 /**
@@ -73,7 +76,7 @@ export interface CreateCollectionOptions {
 function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions,
 ): Collection<T, string> {
-  const { toolCaller, collectionName, pageSize = 100 } = options;
+  const { toolCaller, collectionName, pageSize = 100, skipInitialSync = false } = options;
 
   const upperName = collectionName.toUpperCase();
   const listToolName = `COLLECTION_${upperName}_LIST`;
@@ -139,6 +142,12 @@ function createCollectionFromToolCaller<T extends CollectionEntity>(
         let isActive = true;
 
         async function initialSync() {
+          // Skip initial sync if configured (for collections that require filters)
+          if (skipInitialSync) {
+            markReady();
+            return;
+          }
+
           try {
             const items = await fetchAllPages();
 
@@ -216,9 +225,17 @@ function createCollectionFromToolCaller<T extends CollectionEntity>(
 }
 
 // Module-level cache for collection instances
-// Key format: `${connectionKey}:${collectionName}`
+// Key format: `${connectionId}:${collectionName}` or `${connectionId}:${collectionName}:${filterKey}`
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const collectionCache = new Map<string, Collection<any, string>>();
+
+/**
+ * Options for useCollection hook
+ */
+export interface UseCollectionOptions {
+  /** Skip initial sync - useful for collections that require filters (default: false) */
+  skipInitialSync?: boolean;
+}
 
 /**
  * Get or create a collection instance for a specific connection and collection name.
@@ -247,6 +264,152 @@ export function useCollection<T extends CollectionEntity>(
   }
 
   return collectionCache.get(key) as Collection<T, string>;
+}
+
+/**
+ * Options for useFilteredCollection hook
+ */
+export interface UseFilteredCollectionOptions {
+  /** Server-side filter to apply during initial sync */
+  where: WhereExpression;
+}
+
+/**
+ * Get or create a filtered collection instance.
+ * Each unique filter creates a separate collection that syncs with that filter.
+ * This is useful for child collections that always need a parent filter (e.g., step_results by execution_id).
+ *
+ * @param connectionId - The ID of the connection (or undefined/null for mesh tools)
+ * @param collectionName - The name of the collection
+ * @param options - Filter options - the where clause is passed to the server during sync
+ * @returns A TanStack DB collection instance that syncs with the filter
+ */
+export function useFilteredCollection<T extends CollectionEntity>(
+  connectionId: string | undefined | null,
+  collectionName: string,
+  options: UseFilteredCollectionOptions,
+): Collection<T, string> {
+  const safeConnectionId = connectionId ?? "";
+  // Create a unique key based on the filter
+  const filterKey = JSON.stringify(options.where);
+  const key = `${safeConnectionId}:${collectionName}:filtered:${filterKey}`;
+
+  if (!collectionCache.has(key)) {
+    const collection = createFilteredCollection<T>({
+      toolCaller: createToolCaller(connectionId || undefined),
+      collectionName,
+      where: options.where,
+    });
+    collectionCache.set(key, collection);
+  }
+
+  return collectionCache.get(key) as Collection<T, string>;
+}
+
+/**
+ * Options for creating a filtered collection
+ */
+interface CreateFilteredCollectionOptions {
+  toolCaller: ToolCaller;
+  collectionName: string;
+  where: WhereExpression;
+  pageSize?: number;
+}
+
+/**
+ * Creates a collection that syncs with a server-side filter.
+ * The filter is passed to the LIST tool during initial sync.
+ */
+function createFilteredCollection<T extends CollectionEntity>(
+  options: CreateFilteredCollectionOptions,
+): Collection<T, string> {
+  const { toolCaller, collectionName, where, pageSize = 100 } = options;
+
+  const upperName = collectionName.toUpperCase();
+  const listToolName = `COLLECTION_${upperName}_LIST`;
+
+  async function fetchAllPages(): Promise<T[]> {
+    const allItems: T[] = [];
+    let offset = 0;
+    const limit = pageSize;
+
+    while (true) {
+      try {
+        const params = {
+          where,
+          offset,
+          limit,
+        };
+
+        const result = (await toolCaller(
+          listToolName,
+          params,
+        )) as CollectionListOutput<unknown>;
+        const items = result?.items || [];
+
+        for (const item of items) {
+          allItems.push(item as T);
+        }
+
+        if (!result?.hasMore || items.length === 0) {
+          break;
+        }
+
+        offset += limit;
+      } catch (error) {
+        console.error(
+          `Error fetching page at offset ${offset} for ${collectionName}:`,
+          error,
+        );
+        break;
+      }
+    }
+
+    return allItems;
+  }
+
+  // Create a unique ID for this filtered collection
+  const filterId = `collection-${collectionName.toLowerCase()}-${JSON.stringify(where)}`;
+
+  const collectionConfig = createCollectionWithSync<T, string>({
+    id: filterId,
+    getKey: (item: T) => item.id,
+
+    sync: {
+      rowUpdateMode: "full",
+      sync: ({ begin, write, commit, markReady }) => {
+        let isActive = true;
+
+        async function initialSync() {
+          try {
+            const items = await fetchAllPages();
+
+            if (!isActive) {
+              return;
+            }
+
+            begin();
+            for (const item of items) {
+              write({ type: "insert", value: item });
+            }
+            commit();
+          } catch (error) {
+            console.error(`Initial sync failed for filtered ${collectionName}:`, error);
+          } finally {
+            markReady();
+          }
+        }
+
+        initialSync();
+
+        return () => {
+          isActive = false;
+        };
+      },
+    },
+  });
+
+  return createCollection<T, string>(collectionConfig);
 }
 
 /**
@@ -304,6 +467,7 @@ export function useCollectionList<T extends CollectionEntity>(
   const { data } = useLiveSuspenseQuery(
     (q) => {
       // Start with base query and sorting
+      console.log({ collection });
       let query = q
         .from({ item: collection })
         .orderBy(
@@ -316,6 +480,8 @@ export function useCollectionList<T extends CollectionEntity>(
       const hasFilters = filters && filters.length > 0;
 
       if (hasSearch || hasFilters) {
+        console.log("hasSearch || hasFilters", hasSearch, hasFilters);
+        console.log("filters", filters);
         query = query.where(({ item }) => {
           if (!item) {
             return false;
@@ -328,7 +494,7 @@ export function useCollectionList<T extends CollectionEntity>(
             const searchConditions = searchFields
               .filter((field) => item[field])
               .map((field) =>
-                like(item[field] as string, `%${trimmedSearchTerm}%`),
+                like(item[field] as string, `%${trimmedSearchTerm}%`)
               );
 
             if (searchConditions.length > 0) {
@@ -349,6 +515,7 @@ export function useCollectionList<T extends CollectionEntity>(
               conditions.push(eq(field as string, filter.value));
             }
           }
+          console.log("conditions", conditions);
 
           // Combine all conditions with AND using a ternary
           return conditions.length === 1
@@ -356,6 +523,8 @@ export function useCollectionList<T extends CollectionEntity>(
             : and(...(conditions as Parameters<typeof and>));
         });
       }
+
+      console.log("query", query);
 
       return query;
     },

@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import type { Binder } from "../core/binder";
+import { bindingClient, type Binder, type ToolBinder } from "../core/binder";
 import {
   BaseCollectionEntitySchema,
   createCollectionBindings,
@@ -61,6 +61,56 @@ export const StepActionSchema = z.union([
 ]);
 export type StepAction = z.infer<typeof StepActionSchema>;
 /**
+ * ForEach Config Schema - Iterate over arrays
+ */
+export const ForEachConfigSchema = z.object({
+  items: z
+    .string()
+    .describe("@ref to array to iterate over, e.g. '@fetchData.output.items'"),
+  as: z
+    .string()
+    .optional()
+    .describe(
+      "Variable name for current item, default 'item' (accessible as @item)",
+    ),
+  mode: z
+    .enum(["sequential", "parallel", "race", "allSettled"])
+    .optional()
+    .describe("Execution mode for iterations"),
+  maxConcurrency: z
+    .number()
+    .optional()
+    .describe("Max concurrent executions for parallel mode"),
+});
+export type ForEachConfig = z.infer<typeof ForEachConfigSchema>;
+
+/**
+ * Parallel Group Config Schema - Explicit step grouping
+ */
+export const ParallelGroupConfigSchema = z.object({
+  group: z.string().describe("Group ID - steps with same groupId run together"),
+  mode: z
+    .enum(["all", "race", "allSettled"])
+    .optional()
+    .describe("How to handle the parallel group"),
+});
+export type ParallelGroupConfig = z.infer<typeof ParallelGroupConfigSchema>;
+
+/**
+ * Step Config Schema - Optional configuration for step execution
+ */
+export const StepConfigSchema = z.object({
+  maxAttempts: z.number().optional().describe("Maximum retry attempts"),
+  backoffMs: z.number().optional().describe("Initial backoff in milliseconds"),
+  timeoutMs: z.number().optional().describe("Timeout in milliseconds"),
+  forEach: ForEachConfigSchema.optional().describe("Iterate over an array"),
+  parallel: ParallelGroupConfigSchema.optional().describe(
+    "Explicit parallel grouping with execution mode",
+  ),
+});
+export type StepConfig = z.infer<typeof StepConfigSchema>;
+
+/**
  * Step Schema - Unified schema for all step types
  *
  * Step types:
@@ -68,6 +118,11 @@ export type StepAction = z.infer<typeof StepActionSchema>;
  * - transform: Pure TypeScript data transformation (deterministic, replayable)
  * - sleep: Wait for time
  * - waitForSignal: Block until external signal (human-in-the-loop)
+ *
+ * Features:
+ * - Auto-parallelization: Steps are grouped by @ref dependencies automatically
+ * - forEach: Iterate over arrays with sequential/parallel/race/allSettled modes
+ * - parallel groups: Explicit step grouping with race/allSettled for special cases
  */
 export const StepSchema = z.object({
   name: z.string().min(1).describe("Unique step name within workflow"),
@@ -78,17 +133,9 @@ export const StepSchema = z.object({
     .describe(
       "Input object with @ref resolution or default values. Example: { 'user_id': '@input.user_id', 'product_id': '@input.product_id' }",
     ),
-  config: z
-    .object({
-      maxAttempts: z.number().default(3).describe("Maximum retry attempts"),
-      backoffMs: z
-        .number()
-        .default(1000)
-        .describe("Initial backoff in milliseconds"),
-      timeoutMs: z.number().default(10000).describe("Timeout in milliseconds"),
-    })
-    .optional()
-    .describe("Step configuration (max attempts, backoff, timeout)"),
+  config: StepConfigSchema.optional().describe(
+    "Step configuration (retry, forEach, parallel groups)",
+  ),
 });
 
 export type Step = z.infer<typeof StepSchema>;
@@ -154,6 +201,8 @@ export const WorkflowExecutionSchema = BaseCollectionEntitySchema.extend({
 });
 export type WorkflowExecution = z.infer<typeof WorkflowExecutionSchema>;
 
+
+
 /**
  * Execution Step Result Schema
  *
@@ -171,6 +220,14 @@ export const WorkflowExecutionStepResultSchema =
   });
 export type WorkflowExecutionStepResult = z.infer<
   typeof WorkflowExecutionStepResultSchema
+>;
+
+export const WorkflowExecutionWithStepResultsSchema = WorkflowExecutionSchema.extend({
+  step_results: z.array(WorkflowExecutionStepResultSchema).optional(),
+});
+
+export type WorkflowExecutionWithStepResults = z.infer<
+  typeof WorkflowExecutionWithStepResultsSchema
 >;
 /**
  * Event Type Enum
@@ -224,13 +281,17 @@ export const WorkflowSchema = BaseCollectionEntitySchema.extend({
   description: z.string().optional().describe("Workflow description"),
 
   /**
-   * Steps organized into phases.
-   * - Phases execute sequentially
-   * - Steps within a phase execute in parallel
+   * Steps as a flat array.
+   * - Parallelization is automatically determined by @ref dependencies
+   * - Steps with no dependencies run in parallel
+   * - Steps depending on other steps wait for them to complete
+   * - Use config.forEach for iteration, config.parallel for explicit grouping
    */
   steps: z
-    .array(z.array(StepSchema))
-    .describe("2D array: phases (sequential) containing steps (parallel)"),
+    .array(StepSchema)
+    .describe(
+      "Flat array of steps - parallelization is auto-determined from @ref dependencies",
+    ),
 
   /**
    * Triggers to fire when execution completes successfully
@@ -262,9 +323,9 @@ export const WORKFLOW_EXECUTIONS_COLLECTION_BINDING = createCollectionBindings(
   },
 );
 
-export const WORKFLOW_STEP_RESULTS_COLLECTION_BINDING =
+export const EXECUTION_STEP_RESULTS_COLLECTION_BINDING =
   createCollectionBindings(
-    "workflow_execution_step_results",
+    "execution_step_results",
     WorkflowExecutionStepResultSchema,
     {
       readOnly: true,
@@ -289,9 +350,28 @@ export const WORKFLOW_EVENTS_COLLECTION_BINDING = createCollectionBindings(
  * - COLLECTION_WORKFLOW_LIST: List available workflows with their configurations
  * - COLLECTION_WORKFLOW_GET: Get a single workflow by ID (includes steps and triggers)
  */
-export const WORKFLOWS_BINDING = [
+export const WORKFLOW_COLLECTIONS_BINDINGS = [
   ...WORKFLOWS_COLLECTION_BINDING,
   ...WORKFLOW_EXECUTIONS_COLLECTION_BINDING,
-  ...WORKFLOW_STEP_RESULTS_COLLECTION_BINDING,
+  ...EXECUTION_STEP_RESULTS_COLLECTION_BINDING,
   ...WORKFLOW_EVENTS_COLLECTION_BINDING,
 ] as const satisfies Binder;
+
+export const WORKFLOW_BINDING = [
+  {
+    name: "WORKFLOW_START" as const,
+    inputSchema: z.object({
+      workflowId: z.string().describe("The workflow ID to execute"),
+      input: z
+        .record(z.unknown())
+        .optional()
+        .describe("Input data for the workflow"),
+    }),
+    outputSchema: z.object({
+      executionId: z.string(),
+    }),
+  },
+  ...WORKFLOW_COLLECTIONS_BINDINGS,
+] satisfies ToolBinder[];
+
+export const WorkflowBinding = bindingClient(WORKFLOW_BINDING);

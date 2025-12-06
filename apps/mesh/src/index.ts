@@ -10,7 +10,7 @@
 import "./observability";
 import app from "./api";
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "8002", 10);
 
 // Log startup info
 const dim = "\x1b[2m";

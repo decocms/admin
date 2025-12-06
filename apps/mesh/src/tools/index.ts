@@ -7,6 +7,7 @@
 import * as ConnectionTools from "./connection";
 import * as DatabaseTools from "./database";
 import * as OrganizationTools from "./organization";
+import * as AuthTools from "./auth";
 export { ConnectionTools };
 
 // All available tools
@@ -34,6 +35,9 @@ export const ALL_TOOLS = [
 
   // Database tools
   DatabaseTools.DATABASES_RUN_SQL,
+
+  // Auth tools
+  AuthTools.CALL_TOOL,
 ] as const;
 
 export type MCPMeshTools = typeof ALL_TOOLS;

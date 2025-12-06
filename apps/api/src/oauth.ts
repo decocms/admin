@@ -74,8 +74,8 @@ const sanitize = (path: string) => {
 };
 
 const isListToolsRequest = async (c: Context<AppEnv>) => {
-  const clonedReq = c.req.raw.clone();
   try {
+    const clonedReq = c.req.raw.clone();
     const body = (await clonedReq.json()) as { method?: string };
     // Allow tools/list to pass without auth
     return body?.method === "tools/list";
@@ -358,7 +358,7 @@ export const withOAuth = ({
     const url = new URL(c.req.url);
     const ctx = honoCtxToAppCtx(c);
 
-    if (!ctx.user && !isListToolsRequest(c)) {
+    if (!ctx.user && !(await isListToolsRequest(c))) {
       // Get OAuth params using the provided function
       const params = await getOAuthParams(c);
       // Build resource metadata URL using the MCP URL builder (no query params)

@@ -1,24 +1,22 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.23",
+  "version": "1.0.0-alpha.31",
   "type": "module",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
-    "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@decocms/bindings": "1.0.1-alpha.14",
+    "@deco/mcp": "npm:@jsr/deco__mcp@0.7.8",
+    "@decocms/bindings": "1.0.1-alpha.17",
     "@modelcontextprotocol/sdk": "1.20.2",
     "@ai-sdk/provider": "^2.0.0",
     "hono": "^4.10.7",
     "jose": "^6.0.11",
     "zod": "^3.25.76",
-    "zod-from-json-schema": "^0.0.5",
     "zod-to-json-schema": "3.25.0"
   },
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
     "./client": "./src/client.ts",
-    "./mcp-client": "./src/mcp-client.ts",
     "./bindings": "./src/bindings/index.ts",
     "./asset-server": "./src/asset-server/index.ts",
     "./tools": "./src/tools.ts"

@@ -83,6 +83,7 @@ export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
   meshUrl: string;
+  authorization?: string | null;
   ensureAuthenticated: (options?: {
     workspaceHint?: string;
   }) => User | undefined;
@@ -159,14 +160,19 @@ export const withBindings = <TEnv>({
   tokenOrContext,
   url,
   bindings: inlineBindings,
+  authToken,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
+  // token is x-mesh-token
   tokenOrContext?: string | RequestContext;
+  // authToken is the authorization header
+  authToken?: string | null;
   url?: string;
   bindings?: Binding[];
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
+  const authorization = authToken ? authToken.split(" ")[1] : undefined;
 
   let context;
   if (typeof tokenOrContext === "string") {
@@ -180,6 +186,7 @@ export const withBindings = <TEnv>({
       }) ?? {};
 
     context = {
+      authorization,
       state: decoded.state ?? metadata.state,
       token: tokenOrContext,
       meshUrl: (decoded.meshUrl as string) ?? metadata.meshUrl,
@@ -197,6 +204,7 @@ export const withBindings = <TEnv>({
         connectionId?: string;
       }) ?? {};
     const appName = decoded.appName as string | undefined;
+    context.authorization ??= authorization;
     context.callerApp = appName;
     context.connectionId ??=
       (decoded.connectionId as string) ?? metadata.connectionId;
@@ -204,6 +212,7 @@ export const withBindings = <TEnv>({
   } else {
     context = {
       state: {},
+      authorization,
       token: undefined,
       meshUrl: undefined,
       connectionId: undefined,
@@ -229,11 +238,25 @@ export const withBindings = <TEnv>({
   return env as TEnv;
 };
 
+const DEFAULT_CORS_OPTIONS = {
+  origin: (origin: string) => {
+    // Allow localhost and configured origins
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return origin;
+    }
+    // TODO: Configure allowed origins from environment
+    return origin;
+  },
+  credentials: true,
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization", "mcp-protocol-version"],
+};
+
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
 ) => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
-  const corsOptions = userFns.cors;
+  const corsOptions = userFns.cors ?? DEFAULT_CORS_OPTIONS;
   const oauth = userFns.oauth;
   const oauthHandlers = oauth ? createOAuthHandlers(oauth) : null;
 
@@ -254,22 +277,54 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         return oauthHandlers.handleProtectedResourceMetadata(req);
       }
 
+      // Authorization server metadata (RFC8414)
+      if (url.pathname === "/.well-known/oauth-authorization-server") {
+        return oauthHandlers.handleAuthorizationServerMetadata(req);
+      }
+
+      // Authorization endpoint - redirects to external OAuth provider
+      if (url.pathname === "/authorize") {
+        return oauthHandlers.handleAuthorize(req);
+      }
+
       // OAuth callback - receives code from external OAuth provider
       if (url.pathname === "/oauth/callback") {
         return oauthHandlers.handleOAuthCallback(req);
       }
 
+      // Token endpoint - exchanges code for tokens
+      if (url.pathname === "/token" && req.method === "POST") {
+        return oauthHandlers.handleToken(req);
+      }
+
       // Dynamic client registration (RFC7591)
-      if (url.pathname === "/mcp/register" && req.method === "POST") {
+      if (
+        (url.pathname === "/register" || url.pathname === "/mcp/register") &&
+        req.method === "POST"
+      ) {
         return oauthHandlers.handleClientRegistration(req);
       }
     }
 
     // MCP endpoint
     if (url.pathname === "/mcp") {
+      if (req.method === "GET") {
+        return new Response("Method not allowed", { status: 405 });
+      }
       // If OAuth is configured, require authentication
       if (oauthHandlers && !oauthHandlers.hasAuth(req)) {
-        return oauthHandlers.createUnauthorizedResponse(req);
+        // Clone request to check method without consuming the original body
+        const clonedReq = req.clone();
+        try {
+          const body = (await clonedReq.json()) as { method?: string };
+          // Allow tools/list to pass without auth
+          if (body?.method !== "tools/list") {
+            return oauthHandlers.createUnauthorizedResponse(req);
+          }
+        } catch {
+          // If body parsing fails, require auth
+          return oauthHandlers.createUnauthorizedResponse(req);
+        }
       }
 
       return server.fetch(req, env, ctx);
@@ -305,6 +360,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 
   return {
     fetch: async (req: Request, env: TEnv & DefaultEnv<TSchema>, ctx?: any) => {
+      if (new URL(req.url).pathname === "/_healthcheck") {
+        return new Response("OK", { status: 200 });
+      }
       // Handle CORS preflight (OPTIONS) requests
       if (corsOptions !== false && req.method === "OPTIONS") {
         const options = corsOptions ?? {};
@@ -312,7 +370,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       }
 
       const bindings = withBindings({
-        env,
+        authToken: req.headers.get("authorization") ?? null,
+        env: { ...process.env, ...env },
         server,
         bindings: userFns.bindings,
         tokenOrContext: req.headers.get("x-mesh-token") ?? undefined,

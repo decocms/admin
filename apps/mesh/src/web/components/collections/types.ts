@@ -1,8 +1,8 @@
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
-import type { z } from "zod";
 import type { ReactNode } from "react";
 import type { Filter } from "@deco/ui/components/filter-bar.tsx";
 import type { TableColumn } from "@deco/ui/components/collection-table.tsx";
+import type { JsonSchema } from "@/web/utils/constants";
 
 export interface CollectionsListProps<T extends BaseCollectionEntity> {
   /**
@@ -11,11 +11,10 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
   data: T[];
 
   /**
-   * The Zod schema defining the entity structure.
+   * The JSON Schema defining the entity structure.
    * Used for rendering default cards and table columns.
-   * Optional if `columns` and `renderCard` are provided.
    */
-  schema?: z.AnyZodObject;
+  schema: JsonSchema;
 
   /**
    * Current view mode
@@ -63,12 +62,11 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
   onFiltersChange?: (filters: Filter[]) => void;
 
   /**
-   * Callback for item actions
+   * Object mapping action names to their handlers.
+   * Only available actions should be included in this object.
+   * UI components will automatically filter actions based on what's provided.
    */
-  onAction?: (
-    action: "open" | "delete" | "duplicate" | "edit",
-    item: T,
-  ) => void;
+  actions?: Record<string, (item: T) => void | Promise<void>>;
 
   /**
    * Callback when an item is clicked
@@ -79,11 +77,6 @@ export interface CollectionsListProps<T extends BaseCollectionEntity> {
    * Extra content to render in the header (e.g. "New" button)
    */
   headerActions?: ReactNode;
-
-  /**
-   * Whether data is loading
-   */
-  isLoading?: boolean;
 
   /**
    * Custom empty state component

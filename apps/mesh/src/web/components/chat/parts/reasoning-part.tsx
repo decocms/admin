@@ -1,8 +1,8 @@
 import { ReasoningUIPart } from "ai";
 import { useEffect, useReducer } from "react";
-import { cn } from "../../../lib/utils.ts";
-import { Icon } from "../../icon.tsx";
-import { MemoizedMarkdown } from "../chat-markdown.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { MemoizedMarkdown } from "@deco/ui/components/chat/chat-markdown.tsx";
 
 interface ReasoningPartProps {
   part: ReasoningUIPart;
@@ -36,7 +36,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export function DecoChatMessageReasoningPart({ part, id }: ReasoningPartProps) {
+export function MessageReasoningPart({ part, id }: ReasoningPartProps) {
   const { state: partState } = part;
   const isPartStreaming = partState === "streaming";
 
@@ -46,6 +46,7 @@ export function DecoChatMessageReasoningPart({ part, id }: ReasoningPartProps) {
   });
 
   // Handle automatic expansion/collapse based on streaming states
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     dispatch({ type: "SET_EXPANDED", payload: isPartStreaming });
   }, [isPartStreaming]);

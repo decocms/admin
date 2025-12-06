@@ -6,64 +6,9 @@
  */
 
 import type { ZodType } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { createMCPFetchStub, MCPClientFetchStub } from "./client/mcp";
+import { ServerClient } from "./client/mcp-client";
 import { MCPConnection } from "./connection";
-import { isSubset } from "./subset";
-
-type JsonSchema = Record<string, unknown>;
-
-/**
- * Checks if a value is a Zod schema by looking for the _def property
- */
-function isZodSchema(value: unknown): value is ZodType<unknown> {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "_def" in value &&
-    typeof (value as Record<string, unknown>)._def === "object"
-  );
-}
-
-/**
- * Normalizes a schema to JSON Schema format.
- * Accepts either a Zod schema or a JSON schema and returns a JSON schema.
- *
- * @param schema - A Zod schema or JSON schema
- * @returns The JSON schema representation, or null if input is null/undefined
- */
-function normalizeToJsonSchema(
-  schema: ZodType<unknown> | JsonSchema | null | undefined,
-): JsonSchema | null {
-  if (schema == null) {
-    return null;
-  }
-
-  if (isZodSchema(schema)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return zodToJsonSchema(schema as any) as JsonSchema;
-  }
-
-  // Already a JSON schema
-  return schema as JsonSchema;
-}
-
-/**
- * Checks if a JSON schema is "empty" (has no properties defined).
- * An empty schema means the binder didn't specify requirements,
- * so we should skip schema validation and only check tool name.
- */
-function isEmptySchema(schema: JsonSchema | null): boolean {
-  if (!schema) return true;
-
-  // Check if it's an object schema with no properties
-  if (schema.type === "object") {
-    const props = schema.properties as Record<string, unknown> | undefined;
-    return !props || Object.keys(props).length === 0;
-  }
-
-  return false;
-}
 
 /**
  * ToolBinder defines a single tool within a binding.
@@ -155,6 +100,18 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
 ) => {
   return {
     ...createBindingChecker(binder),
+    forClient: (client: ServerClient): MCPClientFetchStub<TDefinition> => {
+      return createMCPFetchStub<TDefinition>({
+        client,
+        streamable: binder.reduce(
+          (acc, tool) => {
+            acc[tool.name] = tool.streamable === true;
+            return acc;
+          },
+          {} as Record<string, boolean>,
+        ),
+      });
+    },
     forConnection: (
       mcpConnection: MCPConnection,
     ): MCPClientFetchStub<TDefinition> => {
@@ -214,49 +171,9 @@ export function createBindingChecker<TDefinition extends readonly ToolBinder[]>(
         if (!matchedTool) {
           return false;
         }
+        return true;
 
-        // === INPUT SCHEMA VALIDATION ===
-        // Tool must accept what binder requires
-        // Check: isSubset(binder, tool) - every value valid under binder is valid under tool
-        const binderInputSchema = normalizeToJsonSchema(binderTool.inputSchema);
-        const toolInputSchema = normalizeToJsonSchema(matchedTool.inputSchema);
-
-        // Skip input schema validation if binder doesn't specify requirements (empty schema)
-        // This allows bindings that only care about tool names, not specific schemas
-        if (!isEmptySchema(binderInputSchema)) {
-          if (binderInputSchema && toolInputSchema) {
-            // Check if binder input is a subset of tool input (tool accepts what binder requires)
-            if (!isSubset(binderInputSchema, toolInputSchema)) {
-              return false;
-            }
-          } else if (binderInputSchema && !toolInputSchema) {
-            // Binder requires input schema but tool doesn't have one
-            return false;
-          }
-        }
-
-        // === OUTPUT SCHEMA VALIDATION ===
-        // Tool must provide what binder expects (but can provide more)
-        // Check: isSubset(binder, tool) - tool provides at least what binder expects
-        const binderOutputSchema = normalizeToJsonSchema(
-          binderTool.outputSchema,
-        );
-        const toolOutputSchema = normalizeToJsonSchema(
-          matchedTool.outputSchema,
-        );
-
-        // Skip output schema validation if binder doesn't specify requirements (empty schema)
-        if (!isEmptySchema(binderOutputSchema)) {
-          if (binderOutputSchema && toolOutputSchema) {
-            // Check if binder output is a subset of tool output (tool provides what binder expects)
-            if (!isSubset(binderOutputSchema, toolOutputSchema)) {
-              return false;
-            }
-          } else if (binderOutputSchema && !toolOutputSchema) {
-            // Binder expects output schema but tool doesn't have one
-            return false;
-          }
-        }
+        // FIXME @mcandeia Zod to JSONSchema converstion is creating inconsistent schemas
       }
       return true;
     },

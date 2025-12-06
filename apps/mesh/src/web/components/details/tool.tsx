@@ -90,7 +90,11 @@ export function ToolDetailsView({
       const initialParams: Record<string, unknown> = {};
       // Simple initialization for now
       Object.keys(tool.inputSchema.properties).forEach((key) => {
-        initialParams[key] = "";
+        if (tool.inputSchema.required?.includes(key)) {
+          initialParams[key] = "";
+        } else {
+          initialParams[key] = undefined;
+        }
       });
       setInputParams(initialParams);
     }

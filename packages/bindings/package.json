@@ -1,6 +1,6 @@
 {
   "name": "@decocms/bindings",
-  "version": "1.0.1-alpha.15",
+  "version": "1.0.1-alpha.17",
   "type": "module",
   "scripts": {
     "test": "vitest run",
@@ -9,8 +9,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.20.2",
     "zod": "^3.25.76",
-    "zod-from-json-schema": "^0.0.5",
-    "zod-to-json-schema": "3.25.0"
+    "zod-from-json-schema": "^0.0.5"
   },
   "exports": {
     ".": "./src/index.ts",

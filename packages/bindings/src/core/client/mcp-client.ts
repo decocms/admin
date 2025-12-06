@@ -9,8 +9,10 @@ import {
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import {
+  CallToolRequest,
   Implementation,
   ListToolsRequest,
+  ListToolsResult,
   ListToolsResultSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { MCPConnection } from "../connection";
@@ -41,10 +43,16 @@ class Client extends BaseClient {
     return result;
   }
 }
-
+type CallToolResponse = Awaited<ReturnType<Client["callTool"]>>;
 export interface ServerClient {
-  client: Client;
-  callStreamableTool: (tool: string, args: unknown) => Promise<Response>;
+  client: {
+    callTool: (params: CallToolRequest["params"]) => Promise<CallToolResponse>;
+    listTools: () => Promise<ListToolsResult>;
+  };
+  callStreamableTool: (
+    tool: string,
+    args: Record<string, unknown>,
+  ) => Promise<Response>;
 }
 export const createServerClient = async (
   mcpServer: { connection: MCPConnection; name?: string },

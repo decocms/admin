@@ -1,6 +1,7 @@
 import { createServerClient } from "@deco/ai/mcp";
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
+  DECO_CMS_API_URL,
   DECO_CMS_WEB_URL,
   formatIntegrationId,
   Locator,
@@ -11,6 +12,8 @@ import {
   WorkflowDefinitionSchema,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
+import { AppName } from "@deco/sdk/common";
+import { Hosts } from "@deco/sdk/hosts";
 import {
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
@@ -23,6 +26,7 @@ import {
   createDocumentViewsV2,
   createItemSchema,
   createMCPToolsStub,
+  createToolGroup,
   createToolResourceV2Implementation,
   createToolViewsV2,
   createViewResourceV2Implementation,
@@ -58,7 +62,6 @@ import {
   WithTool,
   WorkflowBindingImplOptions,
   wrapToolFn,
-  createToolGroup,
 } from "@deco/sdk/mcp";
 import { getApps, getGroupByAppName } from "@deco/sdk/mcp/groups";
 import { executeTool } from "@deco/sdk/mcp/tools/api";
@@ -79,7 +82,6 @@ import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import {
-  MCP_CONFIGURATION_TOOL_NAME,
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_DEFAULT_VERSION,
   MCP_REGISTRY_ICON_MIME_TYPE,
@@ -574,10 +576,40 @@ const createMcpServerProxyForIntegration = async (
   };
 };
 
+const integrationIdFromUser = (ctx: AppContext) => {
+  if (ctx.user && "sub" in ctx.user && typeof ctx.user.sub === "string") {
+    const [type, ...id] = ctx.user.sub.split(":");
+    if (type === "proxy" && id) {
+      return id.join(":");
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Extract appName from request - supports both path params (:scope/:appName) and query string
+ * Path params take precedence for MCP OAuth compliance
+ */
+const getAppNameFromRequest = (c: Context): string | undefined => {
+  // Try named path params first (e.g., /apps/mcp/:scope/:appName)
+  const scope = c.req.param("scope");
+  const name = c.req.param("appName");
+  if (scope && name) {
+    return AppName.build(scope, name);
+  }
+
+  // Fallback to query string for backward compatibility
+  return c.req.query("appName") ?? undefined;
+};
+
 const createMcpServerProxyForAppName = (c: Context) => {
   const ctx = honoCtxToAppCtx(c);
+  const integrationId = integrationIdFromUser(ctx);
+  if (integrationId) {
+    return createMcpServerProxy(c, integrationId);
+  }
 
-  const appName = c.req.query("appName");
+  const appName = getAppNameFromRequest(c);
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
     const integration = await State.run(ctx, () =>
@@ -598,7 +630,10 @@ export const createMcpServerProxy = (
 ) => {
   const ctx = honoCtxToAppCtx(c);
 
-  const integrationId = maybeIntegrationId ?? c.req.param("integrationId");
+  const integrationId =
+    maybeIntegrationId ??
+    c.req.param("integrationId") ??
+    integrationIdFromUser(ctx);
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
     return await State.run(ctx, () =>
@@ -683,35 +718,64 @@ app.get(`/:org/:project/deconfig/watch`, async (ctx) => {
   });
 });
 
-const ensureISOString = (date: unknown): string => {
-  if (date instanceof Date) {
-    return date.toISOString();
+const ensureISOString = (date: string | null): string => {
+  if (!date) {
+    return new Date().toISOString();
   }
-  if (typeof date === "string") {
-    try {
-      return new Date(date).toISOString();
-    } catch {
-      return new Date().toISOString();
-    }
+  try {
+    return new Date(date).toISOString();
+  } catch {
+    return new Date().toISOString();
   }
-  return new Date().toISOString();
 };
 
-const mapAppToMCPRegistryServer = (
-  app: Record<string, unknown>,
-): Record<string, unknown> => {
-  const serverName = `${(app.scope as Record<string, unknown>).scope_name}/${app.name}`;
+/** Registry app with relations from drizzle query */
+interface RegistryAppWithRelations {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  connection: MCPConnection;
+  created_at: string;
+  updated_at: string;
+  friendly_name: string | null;
+  verified: boolean | null;
+  metadata: Record<string, unknown> | null;
+  tools: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    input_schema: Record<string, unknown> | null;
+    output_schema: Record<string, unknown> | null;
+  }>;
+  scope: { scope_name: string };
+}
+
+const replaceDecoPageToDecoCMS = (urlStr: string, appName: string) => {
+  const url = new URL(urlStr);
+  if (url.hostname.endsWith(Hosts.APPS) || url.hostname.endsWith(Hosts.SITES)) {
+    // Use path-based /apps/:scope/:appName/mcp for MCP OAuth compliance
+    const { scopeName, name } = AppName.parse(appName);
+    return `${DECO_CMS_API_URL}/apps/${scopeName}/${name}/mcp`;
+  }
+  return urlStr;
+};
+const mapAppToMCPRegistryServer = <T extends RegistryAppWithRelations>(
+  app: T,
+) => {
+  const serverName = `${app.scope.scope_name}/${app.name}`;
+  const connectionUrl = "url" in app.connection ? app.connection.url : "";
 
   return {
     id: app.id,
     title: app.friendly_name || app.name,
-    created_at: ensureISOString(app.created_at as string),
-    updated_at: ensureISOString(app.updated_at as string),
+    created_at: ensureISOString(app.created_at),
+    updated_at: ensureISOString(app.updated_at),
     _meta: {
       [MCP_REGISTRY_DECOCMS_KEY]: {
         id: app.id,
-        verified: (app.verified as boolean | undefined) ?? false,
-        scopeName: (app.scope as Record<string, unknown>).scope_name,
+        verified: app.verified ?? false,
+        scopeName: app.scope.scope_name,
         appName: app.name,
       },
     },
@@ -721,22 +785,18 @@ const mapAppToMCPRegistryServer = (
         [MCP_REGISTRY_PUBLISHER_KEY]: {
           friendlyName: app.friendly_name ?? null,
           metadata: app.metadata ?? null,
-          tools: (app.tools as Array<Record<string, unknown>>).map((tool) => ({
+          tools: app.tools.map((tool) => ({
             id: tool.id,
             name: tool.name,
-            description: (tool.description as string | undefined) ?? null,
-            inputSchema:
-              (tool.input_schema as Record<string, unknown> | undefined) ??
-              null,
-            outputSchema:
-              (tool.output_schema as Record<string, unknown> | undefined) ??
-              null,
+            description: tool.description ?? null,
+            inputSchema: tool.input_schema ?? null,
+            outputSchema: tool.output_schema ?? null,
           })),
         },
       },
       name: serverName,
       title: app.friendly_name || app.name,
-      description: (app.description as string | undefined) ?? undefined,
+      description: app.description ?? undefined,
       icons: app.icon
         ? [
             {
@@ -748,11 +808,14 @@ const mapAppToMCPRegistryServer = (
       remotes: [
         {
           type: MCP_REGISTRY_SERVER_TYPE,
-          url: (app.connection as Record<string, unknown>).url,
+          url: replaceDecoPageToDecoCMS(
+            connectionUrl,
+            AppName.build(app.scope.scope_name, app.name),
+          ),
         },
       ],
       version: app.updated_at
-        ? new Date(app.updated_at as string)
+        ? new Date(app.updated_at)
             .toISOString()
             .split("T")[0]
             .replace(/-/g, ".")
@@ -761,26 +824,21 @@ const mapAppToMCPRegistryServer = (
   };
 };
 
-const mapAppToMCPRegistryServerDetail = (
-  app: Record<string, unknown>,
-): Record<string, unknown> => {
+const mapAppToMCPRegistryServerDetail = <T extends RegistryAppWithRelations>(
+  app: T,
+) => {
   const base = mapAppToMCPRegistryServer(app);
-  const baseMeta = base._meta as Record<string, unknown>;
-  const baseMetaDecocms = baseMeta[MCP_REGISTRY_DECOCMS_KEY] as Record<
-    string,
-    unknown
-  >;
   return {
     ...base,
     _meta: {
-      ...(baseMeta ?? {}),
+      ...base._meta,
       [MCP_REGISTRY_DECOCMS_KEY]: {
-        ...baseMetaDecocms,
+        ...base._meta[MCP_REGISTRY_DECOCMS_KEY],
         publishedAt: app.created_at
-          ? new Date(app.created_at as string).toISOString()
+          ? new Date(app.created_at).toISOString()
           : undefined,
         updatedAt: app.updated_at
-          ? new Date(app.updated_at as string).toISOString()
+          ? new Date(app.updated_at).toISOString()
           : undefined,
       },
     },
@@ -833,13 +891,6 @@ const createPublicRegistryTools = createToolGroup("Registry", {
   icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
 });
 
-const hasMCPConfigurationTool = (
-  tools: Array<Record<string, unknown>> | null | undefined,
-): boolean => {
-  if (!Array.isArray(tools)) return false;
-  return tools.some((tool) => tool.name === MCP_CONFIGURATION_TOOL_NAME);
-};
-
 const listPublicRegistryApps = createPublicRegistryTools({
   name: "COLLECTION_REGISTRY_APP_LIST",
   description:
@@ -870,10 +921,7 @@ const listPublicRegistryApps = createPublicRegistryTools({
         .describe("Whether there are more items available"),
     }),
   ),
-  handler: async (
-    input, // eslint-disable-line @typescript-eslint/no-unused-vars
-    c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-  ) => {
+  handler: async (input, c: WithTool<AppContext>) => {
     c.resourceAccess.grant();
 
     const drizzle = c.drizzle;
@@ -899,21 +947,14 @@ const listPublicRegistryApps = createPublicRegistryTools({
     });
 
     let filteredApps = apps.filter(
-      (app: Record<string, unknown>) =>
-        !REGISTRY_OMITTED_APPS.includes(app.id as string),
-    );
-
-    filteredApps = filteredApps.filter((app: Record<string, unknown>) =>
-      hasMCPConfigurationTool(app.tools as Array<Record<string, unknown>>),
+      (app) => !REGISTRY_OMITTED_APPS.includes(app.id),
     );
 
     const totalCount = filteredApps.length;
     const paginated = filteredApps.slice(offset, offset + limit);
     const hasMore = filteredApps.length > offset + limit;
 
-    const servers = paginated.map((app: Record<string, unknown>) =>
-      mapAppToMCPRegistryServer(app),
-    );
+    const servers = paginated.map((app) => mapAppToMCPRegistryServer(app));
 
     return {
       items: servers,
@@ -938,10 +979,7 @@ const getPublicRegistryApp = createPublicRegistryTools({
       ),
     }),
   ),
-  handler: async (
-    { id },
-    c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-  ) => {
+  handler: async ({ id }, c: WithTool<AppContext>) => {
     c.resourceAccess.grant();
 
     const drizzle = c.drizzle;
@@ -967,9 +1005,7 @@ const getPublicRegistryApp = createPublicRegistryTools({
       };
     }
 
-    const serverData = mapAppToMCPRegistryServerDetail(
-      app as Record<string, unknown>,
-    );
+    const serverData = mapAppToMCPRegistryServerDetail(app);
 
     return {
       item: serverData,
@@ -1437,9 +1473,46 @@ Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
 
+// Path-based appName OAuth routes using /apps/:scope/:appName/mcp pattern (MCP OAuth compliant)
+// Follows same pattern as /:org/:project/:integrationId/mcp
+// IMPORTANT: Register BEFORE /:org/:project/:integrationId/mcp to avoid route conflicts
+withOAuth({
+  hono: app,
+  mcpEndpoint: "/apps/:scope/:appName/mcp",
+  getOAuthParams: (c) => {
+    const ctx = honoCtxToAppCtx(c);
+    const scope = c.req.param("scope") ?? "";
+    const name = c.req.param("appName") ?? "";
+    const appName = scope && name ? AppName.build(scope, name) : "";
+    const integrationId = integrationIdFromUser(ctx) ?? appName;
+    return {
+      org: ctx.locator?.org ?? "",
+      project: ctx.locator?.project ?? "",
+      integrationId,
+      appName,
+    };
+  },
+  buildMcpUrl: (baseUrl, { appName }) => {
+    if (!appName) return `${baseUrl}/apps/mcp`;
+    const { scopeName, name } = AppName.parse(appName);
+    return `${baseUrl}/apps/${scopeName}/${name}/mcp`;
+  },
+  buildIssuerUrl: (baseUrl, { appName }) => {
+    if (!appName) return `${baseUrl}/apps`;
+    const { scopeName, name } = AppName.parse(appName);
+    return `${baseUrl}/apps/${scopeName}/${name}`;
+  },
+});
+
 withOAuth({
   hono: app,
   mcpEndpoint: "/:org/:project/:integrationId/mcp",
+});
+
+// Legacy backward-compatible route for query string appName (no OAuth flow)
+app.all("/apps/mcp", async (c) => {
+  const proxy = await createMcpServerProxyForAppName(c);
+  return proxy.fetch(c.req.raw);
 });
 
 app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
@@ -1478,15 +1551,24 @@ app.post(
   },
 );
 
-app.post("/apps/mcp", async (c) => {
+// Path-based appName routes using /apps/:scope/:appName/mcp pattern (MCP OAuth compliant)
+app.post("/apps/:scope/:appName/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
-
   return mcpServerProxy.fetch(c.req.raw);
 });
-app.post("/apps/mcp/tool/:toolName", async (c) => {
-  const mcpServerProxy = await createMcpServerProxyForAppName(c);
 
-  return mcpServerProxy.fetch(c.req.raw);
+app.post("/apps/:scope/:appName/mcp/call-tool/:toolName", async (c) => {
+  const mcpServerProxy = await createMcpServerProxyForAppName(c);
+  const toolArgs = await c.req.json();
+  const toolName = c.req.param("toolName");
+
+  return await mcpServerProxy.callStreamableTool({
+    method: "tools/call" as const,
+    params: {
+      name: toolName,
+      arguments: toolArgs,
+    },
+  });
 });
 
 app.post("/:org/:project/:integrationId/tools/list", async (c) => {

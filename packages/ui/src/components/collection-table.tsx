@@ -76,6 +76,7 @@ export function CollectionTable<T = Record<string, unknown>>({
                     "group transition-colors select-none",
                     col.sortable && "hover:bg-accent cursor-pointer",
                     col.rowClassName,
+                    col.cellClassName,
                   )}
                   onClick={
                     col.sortable && onSort ? () => onSort(col.id) : undefined
@@ -109,18 +110,24 @@ export function CollectionTable<T = Record<string, unknown>>({
                   <TableCell
                     key={col.id}
                     className={cn(
-                      "px-5 py-4 h-16 align-middle min-w-0 text-sm text-foreground",
+                      "px-5 py-4 h-16 align-middle text-sm text-foreground",
                       col.cellClassName,
-                      col.wrap
-                        ? "whitespace-normal wrap-break-word"
-                        : "truncate overflow-hidden whitespace-nowrap",
+                      col.wrap ? "whitespace-normal wrap-break-word" : "",
                     )}
                   >
-                    {col.render
-                      ? col.render(row)
-                      : col.accessor
-                        ? col.accessor(row)
-                        : null}
+                    <div
+                      className={cn(
+                        "min-w-0 w-full",
+                        !col.wrap &&
+                          "truncate overflow-hidden whitespace-nowrap",
+                      )}
+                    >
+                      {col.render
+                        ? col.render(row)
+                        : col.accessor
+                          ? col.accessor(row)
+                          : null}
+                    </div>
                   </TableCell>
                 ))}
               </TableRow>

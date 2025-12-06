@@ -11,6 +11,7 @@
  * - Supports StreamableHTTP transport
  */
 
+import { ConnectionEntity } from "@/tools/connection/schema";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -44,6 +45,11 @@ type CallToolMiddleware = (
   request: CallToolRequest,
   next: () => Promise<CallToolResult>,
 ) => Promise<CallToolResult>;
+
+type CallStreamableToolMiddleware = (
+  request: CallToolRequest,
+  next: () => Promise<Response>,
+) => Promise<Response>;
 
 // ============================================================================
 // Authorization Middleware
@@ -99,6 +105,49 @@ function withConnectionAuthorization(
   };
 }
 
+/**
+ * Streamable authorization middleware - checks access to tool on connection
+ * Returns Response instead of CallToolResult for streaming use cases
+ */
+function withStreamableConnectionAuthorization(
+  ctx: MeshContext,
+  connectionId: string,
+): CallStreamableToolMiddleware {
+  return async (request, next) => {
+    if (!ctx.auth.apiKey) {
+      return await next();
+    }
+
+    try {
+      const toolName = request.params.name;
+
+      const connectionAccessControl = new AccessControl(
+        ctx.authInstance,
+        ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
+        toolName,
+        ctx.auth.apiKey?.permissions,
+        ctx.auth.user?.role,
+        connectionId,
+      );
+
+      await connectionAccessControl.check(toolName);
+
+      return await next();
+    } catch (error) {
+      const err = error as Error;
+      return new Response(
+        JSON.stringify({
+          error: `Authorization failed: ${err.message}`,
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  };
+}
+
 // ============================================================================
 // MCP Proxy Factory
 // ============================================================================
@@ -109,12 +158,19 @@ function withConnectionAuthorization(
  *
  * Single server approach - tools from downstream are dynamically fetched and registered
  */
-export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
+export async function createMCPProxy(
+  connectionIdOrConnection: string | ConnectionEntity,
+  ctx: MeshContext,
+) {
   // Get connection details
-  const connection = await ctx.storage.connections.findById(connectionId);
+  const connection =
+    typeof connectionIdOrConnection === "string"
+      ? await ctx.storage.connections.findById(connectionIdOrConnection)
+      : connectionIdOrConnection;
   if (!connection) {
     throw new Error("Connection not found");
   }
+  const connectionId = connection?.id;
 
   if (ctx.organization && connection.organization_id !== ctx.organization.id) {
     throw new Error("Connection does not belong to the active organization");
@@ -179,9 +235,8 @@ export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     // Continue without configuration token - downstream will fail if it requires it
   }
 
-  // Create client factory for downstream MCP
-  const createClient = async () => {
-    // Prepare headers
+  // Build request headers - reusable for both client and direct fetch
+  const buildRequestHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {};
 
     // Add connection token (already decrypted by storage layer)
@@ -194,10 +249,17 @@ export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
       headers["x-mesh-token"] = configurationToken;
     }
 
-    // Add custom headers
+    // Add custom headers from connection
     if (connection.connection_headers) {
       Object.assign(headers, connection.connection_headers);
     }
+
+    return headers;
+  };
+
+  // Create client factory for downstream MCP
+  const createClient = async () => {
+    const headers = buildRequestHeaders();
 
     // Create transport to downstream MCP using StreamableHTTP
     const transport = new StreamableHTTPClientTransport(
@@ -216,11 +278,16 @@ export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     return client;
   };
 
-  // Create authorization middleware
+  // Create authorization middlewares
   const authMiddleware = withConnectionAuthorization(ctx, connectionId);
+  const streamableAuthMiddleware = withStreamableConnectionAuthorization(
+    ctx,
+    connectionId,
+  );
 
   // Compose middlewares
   const callToolPipeline = compose(authMiddleware);
+  const callStreamableToolPipeline = compose(streamableAuthMiddleware);
 
   // Core tool execution logic - shared between fetch and callTool
   const executeToolCall = async (
@@ -292,30 +359,104 @@ export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     });
   };
 
-  // Programmatic tool call function
-  const callTool = async <TResponse = unknown>(
+  // List tools from downstream connection
+  const listTools = async (): Promise<ListToolsResult> => {
+    const client = await createClient();
+    return await client.listTools();
+  };
+
+  // Call tool using fetch directly for streaming support
+  // Inspired by @deco/api proxy callStreamableTool
+  const callStreamableTool = async (
     name: string,
-    args?: Record<string, unknown>,
-  ): Promise<TResponse> => {
+    args: Record<string, unknown>,
+  ): Promise<Response> => {
     const request: CallToolRequest = {
       method: "tools/call",
-      params: {
-        name,
-        arguments: args,
-      },
+      params: { name, arguments: args },
     };
-    const { structuredContent, isError, content } =
-      await executeToolCall(request);
+    return callStreamableToolPipeline(request, async (): Promise<Response> => {
+      const headers = buildRequestHeaders();
 
-    if (isError) {
-      throw new Error(JSON.stringify(content));
-    }
+      // Use fetch directly to support streaming responses
+      // Build URL with tool name appended for call-tool endpoint pattern
+      const url = new URL(connection.connection_url);
+      url.pathname =
+        url.pathname.replace(/\/$/, "") + `/call-tool/${request.params.name}`;
 
-    return structuredContent as TResponse;
+      return await ctx.tracer.startActiveSpan(
+        "mcp.proxy.callStreamableTool",
+        {
+          attributes: {
+            "connection.id": connectionId,
+            "tool.name": request.params.name,
+          },
+        },
+        async (span) => {
+          const startTime = Date.now();
+
+          try {
+            const response = await fetch(url.toString(), {
+              method: "POST",
+              redirect: "manual",
+              body: JSON.stringify(request.params.arguments),
+              headers: {
+                ...headers,
+                "Content-Type": "application/json",
+              },
+            });
+            const duration = Date.now() - startTime;
+
+            // Record metrics
+            ctx.meter
+              .createHistogram("connection.proxy.streamable.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: response.ok ? "success" : "error",
+              });
+
+            ctx.meter
+              .createCounter("connection.proxy.streamable.requests")
+              .add(1, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: response.ok ? "success" : "error",
+              });
+
+            span.end();
+            return response;
+          } catch (error) {
+            const err = error as Error;
+            const duration = Date.now() - startTime;
+
+            ctx.meter
+              .createHistogram("connection.proxy.streamable.duration")
+              .record(duration, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                status: "error",
+              });
+
+            ctx.meter
+              .createCounter("connection.proxy.streamable.errors")
+              .add(1, {
+                "connection.id": connectionId,
+                "tool.name": request.params.name,
+                error: err.message,
+              });
+
+            span.recordException(err);
+            span.end();
+            throw error;
+          }
+        },
+      );
+    });
   };
 
   // Create fetch function that handles MCP protocol
-  const fetch = async (req: Request) => {
+  const handleMcpRequest = async (req: Request) => {
     // Create MCP server for this proxy
     const server = new McpServer(
       {
@@ -349,7 +490,19 @@ export async function createMCPProxy(connectionId: string, ctx: MeshContext) {
     return await transport.handleMessage(req);
   };
 
-  return { fetch, callTool };
+  return {
+    fetch: handleMcpRequest,
+    client: {
+      callTool: (args: CallToolRequest["params"]) => {
+        return executeToolCall({
+          method: "tools/call",
+          params: args,
+        });
+      },
+      listTools,
+    },
+    callStreamableTool,
+  };
 }
 
 // ============================================================================

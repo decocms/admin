@@ -1,5 +1,5 @@
-import { DECO_CMS_WEB_URL } from "@deco/sdk";
-import { workspaceDB } from "@deco/sdk/mcp";
+import { DECO_CMS_WEB_URL, Locator } from "@deco/sdk";
+import { fromWorkspaceString, workspaceDB } from "@deco/sdk/mcp";
 import type { Context, Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { createMcpServerProxy, honoCtxToAppCtx } from "./api.ts";
@@ -13,10 +13,53 @@ import {
 } from "./oauth/utils.ts";
 import type { AppEnv } from "./utils/context.ts";
 
+export interface OAuthParams {
+  appName?: string;
+  org: string;
+  project: string;
+  integrationId: string;
+}
+
 export interface WithOAuthOptions {
   hono: Hono<AppEnv>;
   mcpEndpoint: string;
+  getOAuthParams?: (c: Context<AppEnv>) => OAuthParams | Promise<OAuthParams>;
+  /**
+   * Builds the MCP resource URL (e.g., "http://localhost:3001/apps/mcp" or "http://localhost:3001/org/project/integrationId/mcp")
+   * This URL should NOT include query parameters - it's used for building .well-known paths
+   */
+  buildMcpUrl?: (baseUrl: string, params: OAuthParams) => string;
+  /**
+   * Builds the issuer/authorization server base URL (e.g., "http://localhost:3001/apps" or "http://localhost:3001/org/project/integrationId")
+   * This is the base URL without the "/mcp" suffix
+   */
+  buildIssuerUrl?: (baseUrl: string, params: OAuthParams) => string;
 }
+
+/**
+ * Default implementation: extract OAuth params from URL params
+ */
+const defaultGetOAuthParams = (c: Context<AppEnv>): OAuthParams => ({
+  org: c.req.param("org") ?? "",
+  project: c.req.param("project") ?? "",
+  integrationId: c.req.param("integrationId") ?? "",
+});
+
+/**
+ * Default implementation: build standard MCP URL pattern (no query params)
+ */
+const defaultBuildMcpUrl = (
+  baseUrl: string,
+  { org, project, integrationId }: OAuthParams,
+): string => `${baseUrl}/${org}/${project}/${integrationId}/mcp`;
+
+/**
+ * Default implementation: build issuer URL (auth server base URL without /mcp)
+ */
+const defaultBuildIssuerUrl = (
+  baseUrl: string,
+  { org, project, integrationId }: OAuthParams,
+): string => `${baseUrl}/${org}/${project}/${integrationId}`;
 
 const withoutLeadingSlash = (path: string) => {
   return path.startsWith("/") ? path.slice(1) : path;
@@ -28,6 +71,18 @@ const withoutTrailingSlash = (path: string) => {
 
 const sanitize = (path: string) => {
   return withoutLeadingSlash(withoutTrailingSlash(path));
+};
+
+const isListToolsRequest = async (c: Context<AppEnv>) => {
+  try {
+    const clonedReq = c.req.raw.clone();
+    const body = (await clonedReq.json()) as { method?: string };
+    // Allow tools/list to pass without auth
+    return body?.method === "tools/list";
+  } catch {
+    // If body parsing fails, require auth
+    return false;
+  }
 };
 
 interface OAuthClient {
@@ -48,11 +103,23 @@ interface OAuthClient {
   updated_at: number;
 }
 
+const DEFAULT_DB_ORG = "deco-team";
+const DEFAULT_DB_PROJECT = "default";
 /**
  * Helper to get workspace database with proper exec function
  */
 async function getWorkspaceDB(c: Context<AppEnv>) {
   const ctx = honoCtxToAppCtx(c);
+  ctx.locator ??= {
+    branch: "main",
+    org: DEFAULT_DB_ORG,
+    project: DEFAULT_DB_PROJECT,
+    value: Locator.from({ org: DEFAULT_DB_ORG, project: DEFAULT_DB_PROJECT }),
+  };
+  ctx.workspace ??= fromWorkspaceString(
+    ctx.locator.value.toString(),
+    ctx.locator.branch,
+  );
   return await workspaceDB(ctx);
 }
 
@@ -141,6 +208,9 @@ function buildProtectedResourceMetadata(
 export const withOAuth = ({
   hono,
   mcpEndpoint: mcpEndpointParam,
+  getOAuthParams = defaultGetOAuthParams,
+  buildMcpUrl = defaultBuildMcpUrl,
+  buildIssuerUrl = defaultBuildIssuerUrl,
 }: WithOAuthOptions) => {
   const mcpEndpoint = `/${sanitize(mcpEndpointParam)}`;
   const withoutMcpEnding = mcpEndpoint.replace("/mcp", "");
@@ -168,18 +238,136 @@ export const withOAuth = ({
     }
   };
 
+  /**
+   * Build dynamic authorization server metadata using the URL builders
+   */
+  const buildDynamicAuthServerMetadata = (
+    baseUrl: string,
+    params: OAuthParams,
+  ) => {
+    const issuerUrl = new URL(buildIssuerUrl(baseUrl, params));
+    const mcpUrl = new URL(buildMcpUrl(baseUrl, params));
+    return {
+      issuer: issuerUrl.href,
+      authorization_endpoint: new URL(`${mcpUrl.pathname}/authorize`, mcpUrl)
+        .href,
+      token_endpoint: `${baseUrl}/apps/code-exchange`,
+      jwks_uri: `${baseUrl}/.well-known/jwks.json`,
+      registration_endpoint: new URL(`${mcpUrl.pathname}/register`, mcpUrl)
+        .href,
+      ...COMMON_METADATA,
+    };
+  };
+
+  /**
+   * Build dynamic protected resource metadata using the URL builders
+   */
+  const buildDynamicProtectedResourceMetadata = (
+    baseUrl: string,
+    params: OAuthParams,
+  ) => {
+    const issuerUrl = new URL(buildIssuerUrl(baseUrl, params));
+    const mcpUrl = new URL(buildMcpUrl(baseUrl, params));
+    return {
+      resource: mcpUrl.href,
+      authorization_servers: [issuerUrl.href],
+      jwks_uri: `${baseUrl}/.well-known/jwks.json`,
+      scopes_supported: ["*"],
+      bearer_methods_supported: ["header"],
+      resource_signing_alg_values_supported: ["RS256", "none"],
+    };
+  };
+
+  /**
+   * Build dynamic OIDC metadata using the URL builders
+   */
+  const buildDynamicOIDCMetadata = (baseUrl: string, params: OAuthParams) => {
+    return {
+      ...buildDynamicAuthServerMetadata(baseUrl, params),
+      scopes_supported: ["openid", "profile", "email"],
+      claims_supported: OIDC_CLAIMS,
+    };
+  };
+
+  // ============================================================
+  // IMPORTANT: All .well-known routes MUST be registered BEFORE
+  // the main MCP endpoint, because /:org/:project/:integrationId/mcp
+  // can match paths like /.well-known/oauth-protected-resource/apps/mcp
+  // ============================================================
+
+  // Path-insertion pattern routes for dynamic endpoint
+  // These handle URLs like /.well-known/oauth-protected-resource/apps/mcp
+  // MUST be registered BEFORE the main MCP endpoint!
+  hono.get(`/.well-known/oauth-protected-resource${mcpEndpoint}`, async (c) => {
+    const url = new URL(c.req.url);
+    const params = await getOAuthParams(c);
+    return Response.json(
+      buildDynamicProtectedResourceMetadata(url.origin, params),
+    );
+  });
+
+  hono.get(
+    `/.well-known/oauth-authorization-server${withoutMcpEnding}`,
+    async (c) => {
+      const url = new URL(c.req.url);
+      const params = await getOAuthParams(c);
+      return Response.json(buildDynamicAuthServerMetadata(url.origin, params));
+    },
+  );
+
+  hono.get(
+    `/.well-known/openid-configuration${withoutMcpEnding}`,
+    async (c) => {
+      const url = new URL(c.req.url);
+      const params = await getOAuthParams(c);
+      return Response.json(buildDynamicOIDCMetadata(url.origin, params));
+    },
+  );
+
+  // Dynamic protected resource metadata for this endpoint
+  hono.get(`${mcpEndpoint}/.well-known/oauth-protected-resource`, async (c) => {
+    const url = new URL(c.req.url);
+    const params = await getOAuthParams(c);
+    return Response.json(
+      buildDynamicProtectedResourceMetadata(url.origin, params),
+    );
+  });
+
+  // Dynamic authorization server metadata for this endpoint
+  hono.get(
+    `${withoutMcpEnding}/.well-known/oauth-authorization-server`,
+    async (c) => {
+      const url = new URL(c.req.url);
+      const params = await getOAuthParams(c);
+      return Response.json(buildDynamicAuthServerMetadata(url.origin, params));
+    },
+  );
+
+  // Dynamic OIDC discovery for this endpoint
+  hono.get(
+    `${withoutMcpEnding}/.well-known/openid-configuration`,
+    async (c) => {
+      const url = new URL(c.req.url);
+      const params = await getOAuthParams(c);
+      return Response.json(buildDynamicOIDCMetadata(url.origin, params));
+    },
+  );
+
   // Protected MCP endpoint - JWT token validation happens in existing middleware
+  // NOTE: This is registered AFTER .well-known routes to prevent /:org/:project/:integrationId/mcp
+  // from matching paths like /.well-known/oauth-protected-resource/apps/mcp
   hono.all(mcpEndpoint, async (c) => {
     const url = new URL(c.req.url);
-    const org = c.req.param("org");
-    const project = c.req.param("project");
-    const integrationId = c.req.param("integrationId");
-
     const ctx = honoCtxToAppCtx(c);
 
-    if (!ctx.user) {
-      // Return 401 with resource_metadata pointing to workspace-specific endpoint
-      const resourceMetadataUrl = `${url.origin}/${org}/${project}/${integrationId}/mcp/.well-known/oauth-protected-resource`;
+    if (!ctx.user && !(await isListToolsRequest(c))) {
+      // Get OAuth params using the provided function
+      const params = await getOAuthParams(c);
+      // Build resource metadata URL using the MCP URL builder (no query params)
+      const mcpUrl = buildMcpUrl(url.origin, params);
+      const mcpUrlParsed = new URL(mcpUrl);
+      mcpUrlParsed.pathname = `${mcpUrlParsed.pathname}/.well-known/oauth-protected-resource`;
+      const resourceMetadataUrl = mcpUrlParsed.href;
       const wwwAuthenticateValue = `Bearer resource_metadata="${resourceMetadataUrl}", scope="*"`;
       return Response.json(
         {
@@ -436,9 +624,13 @@ export const withOAuth = ({
     const ctx = honoCtxToAppCtx(c);
     const db = await getWorkspaceDB(c);
 
-    const org = c.req.param("org");
-    const project = c.req.param("project");
-    const integrationId = c.req.param("integrationId");
+    // Get OAuth params using the provided function
+    const {
+      org,
+      project,
+      integrationId,
+      appName: _name,
+    } = await getOAuthParams(c);
 
     const clientId = c.req.query("client_id");
     const redirectUri = c.req.query("redirect_uri");
@@ -496,13 +688,15 @@ export const withOAuth = ({
     }
 
     // Fetch integration to get app_name
-    let appName: string | undefined;
-    try {
-      const proxy = await createMcpServerProxy(c, integrationId);
-      const integration = await proxy.fetchIntegration();
-      appName = integration?.appName ?? undefined;
-    } catch {
-      appName = client.client_name || undefined;
+    let appName: string | undefined = _name;
+    if (!appName) {
+      try {
+        const proxy = await createMcpServerProxy(c, integrationId);
+        const integration = await proxy.fetchIntegration();
+        appName = integration?.appName ?? undefined;
+      } catch {
+        appName = client.client_name || undefined;
+      }
     }
 
     // Redirect to apps-auth consent page (which will handle login if needed)

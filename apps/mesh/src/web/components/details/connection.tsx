@@ -1,15 +1,18 @@
 import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { ConnectionEntitySchema } from "@/tools/connection/schema";
-import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
-import { CollectionsList } from "@/web/components/collections/collections-list.tsx";
-import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
+import { AddToCursorButton } from "@/web/components/add-to-cursor-button.tsx";
 import { CollectionDisplayButton } from "@/web/components/collections/collection-display-button.tsx";
+import { CollectionSearch } from "@/web/components/collections/collection-search.tsx";
+import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper.tsx";
+import {
+  CollectionsList,
+  generateSortOptionsFromSchema,
+} from "@/web/components/collections/collections-list.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
-import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
-import { jsonSchemaToZod } from "@/web/utils/schema-converter";
-import { TOOL_CONNECTION_CONFIGURE } from "@/web/utils/constants";
+import { BaseCollectionJsonSchema, TOOL_CONNECTION_CONFIGURE } from "@/web/utils/constants";
+import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import {
   CONNECTIONS_COLLECTION,
   useConnection,
@@ -20,6 +23,16 @@ import {
 } from "@/web/hooks/use-binding";
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
@@ -541,7 +554,7 @@ function ConnectionSettingsFormUI({
 }) {
   return (
     <Form {...form}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col">
         {/* Header section - Icon, Title, Description */}
         <div className="flex flex-col gap-4 p-5 border-b border-border">
           <IntegrationIcon
@@ -675,7 +688,46 @@ function ConnectionSettingsFormUI({
           </span>
         </div>
       </div>
+      <CursorIDEIntegration connection={connection} />
     </Form>
+  );
+}
+
+function CursorIDEIntegration({
+  connection,
+}: {
+  connection: ConnectionEntity;
+}) {
+  // Generate MCP config for Cursor - uses Mesh proxy URL
+  const mcpConfig = useMemo(() => {
+    // Get the base URL (current window origin)
+    const baseUrl = window.location.origin;
+
+    // Build the Mesh proxy URL: {baseUrl}/mcp/{connectionId}
+    const proxyUrl = `${baseUrl}/mcp/${connection.id}`;
+
+    return {
+      url: proxyUrl,
+    };
+  }, [connection.id]);
+
+  return (
+    <div className="space-y-4 p-5">
+      <div>
+        <h4 className="text-sm font-medium text-foreground mb-1">
+          Install in Cursor IDE
+        </h4>
+        <p className="text-sm text-muted-foreground">
+          Add this MCP server to Cursor via the Mesh HTTP proxy. Authentication
+          and permissions are handled automatically through Mesh.
+        </p>
+      </div>
+      <AddToCursorButton
+        serverName={connection.title || `mcp-${connection.id.slice(0, 8)}`}
+        config={mcpConfig}
+        variant="default"
+      />
+    </div>
   );
 }
 
@@ -881,7 +933,7 @@ function CollectionContent({
   connectionId,
   collectionName,
   org,
-  schema: jsonSchema,
+  schema = BaseCollectionJsonSchema,
   hasCreateTool,
   hasUpdateTool,
   hasDeleteTool,
@@ -922,91 +974,57 @@ function CollectionContent({
       sortDirection,
     }) ?? [];
 
-  const schema = useMemo(
-    () =>
-      jsonSchema
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (jsonSchemaToZod(jsonSchema as any) as z.AnyZodObject)
-        : undefined,
-    [jsonSchema],
-  );
-
   // Collection is read-only if ALL mutation tools are missing
   const isReadOnly = !hasCreateTool && !hasUpdateTool && !hasDeleteTool;
 
-  const handleAction = async (
-    action: "open" | "delete" | "duplicate" | "edit",
-    item: BaseCollectionEntity,
-  ) => {
-    switch (action) {
-      case "open":
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName,
-            itemId: item.id,
-          },
-        });
-        break;
-      case "delete":
-        if (!hasDeleteTool) {
-          toast.error("Delete operation is not available for this collection");
-          return;
-        }
-        if (confirm("Are you sure you want to delete this item?")) {
-          await collection.delete(item.id);
-          toast.success("Item deleted");
-        }
-        break;
-      case "duplicate": {
-        if (!hasCreateTool) {
-          toast.error("Create operation is not available for this collection");
-          return;
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const itemAny = item as any;
-        const {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          id: _id,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          created_at: _created_at,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          updated_at: _updated_at,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          created_by: _created_by,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          updated_by: _updated_by,
-          ...rest
-        } = itemAny;
-
-        await collection.insert({
-          ...rest,
-          title: `${rest.title} (Copy)`,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
-        toast.success("Item duplicated");
-        break;
-      }
-      case "edit":
-        if (!hasUpdateTool) {
-          toast.error("Update operation is not available for this collection");
-          return;
-        }
-        navigate({
-          to: "/$org/mcps/$connectionId/$collectionName/$itemId",
-          params: {
-            org,
-            connectionId,
-            collectionName,
-            itemId: item.id,
-          },
-        });
-        break;
-    }
+  // Create action handlers
+  const handleEdit = (item: BaseCollectionEntity) => {
+    navigate({
+      to: "/$org/mcps/$connectionId/$collectionName/$itemId",
+      params: {
+        org,
+        connectionId,
+        collectionName,
+        itemId: item.id,
+      },
+    });
   };
 
-  const [isCreating, setIsCreating] = useState(false);
+  const handleDuplicate = (item: BaseCollectionEntity) => {
+    const now = new Date().toISOString();
+    collection.insert({
+      ...item,
+      id: crypto.randomUUID(),
+      title: `${item.title} (Copy)`,
+      created_at: now,
+      updated_at: now,
+      created_by: userId,
+      updated_by: userId,
+    });
+    toast.success("Item duplicated");
+  };
+
+  const [itemToDelete, setItemToDelete] = useState<BaseCollectionEntity | null>(
+    null,
+  );
+
+  const handleDelete = (item: BaseCollectionEntity) => {
+    setItemToDelete(item);
+  };
+
+  // Build actions object with only available actions
+  const actions: Record<string, (item: BaseCollectionEntity) => void> = {
+    ...(hasUpdateTool && { edit: handleEdit }),
+    ...(hasCreateTool && { duplicate: handleDuplicate }),
+    ...(hasDeleteTool && { delete: handleDelete }),
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    collection.delete(itemToDelete.id);
+    toast.success("Item deleted");
+    setItemToDelete(null);
+  };
 
   const handleCreate = async () => {
     if (!hasCreateTool) {
@@ -1014,18 +1032,19 @@ function CollectionContent({
       return;
     }
 
-    setIsCreating(true);
+    const now = new Date().toISOString();
+    const newItem: BaseCollectionEntity = {
+      id: crypto.randomUUID(),
+      title: "New Item",
+      created_at: now,
+      updated_at: now,
+      created_by: userId,
+      updated_by: userId,
+    };
+
     try {
-      const now = new Date().toISOString();
-      const newItem: BaseCollectionEntity = {
-        id: crypto.randomUUID(),
-        title: "New Item",
-        created_at: now,
-        updated_at: now,
-        created_by: userId,
-        updated_by: userId,
-      };
-      collection.insert(newItem);
+      const tx = collection.insert(newItem);
+      await tx.isPersisted.promise;
 
       toast.success("Item created successfully");
       // Navigate to the new item's detail page
@@ -1040,48 +1059,23 @@ function CollectionContent({
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to create item:", error);
       toast.error(`Failed to create item: ${message}`);
-    } finally {
-      setIsCreating(false);
+      // Do not navigate on error - optimistic update will be rolled back automatically
     }
   };
 
   // Generate sort options from schema
-  const sortOptions = schema
-    ? Object.keys(schema.shape)
-        .filter(
-          (key) =>
-            ![
-              "id",
-              "created_at",
-              "updated_at",
-              "created_by",
-              "updated_by",
-            ].includes(key),
-        )
-        .map((key) => ({
-          id: key,
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
-        }))
-    : [];
+  const sortOptions = generateSortOptionsFromSchema(schema);
 
   const hasItems = (items?.length ?? 0) > 0;
   const showCreateInToolbar = hasCreateTool && hasItems;
   const showCreateInEmptyState = hasCreateTool && !hasItems && !search;
 
   const createButton = hasCreateTool ? (
-    <Button onClick={handleCreate} disabled={isCreating} size="sm">
-      {isCreating ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Creating...
-        </>
-      ) : (
-        <>
-          <Plus className="mr-2 h-4 w-4" />
-          Create
-        </>
-      )}
+    <Button onClick={handleCreate} size="sm">
+      <Plus className="mr-2 h-4 w-4" />
+      Create
     </Button>
   ) : null;
 
@@ -1126,9 +1120,8 @@ function CollectionContent({
             sortKey={sortKey as string}
             sortDirection={sortDirection}
             onSort={handleSort}
-            onAction={handleAction}
-            onItemClick={(item) => handleAction("open", item)}
-            isLoading={items === undefined}
+            actions={actions}
+            onItemClick={(item) => handleEdit(item)}
             readOnly={isReadOnly}
             emptyState={
               <EmptyState
@@ -1145,6 +1138,35 @@ function CollectionContent({
           />
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setItemToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.title}"? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

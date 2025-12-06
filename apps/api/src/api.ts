@@ -753,7 +753,7 @@ interface RegistryAppWithRelations {
 
 const replaceDecoPageToDecoCMS = (urlStr: string, appName: string) => {
   const url = new URL(urlStr);
-  if (url.hostname.endsWith(Hosts.APPS)) {
+  if (url.hostname.endsWith(Hosts.APPS) || url.hostname.endsWith(Hosts.SITES)) {
     // Use path-based /apps/:scope/:appName/mcp for MCP OAuth compliance
     const { scopeName, name } = AppName.parse(appName);
     return `${DECO_CMS_API_URL}/apps/${scopeName}/${name}/mcp`;

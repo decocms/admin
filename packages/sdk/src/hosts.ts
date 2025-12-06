@@ -2,6 +2,7 @@ export const Hosts = {
   API: "api.decocms.com",
   WEB_APP: "admin.decocms.com",
   APPS: "deco.page",
+  SITES: "deco.site",
   LOCALHOST: "localhost:3000",
   API_LEGACY: "api.deco.chat",
   WEB_APP_LEGACY: "deco.chat",

@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import { createToolCaller } from "@/tools/client";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import type { ConnectionEntity } from "@/tools/connection/schema";
-import { CONNECTIONS_COLLECTION, useConnections } from "@/web/hooks/collections/use-connection";
+import {
+  CONNECTIONS_COLLECTION,
+  useConnections,
+} from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
@@ -69,10 +72,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
     return listTool?.name || "";
   }, [registryConnection?.tools]);
 
-  const toolCaller = useMemo(
-    () => createToolCaller(registryId),
-    [registryId],
-  );
+  const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
 
   // Fetch registry items
   const { data: listResults, isLoading } = useToolCall({
@@ -116,7 +116,10 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
       }
 
       // Find the registry item matching the binding type
-      const registryItem = findRegistryItemByBinding(registryItems, bindingType);
+      const registryItem = findRegistryItemByBinding(
+        registryItems,
+        bindingType,
+      );
 
       if (!registryItem) {
         toast.error(`MCP not found in registry: ${bindingType}`);
@@ -131,7 +134,9 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
       );
 
       if (!connectionData.connection_url) {
-        toast.error("This MCP cannot be installed: no connection URL available");
+        toast.error(
+          "This MCP cannot be installed: no connection URL available",
+        );
         return undefined;
       }
 

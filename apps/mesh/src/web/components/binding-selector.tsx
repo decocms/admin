@@ -190,7 +190,9 @@ export function BindingSelector({
               ) : (
                 <>
                   <Icon name="add" size={16} />
-                  <span>{canInstallInline ? "Install MCP" : "Create connection"}</span>
+                  <span>
+                    {canInstallInline ? "Install MCP" : "Create connection"}
+                  </span>
                 </>
               )}
             </button>

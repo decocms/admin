@@ -86,10 +86,11 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   // Extract the field name from the first child element's content key/id
   // Each element in properties has a content with a key that contains the field path
   const firstChildKey = props.properties[0]?.content?.key as string | undefined;
-  
+
   // Use title if available (it's the actual field name like "DATABASE")
   // Fall back to extracting from child key only if title is not available
-  const fieldPath = title || (firstChildKey ? extractFieldName(firstChildKey) : "");
+  const fieldPath =
+    title || (firstChildKey ? extractFieldName(firstChildKey) : "");
 
   // Check if this is a binding field (has __type or __binding in properties)
   if (isBindingField(schema as Record<string, unknown>)) {

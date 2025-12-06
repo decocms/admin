@@ -13,7 +13,6 @@ import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import { MCP_REGISTRY_DECOCMS_KEY } from "@/web/utils/constants";
 import { extractConnectionData } from "@/web/utils/extract-connection-data";
 import { slugify } from "@/web/utils/slugify";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -22,7 +21,6 @@ import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
 function getPublisherInfo(

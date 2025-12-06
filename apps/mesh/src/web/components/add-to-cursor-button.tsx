@@ -1,7 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";

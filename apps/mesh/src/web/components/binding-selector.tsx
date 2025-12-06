@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Loader2 } from "lucide-react";
 import {
@@ -127,6 +128,9 @@ export function BindingSelector({
           // Automatically select the newly installed connection
           onValueChange(result.id);
         }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        toast.error(`Failed to install connection: ${message}`);
       } finally {
         setIsLocalInstalling(false);
       }

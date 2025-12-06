@@ -506,12 +506,12 @@ function SettingsTab({
       {hasAnyChanges && (
         <ViewActions>
           <Button
-            onClick={() => {
+            onClick={ async () => {
               if (hasConnectionChanges) {
-                handleSaveConnection();
+                await handleSaveConnection();
               }
               if (mcpHasChanges) {
-                handleSaveMcpConfig();
+                await handleSaveMcpConfig();
               }
             }}
             disabled={isSaving}
@@ -576,7 +576,7 @@ function ConnectionSettingsFormUI({
                     <FormControl>
                       <Input
                         {...field}
-                        className="h-auto! text-xl! font-medium! leading-7! px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
+                        className="h-auto text-xl font-medium leading-7 px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
                         placeholder="Connection Name"
                       />
                     </FormControl>
@@ -594,7 +594,7 @@ function ConnectionSettingsFormUI({
                     <Input
                       {...field}
                       value={field.value || ""}
-                      className="h-auto! text-base! text-muted-foreground! leading-6! px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
+                      className="h-auto text-base text-muted-foreground leading-6 px-0 border-transparent hover:border-input focus:border-input bg-transparent transition-all"
                       placeholder="Add a description..."
                     />
                   </FormControl>
@@ -667,7 +667,7 @@ function ConnectionSettingsFormUI({
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder={connection.connection_token ? "••••••••" : ""}
+                    placeholder={connection.connection_token ? "••••••••" : "Enter access token..."}
                     {...field}
                     value={field.value || ""}
                     className="h-10 rounded-lg"

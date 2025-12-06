@@ -1463,20 +1463,11 @@ withOAuth({
   getOAuthParams: (c) => {
     const ctx = honoCtxToAppCtx(c);
 
-    let appName = c.req.query("appName");
+    let appName = c.req.query("appName") ?? "";
     const resource = c.req.query("resource");
     if (!appName && resource && URL.canParse(resource)) {
       const resourceUrl = new URL(resource);
       appName = resourceUrl.searchParams.get("appName") ?? "";
-    }
-    if (!appName) {
-      const lastSegment = c.req.url.split("/").pop();
-      try {
-        const decoded = atob(lastSegment ?? "");
-        appName = decodeURIComponent(decoded);
-      } catch {
-        appName = "";
-      }
     }
     const integrationId = integrationIdFromUser(ctx) ?? appName;
     return {
@@ -1488,7 +1479,7 @@ withOAuth({
   },
   // MCP URL should be clean path without query params - used for .well-known paths
   buildMcpUrl: (baseUrl, { appName }) =>
-    `${baseUrl}/apps/mcp${appName ? `/${btoa(encodeURIComponent(appName))}` : ""}`,
+    `${baseUrl}/apps/mcp${appName ? `?appName=${appName}` : ""}`,
   // Issuer URL is the auth server base (without /mcp suffix)
   buildIssuerUrl: (baseUrl, { appName }) =>
     `${baseUrl}/apps${appName ? `?appName=${appName}` : ""}`,

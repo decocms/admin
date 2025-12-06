@@ -12,6 +12,8 @@ import {
   WorkflowDefinitionSchema,
 } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
+import { AppName } from "@deco/sdk/common";
+import { Hosts } from "@deco/sdk/hosts";
 import {
   AGENT_TOOLS,
   assertWorkspaceResourceAccess,
@@ -99,8 +101,6 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import { Hosts } from "@deco/sdk/hosts";
-import { AppName } from "@deco/sdk/common";
 
 const app = new Hono<AppEnv>();
 

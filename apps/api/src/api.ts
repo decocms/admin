@@ -586,6 +586,22 @@ const integrationIdFromUser = (ctx: AppContext) => {
   return undefined;
 };
 
+/**
+ * Extract appName from request - supports both path params (:scope/:appName) and query string
+ * Path params take precedence for MCP OAuth compliance
+ */
+const getAppNameFromRequest = (c: Context): string | undefined => {
+  // Try named path params first (e.g., /apps/mcp/:scope/:appName)
+  const scope = c.req.param("scope");
+  const name = c.req.param("appName");
+  if (scope && name) {
+    return AppName.build(scope, name);
+  }
+
+  // Fallback to query string for backward compatibility
+  return c.req.query("appName") ?? undefined;
+};
+
 const createMcpServerProxyForAppName = (c: Context) => {
   const ctx = honoCtxToAppCtx(c);
   const integrationId = integrationIdFromUser(ctx);
@@ -593,7 +609,7 @@ const createMcpServerProxyForAppName = (c: Context) => {
     return createMcpServerProxy(c, integrationId);
   }
 
-  const appName = c.req.query("appName");
+  const appName = getAppNameFromRequest(c);
   const fetchIntegration = async () => {
     using _ = ctx.resourceAccess.grant();
     const integration = await State.run(ctx, () =>
@@ -738,7 +754,9 @@ interface RegistryAppWithRelations {
 const replaceDecoPageToDecoCMS = (urlStr: string, appName: string) => {
   const url = new URL(urlStr);
   if (url.hostname.endsWith(Hosts.APPS)) {
-    return `${DECO_CMS_API_URL}/apps/mcp?appName=${appName}`;
+    // Use path-based /apps/:scope/:appName/mcp for MCP OAuth compliance
+    const { scopeName, name } = AppName.parse(appName);
+    return `${DECO_CMS_API_URL}/apps/${scopeName}/${name}/mcp`;
   }
   return urlStr;
 };
@@ -1455,20 +1473,17 @@ Object.entries(WellKnownMcpGroups).forEach(([_key, groupPath]) => {
 // Decopilot streaming endpoint
 app.post("/:org/:project/agents/decopilot/stream", handleDecopilotStream);
 
-// IMPORTANT: Register /apps/mcp OAuth routes BEFORE /:org/:project/:integrationId/mcp
-// because the wildcard route can match paths like /.well-known/oauth-protected-resource/apps/mcp
+// Path-based appName OAuth routes using /apps/:scope/:appName/mcp pattern (MCP OAuth compliant)
+// Follows same pattern as /:org/:project/:integrationId/mcp
+// IMPORTANT: Register BEFORE /:org/:project/:integrationId/mcp to avoid route conflicts
 withOAuth({
   hono: app,
-  mcpEndpoint: "/apps/mcp",
+  mcpEndpoint: "/apps/:scope/:appName/mcp",
   getOAuthParams: (c) => {
     const ctx = honoCtxToAppCtx(c);
-
-    let appName = c.req.query("appName") ?? "";
-    const resource = c.req.query("resource");
-    if (!appName && resource && URL.canParse(resource)) {
-      const resourceUrl = new URL(resource);
-      appName = resourceUrl.searchParams.get("appName") ?? "";
-    }
+    const scope = c.req.param("scope") ?? "";
+    const name = c.req.param("appName") ?? "";
+    const appName = scope && name ? AppName.build(scope, name) : "";
     const integrationId = integrationIdFromUser(ctx) ?? appName;
     return {
       org: ctx.locator?.org ?? "",
@@ -1477,17 +1492,27 @@ withOAuth({
       appName,
     };
   },
-  // MCP URL should be clean path without query params - used for .well-known paths
-  buildMcpUrl: (baseUrl, { appName }) =>
-    `${baseUrl}/apps/mcp${appName ? `?appName=${appName}` : ""}`,
-  // Issuer URL is the auth server base (without /mcp suffix)
-  buildIssuerUrl: (baseUrl, { appName }) =>
-    `${baseUrl}/apps${appName ? `?appName=${appName}` : ""}`,
+  buildMcpUrl: (baseUrl, { appName }) => {
+    if (!appName) return `${baseUrl}/apps/mcp`;
+    const { scopeName, name } = AppName.parse(appName);
+    return `${baseUrl}/apps/${scopeName}/${name}/mcp`;
+  },
+  buildIssuerUrl: (baseUrl, { appName }) => {
+    if (!appName) return `${baseUrl}/apps`;
+    const { scopeName, name } = AppName.parse(appName);
+    return `${baseUrl}/apps/${scopeName}/${name}`;
+  },
 });
 
 withOAuth({
   hono: app,
   mcpEndpoint: "/:org/:project/:integrationId/mcp",
+});
+
+// Legacy backward-compatible route for query string appName (no OAuth flow)
+app.all("/apps/mcp", async (c) => {
+  const proxy = await createMcpServerProxyForAppName(c);
+  return proxy.fetch(c.req.raw);
 });
 
 app.post("/:org/:project/:integrationId/mcp/tool/:toolName", async (c) => {
@@ -1526,13 +1551,13 @@ app.post(
   },
 );
 
-app.post("/apps/mcp/tool/:toolName", async (c) => {
+// Path-based appName routes using /apps/:scope/:appName/mcp pattern (MCP OAuth compliant)
+app.post("/apps/:scope/:appName/mcp/tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
-
   return mcpServerProxy.fetch(c.req.raw);
 });
-// this endpoint differs from the others in that it allows for a tool to be called directly
-app.post("/apps/mcp/call-tool/:toolName", async (c) => {
+
+app.post("/apps/:scope/:appName/mcp/call-tool/:toolName", async (c) => {
   const mcpServerProxy = await createMcpServerProxyForAppName(c);
   const toolArgs = await c.req.json();
   const toolName = c.req.param("toolName");

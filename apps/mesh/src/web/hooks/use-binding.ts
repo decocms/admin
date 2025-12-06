@@ -8,6 +8,7 @@ import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { MCP_BINDING } from "@decocms/bindings/mcp";
 import type { ConnectionEntity } from "@/tools/connection/schema";
+import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
 /**
  * Map of well-known binding names to their definitions
@@ -15,6 +16,7 @@ import type { ConnectionEntity } from "@/tools/connection/schema";
 const BUILTIN_BINDINGS: Record<string, Binder> = {
   LLMS: LANGUAGE_MODEL_BINDING,
   AGENTS: AGENTS_BINDING,
+  WORKFLOWS: WORKFLOW_BINDING,
   MCP: MCP_BINDING,
 };
 
@@ -107,7 +109,6 @@ function extractCollectionNames(
   tools: Array<{ name: string }> | null | undefined,
 ): string[] {
   if (!tools || tools.length === 0) return [];
-  console.log("tools", tools);
 
   const collectionRegex = /^COLLECTION_(.+)_LIST$/;
   const names: string[] = [];
@@ -219,8 +220,6 @@ function detectCollections(
   }
 
   const potentialCollections = extractCollectionNames(tools);
-
-  console.log("potentialCollections", potentialCollections);
 
   if (potentialCollections.length === 0) {
     return [];

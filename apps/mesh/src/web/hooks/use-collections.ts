@@ -76,7 +76,12 @@ export interface CreateCollectionOptions {
 function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions,
 ): Collection<T, string> {
-  const { toolCaller, collectionName, pageSize = 100, skipInitialSync = false } = options;
+  const {
+    toolCaller,
+    collectionName,
+    pageSize = 100,
+    skipInitialSync = false,
+  } = options;
 
   const upperName = collectionName.toUpperCase();
   const listToolName = `COLLECTION_${upperName}_LIST`;
@@ -394,7 +399,10 @@ function createFilteredCollection<T extends CollectionEntity>(
             }
             commit();
           } catch (error) {
-            console.error(`Initial sync failed for filtered ${collectionName}:`, error);
+            console.error(
+              `Initial sync failed for filtered ${collectionName}:`,
+              error,
+            );
           } finally {
             markReady();
           }
@@ -467,7 +475,6 @@ export function useCollectionList<T extends CollectionEntity>(
   const { data } = useLiveSuspenseQuery(
     (q) => {
       // Start with base query and sorting
-      console.log({ collection });
       let query = q
         .from({ item: collection })
         .orderBy(
@@ -480,8 +487,6 @@ export function useCollectionList<T extends CollectionEntity>(
       const hasFilters = filters && filters.length > 0;
 
       if (hasSearch || hasFilters) {
-        console.log("hasSearch || hasFilters", hasSearch, hasFilters);
-        console.log("filters", filters);
         query = query.where(({ item }) => {
           if (!item) {
             return false;
@@ -494,7 +499,7 @@ export function useCollectionList<T extends CollectionEntity>(
             const searchConditions = searchFields
               .filter((field) => item[field])
               .map((field) =>
-                like(item[field] as string, `%${trimmedSearchTerm}%`)
+                like(item[field] as string, `%${trimmedSearchTerm}%`),
               );
 
             if (searchConditions.length > 0) {
@@ -515,7 +520,6 @@ export function useCollectionList<T extends CollectionEntity>(
               conditions.push(eq(field as string, filter.value));
             }
           }
-          console.log("conditions", conditions);
 
           // Combine all conditions with AND using a ternary
           return conditions.length === 1
@@ -523,8 +527,6 @@ export function useCollectionList<T extends CollectionEntity>(
             : and(...(conditions as Parameters<typeof and>));
         });
       }
-
-      console.log("query", query);
 
       return query;
     },

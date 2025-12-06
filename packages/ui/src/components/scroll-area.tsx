@@ -8,8 +8,11 @@ import { cn } from "@deco/ui/lib/utils.ts";
 function ScrollArea({
   className,
   children,
+  hideScrollbar = false,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  hideScrollbar?: boolean;
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -22,7 +25,7 @@ function ScrollArea({
       >
         <div className="flex min-w-0 flex-col">{children}</div>
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      <ScrollBar className={cn(hideScrollbar && "hidden")} />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );

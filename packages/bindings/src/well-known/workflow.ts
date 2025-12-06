@@ -201,8 +201,6 @@ export const WorkflowExecutionSchema = BaseCollectionEntitySchema.extend({
 });
 export type WorkflowExecution = z.infer<typeof WorkflowExecutionSchema>;
 
-
-
 /**
  * Execution Step Result Schema
  *
@@ -222,9 +220,10 @@ export type WorkflowExecutionStepResult = z.infer<
   typeof WorkflowExecutionStepResultSchema
 >;
 
-export const WorkflowExecutionWithStepResultsSchema = WorkflowExecutionSchema.extend({
-  step_results: z.array(WorkflowExecutionStepResultSchema).optional(),
-});
+export const WorkflowExecutionWithStepResultsSchema =
+  WorkflowExecutionSchema.extend({
+    step_results: z.array(WorkflowExecutionStepResultSchema).optional(),
+  });
 
 export type WorkflowExecutionWithStepResults = z.infer<
   typeof WorkflowExecutionWithStepResultsSchema

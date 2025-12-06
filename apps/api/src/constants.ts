@@ -40,5 +40,3 @@ export const MCP_REGISTRY_ICON_MIME_TYPE = "image/png";
 
 /** MCP Registry default version */
 export const MCP_REGISTRY_DEFAULT_VERSION = "1.0.0";
-
-export const MCP_CONFIGURATION_TOOL_NAME = "MCP_CONFIGURATION";

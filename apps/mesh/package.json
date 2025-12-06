@@ -30,6 +30,7 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.207.0",
     "@opentelemetry/sdk-metrics": "^2.2.0",
     "@opentelemetry/sdk-node": "^0.207.0",
+    "zod-from-json-schema": "0.0.5",
     "@rjsf/core": "^6.1.2",
     "@rjsf/shadcn": "^6.1.2",
     "@rjsf/utils": "^6.1.2",

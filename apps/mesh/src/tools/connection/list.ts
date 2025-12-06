@@ -18,7 +18,7 @@ import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { type ConnectionEntity, ConnectionEntitySchema } from "./schema";
-import { jsonSchemaToZod } from "@/web/utils/schema-converter";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
   LLM: LANGUAGE_MODEL_BINDING,
@@ -67,10 +67,10 @@ function convertBindingToBinder(
   return bindings.map((binding) => ({
     name: binding.name,
     inputSchema: binding.inputSchema
-      ? jsonSchemaToZod(binding.inputSchema)
+      ? convertJsonSchemaToZod(binding.inputSchema)
       : z.object({}),
     outputSchema: binding.outputSchema
-      ? jsonSchemaToZod(binding.outputSchema)
+      ? convertJsonSchemaToZod(binding.outputSchema)
       : z.object({}),
   }));
 }

@@ -1,9 +1,7 @@
 import { createToolCaller } from "@/tools/client";
-import { OAuthConfig } from "@/tools/connection/schema";
 import { CollectionSearch } from "@/web/components/collections/collection-search";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper";
 import { EmptyState } from "@/web/components/empty-state";
-import type { MCPRegistryServer } from "@/web/components/store/registry-item-card";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import {
   CONNECTIONS_COLLECTION,
@@ -15,10 +13,8 @@ import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
-import {
-  MCP_REGISTRY_DECOCMS_KEY,
-  MCP_REGISTRY_PUBLISHER_KEY,
-} from "@/web/utils/constants";
+import { MCP_REGISTRY_DECOCMS_KEY } from "@/web/utils/constants";
+import { extractConnectionData } from "@/web/utils/extract-connection-data";
 import { slugify } from "@/web/utils/slugify";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -27,107 +23,6 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-/** Extract connection data from a registry item for installation */
-function extractConnectionData(
-  item: RegistryItem,
-  organizationId: string,
-  userId: string,
-) {
-  const server = item.server as MCPRegistryServer["server"] | undefined;
-
-  const meshMeta =
-    item._meta?.[MCP_REGISTRY_DECOCMS_KEY] ??
-    server?._meta?.[MCP_REGISTRY_DECOCMS_KEY];
-  const publisherMeta =
-    item._meta?.[MCP_REGISTRY_PUBLISHER_KEY] ??
-    server?._meta?.[MCP_REGISTRY_PUBLISHER_KEY];
-
-  const appMetadata = publisherMeta?.metadata as
-    | Record<string, unknown>
-    | null
-    | undefined;
-
-  const remote = server?.remotes?.[0];
-
-  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
-    http: "HTTP",
-    sse: "SSE",
-    websocket: "Websocket",
-  };
-
-  const connectionType = remote?.type
-    ? connectionTypeMap[remote.type] || "HTTP"
-    : "HTTP";
-
-  const now = new Date().toISOString();
-
-  const title =
-    publisherMeta?.friendlyName ||
-    item.title ||
-    server?.title ||
-    server?.name ||
-    "Unnamed App";
-
-  const description = server?.description || null;
-
-  const icon = server?.icons?.[0]?.src || null;
-
-  const rawOauthConfig = appMetadata?.oauth_config as
-    | Record<string, unknown>
-    | null
-    | undefined;
-  const oauthConfig: OAuthConfig | null =
-    rawOauthConfig &&
-    typeof rawOauthConfig.authorizationEndpoint === "string" &&
-    typeof rawOauthConfig.tokenEndpoint === "string" &&
-    typeof rawOauthConfig.clientId === "string" &&
-    Array.isArray(rawOauthConfig.scopes) &&
-    (rawOauthConfig.grantType === "authorization_code" ||
-      rawOauthConfig.grantType === "client_credentials")
-      ? (rawOauthConfig as unknown as OAuthConfig)
-      : null;
-
-  const configState = appMetadata?.configuration_state as
-    | Record<string, unknown>
-    | null
-    | undefined;
-  const configScopes = appMetadata?.configuration_scopes as
-    | string[]
-    | null
-    | undefined;
-
-  return {
-    id: crypto.randomUUID(),
-    title,
-    description,
-    icon,
-    app_name: meshMeta?.appName || server?.name || null,
-    app_id: meshMeta?.id || item.id || null,
-    connection_type: connectionType,
-    connection_url: remote?.url || "",
-    connection_token: null,
-    connection_headers: null,
-    oauth_config: oauthConfig,
-    configuration_state: configState ?? null,
-    configuration_scopes: configScopes ?? null,
-    metadata: {
-      ...appMetadata,
-      source: "store",
-      registry_item_id: item.id,
-      verified: meshMeta?.verified ?? false,
-      scopeName: meshMeta?.scopeName ?? null,
-      toolsCount: publisherMeta?.tools?.length ?? 0,
-      publishedAt: meshMeta?.publishedAt ?? null,
-    },
-    created_at: now,
-    updated_at: now,
-    created_by: userId,
-    organization_id: organizationId,
-    tools: null,
-    bindings: null,
-    status: "inactive" as const,
-  };
-}
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
 function getPublisherInfo(

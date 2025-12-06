@@ -462,6 +462,16 @@ function SettingsTab({
         scopes: mcpScopes,
         state: mcpFormState,
       });
+      
+      // Update local collection to keep cache in sync
+      const tx = CONNECTIONS_COLLECTION.update(connection.id, (draft) => {
+        draft.configuration_state = mcpFormState;
+        draft.configuration_scopes = mcpScopes;
+      });
+      await tx.isPersisted.promise;
+      
+      setMcpInitialState(mcpFormState);
+      
       toast.success("Configuration saved successfully");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

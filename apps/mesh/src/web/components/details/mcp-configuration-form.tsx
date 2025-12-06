@@ -86,9 +86,10 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   // Extract the field name from the first child element's content key/id
   // Each element in properties has a content with a key that contains the field path
   const firstChildKey = props.properties[0]?.content?.key as string | undefined;
-  const fieldPath = firstChildKey
-    ? extractFieldName(firstChildKey)
-    : title?.toLowerCase().replace(/\s+/g, "_") || "";
+  
+  // Use title if available (it's the actual field name like "DATABASE")
+  // Fall back to extracting from child key only if title is not available
+  const fieldPath = title || (firstChildKey ? extractFieldName(firstChildKey) : "");
 
   // Check if this is a binding field (has __type or __binding in properties)
   if (isBindingField(schema as Record<string, unknown>)) {
@@ -133,14 +134,18 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
           onValueChange={handleBindingChange}
           placeholder={`Select ${displayTitle.toLowerCase()}...`}
           binding={
-            (bindingSchema as
-              | string
-              | Array<{
-                  name: string;
-                  inputSchema?: Record<string, unknown>;
-                  outputSchema?: Record<string, unknown>;
-                }>) ?? bindingType
+            // Only use bindingSchema if it's an array of tools, not a string starting with @
+            bindingSchema && !String(bindingSchema).startsWith("@")
+              ? (bindingSchema as
+                  | string
+                  | Array<{
+                      name: string;
+                      inputSchema?: Record<string, unknown>;
+                      outputSchema?: Record<string, unknown>;
+                    }>)
+              : undefined
           }
+          bindingType={bindingType}
           onAddNew={() => formContext?.onAddNew()}
           className="w-[200px] shrink-0"
         />

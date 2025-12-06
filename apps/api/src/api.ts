@@ -99,6 +99,8 @@ import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
+import { Hosts } from "@deco/sdk/hosts";
+import { AppName } from "@deco/sdk/common";
 
 const app = new Hono<AppEnv>();
 
@@ -735,7 +737,7 @@ interface RegistryAppWithRelations {
 
 const replaceDecoPageToDecoCMS = (urlStr: string, appName: string) => {
   const url = new URL(urlStr);
-  if (url.hostname.endsWith("deco.page")) {
+  if (url.hostname.endsWith(Hosts.APPS)) {
     return `${DECO_CMS_API_URL}/apps/mcp?appName=${appName}`;
   }
   return urlStr;
@@ -788,7 +790,10 @@ const mapAppToMCPRegistryServer = <T extends RegistryAppWithRelations>(
       remotes: [
         {
           type: MCP_REGISTRY_SERVER_TYPE,
-          url: replaceDecoPageToDecoCMS(connectionUrl, app.name),
+          url: replaceDecoPageToDecoCMS(
+            connectionUrl,
+            AppName.build(app.scope.scope_name, app.name),
+          ),
         },
       ],
       version: app.updated_at

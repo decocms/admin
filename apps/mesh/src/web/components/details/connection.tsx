@@ -506,7 +506,7 @@ function SettingsTab({
       {hasAnyChanges && (
         <ViewActions>
           <Button
-            onClick={ async () => {
+            onClick={async () => {
               if (hasConnectionChanges) {
                 await handleSaveConnection();
               }
@@ -667,7 +667,11 @@ function ConnectionSettingsFormUI({
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder={connection.connection_token ? "••••••••" : "Enter access token..."}
+                    placeholder={
+                      connection.connection_token
+                        ? "••••••••"
+                        : "Enter access token..."
+                    }
                     {...field}
                     value={field.value || ""}
                     className="h-10 rounded-lg"

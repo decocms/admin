@@ -77,7 +77,11 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
 
   // Fetch registry items
-  const { data: listResults, isLoading, isError } = useToolCall({
+  const {
+    data: listResults,
+    isLoading,
+    isError,
+  } = useToolCall({
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},

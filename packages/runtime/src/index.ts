@@ -308,6 +308,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 
     // MCP endpoint
     if (url.pathname === "/mcp") {
+      if (req.method === "GET") {
+        return new Response("Method not allowed", { status: 405 });
+      }
       // If OAuth is configured, require authentication
       if (oauthHandlers && !oauthHandlers.hasAuth(req)) {
         // Clone request to check method without consuming the original body

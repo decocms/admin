@@ -10,7 +10,7 @@
     "@ai-sdk/ui-utils": "^1.2.11",
     "@deco/actors": "npm:@jsr/deco__actors@0.35.1",
     "@deco/ai": "^1.0.0",
-    "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
+    "@deco/mcp": "npm:@jsr/deco__mcp@0.7.8",
     "@deco/sdk": "^0.1.1",
     "@modelcontextprotocol/sdk": "1.20.2",
     "@openrouter/ai-sdk-provider": "^1.2.0",

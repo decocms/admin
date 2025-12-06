@@ -363,7 +363,9 @@ export const withOAuth = ({
       const params = await getOAuthParams(c);
       // Build resource metadata URL using the MCP URL builder (no query params)
       const mcpUrl = buildMcpUrl(url.origin, params);
-      const resourceMetadataUrl = `${mcpUrl}/.well-known/oauth-protected-resource`;
+      const mcpUrlParsed = new URL(mcpUrl);
+      mcpUrlParsed.pathname = `${mcpUrlParsed.pathname}/.well-known/oauth-protected-resource`;
+      const resourceMetadataUrl = mcpUrlParsed.href;
       const wwwAuthenticateValue = `Bearer resource_metadata="${resourceMetadataUrl}", scope="*"`;
       return Response.json(
         {

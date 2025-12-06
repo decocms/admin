@@ -425,6 +425,7 @@ const FileSchema = z.object({
   path: z.string(),
   content: z.string(),
   asset: z.boolean().optional(),
+  binary: z.boolean().optional(), // Indicates content is base64 encoded (for WASM and other binary worker modules)
 });
 
 const ensureLeadingSlash = (path: string) => {
@@ -432,13 +433,18 @@ const ensureLeadingSlash = (path: string) => {
 };
 
 const splitFiles = (
-  files: Record<string, { content: string; asset: boolean }>,
+  files: Record<string, { content: string; asset: boolean; binary?: boolean }>,
 ) => {
   const code: Record<string, string> = {};
   const assets: Record<string, string> = {};
+  const binaryModules: Record<string, Uint8Array> = {};
 
-  for (const [path, { content, asset }] of Object.entries(files)) {
-    if (asset) {
+  for (const [path, { content, asset, binary }] of Object.entries(files)) {
+    if (binary) {
+      // Decode base64 content for binary files (WASM, etc.) and store as Uint8Array
+      const binaryData = Uint8Array.from(atob(content), (c) => c.charCodeAt(0));
+      binaryModules[path] = binaryData;
+    } else if (asset) {
       const assetPath = ensureLeadingSlash(path);
       assets[assetPath] = content;
     } else {
@@ -449,6 +455,7 @@ const splitFiles = (
   return {
     code,
     assets,
+    binaryModules,
   };
 };
 
@@ -537,10 +544,14 @@ export const hostingAppDeploy = createTool({
           acc[file.path] = {
             content: file.content,
             asset: file.asset ?? false,
+            binary: file.binary ?? false,
           };
           return acc;
         },
-        {} as Record<string, { content: string; asset: boolean }>,
+        {} as Record<
+          string,
+          { content: string; asset: boolean; binary?: boolean }
+        >,
       );
 
       const wranglerFile = CONFIGS.find((file) => file in filesRecord);
@@ -586,7 +597,11 @@ export const hostingAppDeploy = createTool({
         );
       }
 
-      const { code: codeFiles, assets: assetFiles } = splitFiles(filesRecord);
+      const {
+        code: codeFiles,
+        assets: assetFiles,
+        binaryModules,
+      } = splitFiles(filesRecord);
       let bundledCode: Record<string, File>;
 
       if (bundle) {
@@ -604,6 +619,13 @@ export const hostingAppDeploy = createTool({
             new File([content], path, { type: getMimeType(path) }),
           ]),
         );
+      }
+
+      // Add binary modules (WASM, etc.) to bundled code - they need to be deployed alongside the bundled script
+      for (const [path, binaryData] of Object.entries(binaryModules)) {
+        bundledCode[path] = new File([binaryData], path, {
+          type: getMimeType(path),
+        });
       }
 
       const issuer = await c.jwtIssuer();

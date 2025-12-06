@@ -8,6 +8,8 @@ import { useParams } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { Suspense, type ComponentType } from "react";
 import { toast } from "sonner";
+import { WorkflowDetailsView } from "@/web/components/details/workflow";
+import { WorkflowExecutionDetailsView } from "@/web/components/details/workflow-execution";
 
 interface CollectionDetailsProps {
   itemId: string;
@@ -21,6 +23,8 @@ const WELL_KNOWN_VIEW_DETAILS: Record<
   ComponentType<CollectionDetailsProps>
 > = {
   agent: AgentDetailsView,
+  workflow: WorkflowDetailsView,
+  execution: WorkflowExecutionDetailsView,
 };
 
 function CollectionDetailsContent() {

@@ -107,6 +107,7 @@ function extractCollectionNames(
   tools: Array<{ name: string }> | null | undefined,
 ): string[] {
   if (!tools || tools.length === 0) return [];
+  console.log("tools", tools);
 
   const collectionRegex = /^COLLECTION_(.+)_LIST$/;
   const names: string[] = [];
@@ -218,6 +219,8 @@ function detectCollections(
   }
 
   const potentialCollections = extractCollectionNames(tools);
+
+  console.log("potentialCollections", potentialCollections);
 
   if (potentialCollections.length === 0) {
     return [];

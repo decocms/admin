@@ -1,4 +1,3 @@
-
 // Check for disallowed ASCII control characters
 function containsControlCharacters(value: string): boolean {
   for (let index = 0; index < value.length; index++) {

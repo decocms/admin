@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
-    "dev-prod": "VITE_USE_LOCAL_BACKEND=false concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+    "dev": "bun run --filter=@decocms/mesh dev",
     "fmt": "biome format --write",
     "lint": "oxlint",
     "check": "tsc --noEmit",
@@ -20,7 +19,6 @@
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked --include-all",
     "db:migration:create": "supabase migration new",
-    "npm:build": "npm run build --workspace=apps/web",
     "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
     "knip": "knip"
   },

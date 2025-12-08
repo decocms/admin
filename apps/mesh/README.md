@@ -328,9 +328,8 @@ RUN bun run build:client && bun run build:server
 
 FROM oven/bun:1-slim
 WORKDIR /app
-COPY --from=builder /app/dist-server ./
 COPY --from=builder /app/dist ./dist
-CMD ["bun", "run", "server.js"]
+CMD ["bun", "run", "dist/server/server.js"]
 ```
 
 ### Docker Compose

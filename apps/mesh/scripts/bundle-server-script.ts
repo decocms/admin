@@ -8,7 +8,7 @@
  *   bun run scripts/bundle-server-script.ts [--dist <path>]
  *
  * Options:
- *   --dist <path>  Output directory for pruned node_modules, server.js, and migrate.js (default: ./dist-server)
+ *   --dist <path>  Output directory for pruned node_modules, server.js, and migrate.js (default: ./dist/server)
  */
 
 import { nodeFileTrace } from "@vercel/nft";
@@ -47,7 +47,7 @@ const NODE_MODULES_DIR = join(WORKSPACE_ROOT, "node_modules");
 const { distPath } = parseArgs();
 const OUTPUT_DIR = distPath
   ? resolve(distPath)
-  : join(process.cwd(), "dist-server");
+  : join(process.cwd(), "dist/server");
 
 async function pruneNodeModules(): Promise<Set<string>> {
   console.log(`🔍 Tracing dependencies for server and migration scripts...`);

@@ -97,11 +97,16 @@ function extractConnectionData(
     | undefined;
 
   // Check if MCP needs OAuth by looking for DECO_CHAT_OAUTH_START tool
-  const tools = publisherMeta?.tools as Array<{ name: string }> | null | undefined;
-  const needsOAuth = tools?.some((tool) => tool.name === "DECO_CHAT_OAUTH_START") ?? false;
+  const tools = publisherMeta?.tools as
+    | Array<{ name: string }>
+    | null
+    | undefined;
+  const needsOAuth =
+    tools?.some((tool) => tool.name === "DECO_CHAT_OAUTH_START") ?? false;
 
   // Status: inactive if needs OAuth or has config state to fill
-  const status = needsOAuth || oauthConfig || configState ? "inactive" : "active";
+  const status =
+    needsOAuth || oauthConfig || configState ? "inactive" : "active";
 
   return {
     id: crypto.randomUUID(),

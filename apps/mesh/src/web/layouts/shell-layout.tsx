@@ -100,6 +100,10 @@ function ShellLayoutContent() {
       await authClient.organization.setActive({ organizationSlug: org });
       return org ?? null;
     },
+    gcTime: Infinity,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   // Should use "project ?? org-admin" when projects are introduced

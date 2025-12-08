@@ -18,7 +18,6 @@ import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireOrganization } from "../../core/mesh-context";
 import { type ConnectionEntity, ConnectionEntitySchema } from "./schema";
-import { convertJsonSchemaToZod } from "zod-from-json-schema";
 
 const BUILTIN_BINDING_CHECKERS: Record<string, Binder> = {
   LLM: LANGUAGE_MODEL_BINDING,
@@ -53,26 +52,6 @@ function convertLikeToRegex(likePattern: string): string {
 
 function isStringOrValue(value: unknown): value is string | number {
   return typeof value === "string" || typeof value === "number";
-}
-
-const BindingSchema = z.object({
-  name: z.string(),
-  inputSchema: z.object({}).passthrough().optional(),
-  outputSchema: z.object({}).passthrough().optional(),
-});
-
-function convertBindingToBinder(
-  bindings: z.infer<typeof BindingSchema>[],
-): Binder {
-  return bindings.map((binding) => ({
-    name: binding.name,
-    inputSchema: binding.inputSchema
-      ? convertJsonSchemaToZod(binding.inputSchema)
-      : z.object({}),
-    outputSchema: binding.outputSchema
-      ? convertJsonSchemaToZod(binding.outputSchema)
-      : z.object({}),
-  }));
 }
 
 /**
@@ -208,8 +187,7 @@ function applyOrderBy(
  * Extended input schema with optional binding parameter
  */
 const ConnectionListInputSchema = CollectionListInputSchema.extend({
-  binding: z.string().optional(),
-  inlineBinding: z.array(BindingSchema).optional(),
+  binding: z.union([z.object({}).passthrough(), z.string()]).optional(),
 });
 
 /**
@@ -232,22 +210,19 @@ export const COLLECTION_CONNECTIONS_LIST = defineTool({
 
     const organization = requireOrganization(ctx);
 
-    // Determine which binding to use:
-    // - input.binding: well-known binding name (e.g., "LLM", "AGENTS")
-    // - input.inlineBinding: custom binding schema array
-    let bindingDefinition: Binder | undefined;
-
-    if (input.binding) {
-      // Well-known binding by name
-      const wellKnownBinding =
-        BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
-      if (!wellKnownBinding) {
-        throw new Error(`Unknown binding: ${input.binding}`);
-      }
-      bindingDefinition = wellKnownBinding;
-    } else if (input.inlineBinding && input.inlineBinding.length > 0) {
-      bindingDefinition = convertBindingToBinder(input.inlineBinding);
-    }
+    // Determine which binding to use: well-known binding (string) or provided JSON schema (object)
+    const bindingDefinition: Binder | undefined = input.binding
+      ? typeof input.binding === "string"
+        ? (() => {
+            const wellKnownBinding =
+              BUILTIN_BINDING_CHECKERS[input.binding.toUpperCase()];
+            if (!wellKnownBinding) {
+              throw new Error(`Unknown binding: ${input.binding}`);
+            }
+            return wellKnownBinding;
+          })()
+        : (input.binding as unknown as Binder)
+      : undefined;
 
     // Create binding checker from the binding definition
     const bindingChecker = bindingDefinition

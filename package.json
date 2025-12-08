@@ -29,14 +29,12 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.5",
     "@types/node": "^24.9.1",
-    "concurrently": "^9.2.1",
     "knip": "^5.66.2",
     "oxlint": "1.23.0",
     "supabase": "^2.48.3",
     "typescript": "^5.9.3",
     "vitest": "3.2.4",
-    "react": "^19.2.0",
-    "wrangler": "4.45.0"
+    "react": "^19.2.0"
   },
   "overrides": {
     "zod-to-json-schema": "3.25.0"

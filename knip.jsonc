@@ -1,9 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
+    // todo: remove this .
     ".": {
-      "entry": ["scripts/**/*.ts"],
-      "project": ["scripts/**/*.ts"]
+      "entry": [],
+      "project": []
     },
     "packages/runtime": {
       "entry": ["scripts/generate-json-schema.ts"]

@@ -9,11 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useToolCall } from "@/web/hooks/use-tool-call";
 import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
-import { createToolCaller } from "@/tools/client";
 import type { ConnectionEntity } from "@/tools/connection/schema";
+import { useBindingConnections } from "../hooks/use-binding";
+import { useConnections } from "../hooks/collections/use-connection";
 
 interface BindingSelectorProps {
   value: string;
@@ -42,12 +41,6 @@ interface BindingSelectorProps {
   className?: string;
 }
 
-interface ConnectionListResult {
-  items: ConnectionEntity[];
-  totalCount: number;
-  hasMore: boolean;
-}
-
 export function BindingSelector({
   value,
   onValueChange,
@@ -57,7 +50,6 @@ export function BindingSelector({
   onAddNew,
   className,
 }: BindingSelectorProps) {
-  const toolCaller = useMemo(() => createToolCaller(), []);
   const [isLocalInstalling, setIsLocalInstalling] = useState(false);
   // Store newly installed connection locally (since it won't appear in filtered list until tools are discovered)
   const [installedConnection, setInstalledConnection] =
@@ -67,15 +59,13 @@ export function BindingSelector({
 
   const isInstalling = isLocalInstalling || isGlobalInstalling;
 
-  const { data, isLoading } = useToolCall<
-    { binding?: typeof binding },
-    ConnectionListResult
-  >({
-    toolCaller,
-    toolName: "COLLECTION_CONNECTIONS_LIST",
-    // @ts-ignore
-    toolInputParams: binding ? { inlineBinding: binding } : {},
-    enabled: true,
+  // Fetch all connections from local collection
+  const allConnections = useConnections();
+
+  // Filter connections by binding (works with both well-known binding names and inline binding schemas)
+  const filteredConnections = useBindingConnections({
+    connections: allConnections,
+    inlineBinding: binding,
   });
 
   // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })
@@ -85,13 +75,13 @@ export function BindingSelector({
     return scope && appName ? { scope, appName } : null;
   }, [bindingType]);
 
-  // Combine server connections with locally installed connection
+  // Apply additional filtering by bindingType and combine with locally installed connection
   const connections = useMemo(() => {
-    let serverConnections = data?.items ?? [];
+    let result = filteredConnections;
 
     // If we have a specific binding type (@scope/appName), filter connections that match
     if (parsedBindingType) {
-      serverConnections = serverConnections.filter((conn) => {
+      result = result.filter((conn) => {
         const connAppName = conn.app_name;
         const connScopeName = (conn.metadata as Record<string, unknown> | null)
           ?.scopeName as string | undefined;
@@ -106,12 +96,12 @@ export function BindingSelector({
 
     if (
       installedConnection &&
-      !serverConnections.some((c) => c.id === installedConnection.id)
+      !result.some((c) => c.id === installedConnection.id)
     ) {
-      return [installedConnection, ...serverConnections];
+      return [installedConnection, ...result];
     }
-    return serverConnections;
-  }, [data?.items, installedConnection, parsedBindingType]);
+    return result;
+  }, [filteredConnections, installedConnection, parsedBindingType]);
 
   // Check if we can do inline installation (bindingType starts with @)
   const canInstallInline = bindingType?.startsWith("@");
@@ -140,10 +130,6 @@ export function BindingSelector({
     // Fallback to onAddNew navigation
     onAddNew?.();
   };
-
-  if (isLoading) {
-    return <Skeleton className={className ?? "w-[200px] h-8"} />;
-  }
 
   return (
     <Select value={value} onValueChange={onValueChange}>

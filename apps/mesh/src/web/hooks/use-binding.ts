@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { z } from "zod";
 import { type Binder, createBindingChecker } from "@decocms/bindings";
 import {
   BaseCollectionEntitySchema,
@@ -7,6 +8,7 @@ import {
 import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { MCP_BINDING } from "@decocms/bindings/mcp";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 
 /**
@@ -17,6 +19,32 @@ const BUILTIN_BINDINGS: Record<string, Binder> = {
   AGENTS: AGENTS_BINDING,
   MCP: MCP_BINDING,
 };
+
+/**
+ * Simplified binding definition format (JSON Schema based)
+ */
+export interface InlineBindingDefinition {
+  name: string;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+}
+
+/**
+ * Converts a simplified inline binding definition to Binder format
+ */
+function convertInlineBindingToBinder(
+  bindings: InlineBindingDefinition[],
+): Binder {
+  return bindings.map((binding) => ({
+    name: binding.name,
+    inputSchema: binding.inputSchema
+      ? convertJsonSchemaToZod(binding.inputSchema)
+      : z.object({}),
+    outputSchema: binding.outputSchema
+      ? convertJsonSchemaToZod(binding.outputSchema)
+      : z.object({}),
+  }));
+}
 
 /**
  * Checks if a connection implements a binding by validating its tools
@@ -51,18 +79,51 @@ export function connectionImplementsBinding(
 }
 
 /**
+ * Options for useBindingConnections hook
+ */
+interface UseBindingConnectionsOptions {
+  connections: ConnectionEntity[] | undefined;
+  /**
+   * Binding filter - can be:
+   * - A well-known binding name (e.g., "LLMS", "AGENTS", "MCP")
+   * - A custom binding schema array (InlineBindingDefinition[]) for filtering connections
+   */
+  inlineBinding?: string | InlineBindingDefinition[];
+}
+
+/**
  * Hook to filter connections that implement a specific binding.
  * Returns only connections whose tools satisfy the binding requirements.
  *
- * @param connections - Array of connections to filter
- * @param bindingName - Name of the binding to check ("LLMS" | "AGENTS")
+ * @param options - Object with connections and inlineBinding
  * @returns Filtered array of connections that implement the binding
+ *
+ * @example
+ * // Using well-known binding name
+ * useBindingConnections({ connections: allConnections, inlineBinding: "LLMS" })
+ *
+ * @example
+ * // Using custom inline binding
+ * useBindingConnections({ connections: allConnections, inlineBinding: [{ name: "MY_TOOL", inputSchema: {...} }] })
  */
-export function useBindingConnections(
-  connections: ConnectionEntity[] | undefined,
-  bindingName: string,
-): ConnectionEntity[] {
-  const binding = BUILTIN_BINDINGS[bindingName];
+export function useBindingConnections({
+  connections,
+  inlineBinding,
+}: UseBindingConnectionsOptions): ConnectionEntity[] {
+  // Resolve binding definition:
+  // - If inlineBinding is a string, look up in BUILTIN_BINDINGS
+  // - If inlineBinding is an array, convert JSON schemas to Binder
+  const binding = useMemo(() => {
+    if (!inlineBinding) {
+      return undefined;
+    }
+
+    if (typeof inlineBinding === "string") {
+      return BUILTIN_BINDINGS[inlineBinding.toUpperCase()];
+    }
+
+    return convertInlineBindingToBinder(inlineBinding);
+  }, [inlineBinding]);
 
   return useMemo(
     () =>

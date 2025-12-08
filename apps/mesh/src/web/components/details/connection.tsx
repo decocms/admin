@@ -217,7 +217,6 @@ function ConnectionInspectorViewContent() {
                     draft.connection_type = connection.connection_type;
                     draft.connection_url = connection.connection_url;
                     draft.connection_token = newOrChangedToken;
-                    draft.status = "active";
                   },
                 );
                 await tx.isPersisted.promise;
@@ -253,6 +252,29 @@ function ConnectionInspectorViewContent() {
       );
     },
   });
+
+  // Auto-update status to active when MCP is connected with tools
+  // This handles both: already authenticated (cached) and just authenticated via OAuth
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    if (
+      connection &&
+      connection.status === "inactive" &&
+      mcp.tools &&
+      mcp.tools.length > 0 &&
+      mcp.state !== "pending_auth" &&
+      mcp.state !== "authenticating" &&
+      mcp.state !== "failed" &&
+      connectionsCollection
+    ) {
+      const tx = connectionsCollection.update(connection.id, (draft) => {
+        draft.status = "active";
+      });
+      tx.isPersisted.promise.then(() => {
+        toast.success("Connection activated");
+      });
+    }
+  }, [connection, mcp.tools, mcp.state, connectionsCollection]);
 
   if (!connection && connectionId) {
     return (
@@ -713,12 +735,6 @@ function McpConfigurationForm({
         scopes: selectedScopes,
         state: data.formData,
       });
-
-      const tx = CONNECTIONS_COLLECTION.update(connection.id, (draft) => {
-      draft.status = "active";
-      })
-      await tx.isPersisted.promise;
-      
       toast.success("Configuration saved successfully");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

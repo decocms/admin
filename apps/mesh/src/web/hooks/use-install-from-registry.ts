@@ -56,6 +56,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   const { org } = useProjectContext();
   const { data: session } = authClient.useSession();
   const [isInstalling, setIsInstalling] = useState(false);
+  const connectionsCollection = useConnectionsCollection();
 
   // Get all connections and filter to registry connections
   const allConnections = useConnections();
@@ -148,7 +149,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
 
       setIsInstalling(true);
       try {
-        const tx = await useConnectionsCollection().insert(connectionData);
+        const tx = await connectionsCollection.insert(connectionData);
         await tx.isPersisted.promise;
 
         toast.success(`${connectionData.title} installed successfully`);

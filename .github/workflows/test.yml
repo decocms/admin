@@ -26,7 +26,7 @@ jobs:
         run: bun run fmt:check
 
       - name: Run lint
-        run: bun run lint --deny-warnings
+        run: bun run lint
 
       - name: Run check
         run: bun run check

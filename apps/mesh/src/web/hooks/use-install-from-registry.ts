@@ -9,7 +9,7 @@ import { createToolCaller } from "@/tools/client";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import {
-  CONNECTIONS_COLLECTION,
+  useConnectionsCollection,
   useConnections,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
@@ -148,7 +148,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
 
       setIsInstalling(true);
       try {
-        const tx = await CONNECTIONS_COLLECTION.insert(connectionData);
+        const tx = await useConnectionsCollection().insert(connectionData);
         await tx.isPersisted.promise;
 
         toast.success(`${connectionData.title} installed successfully`);

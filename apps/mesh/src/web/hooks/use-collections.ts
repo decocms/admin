@@ -21,7 +21,7 @@ import {
   or,
 } from "@tanstack/db";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import { createToolCaller, type ToolCaller } from "../../tools/client";
+import { type ToolCaller } from "../../tools/client";
 import { createCollectionWithSync } from "./create-collection-with-sync";
 
 /**
@@ -70,7 +70,7 @@ export interface CreateCollectionOptions {
  * @param options - Configuration options for the collection
  * @returns A TanStack DB collection instance with persistence handlers
  */
-export function createCollectionFromToolCaller<T extends CollectionEntity>(
+function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions,
 ): Collection<T, string> {
   const { toolCaller, collectionName, pageSize = 100 } = options;
@@ -216,7 +216,7 @@ export function createCollectionFromToolCaller<T extends CollectionEntity>(
 }
 
 // Module-level cache for collection instances
-// Key format: `${connectionId}:${collectionName}`
+// Key format: `${connectionKey}:${collectionName}`
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const collectionCache = new Map<string, Collection<any, string>>();
 
@@ -224,21 +224,23 @@ const collectionCache = new Map<string, Collection<any, string>>();
  * Get or create a collection instance for a specific connection and collection name.
  * Collections are cached to ensure singleton-like behavior per connection/collection pair.
  *
- * @param connectionId - The ID of the connection (or undefined/null for mesh tools)
+ * @param connectionKey - The unique key for the connection (e.g. connectionId or org slug)
  * @param collectionName - The name of the collection (e.g., "AGENT", "LLM")
+ * @param toolCaller - The tool caller function for making API calls
  * @returns A TanStack DB collection instance
  */
 export function useCollection<T extends CollectionEntity>(
-  connectionId: string | undefined | null,
+  connectionKey: string | undefined | null,
   collectionName: string,
+  toolCaller: ToolCaller,
 ): Collection<T, string> {
-  // Use empty string key for null/undefined connectionId to represent mesh tools
-  const safeConnectionId = connectionId ?? "";
-  const key = `${safeConnectionId}:${collectionName}`;
+  // Use empty string key for null/undefined connectionKey to represent mesh tools
+  const safeConnectionKey = connectionKey ?? "";
+  const key = `${safeConnectionKey}:${collectionName}`;
 
   if (!collectionCache.has(key)) {
     const collection = createCollectionFromToolCaller<T>({
-      toolCaller: createToolCaller(connectionId || undefined),
+      toolCaller,
       collectionName,
     });
     collectionCache.set(key, collection);

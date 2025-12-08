@@ -17,8 +17,8 @@ import {
 } from "@/web/utils/constants";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import {
-  CONNECTIONS_COLLECTION,
   useConnection,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
   useBindingConnections,
@@ -57,7 +57,12 @@ import {
 } from "@deco/ui/components/select.tsx";
 import type { BaseCollectionEntity } from "@decocms/bindings/collections";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  useParams,
+  useRouter,
+  useSearch,
+} from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, Lock, Plus } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -70,6 +75,7 @@ import { ViewLayout, ViewTabs, ViewActions } from "./layout";
 import { McpConfigurationForm } from "./mcp-configuration-form";
 
 function ConnectionInspectorViewContent() {
+  const router = useRouter();
   const { connectionId, org } = useParams({ strict: false });
   const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
 
@@ -78,7 +84,7 @@ function ConnectionInspectorViewContent() {
   const activeTabId = search.tab || "settings";
 
   const connection = useConnection(connectionId);
-  const connectionsCollection = CONNECTIONS_COLLECTION;
+  const connectionsCollection = useConnectionsCollection();
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
@@ -282,7 +288,7 @@ function ConnectionInspectorViewContent() {
   const activeCollection = collections.find((c) => c.name === activeTabId);
 
   return (
-    <ViewLayout onBack={() => window.history.back()}>
+    <ViewLayout onBack={() => router.history.back()}>
       <ViewTabs>
         <ResourceTabs
           tabs={tabs}
@@ -399,6 +405,7 @@ function SettingsTab({
 }: SettingsTabProps) {
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const connectionsCollection = useConnectionsCollection();
 
   // Connection settings form
   const connectionForm = useForm<ConnectionFormData>({
@@ -480,7 +487,7 @@ function SettingsTab({
       });
 
       // Update local collection to keep cache in sync
-      CONNECTIONS_COLLECTION.update(connection.id, (draft) => {
+      connectionsCollection.update(connection.id, (draft) => {
         draft.configuration_state = mcpFormState;
         draft.configuration_scopes = mcpScopes;
       });
@@ -956,7 +963,11 @@ function CollectionContent({
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id || "unknown";
 
-  const collection = useCollection(connectionId, collectionName);
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId),
+    [connectionId],
+  );
+  const collection = useCollection(connectionId, collectionName, toolCaller);
 
   const {
     search,

@@ -10,18 +10,13 @@ import { createToolCaller } from "../../../tools/client";
 import type { ConnectionEntity } from "../../../tools/connection/schema";
 import {
   type CollectionFilter,
-  createCollectionFromToolCaller,
+  useCollection,
   useCollectionItem,
   useCollectionList,
   type UseCollectionListOptions,
 } from "../use-collections";
-
-// Module-level singleton to store the collection instance
-export const CONNECTIONS_COLLECTION =
-  createCollectionFromToolCaller<ConnectionEntity>({
-    toolCaller: createToolCaller(),
-    collectionName: "CONNECTIONS",
-  });
+import { useProjectContext } from "../../providers/project-context-provider";
+import { useMemo } from "react";
 
 /**
  * Filter definition for connections (matches @deco/ui Filter shape)
@@ -34,23 +29,36 @@ export type ConnectionFilter = CollectionFilter;
 export type UseConnectionsOptions = UseCollectionListOptions<ConnectionEntity>;
 
 /**
+ * Hook to get the connections collection instance
+ */
+export function useConnectionsCollection() {
+  const { org } = useProjectContext();
+  // Use org as the connectionKey, and default toolCaller (mesh tools)
+  const toolCaller = useMemo(() => createToolCaller(), []);
+
+  return useCollection<ConnectionEntity>(org, "CONNECTIONS", toolCaller);
+}
+
+/**
  * Hook to get all connections with live query reactivity
  *
  * @param options - Filter and configuration options
- * @returns Live query result with connections as ConnectionEntity, plus the original collection for mutations
+ * @returns Live query result with connections as ConnectionEntity
  */
 export function useConnections(options: UseConnectionsOptions = {}) {
-  return useCollectionList(CONNECTIONS_COLLECTION, options);
+  const collection = useConnectionsCollection();
+  return useCollectionList(collection, options);
 }
 
 /**
  * Hook to get a single connection by ID with live query reactivity
  *
  * @param connectionId - The ID of the connection to fetch
- * @returns Live query result with the connection as ConnectionEntity, plus the original collection for mutations
+ * @returns Live query result with the connection as ConnectionEntity
  */
 export function useConnection(connectionId: string | undefined) {
-  return useCollectionItem(CONNECTIONS_COLLECTION, connectionId);
+  const collection = useConnectionsCollection();
+  return useCollectionItem(collection, connectionId);
 }
 
 /**

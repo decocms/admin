@@ -2035,12 +2035,16 @@ export const autoJoinTeam = createTool({
       );
     }
 
+    if (!user.email) {
+      throw new UserInputError("User email is required");
+    }
+
     // validate if user email domain got the same domain supplied input
-    if (user.email.split('@')[1].toLowerCase() !== domain.toLowerCase()) {
-  throw new UserInputError(
-    "Cannot auto-join team, user email is different from domain"
-  );
-}
+    if (user.email.split("@")[1].toLowerCase() !== domain.toLowerCase()) {
+      throw new UserInputError(
+        "Cannot auto-join team, user email is different from domain",
+      );
+    }
 
     // Find team with matching domain
     const { data: team, error: teamError } = await c.db

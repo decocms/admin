@@ -45,7 +45,6 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ErrorBoundary } from "../../error-boundary";
 import { normalizeGithubImportValue } from "../../utils/github-import.ts";
-import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { ImportProjectFromGithub } from "./import-project-from-github.tsx";
 import { OrgAvatars, OrgMemberCount } from "./members";
 
@@ -747,7 +746,6 @@ function OrgProjectListContent() {
   return (
     <div className="min-h-full w-full bg-background">
       <div className="p-8 flex flex-col gap-4 w-full max-w-7xl mx-auto min-h-[calc(100vh-48px)]">
-        <CommunityCallBanner />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-medium">Projects</h2>
           <div className="flex items-center gap-2">

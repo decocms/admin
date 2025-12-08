@@ -19,7 +19,6 @@ import {
 import { useNavigate, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary";
 import { timeAgo } from "../../utils/time-ago";
-import { CommunityCallBanner } from "../common/event/community-call-banner";
 import { CreateOrganizationDialog } from "../sidebar/create-team-dialog";
 import { TopbarLayout } from "../layout/home";
 import { OrgAvatars, OrgMemberCount } from "./members";
@@ -290,11 +289,7 @@ function MyOrganizations() {
               Dismiss
             </Button>
           </div>
-        ) : (
-          <>
-            <CommunityCallBanner />
-          </>
-        )}
+        ) : null}
         <Suspense
           fallback={
             importGithubSlug ? (

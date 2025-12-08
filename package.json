@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --filter=@decocms/mesh dev",
+    "dev": "bun run --filter=mcp-mesh dev",
     "fmt": "biome format --write",
     "lint": "oxlint",
     "check": "tsc --noEmit",
@@ -16,10 +16,6 @@
     "build:runtime": "bun run --filter=@decocms/runtime build",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-    "db:repair": "supabase migration repair --status reverted",
-    "db:migration": "supabase migration up --linked --include-all",
-    "db:migration:create": "supabase migration new",
-    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
     "knip": "knip"
   },
   "workspaces": [

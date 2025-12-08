@@ -1,186 +1,186 @@
 # Docker Compose - Deco MCP Mesh
 
-Esta é a versão local usando Docker Compose, para acelerar os seus testes com a aplicação Deco MCP Mesh direto no seu computador ou servidor.
+This is the local version using Docker Compose, to speed up your testing with the Deco MCP Mesh application directly on your computer or server.
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [Visão Geral](#-visão-geral)
-- [Pré-requisitos](#-pré-requisitos)
-- [Quick Start](#-quick-start---início-em-4-passos)
-- [Configuração](#️-configuração)
-- [Uso com SQLite (Padrão)](#-uso-com-sqlite-padrão)
-- [Uso com PostgreSQL](#-uso-com-postgresql)
-- [Configuração de Autenticação](#-configuração-de-autenticação-auth-configjson)
-- [Segurança](#-segurança)
-- [Monitoramento](#-monitoramento)
+- [Overview](#-overview)
+- [Prerequisites](#-prerequisites)
+- [Quick Start](#-quick-start---get-started-in-4-steps)
+- [Configuration](#️-configuration)
+- [Using SQLite (Default)](#-using-sqlite-default)
+- [Using PostgreSQL](#-using-postgresql)
+- [Authentication Configuration](#-authentication-configuration-auth-configjson)
+- [Security](#-security)
+- [Monitoring](#-monitoring)
 - [Troubleshooting](#-troubleshooting)
-- [Atualização](#-atualização)
-- [Backup e Restore](#-backup-e-restore)
+- [Updating](#-updating)
+- [Backup and Restore](#-backup-and-restore)
 
-## 🎯 Visão Geral
+## 🎯 Overview
 
-- ✅ **SQLite por padrão** - Funciona imediatamente sem configuração adicional
-- ✅ **PostgreSQL opcional** - Configure via variável de ambiente
-- ✅ **Persistência de dados** - Volume Docker para manter dados entre reinicializações
-- ✅ **Health checks** - Monitoramento automático da saúde da aplicação
-- ✅ **Configuração via variáveis** - Todas as configurações via `.env`
+- ✅ **SQLite by default** - Works immediately without additional configuration
+- ✅ **PostgreSQL optional** - Configure via environment variable
+- ✅ **Data persistence** - Docker volume to keep data between restarts
+- ✅ **Health checks** - Automatic application health monitoring
+- ✅ **Configuration via variables** - All configurations via `.env`
 
-## 📦 Pré-requisitos
+## 📦 Prerequisites
 
 - Docker 20.10+
 - Docker Compose 2.0+
-- (Opcional) PostgreSQL se quiser usar banco externo
+- (Optional) PostgreSQL if you want to use external database
 
-## ⚡ Quick Start - Início em 4 passos
+## ⚡ Quick Start - Get Started in 4 Steps
 
-A forma mais rápida de testar a aplicação:
+The fastest way to test the application:
 
 ```bash
-# 1. Configure variáveis de ambiente
-# Edite .env e configure BETTER_AUTH_SECRET (obrigatório)
-# Gere um secret: openssl rand -base64 32
+# 1. Configure environment variables
+# Edit .env and configure BETTER_AUTH_SECRET (required)
+# Generate a secret: openssl rand -base64 32
 cp conf-examples/env.example .env
 
-# 2. Configure a autenticação
+# 2. Configure authentication
 cp conf-examples/auth-config.json.example auth-config.json
 
-# 3. Inicie a aplicação
+# 3. Start the application
 docker compose up -d
 
-# 4. Acesse
+# 4. Access
 open http://localhost:3000
 ```
 
-Essas configurações são tudo que você precisa para iniciar os testes com o MCP-MESH. Se precisar de outras opções, consulte as informações nas próximas seções.
+These configurations are all you need to start testing with MCP-MESH. If you need other options, check the information in the following sections.
 
-### 📝 Configuração Mínima
+### 📝 Minimum Configuration
 
-O arquivo `.env` precisa ter pelo menos:
+The `.env` file needs at least:
 
 ```bash
-BETTER_AUTH_SECRET=seu_secret_gerado_aqui
+BETTER_AUTH_SECRET=your_generated_secret_here
 ```
 
-Todas as outras variáveis têm valores padrão que funcionam para testes locais.
+All other variables have default values that work for local testing.
 
-## ⚙️ Configurações
+## ⚙️ Configuration
 
-### Arquivo .env
+### .env File
 
-O arquivo `.env` contém todas as configurações.
+The `.env` file contains all configurations.
 
-Principais variáveis:
-| Variável | Padrão | Descrição |
-|----------|--------|-----------|
-| `IMAGE_REPOSITORY` | `ghcr.io/decocms/admin/mesh` | Repositório da imagem |
-| `IMAGE_TAG` | `latest` | Tag da imagem |
-| `PORT` | `3000` | Porta exposta no host |
-| `NODE_ENV` | `production` | Ambiente Node.js |
-| `BETTER_AUTH_URL` | `http://localhost:3000` | URL para autenticação |
-| `BASE_URL` | `http://localhost:3000` | URL base da aplicação |
-| `BETTER_AUTH_SECRET` | **obrigatório** | Secret de autenticação |
-| `DATABASE_URL` | `/app/data/mesh.db` | URL do banco (SQLite ou PostgreSQL) |
+Main variables:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IMAGE_REPOSITORY` | `ghcr.io/decocms/admin/mesh` | Image repository |
+| `IMAGE_TAG` | `latest` | Image tag |
+| `PORT` | `3000` | Port exposed on host |
+| `NODE_ENV` | `production` | Node.js environment |
+| `BETTER_AUTH_URL` | `http://localhost:3000` | URL for authentication |
+| `BASE_URL` | `http://localhost:3000` | Application base URL |
+| `BETTER_AUTH_SECRET` | **required** | Authentication secret |
+| `DATABASE_URL` | `/app/data/mesh.db` | Database URL (SQLite or PostgreSQL) |
 
-## 💾 Uso com SQLite (Padrão)
+## 💾 Using SQLite (Default)
 
-SQLite é o padrão e não requer configuração adicional:
+SQLite is the default and requires no additional configuration:
 
 ```bash
 # .env
 DATABASE_URL=/app/data/mesh.db
 ```
 
-Os dados serão persistidos no volume Docker `mesh-data` e mantidos entre reinicializações.
+Data will be persisted in the Docker volume `mesh-data` and kept between restarts.
 
-**Vantagens:**
-- ✅ Zero configuração
-- ✅ Funciona imediatamente
-- ✅ Ideal para desenvolvimento e testes
+**Advantages:**
+- ✅ Zero configuration
+- ✅ Works immediately
+- ✅ Ideal for development and testing
 
-**Limitações:**
-- ⚠️ Apenas 1 instância (não escalável horizontalmente)
-- ⚠️ Performance limitada para grandes volumes de dados
+**Limitations:**
+- ⚠️ Only 1 instance (not horizontally scalable)
+- ⚠️ Limited performance for large data volumes
 
-## 🐘 Uso com PostgreSQL
+## 🐘 Using PostgreSQL
 
-Para usar PostgreSQL, você tem duas opções:
+To use PostgreSQL, you have two options:
 
-### Opção 1: Usar docker-compose.postgres.yml (Recomendado)
+### Option 1: Use docker-compose.postgres.yml (Recommended)
 
-Já existe um arquivo `docker-compose.postgres.yml` pronto para uso:
+There is already a `docker-compose.postgres.yml` file ready to use:
 
-Configure no `.env`:
+Configure in `.env`:
 ```bash
 POSTGRES_USER=mesh_user
-POSTGRES_PASSWORD=senha_segura_aqui
+POSTGRES_PASSWORD=secure_password_here
 POSTGRES_DB=mesh_db
 ```
 
 ```bash
-# Iniciar com PostgreSQL incluído
+# Start with PostgreSQL included
 docker compose -f docker-compose.postgres.yml up -d
 ```
 
-O `DATABASE_URL` será configurado automaticamente, mas você pode especificá-lo caso necessário.
+The `DATABASE_URL` will be configured automatically, but you can specify it if needed.
 
 ```bash
-DATABASE_URL=postgresql://mesh_user:senha_segura_aqui@localhost:5432/mesh_db
+DATABASE_URL=postgresql://mesh_user:secure_password_here@localhost:5432/mesh_db
 ```
 
-### Opção 2: PostgreSQL Externo
+### Option 2: External PostgreSQL
 
-Se você já tem um PostgreSQL rodando (local ou remoto):
+If you already have a PostgreSQL running (local or remote):
 
 ```bash
 # .env
-DATABASE_URL=postgresql://usuario:senha@host:5432/nome_do_banco
+DATABASE_URL=postgresql://user:password@host:5432/database_name
 ```
 
-**Exemplo com PostgreSQL local:**
+**Example with local PostgreSQL:**
 ```bash
-DATABASE_URL=postgresql://postgres:senha@localhost:5432/mesh_db
+DATABASE_URL=postgresql://postgres:password@localhost:5432/mesh_db
 ```
 
-**Exemplo com PostgreSQL remoto:**
+**Example with remote PostgreSQL:**
 ```bash
-DATABASE_URL=postgresql://usuario:senha@db.example.com:5432/mesh_db
+DATABASE_URL=postgresql://user:password@db.example.com:5432/mesh_db
 ```
 
-**Vantagens do PostgreSQL:**
-- ✅ Suporta múltiplas instâncias (escalabilidade horizontal)
-- ✅ Melhor performance para grandes volumes
-- ✅ Recursos avançados (backups, replicação, etc.)
+**PostgreSQL Advantages:**
+- ✅ Supports multiple instances (horizontal scalability)
+- ✅ Better performance for large volumes
+- ✅ Advanced features (backups, replication, etc.)
 
-## 🔐 Configuração de Autenticação (auth-config.json)
+## 🔐 Authentication Configuration (auth-config.json)
 
-### 📍 Localização no Container
+### 📍 Location in Container
 
-O arquivo `auth-config.json` é montado no caminho:
+The `auth-config.json` file is mounted at the path:
 
 ```
 /app/apps/mesh/auth-config.json
 ```
 
-### 🔄 Como funciona no Docker Compose
+### 🔄 How it Works in Docker Compose
 
-#### 1. Arquivo Local
+#### 1. Local File
 
-O arquivo `auth-config.json` deve existir na pasta raiz, junto com o docker-compose para subir a stack:
+The `auth-config.json` file must exist in the root folder, alongside docker-compose to start the stack:
 
 ```yaml
 volumes:
   - ./auth-config.json:/app/apps/mesh/auth-config.json:ro
 ```
 
-#### 2. Montagem no Container
+#### 2. Mount in Container
 
-- **Origem**: `./auth-config.json` (arquivo na raiz, junto com o docker-compose)
-- **Destino**: `/app/apps/mesh/auth-config.json` (dentro do container)
-- **Modo**: `ro` (read-only, somente leitura)
+- **Source**: `./auth-config.json` (file in root, alongside docker-compose)
+- **Destination**: `/app/apps/mesh/auth-config.json` (inside container)
+- **Mode**: `ro` (read-only)
 
-#### 3. Quando é Carregado
+#### 3. When it's Loaded
 
-A aplicação Mesh carrega este arquivo na inicialização para configurar:
+The Mesh application loads this file on startup to configure:
 
 - Email/Password authentication
 - Social providers (Google, GitHub)
@@ -188,17 +188,17 @@ A aplicação Mesh carrega este arquivo na inicialização para configurar:
 - Email providers (Resend, etc.)
 - Magic link configuration
 
-### 📝 Estrutura do Arquivo
+### 📝 File Structure
 
-O arquivo `auth-config.json` pode ter diferentes níveis de complexidade dependendo das funcionalidades que você deseja habilitar.
+The `auth-config.json` file can have different levels of complexity depending on the features you want to enable.
 
-#### Arquivos de Exemplo Disponíveis
+#### Available Example Files
 
-Existem dois arquivos de exemplo na pasta `conf-examples/`:
+There are two example files in the `conf-examples/` folder:
 
-##### 1. `auth-config.json.example` - Configuração Simples
+##### 1. `auth-config.json.example` - Simple Configuration
 
-Use este arquivo quando você precisa apenas de autenticação básica por email e senha:
+Use this file when you only need basic email and password authentication:
 
 ```json
 {
@@ -208,14 +208,14 @@ Use este arquivo quando você precisa apenas de autenticação básica por email
 }
 ```
 
-**Quando usar:**
-- Apenas autenticação por email/senha
-- Não precisa de SSO ou login social
-- Não precisa enviar emails (convites, magic links, etc.)
+**When to use:**
+- Only email/password authentication
+- Don't need SSO or social login
+- Don't need to send emails (invites, magic links, etc.)
 
-##### 2. `auth-config-sso-email.json.example` - Configuração Completa
+##### 2. `auth-config-sso-email.json.example` - Complete Configuration
 
-Use este arquivo quando você precisa de funcionalidades avançadas como SSO, login social e envio de emails:
+Use this file when you need advanced features like SSO, social login and email sending:
 
 ```json
 {
@@ -254,223 +254,225 @@ Use este arquivo quando você precisa de funcionalidades avançadas como SSO, lo
 }
 ```
 
-**Quando usar:**
-- Precisa de SSO (SAML)
-- Precisa de login social (Google, GitHub)
-- Precisa enviar emails (convites, magic links, etc.)
-- Precisa de magic links para autenticação sem senha
+**When to use:**
+- Need SSO (SAML)
+- Need social login (Google, GitHub)
+- Need to send emails (invites, magic links, etc.)
+- Need magic links for passwordless authentication
 
-#### Estrutura Completa de Referência
+#### Complete Reference Structure
 
-A estrutura completa do arquivo `auth-config.json` inclui:
+The complete structure of the `auth-config.json` file includes:
 
-- **emailAndPassword**: Autenticação básica por email/senha
-- **socialProviders**: Provedores sociais (Google, GitHub)
-- **saml**: Configuração SAML para SSO empresarial
-- **emailProviders**: Configuração de provedores de email (Resend, etc.)
-- **inviteEmailProviderId**: ID do provedor de email para envio de convites
-- **magicLinkConfig**: Configuração de magic links (autenticação via link enviado por email)
+- **emailAndPassword**: Basic email/password authentication
+- **socialProviders**: Social providers (Google, GitHub)
+- **saml**: SAML configuration for enterprise SSO
+- **emailProviders**: Email provider configuration (Resend, etc.)
+- **inviteEmailProviderId**: Email provider ID for sending invites
+- **magicLinkConfig**: Magic link configuration (authentication via link sent by email)
 
-### 🛠️ Como Editar
+### 🛠️ How to Edit
 
-1. **Edite o arquivo localmente**:
+1. **Edit the file locally**:
 
 ```bash
-# Abra o seu editor de arquivos com o arquivo e faça as edições
+# Open your file editor with the file and make edits
 vim auth-config.json
 ```
 
-2. **Reinicie o container** para carregar as mudanças:
+2. **Restart the container** to load the changes:
 
 ```bash
 docker compose restart mesh
 ```
 
-3. **Ou recrie o container**:
+3. **Or recreate the container**:
 
 ```bash
 docker compose up -d --force-recreate mesh
 ```
 
-### ⚠️ Importante
+### ⚠️ Important
 
-- O arquivo deve ser um JSON válido
-- Se o arquivo não existir, o Docker Compose falhará ao iniciar
-- Escolha o arquivo de exemplo adequado às suas necessidades:
-  - **Configuração simples**: Use `conf-examples/auth-config.json.example`
-  - **SSO e envio de emails**: Use `conf-examples/auth-config-sso-email.json.example`
-- Não commite secrets (clientSecret, apiKey) no arquivo em produção
+- The file must be valid JSON
+- If the file doesn't exist, Docker Compose will fail to start
+- Choose the example file appropriate to your needs:
+  - **Simple configuration**: Use `conf-examples/auth-config.json.example`
+  - **SSO and email sending**: Use `conf-examples/auth-config-sso-email.json.example`
+- Don't commit secrets (clientSecret, apiKey) in the file in production
 
-## 🔐 Segurança
+## 🔐 Security
 
-### Gerar BETTER_AUTH_SECRET
+### Generate BETTER_AUTH_SECRET
 
-**⚠️ IMPORTANTE**: Sempre gere um secret seguro em produção:
+**⚠️ IMPORTANT**: Always generate a secure secret in production:
 
 ```bash
-# Gerar secret seguro (32+ caracteres)
+# Generate secure secret (32+ characters)
 openssl rand -base64 32
 
-# Adicionar ao .env
-BETTER_AUTH_SECRET=seu_secret_gerado_aqui
+# Add to .env
+BETTER_AUTH_SECRET=your_generated_secret_here
 ```
 
-### Proteger arquivo .env
+### Protect .env file
 
 ```bash
-# Não commitar .env no Git
+# Don't commit .env to Git
 echo ".env" >> .gitignore
 
-# Definir permissões restritas
+# Set restrictive permissions
 chmod 600 .env
 ```
+
+## 📊 Monitoring
 
 ### Logs
 
 ```bash
-# Ver logs em tempo real
+# View logs in real time
 docker compose logs -f mesh
 
-# Ver últimas 100 linhas
+# View last 100 lines
 docker compose logs --tail=100 mesh
 
-# Ver logs desde um timestamp
+# View logs since a timestamp
 docker compose logs --since 2024-01-01T00:00:00 mesh
 ```
 
-### Status do Container
+### Container Status
 
 ```bash
-# Ver status
+# View status
 docker compose ps
 
-# Ver detalhes
+# View details
 docker compose ps -a
 
-# Ver uso de recursos
+# View resource usage
 docker stats deco-mcp-mesh
 ```
 
-### Resetar Volume (Apagar Dados)
+### Reset Volume (Delete Data)
 
-Para resetar completamente os dados e começar do zero:
+To completely reset data and start from scratch:
 
-#### Método 1: Usar Docker Compose (Recomendado) ✅
+#### Method 1: Use Docker Compose (Recommended) ✅
 
 ```bash
-# Parar containers e remover volumes
+# Stop containers and remove volumes
 docker compose down -v
 
-# Reiniciar com volume vazio
+# Restart with empty volume
 docker compose up -d
 ```
 
-O flag `-v` remove os volumes nomeados definidos no `docker-compose.yml`.
+The `-v` flag removes the named volumes defined in `docker-compose.yml`.
 
-#### Método 2: Resetar volume específico
+#### Method 2: Reset specific volume
 
 ```bash
-# Parar apenas o serviço
+# Stop only the service
 docker compose stop mesh
 
-# Remover volume específico
+# Remove specific volume
 docker volume rm docker_mesh-data
 
-# Ou se estiver em outro diretório:
+# Or if in another directory:
 docker volume rm helm-chart-deco-mcp-mesh_mesh-data
 
-# Reiniciar (criará novo volume vazio)
+# Restart (will create new empty volume)
 docker compose up -d
 ```
 
-#### Método 3: Backup antes de resetar
+#### Method 3: Backup before resetting
 
 ```bash
-# 1. Fazer backup primeiro
+# 1. Backup first
 docker compose exec mesh cp /app/data/mesh.db /app/data/mesh.db.backup
 docker compose cp mesh:/app/data/mesh.db ./backup-$(date +%Y%m%d-%H%M%S).db
 
-# 2. Resetar
+# 2. Reset
 docker compose down -v
 docker compose up -d
 ```
 
-#### Método 4: Resetar apenas SQLite (manter outros dados)
+#### Method 4: Reset only SQLite (keep other data)
 
-Se quiser resetar apenas o banco SQLite mantendo outros arquivos:
+If you want to reset only the SQLite database keeping other files:
 
 ```bash
-# Entrar no container
+# Enter container
 docker compose exec mesh sh
 
-# Dentro do container, remover apenas o banco
+# Inside container, remove only the database
 rm /app/data/mesh.db
 
-# Reiniciar aplicação (recriará o banco)
+# Restart application (will recreate database)
 exit
 docker compose restart mesh
 ```
 
-#### Verificar volumes
+#### Verify volumes
 
 ```bash
-# Listar volumes
+# List volumes
 docker volume ls | grep mesh
 
-# Ver detalhes de um volume
+# View volume details
 docker volume inspect docker_mesh-data
 
-# Ver tamanho usado
+# View used size
 docker system df -v
 ```
 
-**⚠️ Atenção**: 
-- `docker compose down -v` **apaga todos os dados permanentemente**
-- Faça backup antes se tiver dados importantes
-- Volumes não são removidos automaticamente quando você faz `docker compose down` (sem `-v`)
+**⚠️ Warning**: 
+- `docker compose down -v` **permanently deletes all data**
+- Make a backup first if you have important data
+- Volumes are not automatically removed when you run `docker compose down` (without `-v`)
 
-## 🔄 Atualização
+## 🔄 Updating
 
-### Atualizar Imagem
+### Update Image
 
 ```bash
-# Parar aplicação
+# Stop application
 docker compose down
 
-# Atualizar imagem
+# Update image
 docker compose pull
 
-# Reiniciar
+# Restart
 docker compose up -d
 ```
 
-### Atualizar para versão específica
+### Update to specific version
 
 ```bash
-# Editar .env
+# Edit .env
 IMAGE_TAG=0.1.24
 
-# Atualizar
+# Update
 docker compose pull
 docker compose up -d
 ```
 
-## 📦 Backup e Restore
+## 📦 Backup and Restore
 
 ### Backup (SQLite)
 
 ```bash
-# Criar backup
+# Create backup
 docker compose exec mesh cp /app/data/mesh.db /app/data/mesh.db.backup
 
-# Copiar para host
+# Copy to host
 docker compose cp mesh:/app/data/mesh.db ./backup-$(date +%Y%m%d).db
 ```
 
 ### Backup (PostgreSQL)
 
 ```bash
-# Backup do banco
+# Database backup
 docker compose exec postgres pg_dump -U mesh_user mesh_db > backup-$(date +%Y%m%d).sql
 
 # Restore

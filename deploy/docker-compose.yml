@@ -9,35 +9,35 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      # Configurações básicas
+      # Basic configuration
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
       - HOST=0.0.0.0
       
-      # URLs da aplicação
+      # Application URLs
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       
-      # Secret de autenticação (obrigatório)
+      # Authentication secret (required)
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       
       # Database URL
-      # Se POSTGRES_USER estiver definido no .env: monta PostgreSQL automaticamente
-      # Caso contrário: usa SQLite como padrão (/app/data/mesh.db)
-      # Você pode sobrescrever definindo DATABASE_URL manualmente no .env
+      # If POSTGRES_USER is defined in .env: mounts PostgreSQL automatically
+      # Otherwise: uses SQLite as default (/app/data/mesh.db)
+      # You can override by defining DATABASE_URL manually in .env
       - DATABASE_URL=${DATABASE_URL:-${POSTGRES_USER:+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-mesh_db}}}
       - DATABASE_URL=${DATABASE_URL:-/app/data/mesh.db}
     volumes:
-      # Volume persistente para dados (SQLite ou outros arquivos)
+      # Persistent volume for data (SQLite or other files)
       - mesh-data:/app/data
       
-      # Auth config - monta o arquivo JSON de configuração de autenticação
-      # O arquivo é montado em /app/apps/mesh/auth-config.json
-      # Se o arquivo não existir localmente, o Docker Compose falhará ao iniciar
+      # Auth config - mounts the JSON authentication configuration file
+      # The file is mounted at /app/apps/mesh/auth-config.json
+      # If the file doesn't exist locally, Docker Compose will fail to start
       - ./auth-config.json:/app/apps/mesh/auth-config.json:ro
     healthcheck:
-      # Health check usando curl (ajuste se sua imagem não tiver curl)
-      # Alternativa: usar wget ou remover se não disponível
+      # Health check using curl (adjust if your image doesn't have curl)
+      # Alternative: use wget or remove if not available
       test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
       interval: 30s
       timeout: 5s

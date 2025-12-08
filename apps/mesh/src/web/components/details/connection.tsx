@@ -86,7 +86,7 @@ function ConnectionInspectorViewContent() {
   // Detect MCP binding
   const mcpBindingConnections = useBindingConnections({
     connections: connection ? [connection] : [],
-    inlineBinding: "MCP",
+    binding: "MCP",
   });
   const hasMcpBinding = mcpBindingConnections.length > 0;
 

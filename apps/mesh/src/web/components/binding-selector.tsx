@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Loader2 } from "lucide-react";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Select,
   SelectItem,
@@ -11,16 +11,17 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
 import type { ConnectionEntity } from "@/tools/connection/schema";
-import { useBindingConnections } from "../hooks/use-binding";
 import { useConnections } from "../hooks/collections/use-connection";
+import { useBindingConnections } from "../hooks/use-binding";
 
 interface BindingSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   /**
-   * Binding filter - can be a well-known binding name (e.g., "LLM", "AGENTS")
-   * or a custom binding schema array for filtering connections
+   * Binding filter - can be a well-known binding name (e.g., "LLMS", "AGENTS", "MCP")
+   * or a custom binding schema array for filtering connections.
+   * Note: String values are case-insensitive (e.g., "llms" works the same as "LLMS").
    */
   binding?:
     | string
@@ -65,7 +66,7 @@ export function BindingSelector({
   // Filter connections by binding (works with both well-known binding names and inline binding schemas)
   const filteredConnections = useBindingConnections({
     connections: allConnections,
-    inlineBinding: binding,
+    binding: binding,
   });
 
   // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })

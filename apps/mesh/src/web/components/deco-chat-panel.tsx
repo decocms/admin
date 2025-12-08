@@ -56,11 +56,11 @@ export function DecoChatPanel() {
   // Filter connections by binding type
   const [modelsConnection] = useBindingConnections({
     connections: allConnections,
-    inlineBinding: "LLMS",
+    binding: "LLMS",
   });
   const [agentsConnection] = useBindingConnections({
     connections: allConnections,
-    inlineBinding: "AGENTS",
+    binding: "AGENTS",
   });
 
   // Fetch models from the first LLM connection

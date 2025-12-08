@@ -23,25 +23,48 @@ const BUILTIN_BINDINGS: Record<string, Binder> = {
 /**
  * Simplified binding definition format (JSON Schema based)
  */
-export interface InlineBindingDefinition {
+export interface bindingDefinition {
+  /** Tool name to match (e.g., "MY_TOOL", "COLLECTION_USERS_LIST") */
   name: string;
+  /** JSON Schema for the tool's input parameters */
   inputSchema?: Record<string, unknown>;
+  /** JSON Schema for the tool's output */
   outputSchema?: Record<string, unknown>;
 }
 
 /**
- * Converts a simplified inline binding definition to Binder format
+ * Converts a simplified binding definition to Binder format
  */
-function convertInlineBindingToBinder(
-  bindings: InlineBindingDefinition[],
+function convertBindingToBinder(
+  bindings: bindingDefinition[],
 ): Binder {
   return bindings.map((binding) => ({
     name: binding.name,
     inputSchema: binding.inputSchema
-      ? convertJsonSchemaToZod(binding.inputSchema)
+      ? (() => {
+          try {
+            return convertJsonSchemaToZod(binding.inputSchema);
+          } catch (error) {
+            console.error(
+              `Failed to convert input schema for ${binding.name}:`,
+              error,
+            );
+            return z.object({});
+          }
+        })()
       : z.object({}),
     outputSchema: binding.outputSchema
-      ? convertJsonSchemaToZod(binding.outputSchema)
+      ? (() => {
+          try {
+            return convertJsonSchemaToZod(binding.outputSchema);
+          } catch (error) {
+            console.error(
+              `Failed to convert output schema for ${binding.name}:`,
+              error,
+            );
+            return z.object({});
+          }
+        })()
       : z.object({}),
   }));
 }
@@ -86,53 +109,83 @@ interface UseBindingConnectionsOptions {
   /**
    * Binding filter - can be:
    * - A well-known binding name (e.g., "LLMS", "AGENTS", "MCP")
-   * - A custom binding schema array (InlineBindingDefinition[]) for filtering connections
+   * - A custom binding schema array (BindingDefinition[]) for filtering connections
    */
-  inlineBinding?: string | InlineBindingDefinition[];
+  binding?: string | bindingDefinition[];
 }
 
 /**
  * Hook to filter connections that implement a specific binding.
  * Returns only connections whose tools satisfy the binding requirements.
  *
- * @param options - Object with connections and inlineBinding
+ * @param options - Object with connections and binding
  * @returns Filtered array of connections that implement the binding
  *
  * @example
  * // Using well-known binding name
- * useBindingConnections({ connections: allConnections, inlineBinding: "LLMS" })
+ * useBindingConnections({ connections: allConnections, binding: "LLMS" })
  *
  * @example
- * // Using custom inline binding
- * useBindingConnections({ connections: allConnections, inlineBinding: [{ name: "MY_TOOL", inputSchema: {...} }] })
+ * // Using custom binding schema
+ * useBindingConnections({ connections: allConnections, binding: [{ name: "MY_TOOL", inputSchema: {...} }] })
  */
 export function useBindingConnections({
   connections,
-  inlineBinding,
+  binding,
 }: UseBindingConnectionsOptions): ConnectionEntity[] {
   // Resolve binding definition:
-  // - If inlineBinding is a string, look up in BUILTIN_BINDINGS
-  // - If inlineBinding is an array, convert JSON schemas to Binder
-  const binding = useMemo(() => {
-    if (!inlineBinding) {
+  // - If binding is a string, look up in BUILTIN_BINDINGS
+  // - If binding is an array, convert JSON schemas to Binder
+  const resolvedBinding = useMemo(() => {
+    if (!binding) {
       return undefined;
     }
 
-    if (typeof inlineBinding === "string") {
-      return BUILTIN_BINDINGS[inlineBinding.toUpperCase()];
+    if (typeof binding === "string") {
+      const upperBinding = binding.toUpperCase();
+      const builtinBinding = BUILTIN_BINDINGS[upperBinding];
+
+      if (!builtinBinding) {
+        console.warn(
+          `[useBindingConnections] Unknown binding "${binding}". ` +
+            `Available bindings: ${Object.keys(BUILTIN_BINDINGS).join(", ")}. ` +
+            `Returning all connections without filtering.`,
+        );
+        return undefined;
+      }
+
+      return builtinBinding;
     }
 
-    return convertInlineBindingToBinder(inlineBinding);
-  }, [inlineBinding]);
+    // Validate binding array
+    if (binding.length === 0) {
+      console.warn(
+        "[useBindingConnections] Empty binding array provided. " +
+          "Returning all connections without filtering.",
+      );
+      return undefined;
+    }
+
+    return convertBindingToBinder(binding);
+  }, [binding]);
 
   return useMemo(
-    () =>
-      !connections || !binding
-        ? []
-        : connections.filter((conn) =>
-            connectionImplementsBinding(conn, binding),
-          ),
-    [connections, binding],
+    () => {
+      if (!connections) {
+        return [];
+      }
+
+      // If no binding filter, return all connections
+      if (!resolvedBinding) {
+        return connections;
+      }
+
+      // Filter connections by binding
+      return connections.filter((conn) =>
+        connectionImplementsBinding(conn, resolvedBinding),
+      );
+    },
+    [connections, resolvedBinding],
   );
 }
 

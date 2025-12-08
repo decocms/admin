@@ -35,9 +35,7 @@ export interface bindingDefinition {
 /**
  * Converts a simplified binding definition to Binder format
  */
-function convertBindingToBinder(
-  bindings: bindingDefinition[],
-): Binder {
+function convertBindingToBinder(bindings: bindingDefinition[]): Binder {
   return bindings.map((binding) => ({
     name: binding.name,
     inputSchema: binding.inputSchema
@@ -169,24 +167,21 @@ export function useBindingConnections({
     return convertBindingToBinder(binding);
   }, [binding]);
 
-  return useMemo(
-    () => {
-      if (!connections) {
-        return [];
-      }
+  return useMemo(() => {
+    if (!connections) {
+      return [];
+    }
 
-      // If no binding filter, return all connections
-      if (!resolvedBinding) {
-        return connections;
-      }
+    // If no binding filter, return all connections
+    if (!resolvedBinding) {
+      return connections;
+    }
 
-      // Filter connections by binding
-      return connections.filter((conn) =>
-        connectionImplementsBinding(conn, resolvedBinding),
-      );
-    },
-    [connections, resolvedBinding],
-  );
+    // Filter connections by binding
+    return connections.filter((conn) =>
+      connectionImplementsBinding(conn, resolvedBinding),
+    );
+  }, [connections, resolvedBinding]);
 }
 
 /**

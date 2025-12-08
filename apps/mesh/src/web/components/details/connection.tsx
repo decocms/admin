@@ -217,6 +217,7 @@ function ConnectionInspectorViewContent() {
                     draft.connection_type = connection.connection_type;
                     draft.connection_url = connection.connection_url;
                     draft.connection_token = newOrChangedToken;
+                    draft.status = "active";
                   },
                 );
                 await tx.isPersisted.promise;
@@ -712,6 +713,12 @@ function McpConfigurationForm({
         scopes: selectedScopes,
         state: data.formData,
       });
+
+      const tx = CONNECTIONS_COLLECTION.update(connection.id, (draft) => {
+      draft.status = "active";
+      })
+      await tx.isPersisted.promise;
+      
       toast.success("Configuration saved successfully");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

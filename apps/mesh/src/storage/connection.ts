@@ -63,7 +63,6 @@ export class ConnectionStorage implements ConnectionStoragePort {
     const serialized = await this.serializeConnection({
       ...data,
       id,
-      status: "active",
       created_at: now,
       updated_at: now,
     });

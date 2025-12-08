@@ -109,8 +109,8 @@ export const ConnectionCreateDataSchema = ConnectionEntitySchema.omit({
   organization_id: true,
   tools: true,
   bindings: true,
-  status: true,
 }).partial({
+  status: true,
   description: true,
   icon: true,
   app_name: true,

@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
-import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useConnections } from "../hooks/collections/use-connection";
 import { useBindingConnections } from "../hooks/use-binding";
 
@@ -52,9 +51,6 @@ export function BindingSelector({
   className,
 }: BindingSelectorProps) {
   const [isLocalInstalling, setIsLocalInstalling] = useState(false);
-  // Store newly installed connection locally (since it won't appear in filtered list until tools are discovered)
-  const [installedConnection, setInstalledConnection] =
-    useState<ConnectionEntity | null>(null);
   const { installByBinding, isInstalling: isGlobalInstalling } =
     useInstallFromRegistry();
 
@@ -76,7 +72,7 @@ export function BindingSelector({
     return scope && appName ? { scope, appName } : null;
   }, [bindingType]);
 
-  // Apply additional filtering by bindingType and combine with locally installed connection
+  // Apply additional filtering by bindingType and include selected connection if not in filtered list
   const connections = useMemo(() => {
     let result = filteredConnections;
 
@@ -95,14 +91,15 @@ export function BindingSelector({
       });
     }
 
-    if (
-      installedConnection &&
-      !result.some((c) => c.id === installedConnection.id)
-    ) {
-      return [installedConnection, ...result];
+    if (value && !result.some((c) => c.id === value)) {
+      const selectedConnection = allConnections?.find((c) => c.id === value);
+      if (selectedConnection) {
+        return [selectedConnection, ...result];
+      }
     }
+
     return result;
-  }, [filteredConnections, installedConnection, parsedBindingType]);
+  }, [filteredConnections, parsedBindingType, value, allConnections]);
 
   // Check if we can do inline installation (bindingType starts with @)
   const canInstallInline = bindingType?.startsWith("@");
@@ -114,9 +111,8 @@ export function BindingSelector({
       try {
         const result = await installByBinding(bindingType);
         if (result) {
-          // Store the connection locally so it appears in the list immediately
-          setInstalledConnection(result.connection);
           // Automatically select the newly installed connection
+          // The connection will appear in the list via allConnections
           onValueChange(result.id);
         }
       } catch (error) {

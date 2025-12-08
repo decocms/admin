@@ -26,6 +26,7 @@ import { useMcp } from "use-mcp/react";
 import { ViewLayout } from "./layout";
 import { useParams } from "@tanstack/react-router";
 import { JsonSchema } from "@/web/utils/constants";
+import { ScrollArea } from "@deco/ui/components/scroll-area.js";
 
 // Helper to normalize URL for MCP
 export interface ToolDetailsViewProps {
@@ -332,7 +333,6 @@ export function ToolDetail({
   if (!tool) {
     return <div>Tool not found</div>;
   }
-  console.log({ tool });
   return (
     <div className="flex flex-col items-center w-full mx-auto gap-4">
       {withHeader && <ToolHeader tool={tool} />}
@@ -437,10 +437,12 @@ export function ToolDetail({
               handleInputChange={handleInputChange}
             />
           </div>
-          <ExecutionResult
-            executionResult={executionResult}
-            placeholder="Run the tool to see results"
-          />
+          <div className="flex-1 shrink-0">
+            <ExecutionResult
+              executionResult={executionResult}
+              placeholder="Run the tool to see results"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -456,12 +458,12 @@ export function ExecutionResult({
 }) {
   const [viewMode, setViewMode] = useState<"json" | "view">("json");
   return (
-    <div className="w-full bg-card shadow-sm overflow-hidden border-t border-border">
+    <div className="w-full bg-card shadow-sm h-full border-t border-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
         <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
           Execution Result
         </span>
-        <div className="flex items-center bg-muted rounded-lg p-1 h-8">
+        <div className="flex items-center bg-muted rounded-lg p-1">
           <button
             onClick={() => setViewMode("json")}
             className={cn(
@@ -490,11 +492,13 @@ export function ExecutionResult({
         </div>
       </div>
 
-      <div className="relative min-h-[200px] max-h-[500px] overflow-auto bg-zinc-950 text-zinc-50 p-4 font-mono text-xs">
+      <div className="relative bg-zinc-950 text-zinc-50 p-4 font-mono text-xs flex-1 h-full">
         {executionResult ? (
-          <pre className="whitespace-pre-wrap break-all">
-            {JSON.stringify(executionResult, null, 2)}
-          </pre>
+          <ScrollArea className="h-full w-full">
+            <pre className="whitespace-pre-wrap break-all">
+              {JSON.stringify(executionResult, null, 2)}
+            </pre>
+          </ScrollArea>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700">
             <Code className="h-8 w-8 mb-2 opacity-50" />

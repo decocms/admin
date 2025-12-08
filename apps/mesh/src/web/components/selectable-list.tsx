@@ -1,7 +1,7 @@
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useState } from "react";
 
-function useScrollFade() {
+export function useScrollFade() {
   const [showFade, setShowFade] = useState(false);
 
   const checkScroll = useCallback((el: HTMLDivElement | null) => {

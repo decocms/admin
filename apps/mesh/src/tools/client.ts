@@ -92,3 +92,108 @@ export function createToolCaller<TArgs = unknown, TOutput = unknown>(
     return json.result?.structuredContent || json.result;
   };
 }
+
+/**
+ * Type for a streaming tool caller function
+ */
+export type StreamingToolCaller = <TOutput>(
+  toolName: string,
+  args: unknown,
+  signal?: AbortSignal,
+) => AsyncGenerator<TOutput, void, unknown>;
+
+/**
+ * Create a streaming tool caller for tools that return ndjson streams.
+ *
+ * Uses the dedicated streaming endpoint: /mcp/:connectionId/stream/:toolName
+ * This bypasses the MCP JSON-RPC protocol and calls the tool directly.
+ *
+ * Usage:
+ * ```ts
+ * const streamCaller = createStreamingToolCaller(connectionId);
+ * for await (const chunk of streamCaller<MyOutput>("STREAM_MY_TOOL", { id: "123" })) {
+ *   console.log("Got update:", chunk);
+ * }
+ * ```
+ */
+export function createStreamingToolCaller(
+  connectionId?: string,
+): StreamingToolCaller {
+  if (connectionId === UNKNOWN_CONNECTION_ID) {
+    return async function* <TOutput>(): AsyncGenerator<TOutput> {
+      // No-op for unknown connections
+    };
+  }
+
+  // Streaming tools require a connectionId to route to the right MCP server
+  if (!connectionId) {
+    throw new Error("connectionId is required for streaming tool calls");
+  }
+
+  return async function* <TOutput>(
+    toolName: string,
+    args: unknown,
+    signal?: AbortSignal,
+  ): AsyncGenerator<TOutput, void, unknown> {
+    // Use dedicated streaming endpoint that bypasses MCP JSON-RPC protocol
+    const endpoint = `/mcp/${connectionId}/stream/${toolName}`;
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      body: JSON.stringify(args),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/x-ndjson",
+      },
+      credentials: "include",
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error("No body received from the server");
+    }
+
+    const reader = response.body
+      .pipeThrough(new TextDecoderStream())
+      .getReader();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += value;
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const parsed = JSON.parse(line);
+              yield parsed as TOutput;
+            } catch {
+              console.warn("Failed to parse stream chunk:", line);
+            }
+          }
+        }
+      }
+
+      // Handle any remaining data in buffer
+      if (buffer.trim()) {
+        try {
+          const parsed = JSON.parse(buffer);
+          yield parsed as TOutput;
+        } catch {
+          // Ignore incomplete final chunk
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  };
+}

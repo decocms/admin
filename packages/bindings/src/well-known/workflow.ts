@@ -33,6 +33,7 @@ export const SleepActionSchema = z.union([
     sleepUntil: z.string().describe("ISO date string or @ref to sleep until"),
   }),
 ]);
+export type SleepAction = z.infer<typeof SleepActionSchema>;
 
 export const WaitForSignalActionSchema = z.object({
   signalName: z
@@ -220,6 +221,14 @@ export type WorkflowExecutionStepResult = z.infer<
   typeof WorkflowExecutionStepResultSchema
 >;
 
+export const WorkflowExecutionStreamChunkSchema = z.object({
+  step_id: z.string(),
+  chunk_data: z.unknown(),
+});
+export type WorkflowExecutionStreamChunk = z.infer<
+  typeof WorkflowExecutionStreamChunkSchema
+>;
+
 export const WorkflowExecutionWithStepResultsSchema =
   WorkflowExecutionSchema.extend({
     step_results: z.array(WorkflowExecutionStepResultSchema).optional(),
@@ -313,6 +322,151 @@ export const WORKFLOWS_COLLECTION_BINDING = createCollectionBindings(
   "workflow",
   WorkflowSchema,
 );
+export const DEFAULT_CODE_STEP: Omit<Step, "name"> = {
+  action: {
+    code: `
+  interface Input {
+    name: string;
+  }
+  interface Output {
+    name: string;
+  }
+  export default async function(input: Input): Promise<Output> { 
+    return {
+      name: input.name,
+    };
+  }
+    
+  `,
+  },
+};
+
+export const DEFAULT_SLEEP_STEP: Omit<Step, "name"> = {
+  action: {
+    sleepMs: 1000,
+  },
+};
+
+export const DEFAULT_WAIT_FOR_SIGNAL_STEP: Omit<Step, "name"> = {
+  action: {
+    signalName: "signal_name",
+  },
+};
+export const DEFAULT_TOOL_STEP: Omit<Step, "name"> = {
+  action: {
+    toolName: "LLM_DO_GENERATE",
+    connectionId: "conn_XXrfo-eDysOYg3G5daZ2R", // TODO @franca: this should be a binding
+  },
+  input: {
+    modelId: "anthropic/claude-3.5-haiku",
+    callOptions: {
+      prompt: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Hello, world!",
+            },
+          ],
+        },
+      ],
+    },
+  },
+};
+
+export const DEFAULT_WORKFLOW_STEPS: Step[] = [
+  // Step 1: Generate a list of items
+  {
+    name: "generate_items", // No spaces! Use underscores or camelCase
+    action: {
+      toolName: "LLM_DO_GENERATE",
+      connectionId: "conn_XXrfo-eDysOYg3G5daZ2R", // TODO @franca: this should be a binding
+    },
+    input: {
+      modelId: "anthropic/claude-3.5-haiku",
+      callOptions: {
+        prompt: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: 'Generate a JSON array of 3 items with "id" and "name" fields. Example: [{"id": 1, "name": "Item 1"}]. Output only valid JSON.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  // Step 2: Runs in PARALLEL with Step 1 (no @ref dependency)
+  {
+    name: "generate_categories",
+    action: {
+      toolName: "LLM_DO_GENERATE",
+      connectionId: "conn_XXrfo-eDysOYg3G5daZ2R", // TODO @franca: this should be a binding
+    },
+    input: {
+      modelId: "anthropic/claude-3.5-haiku",
+      callOptions: {
+        prompt: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: 'Generate a JSON array of 3 category names. Example: ["Electronics", "Books", "Clothing"]. Output only valid JSON.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  // Step 3: ForEach loop over items from Step 1
+  {
+    name: "process_each_item",
+    action: {
+      toolName: "LLM_DO_GENERATE",
+      connectionId: "conn_XXrfo-eDysOYg3G5daZ2R", // TODO @franca: this should be a binding
+    },
+    input: {
+      modelId: "anthropic/claude-3.5-haiku",
+      callOptions: {
+        prompt: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                // @item and @generate_categories work because they use underscores
+                text: "Describe this item: @item. Categories available: @generate_categories.output",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    config: {
+      forEach: {
+        items: "@generate_items.output", // Underscore instead of space!
+        mode: "parallel",
+        maxConcurrency: 3,
+      },
+    },
+  },
+];
+
+export const createDefaultWorkflow = (id?: string): Workflow => ({
+  id: id || crypto.randomUUID(),
+  title: "Default Workflow",
+  description: "The default workflow for the toolkit",
+  steps: DEFAULT_WORKFLOW_STEPS,
+  triggers: [],
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+});
 
 export const WORKFLOW_EXECUTIONS_COLLECTION_BINDING = createCollectionBindings(
   "workflow_execution",
@@ -368,6 +522,24 @@ export const WORKFLOW_BINDING = [
     }),
     outputSchema: z.object({
       executionId: z.string(),
+    }),
+  },
+  {
+    name: "SEND_SIGNAL" as const,
+    inputSchema: z.object({
+      executionId: z.string().describe("The execution ID to send signal to"),
+      signalName: z
+        .string()
+        .describe("Name of the signal (used by workflow to filter)"),
+      payload: z
+        .unknown()
+        .optional()
+        .describe("Optional data payload to send with the signal"),
+    }),
+    outputSchema: z.object({
+      success: z.boolean(),
+      signalId: z.string().optional(),
+      message: z.string().optional(),
     }),
   },
   ...WORKFLOW_COLLECTIONS_BINDINGS,

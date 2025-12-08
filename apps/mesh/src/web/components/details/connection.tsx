@@ -59,7 +59,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { IChangeEvent } from "@rjsf/core";
 import RJSForm from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  useParams,
+  useRouter,
+  useSearch,
+} from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle2, Globe, Loader2, Lock, Plus } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -70,6 +75,7 @@ import { z } from "zod";
 import { ViewActions, ViewLayout, ViewTabs } from "./layout";
 
 function ConnectionInspectorViewContent() {
+  const router = useRouter();
   const { connectionId, org } = useParams({ strict: false });
   const navigate = useNavigate({ from: "/$org/mcps/$connectionId" });
 
@@ -282,7 +288,7 @@ function ConnectionInspectorViewContent() {
   const activeCollection = collections.find((c) => c.name === activeTabId);
 
   return (
-    <ViewLayout onBack={() => window.history.back()}>
+    <ViewLayout onBack={() => router.history.back()}>
       <ViewTabs>
         <ResourceTabs
           tabs={tabs}

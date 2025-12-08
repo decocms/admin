@@ -70,7 +70,7 @@ export interface CreateCollectionOptions {
  * @param options - Configuration options for the collection
  * @returns A TanStack DB collection instance with persistence handlers
  */
-export function createCollectionFromToolCaller<T extends CollectionEntity>(
+function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions,
 ): Collection<T, string> {
   const { toolCaller, collectionName, pageSize = 100 } = options;

@@ -1,1 +1,0 @@
-alter table deco_chat_agents alter column project_id set not null;

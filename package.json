@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
-    "dev-prod": "VITE_USE_LOCAL_BACKEND=false concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+    "dev": "bun run --filter=@decocms/mesh dev",
     "fmt": "biome format --write",
     "lint": "oxlint",
     "check": "tsc --noEmit",
@@ -20,7 +19,6 @@
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked --include-all",
     "db:migration:create": "supabase migration new",
-    "npm:build": "npm run build --workspace=apps/web",
     "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
     "knip": "knip"
   },
@@ -31,14 +29,12 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.5",
     "@types/node": "^24.9.1",
-    "concurrently": "^9.2.1",
     "knip": "^5.66.2",
     "oxlint": "1.23.0",
     "supabase": "^2.48.3",
     "typescript": "^5.9.3",
     "vitest": "3.2.4",
-    "react": "^19.2.0",
-    "wrangler": "4.45.0"
+    "react": "^19.2.0"
   },
   "overrides": {
     "zod-to-json-schema": "3.25.0"

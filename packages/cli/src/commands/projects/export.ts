@@ -13,7 +13,7 @@ import {
   writeManifestFile,
   extractDependenciesFromTools,
 } from "../../lib/mcp-manifest.js";
-import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
+import { sanitizeProjectPath } from "../../lib/projects.js";
 import {
   viewJsonToCode,
   toolJsonToCode,
@@ -21,7 +21,7 @@ import {
   type ViewResource,
   type ToolResource,
   type WorkflowResource,
-} from "@deco/sdk/mcp/projects/code-conversion";
+} from "../../lib/code-conversion.js";
 
 interface ExportOptions {
   org?: string;

@@ -4,11 +4,7 @@
     "./plugins/enforce-query-key-constants.js",
     "./plugins/ban-use-effect.js"
   ],
-  "ignorePatterns": [
-    "scripts/migrate-project-entity-table.ts",
-    "packages/sdk/src/observability/otel/*",
-    "docs/*"
-  ],
+  "ignorePatterns": ["docs/*"],
   "rules": {
     "unicorn/no-useless-fallback-in-spread": "off",
     "no-unused-expressions": "off",
@@ -16,14 +12,6 @@
     "enforce-kebab-case-file-names/kebab-case": "warn",
     "ban-types": "warn",
     "enforce-query-key-constants/enforce-query-key-constants": "warn",
-    "ban-use-effect/ban-use-effect": "off"
-  },
-  "overrides": [
-    {
-      "files": ["apps/mesh/**/*.tsx"],
-      "rules": {
-        "ban-use-effect/ban-use-effect": "error"
-      }
-    }
-  ]
+    "ban-use-effect/ban-use-effect": "error"
+  }
 }

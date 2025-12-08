@@ -7,6 +7,7 @@ const isMobileDevice = () => globalThis.innerWidth < MOBILE_BREAKPOINT;
 export function useIsMobile() {
   const [isMobile, setIsMobile] = useState(isMobileDevice);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     const onChange = () => setIsMobile(isMobileDevice);
     const mql = globalThis.matchMedia(

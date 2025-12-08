@@ -8,8 +8,6 @@ node_modules
 **/node_modules
 
 # Build outputs (except mesh dist which we need)
-apps/web/dist
-apps/api/dist
 packages/*/dist
 
 # Development files

@@ -1,9 +1,0 @@
-#:schema node_modules/wrangler/config-schema.json
-compatibility_flags = ["nodejs_compat"]
-name = "apps-outbound"
-main = "main.ts"
-compatibility_date = "2023-12-01"
-services = [{ binding = "DECO_CHAT_API", service = "deco-chat-api" }]
-
-[observability]
-enabled = true

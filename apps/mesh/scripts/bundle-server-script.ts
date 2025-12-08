@@ -8,12 +8,12 @@
  *   bun run scripts/bundle-server-script.ts [--dist <path>]
  *
  * Options:
- *   --dist <path>  Output directory for pruned node_modules, server.js, and migrate.js (default: ./dist-server)
+ *   --dist <path>  Output directory for pruned node_modules, server.js, and migrate.js (default: ./dist/server)
  */
 
 import { nodeFileTrace } from "@vercel/nft";
-import { mkdir, cp } from "fs/promises";
-import { join, dirname, resolve } from "path";
+import { cp, mkdir, readFile, stat } from "fs/promises";
+import { dirname, join, resolve } from "path";
 import { existsSync } from "fs";
 import { $ } from "bun";
 
@@ -41,13 +41,74 @@ function parseArgs() {
 // Script is at apps/mesh/scripts, so we need to go up three levels to the repo root
 const WORKSPACE_ROOT = resolve(SCRIPT_DIR, "../../..");
 const MESH_APP_ROOT = resolve(SCRIPT_DIR, "..");
-const NODE_MODULES_DIR = join(WORKSPACE_ROOT, "node_modules");
 
 // Get dist path from args or use default
 const { distPath } = parseArgs();
 const OUTPUT_DIR = distPath
   ? resolve(distPath)
-  : join(process.cwd(), "dist-server");
+  : join(process.cwd(), "dist/server");
+
+// Cache to store resolved package names for directories to avoid repeated FS calls
+// Map<directoryPath, { name: string, path: string } | null>
+const packageCache = new Map<string, { name: string; path: string } | null>();
+
+/**
+ * Walks up the directory tree from a file path to find the enclosing package.json
+ * and returns the package name and its root directory.
+ */
+async function resolvePackage(
+  filePath: string,
+  rootDir: string,
+): Promise<{ name: string; path: string } | null> {
+  // Convert to absolute path if it isn't already
+  let currentDir = resolve(rootDir, filePath);
+
+  // If it's a file, start from its directory
+  const stats = await stat(currentDir);
+  if (!stats.isDirectory()) {
+    currentDir = dirname(currentDir);
+  }
+
+  // Traverse up until we leave the rootDir or hit the system root
+  while (currentDir.startsWith(rootDir)) {
+    // Check cache first
+    if (packageCache.has(currentDir)) {
+      return packageCache.get(currentDir)!;
+    }
+
+    const pkgJsonPath = join(currentDir, "package.json");
+
+    if (existsSync(pkgJsonPath)) {
+      try {
+        const content = await readFile(pkgJsonPath, "utf-8");
+        const pkg = JSON.parse(content);
+        const name = pkg.name;
+
+        if (!name) {
+          throw new Error(`Invalid package.json: ${pkgJsonPath}`);
+        }
+
+        const result = { name, path: currentDir };
+
+        // Cache this result for this directory
+        packageCache.set(currentDir, result);
+
+        return result;
+      } catch {
+        // invalid package.json, keep walking
+      }
+    }
+
+    // Move up one level
+    const parentDir = dirname(currentDir);
+    if (parentDir === currentDir) break; // Reached system root
+    currentDir = parentDir;
+  }
+
+  // Cache failure to avoid re-walking
+  // Note: this might be too aggressive if we traverse deeply, but for node_modules usually fine
+  return null;
+}
 
 async function pruneNodeModules(): Promise<Set<string>> {
   console.log(`🔍 Tracing dependencies for server and migration scripts...`);
@@ -81,27 +142,29 @@ async function pruneNodeModules(): Promise<Set<string>> {
 
   console.log(`📋 Found ${fileList.size} files in dependency tree`);
 
-  // Extract unique package names from traced files
-  const packagesToCopy = new Set<string>();
-  for (const file of fileList) {
-    // Extract package name from path (e.g., node_modules/kysely-bun-worker/... -> kysely-bun-worker)
-    if (file.startsWith("node_modules/")) {
-      const parts = file.split("/");
-      if (parts.length > 1) {
-        const packageName = parts[1];
-        // Handle scoped packages (e.g., @vercel/nft)
-        if (packageName.startsWith("@") && parts.length > 2) {
-          packagesToCopy.add(`${packageName}/${parts[2]}`);
-        } else {
-          packagesToCopy.add(packageName);
-        }
+  // Extract unique packages from traced files
+  // Map<packageName, packageRootPath>
+  const packagesToCopy = new Map<string, string>();
+
+  // Use parallel processing for faster resolution
+  await Promise.all(
+    Array.from(fileList).map(async (file) => {
+      // Only check files that look like they are in node_modules
+      if (!file.includes("node_modules/")) return;
+
+      const pkg = await resolvePackage(file, WORKSPACE_ROOT);
+      if (pkg) {
+        // We might encounter the same package multiple times from different files
+        // We just overwrite, assuming consistent locations for the same package name
+        // or that we want the last one found.
+        packagesToCopy.set(pkg.name, pkg.path);
       }
-    }
-  }
+    }),
+  );
 
   console.log(
     `📦 Found ${packagesToCopy.size} packages to copy:`,
-    Array.from(packagesToCopy).join(", "),
+    Array.from(packagesToCopy.keys()).join(", "),
   );
 
   // Create output directory structure
@@ -114,12 +177,13 @@ async function pruneNodeModules(): Promise<Set<string>> {
 
   // Copy entire package directories to ensure package.json and all metadata are included
   let copiedCount = 0;
-  for (const packageName of packagesToCopy) {
-    const packagePath = join(NODE_MODULES_DIR, packageName);
+  for (const [packageName, packagePath] of packagesToCopy.entries()) {
     const destPackagePath = join(outputNodeModules, packageName);
 
     if (!existsSync(packagePath)) {
-      console.warn(`⚠️  Package not found: ${packageName} at ${packagePath}`);
+      console.warn(
+        `⚠️  Package source not found: ${packageName} at ${packagePath}`,
+      );
       continue;
     }
 
@@ -137,7 +201,7 @@ async function pruneNodeModules(): Promise<Set<string>> {
   );
   console.log(`📊 Output directory: ${OUTPUT_DIR}`);
 
-  return packagesToCopy;
+  return new Set(packagesToCopy.keys());
 }
 
 async function buildMigrateScript(packagesToExternalize: Set<string>) {

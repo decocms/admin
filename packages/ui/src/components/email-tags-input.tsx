@@ -277,6 +277,7 @@ export function EmailTagsInput({
     }
   }, []);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue, adjustTextareaHeight]);

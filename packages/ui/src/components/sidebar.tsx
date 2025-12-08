@@ -92,6 +92,7 @@ function SidebarProvider({
   }, [isMobile, setOpen, setOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (

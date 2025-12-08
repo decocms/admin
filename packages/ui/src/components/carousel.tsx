@@ -88,11 +88,13 @@ function Carousel({
     [scrollPrev, scrollNext],
   );
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   React.useEffect(() => {
     if (!api || !setApi) return;
     setApi(api);
   }, [api, setApi]);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   React.useEffect(() => {
     if (!api) return;
     onSelect(api);

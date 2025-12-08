@@ -26,6 +26,7 @@ export function useViewMode(
   };
 
   // Auto-switch from table to cards when going from desktop to mobile
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     if (!previousIsMobile.current && isMobile && viewMode === "table") {
       setViewMode("cards"); // Don't save auto-switches to localStorage

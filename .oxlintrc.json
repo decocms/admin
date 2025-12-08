@@ -5,7 +5,7 @@
     "./plugins/ban-use-effect.js",
     "./plugins/ban-memoization.js"
   ],
-  "ignorePatterns": ["docs/*"],
+  "ignorePatterns": ["apps/docs/*"],
   "rules": {
     "unicorn/no-useless-fallback-in-spread": "off",
     "no-unused-expressions": "off",

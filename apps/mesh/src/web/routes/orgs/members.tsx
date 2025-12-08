@@ -16,6 +16,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import {
   AlertDialog,
@@ -32,6 +35,8 @@ import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { InviteMemberDialog } from "@/web/components/invite-member-dialog";
 import { useState } from "react";
+import { CreateRoleDialog } from "@/web/components/create-role-dialog";
+import { useOrganizationRoles } from "@/web/hooks/use-organization-roles";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 
 const useMembers = () => {
@@ -80,6 +85,12 @@ function MemberActionsDropdown({
   isUpdating = false,
 }: MemberActionsDropdownProps) {
   const isOwner = member.role === "owner";
+  const { roles } = useOrganizationRoles();
+
+  // Filter out the current role and owner role from options
+  const availableRoles = roles.filter(
+    (r) => r.role !== member.role && r.role !== "owner",
+  );
 
   return (
     <DropdownMenu>
@@ -95,29 +106,45 @@ function MemberActionsDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        {member.role === "admin" ? (
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onChangeRole(member.id, "member");
-            }}
-            disabled={isUpdating}
-          >
-            <Icon name="person" size={16} />
-            Change to Member
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onChangeRole(member.id, "admin");
-            }}
-            disabled={isUpdating}
-          >
-            <Icon name="admin_panel_settings" size={16} />
-            Change to Admin
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger disabled={isUpdating}>
+            <Icon name="swap_horiz" size={16} />
+            Change Role
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {availableRoles.map((role) => {
+              const connectionText =
+                role.connectionCount === -1
+                  ? "All connections"
+                  : `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`;
+              const toolText =
+                role.toolCount === -1
+                  ? "all tools"
+                  : `${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`;
+
+              return (
+                <DropdownMenuItem
+                  key={role.role}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChangeRole(member.id, role.role);
+                  }}
+                  disabled={isUpdating}
+                >
+                  <Icon name={role.isBuiltin ? "shield" : "key"} size={16} />
+                  <span className="flex flex-col">
+                    <span>{role.label}</span>
+                    {!role.isBuiltin && (
+                      <span className="text-xs text-muted-foreground">
+                        {connectionText}, {toolText}
+                      </span>
+                    )}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
@@ -325,13 +352,27 @@ export default function OrgMembers() {
   ];
 
   const ctaButton = (
-    <InviteMemberDialog
-      trigger={
-        <Button size="sm" className="h-7 px-3 rounded-lg text-sm font-medium">
-          Invite Member
-        </Button>
-      }
-    />
+    <div className="flex items-center gap-2">
+      <CreateRoleDialog
+        trigger={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-3 rounded-lg text-sm font-medium"
+          >
+            <Icon name="add" size={16} />
+            Create Role
+          </Button>
+        }
+      />
+      <InviteMemberDialog
+        trigger={
+          <Button size="sm" className="h-7 px-3 rounded-lg text-sm font-medium">
+            Invite Member
+          </Button>
+        }
+      />
+    </div>
   );
 
   return (

@@ -19,9 +19,9 @@ import {
   magicLink,
   mcp,
   openAPI,
-  organization,
   OrganizationOptions,
 } from "better-auth/plugins";
+import { organization } from "@decocms/better-auth/plugins";
 import {
   adminAc,
   defaultStatements,
@@ -105,6 +105,7 @@ const plugins = [
     dynamicAccessControl: {
       enabled: true,
       maximumRolesPerOrganization: 500,
+      enableCustomResources: true,
     },
     roles: {
       user,

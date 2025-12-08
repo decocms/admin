@@ -17,6 +17,10 @@ export const KEYS = {
   // Organization members (scoped by org)
   members: (locator: ProjectLocator) => [locator, "members"] as const,
 
+  // Organization roles (scoped by org)
+  organizationRoles: (locator: ProjectLocator) =>
+    [locator, "organization-roles"] as const,
+
   // Connections (scoped by project)
   connections: (locator: ProjectLocator) => [locator, "connections"] as const,
   connectionsByBinding: (locator: ProjectLocator, binding: string) =>

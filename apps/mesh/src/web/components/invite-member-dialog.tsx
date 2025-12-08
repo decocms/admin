@@ -19,11 +19,18 @@ import {
   FormItem,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
-import { MultiSelect } from "@deco/ui/components/multi-select.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 import { EmailTagsInput } from "@deco/ui/components/email-tags-input.tsx";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { KEYS } from "@/web/lib/query-keys";
+import { useOrganizationRoles } from "@/web/hooks/use-organization-roles";
 
 interface InviteMemberDialogProps {
   trigger: React.ReactNode;
@@ -33,7 +40,7 @@ const emailSchema = z.string().email("Invalid email address");
 
 type InviteMemberFormData = {
   emails: string[];
-  roles: string[]; // Support multiple roles like apps/web
+  role: string; // Single role selection
 };
 
 export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
@@ -45,15 +52,23 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
   const { data: session } = authClient.useSession();
   const currentUserEmail = session?.user?.email;
 
+  // Get available roles
+  const { roles: availableRoles, isLoading: isLoadingRoles } =
+    useOrganizationRoles();
+
+  // Filter out owner role from invite options
+  const inviteableRoles = availableRoles.filter((r) => r.role !== "owner");
+
   const form = useForm<InviteMemberFormData>({
     mode: "onChange",
     defaultValues: {
       emails: [],
-      roles: ["member"], // Default to member role
+      role: "member", // Default to member role
     },
   });
 
   const emails = form.watch("emails");
+  const selectedRole = form.watch("role");
 
   // Filter valid emails for submission
   const validEmails = emails.filter((email) => {
@@ -66,20 +81,16 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
 
   const inviteMutation = useMutation({
     mutationFn: async (data: InviteMemberFormData) => {
-      if (data.roles.length === 0) {
-        throw new Error("Please select at least one role");
+      if (!data.role) {
+        throw new Error("Please select a role");
       }
 
-      // Note: Better Auth's inviteMember accepts a single role
-      // Using the first selected role for now
-      const role = data.roles[0] as "member" | "admin" | "owner";
-
-      // Invite each valid email
+      // Invite each valid email with the selected role
       const results = await Promise.allSettled(
         validEmails.map(async (email) => {
           const result = await authClient.organization.inviteMember({
             email,
-            role,
+            role: data.role,
           });
 
           if (result.error) {
@@ -109,7 +120,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
       );
       form.reset({
         emails: [],
-        roles: ["member"],
+        role: "member",
       });
       setOpen(false);
     },
@@ -120,21 +131,19 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
     },
   });
 
-  const roles = form.watch("roles");
-
   const handleSubmit = (data: InviteMemberFormData) => {
     if (validEmails.length === 0) {
       toast.error("Please add at least one valid email address");
       return;
     }
-    if (data.roles.length === 0) {
-      toast.error("Please select at least one role");
+    if (!data.role) {
+      toast.error("Please select a role");
       return;
     }
     inviteMutation.mutate(data);
   };
 
-  const isFormValid = validEmails.length > 0 && roles.length > 0;
+  const isFormValid = validEmails.length > 0 && !!selectedRole;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -170,23 +179,44 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
 
             <FormField
               control={form.control}
-              name="roles"
+              name="role"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <MultiSelect
-                      options={[
-                        { value: "member", label: "Member" },
-                        { value: "admin", label: "Admin" },
-                      ]}
-                      defaultValue={field.value}
+                    <Select
+                      value={field.value}
                       onValueChange={field.onChange}
-                      placeholder="Select roles"
-                      variant="secondary"
-                      className="w-full max-w-none"
-                      disabled={inviteMutation.isPending}
-                      maxCount={99}
-                    />
+                      disabled={inviteMutation.isPending || isLoadingRoles}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inviteableRoles.map((role) => {
+                          const connectionText =
+                            role.connectionCount === -1
+                              ? "All connections"
+                              : `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`;
+                          const toolText =
+                            role.toolCount === -1
+                              ? "all tools"
+                              : `${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`;
+
+                          return (
+                            <SelectItem key={role.role} value={role.role}>
+                              <div className="flex flex-col">
+                                <span>{role.label}</span>
+                                {!role.isBuiltin && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {connectionText}, {toolText}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +229,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
                 onClick={() => {
                   form.reset({
                     emails: [],
-                    roles: ["member"],
+                    role: "member",
                   });
                   setOpen(false);
                 }}

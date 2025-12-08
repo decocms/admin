@@ -30,6 +30,54 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { KEYS } from "@/web/lib/query-keys";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 
+/**
+ * Static/Organization-level permissions
+ * These are stored under the "self" resource key
+ */
+const STATIC_PERMISSIONS = {
+  organization: {
+    label: "Organization",
+    permissions: [
+      { value: "ORGANIZATION_LIST", label: "List organizations" },
+      { value: "ORGANIZATION_GET", label: "View organization details" },
+      { value: "ORGANIZATION_UPDATE", label: "Update organization" },
+      { value: "ORGANIZATION_DELETE", label: "Delete organization" },
+      {
+        value: "ORGANIZATION_SETTINGS_GET",
+        label: "View organization settings",
+      },
+      {
+        value: "ORGANIZATION_SETTINGS_UPDATE",
+        label: "Update organization settings",
+      },
+    ],
+  },
+  members: {
+    label: "Members",
+    permissions: [
+      { value: "ORGANIZATION_MEMBER_LIST", label: "List members" },
+      { value: "ORGANIZATION_MEMBER_ADD", label: "Add members" },
+      { value: "ORGANIZATION_MEMBER_REMOVE", label: "Remove members" },
+      {
+        value: "ORGANIZATION_MEMBER_UPDATE_ROLE",
+        label: "Update member roles",
+      },
+    ],
+  },
+  connections: {
+    label: "Connection Management",
+    permissions: [
+      { value: "COLLECTION_CONNECTIONS_LIST", label: "List connections" },
+      { value: "COLLECTION_CONNECTIONS_GET", label: "View connection details" },
+      { value: "COLLECTION_CONNECTIONS_CREATE", label: "Create connections" },
+      { value: "COLLECTION_CONNECTIONS_UPDATE", label: "Update connections" },
+      { value: "COLLECTION_CONNECTIONS_DELETE", label: "Delete connections" },
+      { value: "CONNECTION_TEST", label: "Test connections" },
+      { value: "CONNECTION_CONFIGURE", label: "Configure connections" },
+    ],
+  },
+};
+
 interface CreateRoleDialogProps {
   trigger: React.ReactNode;
   onSuccess?: () => void;
@@ -37,6 +85,10 @@ interface CreateRoleDialogProps {
 
 type CreateRoleFormData = {
   roleName: string;
+  // Static permissions (organization-level)
+  allowAllStaticPermissions: boolean;
+  staticPermissions: string[];
+  // Connection-specific permissions
   allowAllConnections: boolean;
   connectionIds: string[];
   allowAllTools: boolean;
@@ -58,6 +110,8 @@ export function CreateRoleDialog({
     mode: "onChange",
     defaultValues: {
       roleName: "",
+      allowAllStaticPermissions: true,
+      staticPermissions: [],
       allowAllConnections: false,
       connectionIds: [],
       allowAllTools: true,
@@ -65,11 +119,24 @@ export function CreateRoleDialog({
     },
   });
 
+  const allowAllStaticPermissions = form.watch("allowAllStaticPermissions");
+  const staticPermissions = form.watch("staticPermissions");
   const allowAllConnections = form.watch("allowAllConnections");
   const allowAllTools = form.watch("allowAllTools");
   const roleName = form.watch("roleName");
   const connectionIds = form.watch("connectionIds");
   const toolNames = form.watch("toolNames");
+
+  // Build static permission options for MultiSelect
+  const staticPermissionOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    for (const category of Object.values(STATIC_PERMISSIONS)) {
+      for (const perm of category.permissions) {
+        options.push(perm);
+      }
+    }
+    return options;
+  }, []);
 
   // Get available tools from selected connections
   const availableTools = useMemo(() => {
@@ -113,17 +180,24 @@ export function CreateRoleDialog({
 
   const createRoleMutation = useMutation({
     mutationFn: async (data: CreateRoleFormData) => {
-      // Build permission object based on connection and tool selection
-      // Format: { "<connectionId>": ["tool1", "tool2"] } or { "*": ["*"] }
+      // Build permission object
+      // Format: { "self": ["PERM1", "PERM2"], "<connectionId>": ["tool1", "tool2"] }
       const permission: Record<string, string[]> = {};
 
-      // Determine which tools to allow
+      // Add static/organization-level permissions under "self"
+      if (data.allowAllStaticPermissions) {
+        permission["self"] = ["*"];
+      } else if (data.staticPermissions.length > 0) {
+        permission["self"] = data.staticPermissions;
+      }
+
+      // Determine which tools to allow for connections
       const toolsToAllow = data.allowAllTools ? ["*"] : data.toolNames;
 
       if (data.allowAllConnections) {
         // Allow access to all connections
         permission["*"] = toolsToAllow;
-      } else {
+      } else if (data.connectionIds.length > 0) {
         // Allow access to specific connections
         for (const connId of data.connectionIds) {
           permission[connId] = toolsToAllow;
@@ -152,6 +226,8 @@ export function CreateRoleDialog({
       toast.success("Role created successfully!");
       form.reset({
         roleName: "",
+        allowAllStaticPermissions: true,
+        staticPermissions: [],
         allowAllConnections: false,
         connectionIds: [],
         allowAllTools: true,
@@ -173,16 +249,23 @@ export function CreateRoleDialog({
       return;
     }
 
-    if (!data.allowAllConnections && data.connectionIds.length === 0) {
+    // Validate static permissions
+    if (
+      !data.allowAllStaticPermissions &&
+      data.staticPermissions.length === 0
+    ) {
       toast.error(
-        "Please select at least one connection or allow all connections",
+        "Please select at least one organization permission or allow all",
       );
       return;
     }
 
-    if (!data.allowAllTools && data.toolNames.length === 0) {
-      toast.error("Please select at least one tool or allow all tools");
-      return;
+    // Connection permissions are optional - a role can have only org-level permissions
+    if (data.connectionIds.length > 0 || data.allowAllConnections) {
+      if (!data.allowAllTools && data.toolNames.length === 0) {
+        toast.error("Please select at least one tool or allow all tools");
+        return;
+      }
     }
 
     createRoleMutation.mutate(data);
@@ -200,10 +283,17 @@ export function CreateRoleDialog({
     label: tool.name,
   }));
 
+  // Form is valid if we have a name and at least static permissions configured
+  const hasStaticPerms =
+    allowAllStaticPermissions || staticPermissions.length > 0;
+  const hasConnectionPerms = allowAllConnections || connectionIds.length > 0;
+  const hasToolPerms = allowAllTools || toolNames.length > 0;
+
+  // Valid if: name + static perms, and if connections selected then tools must be configured
   const isFormValid =
     roleName.trim().length > 0 &&
-    (allowAllConnections || connectionIds.length > 0) &&
-    (allowAllTools || toolNames.length > 0);
+    hasStaticPerms &&
+    (!hasConnectionPerms || hasToolPerms);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -242,6 +332,70 @@ export function CreateRoleDialog({
                 </FormItem>
               )}
             />
+
+            {/* Organization Permissions Section */}
+            <div className="space-y-3">
+              <div className="text-sm font-medium">
+                Organization Permissions
+              </div>
+
+              <FormField
+                control={form.control}
+                name="allowAllStaticPermissions"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={createRoleMutation.isPending}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Allow all organization permissions</FormLabel>
+                      <FormDescription>
+                        Full access to organization, members, and connection
+                        management.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {!allowAllStaticPermissions && (
+                <FormField
+                  control={form.control}
+                  name="staticPermissions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Permissions{" "}
+                        <Badge variant="secondary" className="ml-2">
+                          {staticPermissionOptions.length} available
+                        </Badge>
+                      </FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          options={staticPermissionOptions}
+                          defaultValue={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select permissions"
+                          variant="secondary"
+                          className="w-full max-w-none"
+                          disabled={createRoleMutation.isPending}
+                          maxCount={3}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Select specific organization-level permissions for this
+                        role.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             {/* Connection Permissions Section */}
             <div className="space-y-3">
@@ -396,6 +550,3 @@ export function CreateRoleDialog({
     </Dialog>
   );
 }
-
-
-

@@ -59,33 +59,32 @@ type CallStreamableToolMiddleware = (
  * Authorization middleware - checks access to tool on connection
  * Inspired by withMCPAuthorization from @deco/sdk
  *
- * Permissions format: { 'conn_<UUID>': ['TOOL1', 'TOOL2', '*'] }
+ * Permissions format: { '<connectionId>': ['TOOL1', 'TOOL2', '*'], '*': ['*'] }
  * This checks if the user has permission for the specific tool on this connection
  */
 function withConnectionAuthorization(
   ctx: MeshContext,
   connectionId: string,
+  permissions: Record<string, string[]>,
 ): CallToolMiddleware {
   return async (request, next) => {
-    if (!ctx.auth.apiKey) {
-      return await next();
-    }
-
     try {
       const toolName = request.params.name;
 
       // Create AccessControl with connectionId set
       // This allows it to check: does user have permission for this TOOL on this CONNECTION?
       // Example: { 'conn_123': ['SEND_MESSAGE'] } - allows SEND_MESSAGE on conn_123
+      // Permissions come from either API key or user's role (fetched in context-factory)
       const connectionAccessControl = new AccessControl(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName, // Tool being called
-        ctx.auth.apiKey?.permissions,
+        permissions, // Permissions from context-factory (API key or custom role)
         ctx.auth.user?.role,
         connectionId, // Connection ID to filter by
       );
 
+      console.log(permissions, connectionId);
       // Check permission for this specific tool on this connection
       await connectionAccessControl.check(toolName);
 
@@ -112,20 +111,18 @@ function withConnectionAuthorization(
 function withStreamableConnectionAuthorization(
   ctx: MeshContext,
   connectionId: string,
+  permissions: Record<string, string[]>,
 ): CallStreamableToolMiddleware {
   return async (request, next) => {
-    if (!ctx.auth.apiKey) {
-      return await next();
-    }
-
     try {
       const toolName = request.params.name;
 
+      // Permissions come from either API key or user's role (fetched in context-factory)
       const connectionAccessControl = new AccessControl(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName,
-        ctx.auth.apiKey?.permissions,
+        permissions,
         ctx.auth.user?.role,
         connectionId,
       );
@@ -279,10 +276,16 @@ export async function createMCPProxy(
   };
 
   // Create authorization middlewares
-  const authMiddleware = withConnectionAuthorization(ctx, connectionId);
+  // Use unified permissions from ctx.auth.permissions (API key or custom role)
+  const authMiddleware = withConnectionAuthorization(
+    ctx,
+    connectionId,
+    ctx.auth.permissions,
+  );
   const streamableAuthMiddleware = withStreamableConnectionAuthorization(
     ctx,
     connectionId,
+    ctx.auth.permissions,
   );
 
   // Compose middlewares

@@ -106,6 +106,11 @@ const plugins = [
       enabled: true,
       maximumRolesPerOrganization: 500,
       enableCustomResources: true,
+      canCreateRole: async ({ member }) => {
+        return member.role === "owner" || member.role === "admin"
+          ? "yes"
+          : "default";
+      },
     },
     roles: {
       user,

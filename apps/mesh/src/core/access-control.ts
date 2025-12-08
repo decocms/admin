@@ -144,8 +144,8 @@ export class AccessControl implements Disposable {
       return false;
     }
 
-    // Admin role bypasses all checks
-    if (this.role === "admin") {
+    // Admin and owner roles bypass all checks (they have full access)
+    if (this.role === "admin" || this.role === "owner") {
       return true;
     }
 
@@ -203,7 +203,7 @@ export class AccessControl implements Disposable {
 
     // Check permissions object
     for (const [key, actions] of Object.entries(this.permissions)) {
-      const isGlobalScope = key === "self";
+      const isGlobalScope = key === "self" && this.connectionId === "self";
       const matchesConnection =
         !this.connectionId || key === this.connectionId || isGlobalScope;
 

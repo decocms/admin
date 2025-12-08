@@ -113,14 +113,42 @@ function MemberActionsDropdown({
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {availableRoles.map((role) => {
-              const connectionText =
-                role.connectionCount === -1
-                  ? "All connections"
-                  : `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`;
-              const toolText =
-                role.toolCount === -1
-                  ? "all tools"
-                  : `${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`;
+              // Build description parts for custom roles
+              const parts: string[] = [];
+
+              if (!role.isBuiltin) {
+                // Static permissions
+                if (role.allowsAllStaticPermissions) {
+                  parts.push("Full org access");
+                } else if (
+                  role.staticPermissionCount &&
+                  role.staticPermissionCount > 0
+                ) {
+                  parts.push(
+                    `${role.staticPermissionCount} org perm${role.staticPermissionCount !== 1 ? "s" : ""}`,
+                  );
+                }
+
+                // Connection permissions
+                if (role.allowsAllConnections) {
+                  parts.push("All connections");
+                } else if (role.connectionCount && role.connectionCount > 0) {
+                  parts.push(
+                    `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`,
+                  );
+                }
+
+                // Tool permissions
+                if (role.connectionCount !== 0 || role.allowsAllConnections) {
+                  if (role.allowsAllTools) {
+                    parts.push("all tools");
+                  } else if (role.toolCount && role.toolCount > 0) {
+                    parts.push(
+                      `${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`,
+                    );
+                  }
+                }
+              }
 
               return (
                 <DropdownMenuItem
@@ -134,9 +162,9 @@ function MemberActionsDropdown({
                   <Icon name={role.isBuiltin ? "shield" : "key"} size={16} />
                   <span className="flex flex-col">
                     <span>{role.label}</span>
-                    {!role.isBuiltin && (
+                    {!role.isBuiltin && parts.length > 0 && (
                       <span className="text-xs text-muted-foreground">
-                        {connectionText}, {toolText}
+                        {parts.join(", ")}
                       </span>
                     )}
                   </span>

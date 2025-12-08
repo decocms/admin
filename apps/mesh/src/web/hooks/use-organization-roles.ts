@@ -25,16 +25,25 @@ export interface OrganizationRole {
   label: string;
   isBuiltin: boolean;
   permission?: Record<string, string[]>;
+  // Static/organization-level permissions (under "self")
+  staticPermissionCount?: number;
+  allowsAllStaticPermissions?: boolean;
+  // Connection-specific permissions
   connectionCount?: number;
   toolCount?: number;
+  allowsAllConnections?: boolean;
   allowsAllTools?: boolean;
 }
 
 /**
- * Parse permission to extract connection and tool information
- * Format: { "<connectionId>": ["tool1", "tool2"], "*": ["*"] }
+ * Parse permission to extract static and connection-specific information
+ * Format: { "self": ["PERM1", "PERM2"], "<connectionId>": ["tool1", "tool2"], "*": ["*"] }
  */
 function parsePermission(permission: Record<string, string[]> | undefined): {
+  // Static permissions (under "self")
+  staticPermissions: string[];
+  allowsAllStaticPermissions: boolean;
+  // Connection permissions
   connectionIds: string[];
   allowsAllConnections: boolean;
   toolNames: string[];
@@ -42,6 +51,8 @@ function parsePermission(permission: Record<string, string[]> | undefined): {
 } {
   if (!permission) {
     return {
+      staticPermissions: [],
+      allowsAllStaticPermissions: false,
       connectionIds: [],
       allowsAllConnections: false,
       toolNames: [],
@@ -49,18 +60,40 @@ function parsePermission(permission: Record<string, string[]> | undefined): {
     };
   }
 
+  const staticPermissions: string[] = [];
+  let allowsAllStaticPermissions = false;
   const connectionIds: string[] = [];
   let allowsAllConnections = false;
   const toolNamesSet = new Set<string>();
   let allowsAllTools = false;
 
   for (const [resource, tools] of Object.entries(permission)) {
-    // Check if this is the wildcard for all connections
+    // "self" is for static/organization-level permissions
+    if (resource === "self") {
+      if (tools.includes("*")) {
+        allowsAllStaticPermissions = true;
+      } else {
+        staticPermissions.push(...tools);
+      }
+      continue;
+    }
+
+    // "*" is for all connections
     if (resource === "*") {
       allowsAllConnections = true;
-    } else {
-      connectionIds.push(resource);
+      // Check tools for this wildcard
+      if (tools.includes("*")) {
+        allowsAllTools = true;
+      } else {
+        for (const tool of tools) {
+          toolNamesSet.add(tool);
+        }
+      }
+      continue;
     }
+
+    // Otherwise it's a connection ID
+    connectionIds.push(resource);
 
     // Check tools
     if (tools.includes("*")) {
@@ -73,6 +106,8 @@ function parsePermission(permission: Record<string, string[]> | undefined): {
   }
 
   return {
+    staticPermissions,
+    allowsAllStaticPermissions,
     connectionIds,
     allowsAllConnections,
     toolNames: Array.from(toolNamesSet),
@@ -98,6 +133,7 @@ export function useOrganizationRoles() {
     queryFn: async () => {
       try {
         // Fetch custom roles from Better Auth
+        // The API returns the roles array directly (not wrapped in { roles: [...] })
         const result = await authClient.organization.listRoles();
 
         if (result.error) {
@@ -105,7 +141,8 @@ export function useOrganizationRoles() {
           return [];
         }
 
-        return result.data?.roles ?? [];
+        // result.data IS the roles array directly
+        return result.data ?? [];
       } catch (err) {
         console.error("Error fetching organization roles:", err);
         return [];
@@ -129,8 +166,14 @@ export function useOrganizationRoles() {
         continue;
       }
 
-      const { connectionIds, allowsAllConnections, toolNames, allowsAllTools } =
-        parsePermission(customRole.permission);
+      const {
+        staticPermissions,
+        allowsAllStaticPermissions,
+        connectionIds,
+        allowsAllConnections,
+        toolNames,
+        allowsAllTools,
+      } = parsePermission(customRole.permission);
 
       allRoles.push({
         id: customRole.id,
@@ -138,7 +181,14 @@ export function useOrganizationRoles() {
         label: formatRoleLabel(customRole.role),
         isBuiltin: false,
         permission: customRole.permission,
+        // Static permissions
+        staticPermissionCount: allowsAllStaticPermissions
+          ? -1
+          : staticPermissions.length,
+        allowsAllStaticPermissions,
+        // Connection permissions
         connectionCount: allowsAllConnections ? -1 : connectionIds.length,
+        allowsAllConnections,
         toolCount: allowsAllTools ? -1 : toolNames.length,
         allowsAllTools,
       });
@@ -180,20 +230,40 @@ export function useRoleOptions() {
       };
     }
 
-    const connectionText =
-      role.connectionCount === -1
-        ? "All connections"
-        : `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`;
+    // Build description parts
+    const parts: string[] = [];
 
-    const toolText =
-      role.toolCount === -1
-        ? "all tools"
-        : `${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`;
+    // Static permissions
+    if (role.allowsAllStaticPermissions) {
+      parts.push("Full org access");
+    } else if (role.staticPermissionCount && role.staticPermissionCount > 0) {
+      parts.push(
+        `${role.staticPermissionCount} org perm${role.staticPermissionCount !== 1 ? "s" : ""}`,
+      );
+    }
+
+    // Connection permissions
+    if (role.allowsAllConnections) {
+      parts.push("All connections");
+    } else if (role.connectionCount && role.connectionCount > 0) {
+      parts.push(
+        `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`,
+      );
+    }
+
+    // Tool permissions (only if connections are configured)
+    if (role.connectionCount !== 0 || role.allowsAllConnections) {
+      if (role.allowsAllTools) {
+        parts.push("all tools");
+      } else if (role.toolCount && role.toolCount > 0) {
+        parts.push(`${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`);
+      }
+    }
 
     return {
       value: role.role,
       label: role.label,
-      description: `${connectionText}, ${toolText}`,
+      description: parts.length > 0 ? parts.join(", ") : "Custom role",
     };
   });
 
@@ -203,6 +273,3 @@ export function useRoleOptions() {
     error,
   };
 }
-
-
-

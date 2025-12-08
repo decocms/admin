@@ -108,6 +108,54 @@ interface AuthenticatedUser {
 }
 
 /**
+ * Fetch custom role permissions using Better Auth's internal adapter
+ * This bypasses API permission checks which would create a circular dependency
+ */
+async function fetchCustomRolePermissions(
+  auth: BetterAuthInstance,
+  organizationId: string,
+  roleName: string,
+): Promise<Record<string, string[]>> {
+  try {
+    // Access Better Auth's internal context and adapter
+    const context = await (auth as { $context: Promise<unknown> }).$context;
+    const adapter = (
+      context as {
+        adapter?: { findOne: (params: unknown) => Promise<unknown> };
+      }
+    )?.adapter;
+
+    if (!adapter?.findOne) {
+      console.error("[Auth] Better Auth adapter not available");
+      return {};
+    }
+
+    // Query the organizationRole table using Better Auth's adapter
+    const roleRecord = (await adapter.findOne({
+      model: "organizationRole",
+      where: [
+        {
+          field: "organizationId",
+          value: organizationId,
+          operator: "eq",
+          connector: "AND",
+        },
+        { field: "role", value: roleName, operator: "eq", connector: "AND" },
+      ],
+    })) as { permission?: string } | null;
+
+    if (roleRecord?.permission) {
+      return typeof roleRecord.permission === "string"
+        ? JSON.parse(roleRecord.permission)
+        : roleRecord.permission;
+    }
+  } catch (err) {
+    console.error("[Auth] Failed to fetch custom role permissions:", err);
+  }
+  return {};
+}
+
+/**
  * Authenticate request using either OAuth session or API key
  * Returns unified authentication data with organization context
  */
@@ -217,8 +265,10 @@ async function authenticateRequest(
 
     if (session) {
       let organization: OrganizationContext | undefined;
+      let role: string | undefined;
 
       if (session.session.activeOrganizationId) {
+        // Get full organization data (includes members with roles)
         const orgData = await auth.api
           .getFullOrganization({
             headers: c.req.raw.headers,
@@ -231,6 +281,13 @@ async function authenticateRequest(
             slug: orgData.slug,
             name: orgData.name,
           };
+
+          // Extract user's role from the members array
+          // getFullOrganization returns members: [{ userId, role, ... }]
+          const currentMember = orgData.members?.find(
+            (m: { userId: string }) => m.userId === session.user.id,
+          );
+          role = currentMember?.role;
         } else {
           organization = {
             id: session.session.activeOrganizationId,
@@ -240,11 +297,22 @@ async function authenticateRequest(
         }
       }
 
+      // For custom roles (not built-in), fetch the role's permissions
+      // using Better Auth's internal adapter (bypasses API permission checks)
+      let permissions: Record<string, string[]> = {};
+      const builtInRoles = ["owner", "admin", "member"];
+
+      if (role && !builtInRoles.includes(role) && organization) {
+        permissions = await fetchCustomRolePermissions(
+          auth,
+          organization.id,
+          role,
+        );
+      }
       return {
         user: { id: session.user.id, email: session.user.email },
-        permissions: {
-          self: ["*"],
-        },
+        permissions, // Custom role permissions or empty for built-in roles
+        role, // Role name for built-in role bypass checks
         organization,
       };
     }
@@ -296,6 +364,7 @@ export function createMeshContextFactory(
     // Build auth object for MeshContext
     const auth: MeshContext["auth"] = {
       user: authResult.user,
+      permissions: authResult.permissions, // Unified permissions (API key or custom role)
     };
 
     if (authResult.apiKeyId) {

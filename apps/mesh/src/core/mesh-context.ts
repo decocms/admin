@@ -44,6 +44,10 @@ export interface MeshAuth {
     remaining?: number; // Remaining requests (rate limiting)
     expiresAt?: Date;
   };
+
+  // Unified permissions (from API key or custom role)
+  // Used for authorization checks across all auth methods
+  permissions: Permission;
 }
 
 // ============================================================================

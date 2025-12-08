@@ -12,9 +12,6 @@ bun.lockb
 .bun
 
 # Build outputs from other apps (we only need mesh)
-apps/api
-apps/web
-apps/outbound
 packages/ai
 packages/runtime
 packages/sdk

@@ -54,6 +54,7 @@ export function MultiSelect({
     React.useState<string[]>(defaultValue);
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
   React.useEffect(() => {
     if (JSON.stringify(selectedValues) !== JSON.stringify(defaultValue)) {
       setSelectedValues(defaultValue);

@@ -287,7 +287,7 @@ function OrgMcpsContent() {
       id: "description",
       header: "Description",
       render: (connection) => (
-        <span className="text-sm text-foreground">
+        <span className="text-sm text-foreground line-clamp-2 max-w-sm break-words whitespace-normal">
           {connection.description || "—"}
         </span>
       ),

@@ -278,6 +278,20 @@ export default function StoreAppDetail() {
     return getPublisherInfo(items, data.publisher, publisherConnection);
   }, [items, data, publisherConnection]);
 
+  const availableTabs = useMemo(() => {
+    return [
+      { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
+    ].filter((tab) => tab.visible);
+  }, [data?.tools?.length]);
+
+  // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
+  const effectiveActiveTabId = useMemo(() => {
+    if (availableTabs.find((t) => t.id === activeTabId)) {
+      return activeTabId;
+    }
+    return availableTabs[0]?.id || "overview";
+  }, [activeTabId, availableTabs]);
+
   const handleInstall = async () => {
     if (!selectedItem || !org || !session?.user?.id) return;
 
@@ -382,20 +396,6 @@ export default function StoreAppDetail() {
   if (!data) {
     return null;
   }
-
-  const availableTabs = useMemo(() => {
-    return [
-      { id: "tools", label: "Tools", visible: (data.tools?.length || 0) > 0 },
-    ].filter((tab) => tab.visible);
-  }, [data.tools?.length]);
-
-  // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
-  const effectiveActiveTabId = useMemo(() => {
-    if (availableTabs.find((t) => t.id === activeTabId)) {
-      return activeTabId;
-    }
-    return availableTabs[0]?.id || "overview";
-  }, [activeTabId, availableTabs]);
 
   return (
     <div className="flex flex-col h-full border-l border-border">

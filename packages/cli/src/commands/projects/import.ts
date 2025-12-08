@@ -10,13 +10,13 @@ import { createWorkspaceClient } from "../../lib/mcp.js";
 import { putFileContent } from "../deconfig/base.js";
 import { readManifestFile, manifestExists } from "../../lib/mcp-manifest.js";
 import { createIgnoreChecker } from "../../lib/ignore.js";
-import { sanitizeProjectPath } from "@deco/sdk/mcp/projects/file-utils";
+import { sanitizeProjectPath } from "../../lib/projects.js";
 import {
   viewCodeToJson,
   toolCodeToJson,
   workflowCodeToJson,
   detectResourceType,
-} from "@deco/sdk/mcp/projects/code-conversion";
+} from "../../lib/code-conversion.js";
 
 interface ImportOptions {
   from?: string;

@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"bun run migrate\" \"bun run dev:client\" \"NODE_ENV=development bun --hot run src/index.ts\"",
+    "dev": "bun run migrate && concurrently \"bun run dev:client\" \"bun run dev:server\"",
     "dev:client": "bun --bun vite dev",
+    "dev:server": "NODE_ENV=development bun --hot run src/index.ts",
     "build:client": "bun --bun vite build",
     "build:server": "bun run scripts/bundle-server-script.ts --dist ./dist/server",
     "db:migrate": "bun run ./dist/server/migrate.js",

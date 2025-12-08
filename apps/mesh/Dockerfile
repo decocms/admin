@@ -44,11 +44,9 @@ WORKDIR /app
 # Copy only what's needed for production
 
 # Mesh app (runtime files + external dependencies)
-# Copy SPA client assets
+# Copy SPA client assets (dist/client)
+# Copy server and migrate scripts (dist/server)
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist ./apps/mesh/dist
-
-# Copy server and migrate scripts with their shared dependencies
-COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/dist-server ./apps/mesh/dist-server
 
 # Copy start script
 COPY --from=builder --chown=bunuser:bunapp /app/apps/mesh/package.json ./apps/mesh

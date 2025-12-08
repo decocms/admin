@@ -1,11 +1,11 @@
-import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
+import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
 import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Info, Loader2, Upload } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { AgentSchema } from "@decocms/bindings/agent";
 import { z } from "zod";
@@ -99,9 +99,15 @@ export function AgentDetailsView({
     strict: false,
   });
 
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
+    [connectionId],
+  );
+
   const collection = useCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "AGENT",
+    toolCaller,
   );
 
   const item = useCollectionItem(collection, itemId);

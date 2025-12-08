@@ -8,8 +8,8 @@ import { EmptyState } from "@/web/components/empty-state.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import {
-  CONNECTIONS_COLLECTION,
   useConnections,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useListState } from "@/web/hooks/use-list-state";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -117,6 +117,7 @@ function OrgMcpsContent() {
     resource: "connections",
   });
 
+  const connectionsCollection = useConnectionsCollection();
   const connections = useConnections(listState);
 
   const [dialogState, dispatch] = useReducer(dialogReducer, { mode: "idle" });
@@ -180,7 +181,7 @@ function OrgMcpsContent() {
     dispatch({ type: "close" });
 
     try {
-      await CONNECTIONS_COLLECTION.delete(id).isPersisted.promise;
+      await connectionsCollection.delete(id).isPersisted.promise;
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete connection",
@@ -200,7 +201,7 @@ function OrgMcpsContent() {
 
       if (editingConnection) {
         // Update existing connection
-        const tx = CONNECTIONS_COLLECTION.update(
+        const tx = connectionsCollection.update(
           editingConnection.id,
           (draft) => {
             draft.title = data.title;
@@ -215,7 +216,7 @@ function OrgMcpsContent() {
         await tx.isPersisted.promise;
       } else {
         // Create new connection
-        const tx = CONNECTIONS_COLLECTION.insert({
+        const tx = connectionsCollection.insert({
           id: crypto.randomUUID(),
           title: data.title,
           description: data.description || null,

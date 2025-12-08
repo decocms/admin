@@ -1,12 +1,12 @@
-import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
+import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/details/agent.tsx";
 import { ToolDetailsView } from "@/web/components/details/tool.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
 import { useCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useRouter } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { Suspense, type ComponentType } from "react";
+import { Suspense, useMemo, type ComponentType } from "react";
 import { toast } from "sonner";
 
 interface CollectionDetailsProps {
@@ -23,31 +23,57 @@ const WELL_KNOWN_VIEW_DETAILS: Record<
   agent: AgentDetailsView,
 };
 
-function CollectionDetailsContent() {
+function ToolDetailsContent() {
+  const router = useRouter();
   const params = useParams({
-    strict: false,
+    from: "/shell/$org/mcps/$connectionId/$collectionName/$itemId",
+  });
+
+  const itemId = decodeURIComponent(params.itemId);
+
+  const handleBack = () => {
+    router.history.back();
+  };
+
+  const handleUpdate = async (_updates: Record<string, unknown>) => {
+    // Tools don't use collections, so updates are handled by ToolDetailsView
+    // This is a no-op for tools since they don't have collection-based updates
+    return Promise.resolve();
+  };
+
+  return (
+    <ToolDetailsView
+      itemId={itemId}
+      onBack={handleBack}
+      onUpdate={handleUpdate}
+    />
+  );
+}
+
+function CollectionDetailsContent() {
+  const router = useRouter();
+  const params = useParams({
+    from: "/shell/$org/mcps/$connectionId/$collectionName/$itemId",
   });
 
   const connectionId = params.connectionId;
-  const collectionName = params.collectionName
-    ? decodeURIComponent(params.collectionName)
-    : undefined;
-  const itemId = params.itemId ? decodeURIComponent(params.itemId) : undefined;
+  const collectionName = decodeURIComponent(params.collectionName);
+  const itemId = decodeURIComponent(params.itemId);
 
-  // Use dynamic collection hook
-  // collectionName can be "tools", "agents", etc.
-  // We handle "tools" specially below, so we pass null to useCollection if it is tools
-  // to avoid creating an invalid collection.
-  const isTools = collectionName === "tools";
+  const handleBack = () => {
+    router.history.back();
+  };
+
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
+    [connectionId],
+  );
 
   const collection = useCollection(
     connectionId ?? UNKNOWN_CONNECTION_ID,
-    !isTools && collectionName ? collectionName : "",
+    collectionName,
+    toolCaller,
   );
-
-  const handleBack = () => {
-    window.history.back();
-  };
 
   const handleUpdate = async (updates: Record<string, unknown>) => {
     if (!collection || !itemId) return;
@@ -68,18 +94,6 @@ function CollectionDetailsContent() {
     }
   };
 
-  // Special handling for Tools - we might want to show the tool invocation UI here
-  // For now, let's just show a placeholder or redirect back if we can't handle it yet
-  if (isTools) {
-    return (
-      <ToolDetailsView
-        itemId={itemId ?? ""}
-        onBack={handleBack}
-        onUpdate={handleUpdate}
-      />
-    );
-  }
-
   // Check for well-known collections (case insensitive, singular/plural)
   const normalizedCollectionName = collectionName?.toLowerCase();
 
@@ -90,7 +104,7 @@ function CollectionDetailsContent() {
   if (ViewComponent) {
     return (
       <ViewComponent
-        itemId={itemId ?? ""}
+        itemId={itemId}
         onBack={handleBack}
         onUpdate={handleUpdate}
       />
@@ -110,6 +124,22 @@ function CollectionDetailsContent() {
   );
 }
 
+function CollectionDetailsRouter() {
+  const params = useParams({
+    from: "/shell/$org/mcps/$connectionId/$collectionName/$itemId",
+  });
+
+  const collectionName = decodeURIComponent(params.collectionName);
+
+  const isTools = collectionName === "tools";
+
+  if (isTools) {
+    return <ToolDetailsContent />;
+  }
+
+  return <CollectionDetailsContent />;
+}
+
 export default function CollectionDetails() {
   return (
     <ErrorBoundary>
@@ -120,7 +150,7 @@ export default function CollectionDetails() {
           </div>
         }
       >
-        <CollectionDetailsContent />
+        <CollectionDetailsRouter />
       </Suspense>
     </ErrorBoundary>
   );

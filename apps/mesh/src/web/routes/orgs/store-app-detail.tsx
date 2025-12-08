@@ -504,7 +504,6 @@ export default function StoreAppDetail() {
     return null;
   }
 
-
   return (
     <div className="flex flex-col h-full border-l border-border">
       {/* Header */}

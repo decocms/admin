@@ -2,12 +2,9 @@ import { Link, useNavigate } from "@tanstack/react-router";
 
 import { authClient } from "@/web/lib/auth-client";
 import { AuthUIProvider } from "@daveyplate/better-auth-ui";
+import type { PropsWithChildren } from "react";
 
-export function BetterAuthUIProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function BetterAuthUIProvider({ children }: PropsWithChildren) {
   const navigate = useNavigate();
 
   return (

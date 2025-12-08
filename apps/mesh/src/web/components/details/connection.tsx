@@ -13,8 +13,8 @@ import { EmptyState } from "@/web/components/empty-state.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import {
-  CONNECTIONS_COLLECTION,
   useConnection,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import {
   useBindingConnections,
@@ -78,7 +78,7 @@ function ConnectionInspectorViewContent() {
   const activeTabId = search.tab || "settings";
 
   const connection = useConnection(connectionId);
-  const connectionsCollection = CONNECTIONS_COLLECTION;
+  const connectionsCollection = useConnectionsCollection();
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
@@ -1006,7 +1006,11 @@ function CollectionContent({
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id || "unknown";
 
-  const collection = useCollection(connectionId, collectionName);
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId),
+    [connectionId],
+  );
+  const collection = useCollection(connectionId, collectionName, toolCaller);
 
   const {
     search,

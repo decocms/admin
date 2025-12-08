@@ -6,9 +6,9 @@ import { EmptyState } from "@/web/components/empty-state";
 import type { MCPRegistryServer } from "@/web/components/store/registry-item-card";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import {
-  CONNECTIONS_COLLECTION,
   useConnection,
   useConnections,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
@@ -302,6 +302,7 @@ export default function StoreAppDetail() {
   );
   const [isInstalling, setIsInstalling] = useState(false);
 
+  const connectionsCollection = useConnectionsCollection();
   const allConnections = useConnections();
   const { data: session } = authClient.useSession();
   const registryConnections = useRegistryConnections(allConnections);
@@ -415,13 +416,13 @@ export default function StoreAppDetail() {
 
     setIsInstalling(true);
     try {
-      const tx = await CONNECTIONS_COLLECTION.insert(connectionData);
+      const tx = connectionsCollection.insert(connectionData);
       await tx.isPersisted.promise;
 
       toast.success(`${connectionData.title} installed successfully`);
 
       // Use the deterministic ID to directly look up the connection
-      const newConnection = CONNECTIONS_COLLECTION.get(connectionData.id);
+      const newConnection = connectionsCollection.get(connectionData.id);
 
       if (newConnection?.id && org) {
         navigate({

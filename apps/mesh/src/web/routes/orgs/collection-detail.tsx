@@ -1,4 +1,4 @@
-import { UNKNOWN_CONNECTION_ID } from "@/tools/client";
+import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/details/agent.tsx";
 import { ToolDetailsView } from "@/web/components/details/tool.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
@@ -6,7 +6,7 @@ import { useCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { Suspense, type ComponentType } from "react";
+import { Suspense, type ComponentType, useMemo } from "react";
 import { toast } from "sonner";
 
 interface CollectionDetailsProps {
@@ -40,9 +40,15 @@ function CollectionDetailsContent() {
   // to avoid creating an invalid collection.
   const isTools = collectionName === "tools";
 
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
+    [connectionId],
+  );
+
   const collection = useCollection(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     !isTools && collectionName ? collectionName : "",
+    toolCaller,
   );
 
   const handleBack = () => {

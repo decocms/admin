@@ -27,6 +27,10 @@ export const KEYS = {
   organizationSettings: (organizationId: string) =>
     ["organization-settings", organizationId] as const,
 
+  // Active organization
+  activeOrganization: (org: string | undefined) =>
+    ["activeOrganization", org] as const,
+
   // Models list (scoped by organization)
   modelsList: (orgSlug: string) => ["models-list", orgSlug] as const,
 

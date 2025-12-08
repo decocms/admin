@@ -5,7 +5,8 @@
  * using TanStack DB collections and live queries.
  */
 
-import { UNKNOWN_CONNECTION_ID } from "../../../tools/client";
+import { UNKNOWN_CONNECTION_ID, createToolCaller } from "../../../tools/client";
+import { useMemo } from "react";
 import {
   useCollection,
   useCollectionList,
@@ -44,9 +45,15 @@ export function useAgentsFromConnection(
 ) {
   // Use a placeholder ID when connectionId is undefined to ensure hooks are always called
   // in the same order (Rules of Hooks compliance)
+  const toolCaller = useMemo(
+    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
+    [connectionId],
+  );
+
   const collection = useCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "AGENT",
+    toolCaller,
   );
   return useCollectionList(collection, options);
 }

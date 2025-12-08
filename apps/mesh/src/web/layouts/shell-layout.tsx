@@ -27,9 +27,10 @@ import {
   SidebarLayout,
   SidebarProvider,
 } from "@deco/ui/components/sidebar.tsx";
-import { useMutation } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback } from "react";
+import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -74,121 +75,104 @@ function Topbar({
   );
 }
 
-function OrgContextSetter({
-  children,
-  fallback,
-}: {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-}) {
+function ShellLayoutContent() {
   const { org } = useParams({ strict: false });
-  const [isReady, setIsReady] = useState(false);
 
-  const setOrgMutation = useMutation({
-    mutationFn: async (orgSlug: string) => {
-      await authClient.organization.setActive({ organizationSlug: orgSlug });
-    },
-  });
-
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    if (!org) {
-      setIsReady(true);
-      return;
-    }
-
-    setOrgMutation.mutate(org, {
-      onSettled: () => setIsReady(true),
-    });
-  }, [org]);
-
-  if (!isReady) {
-    return <>{fallback}</>;
-  }
-
-  return <>{children}</>;
-}
-
-export default function ShellLayout() {
-  const { org } = useParams({ strict: false });
   const [sidebarOpen, setSidebarOpen] = useLocalStorage(
     "mesh:sidebar-open",
     true,
   );
   const [chatOpen, setChatOpen] = useDecoChatOpen();
+
   const toggleChat = useCallback(
     () => setChatOpen((prev) => !prev),
     [setChatOpen],
   );
+
   const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
     LOCALSTORAGE_KEYS.decoChatPanelWidth(),
     30,
   );
-  const hasOrg = !!org;
+
+  const { data: orgSlug } = useSuspenseQuery({
+    queryKey: KEYS.activeOrganization(org),
+    queryFn: async () => {
+      await authClient.organization.setActive({ organizationSlug: org });
+      return org ?? null;
+    },
+  });
+
+  // Should use "project ?? org-admin" when projects are introduced
+  if (typeof orgSlug !== "string") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Topbar />
+        <div className="pt-12">
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <RequiredAuthLayout>
-      <OrgContextSetter fallback={<SplashScreen />}>
-        {hasOrg ? (
-          // Should use "project ?? org-admin" when projects are introduced
-          <ProjectContextProvider locator={Locator.adminProject(org)}>
-            <ChatProvider>
-              <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <div className="flex flex-col h-screen">
-                  <Topbar
-                    showSidebarToggle
-                    showOrgSwitcher
-                    showDecoChat
-                    onToggleChat={toggleChat}
-                  />
-                  <SidebarLayout
-                    className="flex-1 bg-sidebar"
-                    style={
-                      {
-                        "--sidebar-width": "13rem",
-                        "--sidebar-width-mobile": "11rem",
-                      } as Record<string, string>
-                    }
-                  >
-                    <MeshSidebar />
-                    <SidebarInset className="pt-12">
-                      <ResizablePanelGroup direction="horizontal">
-                        <ResizablePanel className="bg-background">
-                          <Outlet />
-                        </ResizablePanel>
-                        {chatOpen && (
-                          <>
-                            <ResizableHandle withHandle />
-                            <ResizablePanel
-                              defaultSize={chatPanelWidth}
-                              minSize={20}
-                              className="min-w-0"
-                              onResize={setChatPanelWidth}
-                            >
-                              <ErrorBoundary>
-                                <Suspense fallback={<DecoChatSkeleton />}>
-                                  <DecoChatPanel />
-                                </Suspense>
-                              </ErrorBoundary>
-                            </ResizablePanel>
-                          </>
-                        )}
-                      </ResizablePanelGroup>
-                    </SidebarInset>
-                  </SidebarLayout>
-                </div>
-              </SidebarProvider>
-            </ChatProvider>
-          </ProjectContextProvider>
-        ) : (
-          <div className="min-h-screen bg-background">
-            <Topbar />
-            <div className="pt-12">
-              <Outlet />
-            </div>
+    <ProjectContextProvider locator={Locator.adminProject(orgSlug)}>
+      <ChatProvider>
+        <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <div className="flex flex-col h-screen">
+            <Topbar
+              showSidebarToggle
+              showOrgSwitcher
+              showDecoChat
+              onToggleChat={toggleChat}
+            />
+            <SidebarLayout
+              className="flex-1 bg-sidebar"
+              style={
+                {
+                  "--sidebar-width": "13rem",
+                  "--sidebar-width-mobile": "11rem",
+                } as Record<string, string>
+              }
+            >
+              <MeshSidebar />
+              <SidebarInset className="pt-12">
+                <ResizablePanelGroup direction="horizontal">
+                  <ResizablePanel className="bg-background">
+                    <Outlet />
+                  </ResizablePanel>
+                  {chatOpen && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel
+                        defaultSize={chatPanelWidth}
+                        minSize={20}
+                        className="min-w-0"
+                        onResize={setChatPanelWidth}
+                      >
+                        <ErrorBoundary>
+                          <Suspense fallback={<DecoChatSkeleton />}>
+                            <DecoChatPanel />
+                          </Suspense>
+                        </ErrorBoundary>
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
+              </SidebarInset>
+            </SidebarLayout>
           </div>
-        )}
-      </OrgContextSetter>
+        </SidebarProvider>
+      </ChatProvider>
+    </ProjectContextProvider>
+  );
+}
+
+export default function ShellLayout() {
+  return (
+    <RequiredAuthLayout>
+      <Suspense fallback={<SplashScreen />}>
+        <ShellLayoutContent />
+      </Suspense>
     </RequiredAuthLayout>
   );
 }

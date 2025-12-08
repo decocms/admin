@@ -2036,7 +2036,7 @@ export const autoJoinTeam = createTool({
     }
 
     // validate if user email domain got the same domain supplied input
-    if (user.email.split("@")[1].toLowerCase() !== domain.toLowerCase()) {
+    if (user.email?.split("@")[1].toLowerCase() !== domain.toLowerCase()) {
       throw new UserInputError(
         "Cannot auto-join team, user email is different from domain",
       );

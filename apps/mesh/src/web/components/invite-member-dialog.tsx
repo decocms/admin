@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -56,15 +56,13 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
   const emails = form.watch("emails");
 
   // Filter valid emails for submission
-  const validEmails = useMemo(() => {
-    return emails.filter((email) => {
-      const trimmedEmail = email.trim().toLowerCase();
-      const isValidFormat = emailSchema.safeParse(trimmedEmail).success;
-      const isNotSelf =
-        !currentUserEmail || trimmedEmail !== currentUserEmail.toLowerCase();
-      return isValidFormat && isNotSelf;
-    });
-  }, [emails, currentUserEmail]);
+  const validEmails = emails.filter((email) => {
+    const trimmedEmail = email.trim().toLowerCase();
+    const isValidFormat = emailSchema.safeParse(trimmedEmail).success;
+    const isNotSelf =
+      !currentUserEmail || trimmedEmail !== currentUserEmail.toLowerCase();
+    return isValidFormat && isNotSelf;
+  });
 
   const inviteMutation = useMutation({
     mutationFn: async (data: InviteMemberFormData) => {

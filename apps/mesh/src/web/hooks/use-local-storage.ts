@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
 
 function safeParse<T>(value: string): T | undefined {
   try {
@@ -44,7 +43,7 @@ export function useLocalStorage<T>(
   initializer: T | ((existing: T | undefined) => T),
 ): [T, (value: T | ((prev: T) => T)) => void] {
   const queryClientInstance = useQueryClient();
-  const queryKey = useMemo(() => ["localStorage", key] as const, [key]);
+  const queryKey = ["localStorage", key] as const;
 
   // Use TanStack Query to read from localStorage
   const { data: value } = useQuery({
@@ -69,21 +68,18 @@ export function useLocalStorage<T>(
   });
 
   // Setter that updates localStorage via mutation
-  const setLocalStorageValue = useCallback(
-    (updater: T | ((prev: T) => T)) => {
-      const current = queryClientInstance.getQueryData<T>(queryKey);
-      // If for some reason current is undefined (shouldn't happen due to initialData),
-      // we fall back to initializer logic or just throw/ignore.
-      // Assuming initialData guarantees T.
-      const next =
-        typeof updater === "function"
-          ? (updater as (prev: T) => T)(current as T)
-          : updater;
+  const setLocalStorageValue = (updater: T | ((prev: T) => T)) => {
+    const current = queryClientInstance.getQueryData<T>(queryKey);
+    // If for some reason current is undefined (shouldn't happen due to initialData),
+    // we fall back to initializer logic or just throw/ignore.
+    // Assuming initialData guarantees T.
+    const next =
+      typeof updater === "function"
+        ? (updater as (prev: T) => T)(current as T)
+        : updater;
 
-      mutation.mutate(next);
-    },
-    [mutation, queryClientInstance, queryKey],
-  );
+    mutation.mutate(next);
+  };
 
   // Return the value from query (guaranteed to be T due to initialData)
   return [value as T, setLocalStorageValue];

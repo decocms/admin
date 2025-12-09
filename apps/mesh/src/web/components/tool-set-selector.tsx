@@ -3,7 +3,7 @@ import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Search } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 
 export interface ToolSetSelectorProps {
@@ -22,34 +22,29 @@ export function ToolSetSelector({
     searchTerm: searchQuery.trim() || undefined,
   });
 
-  const sortedConnections = useMemo(() => {
-    const toolSet = initialOrder.current;
+  const initialOrderSet = initialOrder.current;
 
-    // selected first
-    const selected = [...toolSet.values()]
-      .map((id) => connections.find((c) => c.id === id))
-      .filter((c) => c !== undefined);
+  // selected first
+  const selected = [...initialOrderSet.values()]
+    .map((id) => connections.find((c) => c.id === id))
+    .filter((c) => c !== undefined);
 
-    // then not selected
-    const notSelected = connections.filter((c) => !toolSet.has(c.id));
+  // then not selected
+  const notSelected = connections.filter((c) => !initialOrderSet.has(c.id));
 
-    return [...selected, ...notSelected];
-  }, [connections]);
+  const sortedConnections = [...selected, ...notSelected];
 
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(sortedConnections[0]?.id ?? null);
 
   // Get selected connection
-  const selectedConnection = useMemo(() => {
-    if (!selectedConnectionId) return null;
-    return sortedConnections.find((c) => c.id === selectedConnectionId) ?? null;
-  }, [sortedConnections, selectedConnectionId]);
+  const selectedConnection = selectedConnectionId
+    ? (sortedConnections.find((c) => c.id === selectedConnectionId) ?? null)
+    : null;
 
   // Get tools for selected connection
-  const connectionTools = useMemo(() => {
-    return selectedConnection?.tools ?? [];
-  }, [selectedConnection]);
+  const connectionTools = selectedConnection?.tools ?? [];
 
   // Check if connection has any tools enabled
   const isConnectionSelected = (connectionId: string): boolean => {

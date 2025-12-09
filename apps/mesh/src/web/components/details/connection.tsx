@@ -67,7 +67,7 @@ import {
 } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle2, Globe, Loader2, Lock, Plus } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
@@ -627,17 +627,15 @@ function CursorIDEIntegration({
   connection: ConnectionEntity;
 }) {
   // Generate MCP config for Cursor - uses Mesh proxy URL
-  const mcpConfig = useMemo(() => {
-    // Get the base URL (current window origin)
-    const baseUrl = window.location.origin;
+  // Get the base URL (current window origin)
+  const baseUrl = window.location.origin;
 
-    // Build the Mesh proxy URL: {baseUrl}/mcp/{connectionId}
-    const proxyUrl = `${baseUrl}/mcp/${connection.id}`;
+  // Build the Mesh proxy URL: {baseUrl}/mcp/{connectionId}
+  const proxyUrl = `${baseUrl}/mcp/${connection.id}`;
 
-    return {
-      url: proxyUrl,
-    };
-  }, [connection.id]);
+  const mcpConfig = {
+    url: proxyUrl,
+  };
 
   return (
     <div className="space-y-4">
@@ -664,10 +662,7 @@ function McpConfigurationForm({
 }: {
   connection: ConnectionEntity;
 }) {
-  const toolCaller = useMemo(
-    () => createToolCaller(connection.id),
-    [connection.id],
-  );
+  const toolCaller = createToolCaller(connection.id);
 
   const {
     data: config,
@@ -822,27 +817,30 @@ function ToolsList({
     }
   };
 
-  const filteredTools = useMemo(() => {
-    if (!tools || tools.length === 0) return [];
-    if (!search.trim()) return tools;
-    const searchLower = search.toLowerCase();
-    return tools.filter(
-      (t) =>
-        t.name.toLowerCase().includes(searchLower) ||
-        (t.description && t.description.toLowerCase().includes(searchLower)),
-    );
-  }, [tools, search]);
+  const filteredTools =
+    !tools || tools.length === 0
+      ? []
+      : !search.trim()
+        ? tools
+        : (() => {
+            const searchLower = search.toLowerCase();
+            return tools.filter(
+              (t) =>
+                t.name.toLowerCase().includes(searchLower) ||
+                (t.description &&
+                  t.description.toLowerCase().includes(searchLower)),
+            );
+          })();
 
-  const sortedTools = useMemo(() => {
-    if (!sortKey || !sortDirection) return filteredTools;
-
-    return [...filteredTools].sort((a, b) => {
-      const aVal = (a as unknown as Record<string, unknown>)[sortKey] || "";
-      const bVal = (b as unknown as Record<string, unknown>)[sortKey] || "";
-      const comparison = String(aVal).localeCompare(String(bVal));
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-  }, [filteredTools, sortKey, sortDirection]);
+  const sortedTools =
+    !sortKey || !sortDirection
+      ? filteredTools
+      : [...filteredTools].sort((a, b) => {
+          const aVal = (a as unknown as Record<string, unknown>)[sortKey] || "";
+          const bVal = (b as unknown as Record<string, unknown>)[sortKey] || "";
+          const comparison = String(aVal).localeCompare(String(bVal));
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
 
   const columns = [
     {
@@ -1012,10 +1010,7 @@ function CollectionContent({
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id || "unknown";
 
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId);
   const collection = useCollection(connectionId, collectionName, toolCaller);
 
   const {

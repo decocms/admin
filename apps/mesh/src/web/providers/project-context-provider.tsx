@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext } from "react";
 import { Locator, ProjectLocator } from "../lib/locator";
 
 interface ProjectContextType {
@@ -17,7 +17,7 @@ export const useProjectContext = () => {
 
   const { locator } = context;
 
-  const { org, project } = useMemo(() => Locator.parse(locator), [locator]);
+  const { org, project } = Locator.parse(locator);
 
   return { org, project, locator };
 };

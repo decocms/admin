@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useConnection } from "@/web/hooks/collections/use-connection";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { createToolCaller } from "@/tools/client";
@@ -13,15 +12,16 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const registryConnection = useConnection(registryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = useMemo(() => {
-    if (!registryConnection?.tools) return "";
-    const listTool = registryConnection.tools.find((tool) =>
-      tool.name.endsWith("_LIST"),
-    );
-    return listTool?.name || "";
-  }, [registryConnection?.tools]);
+  const listToolName = !registryConnection?.tools
+    ? ""
+    : (() => {
+        const listTool = registryConnection.tools.find((tool) =>
+          tool.name.endsWith("_LIST"),
+        );
+        return listTool?.name || "";
+      })();
 
-  const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
+  const toolCaller = createToolCaller(registryId);
 
   const {
     data: listResults,
@@ -35,29 +35,26 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   });
 
   // Extract items from results without transformation
-  const items: RegistryItem[] = useMemo(() => {
-    if (!listResults) return [];
+  const items: RegistryItem[] = !listResults
+    ? []
+    : // Direct array response
+      Array.isArray(listResults)
+      ? listResults
+      : // Object with nested array
+        typeof listResults === "object" && listResults !== null
+        ? (() => {
+            const itemsKey = Object.keys(listResults).find((key) =>
+              Array.isArray(listResults[key as keyof typeof listResults]),
+            );
 
-    // Direct array response
-    if (Array.isArray(listResults)) {
-      return listResults;
-    }
-
-    // Object with nested array
-    if (typeof listResults === "object" && listResults !== null) {
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
-
-      if (itemsKey) {
-        return listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-      }
-    }
-
-    return [];
-  }, [listResults]);
+            if (itemsKey) {
+              return listResults[
+                itemsKey as keyof typeof listResults
+              ] as RegistryItem[];
+            }
+            return [];
+          })()
+        : [];
 
   return (
     <StoreDiscoveryUI

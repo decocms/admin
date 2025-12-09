@@ -7,6 +7,7 @@
     "fmt": "biome format --write",
     "lint": "oxlint",
     "check": "bun run --workspaces --elide-lines=0 check",
+    "check:ci": "bun run --workspaces check",
     "test": "vitest run",
     "fmt:check": "biome format",
     "test:watch": "vitest",

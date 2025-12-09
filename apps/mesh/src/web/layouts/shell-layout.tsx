@@ -133,7 +133,7 @@ function PersistentSidebarProvider({ children }: PropsWithChildren) {
  * This component renders the chat panel and the main content.
  * It's important to keep it like this to avoid unnecessary re-renders.
  */
-function ChatPannels() {
+function ChatPanels() {
   const [chatOpen] = useDecoChatOpen();
 
   return (
@@ -142,7 +142,7 @@ function ChatPannels() {
         <Outlet />
       </ResizablePanel>
       <ResizableHandle withHandle={chatOpen} />
-      <PersistentResizablePanel className={chatOpen ? "max-w-auto" : "max-w-0"}>
+      <PersistentResizablePanel className={chatOpen ? "max-w-none" : "max-w-0"}>
         <ErrorBoundary>
           <Suspense fallback={<DecoChatSkeleton />}>
             <DecoChatPanel />
@@ -197,7 +197,7 @@ function ShellLayoutContent() {
             >
               <MeshSidebar />
               <SidebarInset className="pt-12">
-                <ChatPannels />
+                <ChatPanels />
               </SidebarInset>
             </SidebarLayout>
           </div>

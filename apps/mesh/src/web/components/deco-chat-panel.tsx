@@ -11,16 +11,17 @@ import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selec
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { MessageAssistant } from "./chat/message-assistant.tsx";
-import { MessageList, MessageFooter } from "./chat/message-list.tsx";
-import { MessageUser } from "./chat/message-user.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useChat } from "../providers/chat-provider";
+import { MessageAssistant } from "./chat/message-assistant.tsx";
+import { MessageFooter, MessageList } from "./chat/message-list.tsx";
+import { MessageUser } from "./chat/message-user.tsx";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
@@ -50,8 +51,16 @@ function ChatInput({
         return;
       }
       const text = input.trim();
-      setInput("");
-      await onSubmit(text);
+      try {
+        await onSubmit(text);
+        // Only clear input after successful submission so user can retry
+        setInput("");
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        const message =
+          error instanceof Error ? error.message : "Failed to send message";
+        toast.error(message);
+      }
     },
     [input, isStreaming, onSubmit],
   );

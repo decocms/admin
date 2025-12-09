@@ -118,7 +118,7 @@ function PersistentResizablePanel({
  */
 function PersistentSidebarProvider({ children }: PropsWithChildren) {
   const [sidebarOpen, setSidebarOpen] = useLocalStorage(
-    "mesh:sidebar-open",
+    LOCALSTORAGE_KEYS.sidebarOpen(),
     true,
   );
 

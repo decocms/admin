@@ -79,11 +79,20 @@ describe("createMeshContextFactory", () => {
     });
   });
 
+  // Create mock auth with minimal API for unauthenticated requests
+  const createMinimalMockAuth = (): any => ({
+    api: {
+      getMcpSession: vi.fn().mockResolvedValue(null),
+      verifyApiKey: vi.fn().mockResolvedValue({ valid: false }),
+      getSession: vi.fn().mockResolvedValue(null),
+    },
+  });
+
   describe("MeshContext creation", () => {
     it("should create MeshContext from Hono context", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as unknown as BetterAuthInstance, // No auth for this test
+        auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
           tracer: {} as unknown as Tracer,
@@ -96,6 +105,7 @@ describe("createMeshContextFactory", () => {
           url: "https://mesh.example.com/mcp/tools",
           path: "/mcp/tools",
           header: vi.fn(() => undefined), // No Authorization
+          raw: { headers: new Headers() },
         },
       });
 
@@ -112,7 +122,7 @@ describe("createMeshContextFactory", () => {
     it("should derive base URL from request", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as unknown as BetterAuthInstance,
+        auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
           tracer: {} as unknown as Tracer,
@@ -125,6 +135,7 @@ describe("createMeshContextFactory", () => {
           url: "http://localhost:3000/mcp/tools",
           path: "/mcp/tools",
           header: vi.fn(() => undefined),
+          raw: { headers: new Headers() },
         },
       });
 
@@ -136,7 +147,7 @@ describe("createMeshContextFactory", () => {
     it("should populate request metadata", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as unknown as BetterAuthInstance,
+        auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
           tracer: {} as unknown as Tracer,
@@ -153,6 +164,7 @@ describe("createMeshContextFactory", () => {
             if (name === "X-Forwarded-For") return "192.168.1.1";
             return undefined;
           }),
+          raw: { headers: new Headers() },
         },
       });
 
@@ -222,7 +234,7 @@ describe("createMeshContextFactory", () => {
     it("should create storage adapters", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as unknown as BetterAuthInstance,
+        auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
           tracer: {} as unknown as Tracer,
@@ -251,7 +263,7 @@ describe("createMeshContextFactory", () => {
     it("should create AccessControl instance", async () => {
       const factory = createMeshContextFactory({
         db,
-        auth: null as unknown as BetterAuthInstance,
+        auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
         encryption: { key: "test_key" },
         observability: {
           tracer: {} as unknown as Tracer,
@@ -264,6 +276,7 @@ describe("createMeshContextFactory", () => {
           url: "https://mesh.example.com/mcp/tools",
           path: "/mcp/tools",
           header: vi.fn(() => undefined),
+          raw: { headers: new Headers() },
         },
       });
 

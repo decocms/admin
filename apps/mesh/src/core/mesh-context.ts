@@ -169,7 +169,7 @@ export interface RequestMetadata {
 // ============================================================================
 
 // Forward declare storage types
-import { BetterAuthInstance } from "@/auth";
+import type { BetterAuthInstance } from "@/auth";
 import type { AuditLogStorage } from "../storage/audit-log";
 import type { ConnectionStorage } from "../storage/connection";
 import type { OrganizationSettingsStorage } from "../storage/organization-settings";

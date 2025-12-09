@@ -33,6 +33,7 @@ jobs:
 
       - name: Run test
         run: bun run test
+        working-directory: apps/mesh
 
       - name: Run knip
         run: bun run knip

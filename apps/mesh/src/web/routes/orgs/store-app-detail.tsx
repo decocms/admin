@@ -19,7 +19,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
@@ -83,29 +83,30 @@ function ToolsTable({
   onSort: (key: string) => void;
 }) {
   // Filter tools
-  const filteredTools = useMemo(() => {
-    if (!search.trim()) return tools;
-    const searchLower = search.toLowerCase();
-    return tools.filter((tool) => {
-      const name = (tool.name as string) || "";
-      const desc = (tool.description as string) || "";
-      return (
-        name.toLowerCase().includes(searchLower) ||
-        desc.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [tools, search]);
+  const filteredTools = !search.trim()
+    ? tools
+    : (() => {
+        const searchLower = search.toLowerCase();
+        return tools.filter((tool) => {
+          const name = (tool.name as string) || "";
+          const desc = (tool.description as string) || "";
+          return (
+            name.toLowerCase().includes(searchLower) ||
+            desc.toLowerCase().includes(searchLower)
+          );
+        });
+      })();
 
   // Sort tools
-  const sortedTools = useMemo(() => {
-    if (!sortKey || !sortDirection) return filteredTools;
-    return [...filteredTools].sort((a, b) => {
-      const aVal = (a[sortKey] as string) || "";
-      const bVal = (b[sortKey] as string) || "";
-      const comparison = String(aVal).localeCompare(String(bVal));
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-  }, [filteredTools, sortKey, sortDirection]);
+  const sortedTools =
+    !sortKey || !sortDirection
+      ? filteredTools
+      : [...filteredTools].sort((a, b) => {
+          const aVal = (a[sortKey] as string) || "";
+          const bVal = (b[sortKey] as string) || "";
+          const comparison = String(aVal).localeCompare(String(bVal));
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
 
   const columns = [
     {
@@ -207,18 +208,16 @@ export default function StoreAppDetail() {
   const registryConnection = useConnection(effectiveRegistryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = useMemo(() => {
-    if (!registryConnection?.tools) return "";
-    const listTool = registryConnection.tools.find((tool) =>
-      tool.name.endsWith("_LIST"),
-    );
-    return listTool?.name || "";
-  }, [registryConnection?.tools]);
+  const listToolName = !registryConnection?.tools
+    ? ""
+    : (() => {
+        const listTool = registryConnection.tools.find((tool) =>
+          tool.name.endsWith("_LIST"),
+        );
+        return listTool?.name || "";
+      })();
 
-  const toolCaller = useMemo(
-    () => createToolCaller(effectiveRegistryId),
-    [effectiveRegistryId],
-  );
+  const toolCaller = createToolCaller(effectiveRegistryId);
 
   const {
     data: listResults,
@@ -232,37 +231,32 @@ export default function StoreAppDetail() {
   });
 
   // Extract items from results without transformation
-  const items: RegistryItem[] = useMemo(() => {
-    if (!listResults) return [];
+  const items: RegistryItem[] = !listResults
+    ? []
+    : // Direct array response
+      Array.isArray(listResults)
+      ? listResults
+      : // Object with nested array
+        typeof listResults === "object" && listResults !== null
+        ? (() => {
+            const itemsKey = Object.keys(listResults).find((key) =>
+              Array.isArray(listResults[key as keyof typeof listResults]),
+            );
 
-    // Direct array response
-    if (Array.isArray(listResults)) {
-      return listResults;
-    }
-
-    // Object with nested array
-    if (typeof listResults === "object" && listResults !== null) {
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
-
-      if (itemsKey) {
-        return listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-      }
-    }
-
-    return [];
-  }, [listResults]);
+            if (itemsKey) {
+              return listResults[
+                itemsKey as keyof typeof listResults
+              ] as RegistryItem[];
+            }
+            return [];
+          })()
+        : [];
 
   // Find the item matching the appName slug
-  const selectedItem = useMemo(() => {
-    return items.find((item) => {
-      const itemName = item.name || item.title || item.server?.title || "";
-      return slugify(itemName) === appName;
-    });
-  }, [items, appName]);
+  const selectedItem = items.find((item) => {
+    const itemName = item.name || item.title || item.server?.title || "";
+    return slugify(itemName) === appName;
+  });
 
   // Extract data from item (moved before conditionals to ensure hook order)
   const data = selectedItem ? extractItemData(selectedItem) : null;
@@ -274,24 +268,18 @@ export default function StoreAppDetail() {
   );
 
   // Calculate publisher info (logo and apps count) (moved before conditionals to ensure hook order)
-  const publisherInfo = useMemo(() => {
-    if (!data) return { count: 0 };
-    return getPublisherInfo(items, data.publisher, publisherConnection);
-  }, [items, data, publisherConnection]);
+  const publisherInfo = !data
+    ? { count: 0 }
+    : getPublisherInfo(items, data.publisher, publisherConnection);
 
-  const availableTabs = useMemo(() => {
-    return [
-      { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
-    ].filter((tab) => tab.visible);
-  }, [data?.tools?.length]);
+  const availableTabs = [
+    { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
+  ].filter((tab) => tab.visible);
 
   // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
-  const effectiveActiveTabId = useMemo(() => {
-    if (availableTabs.find((t) => t.id === activeTabId)) {
-      return activeTabId;
-    }
-    return availableTabs[0]?.id || "overview";
-  }, [activeTabId, availableTabs]);
+  const effectiveActiveTabId = availableTabs.find((t) => t.id === activeTabId)
+    ? activeTabId
+    : availableTabs[0]?.id || "overview";
 
   const handleInstall = async () => {
     if (!selectedItem || !org || !session?.user?.id) return;

@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 import { useCallback, useState } from "react";
 
 export function useCopy() {

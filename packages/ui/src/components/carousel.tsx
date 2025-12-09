@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 "use client";
 
 import * as React from "react";

@@ -6,7 +6,7 @@ import { useCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { Suspense, useMemo, type ComponentType } from "react";
+import { Suspense, type ComponentType } from "react";
 import { toast } from "sonner";
 
 interface CollectionDetailsProps {
@@ -64,10 +64,7 @@ function CollectionDetailsContent() {
     router.history.back();
   };
 
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
   const collection = useCollection(
     connectionId ?? UNKNOWN_CONNECTION_ID,

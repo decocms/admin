@@ -1,46 +1,38 @@
+import { useChat as useAiChat } from "@ai-sdk/react";
+import { Metadata } from "@deco/ui/types/chat-metadata.ts";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   createContext,
-  useCallback,
+  PropsWithChildren,
   useContext,
-  useMemo,
   useRef,
-  type ReactNode,
   type RefObject,
 } from "react";
 import {
-  MESSAGES_COLLECTION,
-  THREADS_COLLECTION,
+  useMessagesCollection,
   useThreadMessages,
+  useThreadsCollection,
 } from "../hooks/use-chat-store";
 import { useLocalStorage } from "../hooks/use-local-storage";
 import { LOCALSTORAGE_KEYS } from "../lib/localstorage-keys";
 import type { Message, Thread } from "../types/chat-threads";
 import { useProjectContext } from "./project-context-provider";
-import { useChat as useAiChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { Metadata } from "@deco/ui/types/chat-metadata.ts";
-import { useCurrentOrganization } from "@/web/hooks/use-current-organization";
 
 // Create transport for models stream API (stable across model changes)
-function createModelsTransport(
-  orgSlug: string,
-): DefaultChatTransport<UIMessage<Metadata>> {
-  return new DefaultChatTransport({
-    api: `/api/${orgSlug}/models/stream`,
+const createModelsTransport = (
+  org: string,
+): DefaultChatTransport<UIMessage<Metadata>> =>
+  new DefaultChatTransport<UIMessage<Metadata>>({
+    api: `/api/${org}/models/stream`,
     credentials: "include",
-    prepareSendMessagesRequest: ({ messages, requestMetadata }) => {
-      const metadata = requestMetadata as Metadata | undefined;
-
-      return {
-        body: {
-          messages,
-          stream: true,
-          ...metadata,
-        },
-      };
-    },
+    prepareSendMessagesRequest: ({ messages, requestMetadata }) => ({
+      body: {
+        messages,
+        stream: true,
+        ...(requestMetadata as Metadata | undefined),
+      },
+    }),
   });
-}
 
 export interface ChatContextValue {
   // Thread management
@@ -69,13 +61,14 @@ export interface ChatContextValue {
 
 const createThreadId = () => crypto.randomUUID();
 
-// oxlint-disable-next-line @typescript-eslint/no-explicit-any
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-export function ChatProvider({ children }: { children: ReactNode }) {
-  const { locator } = useProjectContext();
-  const { organization } = useCurrentOrganization();
-  const orgSlug = organization?.slug || "";
+export function ChatProvider({ children }: PropsWithChildren) {
+  const { locator, org } = useProjectContext();
+
+  // Get org-scoped collections
+  const threadsCollection = useThreadsCollection();
+  const messagesCollection = useMessagesCollection();
 
   // Active Thread ID State
   const [activeThreadId, setActiveThreadId] = useLocalStorage<string>(
@@ -84,43 +77,37 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   // Messages for active thread
-  const messages = useThreadMessages(activeThreadId) ?? [];
+  const messages = useThreadMessages(activeThreadId);
 
-  // Actions
-  const createThread = useCallback(
-    (thread?: Partial<Thread>) => {
-      const id = thread?.id || crypto.randomUUID();
-      const now = new Date().toISOString();
-      const newThread: Thread = {
-        id,
-        title: thread?.title || "",
-        created_at: thread?.created_at || now,
-        updated_at: thread?.updated_at || now,
-        hidden: thread?.hidden ?? false,
-      };
-      THREADS_COLLECTION.insert(newThread);
+  // // Actions
+  const createThread = (thread?: Partial<Thread>) => {
+    const id = thread?.id || crypto.randomUUID();
+    const now = new Date().toISOString();
+    const newThread: Thread = {
+      id,
+      title: thread?.title || "",
+      created_at: thread?.created_at || now,
+      updated_at: thread?.updated_at || now,
+      hidden: thread?.hidden ?? false,
+    };
+    threadsCollection.insert(newThread);
 
-      setActiveThreadId(id);
-      return newThread;
-    },
-    [setActiveThreadId],
-  );
+    setActiveThreadId(id);
+    return newThread;
+  };
 
   // Consolidated hide/delete
-  const hideThread = useCallback(
-    (threadId: string) => {
-      THREADS_COLLECTION.update(threadId, (draft) => {
-        draft.hidden = true;
-        draft.updated_at = new Date().toISOString();
-      });
+  const hideThread = (threadId: string) => {
+    threadsCollection.update(threadId, (draft) => {
+      draft.hidden = true;
+      draft.updated_at = new Date().toISOString();
+    });
 
-      // If hiding active thread, clear selection
-      if (activeThreadId === threadId) {
-        setActiveThreadId(createThreadId());
-      }
-    },
-    [activeThreadId, setActiveThreadId],
-  );
+    // If hiding active thread, clear selection
+    if (activeThreadId === threadId) {
+      setActiveThreadId(createThreadId());
+    }
+  };
 
   // Persist selected model (including connectionId) per organization in localStorage
   const [selectedModelState, setSelectedModelState] = useLocalStorage<{
@@ -141,7 +128,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Create transport (stable, doesn't depend on selected model)
-  const transport = useMemo(() => createModelsTransport(orgSlug), [orgSlug]);
+  const transport = createModelsTransport(org);
 
   // Use AI SDK's useChat hook
   const chat = useAiChat({
@@ -160,7 +147,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       if (newMessages.length === 2) {
         // 1. Insert all messages at once (batch insertion)
-        MESSAGES_COLLECTION.insert(newMessages);
+        messagesCollection.insert(newMessages);
 
         const title =
           newMessages
@@ -168,10 +155,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ?.parts?.find((part) => part.type === "text")
             ?.text.slice(0, 100) || "";
 
-        if (!THREADS_COLLECTION.has(activeThreadId)) {
+        if (!threadsCollection.has(activeThreadId)) {
           createThread({ id: activeThreadId, title });
         } else {
-          THREADS_COLLECTION.update(activeThreadId, (draft) => {
+          threadsCollection.update(activeThreadId, (draft) => {
             draft.title ||= title;
             draft.updated_at = new Date().toISOString();
           });
@@ -183,33 +170,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const value = useMemo(
-    () => ({
-      activeThreadId,
-      createThread,
-      setActiveThreadId,
-      hideThread,
-      messages,
-      chat: chat as unknown as ReturnType<typeof useAiChat>,
-      sentinelRef: sentinelRef as RefObject<HTMLDivElement>,
-      selectedModelState,
-      setSelectedModelState,
-      selectedAgentState,
-      setSelectedAgentState,
-    }),
-    [
-      activeThreadId,
-      createThread,
-      setActiveThreadId,
-      hideThread,
-      messages,
-      chat,
-      selectedModelState,
-      setSelectedModelState,
-      selectedAgentState,
-      setSelectedAgentState,
-    ],
-  );
+  const value = {
+    activeThreadId,
+    createThread,
+    setActiveThreadId,
+    hideThread,
+    messages,
+    chat: chat as unknown as ReturnType<typeof useAiChat>,
+    sentinelRef: sentinelRef as RefObject<HTMLDivElement>,
+    selectedModelState,
+    setSelectedModelState,
+    selectedAgentState,
+    setSelectedAgentState,
+  };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

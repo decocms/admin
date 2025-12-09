@@ -27,9 +27,10 @@ import {
   SidebarLayout,
   SidebarProvider,
 } from "@deco/ui/components/sidebar.tsx";
+import { cn } from "@deco/ui/lib/utils.js";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { Suspense, useCallback } from "react";
+import { PropsWithChildren, Suspense, useTransition } from "react";
 import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
@@ -40,13 +41,15 @@ function Topbar({
   showSidebarToggle = false,
   showOrgSwitcher = false,
   showDecoChat = false,
-  onToggleChat,
 }: {
   showSidebarToggle?: boolean;
   showOrgSwitcher?: boolean;
   showDecoChat?: boolean;
-  onToggleChat?: () => void;
 }) {
+  const [_isOpen, setChatOpen] = useDecoChatOpen();
+
+  const toggleChat = () => setChatOpen((prev) => !prev);
+
   return (
     <AppTopbar>
       <AppTopbar.Left>
@@ -58,8 +61,8 @@ function Topbar({
         )}
       </AppTopbar.Left>
       <AppTopbar.Right className="gap-2">
-        {showDecoChat && onToggleChat && (
-          <Button size="sm" variant="default" onClick={onToggleChat}>
+        {showDecoChat && (
+          <Button size="sm" variant="default" onClick={toggleChat}>
             <Avatar
               url={CAPYBARA_AVATAR_URL}
               fallback="DC"
@@ -75,24 +78,78 @@ function Topbar({
   );
 }
 
-function ShellLayoutContent() {
-  const { org } = useParams({ strict: false });
-
-  const [sidebarOpen, setSidebarOpen] = useLocalStorage(
-    "mesh:sidebar-open",
-    true,
-  );
-  const [chatOpen, setChatOpen] = useDecoChatOpen();
-
-  const toggleChat = useCallback(
-    () => setChatOpen((prev) => !prev),
-    [setChatOpen],
-  );
-
+/**
+ * This component persists the width of the chat panel across reloads.
+ * Also, it's important to keep it like this to avoid unnecessary re-renders.
+ */
+function PersistentResizablePanel({
+  children,
+  className,
+}: PropsWithChildren<{ className?: string }>) {
+  const [_isPending, startTransition] = useTransition();
   const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
     LOCALSTORAGE_KEYS.decoChatPanelWidth(),
     30,
   );
+
+  const handleResize = (size: number) =>
+    startTransition(() => setChatPanelWidth(size));
+
+  return (
+    <ResizablePanel
+      defaultSize={chatPanelWidth}
+      minSize={20}
+      className={cn("min-w-0", className)}
+      onResize={handleResize}
+    >
+      {children}
+    </ResizablePanel>
+  );
+}
+
+/**
+ * This component persists the open state of the sidebar across reloads.
+ * Also, it's important to keep it like this to avoid unnecessary re-renders.
+ */
+function PersistentSidebarProvider({ children }: PropsWithChildren) {
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage(
+    LOCALSTORAGE_KEYS.sidebarOpen(),
+    true,
+  );
+
+  return (
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      {children}
+    </SidebarProvider>
+  );
+}
+
+/**
+ * This component renders the chat panel and the main content.
+ * It's important to keep it like this to avoid unnecessary re-renders.
+ */
+function ChatPanels() {
+  const [chatOpen] = useDecoChatOpen();
+
+  return (
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel className="bg-background">
+        <Outlet />
+      </ResizablePanel>
+      <ResizableHandle withHandle={chatOpen} />
+      <PersistentResizablePanel className={chatOpen ? "max-w-none" : "max-w-0"}>
+        <ErrorBoundary>
+          <Suspense fallback={<DecoChatSkeleton />}>
+            <DecoChatPanel />
+          </Suspense>
+        </ErrorBoundary>
+      </PersistentResizablePanel>
+    </ResizablePanelGroup>
+  );
+}
+
+function ShellLayoutContent() {
+  const { org } = useParams({ strict: false });
 
   const { data: orgSlug } = useSuspenseQuery({
     queryKey: KEYS.activeOrganization(org),
@@ -120,15 +177,10 @@ function ShellLayoutContent() {
 
   return (
     <ProjectContextProvider locator={Locator.adminProject(orgSlug)}>
-      <ChatProvider>
-        <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <ChatProvider key={orgSlug}>
+        <PersistentSidebarProvider>
           <div className="flex flex-col h-screen">
-            <Topbar
-              showSidebarToggle
-              showOrgSwitcher
-              showDecoChat
-              onToggleChat={toggleChat}
-            />
+            <Topbar showSidebarToggle showOrgSwitcher showDecoChat />
             <SidebarLayout
               className="flex-1 bg-sidebar"
               style={
@@ -140,32 +192,11 @@ function ShellLayoutContent() {
             >
               <MeshSidebar />
               <SidebarInset className="pt-12">
-                <ResizablePanelGroup direction="horizontal">
-                  <ResizablePanel className="bg-background">
-                    <Outlet />
-                  </ResizablePanel>
-                  {chatOpen && (
-                    <>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel
-                        defaultSize={chatPanelWidth}
-                        minSize={20}
-                        className="min-w-0"
-                        onResize={setChatPanelWidth}
-                      >
-                        <ErrorBoundary>
-                          <Suspense fallback={<DecoChatSkeleton />}>
-                            <DecoChatPanel />
-                          </Suspense>
-                        </ErrorBoundary>
-                      </ResizablePanel>
-                    </>
-                  )}
-                </ResizablePanelGroup>
+                <ChatPanels />
               </SidebarInset>
             </SidebarLayout>
           </div>
-        </SidebarProvider>
+        </PersistentSidebarProvider>
       </ChatProvider>
     </ProjectContextProvider>
   );

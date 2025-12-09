@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useCopy } from "@deco/ui/hooks/use-copy.ts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { MemoizedMarkdown } from "@deco/ui/components/chat/chat-markdown.tsx";
@@ -18,11 +18,11 @@ export function MessageTextPart({
   const { handleCopy } = useCopy();
   const [isCopied, setIsCopied] = useState(false);
 
-  const handleCopyMessage = useCallback(async () => {
+  const handleCopyMessage = async () => {
     await handleCopy(text);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  }, [text, handleCopy]);
+  };
 
   return (
     <div className="group/part relative">

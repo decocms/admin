@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 "use client";
 
 import * as React from "react";
@@ -128,7 +129,10 @@ function ChartTooltipContent({
   }) {
   const { config } = useChart();
   // Ensure payload is always an array
-  const safePayload = Array.isArray(payload) ? payload : [];
+  const safePayload = React.useMemo(
+    () => (Array.isArray(payload) ? payload : []),
+    [payload],
+  );
 
   const tooltipLabel = React.useMemo(() => {
     if (hideLabel || !safePayload?.length) {

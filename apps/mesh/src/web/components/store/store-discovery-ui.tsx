@@ -3,7 +3,7 @@ import { slugify } from "@/web/utils/slugify";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CollectionSearch } from "../collections/collection-search";
 import {
   type RegistryItem,
@@ -28,34 +28,33 @@ export function StoreDiscoveryUI({
   const { org } = useProjectContext();
 
   // Filtered items based on search
-  const filteredItems = useMemo(() => {
-    if (!search) return items;
-    const searchLower = search.toLowerCase();
-    return items.filter(
-      (item) =>
-        (item.name || item.title || "").toLowerCase().includes(searchLower) ||
-        (item.description || item.server?.description || "")
-          .toLowerCase()
-          .includes(searchLower),
-    );
-  }, [items, search]);
+  const filteredItems = !search
+    ? items
+    : (() => {
+        const searchLower = search.toLowerCase();
+        return items.filter(
+          (item) =>
+            (item.name || item.title || "")
+              .toLowerCase()
+              .includes(searchLower) ||
+            (item.description || item.server?.description || "")
+              .toLowerCase()
+              .includes(searchLower),
+        );
+      })();
 
   // Verified items
-  const verifiedItems = useMemo(() => {
-    return filteredItems.filter(
-      (item) =>
-        item.verified === true ||
-        item._meta?.["mcp.mesh"]?.verified === true ||
-        item.server?._meta?.["mcp.mesh"]?.verified === true,
-    );
-  }, [filteredItems]);
+  const verifiedItems = filteredItems.filter(
+    (item) =>
+      item.verified === true ||
+      item._meta?.["mcp.mesh"]?.verified === true ||
+      item.server?._meta?.["mcp.mesh"]?.verified === true,
+  );
 
   // Non-verified items
-  const allItems = useMemo(() => {
-    return filteredItems.filter(
-      (item) => !verifiedItems.find((v) => v.id === item.id),
-    );
-  }, [filteredItems, verifiedItems]);
+  const allItems = filteredItems.filter(
+    (item) => !verifiedItems.find((v) => v.id === item.id),
+  );
 
   const handleItemClick = (item: RegistryItem) => {
     const itemName = item.name || item.title || item.server?.title || "";

@@ -2,21 +2,16 @@ import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import type { ToolUIPart } from "ai";
-import { useMemo } from "react";
 import { MessageProps } from "./message-user.tsx";
 import { MessageReasoningPart } from "./parts/reasoning-part.tsx";
 import { MessageTextPart } from "./parts/text-part.tsx";
 import { ToolCallPart } from "./parts/tool-call-part.tsx";
 
 function useTimestamp(created_at: string | Date) {
-  return useMemo(
-    () =>
-      new Date(created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    [created_at],
-  );
+  return new Date(created_at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function TypingIndicator() {

@@ -1,5 +1,4 @@
 import { type UIMessage } from "ai";
-import { useMemo } from "react";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
@@ -12,14 +11,10 @@ export interface MessageProps<T extends Metadata> {
 }
 
 function useTimestamp(created_at: string | Date) {
-  return useMemo(
-    () =>
-      new Date(created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    [created_at],
-  );
+  return new Date(created_at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function MessageUser<T extends Metadata>({

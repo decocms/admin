@@ -21,7 +21,7 @@ import {
   Play,
   Plus,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { ViewLayout } from "./layout";
@@ -77,9 +77,7 @@ export function ToolDetailsView({
   }, [mcp.error]);
 
   // Find the tool definition
-  const tool = useMemo(() => {
-    return mcp.tools?.find((t) => t.name === toolName);
-  }, [mcp.tools, toolName]);
+  const tool = mcp.tools?.find((t) => t.name === toolName);
 
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {

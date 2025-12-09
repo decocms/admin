@@ -9,9 +9,12 @@ import { useLocalStorage } from "@/web/hooks/use-local-storage";
 import RequiredAuthLayout from "@/web/layouts/required-auth-layout";
 import { authClient } from "@/web/lib/auth-client";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
-import { Locator } from "@/web/lib/locator";
+import { ORG_ADMIN_PROJECT_SLUG } from "@/web/lib/locator";
 import { ChatProvider } from "@/web/providers/chat-provider";
-import { ProjectContextProvider } from "@/web/providers/project-context-provider";
+import {
+  ProjectContextProvider,
+  ProjectContextProviderProps,
+} from "@/web/providers/project-context-provider";
 import { AppTopbar } from "@deco/ui/components/app-topbar.tsx";
 import { Avatar } from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -151,17 +154,24 @@ function ChatPanels() {
 function ShellLayoutContent() {
   const { org } = useParams({ strict: false });
 
-  const { data: orgSlug } = useSuspenseQuery({
+  const { data: projectContext } = useSuspenseQuery({
     queryKey: KEYS.activeOrganization(org),
     queryFn: async () => {
-      await authClient.organization.setActive({ organizationSlug: org });
-      return org ?? null;
+      const { data } = await authClient.organization.setActive({
+        organizationSlug: org,
+      });
+
+      return {
+        org: data,
+        project: { slug: ORG_ADMIN_PROJECT_SLUG },
+      } as ProjectContextProviderProps;
     },
     gcTime: Infinity,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+  const orgSlug = projectContext.org?.slug;
 
   // Should use "project ?? org-admin" when projects are introduced
   if (typeof orgSlug !== "string") {
@@ -176,7 +186,7 @@ function ShellLayoutContent() {
   }
 
   return (
-    <ProjectContextProvider locator={Locator.adminProject(orgSlug)}>
+    <ProjectContextProvider {...projectContext}>
       <ChatProvider key={orgSlug}>
         <PersistentSidebarProvider>
           <div className="flex flex-col h-screen">

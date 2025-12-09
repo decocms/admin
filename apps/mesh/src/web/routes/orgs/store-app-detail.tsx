@@ -286,7 +286,7 @@ export default function StoreAppDetail() {
 
     const connectionData = extractConnectionData(
       selectedItem,
-      org,
+      org.id,
       session.user.id,
     );
 
@@ -308,7 +308,7 @@ export default function StoreAppDetail() {
       if (newConnection?.id && org) {
         navigate({
           to: "/$org/mcps/$connectionId",
-          params: { org, connectionId: newConnection.id },
+          params: { org: org.slug, connectionId: newConnection.id },
         });
       }
     } catch (err) {
@@ -322,7 +322,7 @@ export default function StoreAppDetail() {
   const handleBackClick = () => {
     navigate({
       to: "/$org/store",
-      params: { org },
+      params: { org: org.slug },
     });
   };
 

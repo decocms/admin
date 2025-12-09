@@ -128,7 +128,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Create transport (stable, doesn't depend on selected model)
-  const transport = createModelsTransport(org);
+  const transport = createModelsTransport(org.slug);
 
   // Use AI SDK's useChat hook
   const chat = useAiChat({

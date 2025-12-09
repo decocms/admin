@@ -69,7 +69,7 @@ function ThreadListItem({
  */
 function RecentThreadsList() {
   const { activeThreadId } = useChat();
-  const threads = useThreads() ?? [];
+  const threads = useThreads();
   const maxThreads = 5; // Show up to 5 recent threads
 
   // Get the most recent threads (limited, filtered and sorted)

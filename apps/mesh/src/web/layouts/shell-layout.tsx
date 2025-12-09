@@ -29,7 +29,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { Suspense, useCallback } from "react";
+import { PropsWithChildren, Suspense, useCallback, useTransition } from "react";
 import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
@@ -75,6 +75,31 @@ function Topbar({
   );
 }
 
+const DEFAULT_CHAT_PANEL_WIDTH = 30;
+
+const PersistentResizablePanel = ({ children }: PropsWithChildren) => {
+  const [_isPending, startTransition] = useTransition();
+  const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
+    LOCALSTORAGE_KEYS.decoChatPanelWidth(),
+    DEFAULT_CHAT_PANEL_WIDTH,
+  );
+
+  const handleResize = useCallback(
+    (size: number) => startTransition(() => setChatPanelWidth(size)),
+    [startTransition, setChatPanelWidth],
+  );
+
+  return (
+    <ResizablePanel
+      defaultSize={Math.max(chatPanelWidth, DEFAULT_CHAT_PANEL_WIDTH)}
+      className="min-w-0"
+      onResize={handleResize}
+    >
+      {children}
+    </ResizablePanel>
+  );
+};
+
 function ShellLayoutContent() {
   const { org } = useParams({ strict: false });
 
@@ -87,11 +112,6 @@ function ShellLayoutContent() {
   const toggleChat = useCallback(
     () => setChatOpen((prev) => !prev),
     [setChatOpen],
-  );
-
-  const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
-    LOCALSTORAGE_KEYS.decoChatPanelWidth(),
-    30,
   );
 
   const { data: orgSlug } = useSuspenseQuery({
@@ -120,7 +140,7 @@ function ShellLayoutContent() {
 
   return (
     <ProjectContextProvider locator={Locator.adminProject(orgSlug)}>
-      <ChatProvider>
+      <ChatProvider key={orgSlug}>
         <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <div className="flex flex-col h-screen">
             <Topbar
@@ -147,18 +167,13 @@ function ShellLayoutContent() {
                   {chatOpen && (
                     <>
                       <ResizableHandle withHandle />
-                      <ResizablePanel
-                        defaultSize={chatPanelWidth}
-                        minSize={20}
-                        className="min-w-0"
-                        onResize={setChatPanelWidth}
-                      >
+                      <PersistentResizablePanel>
                         <ErrorBoundary>
                           <Suspense fallback={<DecoChatSkeleton />}>
                             <DecoChatPanel />
                           </Suspense>
                         </ErrorBoundary>
-                      </ResizablePanel>
+                      </PersistentResizablePanel>
                     </>
                   )}
                 </ResizablePanelGroup>

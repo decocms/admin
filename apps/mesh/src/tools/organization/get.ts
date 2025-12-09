@@ -36,9 +36,7 @@ export const ORGANIZATION_GET = defineTool({
 
     // Get full organization via Better Auth
     // This uses the active organization from session
-    const organization = await ctx.authInstance.api.getFullOrganization({
-      headers: new Headers(), // Better Auth needs Headers object
-    });
+    const organization = await ctx.boundAuth.organization.get();
 
     if (!organization) {
       throw new Error("No active organization found");

@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 
 /**
  * Built-in roles that are always available
+ * Note: "member" is the default role name in Better Auth, shown as "Member" to users
  */
 const BUILTIN_ROLES = [
   { value: "owner", label: "Owner", isBuiltin: true },
@@ -36,10 +37,23 @@ export interface OrganizationRole {
 }
 
 /**
+ * Raw role data from Better Auth API
+ */
+interface RawRoleData {
+  id?: string;
+  role?: string;
+  permission?: Record<string, string[]> | null;
+  organizationId?: string;
+  createdAt?: string;
+}
+
+/**
  * Parse permission to extract static and connection-specific information
  * Format: { "self": ["PERM1", "PERM2"], "<connectionId>": ["tool1", "tool2"], "*": ["*"] }
  */
-function parsePermission(permission: Record<string, string[]> | undefined): {
+function parsePermission(
+  permission: Record<string, string[]> | undefined | null,
+): {
   // Static permissions (under "self")
   staticPermissions: string[];
   allowsAllStaticPermissions: boolean;
@@ -132,26 +146,39 @@ export function useOrganizationRoles() {
     queryKey: KEYS.organizationRoles(locator),
     queryFn: async () => {
       try {
-        // Fetch custom roles from Better Auth
-        // The API returns the roles array directly (not wrapped in { roles: [...] })
-        if (!("listRoles" in authClient.organization)) {
+        // Try to fetch custom roles from Better Auth's dynamic access control
+        // @ts-expect-error - listRoles may not be in the type definition
+        const listRoles = authClient.organization?.listRoles;
+        if (typeof listRoles !== "function") {
+          console.warn("[useOrganizationRoles] listRoles API not available");
           return [];
         }
-        const listRoles = authClient.organization.listRoles as () => Promise<{
-          data: OrganizationRole[];
-          error: Error | null;
-        }>;
+
         const result = await listRoles();
 
-        if (result.error) {
-          console.error("Failed to fetch roles:", result.error);
+        if (result?.error) {
+          console.error("[useOrganizationRoles] API error:", result.error);
           return [];
         }
 
-        // result.data IS the roles array directly
-        return result.data ?? [];
+        // Handle different response formats:
+        // - { data: Role[] } - array directly
+        // - { data: { roles: Role[] } } - wrapped in object
+        const data = result?.data;
+        if (!data) {
+          return [];
+        }
+
+        // Check if data is array directly or has a roles property
+        const rolesArray = Array.isArray(data)
+          ? data
+          : Array.isArray(data.roles)
+            ? data.roles
+            : [];
+
+        return rolesArray as RawRoleData[];
       } catch (err) {
-        console.error("Error fetching organization roles:", err);
+        console.error("[useOrganizationRoles] Fetch error:", err);
         return [];
       }
     },
@@ -165,11 +192,14 @@ export function useOrganizationRoles() {
     isBuiltin: r.isBuiltin,
   }));
 
-  // Add custom roles
+  // Add custom roles from API response
   if (customRolesData && Array.isArray(customRolesData)) {
     for (const customRole of customRolesData) {
-      // Skip if it's a built-in role name
-      if (BUILTIN_ROLES.some((b) => b.value === customRole.role)) {
+      const roleName = customRole.role;
+      if (!roleName) continue;
+
+      // Skip if it's a built-in role name (owner, admin, member)
+      if (BUILTIN_ROLES.some((b) => b.value === roleName)) {
         continue;
       }
 
@@ -184,10 +214,10 @@ export function useOrganizationRoles() {
 
       allRoles.push({
         id: customRole.id,
-        role: customRole.role,
-        label: formatRoleLabel(customRole.role),
+        role: roleName,
+        label: formatRoleLabel(roleName),
         isBuiltin: false,
-        permission: customRole.permission,
+        permission: customRole.permission ?? undefined,
         // Static permissions
         staticPermissionCount: allowsAllStaticPermissions
           ? -1

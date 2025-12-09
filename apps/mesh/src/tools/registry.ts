@@ -6,28 +6,59 @@
  * - API documentation
  * - Tool discovery
  * - Role permission selection
+ *
+ * NOTE: This file is imported by frontend code. Do NOT import runtime values
+ * from ./index (only type imports are safe, but they cause circular issues).
+ *
+ * Keep ALL_TOOL_NAMES in sync with ALL_TOOLS in index.ts manually.
+ * A test can verify they match.
  */
-
-import { ALL_TOOLS } from "./index";
 
 // ============================================================================
 // Types
 // ============================================================================
 
+export type ToolCategory = "Organizations" | "Connections";
+
+/**
+ * All tool names - keep in sync with ALL_TOOLS in index.ts
+ */
+const ALL_TOOL_NAMES = [
+  // Organization tools
+  "ORGANIZATION_CREATE",
+  "ORGANIZATION_LIST",
+  "ORGANIZATION_GET",
+  "ORGANIZATION_UPDATE",
+  "ORGANIZATION_DELETE",
+  "ORGANIZATION_SETTINGS_GET",
+  "ORGANIZATION_SETTINGS_UPDATE",
+  "ORGANIZATION_MEMBER_ADD",
+  "ORGANIZATION_MEMBER_REMOVE",
+  "ORGANIZATION_MEMBER_LIST",
+  "ORGANIZATION_MEMBER_UPDATE_ROLE",
+  // Connection tools
+  "COLLECTION_CONNECTIONS_CREATE",
+  "COLLECTION_CONNECTIONS_LIST",
+  "COLLECTION_CONNECTIONS_GET",
+  "COLLECTION_CONNECTIONS_UPDATE",
+  "COLLECTION_CONNECTIONS_DELETE",
+  "CONNECTION_TEST",
+  "CONNECTION_CONFIGURE",
+  // Database tools
+  "DATABASES_RUN_SQL",
+] as const;
+
+/**
+ * ToolName type derived from ALL_TOOL_NAMES
+ */
+export type ToolName = (typeof ALL_TOOL_NAMES)[number];
+
 export interface ToolMetadata {
-  name: string;
+  name: ToolName;
   description: string;
   category: ToolCategory;
   dangerous?: boolean; // Requires extra confirmation
 }
-
-export type ToolCategory = "Organizations" | "Connections";
-
-/**
- * Union type of all tool names - derived from ALL_TOOLS
- * Use this for type-safe permission handling
- */
-export type ToolName = (typeof ALL_TOOLS)[number]["name"];
 
 /**
  * Permission option for UI components
@@ -48,44 +79,122 @@ export interface PermissionGroup {
 }
 
 // ============================================================================
-// Tool Categories Configuration
+// Tool Metadata (static - no server imports)
 // ============================================================================
 
 /**
- * Additional metadata for tools (category and danger flags)
- * This complements the tool definitions with UI-specific metadata
+ * All management tools with metadata
+ * Defined statically to avoid importing server-side tool implementations
  */
-const TOOL_CATEGORIES: Record<
-  string,
-  { category: ToolCategory; dangerous?: boolean }
-> = {
+export const MANAGEMENT_TOOLS: ToolMetadata[] = [
   // Organization tools
-  ORGANIZATION_CREATE: { category: "Organizations" },
-  ORGANIZATION_LIST: { category: "Organizations" },
-  ORGANIZATION_GET: { category: "Organizations" },
-  ORGANIZATION_UPDATE: { category: "Organizations" },
-  ORGANIZATION_DELETE: { category: "Organizations", dangerous: true },
-  ORGANIZATION_SETTINGS_GET: { category: "Organizations" },
-  ORGANIZATION_SETTINGS_UPDATE: { category: "Organizations" },
-  ORGANIZATION_MEMBER_ADD: { category: "Organizations" },
-  ORGANIZATION_MEMBER_REMOVE: { category: "Organizations", dangerous: true },
-  ORGANIZATION_MEMBER_LIST: { category: "Organizations" },
-  ORGANIZATION_MEMBER_UPDATE_ROLE: { category: "Organizations" },
-
+  {
+    name: "ORGANIZATION_CREATE",
+    description: "Create a new organization",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_LIST",
+    description: "List organizations",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_GET",
+    description: "View organization details",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_UPDATE",
+    description: "Update organization",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_DELETE",
+    description: "Delete organization",
+    category: "Organizations",
+    dangerous: true,
+  },
+  {
+    name: "ORGANIZATION_SETTINGS_GET",
+    description: "View organization settings",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_SETTINGS_UPDATE",
+    description: "Update organization settings",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_MEMBER_ADD",
+    description: "Add members",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_MEMBER_REMOVE",
+    description: "Remove members",
+    category: "Organizations",
+    dangerous: true,
+  },
+  {
+    name: "ORGANIZATION_MEMBER_LIST",
+    description: "List members",
+    category: "Organizations",
+  },
+  {
+    name: "ORGANIZATION_MEMBER_UPDATE_ROLE",
+    description: "Update member roles",
+    category: "Organizations",
+  },
   // Connection tools
-  COLLECTION_CONNECTIONS_CREATE: { category: "Connections" },
-  COLLECTION_CONNECTIONS_LIST: { category: "Connections" },
-  COLLECTION_CONNECTIONS_GET: { category: "Connections" },
-  COLLECTION_CONNECTIONS_UPDATE: { category: "Connections" },
-  COLLECTION_CONNECTIONS_DELETE: { category: "Connections", dangerous: true },
-  CONNECTION_TEST: { category: "Connections" },
-  CONNECTION_CONFIGURE: { category: "Connections" },
-};
+  {
+    name: "COLLECTION_CONNECTIONS_CREATE",
+    description: "Create connections",
+    category: "Connections",
+  },
+  {
+    name: "COLLECTION_CONNECTIONS_LIST",
+    description: "List connections",
+    category: "Connections",
+  },
+  {
+    name: "COLLECTION_CONNECTIONS_GET",
+    description: "View connection details",
+    category: "Connections",
+  },
+  {
+    name: "COLLECTION_CONNECTIONS_UPDATE",
+    description: "Update connections",
+    category: "Connections",
+  },
+  {
+    name: "COLLECTION_CONNECTIONS_DELETE",
+    description: "Delete connections",
+    category: "Connections",
+    dangerous: true,
+  },
+  {
+    name: "CONNECTION_TEST",
+    description: "Test connections",
+    category: "Connections",
+  },
+  {
+    name: "CONNECTION_CONFIGURE",
+    description: "Configure connections",
+    category: "Connections",
+  },
+  {
+    name: "DATABASES_RUN_SQL",
+    description: "Run SQL queries",
+    category: "Connections",
+    dangerous: true,
+  },
+];
 
 /**
  * Human-readable labels for tool names
  */
-const TOOL_LABELS: Partial<Record<ToolName, string>> = {
+const TOOL_LABELS: Record<ToolName, string> = {
+  ORGANIZATION_CREATE: "Create organization",
   ORGANIZATION_LIST: "List organizations",
   ORGANIZATION_GET: "View organization details",
   ORGANIZATION_UPDATE: "Update organization",
@@ -103,28 +212,12 @@ const TOOL_LABELS: Partial<Record<ToolName, string>> = {
   COLLECTION_CONNECTIONS_DELETE: "Delete connections",
   CONNECTION_TEST: "Test connections",
   CONNECTION_CONFIGURE: "Configure connections",
+  DATABASES_RUN_SQL: "Run SQL queries",
 };
 
 // ============================================================================
 // Exports
 // ============================================================================
-
-/**
- * All management tools with metadata for consent UI
- * Derived from actual tool definitions + additional UI metadata
- */
-export const MANAGEMENT_TOOLS: ToolMetadata[] = ALL_TOOLS.map((tool) => {
-  const additionalMeta = TOOL_CATEGORIES[tool.name] || {
-    category: "Connections" as const,
-  };
-
-  return {
-    name: tool.name,
-    description: tool.description,
-    category: additionalMeta.category,
-    dangerous: additionalMeta.dangerous,
-  };
-});
 
 /**
  * Get tools grouped by category
@@ -148,8 +241,8 @@ export function getToolsByCategory() {
  */
 export function getPermissionOptions(): PermissionOption[] {
   return MANAGEMENT_TOOLS.map((tool) => ({
-    value: tool.name as ToolName,
-    label: TOOL_LABELS[tool.name as ToolName] || tool.name,
+    value: tool.name,
+    label: TOOL_LABELS[tool.name],
     dangerous: tool.dangerous,
   }));
 }

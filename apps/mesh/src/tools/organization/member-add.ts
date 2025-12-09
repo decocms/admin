@@ -42,12 +42,10 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
     }
 
     // Add member via Better Auth
-    const result = await ctx.authInstance.api.addMember({
-      body: {
-        organizationId,
-        userId: input.userId,
-        role: input.role as ("user" | "admin")[], // Better Auth expects specific role values
-      },
+    const result = await ctx.boundAuth.organization.addMember({
+      organizationId,
+      userId: input.userId,
+      role: input.role,
     });
 
     if (!result) {

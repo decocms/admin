@@ -11,6 +11,7 @@
 
 import { getToolsByCategory } from "@/tools/registry";
 import { sso } from "@better-auth/sso";
+import { organization } from "@decocms/better-auth/plugins";
 import { betterAuth } from "better-auth";
 import {
   admin as adminPlugin,
@@ -21,14 +22,13 @@ import {
   openAPI,
   OrganizationOptions,
 } from "better-auth/plugins";
-import { organization } from "@decocms/better-auth/plugins";
 import {
   adminAc,
   defaultStatements,
 } from "better-auth/plugins/organization/access";
 
 import { config } from "@/core/config";
-import { createAccessControl, Role } from "better-auth/plugins/access";
+import { createAccessControl, Role } from "@decocms/better-auth/plugins/access";
 import { getDatabaseUrl, getDbDialect } from "../database";
 import { createEmailSender, findEmailProvider } from "./email-providers";
 import { createMagicLinkConfig } from "./magic-link";
@@ -94,6 +94,13 @@ if (
     };
   }
 }
+
+/**
+ * Built-in roles that have full access (owner, admin, user)
+ * These bypass custom permission checks
+ */
+export const BUILTIN_ROLES = ["owner", "admin", "user"] as const;
+export type BuiltinRole = (typeof BUILTIN_ROLES)[number];
 
 const plugins = [
   // Organization plugin for multi-tenant organization management

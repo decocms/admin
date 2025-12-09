@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -183,11 +183,8 @@ export default function OrgSettings() {
   const organizations = organizationsData;
   const organizationsLoading = organizationsPending && !organizations?.length;
 
-  const currentOrganization = useMemo(
-    () =>
-      organizations?.find((organization) => organization.slug === org) ?? null,
-    [organizations, org],
-  );
+  const currentOrganization =
+    organizations?.find((organization) => organization.slug === org) ?? null;
 
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),

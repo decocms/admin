@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import type { ConnectionEntity } from "../../tools/connection/schema";
 
 /**
@@ -15,24 +14,22 @@ export function usePublisherConnection(
   connections: ConnectionEntity[] | undefined,
   publisherName: string | undefined,
 ): ConnectionEntity | undefined {
-  return useMemo(() => {
-    if (!connections || !publisherName) return undefined;
+  if (!connections || !publisherName) return undefined;
 
-    const publisherLower = publisherName.toLowerCase();
+  const publisherLower = publisherName.toLowerCase();
 
-    // Try to find a connection matching the publisher
-    // Priority: app_name > app_id > title (case-insensitive)
-    return (
-      connections.find(
-        (conn) =>
-          conn.app_name?.toLowerCase() === publisherLower ||
-          conn.app_id?.toLowerCase() === publisherLower ||
-          conn.title.toLowerCase() === publisherLower,
-      ) ||
-      // Fallback: fuzzy match on title if publisher name is contained in connection title
-      connections.find((conn) =>
-        conn.title.toLowerCase().includes(publisherLower),
-      )
-    );
-  }, [connections, publisherName]);
+  // Try to find a connection matching the publisher
+  // Priority: app_name > app_id > title (case-insensitive)
+  return (
+    connections.find(
+      (conn) =>
+        conn.app_name?.toLowerCase() === publisherLower ||
+        conn.app_id?.toLowerCase() === publisherLower ||
+        conn.title.toLowerCase() === publisherLower,
+    ) ||
+    // Fallback: fuzzy match on title if publisher name is contained in connection title
+    connections.find((conn) =>
+      conn.title.toLowerCase().includes(publisherLower),
+    )
+  );
 }

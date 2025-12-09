@@ -16,7 +16,6 @@ import {
   type UseCollectionListOptions,
 } from "../use-collections";
 import { useProjectContext } from "../../providers/project-context-provider";
-import { useMemo } from "react";
 
 /**
  * Filter definition for connections (matches @deco/ui Filter shape)
@@ -34,7 +33,7 @@ export type UseConnectionsOptions = UseCollectionListOptions<ConnectionEntity>;
 export function useConnectionsCollection() {
   const { org } = useProjectContext();
   // Use org as the connectionKey, and default toolCaller (mesh tools)
-  const toolCaller = useMemo(() => createToolCaller(), []);
+  const toolCaller = createToolCaller();
 
   return useCollection<ConnectionEntity>(org, "CONNECTIONS", toolCaller);
 }

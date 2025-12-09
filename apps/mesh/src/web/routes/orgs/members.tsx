@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { InviteMemberDialog } from "@/web/components/invite-member-dialog";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 
 const useMembers = () => {
@@ -159,59 +159,57 @@ export default function OrgMembers() {
     }
   };
 
-  const filteredAndSortedMembers = useMemo(() => {
-    let filtered = members ?? [];
+  let filtered = members ?? [];
 
-    // Filter by search
-    if (search) {
-      const lowerSearch = search.toLowerCase();
-      filtered = filtered.filter(
-        (member) =>
-          member.user?.name?.toLowerCase().includes(lowerSearch) ||
-          member.user?.email?.toLowerCase().includes(lowerSearch) ||
-          member.role?.toLowerCase().includes(lowerSearch),
-      );
-    }
+  // Filter by search
+  if (search) {
+    const lowerSearch = search.toLowerCase();
+    filtered = filtered.filter(
+      (member) =>
+        member.user?.name?.toLowerCase().includes(lowerSearch) ||
+        member.user?.email?.toLowerCase().includes(lowerSearch) ||
+        member.role?.toLowerCase().includes(lowerSearch),
+    );
+  }
 
-    // Sort
-    if (sortKey && sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        let aVal: string;
-        let bVal: string;
+  // Sort
+  if (sortKey && sortDirection) {
+    filtered = [...filtered].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
 
-        switch (sortKey) {
-          case "member":
-            aVal = a.user?.name || "";
-            bVal = b.user?.name || "";
-            break;
-          case "role":
-            aVal = a.role || "";
-            bVal = b.role || "";
-            break;
-          case "joined":
-            aVal = a.createdAt
-              ? typeof a.createdAt === "string"
-                ? a.createdAt
-                : a.createdAt.toISOString()
-              : "";
-            bVal = b.createdAt
-              ? typeof b.createdAt === "string"
-                ? b.createdAt
-                : b.createdAt.toISOString()
-              : "";
-            break;
-          default:
-            return 0;
-        }
+      switch (sortKey) {
+        case "member":
+          aVal = a.user?.name || "";
+          bVal = b.user?.name || "";
+          break;
+        case "role":
+          aVal = a.role || "";
+          bVal = b.role || "";
+          break;
+        case "joined":
+          aVal = a.createdAt
+            ? typeof a.createdAt === "string"
+              ? a.createdAt
+              : a.createdAt.toISOString()
+            : "";
+          bVal = b.createdAt
+            ? typeof b.createdAt === "string"
+              ? b.createdAt
+              : b.createdAt.toISOString()
+            : "";
+          break;
+        default:
+          return 0;
+      }
 
-        return sortDirection === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      });
-    }
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    });
+  }
 
-    return filtered;
-  }, [members, search, sortKey, sortDirection]);
+  const filteredAndSortedMembers = filtered;
 
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {

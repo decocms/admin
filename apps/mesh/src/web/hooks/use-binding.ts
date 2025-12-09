@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { type Binder, createBindingChecker } from "@decocms/bindings";
 import {
   BaseCollectionEntitySchema,
@@ -64,15 +63,9 @@ export function useBindingConnections(
 ): ConnectionEntity[] {
   const binding = BUILTIN_BINDINGS[bindingName];
 
-  return useMemo(
-    () =>
-      !connections || !binding
-        ? []
-        : connections.filter((conn) =>
-            connectionImplementsBinding(conn, binding),
-          ),
-    [connections, binding],
-  );
+  return !connections || !binding
+    ? []
+    : connections.filter((conn) => connectionImplementsBinding(conn, binding));
 }
 
 /**
@@ -281,10 +274,7 @@ function detectCollections(
 export function useCollectionBindings(
   connection: ConnectionEntity | undefined,
 ): ValidatedCollection[] {
-  return useMemo(
-    () => detectCollections(connection?.tools ?? null),
-    [connection?.tools],
-  );
+  return detectCollections(connection?.tools ?? null);
 }
 
 /**
@@ -297,15 +287,11 @@ export function useCollectionBindings(
 export function useRegistryConnections(
   connections: ConnectionEntity[] | undefined,
 ): ConnectionEntity[] {
-  return useMemo(
-    () =>
-      !connections
-        ? []
-        : connections.filter((conn) =>
-            extractCollectionNames(conn.tools).find(
-              (name) => name === "REGISTRY_APP",
-            ),
-          ),
-    [connections],
-  );
+  return !connections
+    ? []
+    : connections.filter((conn) =>
+        extractCollectionNames(conn.tools).find(
+          (name) => name === "REGISTRY_APP",
+        ),
+      );
 }

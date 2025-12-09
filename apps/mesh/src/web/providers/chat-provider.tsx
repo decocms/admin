@@ -4,9 +4,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   createContext,
   PropsWithChildren,
-  useCallback,
   useContext,
-  useMemo,
   useRef,
   type RefObject,
 } from "react";
@@ -82,40 +80,34 @@ export function ChatProvider({ children }: PropsWithChildren) {
   const messages = useThreadMessages(activeThreadId);
 
   // // Actions
-  const createThread = useCallback(
-    (thread?: Partial<Thread>) => {
-      const id = thread?.id || crypto.randomUUID();
-      const now = new Date().toISOString();
-      const newThread: Thread = {
-        id,
-        title: thread?.title || "",
-        created_at: thread?.created_at || now,
-        updated_at: thread?.updated_at || now,
-        hidden: thread?.hidden ?? false,
-      };
-      threadsCollection.insert(newThread);
+  const createThread = (thread?: Partial<Thread>) => {
+    const id = thread?.id || crypto.randomUUID();
+    const now = new Date().toISOString();
+    const newThread: Thread = {
+      id,
+      title: thread?.title || "",
+      created_at: thread?.created_at || now,
+      updated_at: thread?.updated_at || now,
+      hidden: thread?.hidden ?? false,
+    };
+    threadsCollection.insert(newThread);
 
-      setActiveThreadId(id);
-      return newThread;
-    },
-    [setActiveThreadId, threadsCollection],
-  );
+    setActiveThreadId(id);
+    return newThread;
+  };
 
   // Consolidated hide/delete
-  const hideThread = useCallback(
-    (threadId: string) => {
-      threadsCollection.update(threadId, (draft) => {
-        draft.hidden = true;
-        draft.updated_at = new Date().toISOString();
-      });
+  const hideThread = (threadId: string) => {
+    threadsCollection.update(threadId, (draft) => {
+      draft.hidden = true;
+      draft.updated_at = new Date().toISOString();
+    });
 
-      // If hiding active thread, clear selection
-      if (activeThreadId === threadId) {
-        setActiveThreadId(createThreadId());
-      }
-    },
-    [activeThreadId, setActiveThreadId, threadsCollection],
-  );
+    // If hiding active thread, clear selection
+    if (activeThreadId === threadId) {
+      setActiveThreadId(createThreadId());
+    }
+  };
 
   // Persist selected model (including connectionId) per organization in localStorage
   const [selectedModelState, setSelectedModelState] = useLocalStorage<{
@@ -136,7 +128,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Create transport (stable, doesn't depend on selected model)
-  const transport = useMemo(() => createModelsTransport(org), [org]);
+  const transport = createModelsTransport(org);
 
   // Use AI SDK's useChat hook
   const chat = useAiChat({
@@ -178,33 +170,19 @@ export function ChatProvider({ children }: PropsWithChildren) {
     },
   });
 
-  const value = useMemo(
-    () => ({
-      activeThreadId,
-      createThread,
-      setActiveThreadId,
-      hideThread,
-      messages,
-      chat: chat as unknown as ReturnType<typeof useAiChat>,
-      sentinelRef: sentinelRef as RefObject<HTMLDivElement>,
-      selectedModelState,
-      setSelectedModelState,
-      selectedAgentState,
-      setSelectedAgentState,
-    }),
-    [
-      activeThreadId,
-      createThread,
-      setActiveThreadId,
-      hideThread,
-      messages,
-      chat,
-      selectedModelState,
-      setSelectedModelState,
-      selectedAgentState,
-      setSelectedAgentState,
-    ],
-  );
+  const value = {
+    activeThreadId,
+    createThread,
+    setActiveThreadId,
+    hideThread,
+    messages,
+    chat: chat as unknown as ReturnType<typeof useAiChat>,
+    sentinelRef: sentinelRef as RefObject<HTMLDivElement>,
+    selectedModelState,
+    setSelectedModelState,
+    selectedAgentState,
+    setSelectedAgentState,
+  };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

@@ -30,7 +30,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.js";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { PropsWithChildren, Suspense, useCallback, useTransition } from "react";
+import { PropsWithChildren, Suspense, useTransition } from "react";
 import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
@@ -48,10 +48,7 @@ function Topbar({
 }) {
   const [_isOpen, setChatOpen] = useDecoChatOpen();
 
-  const toggleChat = useCallback(
-    () => setChatOpen((prev) => !prev),
-    [setChatOpen],
-  );
+  const toggleChat = () => setChatOpen((prev) => !prev);
 
   return (
     <AppTopbar>
@@ -95,10 +92,8 @@ function PersistentResizablePanel({
     30,
   );
 
-  const handleResize = useCallback(
-    (size: number) => startTransition(() => setChatPanelWidth(size)),
-    [startTransition, setChatPanelWidth],
-  );
+  const handleResize = (size: number) =>
+    startTransition(() => setChatPanelWidth(size));
 
   return (
     <ResizablePanel

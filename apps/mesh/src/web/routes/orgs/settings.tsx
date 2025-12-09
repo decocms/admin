@@ -181,8 +181,7 @@ export default function OrgSettings() {
   } = authClient.useListOrganizations();
 
   const organizations = organizationsData;
-  const organizationsLoading =
-    organizationsPending && organizations?.length === 0;
+  const organizationsLoading = organizationsPending && !organizations?.length;
 
   const currentOrganization = useMemo(
     () =>

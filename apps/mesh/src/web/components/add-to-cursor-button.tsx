@@ -1,7 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
@@ -137,9 +136,6 @@ export function AddToCursorButton({
             {children && <span>{children}</span>}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs font-mono max-w-md break-all">{config.url}</p>
-        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

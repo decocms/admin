@@ -53,6 +53,7 @@ export interface RegistryItem {
   };
   /** Nested server object (used by MCPRegistryServer format) */
   server?: {
+    name?: string;
     title?: string;
     description?: string;
     icons?: Array<{ src: string }>;

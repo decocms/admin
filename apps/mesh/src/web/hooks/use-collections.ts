@@ -256,7 +256,7 @@ export interface CollectionFilter {
   /** Field to filter on (must match an entity property) */
   column: string;
   /** Value to match */
-  value: string;
+  value: string | boolean | number;
 }
 
 /**
@@ -275,6 +275,8 @@ export interface UseCollectionListOptions<T extends CollectionEntity> {
   searchFields?: (keyof T)[];
   /** Default sort key when none provided */
   defaultSortKey?: keyof T;
+  /** Maximum number of items to retrieve from the query */
+  maxItems?: number;
 }
 
 /**
@@ -295,6 +297,7 @@ export function useCollectionList<T extends CollectionEntity>(
     sortDirection,
     searchFields = ["title", "description"] as (keyof T)[],
     defaultSortKey = "updated_at" as keyof T,
+    maxItems,
   } = options;
 
   const trimmedSearchTerm = searchTerm?.trim();
@@ -357,9 +360,14 @@ export function useCollectionList<T extends CollectionEntity>(
         });
       }
 
+      // Apply limit if specified
+      if (maxItems !== undefined) {
+        query = query.limit(maxItems);
+      }
+
       return query;
     },
-    [trimmedSearchTerm, filters, sortKey, sortDirection, collection],
+    [trimmedSearchTerm, filters, sortKey, sortDirection, collection, maxItems],
   );
 
   return data;

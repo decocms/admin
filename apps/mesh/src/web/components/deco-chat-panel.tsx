@@ -26,6 +26,50 @@ import { useChat } from "../providers/chat-provider";
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
 
+function ChatInput({
+  onSubmit,
+  onStop,
+  disabled,
+  isStreaming,
+  placeholder,
+  leftActions,
+}: {
+  onSubmit: (text: string) => Promise<void>;
+  onStop: () => void;
+  disabled: boolean;
+  isStreaming: boolean;
+  placeholder: string;
+  leftActions: React.ReactNode;
+}) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!input?.trim() || isStreaming) {
+        return;
+      }
+      const text = input.trim();
+      setInput("");
+      await onSubmit(text);
+    },
+    [input, isStreaming, onSubmit],
+  );
+
+  return (
+    <DecoChatInputV2
+      value={input}
+      onChange={setInput}
+      onSubmit={handleSubmit}
+      onStop={onStop}
+      disabled={disabled}
+      isStreaming={isStreaming}
+      placeholder={placeholder}
+      leftActions={leftActions}
+    />
+  );
+}
+
 export function DecoChatPanel() {
   const { data: session } = authClient.useSession();
   const user = session?.user;
@@ -46,9 +90,6 @@ export function DecoChatPanel() {
   } = useChat();
 
   const { status } = chat;
-
-  // Local state for input
-  const [input, setInput] = useState("");
 
   // Get all connections
   const allConnections = useConnections() ?? [];
@@ -206,10 +247,8 @@ export function DecoChatPanel() {
   );
 
   const handleSendMessage = useCallback(
-    async (e?: React.FormEvent) => {
-      e?.preventDefault();
-
-      if (!input?.trim() || status === "submitted" || status === "streaming") {
+    async (text: string) => {
+      if (!text?.trim() || status === "submitted" || status === "streaming") {
         return;
       }
 
@@ -217,14 +256,13 @@ export function DecoChatPanel() {
       const userMessage: UIMessage<Metadata> = {
         id: crypto.randomUUID(),
         role: "user",
-        parts: [{ type: "text", text: input }],
+        parts: [{ type: "text", text }],
       };
 
-      setInput("");
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, status, wrappedSendMessage],
+    [status, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
@@ -388,9 +426,7 @@ export function DecoChatPanel() {
       </DecoChatAside.Content>
 
       <DecoChatAside.Footer>
-        <DecoChatInputV2
-          value={input}
-          onChange={setInput}
+        <ChatInput
           onSubmit={handleSendMessage}
           onStop={handleStop}
           disabled={models.length === 0 || !selectedModelState}

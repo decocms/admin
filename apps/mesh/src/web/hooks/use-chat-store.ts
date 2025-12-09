@@ -1,9 +1,8 @@
 import { eq, type Collection } from "@tanstack/db";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import type { Message, Thread } from "../types/chat-threads";
-import { useCollectionList } from "./use-collections";
-import { createIndexedDBCollection } from "./use-indexeddb-collection";
 import { useProjectContext } from "../providers/project-context-provider";
+import type { Message, Thread } from "../types/chat-threads";
+import { createIndexedDBCollection } from "./use-indexeddb-collection";
 
 const threadsCollectionCache = {
   key: "",
@@ -53,14 +52,6 @@ export function useMessagesCollection(): Collection<Message, string> {
   }
 
   return messagesCollectionCache.value!;
-}
-
-export function useThreads() {
-  const threadsCollection = useThreadsCollection();
-  return useCollectionList(threadsCollection, {
-    sortKey: "updated_at",
-    sortDirection: "desc",
-  });
 }
 
 export function useThreadMessages(threadId: string) {

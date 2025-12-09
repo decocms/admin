@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -92,7 +92,7 @@ export function CreateRoleDialog({
   const toolNames = form.watch("toolNames");
 
   // Filter roles based on input
-  const filteredRoles = useMemo(() => {
+  const filteredRoles = (() => {
     if (!roleName.trim()) {
       // Show all custom roles when input is empty
       return customRoles;
@@ -103,7 +103,7 @@ export function CreateRoleDialog({
         role.role.toLowerCase().includes(searchTerm) ||
         role.label.toLowerCase().includes(roleName.toLowerCase()),
     );
-  }, [customRoles, roleName]);
+  })();
 
   // Load role data into form when editing
   const loadRoleForEditing = (role: OrganizationRole) => {
@@ -158,15 +158,13 @@ export function CreateRoleDialog({
   };
 
   // Build static permission options for MultiSelect (type-safe from registry)
-  const staticPermissionOptions = useMemo(() => {
-    return getPermissionOptions().map((p) => ({
-      value: p.value,
-      label: p.label,
-    }));
-  }, []);
+  const staticPermissionOptions = getPermissionOptions().map((p) => ({
+    value: p.value,
+    label: p.label,
+  }));
 
   // Get available tools from selected connections
-  const availableTools = useMemo(() => {
+  const availableTools = (() => {
     if (allowAllConnections) {
       // Show all tools from all connections
       const allTools = new Map<string, { name: string; connection: string }>();
@@ -203,7 +201,7 @@ export function CreateRoleDialog({
       }
       return Array.from(tools.values());
     }
-  }, [connections, connectionIds, allowAllConnections]);
+  })();
 
   // Build permission object from form data
   const buildPermission = (data: RoleFormData): Record<string, string[]> => {
@@ -238,7 +236,6 @@ export function CreateRoleDialog({
 
       // Create the role using Better Auth's dynamic access control
       // API expects: { role: string, permission: Record<string, string[]> }
-      // @ts-expect-error - createRole may not be in type definitions
       const createRole = authClient.organization?.createRole;
       if (typeof createRole !== "function") {
         throw new Error("Create role API not available");
@@ -278,7 +275,6 @@ export function CreateRoleDialog({
 
       // Update the role using Better Auth's dynamic access control
       // API expects: { roleId: string, data: { permission: Record<string, string[]> } }
-      // @ts-expect-error - updateRole may not be in type definitions
       const updateRole = authClient.organization?.updateRole;
       if (typeof updateRole !== "function") {
         throw new Error("Update role API not available");
@@ -316,7 +312,6 @@ export function CreateRoleDialog({
 
   const deleteRoleMutation = useMutation({
     mutationFn: async (roleId: string) => {
-      // @ts-expect-error - deleteRole may not be in type definitions
       const deleteRole = authClient.organization?.deleteRole;
       if (typeof deleteRole !== "function") {
         throw new Error("Delete role API not available");

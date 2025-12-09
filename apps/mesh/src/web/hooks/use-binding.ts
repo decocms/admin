@@ -23,7 +23,7 @@ const BUILTIN_BINDINGS: Record<string, Binder> = {
 /**
  * Simplified binding definition format (JSON Schema based)
  */
-export interface bindingDefinition {
+export interface BindingDefinition {
   /** Tool name to match (e.g., "MY_TOOL", "COLLECTION_USERS_LIST") */
   name: string;
   /** JSON Schema for the tool's input parameters */
@@ -35,7 +35,7 @@ export interface bindingDefinition {
 /**
  * Converts a simplified binding definition to Binder format
  */
-function convertBindingToBinder(bindings: bindingDefinition[]): Binder {
+function convertBindingToBinder(bindings: BindingDefinition[]): Binder {
   return bindings.map((binding) => ({
     name: binding.name,
     inputSchema: binding.inputSchema
@@ -109,7 +109,7 @@ interface UseBindingConnectionsOptions {
    * - A well-known binding name (e.g., "LLMS", "AGENTS", "MCP")
    * - A custom binding schema array (BindingDefinition[]) for filtering connections
    */
-  binding?: string | bindingDefinition[];
+  binding?: string | BindingDefinition[];
 }
 
 /**

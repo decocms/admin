@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 import { marked } from "marked";
 import React, {
   lazy,

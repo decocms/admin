@@ -110,11 +110,29 @@ function createBoundAuthClient(
       }
 
       try {
-        const result = await hasPermissionApi({
+        // Check exact permission first: { resource: [tool] }
+        const exactResult = await hasPermissionApi({
           headers,
           body: { permission },
         });
-        return result?.success === true;
+
+        if (exactResult?.success === true) {
+          return true;
+        }
+
+        // Check wildcard permission: { resource: ["*"] }
+        // Better Auth may not handle wildcards, so we check explicitly
+        const wildcardPermission: Permission = {};
+        for (const resource of Object.keys(permission)) {
+          wildcardPermission[resource] = ["*"];
+        }
+
+        const wildcardResult = await hasPermissionApi({
+          headers,
+          body: { permission: wildcardPermission },
+        });
+
+        return wildcardResult?.success === true;
       } catch (err) {
         console.error("[Auth] Permission check failed:", err);
         return false;

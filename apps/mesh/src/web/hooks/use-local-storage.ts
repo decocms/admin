@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 function safeParse<T>(value: string): T | undefined {
   try {
@@ -44,7 +44,7 @@ export function useLocalStorage<T>(
   initializer: T | ((existing: T | undefined) => T),
 ): [T, (value: T | ((prev: T) => T)) => void] {
   const queryClientInstance = useQueryClient();
-  const queryKey = ["localStorage", key] as const;
+  const queryKey = useMemo(() => ["localStorage", key] as const, [key]);
 
   // Use TanStack Query to read from localStorage
   const { data: value } = useQuery({

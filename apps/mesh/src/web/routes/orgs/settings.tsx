@@ -180,13 +180,14 @@ export default function OrgSettings() {
     isPending: organizationsPending,
   } = authClient.useListOrganizations();
 
-  const organizations = organizationsData ?? [];
-  const organizationsLoading =
-    organizationsPending && organizations.length === 0;
+  const organizations = organizationsData;
+  const organizationsLoading = organizationsPending && !organizations?.length;
 
-  const currentOrganization = useMemo(() => {
-    return organizations.find((organization) => organization.slug === org);
-  }, [organizations, org]);
+  const currentOrganization = useMemo(
+    () =>
+      organizations?.find((organization) => organization.slug === org) ?? null,
+    [organizations, org],
+  );
 
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),

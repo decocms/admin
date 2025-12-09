@@ -13,5 +13,6 @@
     "ban-types": "warn",
     "enforce-query-key-constants/enforce-query-key-constants": "warn",
     "ban-use-effect/ban-use-effect": "error"
-  }
+  },
+  "plugins": ["react"]
 }

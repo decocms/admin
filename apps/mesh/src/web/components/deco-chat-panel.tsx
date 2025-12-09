@@ -101,17 +101,17 @@ export function DecoChatPanel() {
   const { status } = chat;
 
   // Get all connections
-  const allConnections = useConnections() ?? [];
+  const allConnections = useConnections();
 
   // Filter connections by binding type
   const [modelsConnection] = useBindingConnections(allConnections, "LLMS");
   const [agentsConnection] = useBindingConnections(allConnections, "AGENTS");
 
   // Fetch models from the first LLM connection
-  const modelsData = useLLMsFromConnection(modelsConnection?.id) ?? [];
+  const modelsData = useLLMsFromConnection(modelsConnection?.id);
 
   // Fetch agents from the first AGENTS connection
-  const agentsData = useAgentsFromConnection(agentsConnection?.id) ?? [];
+  const agentsData = useAgentsFromConnection(agentsConnection?.id);
 
   // Transform models for UI display
   const models = useMemo(() => {

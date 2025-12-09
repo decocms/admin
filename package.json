@@ -1,13 +1,12 @@
 {
-  "name": "@decocms/mesh",
+  "name": "@decocms/mesh-monorepo",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --filter=mcp-mesh --elide-lines=0 dev",
+    "dev": "bun run --cwd=apps/mesh dev",
     "fmt": "biome format --write",
     "lint": "oxlint",
-    "check": "tsc --noEmit",
+    "check": "bun run --workspaces --elide-lines=0 check",
     "test": "vitest run",
     "fmt:check": "biome format",
     "test:watch": "vitest",

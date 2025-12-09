@@ -7,7 +7,8 @@
     "create-deco": "./index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check": "echo \"No check script\""
   },
   "keywords": [
     "create",

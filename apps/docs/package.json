@@ -8,6 +8,7 @@
     "dev:tunnel": "deco link -p 3000 -- bun run dev",
     "build": "bun run build:client && bun run build:server",
     "build:client": "astro build",
+    "check": "tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "astro": "astro"

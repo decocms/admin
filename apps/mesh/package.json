@@ -1,5 +1,5 @@
 {
-  "name": "mcp-mesh",
+  "name": "@decocms/mesh",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

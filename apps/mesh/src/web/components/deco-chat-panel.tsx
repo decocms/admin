@@ -11,20 +11,73 @@ import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selec
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { MessageAssistant } from "./chat/message-assistant.tsx";
-import { MessageList, MessageFooter } from "./chat/message-list.tsx";
-import { MessageUser } from "./chat/message-user.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { type UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useChat } from "../providers/chat-provider";
+import { MessageAssistant } from "./chat/message-assistant.tsx";
+import { MessageFooter, MessageList } from "./chat/message-list.tsx";
+import { MessageUser } from "./chat/message-user.tsx";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
+
+function ChatInput({
+  onSubmit,
+  onStop,
+  disabled,
+  isStreaming,
+  placeholder,
+  leftActions,
+}: {
+  onSubmit: (text: string) => Promise<void>;
+  onStop: () => void;
+  disabled: boolean;
+  isStreaming: boolean;
+  placeholder: string;
+  leftActions: React.ReactNode;
+}) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!input?.trim() || isStreaming) {
+        return;
+      }
+      const text = input.trim();
+      try {
+        await onSubmit(text);
+        // Only clear input after successful submission so user can retry
+        setInput("");
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        const message =
+          error instanceof Error ? error.message : "Failed to send message";
+        toast.error(message);
+      }
+    },
+    [input, isStreaming, onSubmit],
+  );
+
+  return (
+    <DecoChatInputV2
+      value={input}
+      onChange={setInput}
+      onSubmit={handleSubmit}
+      onStop={onStop}
+      disabled={disabled}
+      isStreaming={isStreaming}
+      placeholder={placeholder}
+      leftActions={leftActions}
+    />
+  );
+}
 
 export function DecoChatPanel() {
   const { data: session } = authClient.useSession();
@@ -46,9 +99,6 @@ export function DecoChatPanel() {
   } = useChat();
 
   const { status } = chat;
-
-  // Local state for input
-  const [input, setInput] = useState("");
 
   // Get all connections
   const allConnections = useConnections() ?? [];
@@ -206,10 +256,8 @@ export function DecoChatPanel() {
   );
 
   const handleSendMessage = useCallback(
-    async (e?: React.FormEvent) => {
-      e?.preventDefault();
-
-      if (!input?.trim() || status === "submitted" || status === "streaming") {
+    async (text: string) => {
+      if (!text?.trim() || status === "submitted" || status === "streaming") {
         return;
       }
 
@@ -217,14 +265,13 @@ export function DecoChatPanel() {
       const userMessage: UIMessage<Metadata> = {
         id: crypto.randomUUID(),
         role: "user",
-        parts: [{ type: "text", text: input }],
+        parts: [{ type: "text", text }],
       };
 
-      setInput("");
       // Use the wrapped send message function
       await wrappedSendMessage(userMessage);
     },
-    [input, status, wrappedSendMessage],
+    [status, wrappedSendMessage],
   );
 
   const handleStop = useCallback(() => {
@@ -388,9 +435,7 @@ export function DecoChatPanel() {
       </DecoChatAside.Content>
 
       <DecoChatAside.Footer>
-        <DecoChatInputV2
-          value={input}
-          onChange={setInput}
+        <ChatInput
           onSubmit={handleSendMessage}
           onStop={handleStop}
           disabled={models.length === 0 || !selectedModelState}

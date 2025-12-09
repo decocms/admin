@@ -17,7 +17,8 @@
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "exorcise": "bun run clean && bun install --force",
-    "knip": "knip"
+    "knip": "knip",
+    "all": "bun run fmt && bun run lint && bun run check && bun run knip"
   },
   "workspaces": [
     "apps/*",

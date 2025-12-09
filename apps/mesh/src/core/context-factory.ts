@@ -107,48 +107,15 @@ interface AuthenticatedUser {
   role?: string;
 }
 
-// Type for Better Auth's internal adapter
-type BetterAuthAdapter = {
-  findOne: (params: {
-    model: string;
-    where: Array<{
-      field: string;
-      value: string;
-      operator?: string;
-      connector?: string;
-    }>;
-  }) => Promise<unknown>;
-};
-
-// Cache for the adapter to avoid repeated $context resolution
-let cachedAdapter: BetterAuthAdapter | null = null;
-
 /**
- * Get Better Auth's internal adapter (cached)
- * This bypasses API permission checks
- */
-async function getBetterAuthAdapter(
-  auth: BetterAuthInstance,
-): Promise<BetterAuthAdapter | null> {
-  if (cachedAdapter) return cachedAdapter;
-
-  try {
-    const context = await (auth as { $context: Promise<unknown> }).$context;
-    const adapter = (context as { adapter?: BetterAuthAdapter })?.adapter;
-    if (adapter?.findOne) {
-      cachedAdapter = adapter;
-      return adapter;
-    }
-  } catch (err) {
-    console.error("[Auth] Failed to get Better Auth adapter:", err);
-  }
-  return null;
-}
-
-/**
- * Fetch custom role permissions using Better Auth's internal adapter
- * This bypasses API permission checks which would create a circular dependency
- * All organization members can read their own role's permissions
+ * Internal/trusted method to fetch custom role permissions
+ *
+ * This uses Better Auth's internal adapter for server-side authorization loading.
+ * We MUST bypass user-level permission checks here to avoid circular dependency:
+ * - User needs permissions to read roles (via getOrgRole API)
+ * - But we need to read the role to know what permissions they have
+ *
+ * This is the standard pattern for server-side authorization systems.
  */
 async function fetchCustomRolePermissions(
   auth: BetterAuthInstance,
@@ -156,37 +123,40 @@ async function fetchCustomRolePermissions(
   roleName: string,
 ): Promise<Record<string, string[]>> {
   try {
-    const adapter = await getBetterAuthAdapter(auth);
-    if (!adapter) {
-      console.error("[Auth] Better Auth adapter not available");
+    // Access Better Auth's internal context for trusted server-side operations
+    const ctx = await (auth as { $context: Promise<{ adapter: Adapter }> })
+      .$context;
+
+    // Use the adapter directly to query role permissions (trusted server-side call)
+    const roleRecord = (await ctx.adapter.findOne({
+      model: "organizationRole",
+      where: [
+        { field: "organizationId", value: organizationId },
+        { field: "role", value: roleName },
+      ],
+    })) as { permission?: string | Record<string, string[]> } | null;
+
+    if (!roleRecord?.permission) {
       return {};
     }
 
-    // Query the organizationRole table directly using Better Auth's adapter
-    // This bypasses permission checks - all users can read their own role
-    const roleRecord = (await adapter.findOne({
-      model: "organizationRole",
-      where: [
-        {
-          field: "organizationId",
-          value: organizationId,
-          operator: "eq",
-          connector: "AND",
-        },
-        { field: "role", value: roleName, operator: "eq", connector: "AND" },
-      ],
-    })) as { permission?: string } | null;
-
-    if (roleRecord?.permission) {
-      return typeof roleRecord.permission === "string"
-        ? JSON.parse(roleRecord.permission)
-        : roleRecord.permission;
-    }
+    // Permission can be stored as JSON string or object
+    return typeof roleRecord.permission === "string"
+      ? JSON.parse(roleRecord.permission)
+      : roleRecord.permission;
   } catch (err) {
     console.error("[Auth] Failed to fetch custom role permissions:", err);
+    return {};
   }
-  return {};
 }
+
+// Better Auth adapter type for internal queries
+type Adapter = {
+  findOne: (params: {
+    model: string;
+    where: Array<{ field: string; value: string }>;
+  }) => Promise<unknown>;
+};
 
 /**
  * Authenticate request using either OAuth session or API key
@@ -331,7 +301,7 @@ async function authenticateRequest(
       }
 
       // For custom roles (not built-in), fetch the role's permissions
-      // using Better Auth's internal adapter (bypasses API permission checks)
+      // using trusted server-side access (bypasses user permission checks)
       let permissions: Record<string, string[]> = {};
       const builtInRoles = ["owner", "admin", "member"];
 

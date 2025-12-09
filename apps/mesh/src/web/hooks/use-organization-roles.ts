@@ -5,15 +5,15 @@
  * dynamic access control feature. Combines built-in roles with custom roles.
  */
 
-import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/web/lib/auth-client";
-import { useProjectContext } from "@/web/providers/project-context-provider";
 import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Built-in roles that are always available
  */
-export const BUILTIN_ROLES = [
+const BUILTIN_ROLES = [
   { value: "owner", label: "Owner", isBuiltin: true },
   { value: "admin", label: "Admin", isBuiltin: true },
   { value: "member", label: "Member", isBuiltin: true },
@@ -134,7 +134,14 @@ export function useOrganizationRoles() {
       try {
         // Fetch custom roles from Better Auth
         // The API returns the roles array directly (not wrapped in { roles: [...] })
-        const result = await authClient.organization.listRoles();
+        if (!("listRoles" in authClient.organization)) {
+          return [];
+        }
+        const listRoles = authClient.organization.listRoles as () => Promise<{
+          data: OrganizationRole[];
+          error: Error | null;
+        }>;
+        const result = await listRoles();
 
         if (result.error) {
           console.error("Failed to fetch roles:", result.error);
@@ -213,63 +220,4 @@ function formatRoleLabel(role: string): string {
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-}
-
-/**
- * Get role options for select/multiselect components
- */
-export function useRoleOptions() {
-  const { roles, isLoading, error } = useOrganizationRoles();
-
-  const options = roles.map((role) => {
-    if (role.isBuiltin) {
-      return {
-        value: role.role,
-        label: role.label,
-        description: "Built-in role",
-      };
-    }
-
-    // Build description parts
-    const parts: string[] = [];
-
-    // Static permissions
-    if (role.allowsAllStaticPermissions) {
-      parts.push("Full org access");
-    } else if (role.staticPermissionCount && role.staticPermissionCount > 0) {
-      parts.push(
-        `${role.staticPermissionCount} org perm${role.staticPermissionCount !== 1 ? "s" : ""}`,
-      );
-    }
-
-    // Connection permissions
-    if (role.allowsAllConnections) {
-      parts.push("All connections");
-    } else if (role.connectionCount && role.connectionCount > 0) {
-      parts.push(
-        `${role.connectionCount} connection${role.connectionCount !== 1 ? "s" : ""}`,
-      );
-    }
-
-    // Tool permissions (only if connections are configured)
-    if (role.connectionCount !== 0 || role.allowsAllConnections) {
-      if (role.allowsAllTools) {
-        parts.push("all tools");
-      } else if (role.toolCount && role.toolCount > 0) {
-        parts.push(`${role.toolCount} tool${role.toolCount !== 1 ? "s" : ""}`);
-      }
-    }
-
-    return {
-      value: role.role,
-      label: role.label,
-      description: parts.length > 0 ? parts.join(", ") : "Custom role",
-    };
-  });
-
-  return {
-    options,
-    isLoading,
-    error,
-  };
 }

@@ -5,16 +5,51 @@
  * - OAuth consent UI (displaying available permissions)
  * - API documentation
  * - Tool discovery
+ * - Role permission selection
  */
 
 import { ALL_TOOLS } from "./index";
 
+// ============================================================================
+// Types
+// ============================================================================
+
 export interface ToolMetadata {
   name: string;
   description: string;
-  category: "Organizations" | "Connections";
+  category: ToolCategory;
   dangerous?: boolean; // Requires extra confirmation
 }
+
+export type ToolCategory = "Organizations" | "Connections";
+
+/**
+ * Union type of all tool names - derived from ALL_TOOLS
+ * Use this for type-safe permission handling
+ */
+export type ToolName = (typeof ALL_TOOLS)[number]["name"];
+
+/**
+ * Permission option for UI components
+ */
+export interface PermissionOption {
+  value: ToolName;
+  label: string;
+  dangerous?: boolean;
+}
+
+/**
+ * Grouped permissions by category for UI
+ */
+export interface PermissionGroup {
+  category: ToolCategory;
+  label: string;
+  permissions: PermissionOption[];
+}
+
+// ============================================================================
+// Tool Categories Configuration
+// ============================================================================
 
 /**
  * Additional metadata for tools (category and danger flags)
@@ -22,7 +57,7 @@ export interface ToolMetadata {
  */
 const TOOL_CATEGORIES: Record<
   string,
-  { category: "Organizations" | "Connections"; dangerous?: boolean }
+  { category: ToolCategory; dangerous?: boolean }
 > = {
   // Organization tools
   ORGANIZATION_CREATE: { category: "Organizations" },
@@ -46,6 +81,33 @@ const TOOL_CATEGORIES: Record<
   CONNECTION_TEST: { category: "Connections" },
   CONNECTION_CONFIGURE: { category: "Connections" },
 };
+
+/**
+ * Human-readable labels for tool names
+ */
+const TOOL_LABELS: Partial<Record<ToolName, string>> = {
+  ORGANIZATION_LIST: "List organizations",
+  ORGANIZATION_GET: "View organization details",
+  ORGANIZATION_UPDATE: "Update organization",
+  ORGANIZATION_DELETE: "Delete organization",
+  ORGANIZATION_SETTINGS_GET: "View organization settings",
+  ORGANIZATION_SETTINGS_UPDATE: "Update organization settings",
+  ORGANIZATION_MEMBER_LIST: "List members",
+  ORGANIZATION_MEMBER_ADD: "Add members",
+  ORGANIZATION_MEMBER_REMOVE: "Remove members",
+  ORGANIZATION_MEMBER_UPDATE_ROLE: "Update member roles",
+  COLLECTION_CONNECTIONS_LIST: "List connections",
+  COLLECTION_CONNECTIONS_GET: "View connection details",
+  COLLECTION_CONNECTIONS_CREATE: "Create connections",
+  COLLECTION_CONNECTIONS_UPDATE: "Update connections",
+  COLLECTION_CONNECTIONS_DELETE: "Delete connections",
+  CONNECTION_TEST: "Test connections",
+  CONNECTION_CONFIGURE: "Configure connections",
+};
+
+// ============================================================================
+// Exports
+// ============================================================================
 
 /**
  * All management tools with metadata for consent UI
@@ -79,3 +141,53 @@ export function getToolsByCategory() {
 
   return grouped;
 }
+
+/**
+ * Get permission options for UI components (type-safe)
+ * Returns flat array of all static permissions with labels
+ */
+export function getPermissionOptions(): PermissionOption[] {
+  return MANAGEMENT_TOOLS.map((tool) => ({
+    value: tool.name as ToolName,
+    label: TOOL_LABELS[tool.name as ToolName] || tool.name,
+    dangerous: tool.dangerous,
+  }));
+}
+
+/**
+ * Get permissions grouped by category for UI
+ * Used by role creation dialog
+ */
+export function getPermissionGroups(): PermissionGroup[] {
+  const grouped = getToolsByCategory();
+
+  return [
+    {
+      category: "Organizations",
+      label: "Organization & Members",
+      permissions:
+        grouped?.Organizations?.map((tool) => ({
+          value: tool.name as ToolName,
+          label: TOOL_LABELS[tool.name as ToolName] || tool.name,
+          dangerous: tool.dangerous,
+        })) ?? [],
+    },
+    {
+      category: "Connections",
+      label: "Connection Management",
+      permissions:
+        grouped?.Connections?.map((tool) => ({
+          value: tool.name as ToolName,
+          label: TOOL_LABELS[tool.name as ToolName] || tool.name,
+          dangerous: tool.dangerous,
+        })) ?? [],
+    },
+  ];
+}
+
+/**
+ * All tool names as a readonly array (for runtime use)
+ */
+export const ALL_TOOL_NAMES = ALL_TOOLS.map(
+  (t) => t.name,
+) as readonly ToolName[];

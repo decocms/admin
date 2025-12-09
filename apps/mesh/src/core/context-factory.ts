@@ -107,9 +107,48 @@ interface AuthenticatedUser {
   role?: string;
 }
 
+// Type for Better Auth's internal adapter
+type BetterAuthAdapter = {
+  findOne: (params: {
+    model: string;
+    where: Array<{
+      field: string;
+      value: string;
+      operator?: string;
+      connector?: string;
+    }>;
+  }) => Promise<unknown>;
+};
+
+// Cache for the adapter to avoid repeated $context resolution
+let cachedAdapter: BetterAuthAdapter | null = null;
+
+/**
+ * Get Better Auth's internal adapter (cached)
+ * This bypasses API permission checks
+ */
+async function getBetterAuthAdapter(
+  auth: BetterAuthInstance,
+): Promise<BetterAuthAdapter | null> {
+  if (cachedAdapter) return cachedAdapter;
+
+  try {
+    const context = await (auth as { $context: Promise<unknown> }).$context;
+    const adapter = (context as { adapter?: BetterAuthAdapter })?.adapter;
+    if (adapter?.findOne) {
+      cachedAdapter = adapter;
+      return adapter;
+    }
+  } catch (err) {
+    console.error("[Auth] Failed to get Better Auth adapter:", err);
+  }
+  return null;
+}
+
 /**
  * Fetch custom role permissions using Better Auth's internal adapter
  * This bypasses API permission checks which would create a circular dependency
+ * All organization members can read their own role's permissions
  */
 async function fetchCustomRolePermissions(
   auth: BetterAuthInstance,
@@ -117,20 +156,14 @@ async function fetchCustomRolePermissions(
   roleName: string,
 ): Promise<Record<string, string[]>> {
   try {
-    // Access Better Auth's internal context and adapter
-    const context = await (auth as { $context: Promise<unknown> }).$context;
-    const adapter = (
-      context as {
-        adapter?: { findOne: (params: unknown) => Promise<unknown> };
-      }
-    )?.adapter;
-
-    if (!adapter?.findOne) {
+    const adapter = await getBetterAuthAdapter(auth);
+    if (!adapter) {
       console.error("[Auth] Better Auth adapter not available");
       return {};
     }
 
-    // Query the organizationRole table using Better Auth's adapter
+    // Query the organizationRole table directly using Better Auth's adapter
+    // This bypasses permission checks - all users can read their own role
     const roleRecord = (await adapter.findOne({
       model: "organizationRole",
       where: [
@@ -372,7 +405,6 @@ export function createMeshContextFactory(
         id: authResult.apiKeyId,
         name: "", // Not needed for access control
         userId: "", // Not needed for access control
-        permissions: authResult.permissions,
       };
     }
 

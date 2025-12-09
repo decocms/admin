@@ -32,21 +32,27 @@ export interface MeshAuth {
     id: string;
     email?: string;
     name?: string;
-    role?: string; // From Better Auth Admin plugin
+    role?: string; // From Better Auth organization plugin
   };
 
   apiKey?: {
     id: string;
     name: string;
     userId: string;
-    permissions: Permission; // Better Auth permission model
     metadata?: Record<string, unknown>;
     remaining?: number; // Remaining requests (rate limiting)
     expiresAt?: Date;
   };
 
-  // Unified permissions (from API key or custom role)
-  // Used for authorization checks across all auth methods
+  /**
+   * Unified permissions (from API key or custom role)
+   * Used for authorization checks across all auth methods
+   *
+   * Format: { "self": ["TOOL1", "TOOL2"], "<connectionId>": ["*"], "*": ["*"] }
+   * - "self" key: Organization-level tool permissions (e.g., COLLECTION_CONNECTIONS_LIST)
+   * - connectionId key: Tool permissions for specific connection
+   * - "*" key: Tool permissions for all connections
+   */
   permissions: Permission;
 }
 

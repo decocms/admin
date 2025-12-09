@@ -29,54 +29,7 @@ import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { KEYS } from "@/web/lib/query-keys";
 import { useConnections } from "@/web/hooks/collections/use-connection";
-
-/**
- * Static/Organization-level permissions
- * These are stored under the "self" resource key
- */
-const STATIC_PERMISSIONS = {
-  organization: {
-    label: "Organization",
-    permissions: [
-      { value: "ORGANIZATION_LIST", label: "List organizations" },
-      { value: "ORGANIZATION_GET", label: "View organization details" },
-      { value: "ORGANIZATION_UPDATE", label: "Update organization" },
-      { value: "ORGANIZATION_DELETE", label: "Delete organization" },
-      {
-        value: "ORGANIZATION_SETTINGS_GET",
-        label: "View organization settings",
-      },
-      {
-        value: "ORGANIZATION_SETTINGS_UPDATE",
-        label: "Update organization settings",
-      },
-    ],
-  },
-  members: {
-    label: "Members",
-    permissions: [
-      { value: "ORGANIZATION_MEMBER_LIST", label: "List members" },
-      { value: "ORGANIZATION_MEMBER_ADD", label: "Add members" },
-      { value: "ORGANIZATION_MEMBER_REMOVE", label: "Remove members" },
-      {
-        value: "ORGANIZATION_MEMBER_UPDATE_ROLE",
-        label: "Update member roles",
-      },
-    ],
-  },
-  connections: {
-    label: "Connection Management",
-    permissions: [
-      { value: "COLLECTION_CONNECTIONS_LIST", label: "List connections" },
-      { value: "COLLECTION_CONNECTIONS_GET", label: "View connection details" },
-      { value: "COLLECTION_CONNECTIONS_CREATE", label: "Create connections" },
-      { value: "COLLECTION_CONNECTIONS_UPDATE", label: "Update connections" },
-      { value: "COLLECTION_CONNECTIONS_DELETE", label: "Delete connections" },
-      { value: "CONNECTION_TEST", label: "Test connections" },
-      { value: "CONNECTION_CONFIGURE", label: "Configure connections" },
-    ],
-  },
-};
+import { getPermissionOptions, type ToolName } from "@/tools/registry";
 
 interface CreateRoleDialogProps {
   trigger: React.ReactNode;
@@ -87,7 +40,7 @@ type CreateRoleFormData = {
   roleName: string;
   // Static permissions (organization-level)
   allowAllStaticPermissions: boolean;
-  staticPermissions: string[];
+  staticPermissions: ToolName[];
   // Connection-specific permissions
   allowAllConnections: boolean;
   connectionIds: string[];
@@ -127,15 +80,12 @@ export function CreateRoleDialog({
   const connectionIds = form.watch("connectionIds");
   const toolNames = form.watch("toolNames");
 
-  // Build static permission options for MultiSelect
+  // Build static permission options for MultiSelect (type-safe from registry)
   const staticPermissionOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
-    for (const category of Object.values(STATIC_PERMISSIONS)) {
-      for (const perm of category.permissions) {
-        options.push(perm);
-      }
-    }
-    return options;
+    return getPermissionOptions().map((p) => ({
+      value: p.value,
+      label: p.label,
+    }));
   }, []);
 
   // Get available tools from selected connections

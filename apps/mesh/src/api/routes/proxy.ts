@@ -65,7 +65,6 @@ type CallStreamableToolMiddleware = (
 function withConnectionAuthorization(
   ctx: MeshContext,
   connectionId: string,
-  permissions: Record<string, string[]>,
 ): CallToolMiddleware {
   return async (request, next) => {
     try {
@@ -79,12 +78,11 @@ function withConnectionAuthorization(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName, // Tool being called
-        permissions, // Permissions from context-factory (API key or custom role)
+        ctx.auth.permissions, // Permissions from context-factory (API key or custom role)
         ctx.auth.user?.role,
         connectionId, // Connection ID to filter by
       );
 
-      console.log(permissions, connectionId);
       // Check permission for this specific tool on this connection
       await connectionAccessControl.check(toolName);
 
@@ -111,7 +109,6 @@ function withConnectionAuthorization(
 function withStreamableConnectionAuthorization(
   ctx: MeshContext,
   connectionId: string,
-  permissions: Record<string, string[]>,
 ): CallStreamableToolMiddleware {
   return async (request, next) => {
     try {
@@ -122,7 +119,7 @@ function withStreamableConnectionAuthorization(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName,
-        permissions,
+        ctx.auth.permissions,
         ctx.auth.user?.role,
         connectionId,
       );
@@ -277,15 +274,10 @@ export async function createMCPProxy(
 
   // Create authorization middlewares
   // Use unified permissions from ctx.auth.permissions (API key or custom role)
-  const authMiddleware = withConnectionAuthorization(
-    ctx,
-    connectionId,
-    ctx.auth.permissions,
-  );
+  const authMiddleware = withConnectionAuthorization(ctx, connectionId);
   const streamableAuthMiddleware = withStreamableConnectionAuthorization(
     ctx,
     connectionId,
-    ctx.auth.permissions,
   );
 
   // Compose middlewares

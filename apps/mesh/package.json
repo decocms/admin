@@ -82,6 +82,7 @@
     "@types/react-dom": "^19.2.2",
     "@vercel/nft": "^1.1.1",
     "@vitejs/plugin-react": "^5.1.0",
+    "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^9.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.1",

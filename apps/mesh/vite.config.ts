@@ -40,7 +40,7 @@ export default defineConfig({
   logLevel: "warn",
   plugins: [
     customServerMessage(),
-    react(),
+    react({ babel: { plugins: ["babel-plugin-react-compiler"] } }),
     tailwindcss(),
     tsconfigPaths({ root: "." }),
     deco({

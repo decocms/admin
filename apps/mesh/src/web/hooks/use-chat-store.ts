@@ -22,8 +22,8 @@ const messagesCollectionCache = {
  * @returns A TanStack DB collection instance for threads
  */
 export function useThreadsCollection(): Collection<Thread, string> {
-  const { org } = useProjectContext();
-  const key = `${org}:threads`;
+  const { locator } = useProjectContext();
+  const key = `${locator}:threads`;
 
   if (threadsCollectionCache.key !== key) {
     threadsCollectionCache.key = key;

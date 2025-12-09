@@ -146,7 +146,7 @@ export default function OrgMembers() {
     "asc",
   );
 
-  const members = data?.data?.members ?? [];
+  const members = data?.data?.members;
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -160,7 +160,7 @@ export default function OrgMembers() {
   };
 
   const filteredAndSortedMembers = useMemo(() => {
-    let filtered = members;
+    let filtered = members ?? [];
 
     // Filter by search
     if (search) {
@@ -261,7 +261,7 @@ export default function OrgMembers() {
     },
   });
 
-  type Member = (typeof members)[number];
+  type Member = NonNullable<typeof members>[number];
 
   const columns: TableColumn<Member>[] = [
     {

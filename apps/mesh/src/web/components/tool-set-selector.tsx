@@ -34,7 +34,7 @@ export function ToolSetSelector({
     const notSelected = connections.filter((c) => !toolSet.has(c.id));
 
     return [...selected, ...notSelected];
-  }, [connections, initialOrder.current]);
+  }, [connections]);
 
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null

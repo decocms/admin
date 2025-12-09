@@ -1,7 +1,15 @@
-import { useState, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getPermissionOptions, type ToolName } from "@/tools/registry";
+import { useConnections } from "@/web/hooks/collections/use-connection";
+import {
+  useOrganizationRoles,
+  type OrganizationRole,
+} from "@/web/hooks/use-organization-roles";
+import { authClient } from "@/web/lib/auth-client";
+import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -21,20 +28,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import { MultiSelect } from "@deco/ui/components/multi-select.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { authClient } from "@/web/lib/auth-client";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-import { KEYS } from "@/web/lib/query-keys";
-import { useConnections } from "@/web/hooks/collections/use-connection";
-import { getPermissionOptions, type ToolName } from "@/tools/registry";
-import {
-  useOrganizationRoles,
-  type OrganizationRole,
-} from "@/web/hooks/use-organization-roles";
+import { Input } from "@deco/ui/components/input.tsx";
+import { MultiSelect } from "@deco/ui/components/multi-select.tsx";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 interface CreateRoleDialogProps {
   trigger: React.ReactNode;
@@ -236,6 +236,7 @@ export function CreateRoleDialog({
 
       // Create the role using Better Auth's dynamic access control
       // API expects: { role: string, permission: Record<string, string[]> }
+      // @ts-expect-error - createRole may not be in the type definition
       const createRole = authClient.organization?.createRole;
       if (typeof createRole !== "function") {
         throw new Error("Create role API not available");
@@ -275,6 +276,7 @@ export function CreateRoleDialog({
 
       // Update the role using Better Auth's dynamic access control
       // API expects: { roleId: string, data: { permission: Record<string, string[]> } }
+      // @ts-expect-error - updateRole may not be in the type definition
       const updateRole = authClient.organization?.updateRole;
       if (typeof updateRole !== "function") {
         throw new Error("Update role API not available");
@@ -312,6 +314,7 @@ export function CreateRoleDialog({
 
   const deleteRoleMutation = useMutation({
     mutationFn: async (roleId: string) => {
+      // @ts-expect-error - deleteRole may not be in the type definition
       const deleteRole = authClient.organization?.deleteRole;
       if (typeof deleteRole !== "function") {
         throw new Error("Delete role API not available");

@@ -102,6 +102,7 @@ if (
 export const BUILTIN_ROLES = ["owner", "admin", "user"] as const;
 export type BuiltinRole = (typeof BUILTIN_ROLES)[number];
 
+export const ADMIN_ROLES: BuiltinRole[] = ["owner", "admin"];
 const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
@@ -114,9 +115,16 @@ const plugins = [
       maximumRolesPerOrganization: 500,
       enableCustomResources: true,
       canCreateRole: async ({ member }) => {
-        return member.role === "owner" || member.role === "admin"
-          ? "yes"
-          : "default";
+        if (ADMIN_ROLES.includes(member.role as BuiltinRole)) {
+          return {
+            allow: true,
+            bypass: true,
+          };
+        }
+        return {
+          allow: true,
+          bypass: false,
+        };
       },
     },
     roles: {

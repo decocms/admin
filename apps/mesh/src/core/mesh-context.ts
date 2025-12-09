@@ -25,6 +25,18 @@ export type { AccessControl, CredentialVault };
 // ============================================================================
 
 /**
+ * Bound auth client for permission checks
+ * Encapsulates HTTP context internally, keeping MeshContext HTTP-agnostic
+ */
+export interface BoundAuthClient {
+  /**
+   * Check if the authenticated user has the specified permission
+   * Delegates to Better Auth's Organization plugin hasPermission API
+   */
+  hasPermission(permission: Permission): Promise<boolean>;
+}
+
+/**
  * Authentication state from Better Auth
  */
 export interface MeshAuth {
@@ -43,17 +55,6 @@ export interface MeshAuth {
     remaining?: number; // Remaining requests (rate limiting)
     expiresAt?: Date;
   };
-
-  /**
-   * Unified permissions (from API key or custom role)
-   * Used for authorization checks across all auth methods
-   *
-   * Format: { "self": ["TOOL1", "TOOL2"], "<connectionId>": ["*"], "*": ["*"] }
-   * - "self" key: Organization-level tool permissions (e.g., COLLECTION_CONNECTIONS_LIST)
-   * - connectionId key: Tool permissions for specific connection
-   * - "*" key: Tool permissions for all connections
-   */
-  permissions: Permission;
 }
 
 // ============================================================================
@@ -136,6 +137,7 @@ export interface MeshContext {
   // Security services
   vault: CredentialVault; // For encrypting connection credentials
   authInstance: BetterAuthInstance; // Better Auth instance
+  boundAuth: BoundAuthClient; // Pre-bound auth client for permission checks
 
   // Access control (for authorization)
   access: AccessControl;

@@ -17,9 +17,14 @@ import { AuditLogStorage } from "../storage/audit-log";
 import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
-import type { MeshContext, BetterAuthInstance } from "./mesh-context";
+import type {
+  MeshContext,
+  BetterAuthInstance,
+  BoundAuthClient,
+} from "./mesh-context";
 import { CredentialVault } from "../encryption/credential-vault";
 import { verifyMeshToken } from "../auth/jwt";
+import type { Permission } from "../storage/types";
 
 // ============================================================================
 // Configuration
@@ -66,34 +71,6 @@ interface OAuthSession {
 // Authentication Helpers
 // ============================================================================
 
-/**
- * Parse OAuth scopes into Better Auth permission format
- *
- * Input: "openid profile email self:*"
- * Output: { "self": ["*"] }
- *
- * Input: "openid profile email self:PROJECT_CREATE self:CONNECTION_LIST"
- * Output: { "self": ["PROJECT_CREATE", "COLLECTION_CONNECTIONS_LIST"] }
- */
-function scopesToPermissions(scopes: string): Record<string, string[]> {
-  const permissions: Record<string, string[]> = {};
-
-  // Split scopes and filter for self: prefixed ones
-  const scopeList = scopes.split(" ").filter((s) => s.trim());
-
-  for (const scope of scopeList) {
-    const [connection, tool] = scope.split(":");
-    if (connection && tool) {
-      if (!permissions[connection]) {
-        permissions[connection] = [];
-      }
-      permissions[connection].push(tool);
-    }
-  }
-
-  return permissions;
-}
-
 interface OrganizationContext {
   id: string;
   slug: string;
@@ -107,56 +84,44 @@ interface AuthenticatedUser {
   role?: string;
 }
 
+// Type for the hasPermission API (from @decocms/better-auth organization plugin)
+type HasPermissionAPI = (params: {
+  headers: Headers;
+  body: { permission: Permission };
+}) => Promise<{ success?: boolean; error?: unknown } | null>;
+
 /**
- * Internal/trusted method to fetch custom role permissions
- *
- * This uses Better Auth's internal adapter for server-side authorization loading.
- * We MUST bypass user-level permission checks here to avoid circular dependency:
- * - User needs permissions to read roles (via getOrgRole API)
- * - But we need to read the role to know what permissions they have
- *
- * This is the standard pattern for server-side authorization systems.
+ * Create a bound auth client that encapsulates HTTP headers
+ * MeshContext stays HTTP-agnostic while delegating permission checks to Better Auth
  */
-async function fetchCustomRolePermissions(
+function createBoundAuthClient(
   auth: BetterAuthInstance,
-  organizationId: string,
-  roleName: string,
-): Promise<Record<string, string[]>> {
-  try {
-    // Access Better Auth's internal context for trusted server-side operations
-    const ctx = await (auth as { $context: Promise<{ adapter: Adapter }> })
-      .$context;
+  headers: Headers,
+): BoundAuthClient {
+  // Get hasPermission from Better Auth's organization plugin
+  const hasPermissionApi = (auth.api as { hasPermission?: HasPermissionAPI })
+    .hasPermission;
 
-    // Use the adapter directly to query role permissions (trusted server-side call)
-    const roleRecord = (await ctx.adapter.findOne({
-      model: "organizationRole",
-      where: [
-        { field: "organizationId", value: organizationId },
-        { field: "role", value: roleName },
-      ],
-    })) as { permission?: string | Record<string, string[]> } | null;
+  return {
+    hasPermission: async (permission: Permission): Promise<boolean> => {
+      if (!hasPermissionApi) {
+        console.error("[Auth] hasPermission API not available");
+        return false;
+      }
 
-    if (!roleRecord?.permission) {
-      return {};
-    }
-
-    // Permission can be stored as JSON string or object
-    return typeof roleRecord.permission === "string"
-      ? JSON.parse(roleRecord.permission)
-      : roleRecord.permission;
-  } catch (err) {
-    console.error("[Auth] Failed to fetch custom role permissions:", err);
-    return {};
-  }
+      try {
+        const result = await hasPermissionApi({
+          headers,
+          body: { permission },
+        });
+        return result?.success === true;
+      } catch (err) {
+        console.error("[Auth] Permission check failed:", err);
+        return false;
+      }
+    },
+  };
 }
-
-// Better Auth adapter type for internal queries
-type Adapter = {
-  findOne: (params: {
-    model: string;
-    where: Array<{ field: string; value: string }>;
-  }) => Promise<unknown>;
-};
 
 /**
  * Authenticate request using either OAuth session or API key
@@ -167,7 +132,6 @@ async function authenticateRequest(
   auth: BetterAuthInstance,
 ): Promise<{
   user?: AuthenticatedUser;
-  permissions: Record<string, string[]>;
   role?: string;
   apiKeyId?: string;
   organization?: OrganizationContext;
@@ -181,24 +145,28 @@ async function authenticateRequest(
     })) as OAuthSession | null;
 
     if (session) {
-      // Parse OAuth scopes into permissions
-      const scopes = session.scopes || "";
-      const permissions = scopesToPermissions(scopes);
-
       // Load user from userId in session
       const userId = session.userId;
 
       // Get active organization from Better Auth organization plugin
-      // The session might include organization context
       const orgData = await auth.api
         .getFullOrganization({
           headers: c.req.raw.headers,
         })
         .catch(() => null);
 
+      // Extract user's role from the members array
+      let role: string | undefined;
+      if (orgData) {
+        const currentMember = orgData.members?.find(
+          (m: { userId: string }) => m.userId === userId,
+        );
+        role = currentMember?.role;
+      }
+
       return {
-        user: { id: userId },
-        permissions,
+        user: { id: userId, role },
+        role,
         organization: orgData
           ? {
               id: orgData.id,
@@ -224,7 +192,6 @@ async function authenticateRequest(
       if (meshJwtPayload) {
         return {
           user: { id: meshJwtPayload.sub },
-          permissions: meshJwtPayload.permissions || {},
         };
       }
     } catch {
@@ -244,7 +211,6 @@ async function authenticateRequest(
           | undefined;
 
         return {
-          permissions: result.key.permissions || {},
           apiKeyId: result.key.id,
           organization: orgMetadata
             ? {
@@ -286,7 +252,6 @@ async function authenticateRequest(
           };
 
           // Extract user's role from the members array
-          // getFullOrganization returns members: [{ userId, role, ... }]
           const currentMember = orgData.members?.find(
             (m: { userId: string }) => m.userId === session.user.id,
           );
@@ -300,22 +265,9 @@ async function authenticateRequest(
         }
       }
 
-      // For custom roles (not built-in), fetch the role's permissions
-      // using trusted server-side access (bypasses user permission checks)
-      let permissions: Record<string, string[]> = {};
-      const builtInRoles = ["owner", "admin", "member"];
-
-      if (role && !builtInRoles.includes(role) && organization) {
-        permissions = await fetchCustomRolePermissions(
-          auth,
-          organization.id,
-          role,
-        );
-      }
       return {
-        user: { id: session.user.id, email: session.user.email },
-        permissions, // Custom role permissions or empty for built-in roles
-        role, // Role name for built-in role bypass checks
+        user: { id: session.user.id, email: session.user.email, role },
+        role,
         organization,
       };
     }
@@ -325,10 +277,8 @@ async function authenticateRequest(
   }
 
   // No valid authentication found - return empty auth data
-  // Access control will check this and throw UnauthorizedError if needed
   return {
     user: undefined,
-    permissions: {},
   };
 }
 
@@ -364,10 +314,12 @@ export function createMeshContextFactory(
     // Authenticate request (OAuth session or API key)
     const authResult = await authenticateRequest(c, config.auth);
 
+    // Create bound auth client (encapsulates HTTP headers for permission checks)
+    const boundAuth = createBoundAuthClient(config.auth, c.req.raw.headers);
+
     // Build auth object for MeshContext
     const auth: MeshContext["auth"] = {
       user: authResult.user,
-      permissions: authResult.permissions, // Unified permissions (API key or custom role)
     };
 
     if (authResult.apiKeyId) {
@@ -385,13 +337,13 @@ export function createMeshContextFactory(
     const url = new URL(c.req.url);
     const baseUrl = process.env.BASE_URL ?? `${url.protocol}//${url.host}`;
 
-    // Create AccessControl instance with unified permissions
+    // Create AccessControl instance with bound auth client
     const access = new AccessControl(
       config.auth,
       auth.user?.id,
       undefined, // toolName set later by defineTool
-      authResult.permissions, // Unified permissions from OAuth or API key
-      authResult.role, // Role from OAuth session or undefined for API keys
+      boundAuth, // Bound auth client for permission checks
+      authResult.role, // Role from session (for built-in role bypass)
       "self", // Default connectionId for management APIs
     );
 
@@ -401,6 +353,7 @@ export function createMeshContextFactory(
       storage,
       vault,
       authInstance: config.auth,
+      boundAuth, // Pre-bound auth client for permission checks
       access,
       db: config.db,
       tracer: config.observability.tracer,

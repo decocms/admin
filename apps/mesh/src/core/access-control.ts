@@ -9,8 +9,7 @@
  * 4. Tools can manually grant access for custom logic
  */
 
-import type { Permission } from "../storage/types";
-import { BetterAuthInstance } from "./mesh-context";
+import type { BetterAuthInstance, BoundAuthClient } from "./mesh-context";
 
 // Forward declaration (will be replaced with actual Better Auth type)
 
@@ -45,19 +44,18 @@ export class ForbiddenError extends Error {
 /**
  * AccessControl using Better Auth's permission system
  *
- * Works with both:
- * - Admin plugin (role-based permissions)
- * - API Key plugin (key-based permissions)
+ * Delegates all permission checks to Better Auth's Organization plugin
+ * via the BoundAuthClient (which encapsulates HTTP headers)
  */
 export class AccessControl implements Disposable {
   private _granted: boolean = false;
 
   constructor(
-    private auth: BetterAuthInstance,
+    _auth: BetterAuthInstance, // Kept for backwards compatibility, not used
     private userId?: string,
     private toolName?: string,
-    private permissions?: Permission, // From API key
-    private role?: string, // From user session
+    private boundAuth?: BoundAuthClient, // Bound auth client for permission checks
+    private role?: string, // From user session (for built-in role bypass)
     private connectionId: string = "self", // For connection-specific checks
   ) {}
 
@@ -103,10 +101,7 @@ export class AccessControl implements Disposable {
     }
 
     // Check if authenticated first (401)
-    if (
-      !this.userId &&
-      (!this.permissions || Object.keys(this.permissions).length === 0)
-    ) {
+    if (!this.userId && !this.boundAuth) {
       throw new UnauthorizedError(
         "Authentication required. Please provide a valid OAuth token or API key.",
       );
@@ -137,10 +132,11 @@ export class AccessControl implements Disposable {
 
   /**
    * Check if user has permission to access a resource
+   * Delegates to Better Auth's Organization plugin via boundAuth
    */
   private async checkResource(resource: string): Promise<boolean> {
-    // No user or permissions = deny
-    if (!this.userId && !this.permissions) {
+    // No user or bound auth = deny
+    if (!this.userId && !this.boundAuth) {
       return false;
     }
 
@@ -149,78 +145,19 @@ export class AccessControl implements Disposable {
       return true;
     }
 
-    // Build permission check
-    const permissionToCheck: Permission = {};
+    // No bound auth client = deny (should not happen in normal flow)
+    if (!this.boundAuth) {
+      return false;
+    }
 
-    // If checking a specific connection, also check that
+    // Build permission check - use connectionId as the resource key
+    const permissionToCheck: Record<string, string[]> = {};
     if (this.connectionId) {
       permissionToCheck[this.connectionId] = [resource];
     }
 
-    try {
-      // Use Better Auth's permission checking if available
-      if (this.userId && this.auth?.api?.userHasPermission) {
-        const result = await this.auth.api.userHasPermission({
-          body: {
-            userId: this.userId,
-            role: this.role as "user" | "admin" | undefined,
-            permission: permissionToCheck,
-          },
-        });
-
-        // Better Auth can return { data: { has: boolean } } or just { success: boolean }
-        // If it returns a valid result, use it; otherwise fall back to manual
-        if (result) {
-          // Type guard for Better Auth permission check result
-          const resultObj = result as {
-            data?: { has?: boolean };
-            success?: boolean;
-          };
-          const hasPermission =
-            resultObj.data?.has === true || resultObj.success === true;
-          if (hasPermission) {
-            return true;
-          }
-        }
-      }
-
-      // Fallback to manual check (when no Better Auth or permission denied)
-      return this.manualPermissionCheck(resource);
-    } catch {
-      // Fallback to manual check on error
-      return this.manualPermissionCheck(resource);
-    }
-  }
-
-  /**
-   * Fallback manual permission check
-   * Used when Better Auth API is unavailable or for API key-only auth
-   */
-  private manualPermissionCheck(resource: string): boolean {
-    if (!this.permissions || Object.keys(this.permissions).length === 0) {
-      return false;
-    }
-
-    // Check permissions object
-    for (const [key, actions] of Object.entries(this.permissions)) {
-      const matchesConnection = !this.connectionId || key === this.connectionId;
-
-      if (!matchesConnection) {
-        continue;
-      }
-
-      // Check if resource matches the permission key (e.g., checking 'conn_123' access)
-      if (key === resource && actions.length > 0) {
-        return true;
-      }
-
-      // Check if resource is in actions array or has wildcard
-      if (actions.includes(resource) || actions.includes("*")) {
-        return true;
-      }
-    }
-
-    return false;
+    // Delegate to Better Auth's hasPermission API
+    return this.boundAuth.hasPermission(permissionToCheck);
   }
 
   /**

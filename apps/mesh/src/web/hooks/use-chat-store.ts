@@ -5,8 +5,15 @@ import { useCollectionList } from "./use-collections";
 import { createIndexedDBCollection } from "./use-indexeddb-collection";
 import { useProjectContext } from "../providers/project-context-provider";
 
-const threadsCollectionCache = new Map<string, Collection<Thread, string>>();
-const messagesCollectionCache = new Map<string, Collection<Message, string>>();
+const threadsCollectionCache = {
+  key: "",
+  value: null as Collection<Thread, string> | null,
+};
+
+const messagesCollectionCache = {
+  key: "",
+  value: null as Collection<Message, string> | null,
+};
 
 /**
  * Get or create a threads collection instance for the current organization.
@@ -18,14 +25,14 @@ export function useThreadsCollection(): Collection<Thread, string> {
   const { org } = useProjectContext();
   const key = `${org}:threads`;
 
-  if (!threadsCollectionCache.has(key)) {
-    const collection = createIndexedDBCollection<Thread>({
+  if (threadsCollectionCache.key !== key) {
+    threadsCollectionCache.key = key;
+    threadsCollectionCache.value = createIndexedDBCollection<Thread>({
       name: key,
     });
-    threadsCollectionCache.set(key, collection);
   }
 
-  return threadsCollectionCache.get(key) as Collection<Thread, string>;
+  return threadsCollectionCache.value!;
 }
 
 /**
@@ -38,12 +45,14 @@ export function useMessagesCollection(): Collection<Message, string> {
   const { locator } = useProjectContext();
   const key = `${locator}:messages`;
 
-  if (!messagesCollectionCache.has(key)) {
-    const collection = createIndexedDBCollection<Message>({ name: key });
-    messagesCollectionCache.set(key, collection);
+  if (messagesCollectionCache.key !== key) {
+    messagesCollectionCache.key = key;
+    messagesCollectionCache.value = createIndexedDBCollection<Message>({
+      name: key,
+    });
   }
 
-  return messagesCollectionCache.get(key) as Collection<Message, string>;
+  return messagesCollectionCache.value!;
 }
 
 export function useThreads() {

@@ -68,11 +68,11 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function ChatProvider({ children }: PropsWithChildren) {
   const { locator, org } = useProjectContext();
 
-  // // Get org-scoped collections
+  // Get org-scoped collections
   const threadsCollection = useThreadsCollection();
   const messagesCollection = useMessagesCollection();
 
-  // // Active Thread ID State
+  // Active Thread ID State
   const [activeThreadId, setActiveThreadId] = useLocalStorage<string>(
     LOCALSTORAGE_KEYS.threadManagerState(locator) + ":active-id", // Modified key to avoid conflict/mess with old state
     (existing) => existing || createThreadId(),
@@ -101,7 +101,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
     [setActiveThreadId, threadsCollection],
   );
 
-  // // Consolidated hide/delete
+  // Consolidated hide/delete
   const hideThread = useCallback(
     (threadId: string) => {
       threadsCollection.update(threadId, (draft) => {
@@ -117,7 +117,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
     [activeThreadId, setActiveThreadId, threadsCollection],
   );
 
-  // // Persist selected model (including connectionId) per organization in localStorage
+  // Persist selected model (including connectionId) per organization in localStorage
   const [selectedModelState, setSelectedModelState] = useLocalStorage<{
     id: string;
     connectionId: string;
@@ -126,7 +126,7 @@ export function ChatProvider({ children }: PropsWithChildren) {
     (existing) => existing ?? null,
   );
 
-  // // Persist selected agent per organization in localStorage
+  // Persist selected agent per organization in localStorage
   const [selectedAgentState, setSelectedAgentState] = useLocalStorage<{
     agentId: string;
     connectionId: string;

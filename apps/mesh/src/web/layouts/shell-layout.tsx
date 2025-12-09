@@ -29,7 +29,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { PropsWithChildren, Suspense, useCallback } from "react";
+import { PropsWithChildren, Suspense, useCallback, useTransition } from "react";
 import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
@@ -75,18 +75,25 @@ function Topbar({
   );
 }
 
+const DEFAULT_CHAT_PANEL_WIDTH = 30;
+
 const PersistentResizablePanel = ({ children }: PropsWithChildren) => {
+  const [_isPending, startTransition] = useTransition();
   const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
     LOCALSTORAGE_KEYS.decoChatPanelWidth(),
-    30,
+    DEFAULT_CHAT_PANEL_WIDTH,
+  );
+
+  const handleResize = useCallback(
+    (size: number) => startTransition(() => setChatPanelWidth(size)),
+    [startTransition, setChatPanelWidth],
   );
 
   return (
     <ResizablePanel
-      defaultSize={chatPanelWidth}
-      minSize={20}
+      defaultSize={Math.max(chatPanelWidth, DEFAULT_CHAT_PANEL_WIDTH)}
       className="min-w-0"
-      onResize={setChatPanelWidth}
+      onResize={handleResize}
     >
       {children}
     </ResizablePanel>

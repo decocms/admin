@@ -4,18 +4,18 @@ This is the local version using Docker Compose, to speed up your testing with th
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Prerequisites](#-prerequisites)
-- [Quick Start](#-quick-start---get-started-in-4-steps)
-- [Configuration](#️-configuration)
-- [Using SQLite (Default)](#-using-sqlite-default)
-- [Using PostgreSQL](#-using-postgresql)
-- [Authentication Configuration](#-authentication-configuration-auth-configjson)
-- [Security](#-security)
-- [Monitoring](#-monitoring)
-- [Troubleshooting](#-troubleshooting)
-- [Updating](#-updating)
-- [Backup and Restore](#-backup-and-restore)
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start---get-started-in-4-steps)
+- [Configuration](#configuration)
+- [Using SQLite (Default)](#using-sqlite-default)
+- [Using PostgreSQL](#using-postgresql)
+- [Authentication Configuration](#authentication-configuration-auth-configjson)
+- [Security](#security)
+- [Monitoring](#monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Updating](#updating)
+- [Backup and Restore](#backup-and-restore)
 
 ## 🎯 Overview
 
@@ -70,6 +70,7 @@ All other variables have default values that work for local testing.
 The `.env` file contains all configurations.
 
 Main variables:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `IMAGE_REPOSITORY` | `ghcr.io/decocms/admin/mesh` | Image repository |

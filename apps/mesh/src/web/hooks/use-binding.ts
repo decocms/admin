@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { z } from "zod";
 import { type Binder, createBindingChecker } from "@decocms/bindings";
 import {
@@ -134,7 +133,7 @@ export function useBindingConnections({
   // Resolve binding definition:
   // - If binding is a string, look up in BUILTIN_BINDINGS
   // - If binding is an array, convert JSON schemas to Binder
-  const resolvedBinding = useMemo(() => {
+  const resolvedBinding = (() => {
     if (!binding) {
       return undefined;
     }
@@ -165,23 +164,21 @@ export function useBindingConnections({
     }
 
     return convertBindingToBinder(binding);
-  }, [binding]);
+  })();
 
-  return useMemo(() => {
-    if (!connections) {
-      return [];
-    }
+  if (!connections) {
+    return [];
+  }
 
-    // If no binding filter, return all connections
-    if (!resolvedBinding) {
-      return connections;
-    }
+  // If no binding filter, return all connections
+  if (!resolvedBinding) {
+    return connections;
+  }
 
-    // Filter connections by binding
-    return connections.filter((conn) =>
-      connectionImplementsBinding(conn, resolvedBinding),
-    );
-  }, [connections, resolvedBinding]);
+  // Filter connections by binding
+  return connections.filter((conn) =>
+    connectionImplementsBinding(conn, resolvedBinding),
+  );
 }
 
 /**

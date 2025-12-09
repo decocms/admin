@@ -3,7 +3,7 @@
  * Provides inline installation without navigation.
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { createToolCaller } from "@/tools/client";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
@@ -67,15 +67,15 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   const registryConnection = registryConnections[0];
 
   // Find the LIST tool from the registry connection
-  const listToolName = useMemo(() => {
+  const listToolName = (() => {
     if (!registryConnection?.tools) return "";
     const listTool = registryConnection.tools.find((tool) =>
       tool.name.endsWith("_LIST"),
     );
     return listTool?.name || "";
-  }, [registryConnection?.tools]);
+  })();
 
-  const toolCaller = useMemo(() => createToolCaller(registryId), [registryId]);
+  const toolCaller = createToolCaller(registryId);
 
   // Fetch registry items
   const {
@@ -90,7 +90,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   });
 
   // Extract items from results
-  const registryItems: RegistryItem[] = useMemo(() => {
+  const registryItems: RegistryItem[] = (() => {
     if (!listResults) return [];
 
     // Direct array response
@@ -112,62 +112,56 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
     }
 
     return [];
-  }, [listResults]);
+  })();
 
   // Installation function
-  const installByBinding = useCallback(
-    async (bindingType: string): Promise<InstallResult | undefined> => {
-      if (!org || !session?.user?.id) {
-        toast.error("Not authenticated");
-        return undefined;
-      }
+  const installByBinding = async (
+    bindingType: string,
+  ): Promise<InstallResult | undefined> => {
+    if (!org || !session?.user?.id) {
+      toast.error("Not authenticated");
+      return undefined;
+    }
 
-      // Find the registry item matching the binding type
-      const registryItem = findRegistryItemByBinding(
-        registryItems,
-        bindingType,
-      );
+    // Find the registry item matching the binding type
+    const registryItem = findRegistryItemByBinding(registryItems, bindingType);
 
-      if (!registryItem) {
-        toast.error(`MCP not found in registry: ${bindingType}`);
-        return undefined;
-      }
+    if (!registryItem) {
+      toast.error(`MCP not found in registry: ${bindingType}`);
+      return undefined;
+    }
 
-      // Extract connection data
-      const connectionData = extractConnectionData(
-        registryItem,
-        org,
-        session.user.id,
-      );
+    // Extract connection data
+    const connectionData = extractConnectionData(
+      registryItem,
+      org,
+      session.user.id,
+    );
 
-      if (!connectionData.connection_url) {
-        toast.error(
-          "This MCP cannot be installed: no connection URL available",
-        );
-        return undefined;
-      }
+    if (!connectionData.connection_url) {
+      toast.error("This MCP cannot be installed: no connection URL available");
+      return undefined;
+    }
 
-      setIsInstalling(true);
-      try {
-        const tx = await connectionsCollection.insert(connectionData);
-        await tx.isPersisted.promise;
+    setIsInstalling(true);
+    try {
+      const tx = await connectionsCollection.insert(connectionData);
+      await tx.isPersisted.promise;
 
-        toast.success(`${connectionData.title} installed successfully`);
-        // Return full connection data so caller doesn't need to fetch from collection
-        return {
-          id: connectionData.id,
-          connection: connectionData as ConnectionEntity,
-        };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        toast.error(`Failed to install MCP: ${message}`);
-        return undefined;
-      } finally {
-        setIsInstalling(false);
-      }
-    },
-    [org, session?.user?.id, registryItems],
-  );
+      toast.success(`${connectionData.title} installed successfully`);
+      // Return full connection data so caller doesn't need to fetch from collection
+      return {
+        id: connectionData.id,
+        connection: connectionData as ConnectionEntity,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to install MCP: ${message}`);
+      return undefined;
+    } finally {
+      setIsInstalling(false);
+    }
+  };
 
   return {
     installByBinding,

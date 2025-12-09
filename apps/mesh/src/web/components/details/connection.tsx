@@ -65,7 +65,7 @@ import {
 } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, Lock, Plus } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
@@ -450,9 +450,8 @@ function SettingsTab({
   }, [connection]);
 
   // Track if MCP config has changes
-  const mcpHasChanges = useMemo(() => {
-    return JSON.stringify(mcpFormState) !== JSON.stringify(mcpInitialState);
-  }, [mcpFormState, mcpInitialState]);
+  const mcpHasChanges =
+    JSON.stringify(mcpFormState) !== JSON.stringify(mcpInitialState);
 
   const handleSaveConnection = async () => {
     const isValid = await connectionForm.trigger();

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -66,14 +66,14 @@ export function BindingSelector({
   });
 
   // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })
-  const parsedBindingType = useMemo(() => {
+  const parsedBindingType = (() => {
     if (!bindingType?.startsWith("@")) return null;
     const [scope, appName] = bindingType.replace("@", "").split("/");
     return scope && appName ? { scope, appName } : null;
-  }, [bindingType]);
+  })();
 
   // Apply additional filtering by bindingType and include selected connection if not in filtered list
-  const connections = useMemo(() => {
+  const connections = (() => {
     let result = filteredConnections;
 
     // If we have a specific binding type (@scope/appName), filter connections that match
@@ -99,7 +99,7 @@ export function BindingSelector({
     }
 
     return result;
-  }, [filteredConnections, parsedBindingType, value, allConnections]);
+  })();
 
   // Check if we can do inline installation (bindingType starts with @)
   const canInstallInline = bindingType?.startsWith("@");

@@ -3,7 +3,6 @@ import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { Loader2 } from "lucide-react";
-import { useMemo, useCallback } from "react";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
@@ -204,10 +203,7 @@ export function McpConfigurationForm({
 }: McpConfigurationFormProps) {
   const { org } = useProjectContext();
   const navigate = useNavigate();
-  const toolCaller = useMemo(
-    () => createToolCaller(connection.id),
-    [connection.id],
-  );
+  const toolCaller = createToolCaller(connection.id);
 
   const {
     data: configResult,
@@ -225,39 +221,30 @@ export function McpConfigurationForm({
     properties: {},
   };
 
-  const handleChange = useCallback(
-    (data: { formData?: Record<string, unknown> }) => {
-      if (data.formData) {
-        onFormStateChange(data.formData);
-      }
-    },
-    [onFormStateChange],
-  );
+  const handleChange = (data: { formData?: Record<string, unknown> }) => {
+    if (data.formData) {
+      onFormStateChange(data.formData);
+    }
+  };
 
-  const handleFieldChange = useCallback(
-    (fieldPath: string, value: unknown) => {
-      const newFormState = { ...formState, [fieldPath]: value };
-      onFormStateChange(newFormState);
-    },
-    [formState, onFormStateChange],
-  );
+  const handleFieldChange = (fieldPath: string, value: unknown) => {
+    const newFormState = { ...formState, [fieldPath]: value };
+    onFormStateChange(newFormState);
+  };
 
-  const handleAddNew = useCallback(() => {
+  const handleAddNew = () => {
     navigate({
       to: "/$org/mcps",
       params: { org },
       search: { action: "create" },
     });
-  }, [navigate, org]);
+  };
 
-  const formContext: FormContext = useMemo(
-    () => ({
-      onFieldChange: handleFieldChange,
-      formData: formState,
-      onAddNew: handleAddNew,
-    }),
-    [handleFieldChange, formState, handleAddNew],
-  );
+  const formContext: FormContext = {
+    onFieldChange: handleFieldChange,
+    formData: formState,
+    onAddNew: handleAddNew,
+  };
 
   if (isLoading) {
     return (

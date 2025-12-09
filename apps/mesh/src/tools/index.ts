@@ -8,6 +8,7 @@
 import * as ConnectionTools from "./connection";
 import * as DatabaseTools from "./database";
 import * as OrganizationTools from "./organization";
+import { ToolName } from "./registry";
 
 export { ConnectionTools };
 
@@ -36,7 +37,7 @@ export const ALL_TOOLS = [
 
   // Database tools
   DatabaseTools.DATABASES_RUN_SQL,
-] as const;
+] as const satisfies { name: ToolName }[];
 
 export type MCPMeshTools = typeof ALL_TOOLS;
 

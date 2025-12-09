@@ -1,47 +1,70 @@
-import { eq } from "@tanstack/db";
+import { eq, type Collection } from "@tanstack/db";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import type { Message, Thread } from "../types/chat-threads";
 import { useCollectionList } from "./use-collections";
 import { createIndexedDBCollection } from "./use-indexeddb-collection";
+import { useProjectContext } from "../providers/project-context-provider";
 
-// Collections defined once at module scope
-export const THREADS_COLLECTION = createIndexedDBCollection<Thread>({
-  name: "threads",
-});
+const threadsCollectionCache = new Map<string, Collection<Thread, string>>();
+const messagesCollectionCache = new Map<string, Collection<Message, string>>();
 
-export const MESSAGES_COLLECTION = createIndexedDBCollection<Message>({
-  name: "messages",
-});
+/**
+ * Get or create a threads collection instance for the current organization.
+ * Collections are cached to ensure singleton-like behavior per org.
+ *
+ * @returns A TanStack DB collection instance for threads
+ */
+export function useThreadsCollection(): Collection<Thread, string> {
+  const { org } = useProjectContext();
+  const key = `${org}:threads`;
+
+  if (!threadsCollectionCache.has(key)) {
+    const collection = createIndexedDBCollection<Thread>({
+      name: key,
+    });
+    threadsCollectionCache.set(key, collection);
+  }
+
+  return threadsCollectionCache.get(key) as Collection<Thread, string>;
+}
+
+/**
+ * Get or create a messages collection instance for the current organization.
+ * Collections are cached to ensure singleton-like behavior per org.
+ *
+ * @returns A TanStack DB collection instance for messages
+ */
+export function useMessagesCollection(): Collection<Message, string> {
+  const { locator } = useProjectContext();
+  const key = `${locator}:messages`;
+
+  if (!messagesCollectionCache.has(key)) {
+    const collection = createIndexedDBCollection<Message>({ name: key });
+    messagesCollectionCache.set(key, collection);
+  }
+
+  return messagesCollectionCache.get(key) as Collection<Message, string>;
+}
 
 export function useThreads() {
-  return useCollectionList(THREADS_COLLECTION, {
+  const threadsCollection = useThreadsCollection();
+  return useCollectionList(threadsCollection, {
     sortKey: "updated_at",
     sortDirection: "desc",
   });
 }
 
 export function useThreadMessages(threadId: string) {
+  const messagesCollection = useMessagesCollection();
+
   const { data } = useLiveSuspenseQuery(
-    (q) => {
-      // Query from messages collection, join with threads
-      return q
-        .from({ messages: MESSAGES_COLLECTION })
-        .where(({ messages }) => {
-          if (!messages) return false;
-          // Filter by threadId from message metadata
-          return eq(messages.metadata?.thread_id, threadId);
-        })
-        .join({ threads: THREADS_COLLECTION }, ({ messages, threads }) => {
-          // Join condition: match threadId from message metadata to thread id
-          return messages && threads
-            ? eq(messages.metadata?.thread_id, threads.id)
-            : false;
-        })
-        .orderBy(({ messages }) => messages?.metadata?.created_at, "asc");
-    },
-    [threadId],
+    (q) =>
+      q
+        .from({ messages: messagesCollection })
+        .where(({ messages }) => eq(messages.metadata?.thread_id, threadId))
+        .orderBy(({ messages }) => messages?.metadata?.created_at, "asc"),
+    [threadId, messagesCollection],
   );
 
-  // Extract messages from join result
-  return data?.map((row) => row.messages) ?? [];
+  return data ?? [];
 }

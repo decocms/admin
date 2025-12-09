@@ -29,7 +29,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, useParams } from "@tanstack/react-router";
-import { Suspense, useCallback } from "react";
+import { PropsWithChildren, Suspense, useCallback } from "react";
 import { KEYS } from "../lib/query-keys";
 
 // Capybara avatar URL from decopilotAgent
@@ -75,6 +75,24 @@ function Topbar({
   );
 }
 
+const PersistentResizablePanel = ({ children }: PropsWithChildren) => {
+  const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
+    LOCALSTORAGE_KEYS.decoChatPanelWidth(),
+    30,
+  );
+
+  return (
+    <ResizablePanel
+      defaultSize={chatPanelWidth}
+      minSize={20}
+      className="min-w-0"
+      onResize={setChatPanelWidth}
+    >
+      {children}
+    </ResizablePanel>
+  );
+};
+
 function ShellLayoutContent() {
   const { org } = useParams({ strict: false });
 
@@ -87,11 +105,6 @@ function ShellLayoutContent() {
   const toggleChat = useCallback(
     () => setChatOpen((prev) => !prev),
     [setChatOpen],
-  );
-
-  const [chatPanelWidth, setChatPanelWidth] = useLocalStorage(
-    LOCALSTORAGE_KEYS.decoChatPanelWidth(),
-    30,
   );
 
   const { data: orgSlug } = useSuspenseQuery({
@@ -120,7 +133,7 @@ function ShellLayoutContent() {
 
   return (
     <ProjectContextProvider locator={Locator.adminProject(orgSlug)}>
-      <ChatProvider>
+      <ChatProvider key={orgSlug}>
         <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <div className="flex flex-col h-screen">
             <Topbar
@@ -147,18 +160,13 @@ function ShellLayoutContent() {
                   {chatOpen && (
                     <>
                       <ResizableHandle withHandle />
-                      <ResizablePanel
-                        defaultSize={chatPanelWidth}
-                        minSize={20}
-                        className="min-w-0"
-                        onResize={setChatPanelWidth}
-                      >
+                      <PersistentResizablePanel>
                         <ErrorBoundary>
                           <Suspense fallback={<DecoChatSkeleton />}>
                             <DecoChatPanel />
                           </Suspense>
                         </ErrorBoundary>
-                      </ResizablePanel>
+                      </PersistentResizablePanel>
                     </>
                   )}
                 </ResizablePanelGroup>

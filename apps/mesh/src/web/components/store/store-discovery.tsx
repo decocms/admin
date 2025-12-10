@@ -49,51 +49,40 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
-      // Extract items from last page
-      let items: RegistryItem[] = [];
+      // Only proceed with pagination if API provides a cursor
+      // If no cursor is available, return undefined to stop pagination
+      if (typeof lastPage === "object" && lastPage !== null) {
+        const nextCursor =
+          (lastPage as { nextCursor?: string; cursor?: string }).nextCursor ||
+          (lastPage as { nextCursor?: string; cursor?: string }).cursor;
 
-      if (Array.isArray(lastPage)) {
-        items = lastPage;
-      } else if (typeof lastPage === "object" && lastPage !== null) {
-        const itemsKey = Object.keys(lastPage).find((key) =>
-          Array.isArray(lastPage[key as keyof typeof lastPage]),
-        );
-        if (itemsKey) {
-          items = lastPage[itemsKey as keyof typeof lastPage] as RegistryItem[];
+        // Only return cursor if API explicitly provides one
+        if (nextCursor) {
+          return nextCursor;
         }
       }
 
-      // Check if hasMore indicates there are more pages
-      const hasMore =
-        typeof lastPage === "object" && lastPage !== null
-          ? ((lastPage as { hasMore?: boolean }).hasMore ?? false)
-          : false;
-
-      // Check if API provides a nextCursor field
-      const nextCursor =
-        typeof lastPage === "object" && lastPage !== null
-          ? (lastPage as { nextCursor?: string; cursor?: string }).nextCursor ||
-            (lastPage as { nextCursor?: string; cursor?: string }).cursor
-          : undefined;
-
-      // Prefer API-provided cursor if available
-      if (nextCursor) {
-        return nextCursor;
-      }
-
-      // Fallback: Use the last item's ID as the next cursor if there are more pages
-      if (hasMore && items.length > 0) {
-        const lastItem = items[items.length - 1];
-        if (lastItem?.id) {
-          return lastItem.id;
-        }
-      }
-
+      // No cursor available - stop pagination
       return undefined;
     },
     enabled: !!listToolName,
     staleTime: 60 * 60 * 1000, // 1 hour - keep data fresh longer
   });
+
+  // Extract totalCount from first page if available
+  const totalCount = (() => {
+    if (!data?.pages || data.pages.length === 0) return null;
+    const firstPage = data.pages[0];
+    if (
+      typeof firstPage === "object" &&
+      firstPage !== null &&
+      "totalCount" in firstPage &&
+      typeof firstPage.totalCount === "number"
+    ) {
+      return firstPage.totalCount;
+    }
+    return null;
+  })();
 
   // Flatten all pages into a single array of items
   const allItems = (() => {
@@ -136,6 +125,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
       registryId={registryId}
       hasMore={hasNextPage ?? false}
       onLoadMore={handleLoadMore}
+      totalCount={totalCount}
     />
   );
 }

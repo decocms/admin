@@ -5,13 +5,14 @@ import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect } from "react";
 import { CollectionHeader } from "@/web/components/collections/collection-header";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 
 export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
-  const [selectedRegistry, setSelectedRegistry] = useState<string>("");
   const allConnections = useConnections();
 
   // Check if we're viewing a child route (app detail)
@@ -28,6 +29,30 @@ export default function StorePage() {
     name: c.title,
     icon: c.icon || undefined,
   }));
+
+  // Persist selected registry in localStorage (scoped by org)
+  const [selectedRegistry, setSelectedRegistry] = useLocalStorage<string>(
+    LOCALSTORAGE_KEYS.selectedRegistry(org),
+    "",
+  );
+
+  // Update selected registry when registry connections change
+  // If the saved registry is no longer available, fallback to first available
+  useEffect(() => {
+    if (registryConnections.length > 0) {
+      const savedRegistryExists = selectedRegistry
+        ? registryConnections.some((c) => c.id === selectedRegistry)
+        : false;
+
+      if (!savedRegistryExists) {
+        // If saved registry doesn't exist or is empty, use first available
+        const firstRegistryId = registryConnections[0]?.id || "";
+        if (firstRegistryId && firstRegistryId !== selectedRegistry) {
+          setSelectedRegistry(firstRegistryId);
+        }
+      }
+    }
+  }, [registryConnections, selectedRegistry, setSelectedRegistry]);
 
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";

@@ -1,7 +1,8 @@
 import { withRuntime } from "@decocms/runtime";
+import { createAssetServer } from "@decocms/runtime/asset-server";
 
 interface Env {
-  ASSETS: {
+  ASSETS?: {
     fetch: (req: Request) => Promise<Response>;
   };
 }
@@ -12,7 +13,13 @@ const runtime = withRuntime<Env>({
     if (url.pathname === "/" || url.pathname === "") {
       return Response.redirect(new URL("/en/introduction", req.url), 302);
     }
-    return env.ASSETS.fetch(req);
+
+    const assets = env.ASSETS ?? createAssetServer({
+      env: "development",
+      assetsMiddlewarePath: "*",
+    });
+
+    return assets.fetch(req);
   },
 });
 

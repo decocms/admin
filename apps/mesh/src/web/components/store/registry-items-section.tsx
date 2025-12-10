@@ -53,9 +53,26 @@ export interface RegistryItem {
   };
   /** Nested server object (used by MCPRegistryServer format) */
   server?: {
+    $schema?: string;
     name?: string;
     title?: string;
     description?: string;
+    version?: string;
+    websiteUrl?: string;
+    repository?: {
+      url?: string;
+      source?: string;
+      subfolder?: string;
+    };
+    remotes?: Array<{
+      type?: string;
+      url?: string;
+      headers?: Array<{
+        name?: string;
+        value?: string;
+        description?: string;
+      }>;
+    }>;
     icons?: Array<{ src: string }>;
     tools?: unknown[];
     models?: unknown[];

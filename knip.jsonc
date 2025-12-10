@@ -1,9 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
-    // todo: remove this . and fix docs
     ".": {
-      "entry": [],
+      "entry": ["plugins/**/*"],
       "project": []
     },
     "packages/runtime": {

@@ -12,6 +12,7 @@ import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
+import { authenticateMcp } from "@/web/lib/browser-oauth-provider";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { extractConnectionData } from "@/web/utils/extract-connection-data";
 import { slugify } from "@/web/utils/slugify";
@@ -297,6 +298,19 @@ export default function StoreAppDetail() {
 
     setIsInstalling(true);
     try {
+      const { token, error } = await authenticateMcp(connectionData.connection_url);
+
+      // If authentication error occurs, show and stop
+      if (error) {
+        toast.error(`Authentication failed: ${error}`);
+        setIsInstalling(false);
+        return;
+      }
+
+      if (token) {
+        (connectionData as any).connection_token = token;
+      }
+      
       const tx = connectionsCollection.insert(connectionData);
       await tx.isPersisted.promise;
 

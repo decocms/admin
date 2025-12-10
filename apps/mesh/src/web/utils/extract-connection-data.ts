@@ -91,7 +91,7 @@ export function extractConnectionData(
     app_id: meshMeta?.id || item.id || null,
     connection_type: connectionType,
     connection_url: remote?.url || "",
-    connection_token: null,
+    connection_token: null as string | null,
     connection_headers: null,
     oauth_config: oauthConfig,
     configuration_state: configState ?? null,

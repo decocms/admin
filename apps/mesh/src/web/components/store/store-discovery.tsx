@@ -31,6 +31,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
+    connectionId: registryId,
     enabled: !!listToolName,
   });
 

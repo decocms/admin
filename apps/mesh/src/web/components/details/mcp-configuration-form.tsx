@@ -229,6 +229,24 @@ export function McpConfigurationForm({
 }: McpConfigurationFormProps) {
   const { org } = useProjectContext();
   const navigate = useNavigate();
+  const toolCaller = createToolCaller(connection.id);
+
+  const {
+    data: configResult,
+    isLoading,
+    error,
+  } = useToolCall<Record<string, never>, McpConfigurationResult>({
+    toolCaller,
+    toolName: "MCP_CONFIGURATION",
+    toolInputParams: {},
+    connectionId: connection.id,
+    enabled: !!connection.id,
+  });
+
+  const stateSchema = configResult?.stateSchema ?? {
+    type: "object",
+    properties: {},
+  };
 
   const handleChange = (data: { formData?: Record<string, unknown> }) => {
     if (data.formData) {

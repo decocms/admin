@@ -227,6 +227,7 @@ export default function StoreAppDetail() {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
+    connectionId: effectiveRegistryId,
     enabled: !!listToolName && !!effectiveRegistryId,
   });
 

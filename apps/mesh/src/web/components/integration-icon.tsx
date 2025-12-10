@@ -1,5 +1,6 @@
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { useState } from "react";
 
 interface IntegrationIconProps {
   icon: string | null | undefined;
@@ -14,6 +15,8 @@ export function IntegrationIcon({
   size = "md",
   className,
 }: IntegrationIconProps) {
+  const [imageError, setImageError] = useState(false);
+  
   const sizeClasses = {
     sm: "h-8 w-8",
     md: "h-12 w-12",
@@ -26,22 +29,7 @@ export function IntegrationIcon({
     lg: 32,
   };
 
-  if (icon) {
-    return (
-      <img
-        src={icon}
-        alt={name}
-        className={cn(
-          "rounded-lg object-cover border border-border",
-          sizeClasses[size],
-          className,
-        )}
-      />
-    );
-  }
-
-  // Fallback: muted icon with connection symbol
-  return (
+  const fallbackIcon = (
     <div
       className={cn(
         "rounded-lg flex items-center justify-center bg-muted border border-border",
@@ -56,4 +44,24 @@ export function IntegrationIcon({
       />
     </div>
   );
+
+  if (icon && !imageError) {
+    return (
+      <img
+        src={icon}
+        alt={name}
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+        onError={() => setImageError(true)}
+        className={cn(
+          "rounded-lg object-cover border border-border",
+          sizeClasses[size],
+          className,
+        )}
+      />
+    );
+  }
+
+  // Fallback: muted icon with connection symbol
+  return fallbackIcon;
 }

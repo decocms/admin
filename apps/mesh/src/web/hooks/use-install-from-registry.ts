@@ -86,6 +86,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
+    connectionId: registryId,
     enabled: !!listToolName && !!registryId,
   });
 

@@ -6,6 +6,8 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card } from "@deco/ui/components/card.js";
 import { IntegrationIcon } from "../integration-icon.tsx";
+import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
+import type { RegistryItem } from "./registry-items-section";
 
 /**
  * MCP Registry Server structure from LIST response
@@ -60,35 +62,87 @@ export interface MCPRegistryServer {
       url?: string;
     }>;
     version?: string;
+    repository?: {
+      url?: string;
+      source?: string;
+      subfolder?: string;
+    };
   };
 }
 
 /**
- * Props for RegistryItemCard - accepts any item with compatible shape.
- * This allows both MCPRegistryServer and RegistryItem types.
+ * Simplified props for RegistryItemCard - receives processed data
+ * Reduces component responsibility to just rendering
  */
 interface RegistryItemCardProps {
-  item: {
-    id: string;
-    title?: string;
-    _meta?: MCPRegistryServerMeta;
-    server?: {
-      title?: string;
-      description?: string;
-      icons?: Array<{ src: string }>;
-      _meta?: MCPRegistryServerMeta;
-    };
-  };
+  icon: string | null;
+  scopeName: string | null;
+  displayName: string;
+  description: string | null;
+  version: string | null;
+  isVerified: boolean;
   onClick: () => void;
 }
 
-export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
-  const name = item.title || item.server?.title || item.id || "Unnamed Item";
-  const description = item.server?.description;
-  const icon = item.server?.icons?.[0]?.src;
+/**
+ * Extract display data from a registry item for the card component
+ * Handles name parsing, icon extraction, and verification status
+ */
+export function extractCardDisplayData(
+  item: RegistryItem,
+): Omit<RegistryItemCardProps, "onClick"> {
+  const rawTitle =
+    item.title || item.server?.title || item.id || "Unnamed Item";
+  const description = item.server?.description || null;
+  const icon =
+    item.server?.icons?.[0]?.src ||
+    getGitHubAvatarUrl(item.server?.repository) ||
+    null;
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
-  const scopeName = `${item._meta?.["mcp.mesh"]?.scopeName}/${item._meta?.["mcp.mesh"]?.appName}`;
+  const version = item.server?.version || null;
 
+  // Extract scopeName and displayName from title if it contains "/"
+  let displayName = rawTitle;
+  let scopeName: string | null = null;
+
+  if (rawTitle.includes("/")) {
+    const parts = rawTitle.split("/");
+    if (parts.length >= 2) {
+      scopeName = parts[0] || null;
+      displayName = parts.slice(1).join("/");
+    }
+  }
+
+  // Fallback to _meta if scopeName wasn't extracted from title
+  if (!scopeName) {
+    const metaScopeName = item._meta?.["mcp.mesh"]?.scopeName;
+    const metaAppName = item._meta?.["mcp.mesh"]?.appName;
+    if (metaScopeName && metaAppName) {
+      scopeName = `${metaScopeName}/${metaAppName}`;
+    } else if (metaScopeName) {
+      scopeName = metaScopeName;
+    }
+  }
+
+  return {
+    icon,
+    scopeName,
+    displayName,
+    description,
+    version,
+    isVerified,
+  };
+}
+
+export function RegistryItemCard({
+  icon,
+  scopeName,
+  displayName,
+  description,
+  version,
+  isVerified,
+  onClick,
+}: RegistryItemCardProps) {
   return (
     <Card
       className="p-6 cursor-pointer hover:shadow-md transition-shadow"
@@ -99,32 +153,38 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
           {/* Icon */}
           <IntegrationIcon
             icon={icon}
-            name={name}
+            name={displayName}
             size="md"
             className="shadow-sm"
           />
-          <div className="flex gap-2 items-start">
-            <div>
-              <div className="flex items-center gap-2 text-base font-semibold truncate">
-                {name}
-                {isVerified && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+          <div className="flex gap-2 items-start min-w-0 flex-1">
+            <div className="min-w-0 flex-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 text-base font-semibold min-w-0">
+                    <span className="truncate">{displayName}</span>
+                    {isVerified && (
                       <Icon
                         name="verified"
                         size={16}
                         className="text-success shrink-0"
                       />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Verified App</p>
-                    </TooltipContent>
-                  </Tooltip>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{displayName}</p>
+                </TooltipContent>
+              </Tooltip>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {scopeName && <span className="truncate">{scopeName}</span>}
+                {version && (
+                  <>
+                    {scopeName && <span>•</span>}
+                    <span className="shrink-0">v{version}</span>
+                  </>
                 )}
               </div>
-              {scopeName && (
-                <p className="text-sm text-muted-foreground">{scopeName}</p>
-              )}
             </div>
           </div>
         </div>

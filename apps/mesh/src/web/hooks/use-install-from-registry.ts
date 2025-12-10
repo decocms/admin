@@ -20,6 +20,10 @@ import {
   extractConnectionData,
   findRegistryItemByBinding,
 } from "@/web/utils/extract-connection-data";
+import {
+  findListToolName,
+  extractItemsFromResponse,
+} from "@/web/utils/registry-utils";
 
 interface InstallResult {
   id: string;
@@ -67,13 +71,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   const registryConnection = registryConnections[0];
 
   // Find the LIST tool from the registry connection
-  const listToolName = (() => {
-    if (!registryConnection?.tools) return "";
-    const listTool = registryConnection.tools.find((tool) =>
-      tool.name.endsWith("_LIST"),
-    );
-    return listTool?.name || "";
-  })();
+  const listToolName = findListToolName(registryConnection?.tools);
 
   const toolCaller = createToolCaller(registryId);
 
@@ -86,33 +84,12 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
+    connectionId: registryId,
     enabled: !!listToolName && !!registryId,
   });
 
   // Extract items from results
-  const registryItems: RegistryItem[] = (() => {
-    if (!listResults) return [];
-
-    // Direct array response
-    if (Array.isArray(listResults)) {
-      return listResults;
-    }
-
-    // Object with nested array
-    if (typeof listResults === "object" && listResults !== null) {
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
-
-      if (itemsKey) {
-        return listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-      }
-    }
-
-    return [];
-  })();
+  const registryItems = extractItemsFromResponse<RegistryItem>(listResults);
 
   // Installation function
   const installByBinding = async (

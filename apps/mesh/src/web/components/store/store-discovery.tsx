@@ -1,67 +1,94 @@
 import { useConnection } from "@/web/hooks/collections/use-connection";
-import { useToolCall } from "@/web/hooks/use-tool-call";
 import { createToolCaller } from "@/tools/client";
 import { StoreDiscoveryUI } from "./store-discovery-ui";
 import type { RegistryItem } from "./registry-items-section";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { KEYS } from "@/web/lib/query-keys";
+import {
+  findListToolName,
+  extractTotalCount,
+  flattenPaginatedItems,
+} from "@/web/utils/registry-utils";
 
 interface StoreDiscoveryProps {
   registryId: string;
 }
 
+const PAGE_SIZE = 42;
+
 export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const registryConnection = useConnection(registryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = !registryConnection?.tools
-    ? ""
-    : (() => {
-        const listTool = registryConnection.tools.find((tool) =>
-          tool.name.endsWith("_LIST"),
-        );
-        return listTool?.name || "";
-      })();
+  const listToolName = findListToolName(registryConnection?.tools);
 
   const toolCaller = createToolCaller(registryId);
 
   const {
-    data: listResults,
+    data,
     isLoading,
     error,
-  } = useToolCall({
-    toolCaller,
-    toolName: listToolName,
-    toolInputParams: {},
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: KEYS.toolCall(
+      listToolName,
+      JSON.stringify({ limit: PAGE_SIZE }),
+      registryId,
+    ),
+    queryFn: async ({ pageParam }) => {
+      // Use cursor if available, otherwise fallback to offset for backward compatibility
+      const params = pageParam
+        ? { cursor: pageParam, limit: PAGE_SIZE }
+        : { limit: PAGE_SIZE };
+      const result = await toolCaller(listToolName, params);
+      return result;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      // Only proceed with pagination if API provides a cursor
+      // If no cursor is available, return undefined to stop pagination
+      if (typeof lastPage === "object" && lastPage !== null) {
+        const nextCursor =
+          (lastPage as { nextCursor?: string; cursor?: string }).nextCursor ||
+          (lastPage as { nextCursor?: string; cursor?: string }).cursor;
+
+        // Only return cursor if API explicitly provides one
+        if (nextCursor) {
+          return nextCursor;
+        }
+      }
+
+      // No cursor available - stop pagination
+      return undefined;
+    },
     enabled: !!listToolName,
+    staleTime: 60 * 60 * 1000, // 1 hour - keep data fresh longer
   });
 
-  // Extract items from results without transformation
-  const items: RegistryItem[] = !listResults
-    ? []
-    : // Direct array response
-      Array.isArray(listResults)
-      ? listResults
-      : // Object with nested array
-        typeof listResults === "object" && listResults !== null
-        ? (() => {
-            const itemsKey = Object.keys(listResults).find((key) =>
-              Array.isArray(listResults[key as keyof typeof listResults]),
-            );
+  // Extract totalCount from first page if available
+  const totalCount = extractTotalCount(data?.pages);
 
-            if (itemsKey) {
-              return listResults[
-                itemsKey as keyof typeof listResults
-              ] as RegistryItem[];
-            }
-            return [];
-          })()
-        : [];
+  // Flatten all pages into a single array of items
+  const allItems = flattenPaginatedItems<RegistryItem>(data?.pages);
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   return (
     <StoreDiscoveryUI
-      items={items}
+      items={allItems}
       isLoading={isLoading}
+      isLoadingMore={isFetchingNextPage}
       error={error}
       registryId={registryId}
+      hasMore={hasNextPage ?? false}
+      onLoadMore={handleLoadMore}
+      totalCount={totalCount}
     />
   );
 }

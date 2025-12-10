@@ -1,4 +1,4 @@
-import { RegistryItemCard } from "./registry-item-card";
+import { RegistryItemCard, extractCardDisplayData } from "./registry-item-card";
 import type { MCPRegistryServerMeta } from "./registry-item-card";
 
 /**
@@ -53,9 +53,26 @@ export interface RegistryItem {
   };
   /** Nested server object (used by MCPRegistryServer format) */
   server?: {
+    $schema?: string;
     name?: string;
     title?: string;
     description?: string;
+    version?: string;
+    websiteUrl?: string;
+    repository?: {
+      url?: string;
+      source?: string;
+      subfolder?: string;
+    };
+    remotes?: Array<{
+      type?: string;
+      url?: string;
+      headers?: Array<{
+        name?: string;
+        value?: string;
+        description?: string;
+      }>;
+    }>;
     icons?: Array<{ src: string }>;
     tools?: unknown[];
     models?: unknown[];
@@ -73,31 +90,39 @@ interface RegistryItemsSectionProps {
   title: string;
   subtitle?: string;
   onItemClick: (item: RegistryItem) => void;
+  totalCount?: number | null;
 }
 
 export function RegistryItemsSection({
   items,
   title,
   onItemClick,
+  totalCount,
 }: RegistryItemsSectionProps) {
   if (items.length === 0) return null;
+
+  const itemsText =
+    totalCount != null
+      ? `${items.length} of ${totalCount}`
+      : `${items.length} items`;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between w-max gap-2">
         <h2 className="text-lg font-medium">{title}</h2>
-        <span className="block text-xs text-muted-foreground">
-          {items.length} items
-        </span>
+        <span className="block text-xs text-muted-foreground">{itemsText}</span>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(259px,1fr))] gap-4">
-        {items.map((item) => (
-          <RegistryItemCard
-            key={item.id}
-            item={item}
-            onClick={() => onItemClick(item)}
-          />
-        ))}
+        {items.map((item) => {
+          const displayData = extractCardDisplayData(item);
+          return (
+            <RegistryItemCard
+              key={item.id}
+              {...displayData}
+              onClick={() => onItemClick(item)}
+            />
+          );
+        })}
       </div>
     </div>
   );

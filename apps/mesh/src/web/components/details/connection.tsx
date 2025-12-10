@@ -442,13 +442,16 @@ function SettingsTab({
     Record<string, unknown>
   >(connection.configuration_state ?? {});
 
-  // Fetch MCP configuration (stateSchema and scopes) directly
   const {
     stateSchema: mcpStateSchema,
-    scopes: mcpScopes,
+    scopes: fetchedScopes,
     isLoading: isMcpConfigLoading,
     error: mcpConfigError,
   } = useMcpConfiguration(connection.id);
+
+  const mcpScopes = isMcpConfigLoading
+    ? (connection.configuration_scopes ?? [])
+    : fetchedScopes;
 
   // Reset MCP state when connection changes
   // oxlint-disable-next-line ban-use-effect/ban-use-effect

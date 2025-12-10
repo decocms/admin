@@ -13,17 +13,14 @@ interface McpConfigurationResult {
   scopes?: string[];
 }
 
-/**
- * Hook to fetch MCP configuration (stateSchema and scopes) for a connection.
- * Use this in the parent component to get scopes directly without callbacks.
- */
 export function useMcpConfiguration(connectionId: string) {
   const toolCaller = createToolCaller(connectionId);
 
-  const { data: configResult, isLoading, error } = useToolCall<
-    Record<string, never>,
-    McpConfigurationResult
-  >({
+  const {
+    data: configResult,
+    isLoading,
+    error,
+  } = useToolCall<Record<string, never>, McpConfigurationResult>({
     toolCaller,
     toolName: "MCP_CONFIGURATION",
     toolInputParams: {},

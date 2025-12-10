@@ -50,8 +50,6 @@ export function IntegrationIcon({
       <img
         src={icon}
         alt={name}
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
         onError={() => setImageError(true)}
         className={cn(
           "rounded-lg object-cover border border-border",

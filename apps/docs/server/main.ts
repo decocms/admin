@@ -14,10 +14,12 @@ const runtime = withRuntime<Env>({
       return Response.redirect(new URL("/en/introduction", req.url), 302);
     }
 
-    const assets = env.ASSETS ?? createAssetServer({
-      env: "development",
-      assetsMiddlewarePath: "*",
-    });
+    const assets =
+      env.ASSETS ??
+      createAssetServer({
+        env: "development",
+        assetsMiddlewarePath: "*",
+      });
 
     return assets.fetch(req);
   },

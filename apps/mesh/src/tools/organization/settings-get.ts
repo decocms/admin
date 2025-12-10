@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth } from "../../core/mesh-context";
+import { SidebarItemSchema } from "./schema.ts";
 
 export const ORGANIZATION_SETTINGS_GET = defineTool({
   name: "ORGANIZATION_SETTINGS_GET",
@@ -12,16 +13,7 @@ export const ORGANIZATION_SETTINGS_GET = defineTool({
 
   outputSchema: z.object({
     organizationId: z.string(),
-    sidebar_items: z
-      .array(
-        z.object({
-          title: z.string(),
-          url: z.string(),
-          connectionId: z.string(),
-        }),
-      )
-      .nullable()
-      .optional(),
+    sidebar_items: z.array(SidebarItemSchema).nullable().optional(),
     createdAt: z.union([z.date(), z.string()]).optional(),
     updatedAt: z.union([z.date(), z.string()]).optional(),
   }),

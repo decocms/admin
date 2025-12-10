@@ -1,13 +1,7 @@
 import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth } from "../../core/mesh-context";
-
-const SidebarItemSchema = z.object({
-  title: z.string(),
-  url: z.string(),
-  connectionId: z.string(),
-  icon: z.string(),
-});
+import { SidebarItemSchema } from "./schema.ts";
 
 export const ORGANIZATION_SETTINGS_UPDATE = defineTool({
   name: "ORGANIZATION_SETTINGS_UPDATE",

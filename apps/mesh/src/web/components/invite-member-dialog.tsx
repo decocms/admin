@@ -90,7 +90,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
         validEmails.map(async (email) => {
           const result = await authClient.organization.inviteMember({
             email,
-            role: data.role,
+            role: data.role as "admin" | "owner",
           });
 
           if (result.error) {

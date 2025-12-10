@@ -37,17 +37,6 @@ export interface OrganizationRole {
 }
 
 /**
- * Raw role data from Better Auth API
- */
-interface RawRoleData {
-  id?: string;
-  role?: string;
-  permission?: Record<string, string[]> | null;
-  organizationId?: string;
-  createdAt?: string;
-}
-
-/**
  * Parse permission to extract static and connection-specific information
  * Format: { "self": ["PERM1", "PERM2"], "<connectionId>": ["tool1", "tool2"], "*": ["*"] }
  */
@@ -146,37 +135,14 @@ export function useOrganizationRoles() {
     queryKey: KEYS.organizationRoles(locator),
     queryFn: async () => {
       try {
-        // Try to fetch custom roles from Better Auth's dynamic access control
-        // @ts-expect-error - listRoles may not be in the type definition
-        const listRoles = authClient.organization?.listRoles;
-        if (typeof listRoles !== "function") {
-          console.warn("[useOrganizationRoles] listRoles API not available");
-          return [];
-        }
-
-        const result = await listRoles();
+        const result = await authClient.organization.listRoles();
 
         if (result?.error) {
           console.error("[useOrganizationRoles] API error:", result.error);
           return [];
         }
 
-        // Handle different response formats:
-        // - { data: Role[] } - array directly
-        // - { data: { roles: Role[] } } - wrapped in object
-        const data = result?.data;
-        if (!data) {
-          return [];
-        }
-
-        // Check if data is array directly or has a roles property
-        const rolesArray = Array.isArray(data)
-          ? data
-          : Array.isArray(data.roles)
-            ? data.roles
-            : [];
-
-        return rolesArray as RawRoleData[];
+        return result?.data ?? [];
       } catch (err) {
         console.error("[useOrganizationRoles] Fetch error:", err);
         return [];

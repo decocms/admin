@@ -234,15 +234,7 @@ export function CreateRoleDialog({
     mutationFn: async (data: RoleFormData) => {
       const permission = buildPermission(data);
 
-      // Create the role using Better Auth's dynamic access control
-      // API expects: { role: string, permission: Record<string, string[]> }
-      // @ts-expect-error - createRole may not be in the type definition
-      const createRole = authClient.organization?.createRole;
-      if (typeof createRole !== "function") {
-        throw new Error("Create role API not available");
-      }
-
-      const result = await createRole({
+      const result = await authClient.organization.createRole({
         role: data.roleName.toLowerCase().replace(/\s+/g, "-"),
         permission,
       });
@@ -274,15 +266,7 @@ export function CreateRoleDialog({
     mutationFn: async (formData: RoleFormData & { roleId: string }) => {
       const permission = buildPermission(formData);
 
-      // Update the role using Better Auth's dynamic access control
-      // API expects: { roleId: string, data: { permission: Record<string, string[]> } }
-      // @ts-expect-error - updateRole may not be in the type definition
-      const updateRole = authClient.organization?.updateRole;
-      if (typeof updateRole !== "function") {
-        throw new Error("Update role API not available");
-      }
-
-      const result = await updateRole({
+      const result = await authClient.organization.updateRole({
         roleId: formData.roleId,
         data: {
           permission,
@@ -314,13 +298,7 @@ export function CreateRoleDialog({
 
   const deleteRoleMutation = useMutation({
     mutationFn: async (roleId: string) => {
-      // @ts-expect-error - deleteRole may not be in the type definition
-      const deleteRole = authClient.organization?.deleteRole;
-      if (typeof deleteRole !== "function") {
-        throw new Error("Delete role API not available");
-      }
-
-      const result = await deleteRole({ roleId });
+      const result = await authClient.organization.deleteRole({ roleId });
 
       if (result?.error) {
         throw new Error(result.error.message);

@@ -298,7 +298,9 @@ export default function StoreAppDetail() {
 
     setIsInstalling(true);
     try {
-      const { token, error } = await authenticateMcp(connectionData.connection_url);
+      const { token, error } = await authenticateMcp(
+        connectionData.connection_url,
+      );
 
       // If authentication error occurs, show and stop
       if (error) {
@@ -310,7 +312,7 @@ export default function StoreAppDetail() {
       if (token) {
         (connectionData as any).connection_token = token;
       }
-      
+
       const tx = connectionsCollection.insert(connectionData);
       await tx.isPersisted.promise;
 

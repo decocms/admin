@@ -3,7 +3,7 @@ import { slugify } from "@/web/utils/slugify";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CollectionSearch } from "../collections/collection-search";
 import {
   type RegistryItem,
@@ -32,6 +32,7 @@ export function StoreDiscoveryUI({
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { org } = useProjectContext();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtered items based on search
   const filteredItems = !search
@@ -71,6 +72,20 @@ export function StoreDiscoveryUI({
       search: { registryId },
     });
   };
+
+  // Infinite scroll: load more when near bottom
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || !onLoadMore || search || isLoadingMore) return;
+
+    const target = e.currentTarget;
+    const scrollBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    // Load more when within 200px of bottom
+    if (scrollBottom < 200) {
+      onLoadMore();
+    }
+  };
   // Loading state
   if (isLoading) {
     return (
@@ -109,7 +124,11 @@ export function StoreDiscoveryUI({
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto"
+        onScroll={handleScroll}
+      >
         <div className="p-5">
           <div>
             {items.length === 0 ? (
@@ -154,26 +173,13 @@ export function StoreDiscoveryUI({
                   />
                 )}
 
-                {/* Load More Button */}
-                {hasMore && !search && (
-                  <div className="flex justify-center pt-4">
-                    <button
-                      onClick={onLoadMore}
-                      disabled={isLoadingMore}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {isLoadingMore ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="arrow_downward" size={16} />
-                          Load More
-                        </>
-                      )}
-                    </button>
+                {/* Loading indicator */}
+                {hasMore && !search && isLoadingMore && (
+                  <div className="flex justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">Loading more items...</span>
+                    </div>
                   </div>
                 )}
               </div>

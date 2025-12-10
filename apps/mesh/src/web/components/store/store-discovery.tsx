@@ -1,10 +1,8 @@
 import { useConnection } from "@/web/hooks/collections/use-connection";
-import { useToolCall } from "@/web/hooks/use-tool-call";
 import { createToolCaller } from "@/tools/client";
 import { StoreDiscoveryUI } from "./store-discovery-ui";
 import type { RegistryItem } from "./registry-items-section";
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { KEYS } from "@/web/lib/query-keys";
 
 interface StoreDiscoveryProps {
@@ -15,11 +13,6 @@ const PAGE_SIZE = 42;
 
 export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const registryConnection = useConnection(registryId);
-  const queryClient = useQueryClient();
-  const [offset, setOffset] = useState(0);
-  const [allItems, setAllItems] = useState<RegistryItem[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const lastRegistryIdRef = useRef<string>("");
 
   // Find the LIST tool from the registry connection
   const listToolName = !registryConnection?.tools
@@ -34,127 +27,114 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const toolCaller = createToolCaller(registryId);
 
   const {
-    data: listResults,
+    data,
     isLoading,
     error,
-  } = useToolCall({
-    toolCaller,
-    toolName: listToolName,
-    toolInputParams: { offset, limit: PAGE_SIZE },
-    connectionId: registryId,
-    enabled: !!listToolName && hasMore,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: KEYS.toolCall(
+      listToolName,
+      JSON.stringify({ limit: PAGE_SIZE }),
+      registryId,
+    ),
+    queryFn: async ({ pageParam }) => {
+      // Use cursor if available, otherwise fallback to offset for backward compatibility
+      const params = pageParam
+        ? { cursor: pageParam, limit: PAGE_SIZE }
+        : { limit: PAGE_SIZE };
+      const result = await toolCaller(listToolName, params);
+      return result;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      // Extract items from last page
+      let items: RegistryItem[] = [];
+
+      if (Array.isArray(lastPage)) {
+        items = lastPage;
+      } else if (typeof lastPage === "object" && lastPage !== null) {
+        const itemsKey = Object.keys(lastPage).find((key) =>
+          Array.isArray(lastPage[key as keyof typeof lastPage]),
+        );
+        if (itemsKey) {
+          items = lastPage[itemsKey as keyof typeof lastPage] as RegistryItem[];
+        }
+      }
+
+      // Check if hasMore indicates there are more pages
+      const hasMore =
+        typeof lastPage === "object" && lastPage !== null
+          ? ((lastPage as { hasMore?: boolean }).hasMore ?? false)
+          : false;
+
+      // Check if API provides a nextCursor field
+      const nextCursor =
+        typeof lastPage === "object" && lastPage !== null
+          ? (lastPage as { nextCursor?: string; cursor?: string }).nextCursor ||
+            (lastPage as { nextCursor?: string; cursor?: string }).cursor
+          : undefined;
+
+      // Prefer API-provided cursor if available
+      if (nextCursor) {
+        return nextCursor;
+      }
+
+      // Fallback: Use the last item's ID as the next cursor if there are more pages
+      if (hasMore && items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem?.id) {
+          return lastItem.id;
+        }
+      }
+
+      return undefined;
+    },
+    enabled: !!listToolName,
     staleTime: 60 * 60 * 1000, // 1 hour - keep data fresh longer
   });
 
-  // Extract items and pagination info from results
-  const currentPageItems: RegistryItem[] = useMemo(() => {
-    if (!listResults) return [];
+  // Flatten all pages into a single array of items
+  const allItems = (() => {
+    if (!data?.pages) return [];
 
-    if (Array.isArray(listResults)) {
-      return listResults;
-    }
+    const items: RegistryItem[] = [];
 
-    if (typeof listResults === "object" && listResults !== null) {
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
+    for (const page of data.pages) {
+      let pageItems: RegistryItem[] = [];
 
-      if (itemsKey) {
-        return listResults[itemsKey as keyof typeof listResults] as RegistryItem[];
-      }
-    }
-
-    return [];
-  }, [listResults]);
-
-  const currentHasMore = useMemo(() => {
-    if (!listResults || typeof listResults !== "object") return false;
-    return (listResults as { hasMore?: boolean }).hasMore ?? false;
-  }, [listResults]);
-
-  // Accumulate items when new page loads
-  useEffect(() => {
-    if (currentPageItems.length > 0 && !isLoading) {
-      // Only add items if this is a new page (offset matches current items length)
-      if (offset === allItems.length) {
-        setAllItems((prev) => [...prev, ...currentPageItems]);
-        setHasMore(currentHasMore);
-      }
-    }
-  }, [currentPageItems, currentHasMore, offset, allItems.length, isLoading]);
-
-  // Reconstruct accumulated items from cache when component mounts or registry changes
-  useEffect(() => {
-    if (!registryId || !listToolName) return;
-
-    // If registry changed, reset everything
-    if (lastRegistryIdRef.current !== registryId) {
-      setAllItems([]);
-      setOffset(0);
-      setHasMore(true);
-      lastRegistryIdRef.current = registryId;
-      return;
-    }
-
-    // If same registry, try to reconstruct from cache
-    // Check cache for pages we might have loaded
-    const reconstructedItems: RegistryItem[] = [];
-    let foundPages = 0;
-    let lastHasMore = true;
-
-    for (let i = 0; i < 10; i++) { // Check up to 10 pages
-      const pageOffset = i * PAGE_SIZE;
-      const cacheKey = KEYS.toolCall(
-        listToolName,
-        JSON.stringify({ offset: pageOffset, limit: PAGE_SIZE }),
-        registryId,
-      );
-      const cachedData = queryClient.getQueryData(cacheKey) as
-        | { items?: RegistryItem[]; hasMore?: boolean }
-        | RegistryItem[]
-        | undefined;
-
-      if (cachedData) {
-        const items = Array.isArray(cachedData)
-          ? cachedData
-          : cachedData.items || [];
-        
-        if (items.length > 0) {
-          reconstructedItems.push(...items);
-          foundPages++;
-          lastHasMore = Array.isArray(cachedData)
-            ? true
-            : cachedData.hasMore ?? true;
-        } else {
-          break;
+      if (Array.isArray(page)) {
+        pageItems = page;
+      } else if (typeof page === "object" && page !== null) {
+        const itemsKey = Object.keys(page).find((key) =>
+          Array.isArray(page[key as keyof typeof page]),
+        );
+        if (itemsKey) {
+          pageItems = page[itemsKey as keyof typeof page] as RegistryItem[];
         }
-      } else {
-        break;
       }
+
+      items.push(...pageItems);
     }
 
-    // Only update if we found cached data and current state is empty
-    if (foundPages > 0 && allItems.length === 0) {
-      setAllItems(reconstructedItems);
-      setOffset(reconstructedItems.length);
-      setHasMore(lastHasMore);
-    }
-  }, [registryId, listToolName, queryClient, allItems.length]);
+    return items;
+  })();
 
   const handleLoadMore = () => {
-    if (!isLoading && hasMore) {
-      setOffset(allItems.length);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
   };
 
   return (
     <StoreDiscoveryUI
       items={allItems}
-      isLoading={isLoading && offset === 0}
-      isLoadingMore={isLoading && offset > 0}
+      isLoading={isLoading}
+      isLoadingMore={isFetchingNextPage}
       error={error}
       registryId={registryId}
-      hasMore={hasMore}
+      hasMore={hasNextPage ?? false}
       onLoadMore={handleLoadMore}
     />
   );

@@ -16,6 +16,7 @@ import {
   TOOL_CONNECTION_CONFIGURE,
 } from "@/web/utils/constants";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import { PinToSidebarButton } from "@/web/components/pin-to-sidebar-button";
 import {
   useConnection,
   useConnectionsCollection,
@@ -1117,6 +1118,10 @@ function CollectionContent({
           sortDirection={sortDirection}
           onSort={handleSort}
           sortOptions={sortOptions}
+        />
+        <PinToSidebarButton
+          connectionId={connectionId}
+          title={`${collectionName}s`}
         />
         {showCreateInToolbar && createButton}
       </ViewActions>

@@ -94,14 +94,22 @@ export interface Organization {
   createdAt: Date | string;
 }
 
+export interface SidebarItem {
+  title: string;
+  url: string;
+  connectionId: string;
+}
+
 export interface OrganizationSettingsTable {
   organizationId: string;
+  sidebar_items: JsonArray<SidebarItem[]> | null;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
 
 export interface OrganizationSettings {
   organizationId: string;
+  sidebar_items: SidebarItem[] | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

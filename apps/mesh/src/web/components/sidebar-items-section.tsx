@@ -1,21 +1,43 @@
+import { SidebarItem } from "@/storage/types";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
-import { Suspense } from "react";
-import type { SidebarItemEntity } from "../hooks/use-sidebar-items-collection";
-import { useSidebarItemsCollection } from "../hooks/use-sidebar-items-collection";
+import { PropsWithChildren, Suspense } from "react";
+import { toast } from "sonner";
+import {
+  getOrganizationSettingsCollection,
+  useOrganizationSettings,
+} from "../hooks/collections/use-organization-settings";
+import { useProjectContext } from "../providers/project-context-provider";
 
 /**
  * Individual sidebar item
  */
-function SidebarItemListItem({ item }: { item: SidebarItemEntity }) {
+function SidebarItemListItem({ item }: { item: SidebarItem }) {
   const navigate = useNavigate();
-  const sidebarItemsCollection = useSidebarItemsCollection();
+  const { org } = useProjectContext();
+  const settings = useOrganizationSettings(org.id);
+  const collection = getOrganizationSettingsCollection(org.id);
+
+  const handleDelete = async () => {
+    const currentItems = settings?.sidebar_items || [];
+    const updatedItems = currentItems.filter(
+      (sidebarItem) => sidebarItem.url !== item.url,
+    );
+
+    const tx = collection.update(org.id, (draft) => {
+      draft.sidebar_items = updatedItems;
+    });
+    tx.isPersisted.promise.catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to delete sidebar item: ${message}`);
+    });
+  };
 
   return (
     <SidebarMenuItem>
@@ -26,7 +48,9 @@ function SidebarItemListItem({ item }: { item: SidebarItemEntity }) {
         }}
       >
         <div className="flex-1 min-w-0 flex flex-col items-start">
-          <span className="truncate text-sm w-full">{item.title}</span>
+          <span className="truncate text-sm w-full capitalize">
+            {item.title.toLocaleLowerCase()}
+          </span>
         </div>
         <Icon
           name="close"
@@ -35,7 +59,7 @@ function SidebarItemListItem({ item }: { item: SidebarItemEntity }) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            sidebarItemsCollection.delete(item.id);
+            handleDelete();
           }}
         />
       </SidebarMenuButton>
@@ -48,30 +72,21 @@ function SidebarItemListItem({ item }: { item: SidebarItemEntity }) {
  * Only shows when there are pinned sidebar items
  */
 function SidebarItemsSectionContent() {
-  const sidebarItemsCollection = useSidebarItemsCollection();
-  const { data: items } = useLiveSuspenseQuery(
-    (q) =>
-      q
-        .from({ item: sidebarItemsCollection })
-        .orderBy(({ item }) => item?.title, "asc"),
-    [sidebarItemsCollection],
-  );
+  const { org } = useProjectContext();
+  const settings = useOrganizationSettings(org.id);
 
-  if (!items || items.length === 0) {
+  const sidebarItems = settings?.sidebar_items;
+
+  if (!sidebarItems?.length) {
     return null;
   }
 
   return (
-    <>
-      <SidebarMenuItem>
-        <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
-          <span>Pinned Views</span>
-        </div>
-      </SidebarMenuItem>
-      {items.map((item) => (
-        <SidebarItemListItem key={item.id} item={item} />
+    <SidebarItemLayout>
+      {sidebarItems.map((item) => (
+        <SidebarItemListItem key={item.url} item={item} />
       ))}
-    </>
+    </SidebarItemLayout>
   );
 }
 
@@ -88,6 +103,20 @@ function SidebarItemSkeleton() {
   );
 }
 
+function SidebarItemLayout({ children }: PropsWithChildren) {
+  return (
+    <>
+      <SidebarSeparator className="my-2 -ml-1" />
+      <SidebarMenuItem>
+        <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
+          <span>Pinned Views</span>
+        </div>
+      </SidebarMenuItem>
+      {children}
+    </>
+  );
+}
+
 /**
  * Sidebar items section - renders above Recent Threads
  */
@@ -95,19 +124,13 @@ export function SidebarItemsSection() {
   return (
     <Suspense
       fallback={
-        <>
-          <SidebarMenuItem>
-            <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span>Pinned Views</span>
-            </div>
-          </SidebarMenuItem>
+        <SidebarItemLayout>
           <SidebarItemSkeleton />
           <SidebarItemSkeleton />
-        </>
+        </SidebarItemLayout>
       }
     >
       <SidebarItemsSectionContent />
     </Suspense>
   );
 }
-

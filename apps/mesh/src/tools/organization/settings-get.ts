@@ -12,6 +12,16 @@ export const ORGANIZATION_SETTINGS_GET = defineTool({
 
   outputSchema: z.object({
     organizationId: z.string(),
+    sidebar_items: z
+      .array(
+        z.object({
+          title: z.string(),
+          url: z.string(),
+          connectionId: z.string(),
+        }),
+      )
+      .nullable()
+      .optional(),
     createdAt: z.union([z.date(), z.string()]).optional(),
     updatedAt: z.union([z.date(), z.string()]).optional(),
   }),

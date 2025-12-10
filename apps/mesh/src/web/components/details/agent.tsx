@@ -1,19 +1,20 @@
 import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
+import { ToolSetSelector } from "@/web/components/tool-set-selector.tsx";
 import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Info, Loader2, Upload } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { AgentSchema } from "@decocms/bindings/agent";
-import { z } from "zod";
-import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import { useParams } from "@tanstack/react-router";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { ToolSetSelector } from "@/web/components/tool-set-selector.tsx";
+import { AgentSchema } from "@decocms/bindings/agent";
+import { useParams } from "@tanstack/react-router";
+import { Info, Loader2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { PinToSidebarButton } from "../pin-to-sidebar-button";
+import { ViewActions, ViewLayout, ViewTabs } from "./layout";
 
 export type Agent = z.infer<typeof AgentSchema>;
 
@@ -96,7 +97,7 @@ export function AgentDetailsView({
   const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   const { connectionId } = useParams({
-    strict: false,
+    from: "/shell/$org/mcps/$connectionId/$collectionName/$itemId",
   });
 
   const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
@@ -224,6 +225,7 @@ export function AgentDetailsView({
       </ViewTabs>
 
       <ViewActions>
+        <PinToSidebarButton connectionId={connectionId} title={item.title} />
         <Button
           className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-8 text-xs font-medium"
           onClick={handleSubmit(onSubmit)}

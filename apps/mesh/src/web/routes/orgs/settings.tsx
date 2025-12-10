@@ -209,7 +209,9 @@ export default function OrgSettings() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: KEYS.organizations() });
-      queryClient.invalidateQueries({ queryKey: KEYS.activeOrganization(org.slug) });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.activeOrganization(org.slug),
+      });
       toast.success("Organization settings updated successfully");
 
       // If slug changed, navigate to new slug
@@ -396,7 +398,10 @@ export default function OrgSettings() {
                   <div>
                     <Button
                       onClick={() =>
-                        navigate({ to: "/$org/mcps", params: { org: org.slug } })
+                        navigate({
+                          to: "/$org/mcps",
+                          params: { org: org.slug },
+                        })
                       }
                     >
                       Manage Connections

@@ -35,7 +35,7 @@ export function useConnectionsCollection() {
   // Use org as the connectionKey, and default toolCaller (mesh tools)
   const toolCaller = createToolCaller();
 
-  return useCollection<ConnectionEntity>(org, "CONNECTIONS", toolCaller);
+  return useCollection<ConnectionEntity>(org.slug, "CONNECTIONS", toolCaller);
 }
 
 /**

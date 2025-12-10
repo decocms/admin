@@ -33,5 +33,8 @@ export interface ConnectionStoragePort {
 
 export interface OrganizationSettingsStoragePort {
   get(organizationId: string): Promise<OrganizationSettings | null>;
-  upsert(organizationId: string): Promise<OrganizationSettings>;
+  upsert(
+    organizationId: string,
+    data?: Partial<Pick<OrganizationSettings, "sidebar_items">>,
+  ): Promise<OrganizationSettings>;
 }

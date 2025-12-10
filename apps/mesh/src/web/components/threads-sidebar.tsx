@@ -2,6 +2,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense } from "react";
@@ -52,7 +53,7 @@ function ThreadListItem({
           <Icon
             name="close"
             size={16}
-            className="text-muted-foreground opacity-0 group-hover/thread:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+            className="text-muted-foreground opacity-0 group-hover/thread:opacity-50 hover:opacity-100 cursor-pointer"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -123,6 +124,7 @@ function ThreadItemSkeleton() {
 export function ThreadsSidebarSection() {
   return (
     <>
+      <SidebarSeparator className="my-2 -ml-1" />
       <SidebarMenuItem>
         <div className="px-2 py-0 text-xs font-medium text-muted-foreground flex items-center justify-between">
           <span>Recent Threads</span>

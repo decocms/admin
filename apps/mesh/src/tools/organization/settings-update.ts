@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineTool } from "../../core/define-tool";
 import { requireAuth } from "../../core/mesh-context";
+import { SidebarItemSchema } from "./schema.ts";
 
 export const ORGANIZATION_SETTINGS_UPDATE = defineTool({
   name: "ORGANIZATION_SETTINGS_UPDATE",
@@ -8,10 +9,12 @@ export const ORGANIZATION_SETTINGS_UPDATE = defineTool({
 
   inputSchema: z.object({
     organizationId: z.string(),
+    sidebar_items: z.array(SidebarItemSchema).optional(),
   }),
 
   outputSchema: z.object({
     organizationId: z.string(),
+    sidebar_items: z.array(SidebarItemSchema).nullable().optional(),
     createdAt: z.union([z.date(), z.string()]),
     updatedAt: z.union([z.date(), z.string()]),
   }),
@@ -26,6 +29,9 @@ export const ORGANIZATION_SETTINGS_UPDATE = defineTool({
 
     const settings = await ctx.storage.organizationSettings.upsert(
       input.organizationId,
+      {
+        sidebar_items: input.sidebar_items,
+      },
     );
 
     return settings;

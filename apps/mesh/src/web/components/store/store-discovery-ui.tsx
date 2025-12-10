@@ -61,7 +61,7 @@ export function StoreDiscoveryUI({
     const appNameSlug = slugify(itemName);
     navigate({
       to: "/$org/store/$appName",
-      params: { org, appName: appNameSlug },
+      params: { org: org.slug, appName: appNameSlug },
       search: { registryId },
     });
   };

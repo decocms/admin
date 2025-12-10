@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { Icon } from "./icon.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -7,9 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "./sidebar.tsx";
-import { Icon } from "./icon.tsx";
 import { Skeleton } from "./skeleton.tsx";
 
 export interface NavigationSidebarItem {
@@ -59,13 +58,7 @@ export function NavigationSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {additionalContent && (
-                <>
-                  <SidebarSeparator className="my-2 -ml-1" />
-                  {additionalContent}
-                </>
-              )}
+              {additionalContent}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

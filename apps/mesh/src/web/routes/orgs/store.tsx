@@ -35,7 +35,7 @@ export default function StorePage() {
   const handleAddNewRegistry = () => {
     navigate({
       to: "/$org/mcps",
-      params: { org },
+      params: { org: org.slug },
       search: { action: "create" },
     });
   };

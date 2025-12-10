@@ -6,7 +6,6 @@
 
 // Main components
 export { StoreDiscovery } from "./store-discovery";
-export { ReadmeViewer } from "./readme-viewer";
 
 // Item components
 export type {

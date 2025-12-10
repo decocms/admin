@@ -66,6 +66,21 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     staleTime: 60 * 60 * 1000, // 1 hour - keep data fresh longer
   });
 
+  // Extract totalCount from first page if available
+  const totalCount = (() => {
+    if (!data?.pages || data.pages.length === 0) return null;
+    const firstPage = data.pages[0];
+    if (
+      typeof firstPage === "object" &&
+      firstPage !== null &&
+      "totalCount" in firstPage &&
+      typeof firstPage.totalCount === "number"
+    ) {
+      return firstPage.totalCount;
+    }
+    return null;
+  })();
+
   // Flatten all pages into a single array of items
   const flattenedItems = flattenPaginatedItems<RegistryItem>(data?.pages);
 
@@ -84,6 +99,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
       registryId={registryId}
       hasMore={hasNextPage ?? false}
       onLoadMore={handleLoadMore}
+      totalCount={totalCount}
     />
   );
 }

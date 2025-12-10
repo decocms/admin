@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { z } from "zod";
 import { type Binder, createBindingChecker } from "@decocms/bindings";
 import {
   BaseCollectionEntitySchema,
@@ -7,6 +7,7 @@ import {
 import { AGENTS_BINDING } from "@decocms/bindings/agent";
 import { LANGUAGE_MODEL_BINDING } from "@decocms/bindings/llm";
 import { MCP_BINDING } from "@decocms/bindings/mcp";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import type { ConnectionEntity } from "@/tools/connection/schema";
 import { WORKFLOW_BINDING } from "@decocms/bindings/workflow";
 
@@ -19,6 +20,53 @@ const BUILTIN_BINDINGS: Record<string, Binder> = {
   WORKFLOWS: WORKFLOW_BINDING,
   MCP: MCP_BINDING,
 };
+
+/**
+ * Simplified binding definition format (JSON Schema based)
+ */
+export interface BindingDefinition {
+  /** Tool name to match (e.g., "MY_TOOL", "COLLECTION_USERS_LIST") */
+  name: string;
+  /** JSON Schema for the tool's input parameters */
+  inputSchema?: Record<string, unknown>;
+  /** JSON Schema for the tool's output */
+  outputSchema?: Record<string, unknown>;
+}
+
+/**
+ * Converts a simplified binding definition to Binder format
+ */
+function convertBindingToBinder(bindings: BindingDefinition[]): Binder {
+  return bindings.map((binding) => ({
+    name: binding.name,
+    inputSchema: binding.inputSchema
+      ? (() => {
+          try {
+            return convertJsonSchemaToZod(binding.inputSchema);
+          } catch (error) {
+            console.error(
+              `Failed to convert input schema for ${binding.name}:`,
+              error,
+            );
+            return z.object({});
+          }
+        })()
+      : z.object({}),
+    outputSchema: binding.outputSchema
+      ? (() => {
+          try {
+            return convertJsonSchemaToZod(binding.outputSchema);
+          } catch (error) {
+            console.error(
+              `Failed to convert output schema for ${binding.name}:`,
+              error,
+            );
+            return z.object({});
+          }
+        })()
+      : z.object({}),
+  }));
+}
 
 /**
  * Checks if a connection implements a binding by validating its tools
@@ -53,27 +101,85 @@ export function connectionImplementsBinding(
 }
 
 /**
+ * Options for useBindingConnections hook
+ */
+interface UseBindingConnectionsOptions {
+  connections: ConnectionEntity[] | undefined;
+  /**
+   * Binding filter - can be:
+   * - A well-known binding name (e.g., "LLMS", "AGENTS", "MCP")
+   * - A custom binding schema array (BindingDefinition[]) for filtering connections
+   */
+  binding?: string | BindingDefinition[];
+}
+
+/**
  * Hook to filter connections that implement a specific binding.
  * Returns only connections whose tools satisfy the binding requirements.
  *
- * @param connections - Array of connections to filter
- * @param bindingName - Name of the binding to check ("LLMS" | "AGENTS")
+ * @param options - Object with connections and binding
  * @returns Filtered array of connections that implement the binding
+ *
+ * @example
+ * // Using well-known binding name
+ * useBindingConnections({ connections: allConnections, binding: "LLMS" })
+ *
+ * @example
+ * // Using custom binding schema
+ * useBindingConnections({ connections: allConnections, binding: [{ name: "MY_TOOL", inputSchema: {...} }] })
  */
-export function useBindingConnections(
-  connections: ConnectionEntity[] | undefined,
-  bindingName: string,
-): ConnectionEntity[] {
-  const binding = BUILTIN_BINDINGS[bindingName];
+export function useBindingConnections({
+  connections,
+  binding,
+}: UseBindingConnectionsOptions): ConnectionEntity[] {
+  // Resolve binding definition:
+  // - If binding is a string, look up in BUILTIN_BINDINGS
+  // - If binding is an array, convert JSON schemas to Binder
+  const resolvedBinding = (() => {
+    if (!binding) {
+      return undefined;
+    }
 
-  return useMemo(
-    () =>
-      !connections || !binding
-        ? []
-        : connections.filter((conn) =>
-            connectionImplementsBinding(conn, binding),
-          ),
-    [connections, binding],
+    if (typeof binding === "string") {
+      const upperBinding = binding.toUpperCase();
+      const builtinBinding = BUILTIN_BINDINGS[upperBinding];
+
+      if (!builtinBinding) {
+        console.warn(
+          `[useBindingConnections] Unknown binding "${binding}". ` +
+            `Available bindings: ${Object.keys(BUILTIN_BINDINGS).join(", ")}. ` +
+            `Returning all connections without filtering.`,
+        );
+        return undefined;
+      }
+
+      return builtinBinding;
+    }
+
+    // Validate binding array
+    if (binding.length === 0) {
+      console.warn(
+        "[useBindingConnections] Empty binding array provided. " +
+          "Returning all connections without filtering.",
+      );
+      return undefined;
+    }
+
+    return convertBindingToBinder(binding);
+  })();
+
+  if (!connections) {
+    return [];
+  }
+
+  // If no binding filter, return all connections
+  if (!resolvedBinding) {
+    return connections;
+  }
+
+  // Filter connections by binding
+  return connections.filter((conn) =>
+    connectionImplementsBinding(conn, resolvedBinding),
   );
 }
 
@@ -283,10 +389,7 @@ function detectCollections(
 export function useCollectionBindings(
   connection: ConnectionEntity | undefined,
 ): ValidatedCollection[] {
-  return useMemo(
-    () => detectCollections(connection?.tools ?? null),
-    [connection?.tools],
-  );
+  return detectCollections(connection?.tools ?? null);
 }
 
 /**
@@ -299,15 +402,11 @@ export function useCollectionBindings(
 export function useRegistryConnections(
   connections: ConnectionEntity[] | undefined,
 ): ConnectionEntity[] {
-  return useMemo(
-    () =>
-      !connections
-        ? []
-        : connections.filter((conn) =>
-            extractCollectionNames(conn.tools).find(
-              (name) => name === "REGISTRY_APP",
-            ),
-          ),
-    [connections],
-  );
+  return !connections
+    ? []
+    : connections.filter((conn) =>
+        extractCollectionNames(conn.tools).find(
+          (name) => name === "REGISTRY_APP",
+        ),
+      );
 }

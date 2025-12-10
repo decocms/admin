@@ -20,7 +20,7 @@ import {
   Play,
   Plus,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { ViewLayout } from "./layout";
@@ -195,9 +195,7 @@ export function useTool(toolName: string, connectionId: string) {
   }, [mcp.error]);
 
   // Find the tool definition
-  const tool = useMemo(() => {
-    return mcp.tools?.find((t) => t.name === toolName);
-  }, [mcp.tools, toolName]);
+  const tool = mcp.tools?.find((t) => t.name === toolName);
 
   // Check if MCP is still loading/discovering
   const isLoading =

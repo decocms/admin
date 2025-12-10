@@ -22,13 +22,10 @@ jobs:
         run: bun install -g deco-cli
 
       - name: Install dependencies
-        run: |
-          cd docs
-          bun install
+        run: bun install
 
       - name: Deploy
-        run: |
-          cd docs
-          bun run deploy
+        run: bun run deploy
+        working-directory: apps/docs
         env:
           DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN_DOCS }}

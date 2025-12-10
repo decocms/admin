@@ -6,7 +6,6 @@
  */
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import type { ToolCaller } from "../../tools/client";
 import { KEYS } from "../lib/query-keys";
 
@@ -52,11 +51,8 @@ export function useToolCall<TInput, TOutput>(
     staleTime = 60_000,
   } = options;
 
-  // Memoize the input params to prevent unnecessary re-fetches
-  const paramsKey = useMemo(
-    () => JSON.stringify(toolInputParams),
-    [toolInputParams],
-  );
+  // Serialize the input params for the query key
+  const paramsKey = JSON.stringify(toolInputParams);
 
   return useQuery({
     queryKey: KEYS.toolCall(toolName, paramsKey),

@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 import { Icon } from "./icon.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip.tsx";
 import {

@@ -1,3 +1,4 @@
+/* eslint-disable ban-memoization/ban-memoization */
 import { useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@deco/ui/components/button.tsx";

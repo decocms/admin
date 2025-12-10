@@ -5,7 +5,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Info, Loader2, Upload } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { AgentSchema } from "@decocms/bindings/agent";
 import { z } from "zod";
@@ -99,10 +99,7 @@ export function AgentDetailsView({
     strict: false,
   });
 
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
   const collection = useCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,

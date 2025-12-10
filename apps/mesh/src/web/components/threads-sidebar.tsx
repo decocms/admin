@@ -4,10 +4,11 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useChat } from "../providers/chat-provider";
-import { useThreads } from "../hooks/use-chat-store";
 import { Suspense } from "react";
+import { useThreadsCollection } from "../hooks/use-chat-store";
+import { useCollectionList } from "../hooks/use-collections";
 import { useDecoChatOpen } from "../hooks/use-deco-chat-open";
+import { useChat } from "../providers/chat-provider";
 import type { Thread } from "../types/chat-threads";
 
 /**
@@ -64,24 +65,23 @@ function ThreadListItem({
   );
 }
 
+const MAX_THREADS_ON_SIDEBAR = 5;
+const FILTERS = [{ column: "hidden", value: false }];
+
 /**
  * Renders the list of recent chat threads
  */
 function RecentThreadsList() {
   const { activeThreadId } = useChat();
-  const threads = useThreads() ?? [];
-  const maxThreads = 5; // Show up to 5 recent threads
+  const threadsCollection = useThreadsCollection();
+  const threads = useCollectionList(threadsCollection, {
+    sortKey: "updated_at",
+    sortDirection: "desc",
+    maxItems: MAX_THREADS_ON_SIDEBAR,
+    filters: FILTERS,
+  });
 
-  // Get the most recent threads (limited, filtered and sorted)
-  const recentThreads = threads
-    .filter((t) => !t.hidden)
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    )
-    .slice(0, maxThreads);
-
-  if (recentThreads.length === 0) {
+  if (threads.length === 0) {
     return (
       <SidebarMenuItem>
         <div className="px-4 py-2 text-xs text-muted-foreground text-center">
@@ -93,13 +93,12 @@ function RecentThreadsList() {
 
   return (
     <>
-      {recentThreads.map((thread) => (
-        <Suspense key={thread.id} fallback={<ThreadItemSkeleton />}>
-          <ThreadListItem
-            thread={thread}
-            isActive={thread.id === activeThreadId}
-          />
-        </Suspense>
+      {threads.map((thread) => (
+        <ThreadListItem
+          key={thread.id}
+          thread={thread}
+          isActive={thread.id === activeThreadId}
+        />
       ))}
     </>
   );
@@ -129,7 +128,15 @@ export function ThreadsSidebarSection() {
           <span>Recent Threads</span>
         </div>
       </SidebarMenuItem>
-      <Suspense fallback={<ThreadItemSkeleton />}>
+      <Suspense
+        fallback={
+          <>
+            <ThreadItemSkeleton />
+            <ThreadItemSkeleton />
+            <ThreadItemSkeleton />
+          </>
+        }
+      >
         <RecentThreadsList />
       </Suspense>
     </>

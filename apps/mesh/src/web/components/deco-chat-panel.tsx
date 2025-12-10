@@ -11,20 +11,70 @@ import { DecoChatAgentSelector } from "@deco/ui/components/deco-chat-agent-selec
 import { DecoChatAside } from "@deco/ui/components/deco-chat-aside.tsx";
 import { DecoChatEmptyState } from "@deco/ui/components/deco-chat-empty-state.tsx";
 import { DecoChatInputV2 } from "@deco/ui/components/deco-chat-input-v2.tsx";
-import { MessageAssistant } from "./chat/message-assistant.tsx";
-import { MessageList, MessageFooter } from "./chat/message-list.tsx";
-import { MessageUser } from "./chat/message-user.tsx";
 import { DecoChatModelSelectorRich } from "@deco/ui/components/deco-chat-model-selector-rich.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Metadata } from "@deco/ui/types/chat-metadata.ts";
 import { useNavigate } from "@tanstack/react-router";
 import { type UIMessage } from "ai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useChat } from "../providers/chat-provider";
+import { MessageAssistant } from "./chat/message-assistant.tsx";
+import { MessageFooter, MessageList } from "./chat/message-list.tsx";
+import { MessageUser } from "./chat/message-user.tsx";
 
 // Capybara avatar URL from decopilotAgent
 const CAPYBARA_AVATAR_URL =
   "https://assets.decocache.com/decocms/fd07a578-6b1c-40f1-bc05-88a3b981695d/f7fc4ffa81aec04e37ae670c3cd4936643a7b269.png";
+
+function ChatInput({
+  onSubmit,
+  onStop,
+  disabled,
+  isStreaming,
+  placeholder,
+  leftActions,
+}: {
+  onSubmit: (text: string) => Promise<void>;
+  onStop: () => void;
+  disabled: boolean;
+  isStreaming: boolean;
+  placeholder: string;
+  leftActions: React.ReactNode;
+}) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input?.trim() || isStreaming) {
+      return;
+    }
+    const text = input.trim();
+    try {
+      await onSubmit(text);
+      // Only clear input after successful submission so user can retry
+      setInput("");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to send message";
+      toast.error(message);
+    }
+  };
+
+  return (
+    <DecoChatInputV2
+      value={input}
+      onChange={setInput}
+      onSubmit={handleSubmit}
+      onStop={onStop}
+      disabled={disabled}
+      isStreaming={isStreaming}
+      placeholder={placeholder}
+      leftActions={leftActions}
+    />
+  );
+}
 
 export function DecoChatPanel() {
   const { data: session } = authClient.useSession();
@@ -47,51 +97,52 @@ export function DecoChatPanel() {
 
   const { status } = chat;
 
-  // Local state for input
-  const [input, setInput] = useState("");
-
   // Get all connections
-  const allConnections = useConnections() ?? [];
+  const allConnections = useConnections();
 
   // Filter connections by binding type
-  const [modelsConnection] = useBindingConnections(allConnections, "LLMS");
-  const [agentsConnection] = useBindingConnections(allConnections, "AGENTS");
+  const [modelsConnection] = useBindingConnections({
+    connections: allConnections,
+    binding: "LLMS",
+  });
+  const [agentsConnection] = useBindingConnections({
+    connections: allConnections,
+    binding: "AGENTS",
+  });
 
   // Fetch models from the first LLM connection
-  const modelsData = useLLMsFromConnection(modelsConnection?.id) ?? [];
+  const modelsData = useLLMsFromConnection(modelsConnection?.id);
 
   // Fetch agents from the first AGENTS connection
-  const agentsData = useAgentsFromConnection(agentsConnection?.id) ?? [];
+  const agentsData = useAgentsFromConnection(agentsConnection?.id);
 
   // Transform models for UI display
-  const models = useMemo(() => {
-    if (!modelsData || !modelsConnection) return [];
-
-    return modelsData
-      .map((model) => ({
-        ...model,
-        name: model.title,
-        contextWindow: model.limits?.contextWindow,
-        outputLimit: model.limits?.maxOutputTokens,
-        inputCost: model.costs?.input,
-        outputCost: model.costs?.output,
-        provider: model.provider,
-        connectionId: modelsConnection.id,
-        connectionName: modelsConnection.title,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [modelsData, modelsConnection]);
+  const models =
+    !modelsData || !modelsConnection
+      ? []
+      : modelsData
+          .map((model) => ({
+            ...model,
+            name: model.title,
+            contextWindow: model.limits?.contextWindow,
+            outputLimit: model.limits?.maxOutputTokens,
+            inputCost: model.costs?.input,
+            outputCost: model.costs?.output,
+            provider: model.provider,
+            connectionId: modelsConnection.id,
+            connectionName: modelsConnection.title,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
   // Transform agents with connection info
-  const agents = useMemo(() => {
-    if (!agentsData || !agentsConnection) return [];
-
-    return agentsData.map((agent) => ({
-      ...agent,
-      connectionId: agentsConnection.id,
-      connectionName: agentsConnection.title,
-    }));
-  }, [agentsData, agentsConnection]);
+  const agents =
+    !agentsData || !agentsConnection
+      ? []
+      : agentsData.map((agent) => ({
+          ...agent,
+          connectionId: agentsConnection.id,
+          connectionName: agentsConnection.title,
+        }));
 
   // Initialize with first model
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
@@ -105,7 +156,8 @@ export function DecoChatPanel() {
         });
       }
     }
-  }, [models, selectedModelState, setSelectedModelState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsData, modelsConnection, selectedModelState, setSelectedModelState]);
 
   // Initialize with first agent
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
@@ -119,28 +171,21 @@ export function DecoChatPanel() {
         });
       }
     }
-  }, [agents, selectedAgentState, setSelectedAgentState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentsData, agentsConnection, selectedAgentState, setSelectedAgentState]);
 
   // Get selected model info
-  const selectedModel = useMemo(
-    () =>
-      models.find(
-        (m) =>
-          m.id === selectedModelState?.id &&
-          m.connectionId === selectedModelState?.connectionId,
-      ),
-    [models, selectedModelState],
+  const selectedModel = models.find(
+    (m) =>
+      m.id === selectedModelState?.id &&
+      m.connectionId === selectedModelState?.connectionId,
   );
 
   // Get selected agent info
-  const selectedAgent = useMemo(
-    () =>
-      agents.find(
-        (a) =>
-          a.id === selectedAgentState?.agentId &&
-          a.connectionId === selectedAgentState?.connectionId,
-      ),
-    [agents, selectedAgentState],
+  const selectedAgent = agents.find(
+    (a) =>
+      a.id === selectedAgentState?.agentId &&
+      a.connectionId === selectedAgentState?.connectionId,
   );
 
   const isEmpty = chat.messages.length === 0;
@@ -157,79 +202,61 @@ export function DecoChatPanel() {
   }, [chat.messages, sentinelRef]);
 
   // Transform agents to selector options
-  const agentSelectorOptions = useMemo(() => {
-    return agents.map((agent) => ({
-      id: `${agent.connectionId}:${agent.id}`,
-      name: agent.title,
-      avatar: agent.avatar,
-      description: agent.description,
-    }));
-  }, [agents]);
+  const agentSelectorOptions = agents.map((agent) => ({
+    id: `${agent.connectionId}:${agent.id}`,
+    name: agent.title,
+    avatar: agent.avatar,
+    description: agent.description,
+  }));
 
   // Wrapped send message - enriches request with metadata (similar to provider.tsx)
-  const wrappedSendMessage = useCallback(
-    async (message: UIMessage<Metadata>) => {
-      if (!selectedModelState || !selectedModel) {
-        // Console error kept for critical missing configuration
-        console.error("No model configured");
-        return;
-      }
+  const wrappedSendMessage = async (message: UIMessage<Metadata>) => {
+    if (!selectedModelState || !selectedModel) {
+      // Console error kept for critical missing configuration
+      console.error("No model configured");
+      return;
+    }
 
-      // Prepare metadata with model and agent configuration
-      const metadata: Metadata = {
-        model: selectedModelState ?? undefined,
-        agent: selectedAgent ?? undefined,
-        user: {
-          avatar: user?.image ?? undefined,
-          name: user?.name ?? "you",
-        },
-        created_at: new Date().toISOString(),
-        thread_id: activeThreadId,
-      };
+    // Prepare metadata with model and agent configuration
+    const metadata: Metadata = {
+      model: selectedModelState ?? undefined,
+      agent: selectedAgent ?? undefined,
+      user: {
+        avatar: user?.image ?? undefined,
+        name: user?.name ?? "you",
+      },
+      created_at: new Date().toISOString(),
+      thread_id: activeThreadId,
+    };
 
-      // Set user message's thread_id
-      message.metadata = {
-        ...metadata,
-        thread_id: activeThreadId,
-      };
+    // Set user message's thread_id
+    message.metadata = {
+      ...metadata,
+      thread_id: activeThreadId,
+    };
 
-      return await chat.sendMessage(message, { metadata });
-    },
-    [
-      chat,
-      selectedModelState,
-      selectedModel,
-      selectedAgent,
-      user,
-      activeThreadId,
-    ],
-  );
+    return await chat.sendMessage(message, { metadata });
+  };
 
-  const handleSendMessage = useCallback(
-    async (e?: React.FormEvent) => {
-      e?.preventDefault();
+  const handleSendMessage = async (text: string) => {
+    if (!text?.trim() || status === "submitted" || status === "streaming") {
+      return;
+    }
 
-      if (!input?.trim() || status === "submitted" || status === "streaming") {
-        return;
-      }
+    // Create and send message with metadata
+    const userMessage: UIMessage<Metadata> = {
+      id: crypto.randomUUID(),
+      role: "user",
+      parts: [{ type: "text", text }],
+    };
 
-      // Create and send message with metadata
-      const userMessage: UIMessage<Metadata> = {
-        id: crypto.randomUUID(),
-        role: "user",
-        parts: [{ type: "text", text: input }],
-      };
+    // Use the wrapped send message function
+    await wrappedSendMessage(userMessage);
+  };
 
-      setInput("");
-      // Use the wrapped send message function
-      await wrappedSendMessage(userMessage);
-    },
-    [input, status, wrappedSendMessage],
-  );
-
-  const handleStop = useCallback(() => {
+  const handleStop = () => {
     chat.stop?.();
-  }, [chat]);
+  };
 
   // Check if both required bindings are present
   const hasModelsBinding = !!modelsConnection;
@@ -388,9 +415,7 @@ export function DecoChatPanel() {
       </DecoChatAside.Content>
 
       <DecoChatAside.Footer>
-        <DecoChatInputV2
-          value={input}
-          onChange={setInput}
+        <ChatInput
           onSubmit={handleSendMessage}
           onStop={handleStop}
           disabled={models.length === 0 || !selectedModelState}

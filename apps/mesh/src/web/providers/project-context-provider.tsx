@@ -14,10 +14,12 @@ export const useProjectContext = () => {
       "useProjectContext must be used within a ProjectContextProvider",
     );
   }
-  return {
-    ...context,
-    ...Locator.parse(context.locator),
-  };
+
+  const { locator } = context;
+
+  const { org, project } = Locator.parse(locator);
+
+  return { org, project, locator };
 };
 
 export const ProjectContextProvider = ({

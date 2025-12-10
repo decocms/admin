@@ -5,7 +5,7 @@ import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CollectionHeader } from "@/web/components/collections/collection-header";
 
 export default function StorePage() {
@@ -23,15 +23,11 @@ export default function StorePage() {
   // Filter to only show registry connections (those with collections)
   const registryConnections = useRegistryConnections(allConnections);
 
-  const registryOptions = useMemo(
-    () =>
-      registryConnections.map((c) => ({
-        id: c.id,
-        name: c.title,
-        icon: c.icon || undefined,
-      })),
-    [registryConnections],
-  );
+  const registryOptions = registryConnections.map((c) => ({
+    id: c.id,
+    name: c.title,
+    icon: c.icon || undefined,
+  }));
 
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";

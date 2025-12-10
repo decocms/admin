@@ -5,7 +5,7 @@ import { EntityGrid } from "@deco/ui/components/entity-grid.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Suspense, useState, useMemo, useDeferredValue } from "react";
+import { Suspense, useState, useDeferredValue } from "react";
 import { CreateOrganizationDialog } from "./create-organization-dialog";
 
 function OrganizationsGrid({ query }: { query?: string }) {
@@ -13,17 +13,18 @@ function OrganizationsGrid({ query }: { query?: string }) {
   const navigate = useNavigate();
 
   // Filter organizations based on search query
-  const filteredOrganizations = useMemo(() => {
-    if (!organizations) return [];
-    if (!query) return organizations;
-
-    const searchLower = query.toLowerCase();
-    return organizations.filter(
-      (org) =>
-        org.name.toLowerCase().includes(searchLower) ||
-        org.slug.toLowerCase().includes(searchLower),
-    );
-  }, [organizations, query]);
+  const filteredOrganizations = !organizations
+    ? []
+    : !query
+      ? organizations
+      : (() => {
+          const searchLower = query.toLowerCase();
+          return organizations.filter(
+            (org) =>
+              org.name.toLowerCase().includes(searchLower) ||
+              org.slug.toLowerCase().includes(searchLower),
+          );
+        })();
 
   if (!organizations || organizations.length === 0) {
     return (

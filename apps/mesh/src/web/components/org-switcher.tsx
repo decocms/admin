@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { authClient } from "@/web/lib/auth-client";
 import { CreateOrganizationDialog } from "./create-organization-dialog";
 import { TopbarSwitcher } from "@deco/ui/components/topbar-switcher.tsx";
@@ -9,43 +9,39 @@ export function MeshOrgSwitcher() {
   const { data: organizations } = authClient.useListOrganizations();
   const navigate = useNavigate();
 
-  const currentOrg = useMemo(
-    () => organizations?.find((organization) => organization.slug === org),
-    [organizations, org],
+  const currentOrg = organizations?.find(
+    (organization) => organization.slug === org,
   );
 
   const [orgSearch, setOrgSearch] = useState("");
   const [creatingOrganization, setCreatingOrganization] = useState(false);
 
-  const filteredOrganizations = useMemo(() => {
-    if (!organizations) return [];
-    const filtered = organizations.filter((organization) =>
-      organization.name.toLowerCase().includes(orgSearch.toLowerCase()),
-    );
-    // Move currentOrg (by slug) to the front if present
-    if (org) {
-      const idx = filtered.findIndex((o) => o.slug === org);
-      if (idx > 0) {
-        const current = filtered[idx];
-        if (current) {
-          filtered.splice(idx, 1);
-          filtered.unshift(current);
+  const filteredOrganizations = !organizations
+    ? []
+    : (() => {
+        const filtered = organizations.filter((organization) =>
+          organization.name.toLowerCase().includes(orgSearch.toLowerCase()),
+        );
+        // Move currentOrg (by slug) to the front if present
+        if (org) {
+          const idx = filtered.findIndex((o) => o.slug === org);
+          if (idx > 0) {
+            const current = filtered[idx];
+            if (current) {
+              filtered.splice(idx, 1);
+              filtered.unshift(current);
+            }
+          }
         }
-      }
-    }
-    return filtered;
-  }, [organizations, orgSearch, org]);
+        return filtered;
+      })();
 
   // Map Better Auth org shape to generic shape
-  const mappedOrgs = useMemo(
-    () =>
-      filteredOrganizations.map((o) => ({
-        slug: o.slug,
-        name: o.name,
-        avatarUrl: o.logo,
-      })),
-    [filteredOrganizations],
-  );
+  const mappedOrgs = filteredOrganizations.map((o) => ({
+    slug: o.slug,
+    name: o.name,
+    avatarUrl: o.logo,
+  }));
 
   const mappedCurrentOrg = currentOrg
     ? {

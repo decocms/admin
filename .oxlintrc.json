@@ -2,9 +2,10 @@
   "jsPlugins": [
     "./plugins/enforce-kebab-case-file-names.js",
     "./plugins/enforce-query-key-constants.js",
-    "./plugins/ban-use-effect.js"
+    "./plugins/ban-use-effect.js",
+    "./plugins/ban-memoization.js"
   ],
-  "ignorePatterns": ["docs/*"],
+  "ignorePatterns": ["apps/docs/*"],
   "rules": {
     "unicorn/no-useless-fallback-in-spread": "off",
     "no-unused-expressions": "off",
@@ -12,6 +13,8 @@
     "enforce-kebab-case-file-names/kebab-case": "warn",
     "ban-types": "warn",
     "enforce-query-key-constants/enforce-query-key-constants": "warn",
-    "ban-use-effect/ban-use-effect": "error"
-  }
+    "ban-use-effect/ban-use-effect": "error",
+    "ban-memoization/ban-memoization": "error"
+  },
+  "plugins": ["react"]
 }

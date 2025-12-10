@@ -6,11 +6,21 @@ import { Handler } from "hono/types";
 interface AssetServerConfig {
   env: "development" | "production" | "test";
   localDevProxyUrl?: string | URL;
+  /**
+   * The prefix to use for serving the assets.
+   * Default: "/assets/*"
+   */
+  assetsMiddlewarePath?: string;
+  /**
+   * The directory to serve the assets from.
+   * Default: "./dist/client"
+   */
   assetsDirectory?: string;
 }
 
 const DEFAULT_LOCAL_DEV_PROXY_URL = "http://localhost:4000";
 const DEFAULT_ASSETS_DIRECTORY = "./dist/client";
+const DEFAULT_ASSETS_MIDDLEWARE_PATH = "/assets/*";
 
 interface HonoApp {
   use: (path: string, handler: Handler) => void;
@@ -25,11 +35,13 @@ export const applyAssetServerRoutes = (
   const localDevProxyUrl =
     config.localDevProxyUrl ?? DEFAULT_LOCAL_DEV_PROXY_URL;
   const assetsDirectory = config.assetsDirectory ?? DEFAULT_ASSETS_DIRECTORY;
+  const assetsMiddlewarePath =
+    config.assetsMiddlewarePath ?? DEFAULT_ASSETS_MIDDLEWARE_PATH;
 
   if (environment === "development") {
     app.use("*", devServerProxy(localDevProxyUrl));
   } else if (environment === "production") {
-    app.use("/assets/*", serveStatic({ root: assetsDirectory }));
+    app.use(assetsMiddlewarePath, serveStatic({ root: assetsDirectory }));
     app.get("*", serveStatic({ path: `${assetsDirectory}/index.html` }));
   }
 };

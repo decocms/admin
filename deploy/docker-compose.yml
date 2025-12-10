@@ -22,10 +22,9 @@ services:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       
       # Database URL
-      # If POSTGRES_USER is defined in .env: mounts PostgreSQL automatically
-      # Otherwise: uses SQLite as default (/app/data/mesh.db)
-      # You can override by defining DATABASE_URL manually in .env
-      - DATABASE_URL=${DATABASE_URL:-${POSTGRES_USER:+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-mesh_db}}}
+      # Priority: 1) DATABASE_URL from .env, 2) PostgreSQL if POSTGRES_USER is set, 3) SQLite default
+      # To use PostgreSQL, set POSTGRES_USER, POSTGRES_PASSWORD, etc. in .env
+      # To use SQLite, leave POSTGRES_USER empty or set DATABASE_URL=/app/data/mesh.db
       - DATABASE_URL=${DATABASE_URL:-/app/data/mesh.db}
     volumes:
       # Persistent volume for data (SQLite or other files)
@@ -49,4 +48,3 @@ services:
 volumes:
   mesh-data:
     driver: local
-

@@ -50,8 +50,8 @@ export const KEYS = {
   // connectionId is optional - if provided, scopes the cache to that connection
   toolCall: (toolName: string, paramsKey: string, connectionId?: string) =>
     connectionId
-      ? ["tool-call", connectionId, toolName, paramsKey] as const
-      : ["tool-call", toolName, paramsKey] as const,
+      ? (["tool-call", connectionId, toolName, paramsKey] as const)
+      : (["tool-call", toolName, paramsKey] as const),
 
   // Collection items (scoped by connection and collection name)
   collectionItems: (connectionId: string, collectionName: string) =>

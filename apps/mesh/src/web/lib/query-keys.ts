@@ -58,6 +58,8 @@ export const KEYS = {
     ["collection", connectionId, collectionName] as const,
 
   // GitHub README (scoped by owner and repo)
-  githubReadme: (owner: string | null | undefined, repo: string | null | undefined) =>
-    ["github-readme", owner, repo] as const,
+  githubReadme: (
+    owner: string | null | undefined,
+    repo: string | null | undefined,
+  ) => ["github-readme", owner, repo] as const,
 } as const;

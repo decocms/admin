@@ -110,9 +110,7 @@ export function RegistryItemsSection({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between w-max gap-2">
         <h2 className="text-lg font-medium">{title}</h2>
-        <span className="block text-xs text-muted-foreground">
-          {itemsText}
-        </span>
+        <span className="block text-xs text-muted-foreground">{itemsText}</span>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(259px,1fr))] gap-4">
         {items.map((item) => (

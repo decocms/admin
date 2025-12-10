@@ -32,7 +32,7 @@ export default function StorePage() {
   // Persist selected registry in localStorage (scoped by org)
   // If the saved registry is no longer available, fallback to first available
   const [selectedRegistry, setSelectedRegistry] = useLocalStorage<string>(
-    LOCALSTORAGE_KEYS.selectedRegistry(org),
+    LOCALSTORAGE_KEYS.selectedRegistry(org.slug),
     (existing) => {
       // Validate existing value against current registry connections
       if (existing && registryConnections.length > 0) {

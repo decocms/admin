@@ -115,7 +115,7 @@ const plugins = [
       maximumRolesPerOrganization: 500,
       enableCustomResources: true,
       allowedRolesToCreateResources: ADMIN_ROLES,
-      resourceNameValidation: (name) => {
+      resourceNameValidation: (name: string) => {
         // allow only alphanumeric characters, hyphens and underscores
         return {
           valid: /^[a-zA-Z0-9-_]+$/.test(name),

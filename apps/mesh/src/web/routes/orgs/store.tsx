@@ -5,7 +5,6 @@ import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { CollectionHeader } from "@/web/components/collections/collection-header";
 import { useLocalStorage } from "@/web/hooks/use-local-storage";
 import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
@@ -31,28 +30,23 @@ export default function StorePage() {
   }));
 
   // Persist selected registry in localStorage (scoped by org)
+  // If the saved registry is no longer available, fallback to first available
   const [selectedRegistry, setSelectedRegistry] = useLocalStorage<string>(
     LOCALSTORAGE_KEYS.selectedRegistry(org),
-    "",
-  );
-
-  // Update selected registry when registry connections change
-  // If the saved registry is no longer available, fallback to first available
-  useEffect(() => {
-    if (registryConnections.length > 0) {
-      const savedRegistryExists = selectedRegistry
-        ? registryConnections.some((c) => c.id === selectedRegistry)
-        : false;
-
-      if (!savedRegistryExists) {
-        // If saved registry doesn't exist or is empty, use first available
-        const firstRegistryId = registryConnections[0]?.id || "";
-        if (firstRegistryId && firstRegistryId !== selectedRegistry) {
-          setSelectedRegistry(firstRegistryId);
+    (existing) => {
+      // Validate existing value against current registry connections
+      if (existing && registryConnections.length > 0) {
+        const savedRegistryExists = registryConnections.some(
+          (c) => c.id === existing,
+        );
+        if (savedRegistryExists) {
+          return existing;
         }
       }
-    }
-  }, [registryConnections, selectedRegistry, setSelectedRegistry]);
+      // Fallback to first available registry
+      return registryConnections[0]?.id || "";
+    },
+  );
 
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";

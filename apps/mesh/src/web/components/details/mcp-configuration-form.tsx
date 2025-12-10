@@ -1,5 +1,4 @@
 import { createToolCaller } from "@/tools/client";
-import type { ConnectionEntity } from "@/tools/connection/schema";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { Loader2 } from "lucide-react";
@@ -14,11 +13,36 @@ interface McpConfigurationResult {
   scopes?: string[];
 }
 
+export function useMcpConfiguration(connectionId: string) {
+  const toolCaller = createToolCaller(connectionId);
+
+  const {
+    data: configResult,
+    isLoading,
+    error,
+  } = useToolCall<Record<string, never>, McpConfigurationResult>({
+    toolCaller,
+    toolName: "MCP_CONFIGURATION",
+    toolInputParams: {},
+    enabled: !!connectionId,
+  });
+
+  const stateSchema = configResult?.stateSchema ?? {
+    type: "object",
+    properties: {},
+  };
+
+  const scopes = configResult?.scopes ?? [];
+
+  return { stateSchema, scopes, isLoading, error };
+}
+
 export interface McpConfigurationFormProps {
-  connection: ConnectionEntity;
   formState: Record<string, unknown>;
   onFormStateChange: (state: Record<string, unknown>) => void;
-  isSaving: boolean;
+  stateSchema: Record<string, unknown>;
+  isLoading: boolean;
+  error: Error | null;
 }
 
 interface FormContext {
@@ -197,29 +221,14 @@ function CustomFieldTemplate(props: FieldTemplateProps) {
 }
 
 export function McpConfigurationForm({
-  connection,
   formState,
   onFormStateChange,
+  stateSchema,
+  isLoading,
+  error,
 }: McpConfigurationFormProps) {
   const { org } = useProjectContext();
   const navigate = useNavigate();
-  const toolCaller = createToolCaller(connection.id);
-
-  const {
-    data: configResult,
-    isLoading,
-    error,
-  } = useToolCall<Record<string, never>, McpConfigurationResult>({
-    toolCaller,
-    toolName: "MCP_CONFIGURATION",
-    toolInputParams: {},
-    enabled: !!connection.id,
-  });
-
-  const stateSchema = configResult?.stateSchema ?? {
-    type: "object",
-    properties: {},
-  };
 
   const handleChange = (data: { formData?: Record<string, unknown> }) => {
     if (data.formData) {

@@ -6,6 +6,11 @@ import { Handler } from "hono/types";
 interface AssetServerConfig {
   env: "development" | "production" | "test";
   localDevProxyUrl?: string | URL;
+  /**
+   * The prefix to use for serving the assets.
+   * Default: "/assets/*"
+   */
+  assetsMiddlewarePath?: string;
   assetsDirectory?: string;
 }
 
@@ -29,7 +34,7 @@ export const applyAssetServerRoutes = (
   if (environment === "development") {
     app.use("*", devServerProxy(localDevProxyUrl));
   } else if (environment === "production") {
-    app.use("/assets/*", serveStatic({ root: assetsDirectory }));
+    app.use(config.assetsMiddlewarePath ?? "/assets/*", serveStatic({ root: assetsDirectory }));
     app.get("*", serveStatic({ path: `${assetsDirectory}/index.html` }));
   }
 };

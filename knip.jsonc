@@ -16,6 +16,10 @@
     }
   },
   "ignore": [
+    // TODO(@camudo): Remove this ignore once the PR is merged
+    // https://github.com/webpro-nl/knip/pull/1384
+    "apps/docs/**/*",
+
     "**/*.d.ts",
     "**/*.test.ts",
     "**/*.test.tsx",

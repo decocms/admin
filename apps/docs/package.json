@@ -10,6 +10,7 @@
     "build:client": "astro build",
     "check": "astro sync > /dev/null 2>&1 && tsc --noEmit",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "start": "NODE_ENV=production bun run dist/server/main.js",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "astro": "astro"
   },

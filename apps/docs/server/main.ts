@@ -3,6 +3,7 @@ import { createAssetServer } from "@decocms/runtime/asset-server";
 
 const assetServer = createAssetServer({
   env: process.env.NODE_ENV as "development" | "production" | "test",
+  assetsMiddlewarePath: "*",
 });
 
 const runtime = withRuntime({

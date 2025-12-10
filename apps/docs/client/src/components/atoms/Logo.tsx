@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-
-const decoLight = "/logos/deco-light.svg";
-const decoDark = "/logos/deco-dark.svg";
+import decoLight from "../../../public/logos/deco-light.svg?url";
+import decoDark from "../../../public/logos/deco-dark.svg?url";
 
 interface LogoProps {
   className?: string;

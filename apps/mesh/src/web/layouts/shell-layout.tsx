@@ -157,6 +157,10 @@ function ShellLayoutContent() {
   const { data: projectContext } = useSuspenseQuery({
     queryKey: KEYS.activeOrganization(org),
     queryFn: async () => {
+      if (!org) {
+        return null;
+      }
+
       const { data } = await authClient.organization.setActive({
         organizationSlug: org,
       });
@@ -171,10 +175,9 @@ function ShellLayoutContent() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
-  const orgSlug = projectContext.org?.slug;
 
   // Should use "project ?? org-admin" when projects are introduced
-  if (typeof orgSlug !== "string") {
+  if (!projectContext) {
     return (
       <div className="min-h-screen bg-background">
         <Topbar />
@@ -187,7 +190,7 @@ function ShellLayoutContent() {
 
   return (
     <ProjectContextProvider {...projectContext}>
-      <ChatProvider key={orgSlug}>
+      <ChatProvider key={projectContext.org.slug}>
         <PersistentSidebarProvider>
           <div className="flex flex-col h-screen">
             <Topbar showSidebarToggle showOrgSwitcher showDecoChat />

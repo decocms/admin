@@ -47,21 +47,12 @@ export class OrganizationSettingsStorage
         createdAt: now,
         updatedAt: now,
       })
-      .onConflict((oc) => {
-        const updateSet: {
-          sidebar_items?: string | null;
-          updatedAt: string;
-        } = {
+      .onConflict((oc) =>
+        oc.column("organizationId").doUpdateSet({
+          sidebar_items: sidebarItemsJson ? sidebarItemsJson : undefined,
           updatedAt: now,
-        };
-
-        // Only update sidebar_items if it was explicitly provided in data
-        if (data !== undefined && "sidebar_items" in data) {
-          updateSet.sidebar_items = sidebarItemsJson;
-        }
-
-        return oc.doUpdateSet(updateSet);
-      })
+        }),
+      )
       .execute();
 
     const settings = await this.get(organizationId);

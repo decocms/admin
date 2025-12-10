@@ -72,7 +72,10 @@ import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import { McpConfigurationForm } from "./mcp-configuration-form";
+import {
+  McpConfigurationForm,
+  useMcpConfiguration,
+} from "./mcp-configuration-form";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -438,7 +441,14 @@ function SettingsTab({
   const [mcpInitialState, setMcpInitialState] = useState<
     Record<string, unknown>
   >(connection.configuration_state ?? {});
-  const [mcpScopes] = useState<string[]>(connection.configuration_scopes ?? []);
+
+  // Fetch MCP configuration (stateSchema and scopes) directly
+  const {
+    stateSchema: mcpStateSchema,
+    scopes: mcpScopes,
+    isLoading: isMcpConfigLoading,
+    error: mcpConfigError,
+  } = useMcpConfiguration(connection.id);
 
   // Reset MCP state when connection changes
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
@@ -541,10 +551,11 @@ function SettingsTab({
         {hasMcpBinding && (
           <div className="w-3/5 min-w-0 overflow-auto">
             <McpConfigurationForm
-              connection={connection}
               formState={mcpFormState}
               onFormStateChange={setMcpFormState}
-              isSaving={isSavingConfig}
+              stateSchema={mcpStateSchema}
+              isLoading={isMcpConfigLoading}
+              error={mcpConfigError}
             />
           </div>
         )}

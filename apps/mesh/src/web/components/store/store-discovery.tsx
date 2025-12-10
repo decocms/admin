@@ -6,7 +6,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { KEYS } from "@/web/lib/query-keys";
 import {
   findListToolName,
-  extractTotalCount,
   flattenPaginatedItems,
 } from "@/web/utils/registry-utils";
 
@@ -67,11 +66,8 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
     staleTime: 60 * 60 * 1000, // 1 hour - keep data fresh longer
   });
 
-  // Extract totalCount from first page if available
-  const totalCount = extractTotalCount(data?.pages);
-
   // Flatten all pages into a single array of items
-  const allItems = flattenPaginatedItems<RegistryItem>(data?.pages);
+  const flattenedItems = flattenPaginatedItems<RegistryItem>(data?.pages);
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -81,14 +77,13 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
 
   return (
     <StoreDiscoveryUI
-      items={allItems}
+      items={flattenedItems}
       isLoading={isLoading}
       isLoadingMore={isFetchingNextPage}
       error={error}
       registryId={registryId}
       hasMore={hasNextPage ?? false}
       onLoadMore={handleLoadMore}
-      totalCount={totalCount}
     />
   );
 }

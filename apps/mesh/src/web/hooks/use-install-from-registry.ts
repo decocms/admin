@@ -134,7 +134,7 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
     // Extract connection data
     const connectionData = extractConnectionData(
       registryItem,
-      org,
+      org.id,
       session.user.id,
     );
 

@@ -10,14 +10,10 @@ import { KEYS } from "@/web/lib/query-keys";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useQuery } from "@tanstack/react-query";
 
-/**
- * Built-in roles that are always available
- * Note: "member" is the default role name in Better Auth, shown as "Member" to users
- */
 const BUILTIN_ROLES = [
   { value: "owner", label: "Owner", isBuiltin: true },
   { value: "admin", label: "Admin", isBuiltin: true },
-  { value: "member", label: "Member", isBuiltin: true },
+  { value: "user", label: "User", isBuiltin: true },
 ] as const;
 
 export interface OrganizationRole {
@@ -164,7 +160,7 @@ export function useOrganizationRoles() {
       const roleName = customRole.role;
       if (!roleName) continue;
 
-      // Skip if it's a built-in role name (owner, admin, member)
+      // Skip if it's a built-in role name (owner, admin, user)
       if (BUILTIN_ROLES.some((b) => b.value === roleName)) {
         continue;
       }

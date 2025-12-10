@@ -100,9 +100,9 @@ if (
  * These bypass custom permission checks
  */
 export const BUILTIN_ROLES = ["owner", "admin", "user"] as const;
+const ADMIN_ROLES: BuiltinRole[] = ["owner", "admin"];
 export type BuiltinRole = (typeof BUILTIN_ROLES)[number];
 
-export const ADMIN_ROLES: BuiltinRole[] = ["owner", "admin"];
 const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
@@ -114,16 +114,11 @@ const plugins = [
       enabled: true,
       maximumRolesPerOrganization: 500,
       enableCustomResources: true,
-      canCreateRole: async ({ member }) => {
-        if (ADMIN_ROLES.includes(member.role as BuiltinRole)) {
-          return {
-            allow: true,
-            bypass: true,
-          };
-        }
+      allowedRolesToCreateResources: ADMIN_ROLES,
+      resourceNameValidation: (name) => {
+        // allow only alphanumeric characters, hyphens and underscores
         return {
-          allow: true,
-          bypass: false,
+          valid: /^[a-zA-Z0-9-_]+$/.test(name),
         };
       },
     },

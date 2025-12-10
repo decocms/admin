@@ -63,7 +63,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
     mode: "onChange",
     defaultValues: {
       emails: [],
-      role: "member", // Default to member role
+      role: "user", // Default to user role
     },
   });
 
@@ -120,7 +120,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
       );
       form.reset({
         emails: [],
-        role: "member",
+        role: "user",
       });
       setOpen(false);
     },
@@ -263,7 +263,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
                 onClick={() => {
                   form.reset({
                     emails: [],
-                    role: "member",
+                    role: "user",
                   });
                   setOpen(false);
                 }}

@@ -361,7 +361,7 @@ describe("Organization Tools", () => {
       const result = await ORGANIZATION_MEMBER_ADD.execute(
         {
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );
@@ -370,7 +370,7 @@ describe("Organization Tools", () => {
         body: {
           organizationId: "org_123",
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
       });
 
@@ -386,7 +386,7 @@ describe("Organization Tools", () => {
       await ORGANIZATION_MEMBER_ADD.execute(
         {
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );
@@ -406,7 +406,7 @@ describe("Organization Tools", () => {
         {
           organizationId: "org_456",
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );

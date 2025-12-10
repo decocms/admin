@@ -51,7 +51,7 @@
     "@tanstack/react-router": "^1.139.7",
     "@tanstack/react-router-devtools": "^1.139.7",
     "ai": "^5.0.101",
-    "@decocms/better-auth": "1.5.13",
+    "@decocms/better-auth": "1.5.17",
     "better-auth": "1.4.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

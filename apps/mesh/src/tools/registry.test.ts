@@ -34,6 +34,9 @@ describe("Tool Registry Sync", () => {
     // This is a compile-time check - if the types diverge, this won't compile
     const _checkToolNameCompat: ToolName = "" as ToolNameFromTools;
     const _checkToolNameFromToolsCompat: ToolNameFromTools = "" as ToolName;
+    // Mark as intentionally unused for type checking only
+    void _checkToolNameCompat;
+    void _checkToolNameFromToolsCompat;
 
     // Runtime check for same length
     const allToolNames = ALL_TOOLS.map((t) => t.name);

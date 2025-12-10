@@ -4,11 +4,8 @@ import {
   ForbiddenError,
   UnauthorizedError,
 } from "./access-control";
-import type {
-  BetterAuthInstance,
-  BoundAuthClient,
-  Permission,
-} from "./mesh-context";
+import type { BetterAuthInstance, BoundAuthClient } from "./mesh-context";
+import type { Permission } from "../storage/types";
 
 const createMockAuth = (): BetterAuthInstance => {
   const mockUserHasPermission = vi.fn();
@@ -32,7 +29,7 @@ const createMockBoundAuth = (permissions: Permission): BoundAuthClient => {
         if (!allowedTools) continue;
 
         // Check if any requested tool is allowed
-        for (const tool of tools) {
+        for (const tool of tools as string[]) {
           if (allowedTools.includes(tool) || allowedTools.includes("*")) {
             return true;
           }

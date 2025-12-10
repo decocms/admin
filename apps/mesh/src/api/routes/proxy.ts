@@ -520,6 +520,12 @@ app.all("/:connectionId", async (c) => {
     if (err.message.includes("not found")) {
       return c.json({ error: err.message }, 404);
     }
+    if (
+      err.message.includes("does not belong to the active organization")
+    ) {
+      // Return 404 to prevent leaking connection existence across organizations
+      return c.json({ error: "Connection not found" }, 404);
+    }
     if (err.message.includes("inactive")) {
       return c.json({ error: err.message }, 503);
     }

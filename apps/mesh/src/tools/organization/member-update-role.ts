@@ -15,7 +15,7 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
   inputSchema: z.object({
     organizationId: z.string().optional(), // Optional: defaults to active organization
     memberId: z.string(),
-    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["member"])
+    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["user"])
   }),
 
   outputSchema: z.object({

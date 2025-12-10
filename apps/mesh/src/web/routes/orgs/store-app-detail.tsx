@@ -17,6 +17,12 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { extractConnectionData } from "@/web/utils/extract-connection-data";
 import { slugify } from "@/web/utils/slugify";
 import { getGitHubAvatarUrl, extractGitHubRepo } from "@/web/utils/github-icon";
+import {
+  findListToolName,
+  getConnectionTypeLabel,
+  extractSchemaVersion,
+  extractItemsFromResponse,
+} from "@/web/utils/registry-utils";
 import { ReadmeViewer } from "@/web/components/store/readme-viewer";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -181,24 +187,10 @@ function extractItemData(item: RegistryItem) {
   const server = item.server;
 
   // Extract connection type from remotes
-  const connectionType = server?.remotes?.[0]?.type
-    ? server.remotes[0].type === "streamable-http" ||
-      server.remotes[0].type === "http"
-      ? "HTTP"
-      : server.remotes[0].type === "sse"
-        ? "SSE"
-        : server.remotes[0].type === "stdio"
-          ? "STDIO"
-          : server.remotes[0].type.toUpperCase()
-    : null;
+  const connectionType = getConnectionTypeLabel(server?.remotes?.[0]?.type);
 
   // Extract schema version from $schema URL
-  const schemaVersion = server?.$schema
-    ? (() => {
-        const match = server.$schema.match(/schemas\/([\d-]+)/);
-        return match ? match[1] : null;
-      })()
-    : null;
+  const schemaVersion = extractSchemaVersion(server?.$schema);
 
   // Extract publisher - prioritize official registry meta
   const publisher = officialMeta
@@ -269,14 +261,7 @@ export default function StoreAppDetail() {
   const registryConnection = useConnection(effectiveRegistryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = !registryConnection?.tools
-    ? ""
-    : (() => {
-        const listTool = registryConnection.tools.find((tool) =>
-          tool.name.endsWith("_LIST"),
-        );
-        return listTool?.name || "";
-      })();
+  const listToolName = findListToolName(registryConnection?.tools);
 
   const toolCaller = createToolCaller(effectiveRegistryId);
 
@@ -293,31 +278,15 @@ export default function StoreAppDetail() {
   });
 
   // Extract items and totalCount from results
-  let items: RegistryItem[] = [];
+  const items = extractItemsFromResponse<RegistryItem>(listResults);
   let totalCount: number | null = null;
 
-  if (listResults) {
-    if (Array.isArray(listResults)) {
-      items = listResults;
-    } else if (typeof listResults === "object" && listResults !== null) {
-      // Check for totalCount in the response
-      if (
-        "totalCount" in listResults &&
-        typeof listResults.totalCount === "number"
-      ) {
-        totalCount = listResults.totalCount;
-      }
-
-      // Find the items array
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
-
-      if (itemsKey) {
-        items = listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-      }
+  if (listResults && typeof listResults === "object" && listResults !== null) {
+    if (
+      "totalCount" in listResults &&
+      typeof listResults.totalCount === "number"
+    ) {
+      totalCount = listResults.totalCount;
     }
   }
 

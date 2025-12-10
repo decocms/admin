@@ -1,4 +1,4 @@
-import { RegistryItemCard } from "./registry-item-card";
+import { RegistryItemCard, extractCardDisplayData } from "./registry-item-card";
 import type { MCPRegistryServerMeta } from "./registry-item-card";
 
 /**
@@ -113,13 +113,16 @@ export function RegistryItemsSection({
         <span className="block text-xs text-muted-foreground">{itemsText}</span>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(259px,1fr))] gap-4">
-        {items.map((item) => (
-          <RegistryItemCard
-            key={item.id}
-            item={item}
-            onClick={() => onItemClick(item)}
-          />
-        ))}
+        {items.map((item) => {
+          const displayData = extractCardDisplayData(item);
+          return (
+            <RegistryItemCard
+              key={item.id}
+              {...displayData}
+              onClick={() => onItemClick(item)}
+            />
+          );
+        })}
       </div>
     </div>
   );

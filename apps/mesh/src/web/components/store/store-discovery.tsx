@@ -4,6 +4,11 @@ import { StoreDiscoveryUI } from "./store-discovery-ui";
 import type { RegistryItem } from "./registry-items-section";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { KEYS } from "@/web/lib/query-keys";
+import {
+  findListToolName,
+  extractTotalCount,
+  flattenPaginatedItems,
+} from "@/web/utils/registry-utils";
 
 interface StoreDiscoveryProps {
   registryId: string;
@@ -15,14 +20,7 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   const registryConnection = useConnection(registryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = !registryConnection?.tools
-    ? ""
-    : (() => {
-        const listTool = registryConnection.tools.find((tool) =>
-          tool.name.endsWith("_LIST"),
-        );
-        return listTool?.name || "";
-      })();
+  const listToolName = findListToolName(registryConnection?.tools);
 
   const toolCaller = createToolCaller(registryId);
 
@@ -70,45 +68,10 @@ export function StoreDiscovery({ registryId }: StoreDiscoveryProps) {
   });
 
   // Extract totalCount from first page if available
-  const totalCount = (() => {
-    if (!data?.pages || data.pages.length === 0) return null;
-    const firstPage = data.pages[0];
-    if (
-      typeof firstPage === "object" &&
-      firstPage !== null &&
-      "totalCount" in firstPage &&
-      typeof firstPage.totalCount === "number"
-    ) {
-      return firstPage.totalCount;
-    }
-    return null;
-  })();
+  const totalCount = extractTotalCount(data?.pages);
 
   // Flatten all pages into a single array of items
-  const allItems = (() => {
-    if (!data?.pages) return [];
-
-    const items: RegistryItem[] = [];
-
-    for (const page of data.pages) {
-      let pageItems: RegistryItem[] = [];
-
-      if (Array.isArray(page)) {
-        pageItems = page;
-      } else if (typeof page === "object" && page !== null) {
-        const itemsKey = Object.keys(page).find((key) =>
-          Array.isArray(page[key as keyof typeof page]),
-        );
-        if (itemsKey) {
-          pageItems = page[itemsKey as keyof typeof page] as RegistryItem[];
-        }
-      }
-
-      items.push(...pageItems);
-    }
-
-    return items;
-  })();
+  const allItems = flattenPaginatedItems<RegistryItem>(data?.pages);
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {

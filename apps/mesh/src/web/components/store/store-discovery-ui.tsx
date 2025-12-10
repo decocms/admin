@@ -10,6 +10,35 @@ import {
   RegistryItemsSection,
 } from "./registry-items-section";
 
+/**
+ * Filter items by search term across name and description
+ */
+function filterItemsBySearch(
+  items: RegistryItem[],
+  search: string,
+): RegistryItem[] {
+  if (!search) return items;
+  const searchLower = search.toLowerCase();
+  return items.filter(
+    (item) =>
+      (item.name || item.title || "").toLowerCase().includes(searchLower) ||
+      (item.description || item.server?.description || "")
+        .toLowerCase()
+        .includes(searchLower),
+  );
+}
+
+/**
+ * Check if an item is verified
+ */
+function isItemVerified(item: RegistryItem): boolean {
+  return (
+    item.verified === true ||
+    item._meta?.["mcp.mesh"]?.verified === true ||
+    item.server?._meta?.["mcp.mesh"]?.verified === true
+  );
+}
+
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
   isLoading: boolean;
@@ -37,28 +66,10 @@ export function StoreDiscoveryUI({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtered items based on search
-  const filteredItems = !search
-    ? items
-    : (() => {
-        const searchLower = search.toLowerCase();
-        return items.filter(
-          (item) =>
-            (item.name || item.title || "")
-              .toLowerCase()
-              .includes(searchLower) ||
-            (item.description || item.server?.description || "")
-              .toLowerCase()
-              .includes(searchLower),
-        );
-      })();
+  const filteredItems = filterItemsBySearch(items, search);
 
   // Verified items
-  const verifiedItems = filteredItems.filter(
-    (item) =>
-      item.verified === true ||
-      item._meta?.["mcp.mesh"]?.verified === true ||
-      item.server?._meta?.["mcp.mesh"]?.verified === true,
-  );
+  const verifiedItems = filteredItems.filter(isItemVerified);
 
   // Non-verified items
   const allItems = filteredItems.filter(

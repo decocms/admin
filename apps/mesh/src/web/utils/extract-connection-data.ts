@@ -11,6 +11,7 @@ import {
   MCP_REGISTRY_PUBLISHER_KEY,
 } from "@/web/utils/constants";
 import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
+import { getConnectionTypeLabel } from "@/web/utils/registry-utils";
 
 /**
  * Extract connection data from a registry item for installation
@@ -36,15 +37,10 @@ export function extractConnectionData(
 
   const remote = server?.remotes?.[0];
 
-  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
-    http: "HTTP",
-    sse: "SSE",
-    websocket: "Websocket",
-  };
-
-  const connectionType = remote?.type
-    ? connectionTypeMap[remote.type] || "HTTP"
-    : "HTTP";
+  const connectionType = (getConnectionTypeLabel(remote?.type) || "HTTP") as
+    | "HTTP"
+    | "SSE"
+    | "Websocket";
 
   const now = new Date().toISOString();
 

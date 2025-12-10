@@ -5,6 +5,38 @@ import { extractGitHubRepo } from "@/web/utils/github-icon";
 import { KEYS } from "@/web/lib/query-keys";
 import "github-markdown-css/github-markdown-light.css";
 
+/**
+ * Remove GitHub's anchor link icons from heading elements
+ * These are the chain-link icons that appear next to headings
+ */
+function removeGitHubAnchorIcons(html: string): string {
+  return html.replace(/<a[^>]*class="[^"]*anchor[^"]*"[^>]*>.*?<\/a>/gi, "");
+}
+
+/**
+ * Add external link attributes to all links in the HTML
+ * Ensures links open in new tabs with proper security attributes
+ */
+function addExternalLinkAttributes(html: string): string {
+  return html.replace(/<a\s+([^>]*href="[^"]*"[^>]*)>/gi, (match, attrs) => {
+    // Check if target is already set
+    if (attrs.includes("target=")) {
+      return match.replace(/target="[^"]*"/gi, 'target="_blank"');
+    }
+    // Add target and rel attributes
+    return `<a ${attrs} target="_blank" rel="noopener noreferrer">`;
+  });
+}
+
+/**
+ * Sanitize README HTML by removing unwanted elements and adding security attributes
+ */
+function sanitizeReadmeHtml(html: string): string {
+  let result = removeGitHubAnchorIcons(html);
+  result = addExternalLinkAttributes(result);
+  return result;
+}
+
 interface ReadmeViewerProps {
   repository?: {
     url?: string;
@@ -34,27 +66,7 @@ export function ReadmeViewer({ repository }: ReadmeViewerProps) {
           throw new Error(`Failed to fetch README: ${response.statusText}`);
         }
         const html = await response.text();
-        // Remove the anchor link icons that GitHub adds to headings
-        // These are the chain-link icons that appear next to headings
-        let cleanedHtml = html.replace(
-          /<a[^>]*class="[^"]*anchor[^"]*"[^>]*>.*?<\/a>/gi,
-          "",
-        );
-
-        // Make all links open in a new tab
-        cleanedHtml = cleanedHtml.replace(
-          /<a\s+([^>]*href="[^"]*"[^>]*)>/gi,
-          (match, attrs) => {
-            // Check if target is already set
-            if (attrs.includes("target=")) {
-              return match.replace(/target="[^"]*"/gi, 'target="_blank"');
-            }
-            // Add target and rel attributes
-            return `<a ${attrs} target="_blank" rel="noopener noreferrer">`;
-          },
-        );
-
-        return cleanedHtml;
+        return sanitizeReadmeHtml(html);
       } catch (error) {
         console.error("Error fetching README:", error);
         return null;

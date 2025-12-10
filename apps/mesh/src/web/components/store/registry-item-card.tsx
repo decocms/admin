@@ -7,6 +7,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card } from "@deco/ui/components/card.js";
 import { IntegrationIcon } from "../integration-icon.tsx";
 import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
+import type { RegistryItem } from "./registry-items-section";
 
 /**
  * MCP Registry Server structure from LIST response
@@ -70,40 +71,35 @@ export interface MCPRegistryServer {
 }
 
 /**
- * Props for RegistryItemCard - accepts any item with compatible shape.
- * This allows both MCPRegistryServer and RegistryItem types.
+ * Simplified props for RegistryItemCard - receives processed data
+ * Reduces component responsibility to just rendering
  */
 interface RegistryItemCardProps {
-  item: {
-    id: string;
-    title?: string;
-    _meta?: MCPRegistryServerMeta;
-    server?: {
-      title?: string;
-      description?: string;
-      version?: string;
-      repository?: {
-        url?: string;
-        source?: string;
-        subfolder?: string;
-      };
-      icons?: Array<{ src: string }>;
-      _meta?: MCPRegistryServerMeta;
-    };
-  };
+  icon: string | null;
+  scopeName: string | null;
+  displayName: string;
+  description: string | null;
+  version: string | null;
+  isVerified: boolean;
   onClick: () => void;
 }
 
-export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
+/**
+ * Extract display data from a registry item for the card component
+ * Handles name parsing, icon extraction, and verification status
+ */
+export function extractCardDisplayData(
+  item: RegistryItem,
+): Omit<RegistryItemCardProps, "onClick"> {
   const rawTitle =
     item.title || item.server?.title || item.id || "Unnamed Item";
-  const description = item.server?.description;
+  const description = item.server?.description || null;
   const icon =
     item.server?.icons?.[0]?.src ||
     getGitHubAvatarUrl(item.server?.repository) ||
     null;
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
-  const version = item.server?.version;
+  const version = item.server?.version || null;
 
   // Extract scopeName and displayName from title if it contains "/"
   let displayName = rawTitle;
@@ -113,7 +109,7 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
     const parts = rawTitle.split("/");
     if (parts.length >= 2) {
       scopeName = parts[0] || null;
-      displayName = parts.slice(1).join("/"); // Handle cases with multiple "/"
+      displayName = parts.slice(1).join("/");
     }
   }
 
@@ -128,6 +124,25 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
     }
   }
 
+  return {
+    icon,
+    scopeName,
+    displayName,
+    description,
+    version,
+    isVerified,
+  };
+}
+
+export function RegistryItemCard({
+  icon,
+  scopeName,
+  displayName,
+  description,
+  version,
+  isVerified,
+  onClick,
+}: RegistryItemCardProps) {
   return (
     <Card
       className="p-6 cursor-pointer hover:shadow-md transition-shadow"

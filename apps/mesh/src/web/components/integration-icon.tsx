@@ -15,7 +15,7 @@ export function IntegrationIcon({
   size = "md",
   className,
 }: IntegrationIconProps) {
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState( icon ? false : true);
 
   const sizeClasses = {
     sm: "h-8 w-8",

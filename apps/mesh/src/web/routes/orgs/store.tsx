@@ -34,8 +34,13 @@ export default function StorePage() {
   const [selectedRegistry, setSelectedRegistry] = useLocalStorage<string>(
     LOCALSTORAGE_KEYS.selectedRegistry(org.slug),
     (existing) => {
+      // If connections haven't loaded yet, preserve existing value
+      if (registryConnections.length === 0) {
+        return existing || "";
+      }
+
       // Validate existing value against current registry connections
-      if (existing && registryConnections.length > 0) {
+      if (existing) {
         const savedRegistryExists = registryConnections.some(
           (c) => c.id === existing,
         );
@@ -43,6 +48,7 @@ export default function StorePage() {
           return existing;
         }
       }
+
       // Fallback to first available registry
       return registryConnections[0]?.id || "";
     },

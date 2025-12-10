@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Loader2 } from "lucide-react";
 import { extractGitHubRepo } from "@/web/utils/github-icon";
+import { KEYS } from "@/web/lib/query-keys";
 import "github-markdown-css/github-markdown-light.css";
 
 interface ReadmeViewerProps {
@@ -16,7 +17,7 @@ export function ReadmeViewer({ repository }: ReadmeViewerProps) {
   const repo = repository ? extractGitHubRepo(repository) : null;
 
   const { data: readmeData, isLoading: isLoadingReadme } = useQuery({
-    queryKey: ["github-readme", repo?.owner, repo?.repo],
+    queryKey: KEYS.githubReadme(repo?.owner, repo?.repo),
     queryFn: async () => {
       if (!repo) return null;
       try {
@@ -39,20 +40,20 @@ export function ReadmeViewer({ repository }: ReadmeViewerProps) {
           /<a[^>]*class="[^"]*anchor[^"]*"[^>]*>.*?<\/a>/gi,
           "",
         );
-        
+
         // Make all links open in a new tab
         cleanedHtml = cleanedHtml.replace(
           /<a\s+([^>]*href="[^"]*"[^>]*)>/gi,
           (match, attrs) => {
             // Check if target is already set
-            if (attrs.includes('target=')) {
+            if (attrs.includes("target=")) {
               return match.replace(/target="[^"]*"/gi, 'target="_blank"');
             }
             // Add target and rel attributes
             return `<a ${attrs} target="_blank" rel="noopener noreferrer">`;
           },
         );
-        
+
         return cleanedHtml;
       } catch (error) {
         console.error("Error fetching README:", error);
@@ -99,4 +100,3 @@ export function ReadmeViewer({ repository }: ReadmeViewerProps) {
     />
   );
 }
-

@@ -34,7 +34,10 @@ export const applyAssetServerRoutes = (
   if (environment === "development") {
     app.use("*", devServerProxy(localDevProxyUrl));
   } else if (environment === "production") {
-    app.use(config.assetsMiddlewarePath ?? "/assets/*", serveStatic({ root: assetsDirectory }));
+    app.use(
+      config.assetsMiddlewarePath ?? "/assets/*",
+      serveStatic({ root: assetsDirectory }),
+    );
     app.get("*", serveStatic({ path: `${assetsDirectory}/index.html` }));
   }
 };

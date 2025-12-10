@@ -12,9 +12,7 @@ export default defineConfig({
   server: {
     port: 4000,
   },
-  redirects: {
-    
-  },
+  redirects: {},
   outDir: "dist/client/",
   srcDir: "client/src",
   i18n: {

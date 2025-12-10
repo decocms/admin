@@ -13,15 +13,21 @@ import {
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
   isLoading: boolean;
+  isLoadingMore?: boolean;
   error: Error | null;
   registryId: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 export function StoreDiscoveryUI({
   items,
   isLoading,
+  isLoadingMore = false,
   error,
   registryId,
+  hasMore = false,
+  onLoadMore,
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -146,6 +152,29 @@ export function StoreDiscoveryUI({
                     title="All"
                     onItemClick={handleItemClick}
                   />
+                )}
+
+                {/* Load More Button */}
+                {hasMore && !search && (
+                  <div className="flex justify-center pt-4">
+                    <button
+                      onClick={onLoadMore}
+                      disabled={isLoadingMore}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="arrow_downward" size={16} />
+                          Load More
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             )}

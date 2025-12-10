@@ -48,7 +48,8 @@ function getPublisherInfo(
 
   const publisherLower = publisherName.toLowerCase();
   const matchingItems = items.filter((item) => {
-    const officialMeta = item._meta?.["io.modelcontextprotocol.registry/official"];
+    const officialMeta =
+      item._meta?.["io.modelcontextprotocol.registry/official"];
     const itemPublisher = officialMeta
       ? "io.modelcontextprotocol.registry/official"
       : item.publisher || item._meta?.["mcp.mesh"]?.scopeName || "Unknown";
@@ -175,18 +176,20 @@ function ToolsTable({
 function extractItemData(item: RegistryItem) {
   const publisherMeta = item.server?._meta?.["mcp.mesh/publisher-provided"];
   const decoMeta = item._meta?.["mcp.mesh"];
-  const officialMeta = item._meta?.["io.modelcontextprotocol.registry/official"];
+  const officialMeta =
+    item._meta?.["io.modelcontextprotocol.registry/official"];
   const server = item.server;
 
   // Extract connection type from remotes
   const connectionType = server?.remotes?.[0]?.type
-    ? server.remotes[0].type === "streamable-http" || server.remotes[0].type === "http"
+    ? server.remotes[0].type === "streamable-http" ||
+      server.remotes[0].type === "http"
       ? "HTTP"
       : server.remotes[0].type === "sse"
-      ? "SSE"
-      : server.remotes[0].type === "stdio"
-      ? "STDIO"
-      : server.remotes[0].type.toUpperCase()
+        ? "SSE"
+        : server.remotes[0].type === "stdio"
+          ? "STDIO"
+          : server.remotes[0].type.toUpperCase()
     : null;
 
   // Extract schema version from $schema URL
@@ -298,7 +301,10 @@ export default function StoreAppDetail() {
       items = listResults;
     } else if (typeof listResults === "object" && listResults !== null) {
       // Check for totalCount in the response
-      if ("totalCount" in listResults && typeof listResults.totalCount === "number") {
+      if (
+        "totalCount" in listResults &&
+        typeof listResults.totalCount === "number"
+      ) {
         totalCount = listResults.totalCount;
       }
 
@@ -308,7 +314,9 @@ export default function StoreAppDetail() {
       );
 
       if (itemsKey) {
-        items = listResults[itemsKey as keyof typeof listResults] as RegistryItem[];
+        items = listResults[
+          itemsKey as keyof typeof listResults
+        ] as RegistryItem[];
       }
     }
   }
@@ -495,7 +503,9 @@ export default function StoreAppDetail() {
                       target.style.display = "none";
                       const parent = target.parentElement;
                       if (parent) {
-                        parent.innerHTML = data.name.substring(0, 2).toUpperCase();
+                        parent.innerHTML = data.name
+                          .substring(0, 2)
+                          .toUpperCase();
                       }
                     }}
                     className="w-full h-full object-cover rounded-2xl"
@@ -574,25 +584,32 @@ export default function StoreAppDetail() {
                             target.style.display = "none";
                             const parent = target.parentElement;
                             if (parent) {
-                              const initials = data.publisher === "io.modelcontextprotocol.registry/official"
-                                ? "OR"
-                                : data.publisher.substring(0, 2).toUpperCase();
+                              const initials =
+                                data.publisher ===
+                                "io.modelcontextprotocol.registry/official"
+                                  ? "OR"
+                                  : data.publisher
+                                      .substring(0, 2)
+                                      .toUpperCase();
                               parent.innerHTML = initials;
                             }
                           }}
                           className="w-full h-full object-cover"
                         />
+                      ) : data.publisher ===
+                        "io.modelcontextprotocol.registry/official" ? (
+                        "OR"
                       ) : (
-                        data.publisher === "io.modelcontextprotocol.registry/official"
-                          ? "OR"
-                          : data.publisher.substring(0, 2).toUpperCase()
+                        data.publisher.substring(0, 2).toUpperCase()
                       )}
                     </div>
                     <div>
                       <div className="font-medium">
-                        {data.publisher === "io.modelcontextprotocol.registry/official"
+                        {data.publisher ===
+                        "io.modelcontextprotocol.registry/official"
                           ? "Official Registry"
-                          : data.publisher.charAt(0).toUpperCase() + data.publisher.slice(1)}
+                          : data.publisher.charAt(0).toUpperCase() +
+                            data.publisher.slice(1)}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         {publisherInfo.count > 0 ? (
@@ -619,26 +636,38 @@ export default function StoreAppDetail() {
 
                 {/* Technical Details */}
                 <div className="px-5 py-5 border-b border-border space-y-4">
-                  <h2 className="text-lg font-medium mb-3">Technical Details</h2>
-                  
+                  <h2 className="text-lg font-medium mb-3">
+                    Technical Details
+                  </h2>
+
                   {data.version && (
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Version</span>
-                      <span className="text-foreground font-medium">v{data.version}</span>
+                      <span className="text-foreground font-medium">
+                        v{data.version}
+                      </span>
                     </div>
                   )}
 
                   {data.connectionType && (
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Connection Type</span>
-                      <span className="text-foreground font-medium">{data.connectionType}</span>
+                      <span className="text-muted-foreground">
+                        Connection Type
+                      </span>
+                      <span className="text-foreground font-medium">
+                        {data.connectionType}
+                      </span>
                     </div>
                   )}
 
                   {data.schemaVersion && (
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Schema Version</span>
-                      <span className="text-foreground font-medium">{data.schemaVersion}</span>
+                      <span className="text-muted-foreground">
+                        Schema Version
+                      </span>
+                      <span className="text-foreground font-medium">
+                        {data.schemaVersion}
+                      </span>
                     </div>
                   )}
 

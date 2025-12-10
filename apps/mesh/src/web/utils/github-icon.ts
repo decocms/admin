@@ -16,7 +16,9 @@ export function extractGitHubRepo(repositoryUrl?: string | { url?: string }): {
   if (!url) return null;
 
   // Handle GitHub URLs
-  const githubMatch = url.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
+  const githubMatch = url.match(
+    /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/,
+  );
   if (githubMatch) {
     return {
       owner: githubMatch[1] || "",
@@ -26,7 +28,6 @@ export function extractGitHubRepo(repositoryUrl?: string | { url?: string }): {
 
   return null;
 }
-
 
 /**
  * Get GitHub avatar URL for a repository
@@ -44,4 +45,3 @@ export function getGitHubAvatarUrl(
   const avatarUrl = `https://images.weserv.nl/?url=${encodeURIComponent(githubAvatarUrl)}&output=webp`;
   return avatarUrl;
 }
-

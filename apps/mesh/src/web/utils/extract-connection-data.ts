@@ -10,6 +10,7 @@ import {
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_PUBLISHER_KEY,
 } from "@/web/utils/constants";
+import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
 
 /**
  * Extract connection data from a registry item for installation
@@ -56,7 +57,9 @@ export function extractConnectionData(
 
   const description = server?.description || null;
 
-  const icon = server?.icons?.[0]?.src || null;
+  // Get icon with GitHub fallback
+  const icon =
+    server?.icons?.[0]?.src || getGitHubAvatarUrl(server?.repository) || null;
 
   const rawOauthConfig = appMetadata?.oauth_config as
     | Record<string, unknown>

@@ -61,6 +61,11 @@ export interface MCPRegistryServer {
       url?: string;
     }>;
     version?: string;
+    repository?: {
+      url?: string;
+      source?: string;
+      subfolder?: string;
+    };
   };
 }
 
@@ -90,7 +95,8 @@ interface RegistryItemCardProps {
 }
 
 export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
-  const rawTitle = item.title || item.server?.title || item.id || "Unnamed Item";
+  const rawTitle =
+    item.title || item.server?.title || item.id || "Unnamed Item";
   const description = item.server?.description;
   const icon =
     item.server?.icons?.[0]?.src ||
@@ -98,11 +104,11 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
     null;
   const isVerified = item._meta?.["mcp.mesh"]?.verified ?? false;
   const version = item.server?.version;
-  
+
   // Extract scopeName and displayName from title if it contains "/"
   let displayName = rawTitle;
   let scopeName: string | null = null;
-  
+
   if (rawTitle.includes("/")) {
     const parts = rawTitle.split("/");
     if (parts.length >= 2) {
@@ -110,7 +116,7 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
       displayName = parts.slice(1).join("/"); // Handle cases with multiple "/"
     }
   }
-  
+
   // Fallback to _meta if scopeName wasn't extracted from title
   if (!scopeName) {
     const metaScopeName = item._meta?.["mcp.mesh"]?.scopeName;
@@ -156,9 +162,7 @@ export function RegistryItemCard({ item, onClick }: RegistryItemCardProps) {
                 </TooltipContent>
               </Tooltip>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {scopeName && (
-                  <span className="truncate">{scopeName}</span>
-                )}
+                {scopeName && <span className="truncate">{scopeName}</span>}
                 {version && (
                   <>
                     {scopeName && <span>•</span>}

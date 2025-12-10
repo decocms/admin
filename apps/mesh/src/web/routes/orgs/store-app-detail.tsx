@@ -4,7 +4,6 @@ import { CollectionTableWrapper } from "@/web/components/collections/collection-
 import { EmptyState } from "@/web/components/empty-state";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import {
-  ConnectionEntity,
   useConnection,
   useConnections,
   useConnectionsCollection,
@@ -22,7 +21,6 @@ import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useMcp } from "use-mcp/react";
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
 function getPublisherInfo(
@@ -283,143 +281,6 @@ export default function StoreAppDetail() {
     ? activeTabId
     : availableTabs[0]?.id || "overview";
 
-  const mcpAuthenticate = (connection: ConnectionEntity | null) => {
-       // Initialize MCP connection
-       const normalizeUrl = (url: string) => {
-        try {
-          const parsed = new URL(url);
-          parsed.pathname = parsed.pathname.replace(/\/i:([a-f0-9-]+)/gi, "/$1");
-          return parsed.toString();
-        } catch {
-          return url;
-        }
-      };
-    
-      const normalizedUrl = connection?.connection_url
-        ? normalizeUrl(connection.connection_url)
-        : "";
-    
-      const mcp = useMcp({
-        url: normalizedUrl,
-        clientName: "MCP Mesh Inspector",
-        clientUri: window.location.origin,
-        callbackUrl: `${window.location.origin}/oauth/callback`,
-        debug: false,
-        autoReconnect: true,
-        autoRetry: 5000,
-        onPopupWindow: (_url, _features, popupWindow) => {
-          const captureTokenSnapshot = (prefix: string): Map<string, string> => {
-            const snapshot = new Map<string, string>();
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
-              if (
-                key &&
-                key.startsWith(prefix) &&
-                (key.endsWith("_tokens") ||
-                  key.endsWith(":token") ||
-                  key.endsWith(":tokens"))
-              ) {
-                const value = localStorage.getItem(key);
-                if (value) {
-                  snapshot.set(key, value);
-                }
-              }
-            }
-            return snapshot;
-          };
-    
-          const tokenSnapshotBefore = captureTokenSnapshot("mcp:auth");
-    
-          if (connection && connection.id) {
-            localStorage.setItem(
-              "mcp_oauth_pending",
-              JSON.stringify({
-                connectionId: connection.id,
-                orgId: connection.organization_id,
-                connectionType: connection.connection_type,
-                connectionUrl: connection.connection_url,
-                timestamp: Date.now(),
-              }),
-            );
-          }
-    
-          const messageHandler = async (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-    
-            if (event.data.type === "mcp:oauth:complete") {
-              if (event.data.success && connection && connection.id) {
-                try {
-                  const tokenSnapshotAfter = captureTokenSnapshot("mcp:auth");
-                  let newOrChangedToken: string | null = null;
-    
-                  for (const [key, value] of tokenSnapshotAfter) {
-                    const beforeValue = tokenSnapshotBefore.get(key);
-                    if (!beforeValue || beforeValue !== value) {
-                      try {
-                        const parsed = JSON.parse(value);
-                        newOrChangedToken =
-                          parsed.access_token || parsed.accessToken || value;
-                      } catch {
-                        newOrChangedToken = value;
-                      }
-                      break;
-                    }
-                  }
-    
-                  if (newOrChangedToken) {
-                    if (!connectionsCollection) {
-                      throw new Error("Connections collection not initialized");
-                    }
-                    if (!connectionsCollection.has(connection.id as string)) {
-                      throw new Error("Connection not found in collection");
-                    }
-    
-                    const tx = connectionsCollection.update(
-                      connection.id as string,
-                      (draft: ConnectionEntity) => {
-                        draft.connection_type = connection.connection_type;
-                        draft.connection_url = connection.connection_url;
-                        draft.connection_token = newOrChangedToken;
-                      },
-                    );
-                    await tx.isPersisted.promise;
-                  }
-    
-                  localStorage.removeItem("mcp_oauth_pending");
-                } catch (saveErr) {
-                  toast.error(
-                    `Failed to save token: ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`,
-                  );
-                }
-    
-                if (popupWindow && !popupWindow.closed) {
-                  popupWindow.close();
-                }
-                window.removeEventListener("message", messageHandler);
-              } else if (!event.data.success) {
-                toast.error(`OAuth failed: ${event.data.error || "Unknown error"}`);
-                if (popupWindow && !popupWindow.closed) {
-                  popupWindow.close();
-                }
-                window.removeEventListener("message", messageHandler);
-              }
-            }
-          };
-    
-          window.addEventListener("message", messageHandler);
-          setTimeout(
-            () => {
-              window.removeEventListener("message", messageHandler);
-            },
-            5 * 60 * 1000,
-          );
-        },
-      });
-
-      mcp.authenticate();
-      console.log(mcp)
-  };
-
   const handleInstall = async () => {
     if (!selectedItem || !org || !session?.user?.id) return;
 
@@ -443,8 +304,6 @@ export default function StoreAppDetail() {
 
       // Use the deterministic ID to directly look up the connection
       const newConnection = connectionsCollection.get(connectionData.id);
-
-      mcpAuthenticate(newConnection as ConnectionEntity);
 
       if (newConnection?.id && org) {
         navigate({

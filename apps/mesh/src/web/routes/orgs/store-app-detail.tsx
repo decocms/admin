@@ -569,9 +569,7 @@ export default function StoreAppDetail() {
                         "io.modelcontextprotocol.registry/official" ? (
                         "OR"
                       ) : (
-                        data.publisher === "io.modelcontextprotocol.registry/official"
-                          ? "OR"
-                          : data.publisher.substring(0, 2).toUpperCase()
+                        data.publisher.substring(0, 2).toUpperCase()
                       )}
                     </div>
                     <div>

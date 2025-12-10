@@ -683,10 +683,7 @@ export function CreateRoleDialog({
                           }
                           variant="secondary"
                           className="w-full max-w-none"
-                          disabled={
-                            createRoleMutation.isPending ||
-                            availableTools.length === 0
-                          }
+                          disabled={isPending || availableTools.length === 0}
                           maxCount={3}
                         />
                       </FormControl>

@@ -17,6 +17,7 @@ import { useProjectContext } from "../providers/project-context-provider";
 interface PinToSidebarButtonProps {
   connectionId: string;
   title: string;
+  icon: string;
 }
 
 /**
@@ -25,6 +26,7 @@ interface PinToSidebarButtonProps {
 export function PinToSidebarButton({
   connectionId,
   title,
+  icon,
 }: PinToSidebarButtonProps) {
   const routerState = useRouterState();
   const url = routerState.location.href;
@@ -43,7 +45,7 @@ export function PinToSidebarButton({
       updatedItems = currentItems.filter((item) => item.url !== url);
     } else {
       // Insert new item
-      updatedItems = [...currentItems, { title, url, connectionId }];
+      updatedItems = [...currentItems, { title, url, connectionId, icon }];
     }
 
     const tx = collection.update(org.id, (draft) => {

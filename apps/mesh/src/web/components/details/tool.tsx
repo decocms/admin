@@ -183,6 +183,7 @@ export function ToolDetailsView({
         <PinToSidebarButton
           connectionId={connectionId}
           title={tool?.title ?? beautifyToolName(toolName)}
+          icon="build"
         />
       </ViewActions>
 

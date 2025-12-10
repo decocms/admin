@@ -53,7 +53,7 @@ function ThreadListItem({
           <Icon
             name="close"
             size={16}
-            className="text-muted-foreground opacity-0 group-hover/thread:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+            className="text-muted-foreground opacity-0 group-hover/thread:opacity-50 hover:opacity-100 cursor-pointer"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

@@ -6,6 +6,7 @@ const SidebarItemSchema = z.object({
   title: z.string(),
   url: z.string(),
   connectionId: z.string(),
+  icon: z.string(),
 });
 
 export const ORGANIZATION_SETTINGS_UPDATE = defineTool({

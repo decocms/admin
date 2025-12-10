@@ -225,7 +225,11 @@ export function AgentDetailsView({
       </ViewTabs>
 
       <ViewActions>
-        <PinToSidebarButton connectionId={connectionId} title={item.title} />
+        <PinToSidebarButton
+          connectionId={connectionId}
+          title={item.title}
+          icon={item.avatar ?? "smart_toy"}
+        />
         <Button
           className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-8 text-xs font-medium"
           onClick={handleSubmit(onSubmit)}

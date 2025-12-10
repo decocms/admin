@@ -39,6 +39,8 @@ function SidebarItemListItem({ item }: { item: SidebarItem }) {
     });
   };
 
+  const isIconUrl = /^https?:\/\/.+/.test(item.icon);
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -47,6 +49,21 @@ function SidebarItemListItem({ item }: { item: SidebarItem }) {
           navigate({ to: item.url });
         }}
       >
+        <div className="flex items-center justify-center shrink-0 mr-2">
+          {isIconUrl ? (
+            <img
+              src={item.icon}
+              alt={item.title}
+              className="h-4 w-4 rounded object-cover"
+            />
+          ) : (
+            <Icon
+              name={item.icon}
+              size={16}
+              className="text-muted-foreground"
+            />
+          )}
+        </div>
         <div className="flex-1 min-w-0 flex flex-col items-start">
           <span className="truncate text-sm w-full capitalize">
             {item.title.toLocaleLowerCase()}
@@ -55,7 +72,7 @@ function SidebarItemListItem({ item }: { item: SidebarItem }) {
         <Icon
           name="close"
           size={16}
-          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer absolute right-1 top-1/2 -translate-y-1/2"
+          className="text-muted-foreground opacity-0 group-hover/item:opacity-50 hover:opacity-100 cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

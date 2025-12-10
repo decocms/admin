@@ -15,7 +15,7 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
   inputSchema: z.object({
     organizationId: z.string().optional(), // Optional: defaults to active organization
     memberId: z.string(),
-    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["member"])
+    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["user"])
   }),
 
   outputSchema: z.object({
@@ -50,13 +50,11 @@ export const ORGANIZATION_MEMBER_UPDATE_ROLE = defineTool({
       );
     }
 
-    // Update member role via Better Auth
-    const result = await ctx.authInstance.api.updateMemberRole({
-      body: {
-        organizationId,
-        memberId: input.memberId,
-        role: input.role,
-      } as { organizationId: string; memberId: string; role: string[] },
+    // Update member role via bound auth client
+    const result = await ctx.boundAuth.organization.updateMemberRole({
+      organizationId,
+      memberId: input.memberId,
+      role: input.role,
     });
 
     if (!result) {

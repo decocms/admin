@@ -11,6 +11,7 @@
 
 import { getToolsByCategory } from "@/tools/registry";
 import { sso } from "@better-auth/sso";
+import { organization } from "@decocms/better-auth/plugins";
 import { betterAuth } from "better-auth";
 import {
   admin as adminPlugin,
@@ -19,7 +20,6 @@ import {
   magicLink,
   mcp,
   openAPI,
-  organization,
   OrganizationOptions,
 } from "better-auth/plugins";
 import {
@@ -28,7 +28,7 @@ import {
 } from "better-auth/plugins/organization/access";
 
 import { config } from "@/core/config";
-import { createAccessControl, Role } from "better-auth/plugins/access";
+import { createAccessControl, Role } from "@decocms/better-auth/plugins/access";
 import { getDatabaseUrl, getDbDialect } from "../database";
 import { createEmailSender, findEmailProvider } from "./email-providers";
 import { createMagicLinkConfig } from "./magic-link";
@@ -95,6 +95,14 @@ if (
   }
 }
 
+/**
+ * Built-in roles that have full access (owner, admin, user)
+ * These bypass custom permission checks
+ */
+export const BUILTIN_ROLES = ["owner", "admin", "user"] as const;
+const ADMIN_ROLES: BuiltinRole[] = ["owner", "admin"];
+export type BuiltinRole = (typeof BUILTIN_ROLES)[number];
+
 const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
@@ -105,6 +113,14 @@ const plugins = [
     dynamicAccessControl: {
       enabled: true,
       maximumRolesPerOrganization: 500,
+      enableCustomResources: true,
+      allowedRolesToCreateResources: ADMIN_ROLES,
+      resourceNameValidation: (name) => {
+        // allow only alphanumeric characters, hyphens and underscores
+        return {
+          valid: /^[a-zA-Z0-9-_]+$/.test(name),
+        };
+      },
     },
     roles: {
       user,

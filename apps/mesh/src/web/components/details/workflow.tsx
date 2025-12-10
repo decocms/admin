@@ -1,11 +1,11 @@
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { WorkflowExecutionWithStepResults } from "@decocms/bindings/workflow";
 import { ViewActions, ViewLayout, ViewTabs } from "./layout";
-import { WorkflowSteps } from "../workflow/steps";
-
-import { ScrollArea } from "@deco/ui/components/scroll-area.js";
-import { WorkflowStoreProvider } from "@/web/stores/workflow";
-import { useScrollFade } from "../selectable-list";
+import { WorkflowSteps } from "../workflow/steps/index";
+import {
+  useCurrentStepName,
+  WorkflowStoreProvider,
+} from "@/web/stores/workflow";
 import { useWorkflowCollectionItem } from "@/web/hooks/workflows/use-workflow-collection-item";
 import { WorkflowActions } from "../workflow/actions";
 import { StepTabs, WorkflowTabs } from "../workflow/tabs";
@@ -63,7 +63,7 @@ export interface StreamResponse {
 }
 
 export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
-  const scroll = useScrollFade();
+  const currentStepName = useCurrentStepName();
 
   return (
     <ViewLayout onBack={onBack}>
@@ -76,28 +76,11 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
       </ViewActions>
 
       {/* Main Content */}
-      <div className="flex w-full h-full bg-background">
-        <div className="flex gap-2 items-start w-2/3 h-full py-8">
-          <ScrollArea
-            hideScrollbar
-            className="w-full h-full"
-            ref={scroll.ref}
-            onScroll={scroll.onScroll}
-            style={
-              scroll.showFade
-                ? {
-                    maskImage:
-                      "linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)",
-                  }
-                : undefined
-            }
-          >
-            <div className="w-1/3 mx-auto h-full">
-              <WorkflowSteps />
-            </div>
-          </ScrollArea>
+      <div className="flex w-full h-full bg-background overflow-hidden">
+        <div className="flex-1 h-full">
+          <WorkflowSteps />
         </div>
-        <StepTabs />
+        {currentStepName && <StepTabs />}
       </div>
     </ViewLayout>
   );

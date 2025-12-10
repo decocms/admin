@@ -218,6 +218,7 @@ type ToolDetailProps = {
   mcp: ReturnType<typeof useTool>["mcp"];
   connection: ReturnType<typeof useTool>["connection"];
   onBack: () => void;
+  onInputChange?: (input: Record<string, unknown>) => void;
   initialInputParams?: Record<string, unknown>;
   withHeader?: boolean;
 };
@@ -236,6 +237,7 @@ export function ToolDetail({
   mcp,
   connection,
   onBack,
+  onInputChange,
   initialInputParams,
   withHeader = true,
 }: ToolDetailProps) {
@@ -320,6 +322,7 @@ export function ToolDetail({
 
   const handleInputChange = (key: string, value: string) => {
     setInputParams((prev) => ({ ...prev, [key]: value }));
+    onInputChange?.({ [key]: value });
   };
 
   if (!connection) {
@@ -334,11 +337,11 @@ export function ToolDetail({
     return <div>Tool not found</div>;
   }
   return (
-    <div className="flex flex-col items-center w-full mx-auto gap-4">
+    <div className="flex flex-col items-center w-full mx-auto gap-4 h-full min-h-0">
       {withHeader && <ToolHeader tool={tool} />}
 
       {/* Stats Row */}
-      <div className="flex items-center gap-4 py-2">
+      <div className="flex items-center gap-4 py-2 shrink-0">
         {/* MCP Status */}
         <div className="flex items-center gap-2">
           {mcp.state === "ready" ? (
@@ -384,10 +387,10 @@ export function ToolDetail({
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col gap-4 w-full max-w-[800px] items-center">
+      <div className="flex flex-col gap-4 w-full max-w-[800px] items-center h-full flex-1 min-h-0">
         {/* Input Section */}
-        <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
+        <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 shrink-0">
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 rounded-sm bg-primary/10 flex items-center justify-center">
                 <Play className="h-3 w-3 text-primary" />
@@ -410,7 +413,7 @@ export function ToolDetail({
             </Button>
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 shrink-0 overflow-auto max-h-[40%]">
             {(mcp.state === "pending_auth" ||
               (!connection.connection_token && mcp.state === "failed")) && (
               <Alert variant="destructive" className="mb-4">
@@ -437,7 +440,7 @@ export function ToolDetail({
               handleInputChange={handleInputChange}
             />
           </div>
-          <div className="flex-1 shrink-0">
+          <div className="flex-1 min-h-0">
             <ExecutionResult
               executionResult={executionResult}
               placeholder="Run the tool to see results"
@@ -458,7 +461,7 @@ export function ExecutionResult({
 }) {
   const [viewMode, setViewMode] = useState<"json" | "view">("json");
   return (
-    <div className="w-full bg-card shadow-sm h-full border-t border-border overflow-hidden">
+    <div className="w-full shadow-sm h-full border-t border-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
         <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
           Execution Result
@@ -492,7 +495,7 @@ export function ExecutionResult({
         </div>
       </div>
 
-      <div className="relative bg-zinc-950 text-zinc-50 p-4 font-mono text-xs flex-1 h-full">
+      <div className="relative bg-zinc-950 text-zinc-50 p-4 font-mono text-xs h-full flex-1">
         {executionResult ? (
           <ScrollArea className="h-full w-full">
             <pre className="whitespace-pre-wrap break-all">
@@ -500,7 +503,7 @@ export function ExecutionResult({
             </pre>
           </ScrollArea>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700">
+          <div className="flex flex-col items-center justify-center text-zinc-700 py-4 h-full">
             <Code className="h-8 w-8 mb-2 opacity-50" />
             {placeholder && <p>{placeholder}</p>}
           </div>

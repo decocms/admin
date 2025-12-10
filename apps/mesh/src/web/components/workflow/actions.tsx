@@ -1,4 +1,9 @@
-import { useWorkflow, useWorkflowActions } from "@/web/stores/workflow";
+import {
+  useIsDirty,
+  useTrackingExecutionId,
+  useWorkflow,
+  useWorkflowActions,
+} from "@/web/stores/workflow";
 import { Icon } from "@deco/ui/components/icon.js";
 import { Button } from "@deco/ui/components/button.js";
 
@@ -10,7 +15,8 @@ export function WorkflowActions({
   const { resetToOriginalWorkflow, setTrackingExecutionId } =
     useWorkflowActions();
   const workflow = useWorkflow();
-
+  const trackingExecutionId = useTrackingExecutionId();
+  const isDirty = useIsDirty();
   return (
     <>
       <Button
@@ -18,6 +24,7 @@ export function WorkflowActions({
         size="sm"
         className="h-7 text-muted-foreground font-normal"
         onClick={() => resetToOriginalWorkflow()}
+        disabled={!isDirty}
       >
         <Icon name="refresh" className="w-4 h-4" />
         Reset
@@ -29,6 +36,7 @@ export function WorkflowActions({
         onClick={() => {
           setTrackingExecutionId(undefined);
         }}
+        disabled={!trackingExecutionId}
       >
         <Icon name="clear" className="w-4 h-4" />
         Clear
@@ -36,6 +44,7 @@ export function WorkflowActions({
       <Button
         className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-7 text-xs font-medium"
         onClick={() => onUpdate(workflow)}
+        disabled={!isDirty}
       >
         Save changes
       </Button>

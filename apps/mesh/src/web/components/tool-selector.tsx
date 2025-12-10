@@ -1,34 +1,28 @@
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
-import {
-  ListHeader,
-  ListItemRow,
-  SelectableList,
-} from "@/web/components/selectable-list.tsx";
 import { useConnections } from "@/web/hooks/collections/use-connection";
-import { Input } from "@deco/ui/components/input.tsx";
+import {
+  Command,
+  CommandItem,
+  CommandGroup,
+  CommandList,
+  CommandInput,
+} from "@deco/ui/components/command.js";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { ChevronRight, Search } from "lucide-react";
-import { useMemo } from "react";
+import { ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
 
 export interface ToolSelectorProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
   selectedConnectionId: string | null;
   onConnectionSelect: (connectionId: string | null) => void;
-  selectedToolName: string | null;
-  onToolNameChange: (toolName: string | null) => void;
 }
 
-export function ToolSelector({
-  searchQuery,
-  onSearchChange,
+export function ConnectionSelector({
   selectedConnectionId,
   onConnectionSelect,
-  selectedToolName,
-  onToolNameChange,
 }: ToolSelectorProps) {
   // Load all connections once, filter client-side to avoid re-fetch flicker
   const allConnections = useConnections();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Client-side search filtering
   const connections = useMemo(() => {
@@ -47,115 +41,34 @@ export function ToolSelector({
     [allConnections, selectedConnectionId],
   );
 
-  const connectionTools = useMemo(
-    () => selectedConnection?.tools ?? [],
-    [selectedConnection],
-  );
-
-  const isToolSelected = (toolName: string) => selectedToolName === toolName;
-
   return (
     <div className="flex flex-col">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
+      <Command>
+        <CommandInput
           placeholder="Search connections..."
           value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 rounded-none border-0 border-b border-border h-10 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+          onValueChange={(value) => setSearchQuery(value)}
         />
-      </div>
-
-      <SelectableList
-        items={connections}
-        maxHeight="140px"
-        emptyMessage={
-          searchQuery ? "No connections found" : "No connections available"
-        }
-        header={
-          connections.length > 0 && (
-            <ListHeader label="Connections" count={connections.length} />
-          )
-        }
-        renderItem={(connection) => (
-          <ListItemRow
-            selected={selectedConnectionId === connection.id}
-            onClick={() => onConnectionSelect(connection.id)}
-          >
-            <IntegrationIcon
-              icon={connection.icon}
-              name={connection.title}
-              size="sm"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {connection.title}
-              </p>
-            </div>
-            <ChevronRight
-              className={cn(
-                "h-4 w-4 shrink-0 transition-colors",
-                selectedConnectionId === connection.id
-                  ? "text-foreground"
-                  : "text-muted-foreground/50",
-              )}
-            />
-          </ListItemRow>
-        )}
-      />
-
-      {selectedConnection && (
-        <div className="border-t border-border">
-          <SelectableList
-            items={connectionTools.map((t) => ({ ...t, id: t.name }))}
-            maxHeight="200px"
-            emptyMessage="No tools available"
-            header={
-              <ListHeader
-                label="Tools"
-                count={connectionTools.length}
-                trailing={
-                  <div className="flex items-center gap-1.5">
-                    <IntegrationIcon
-                      icon={selectedConnection.icon}
-                      name={selectedConnection.title}
-                      size="sm"
-                      className="size-4"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {selectedConnection.title}
-                    </span>
-                  </div>
-                }
-              />
-            }
-            renderItem={(tool) => {
-              const selected = isToolSelected(tool.name);
-              return (
-                <ListItemRow
-                  className={cn(
-                    "flex items-start gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer",
-                    selected && "bg-primary/10 hover:bg-primary/20",
-                  )}
-                  onClick={() => onToolNameChange(tool.name)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground block">
-                      {tool.name}
-                    </span>
-                    {tool.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                        {tool.description}
-                      </p>
-                    )}
-                  </div>
-                </ListItemRow>
-              );
-            }}
-          />
-        </div>
-      )}
+        <CommandList>
+          <CommandGroup>
+            {connections.map((connection) => (
+              <CommandItem
+                key={connection.id}
+                value={connection.id}
+                onSelect={() => onConnectionSelect(connection.id)}
+              >
+                <ItemCard
+                  item={{
+                    icon: connection.icon ?? "",
+                    title: connection.title,
+                  }}
+                  selected={selectedConnectionId === connection.id}
+                />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
 
       {/* Empty state when no connection selected */}
       {!selectedConnection && connections.length > 0 && (
@@ -165,6 +78,90 @@ export function ToolSelector({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+export function ToolSelector({
+  selectedConnectionId,
+  selectedToolName,
+  onToolNameChange,
+}: {
+  selectedConnectionId: string | null;
+  selectedToolName: string | null;
+  onToolNameChange: (toolName: string | null) => void;
+}) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const connections = useConnections();
+  const selectedConnection = useMemo(() => {
+    return connections.find((c) => c.id === selectedConnectionId);
+  }, [connections, selectedConnectionId]);
+  const connectionTools = useMemo(
+    () => selectedConnection?.tools ?? [],
+    [selectedConnection],
+  );
+  const isToolSelected = (toolName: string) => selectedToolName === toolName;
+  return (
+    selectedConnection && (
+      <div className="border-t border-border">
+        <div className="relative">
+          <Command>
+            <CommandInput
+              placeholder="Search tools..."
+              value={searchQuery}
+              onValueChange={(value) => setSearchQuery(value)}
+            />
+            <CommandList>
+              <CommandGroup>
+                {connectionTools.map((t) => (
+                  <CommandItem
+                    key={t.name}
+                    value={t.name}
+                    onSelect={() => onToolNameChange(t.name)}
+                  >
+                    <ItemCard
+                      item={{ icon: null, title: t.name }}
+                      selected={isToolSelected(t.name)}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </div>
+      </div>
+    )
+  );
+}
+
+export function ItemCard({
+  item,
+  selected,
+}: {
+  item: { icon: string | null; title: string };
+  selected: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer w-full",
+        selected && "bg-primary/10 hover:bg-primary/20",
+      )}
+    >
+      {item.icon !== null && (
+        <IntegrationIcon icon={item.icon ?? null} name={item.title} size="sm" />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">
+          {item.title}
+        </p>
+      </div>
+      <ChevronRight
+        className={cn(
+          "h-4 w-4 shrink-0 transition-colors",
+          selected ? "text-foreground" : "text-muted-foreground/50",
+        )}
+      />
     </div>
   );
 }

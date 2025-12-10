@@ -117,7 +117,6 @@ export function useStreamToolCall<TInput, TOutput>(
     ...query,
     enabled,
     select: (data) => {
-      console.log("data", data);
       if (!data.length) return undefined;
 
       // Get the latest response as the base

@@ -30,7 +30,7 @@ interface StreamResponse {
   error?: string;
 }
 
-export function useStreamWorkflowExecution(
+function useStreamedWorkflowExecutionToolCall(
   executionId?: string,
   options: {
     onComplete?: () => void;
@@ -49,9 +49,6 @@ export function useStreamWorkflowExecution(
 
   const toolInputParams = useMemo(() => ({ id: executionId! }), [executionId]);
 
-  console.log("toolInputParams", toolInputParams);
-  console.log("enabled", options?.enabled && !!executionId);
-
   return useStreamToolCall<{ id: string }, StreamResponse>({
     connectionId,
     toolName: "STREAM_WORKFLOW_EXECUTION_GET",
@@ -63,22 +60,17 @@ export function useStreamWorkflowExecution(
         step_results?: WorkflowExecutionStepResult[];
       } | null;
     }) => {
-      console.log("data", data);
       options?.onData?.(data);
     },
     onComplete: () => {
-      console.log("onComplete");
       options?.onComplete?.();
     },
   });
 }
 
-export function WorkflowExecutionDetailsView({
-  itemId,
-  onBack,
-}: WorkflowExecutionDetailsViewProps) {
-  const { data, isLoading, error } = useStreamWorkflowExecution(itemId);
-  console.log("dataMain", data);
+export function useStreamedWorkflowExecution(executionId?: string) {
+  const { data, isLoading, error, isFetching, isFetched, refetch } =
+    useStreamedWorkflowExecutionToolCall(executionId);
 
   const execution = useMemo(() => data?.item, [data]);
   const stepResults = useMemo(() => execution?.step_results ?? [], [execution]);
@@ -109,6 +101,32 @@ export function WorkflowExecutionDetailsView({
       : null;
   }, [execution]);
 
+  return {
+    execution,
+    stepResults,
+    streamingTextByStep,
+    input,
+    isLoading,
+    error,
+    isFetching,
+    isFetched,
+    refetch,
+  };
+}
+
+export function WorkflowExecutionDetailsView({
+  itemId,
+  onBack,
+}: WorkflowExecutionDetailsViewProps) {
+  const {
+    execution,
+    stepResults,
+    streamingTextByStep,
+    input,
+    isLoading,
+    error,
+  } = useStreamedWorkflowExecution(itemId);
+
   // Show loading state while streaming hasn't received first data
   if (!execution && isLoading) {
     return (
@@ -119,14 +137,14 @@ export function WorkflowExecutionDetailsView({
   }
 
   // Show error state
-  if (error || data?.error) {
+  if (error || execution?.error) {
     return (
       <ViewLayout onBack={onBack}>
         <div className="flex h-full items-center justify-center">
           <div className="text-center text-destructive">
             <p className="text-lg font-medium">Error loading execution</p>
             <p className="text-sm text-muted-foreground">
-              {error?.message || data?.error}
+              {error?.message || JSON.stringify(execution?.error)}
             </p>
           </div>
         </div>

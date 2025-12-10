@@ -6,7 +6,7 @@ export const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96a3NnZG15cnFjeGN3aG5iZXBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3NzU3MDEsImV4cCI6MjA3MjM1MTcwMX0.X1SIxXbivIa2dEkWGfn6xigoHCms9Kri9SLu8N-VWck";
 
 const DECO_CMS_WEB_URL = LOCAL_DEBUGGER
-  ? "http://localhost:3000"
+  ? "http://localhost:8002"
   : "https://admin.decocms.com";
 
 export const DECO_CMS_API_PROD = "https://api.decocms.com";

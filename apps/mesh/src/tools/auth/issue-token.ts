@@ -1,4 +1,3 @@
-import { responseToStream } from "@/api/llm-provider";
 import { createMCPProxy } from "@/api/routes/proxy";
 import { defineTool } from "@/core/define-tool";
 import { requireAuth } from "@/core/mesh-context";
@@ -12,28 +11,21 @@ export const CALL_TOOL = defineTool({
     arguments: z.record(z.any()).optional(),
   }),
   outputSchema: z.object({
-    response: z.any(),
+    response: z.unknown(),
   }),
-  description: "Issue a signed JWT with mesh token payload",
+  description: "Call a tool using the MCP proxy",
   handler: async (props, ctx) => {
     try {
       requireAuth(ctx);
       await ctx.access.check();
       const proxy = await createMCPProxy(props.connection, ctx);
-      const response = await proxy.callStreamableTool(
-        props.tool,
-        props.arguments ?? {},
-      );
+      const response = await proxy.client.callTool({
+        name: props.tool,
+        arguments: props.arguments ?? {},
+      });
+      // const tools = await proxy.client.listTools()
 
-      const stream = responseToStream(response);
-      const reader = stream.getReader();
-      let result = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        result += value;
-      }
-      return { response: result };
+      return { response: response.structuredContent ?? response.content };
     } catch (error) {
       console.error({ error });
       throw error;

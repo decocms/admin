@@ -163,7 +163,7 @@ export function MonacoCodeEditor({
   };
 
   return (
-    <div className="rounded-lg overflow-hidden border border-base-border">
+    <div className="rounded-lg border border-base-border h-full">
       <div className="flex justify-end gap-2 p-2 bg-[#1e1e1e] border-b border-[#3c3c3c]">
         <button
           onClick={handleFormat}

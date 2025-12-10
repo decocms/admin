@@ -293,7 +293,6 @@ export async function createMCPProxy(
   const executeToolCall = async (
     request: CallToolRequest,
   ): Promise<CallToolResult> => {
-    console.log({ request });
     return callToolPipeline(request, async (): Promise<CallToolResult> => {
       const client = await createClient();
       const startTime = Date.now();
@@ -329,7 +328,6 @@ export async function createMCPProxy(
             });
 
             span.end();
-            console.log({ result });
             return result as CallToolResult;
           } catch (error) {
             const err = error as Error;
@@ -560,7 +558,6 @@ app.post("/:connectionId/stream/:toolName", async (c) => {
 app.all("/:connectionId", async (c) => {
   const connectionId = c.req.param("connectionId");
   const ctx = c.get("meshContext");
-  console.log({ c });
 
   try {
     const proxy = await createMCPProxy(connectionId, ctx);

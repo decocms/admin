@@ -122,6 +122,7 @@ async function authenticateRequest(
   organization?: OrganizationContext;
 }> {
   const authHeader = c.req.header("Authorization");
+  console.log({ authHeader });
 
   // Try OAuth session first (getMcpSession)
   try {
@@ -170,6 +171,7 @@ async function authenticateRequest(
     // These are issued by mesh for downstream services calling back
     try {
       const meshJwtPayload = await verifyMeshToken(token);
+      console.log({ meshJwtPayload });
       if (meshJwtPayload) {
         return {
           user: { id: meshJwtPayload.sub },

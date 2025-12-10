@@ -18,6 +18,7 @@ interface StoreDiscoveryUIProps {
   registryId: string;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  totalCount?: number | null;
 }
 
 export function StoreDiscoveryUI({
@@ -28,6 +29,7 @@ export function StoreDiscoveryUI({
   registryId,
   hasMore = false,
   onLoadMore,
+  totalCount,
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -170,6 +172,7 @@ export function StoreDiscoveryUI({
                     items={allItems}
                     title="All"
                     onItemClick={handleItemClick}
+                    totalCount={totalCount}
                   />
                 )}
 

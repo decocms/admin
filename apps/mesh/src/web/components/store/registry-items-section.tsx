@@ -90,21 +90,28 @@ interface RegistryItemsSectionProps {
   title: string;
   subtitle?: string;
   onItemClick: (item: RegistryItem) => void;
+  totalCount?: number | null;
 }
 
 export function RegistryItemsSection({
   items,
   title,
   onItemClick,
+  totalCount,
 }: RegistryItemsSectionProps) {
   if (items.length === 0) return null;
+
+  const itemsText =
+    totalCount != null
+      ? `${items.length} of ${totalCount}`
+      : `${items.length} items`;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between w-max gap-2">
         <h2 className="text-lg font-medium">{title}</h2>
         <span className="block text-xs text-muted-foreground">
-          {items.length} items
+          {itemsText}
         </span>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(259px,1fr))] gap-4">

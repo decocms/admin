@@ -5,6 +5,9 @@
   "exports": {
     ".": "./index.ts"
   },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
   "dependencies": {
     "vite": "^7.2.1",
     "@cloudflare/vite-plugin": "^1.13.4"

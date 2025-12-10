@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "check": "tsc --noEmit",
     "test:watch": "vitest"
   },
   "dependencies": {

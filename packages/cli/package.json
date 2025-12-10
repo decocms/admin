@@ -27,7 +27,7 @@
     "build": "tsup",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "type-check": "tsc --noEmit",
+    "check": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "postpublish": "echo 'Published deco-cli to npm registry!'"
   },

@@ -3,7 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": {},
   "exports": {
     "./components/*": "./src/components/*",
     "./hooks/*": "./src/hooks/*",

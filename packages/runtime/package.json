@@ -1,7 +1,10 @@
 {
   "name": "@decocms/runtime",
-  "version": "1.0.0-alpha.31",
+  "version": "1.0.0-alpha.32",
   "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.7.8",

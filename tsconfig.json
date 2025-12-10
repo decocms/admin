@@ -64,7 +64,6 @@
   },
   "include": ["apps/**/*", "packages/**/*", "plugins/**/*"],
   "exclude": [
-    "apps/mesh/**",
     "node_modules",
     "apps/*/node_modules",
     "packages/*/node_modules",
@@ -73,7 +72,6 @@
     "**/.wrangler",
     "packages/runtime/scripts/generate-cf-imports.ts",
     "packages/runtime/scripts/generate-json-schema.ts",
-    "docs/server/**",
     "plugins/*",
     "**/*.test.ts",
     "**/*.test.tsx",

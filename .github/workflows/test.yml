@@ -29,11 +29,7 @@ jobs:
         run: bun run lint
 
       - name: Run check
-        run: bun run check
-
-      - name: Run mesh check
-        run: bun run check
-        working-directory: apps/mesh
+        run: bun run check:ci
 
       - name: Run test
         run: bun run test

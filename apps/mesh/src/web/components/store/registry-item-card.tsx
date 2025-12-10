@@ -177,7 +177,9 @@ export function RegistryItemCard({
                 </TooltipContent>
               </Tooltip>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {scopeName && <span className="truncate">{scopeName}</span>}
+                {scopeName && (
+                  <span className="truncate">{scopeName}</span>
+                )}
                 {version && (
                   <>
                     {scopeName && <span>•</span>}

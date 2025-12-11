@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { BellIcon, ClockIcon, CodeXml, Wrench } from "lucide-react";
 import type { Step } from "@decocms/bindings/workflow";
 import { Card, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
@@ -48,11 +47,11 @@ export function StepCard({
   iconBgColor = "primary",
   className,
 }: StepCardProps) {
-  const displayIcon = useMemo(() => {
+  const displayIcon = (() => {
     if (icon) return icon;
     console.log("🚀 ~ displayIcon ~ step:", step);
     return getStepIcon(step);
-  }, [icon, step]);
+  })();
 
   return (
     <Card
@@ -66,7 +65,7 @@ export function StepCard({
         <div className="flex flex-1 items-center gap-2 min-w-0">
           <div
             className={cn(
-              "h-6 w-6 p-1 flex-shrink-0 flex items-center justify-center rounded-md",
+              "h-6 w-6 p-1 shrink-0 flex items-center justify-center rounded-md",
               `bg-${iconBgColor}`,
             )}
           >

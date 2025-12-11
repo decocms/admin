@@ -1,4 +1,3 @@
-import { useMemo, useCallback } from "react";
 import type {
   Node,
   Edge,
@@ -119,7 +118,7 @@ export function useWorkflowNodes(): WorkflowNode[] {
   const trackingExecutionId = useTrackingExecutionId();
   const { getStepResult, isFetching, isFetched } = useWorkflowExecution();
 
-  return useMemo(() => {
+  return (() => {
     const positions = computeNodePositions(steps);
     const isExecuting = !!trackingExecutionId;
 
@@ -173,7 +172,7 @@ export function useWorkflowNodes(): WorkflowNode[] {
       });
 
     return [triggerNode, ...stepNodes];
-  }, [steps, trackingExecutionId, getStepResult, isFetching, isFetched]);
+  })();
 }
 
 /**
@@ -182,7 +181,7 @@ export function useWorkflowNodes(): WorkflowNode[] {
 export function useWorkflowEdges(): WorkflowEdge[] {
   const steps = useWorkflowSteps();
 
-  return useMemo(() => {
+  return (() => {
     const dagEdges = buildDagEdges(steps);
 
     // Find root steps (no dependencies) and connect them to trigger
@@ -217,7 +216,7 @@ export function useWorkflowEdges(): WorkflowEdge[] {
     }
 
     return edges;
-  }, [steps]);
+  })();
 }
 
 /**
@@ -226,16 +225,13 @@ export function useWorkflowEdges(): WorkflowEdge[] {
 export function useNodeSelection() {
   const { setCurrentStepName } = useWorkflowActions();
 
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      if (node.id === TRIGGER_NODE_ID) {
-        setCurrentStepName("Manual");
-      } else {
-        setCurrentStepName(node.id);
-      }
-    },
-    [setCurrentStepName],
-  );
+  const onNodeClick = (_: React.MouseEvent, node: Node) => {
+    if (node.id === TRIGGER_NODE_ID) {
+      setCurrentStepName("Manual");
+    } else {
+      setCurrentStepName(node.id);
+    }
+  };
 
   return { onNodeClick };
 }
@@ -250,13 +246,13 @@ export function useWorkflowFlow() {
 
   // For controlled React Flow, we need change handlers
   // Since positions are derived, we make these no-ops
-  const onNodesChange: OnNodesChange = useCallback((_changes: NodeChange[]) => {
+  const onNodesChange: OnNodesChange = (_changes: NodeChange[]) => {
     // No-op: positions are derived from step levels
-  }, []);
+  };
 
-  const onEdgesChange: OnEdgesChange = useCallback((_changes: EdgeChange[]) => {
+  const onEdgesChange: OnEdgesChange = (_changes: EdgeChange[]) => {
     // No-op: edges are derived from step dependencies
-  }, []);
+  };
 
   return {
     nodes,

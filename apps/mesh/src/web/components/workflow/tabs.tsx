@@ -3,7 +3,6 @@ import {
   useCurrentStep,
   useDraftStep,
   useIsAddingStep,
-  useTrackingExecutionId,
   useWorkflowActions,
 } from "@/web/stores/workflow";
 import {
@@ -14,9 +13,7 @@ import {
 } from "@deco/ui/components/tabs.js";
 import { Textarea } from "@deco/ui/components/textarea.js";
 import { cn } from "@deco/ui/lib/utils.js";
-import { useCallback, useMemo, useState } from "react";
-import { useStreamedWorkflowExecution } from "../details/workflow-execution";
-import { getStepResults } from "./steps/index";
+import { useState } from "react";
 import {
   CodeAction,
   SleepAction,
@@ -69,54 +66,6 @@ export function StepTabs() {
     setActiveTab(tab);
   };
 
-  const trackingExecutionId = useTrackingExecutionId();
-  const { execution, stepResults } =
-    useStreamedWorkflowExecution(trackingExecutionId);
-
-  const currentStepOutput = useMemo(() => {
-    console.log({ currentStep, stepResults });
-    if (!currentStep?.name) return null;
-
-    // Check for exact match first
-    const exact = stepResults.find(
-      (result) => result.step_id === currentStep.name,
-    );
-    if (exact?.output) return exact.output as Record<string, unknown>;
-    if (exact?.error) return { error: exact.error };
-
-    // Check for loop results (stepName[N] pattern)
-    const pattern = new RegExp(`^${currentStep.name}\\[\\d+\\]$`);
-    const loopResults = stepResults.filter((r) => pattern.test(r.step_id));
-    if (loopResults.length > 0) {
-      return loopResults.map((r) => r.output) as unknown as Record<
-        string,
-        unknown
-      >;
-    }
-
-    return null;
-  }, [stepResults, currentStep?.name]);
-
-  const executionResult = useMemo(() => {
-    if (!currentStep?.name) return null;
-
-    const results = getStepResults(
-      currentStep.name,
-      execution?.step_results,
-      execution?.stream_chunks,
-    );
-
-    if (results.length === 0) return null;
-
-    // If multiple results (loop), aggregate outputs
-    if (results.length > 1) {
-      return results.map((r) => r.output) as unknown as Record<string, unknown>;
-    }
-
-    return results[0]?.output as Record<string, unknown> | null;
-  }, [execution?.step_results, execution?.stream_chunks, currentStep?.name]);
-
-  console.log({ currentStepOutput, executionResult });
   return (
     <Tabs
       value={activeTab}
@@ -162,7 +111,7 @@ export function StepTabs() {
           <div className="h-full">
             <ExecutionResult
               placeholder="No output found"
-              executionResult={currentStepOutput ?? executionResult}
+              executionResult={{}}
             />
           </div>
         )}
@@ -240,29 +189,19 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
   const isAddingStep = useIsAddingStep();
   const connections = useConnections();
 
-  const updateStepAction = useCallback(
-    (newToolName: string | null) => {
-      setSelectedToolName(newToolName);
-      if (isAddingStep) return;
-      if (!currentStep?.name) return;
-      if (!selectedConnectionId || !newToolName) return;
-      updateStep(currentStep.name, {
-        action: {
-          ...step.action,
-          toolName: newToolName,
-          connectionId: selectedConnectionId,
-        },
-      });
-    },
-    [
-      isAddingStep,
-      currentStep?.name,
-      selectedConnectionId,
-      selectedToolName,
-      updateStep,
-      step.action,
-    ],
-  );
+  const updateStepAction = (newToolName: string | null) => {
+    setSelectedToolName(newToolName);
+    if (isAddingStep) return;
+    if (!currentStep?.name) return;
+    if (!selectedConnectionId || !newToolName) return;
+    updateStep(currentStep.name, {
+      action: {
+        ...step.action,
+        toolName: newToolName,
+        connectionId: selectedConnectionId,
+      },
+    });
+  };
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
@@ -426,28 +365,25 @@ function SelectedTool({
   );
   console.log(ts);
 
-  const handleInputChange = useCallback(
-    (input: Record<string, unknown>) => {
-      if (draftStep) {
-        setDraftStep({
-          ...(draftStep ?? {}),
-          input: {
-            ...(draftStep?.input ?? {}),
-            ...input,
-          } as Record<string, unknown>,
-        } as Step);
-      } else {
-        if (!currentStep?.name) return;
-        updateStep(currentStep.name, {
-          input: {
-            ...(currentStep?.input ?? {}),
-            ...input,
-          } as Record<string, unknown>,
-        });
-      }
-    },
-    [draftStep, setDraftStep],
-  );
+  const handleInputChange = (input: Record<string, unknown>) => {
+    if (draftStep) {
+      setDraftStep({
+        ...(draftStep ?? {}),
+        input: {
+          ...(draftStep?.input ?? {}),
+          ...input,
+        } as Record<string, unknown>,
+      } as Step);
+    } else {
+      if (!currentStep?.name) return;
+      updateStep(currentStep.name, {
+        input: {
+          ...(currentStep?.input ?? {}),
+          ...input,
+        } as Record<string, unknown>,
+      });
+    }
+  };
 
   if (!tool || !mcp || !connection) {
     return (

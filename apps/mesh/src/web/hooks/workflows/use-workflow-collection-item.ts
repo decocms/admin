@@ -2,16 +2,12 @@ import { useParams } from "@tanstack/react-router";
 import { useCollection, useCollectionItem } from "../use-collections";
 import { Workflow } from "@decocms/bindings/workflow";
 import { createToolCaller, UNKNOWN_CONNECTION_ID } from "@/tools/client";
-import { useMemo } from "react";
 
 export function useWorkflowCollectionItem(itemId: string) {
   const { connectionId } = useParams({
     strict: false,
   });
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
   const collection = useCollection<Workflow>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "workflow",

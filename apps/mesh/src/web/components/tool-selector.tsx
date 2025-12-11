@@ -9,7 +9,7 @@ import {
 } from "@deco/ui/components/command.js";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 export interface ToolSelectorProps {
   selectedConnectionId: string | null;
@@ -25,7 +25,7 @@ export function ConnectionSelector({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Client-side search filtering
-  const connections = useMemo(() => {
+  const connections = (() => {
     const term = searchQuery.trim().toLowerCase();
     if (!term) return allConnections;
     return allConnections.filter(
@@ -33,13 +33,11 @@ export function ConnectionSelector({
         c.title.toLowerCase().includes(term) ||
         c.description?.toLowerCase().includes(term),
     );
-  }, [allConnections, searchQuery]);
+  })();
 
   // Keep selected connection even if filtered out of search results
-  const selectedConnection = useMemo(
-    () => allConnections.find((c) => c.id === selectedConnectionId) ?? null,
-    [allConnections, selectedConnectionId],
-  );
+  const selectedConnection =
+    allConnections.find((c) => c.id === selectedConnectionId) ?? null;
 
   return (
     <div className="flex flex-col">
@@ -93,13 +91,10 @@ export function ToolSelector({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const connections = useConnections();
-  const selectedConnection = useMemo(() => {
-    return connections.find((c) => c.id === selectedConnectionId);
-  }, [connections, selectedConnectionId]);
-  const connectionTools = useMemo(
-    () => selectedConnection?.tools ?? [],
-    [selectedConnection],
+  const selectedConnection = connections.find(
+    (c) => c.id === selectedConnectionId,
   );
+  const connectionTools = selectedConnection?.tools ?? [];
   const isToolSelected = (toolName: string) => selectedToolName === toolName;
   return (
     selectedConnection && (

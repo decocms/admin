@@ -10,7 +10,7 @@ import {
   DEFAULT_WAIT_FOR_SIGNAL_STEP,
 } from "@decocms/bindings/workflow";
 import { Step, ToolCallAction } from "@decocms/bindings/workflow";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 type ActiveTab = "input" | "output" | "action";
 export type StepType = "tool" | "code" | "sleep" | "wait_for_signal";
@@ -56,26 +56,6 @@ function generateUniqueName(baseName: string, existingSteps: Step[]): string {
   );
   if (!exists) return trimmedName;
   return `${trimmedName}_${Math.random().toString(36).substring(2, 6)}`;
-}
-
-function findDependencies(input: unknown): string[] {
-  const deps: string[] = [];
-
-  function traverse(value: unknown) {
-    if (typeof value === "string") {
-      const matches = value.match(/@(\w+)/g);
-      if (matches) {
-        deps.push(...matches.map((m) => m.substring(1)));
-      }
-    } else if (Array.isArray(value)) {
-      value.forEach(traverse);
-    } else if (typeof value === "object" && value !== null) {
-      Object.values(value).forEach(traverse);
-    }
-  }
-
-  traverse(input);
-  return [...new Set(deps)];
 }
 
 function createDefaultStep(type: StepType, index: number): Step {
@@ -346,9 +326,9 @@ export function useActiveTab() {
 export function useWorkflowSteps() {
   const workflow = useWorkflowStore((state) => state.workflow);
   const draftStep = useDraftStep();
-  const allSteps = useMemo(() => {
+  const allSteps = (() => {
     return [...workflow.steps, draftStep].filter((step) => step !== null);
-  }, [workflow.steps, draftStep]);
+  })();
   return allSteps;
 }
 

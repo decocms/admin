@@ -232,9 +232,7 @@ function useToolInputParams(
   inputSchema: JsonSchema,
   initialInputParams?: Record<string, unknown>,
 ) {
-  return useMemo(() => {
-    return initialInputParams ?? generateInitialParams(inputSchema);
-  }, [initialInputParams]);
+  return initialInputParams ?? generateInitialParams(inputSchema);
 }
 
 export function ToolDetail({
@@ -244,7 +242,6 @@ export function ToolDetail({
   onBack,
   onInputChange,
   initialInputParams,
-  withHeader = true,
 }: ToolDetailProps) {
   const {
     inputParams,
@@ -345,8 +342,8 @@ export function ToolDetail({
     <ViewLayout onBack={onBack}>
       <ViewActions>
         <PinToSidebarButton
-          connectionId={connectionId}
-          title={tool?.title ?? beautifyToolName(toolName)}
+          connectionId={connection?.id ?? undefined}
+          title={tool?.title ?? beautifyToolName(tool.name)}
           icon="build"
         />
       </ViewActions>
@@ -354,7 +351,7 @@ export function ToolDetail({
       <div className="flex flex-col items-center w-full max-w-[1500px] mx-auto p-10 gap-4">
         {/* Tool Title & Description */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-medium text-foreground">{toolName}</h1>
+          <h1 className="text-2xl font-medium text-foreground">{tool.name}</h1>
           <p className="text-muted-foreground text-base">
             {tool?.description || "No description available"}
           </p>
@@ -548,21 +545,6 @@ export function ExecutionResult({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function ToolHeader({
-  tool,
-}: {
-  tool: NonNullable<ReturnType<typeof useTool>["tool"]>;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2 text-center">
-      <h1 className="text-2xl font-medium text-foreground">{tool.name}</h1>
-      <p className="text-muted-foreground text-base">
-        {tool.description || "No description available"}
-      </p>
     </div>
   );
 }

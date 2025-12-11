@@ -1,6 +1,6 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Play, StopCircle, Zap } from "lucide-react";
+import { Play, Zap } from "lucide-react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
 import { cn } from "@deco/ui/lib/utils.js";
@@ -13,7 +13,6 @@ import {
   useWorkflow,
   useWorkflowActions,
 } from "@/web/stores/workflow";
-import { useStreamedWorkflowExecution } from "@/web/components/details/workflow-execution";
 
 // ============================================
 // Workflow Start Hook
@@ -22,10 +21,7 @@ import { useStreamedWorkflowExecution } from "@/web/components/details/workflow-
 function useWorkflowStart() {
   const { id: connectionId } = useWorkflowBindingConnection();
   const { setTrackingExecutionId } = useWorkflowActions();
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId);
   const workflow = useWorkflow();
 
   const { mutateAsync: startWorkflow, isPending } = useToolCallMutation({
@@ -33,7 +29,7 @@ function useWorkflowStart() {
     toolName: "WORKFLOW_START",
   });
 
-  const handleRunWorkflow = useCallback(async () => {
+  const handleRunWorkflow = async () => {
     const result = await startWorkflow({
       workflowId: workflow.id,
       input: {},
@@ -43,36 +39,26 @@ function useWorkflowStart() {
       (result as { structuredContent: { executionId: string } })
         .structuredContent.executionId;
     setTrackingExecutionId(executionId);
-  }, [startWorkflow, workflow.id, setTrackingExecutionId]);
+  };
 
   return { handleRunWorkflow, isPending };
 }
 
 function useWorkflowCancel() {
   const { id: connectionId } = useWorkflowBindingConnection();
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId);
   const trackingExecutionId = useTrackingExecutionId();
-  const { execution } = useStreamedWorkflowExecution(trackingExecutionId);
 
   const { mutateAsync: cancelWorkflow, isPending } = useToolCallMutation({
     toolCaller,
     toolName: "CANCEL_EXECUTION",
   });
 
-  const handleCancelWorkflow = useCallback(async () => {
-    console.log("execution", execution);
-    if (!execution) return;
-    if (execution.status !== "running" && execution.status !== "enqueued") {
-      console.log("not running or enqueued");
-      return;
-    }
+  const handleCancelWorkflow = async () => {
     await cancelWorkflow({
       executionId: trackingExecutionId,
     });
-  }, [cancelWorkflow, trackingExecutionId, execution]);
+  };
 
   return { handleCancelWorkflow, isPending };
 }
@@ -82,41 +68,19 @@ function useWorkflowCancel() {
 // ============================================
 
 export const TriggerNode = memo(function TriggerNode() {
-  const { handleRunWorkflow, isPending: isStarting } = useWorkflowStart();
-  const { handleCancelWorkflow, isPending: isCancelling } = useWorkflowCancel();
-  const trackingExecutionId = useTrackingExecutionId();
-  const { isFetching: isFetchingExecution, execution } =
-    useStreamedWorkflowExecution(trackingExecutionId);
+  const { handleRunWorkflow } = useWorkflowStart();
   const isAddingStep = useIsAddingStep();
 
-  const isRunning = useMemo(() => {
-    console.log("execution?.status", execution?.status);
-    return execution?.status === "running" || execution?.status === "enqueued";
-  }, [isFetchingExecution, isStarting, isCancelling, execution?.status]);
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleRunWorkflow();
+  };
 
-  const handleTriggerClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (isRunning) {
-        console.log("cancelling workflow");
-        handleCancelWorkflow();
-      } else {
-        handleRunWorkflow();
-      }
-    },
-    [handleRunWorkflow, handleCancelWorkflow, isRunning],
-  );
-
-  const triggerIcon = useMemo(() => {
-    if (isRunning) {
-      return (
-        <StopCircle className="w-4 h-4 text-foreground cursor-pointer hover:text-primary transition-colors" />
-      );
-    }
+  const triggerIcon = (() => {
     return (
       <Play className="w-4 h-4 text-foreground cursor-pointer hover:text-primary transition-colors" />
     );
-  }, [isRunning]);
+  })();
 
   return (
     <div className="relative">
@@ -131,8 +95,6 @@ export const TriggerNode = memo(function TriggerNode() {
           className={cn(
             "w-[180px] min-w-[180px] p-0 px-3 h-12 group flex items-center justify-center relative",
             "transition-all duration-200",
-            execution?.status === "success" && "border-success",
-            execution?.status === "error" && "border-destructive",
             // Highlight when in add-step mode
             isAddingStep
               ? [

@@ -1,10 +1,4 @@
-import {
-  memo,
-  useMemo,
-  useCallback,
-  useRef,
-  useSyncExternalStore,
-} from "react";
+import { memo, useRef, useSyncExternalStore } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   BellIcon,
@@ -82,21 +76,18 @@ function Duration({
 }) {
   const timeRef = useRef(Date.now());
 
-  const subscribe = useCallback(
-    (callback: () => void) => {
-      if (!isRunning) return () => {};
-      const interval = setInterval(() => {
-        timeRef.current = Date.now();
-        callback();
-      }, 100);
-      return () => clearInterval(interval);
-    },
-    [isRunning],
-  );
+  const subscribe = (callback: () => void) => {
+    if (!isRunning) return () => {};
+    const interval = setInterval(() => {
+      timeRef.current = Date.now();
+      callback();
+    }, 100);
+    return () => clearInterval(interval);
+  };
 
-  const getSnapshot = useCallback(() => {
+  const getSnapshot = () => {
     return isRunning ? timeRef.current : 0;
-  }, [isRunning]);
+  };
 
   const currentTime = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
@@ -232,39 +223,33 @@ function checkIfIsWaitForSignalAction(
 
 function useSendSignalMutation() {
   const { id: connectionId } = useWorkflowBindingConnection();
-  const toolCaller = useMemo(
-    () => createToolCaller(connectionId),
-    [connectionId],
-  );
+  const toolCaller = createToolCaller(connectionId);
 
   const { mutateAsync: sendSignal, isPending } = useToolCallMutation({
     toolCaller,
     toolName: "SEND_SIGNAL",
   });
 
-  const handleSendSignal = useCallback(
-    async (
-      executionId: string,
-      signalName: string,
-      payload: unknown,
-    ): Promise<{
+  const handleSendSignal = async (
+    executionId: string,
+    signalName: string,
+    payload: unknown,
+  ): Promise<{
+    success: boolean;
+    signalId: string | undefined;
+    message: string | undefined;
+  }> => {
+    const result = await sendSignal({
+      executionId,
+      signalName,
+      payload,
+    });
+    return result as {
       success: boolean;
       signalId: string | undefined;
       message: string | undefined;
-    }> => {
-      const result = await sendSignal({
-        executionId,
-        signalName,
-        payload,
-      });
-      return result as {
-        success: boolean;
-        signalId: string | undefined;
-        message: string | undefined;
-      };
-    },
-    [sendSignal],
-  );
+    };
+  };
 
   return { sendSignal: handleSendSignal, isPending };
 }
@@ -285,7 +270,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
     !stepResult?.completed_at_epoch_ms &&
     !stepResult?.error;
 
-  const displayIcon = useMemo(() => {
+  const displayIcon = (() => {
     if (!step.action) return null;
     if (
       step.action &&
@@ -295,40 +280,34 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       return <CheckIcon className="w-4 h-4 text-primary-foreground" />;
     }
     return getStepIcon(step);
-  }, [isConsumed, step]);
+  })();
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      console.log("handleClick", isAddingStep, step.name);
-      if (isAddingStep) {
-        if (isDraftStep) {
-          cancelAddingStep();
-          return;
-        }
-        e.stopPropagation();
-        addDependencyToDraftStep(step.name);
+  const handleClick = (e: React.MouseEvent) => {
+    console.log("handleClick", isAddingStep, step.name);
+    if (isAddingStep) {
+      if (isDraftStep) {
+        cancelAddingStep();
+        return;
       }
-    },
-    [isAddingStep, addDependencyToDraftStep, step],
-  );
-
-  const handleIconClick = useCallback(
-    (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (
-        step.action &&
-        checkIfIsWaitForSignalAction(step.action) &&
-        trackingExecutionId
-      ) {
-        sendSignal(
-          trackingExecutionId,
-          step.action.signalName,
-          stepResult?.output,
-        );
-      }
-    },
-    [trackingExecutionId, sendSignal, stepResult?.output, step.action],
-  );
+      addDependencyToDraftStep(step.name);
+    }
+  };
+
+  const handleIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (
+      step.action &&
+      checkIfIsWaitForSignalAction(step.action) &&
+      trackingExecutionId
+    ) {
+      sendSignal(
+        trackingExecutionId,
+        step.action.signalName,
+        stepResult?.output,
+      );
+    }
+  };
 
   return (
     <div className="group relative">
@@ -336,7 +315,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-transparent !w-1 !h-1 !border-0 !opacity-0"
+        className="bg-transparent w-1 h-1 border-0 opacity-0"
       />
 
       <Card
@@ -397,7 +376,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
             )}
           </div>
 
-          <CardAction className="group-hover:opacity-100 opacity-0 transition-opacity flex-shrink-0">
+          <CardAction className="group-hover:opacity-100 opacity-0 transition-opacity shrink-0">
             <StepMenu step={step} />
           </CardAction>
         </CardHeader>
@@ -407,7 +386,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-transparent !w-1 !h-1 !border-0 !opacity-0"
+        className="bg-transparent w-1 h-1 border-0 opacity-0"
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import { useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -54,12 +54,9 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 function EmptyState() {
   const { appendStep } = useWorkflowActions();
 
-  const handleAdd = useCallback(
-    (type: StepType) => {
-      appendStep({ type });
-    },
-    [appendStep],
-  );
+  const handleAdd = (type: StepType) => {
+    appendStep({ type });
+  };
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center py-8 text-center z-10">
@@ -81,24 +78,21 @@ function FloatingAddStepButton() {
     useWorkflowActions();
   const isAddingStep = useIsAddingStep();
   const { setActiveTab } = useWorkflowActions();
-  const handleSelectType = useCallback(
-    (type: StepType) => {
-      startAddingStep(type);
-      setActiveTab("action");
-      setIsExpanded(false);
-    },
-    [startAddingStep, setActiveTab],
-  );
+  const handleSelectType = (type: StepType) => {
+    startAddingStep(type);
+    setActiveTab("action");
+    setIsExpanded(false);
+  };
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = () => {
     cancelAddingStep();
     setIsExpanded(false);
-  }, [cancelAddingStep]);
+  };
 
-  const handleComplete = useCallback(() => {
+  const handleComplete = () => {
     completeAddingStep();
     setIsExpanded(false);
-  }, [completeAddingStep]);
+  };
 
   // If we're in "adding step" mode, show cancel button
   if (isAddingStep) {
@@ -223,9 +217,9 @@ export function WorkflowCanvas() {
     useWorkflowFlow();
 
   // Check if workflow has actual steps (excluding Manual trigger)
-  const hasSteps = useMemo(() => {
+  const hasSteps = (() => {
     return steps.some((s) => s.name !== "Manual");
-  }, [steps]);
+  })();
 
   return (
     <div

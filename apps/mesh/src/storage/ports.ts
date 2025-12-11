@@ -6,7 +6,7 @@
  */
 
 import type { ConnectionEntity } from "../tools/connection/schema";
-import type { OrganizationSettings } from "./types";
+import type { MonitoringLog, OrganizationSettings } from "./types";
 
 // ============================================================================
 // Connection Storage Port
@@ -37,4 +37,35 @@ export interface OrganizationSettingsStoragePort {
     organizationId: string,
     data?: Partial<Pick<OrganizationSettings, "sidebar_items">>,
   ): Promise<OrganizationSettings>;
+}
+
+// ============================================================================
+// Monitoring Storage Interface
+// ============================================================================
+
+export interface MonitoringStorage {
+  log(event: MonitoringLog): Promise<void>;
+  logBatch(events: MonitoringLog[]): Promise<void>;
+  query(filters: {
+    organizationId?: string;
+    connectionId?: string;
+    toolName?: string;
+    isError?: boolean;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<MonitoringLog[]>;
+  getStats(filters: {
+    organizationId: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{
+    totalCalls: number;
+    errorRate: number;
+    avgDurationMs: number;
+    p50DurationMs: number;
+    p95DurationMs: number;
+    p99DurationMs: number;
+  }>;
 }

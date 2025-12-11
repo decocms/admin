@@ -62,4 +62,13 @@ export const KEYS = {
     owner: string | null | undefined,
     repo: string | null | undefined,
   ) => ["github-readme", owner, repo] as const,
+  // Monitoring queries
+  monitoringStats: () => ["monitoring", "stats"] as const,
+  monitoringLogs: (filters: {
+    connectionId?: string;
+    toolName?: string;
+    isError?: boolean;
+    limit?: number;
+    offset?: number;
+  }) => ["monitoring", "logs", filters] as const,
 } as const;

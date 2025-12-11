@@ -11,6 +11,8 @@
  * - Supports StreamableHTTP transport
  */
 
+import { getMonitoringConfig } from "@/core/config";
+import { monitoringService } from "@/monitoring/index";
 import { ConnectionEntity } from "@/tools/connection/schema";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -319,6 +321,27 @@ export async function createMCPProxy(
               status: "success",
             });
 
+            // Log to monitoring (non-blocking)
+            if (getMonitoringConfig().enabled && ctx.organization) {
+              monitoringService
+                .log({
+                  organizationId: ctx.organization.id,
+                  connectionId,
+                  connectionTitle: connection.title,
+                  toolName: request.params.name,
+                  input: request.params.arguments,
+                  output: result,
+                  isError: (result.isError as boolean) ?? false,
+                  durationMs: duration,
+                  timestamp: new Date(),
+                  userId: ctx.auth.user?.id || ctx.auth.apiKey?.userId,
+                  requestId: ctx.metadata.requestId,
+                })
+                .catch((err) =>
+                  console.error("Failed to log monitoring event:", err),
+                );
+            }
+
             span.end();
             return result as CallToolResult;
           } catch (error) {
@@ -340,6 +363,28 @@ export async function createMCPProxy(
               "tool.name": request.params.name,
               error: err.message,
             });
+
+            // Log error to monitoring (non-blocking)
+            if (getMonitoringConfig().enabled && ctx.organization) {
+              monitoringService
+                .log({
+                  organizationId: ctx.organization.id,
+                  connectionId,
+                  connectionTitle: connection.title,
+                  toolName: request.params.name,
+                  input: request.params.arguments,
+                  output: null,
+                  isError: true,
+                  errorMessage: err.message,
+                  durationMs: duration,
+                  timestamp: new Date(),
+                  userId: ctx.auth.user?.id || ctx.auth.apiKey?.userId,
+                  requestId: ctx.metadata.requestId,
+                })
+                .catch((logErr) =>
+                  console.error("Failed to log monitoring event:", logErr),
+                );
+            }
 
             span.recordException(err);
             span.end();

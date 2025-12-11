@@ -12,19 +12,22 @@
 import type { Meter, Tracer } from "@opentelemetry/api";
 import type { Context } from "hono";
 import type { Kysely } from "kysely";
-import { ConnectionStorage } from "../storage/connection";
 import { AuditLogStorage } from "../storage/audit-log";
+import { ConnectionStorage } from "../storage/connection";
+import { SqlMonitoringStorage } from "../storage/monitoring";
 import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
 import type {
-  MeshContext,
   BetterAuthInstance,
   BoundAuthClient,
+  MeshContext,
 } from "./mesh-context";
 import { CredentialVault } from "../encryption/credential-vault";
 import { verifyMeshToken } from "../auth/jwt";
 import type { Permission } from "../storage/types";
+import { getMonitoringService } from "../monitoring/index.ts";
+import { getMonitoringConfig } from "./config.ts";
 
 // ============================================================================
 // Configuration
@@ -532,11 +535,15 @@ export function createMeshContextFactory(
   // Create vault instance for credential encryption
   const vault = new CredentialVault(config.encryption.key);
 
+  // Initialize monitoring service singleton with config
+  const monitoringService = getMonitoringService(getMonitoringConfig());
+
   // Create storage adapters once (singleton pattern)
   const storage = {
     connections: new ConnectionStorage(config.db, vault),
     auditLogs: new AuditLogStorage(config.db),
     organizationSettings: new OrganizationSettingsStorage(config.db),
+    monitoring: new SqlMonitoringStorage(config.db),
     // Note: Organizations, teams, members, roles managed by Better Auth organization plugin
     // Note: Policies handled by Better Auth permissions directly
     // Note: API keys (tokens) managed by Better Auth API Key plugin
@@ -605,6 +612,7 @@ export function createMeshContextFactory(
         ipAddress:
           c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For"),
       },
+      monitoring: monitoringService,
     };
   };
 }

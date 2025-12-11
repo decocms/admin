@@ -354,7 +354,6 @@ export default function StoreAppDetail() {
         connectionData.connection_url,
       );
 
-      // If authentication error occurs, show and stop
       if (error) {
         toast.error(`Authentication failed: ${error}`);
         setIsInstalling(false);

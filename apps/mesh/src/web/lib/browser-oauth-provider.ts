@@ -19,18 +19,12 @@ interface StoredState {
   };
 }
 
-/**
- * Result of MCP OAuth authentication.
- */
 export interface AuthResult {
   token: string | null;
   loading: boolean;
   error: string | null;
 }
 
-/**
- * Browser-compatible OAuth client provider for MCP using localStorage.
- */
 class BrowserOAuthClientProvider implements OAuthClientProvider {
   readonly serverUrl: string;
   readonly storageKeyPrefix: string;
@@ -75,8 +69,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
     this.onPopupWindow = options.onPopupWindow;
   }
 
-  // --- SDK Interface Methods ---
-
   get redirectUrl(): string {
     return sanitizeUrl(this.callbackUrl);
   }
@@ -84,12 +76,11 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
   get clientMetadata(): OAuthClientMetadata {
     return {
       redirect_uris: [this.redirectUrl],
-      token_endpoint_auth_method: "none", // Public client
+      token_endpoint_auth_method: "none",
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
       client_name: this.clientName,
       client_uri: this.clientUri,
-      // scope: 'openid profile email mcp', // Example scopes, adjust as needed
     };
   }
 
@@ -98,7 +89,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
     const data = localStorage.getItem(key);
     if (!data) return undefined;
     try {
-      // TODO: Add validation using a schema
       return JSON.parse(data) as OAuthClientInformation;
     } catch (e) {
       console.warn(
@@ -113,10 +103,9 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
   // NOTE: The SDK's auth() function uses this if dynamic registration is needed.
   // Ensure your OAuthClientInformationFull matches the expected structure if DCR is used.
   async saveClientInformation(
-    clientInformation: OAuthClientInformation /* | OAuthClientInformationFull */,
+    clientInformation: OAuthClientInformation,
   ): Promise<void> {
     const key = this.getKey("client_info");
-    // Cast needed if handling OAuthClientInformationFull specifically
     localStorage.setItem(key, JSON.stringify(clientInformation));
   }
 
@@ -125,7 +114,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
     const data = localStorage.getItem(key);
     if (!data) return undefined;
     try {
-      // TODO: Add validation
       return JSON.parse(data) as OAuthTokens;
     } catch (e) {
       console.warn(`[${this.storageKeyPrefix}] Failed to parse tokens:`, e);
@@ -155,27 +143,17 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
         `[${this.storageKeyPrefix}] Code verifier not found in storage for key ${key}. Auth flow likely corrupted or timed out.`,
       );
     }
-    // SDK's auth() retrieves this BEFORE exchanging code. Don't remove it here.
-    // It will be removed in saveTokens on success.
     return verifier;
   }
 
-  /**
-   * Generates and stores the authorization URL with state, without opening a popup.
-   * Used when preventAutoAuth is enabled to provide the URL for manual navigation.
-   * @param authorizationUrl The fully constructed authorization URL from the SDK.
-   * @returns The full authorization URL with state parameter.
-   */
   async prepareAuthorizationUrl(authorizationUrl: URL): Promise<string> {
     // Generate a unique state parameter for this authorization request
     const state = crypto.randomUUID();
     const stateKey = `${this.storageKeyPrefix}:state_${state}`;
 
-    // Store context needed by the callback handler, associated with the state param
     const stateData: StoredState = {
       serverUrlHash: this.serverUrlHash,
-      expiry: Date.now() + 1000 * 60 * 10, // State expires in 10 minutes
-      // Store provider options needed to reconstruct on callback
+      expiry: Date.now() + 1000 * 60 * 10,
       providerOptions: {
         serverUrl: this.serverUrl,
         storageKeyPrefix: this.storageKeyPrefix,
@@ -186,35 +164,24 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
     };
     localStorage.setItem(stateKey, JSON.stringify(stateData));
 
-    // Add the state parameter to the URL
     authorizationUrl.searchParams.set("state", state);
     const authUrlString = authorizationUrl.toString();
 
-    // Sanitize the authorization URL to prevent XSS attacks
     const sanitizedAuthUrl = sanitizeUrl(authUrlString);
 
-    // Persist the exact auth URL in case the popup fails and manual navigation is needed
     localStorage.setItem(this.getKey("last_auth_url"), sanitizedAuthUrl);
 
     return sanitizedAuthUrl;
   }
 
-  /**
-   * Redirects the user agent to the authorization URL, storing necessary state.
-   * This now adheres to the SDK's void return type expectation for the interface.
-   * @param authorizationUrl The fully constructed authorization URL from the SDK.
-   */
   async redirectToAuthorization(authorizationUrl: URL): Promise<void> {
-    // Ideally we should catch things before we get here, but if we don't, let's not show everyone we are dum
     if (this.preventAutoAuth) return;
 
-    // Prepare the authorization URL with state
     const sanitizedAuthUrl =
       await this.prepareAuthorizationUrl(authorizationUrl);
 
-    // Attempt to open the popup
     const popupFeatures =
-      "width=600,height=700,resizable=yes,scrollbars=yes,status=yes"; // Make configurable if needed
+      "width=600,height=700,resizable=yes,scrollbars=yes,status=yes";
     try {
       const popup = window.open(
         sanitizedAuthUrl,
@@ -231,8 +198,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
         console.warn(
           `[${this.storageKeyPrefix}] Popup likely blocked by browser. Manual navigation might be required using the stored URL.`,
         );
-        // Cannot signal failure back via SDK auth() directly.
-        // useMcp will need to rely on timeout or manual trigger if stuck.
       } else {
         popup.focus();
         console.info(
@@ -244,17 +209,9 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
         `[${this.storageKeyPrefix}] Error opening popup window:`,
         e,
       );
-      // Cannot signal failure back via SDK auth() directly.
     }
-    // Regardless of popup success, the interface expects this method to initiate the redirect.
-    // If the popup failed, the user journey stops here until manual action or timeout.
   }
 
-  // --- Helper Methods ---
-
-  /**
-   * Retrieves the last URL passed to `redirectToAuthorization`. Useful for manual fallback.
-   */
   getLastAttemptedAuthUrl(): string | null {
     const storedUrl = localStorage.getItem(this.getKey("last_auth_url"));
     return storedUrl ? sanitizeUrl(storedUrl) : null;
@@ -276,8 +233,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
         try {
           const item = localStorage.getItem(key);
           if (item) {
-            // Check if state belongs to this provider instance based on serverUrlHash
-            // We need to parse cautiously as the structure isn't guaranteed.
             const state = JSON.parse(item) as Partial<StoredState>;
             if (state.serverUrlHash === this.serverUrlHash) {
               keysToRemove.push(key);
@@ -288,8 +243,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
             `[${this.storageKeyPrefix}] Error parsing state key ${key} during clearStorage:`,
             e,
           );
-          // Optionally remove malformed keys
-          // keysToRemove.push(key);
         }
       }
     }
@@ -317,31 +270,6 @@ class BrowserOAuthClientProvider implements OAuthClientProvider {
   }
 }
 
-/**
- * Authenticate with an MCP server using OAuth.
- * Returns token, loading state, and error if any.
- * Waits for the OAuth popup to complete before returning.
- *
- * @param serverUrl The MCP server URL to authenticate with
- * @param options Optional configuration for OAuth client
- * @returns Promise resolving to AuthResult with token, loading, and error states
- *
- * @example
- * ```typescript
- * const { token, loading, error } = await authenticateMcp(
- *   connection.connection_url,
- *   {
- *     clientName: 'MCP Mesh',
- *     clientUri: window.location.origin,
- *     callbackUrl: `${window.location.origin}/oauth/callback`
- *   }
- * );
- *
- * if (token) {
- *   await saveConnectionToken(connectionId, token);
- * }
- * ```
- */
 export async function authenticateMcp(
   serverUrl: string,
   options?: {
@@ -352,7 +280,6 @@ export async function authenticateMcp(
   },
 ): Promise<AuthResult> {
   try {
-    // 1. Create OAuth provider
     const authProvider = new BrowserOAuthClientProvider(serverUrl, {
       clientName: options?.clientName || "MCP Client",
       clientUri: options?.clientUri || window.location.origin,
@@ -360,7 +287,6 @@ export async function authenticateMcp(
         options?.callbackUrl || `${window.location.origin}/oauth/callback`,
     });
 
-    // 2. Check if server has OAuth (attempt to discover metadata)
     try {
       const metadataUrl = new URL(
         "/.well-known/oauth-protected-resource",
@@ -373,7 +299,6 @@ export async function authenticateMcp(
         },
       });
 
-      // If returns 404 or error, server doesn't have OAuth
       if (metadataResponse.status === 404 || !metadataResponse.ok) {
         console.log(
           `[authenticateMcp] Server does not require OAuth (status: ${metadataResponse.status})`,
@@ -385,7 +310,6 @@ export async function authenticateMcp(
         };
       }
 
-      // Check if response is valid JSON (indicates OAuth server)
       const contentType = metadataResponse.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         console.log(
@@ -398,7 +322,6 @@ export async function authenticateMcp(
         };
       }
     } catch (metadataError) {
-      // If error checking metadata, assume no OAuth required
       console.log(
         "[authenticateMcp] Error checking OAuth metadata, assuming no auth required:",
         metadataError,
@@ -410,11 +333,9 @@ export async function authenticateMcp(
       };
     }
 
-    // 3. If reached here, server has OAuth - create Promise that waits for completion
     const oauthCompletePromise = new Promise<void>((resolve, reject) => {
-      const timeout = options?.timeout || 120000; // 2 minutes default
+      const timeout = options?.timeout || 120000;
 
-      // Listen for popup message when OAuth completes
       const handleMessage = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
 
@@ -435,20 +356,16 @@ export async function authenticateMcp(
 
       window.addEventListener("message", handleMessage);
 
-      // Timeout if takes too long
       setTimeout(() => {
         window.removeEventListener("message", handleMessage);
         reject(new Error("OAuth authentication timeout"));
       }, timeout);
     });
 
-    // 4. Execute OAuth flow (opens popup)
     await auth(authProvider, { serverUrl });
 
-    // 5. Wait for OAuth to complete
     await oauthCompletePromise;
 
-    // 6. Retrieve token after authentication
     const tokens = await authProvider.tokens();
 
     return {

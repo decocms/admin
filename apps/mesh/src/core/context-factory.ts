@@ -340,7 +340,7 @@ async function fetchRolePermissions(
  * 2. Browser sessions → no permissions stored (use Better Auth's hasPermission API)
  */
 async function authenticateRequest(
-  c: Context,
+  c: Pick<Context, "req">,
   auth: BetterAuthInstance,
   db: Kysely<Database>,
 ): Promise<{
@@ -530,7 +530,7 @@ async function authenticateRequest(
  */
 export function createMeshContextFactory(
   config: MeshContextConfig,
-): (c: Context) => Promise<MeshContext> {
+): (c: Pick<Context, "req">) => Promise<MeshContext> {
   // Create vault instance for credential encryption
   const vault = new CredentialVault(config.encryption.key);
 
@@ -547,7 +547,7 @@ export function createMeshContextFactory(
   };
 
   // Return factory function
-  return async (c: Context): Promise<MeshContext> => {
+  return async (c: Pick<Context, "req">): Promise<MeshContext> => {
     // Authenticate request (OAuth session or API key)
     const authResult = await authenticateRequest(c, config.auth, config.db);
 

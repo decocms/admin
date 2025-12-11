@@ -7,6 +7,7 @@
 
 import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
+import { RegexRedactor } from "../monitoring/redactor";
 import type { MonitoringStorage } from "./ports";
 import type { Database, MonitoringLog } from "./types";
 
@@ -15,7 +16,11 @@ import type { Database, MonitoringLog } from "./types";
 // ============================================================================
 
 export class SqlMonitoringStorage implements MonitoringStorage {
-  constructor(private db: Kysely<Database>) {}
+  private redactor: RegexRedactor;
+
+  constructor(private db: Kysely<Database>) {
+    this.redactor = new RegexRedactor();
+  }
 
   async log(event: MonitoringLog): Promise<void> {
     await this.logBatch([event]);
@@ -24,11 +29,18 @@ export class SqlMonitoringStorage implements MonitoringStorage {
   async logBatch(events: MonitoringLog[]): Promise<void> {
     if (events.length === 0) return;
 
+    // Apply PII redaction to each event before storing
+    const redactedEvents = events.map((event) => ({
+      ...event,
+      input: this.redactor.redact(event.input) as Record<string, unknown>,
+      output: this.redactor.redact(event.output) as Record<string, unknown>,
+    }));
+
     // Use transaction for atomic batch insert
     await this.db.transaction().execute(async (trx) => {
       await trx
         .insertInto("monitoring_logs")
-        .values(events.map((e) => this.toDbRow(e)))
+        .values(redactedEvents.map((e) => this.toDbRow(e)))
         .execute();
     });
   }
@@ -125,9 +137,6 @@ export class SqlMonitoringStorage implements MonitoringStorage {
     totalCalls: number;
     errorRate: number;
     avgDurationMs: number;
-    p50DurationMs: number;
-    p95DurationMs: number;
-    p99DurationMs: number;
   }> {
     let query = this.db
       .selectFrom("monitoring_logs")
@@ -148,7 +157,7 @@ export class SqlMonitoringStorage implements MonitoringStorage {
       );
     }
 
-    // Get total count and error count
+    // Get total count, error count, and average duration using SQL aggregations
     const stats = await query
       .select([
         (eb) => eb.fn.count("id").as("total_count"),
@@ -157,34 +166,14 @@ export class SqlMonitoringStorage implements MonitoringStorage {
       ])
       .executeTakeFirst();
 
-    // Get percentiles by fetching all durations and calculating in-memory
-    // (More efficient approach would use database-specific percentile functions)
-    const durations = await query
-      .select("duration_ms")
-      .orderBy("duration_ms", "asc")
-      .execute();
-
     const totalCalls = Number(stats?.total_count || 0);
     const errorCount = Number(stats?.error_count || 0);
     const avgDurationMs = Number(stats?.avg_duration || 0);
-
-    let p50 = 0;
-    let p95 = 0;
-    let p99 = 0;
-
-    if (durations.length > 0) {
-      p50 = durations[Math.floor(durations.length * 0.5)]?.duration_ms || 0;
-      p95 = durations[Math.floor(durations.length * 0.95)]?.duration_ms || 0;
-      p99 = durations[Math.floor(durations.length * 0.99)]?.duration_ms || 0;
-    }
 
     return {
       totalCalls,
       errorRate: totalCalls > 0 ? errorCount / totalCalls : 0,
       avgDurationMs,
-      p50DurationMs: p50,
-      p95DurationMs: p95,
-      p99DurationMs: p99,
     };
   }
 

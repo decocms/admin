@@ -47,7 +47,6 @@ interface MonitoringStats {
   totalCalls: number;
   errorCalls: number;
   avgDurationMs: number;
-  p95DurationMs: number;
   errorRatePercent: number;
 }
 
@@ -124,7 +123,7 @@ function MonitoringStatsContent({
 
   return (
     <div className="border-b bg-muted/30 px-5 py-3 flex-shrink-0">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <div className="text-xs text-muted-foreground mb-1">Total Calls</div>
           <div className="text-lg font-semibold">
@@ -143,12 +142,6 @@ function MonitoringStatsContent({
             {`${Math.round(stats?.avgDurationMs || 0)}ms`}
           </div>
         </div>
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">P95 Duration</div>
-          <div className="text-lg font-semibold">
-            {`${Math.round(stats?.p95DurationMs || 0)}ms`}
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -157,8 +150,8 @@ function MonitoringStatsContent({
 function MonitoringStatsSkeleton() {
   return (
     <div className="border-b bg-muted/30 px-5 py-3 flex-shrink-0">
-      <div className="grid grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
           <div key={i}>
             <div className="h-3 w-20 bg-muted rounded animate-pulse mb-2" />
             <div className="h-6 w-16 bg-muted rounded animate-pulse" />

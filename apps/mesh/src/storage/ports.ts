@@ -64,8 +64,5 @@ export interface MonitoringStorage {
     totalCalls: number;
     errorRate: number;
     avgDurationMs: number;
-    p50DurationMs: number;
-    p95DurationMs: number;
-    p99DurationMs: number;
   }>;
 }

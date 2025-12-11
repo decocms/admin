@@ -27,15 +27,6 @@ export const MONITORING_STATS = defineTool({
     totalCalls: z.number().describe("Total number of tool calls"),
     errorRate: z.number().describe("Error rate as a decimal (0 to 1)"),
     avgDurationMs: z.number().describe("Average call duration in milliseconds"),
-    p50DurationMs: z
-      .number()
-      .describe("50th percentile (median) duration in milliseconds"),
-    p95DurationMs: z
-      .number()
-      .describe("95th percentile duration in milliseconds"),
-    p99DurationMs: z
-      .number()
-      .describe("99th percentile duration in milliseconds"),
     errorRatePercent: z.string().describe("Error rate as a percentage string"),
   }),
   handler: async (input, ctx) => {

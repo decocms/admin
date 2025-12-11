@@ -26,8 +26,6 @@ import type {
 import { CredentialVault } from "../encryption/credential-vault";
 import { verifyMeshToken } from "../auth/jwt";
 import type { Permission } from "../storage/types";
-import { getMonitoringService } from "../monitoring/index.ts";
-import { getMonitoringConfig } from "./config.ts";
 
 // ============================================================================
 // Configuration
@@ -535,9 +533,6 @@ export function createMeshContextFactory(
   // Create vault instance for credential encryption
   const vault = new CredentialVault(config.encryption.key);
 
-  // Initialize monitoring service singleton with config
-  const monitoringService = getMonitoringService(getMonitoringConfig());
-
   // Create storage adapters once (singleton pattern)
   const storage = {
     connections: new ConnectionStorage(config.db, vault),
@@ -612,7 +607,6 @@ export function createMeshContextFactory(
         ipAddress:
           c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For"),
       },
-      monitoring: monitoringService,
     };
   };
 }

@@ -407,7 +407,7 @@ export interface MonitoringLogTable {
  * Monitoring Log runtime type
  */
 export interface MonitoringLog {
-  id: string;
+  id?: string;
   organizationId: string;
   connectionId: string;
   connectionTitle: string;
@@ -415,7 +415,7 @@ export interface MonitoringLog {
   input: Record<string, unknown>;
   output: Record<string, unknown>;
   isError: boolean;
-  errorMessage: string | null;
+  errorMessage?: string | null;
   durationMs: number;
   timestamp: Date | string;
   userId: string | null;

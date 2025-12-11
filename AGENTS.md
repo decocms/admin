@@ -33,11 +33,11 @@ Uses Kysely ORM with support for both SQLite (default, via `kysely-bun-worker`) 
 
 ## Coding Style & Naming Conventions
 Biome enforces two-space indentation and double quotes. Components and classes use PascalCase, hooks and utilities use camelCase. Oxlint plugins enforce additional rules:
-- `plugins/enforce-kebab-case-file-names.ts` - kebab-case for files in shared packages
-- `plugins/enforce-query-key-constants.ts` - query keys must use constants
-- `plugins/ban-use-effect.ts` - ban useEffect (prefer alternatives)
-- `plugins/ban-memoization.ts` - ban useMemo/useCallback/memo (React 19 compiler handles this)
-- `plugins/ensure-tailwind-design-system-tokens.ts` - enforce Tailwind design system consistency
+- `plugins/enforce-kebab-case-file-names.js` - kebab-case for files in shared packages
+- `plugins/enforce-query-key-constants.js` - query keys must use constants
+- `plugins/ban-use-effect.js` - ban useEffect (prefer alternatives)
+- `plugins/ban-memoization.js` - ban useMemo/useCallback/memo (React 19 compiler handles this)
+- `plugins/ensure-tailwind-design-system-tokens.js` - enforce Tailwind design system consistency
 
 Favor TypeScript types over `any`. The repository uses React 19 with the React Compiler (babel-plugin-react-compiler) and Tailwind v4.
 

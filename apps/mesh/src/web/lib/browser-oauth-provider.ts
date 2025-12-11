@@ -1,4 +1,3 @@
-// browser-provider.ts
 import {
   OAuthClientInformation,
   OAuthTokens,
@@ -8,10 +7,7 @@ import { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { sanitizeUrl } from "strict-url-sanitise";
 
-/**
- * Internal type for storing OAuth state in localStorage during the popup flow.
- */
-export interface StoredState {
+interface StoredState {
   serverUrlHash: string;
   expiry: number;
   providerOptions: {
@@ -35,7 +31,7 @@ export interface AuthResult {
 /**
  * Browser-compatible OAuth client provider for MCP using localStorage.
  */
-export class BrowserOAuthClientProvider implements OAuthClientProvider {
+class BrowserOAuthClientProvider implements OAuthClientProvider {
   readonly serverUrl: string;
   readonly storageKeyPrefix: string;
   readonly serverUrlHash: string;
@@ -364,17 +360,7 @@ export async function authenticateMcp(
         options?.callbackUrl || `${window.location.origin}/oauth/callback`,
     });
 
-    // 2. Check for existing token in cache
-    const existingTokens = await authProvider.tokens();
-    if (existingTokens?.access_token) {
-      return {
-        token: existingTokens.access_token,
-        loading: false,
-        error: null,
-      };
-    }
-
-    // 3. Check if server has OAuth (attempt to discover metadata)
+    // 2. Check if server has OAuth (attempt to discover metadata)
     try {
       const metadataUrl = new URL(
         "/.well-known/oauth-protected-resource",
@@ -424,7 +410,7 @@ export async function authenticateMcp(
       };
     }
 
-    // 4. If reached here, server has OAuth - create Promise that waits for completion
+    // 3. If reached here, server has OAuth - create Promise that waits for completion
     const oauthCompletePromise = new Promise<void>((resolve, reject) => {
       const timeout = options?.timeout || 120000; // 2 minutes default
 
@@ -456,13 +442,13 @@ export async function authenticateMcp(
       }, timeout);
     });
 
-    // 5. Execute OAuth flow (opens popup)
+    // 4. Execute OAuth flow (opens popup)
     await auth(authProvider, { serverUrl });
 
-    // 6. Wait for OAuth to complete
+    // 5. Wait for OAuth to complete
     await oauthCompletePromise;
 
-    // 7. Retrieve token after authentication
+    // 6. Retrieve token after authentication
     const tokens = await authProvider.tokens();
 
     return {

@@ -64,7 +64,7 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, Lock, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -150,113 +150,6 @@ function ConnectionInspectorViewContent() {
     debug: false,
     autoReconnect: true,
     autoRetry: 5000,
-    onPopupWindow: (_url, _features, popupWindow) => {
-      const captureTokenSnapshot = (prefix: string): Map<string, string> => {
-        const snapshot = new Map<string, string>();
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (
-            key &&
-            key.startsWith(prefix) &&
-            (key.endsWith("_tokens") ||
-              key.endsWith(":token") ||
-              key.endsWith(":tokens"))
-          ) {
-            const value = localStorage.getItem(key);
-            if (value) {
-              snapshot.set(key, value);
-            }
-          }
-        }
-        return snapshot;
-      };
-
-      const tokenSnapshotBefore = captureTokenSnapshot("mcp:auth");
-
-      if (connection && connectionId) {
-        localStorage.setItem(
-          "mcp_oauth_pending",
-          JSON.stringify({
-            connectionId: connectionId as string,
-            orgId: connection.organization_id,
-            connectionType: connection.connection_type,
-            connectionUrl: connection.connection_url,
-            timestamp: Date.now(),
-          }),
-        );
-      }
-
-      const messageHandler = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-
-        if (event.data.type === "mcp:oauth:complete") {
-          if (event.data.success && connection && connectionId) {
-            try {
-              const tokenSnapshotAfter = captureTokenSnapshot("mcp:auth");
-              let newOrChangedToken: string | null = null;
-
-              for (const [key, value] of tokenSnapshotAfter) {
-                const beforeValue = tokenSnapshotBefore.get(key);
-                if (!beforeValue || beforeValue !== value) {
-                  try {
-                    const parsed = JSON.parse(value);
-                    newOrChangedToken =
-                      parsed.access_token || parsed.accessToken || value;
-                  } catch {
-                    newOrChangedToken = value;
-                  }
-                  break;
-                }
-              }
-
-              if (newOrChangedToken) {
-                if (!connectionsCollection) {
-                  throw new Error("Connections collection not initialized");
-                }
-                if (!connectionsCollection.has(connectionId as string)) {
-                  throw new Error("Connection not found in collection");
-                }
-
-                const tx = connectionsCollection.update(
-                  connectionId as string,
-                  (draft: ConnectionEntity) => {
-                    draft.connection_type = connection.connection_type;
-                    draft.connection_url = connection.connection_url;
-                    draft.connection_token = newOrChangedToken;
-                  },
-                );
-                await tx.isPersisted.promise;
-              }
-
-              localStorage.removeItem("mcp_oauth_pending");
-            } catch (saveErr) {
-              toast.error(
-                `Failed to save token: ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`,
-              );
-            }
-
-            if (popupWindow && !popupWindow.closed) {
-              popupWindow.close();
-            }
-            window.removeEventListener("message", messageHandler);
-          } else if (!event.data.success) {
-            toast.error(`OAuth failed: ${event.data.error || "Unknown error"}`);
-            if (popupWindow && !popupWindow.closed) {
-              popupWindow.close();
-            }
-            window.removeEventListener("message", messageHandler);
-          }
-        }
-      };
-
-      window.addEventListener("message", messageHandler);
-      setTimeout(
-        () => {
-          window.removeEventListener("message", messageHandler);
-        },
-        5 * 60 * 1000,
-      );
-    },
   });
 
   if (!connection && connectionId) {
@@ -298,30 +191,7 @@ function ConnectionInspectorViewContent() {
       </ViewTabs>
       <div className="flex h-full w-full bg-background overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
-          {mcp.state === "pending_auth" ||
-          mcp.state === "authenticating" ||
-          (!connection.connection_token && mcp.state === "failed") ? (
-            <EmptyState
-              image={
-                <div className="bg-muted p-4 rounded-full">
-                  <Lock className="w-8 h-8 text-muted-foreground" />
-                </div>
-              }
-              title="Authorization Required"
-              description="This connection requires authorization to access tools and resources."
-              actions={
-                <Button
-                  onClick={() => mcp.authenticate()}
-                  disabled={mcp.state === "authenticating"}
-                >
-                  {mcp.state === "authenticating"
-                    ? "Authorizing..."
-                    : "Authorize"}
-                </Button>
-              }
-              className="h-full"
-            />
-          ) : activeTabId === "tools" ? (
+          {activeTabId === "tools" ? (
             <ToolsList
               tools={mcp.tools}
               connectionId={connectionId as string}

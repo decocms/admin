@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mesh:
     image: ${IMAGE_REPOSITORY:-ghcr.io/decocms/admin/mesh}:${IMAGE_TAG:-latest}

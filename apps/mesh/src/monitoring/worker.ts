@@ -34,6 +34,7 @@ class MonitoringWorker {
   private config: MonitoringConfig;
   private retryQueue: MonitoringLog[] = [];
   private isShuttingDown = false;
+  private retryAttempts = 0;
 
   constructor(config: MonitoringConfig) {
     this.config = config;
@@ -118,22 +119,30 @@ class MonitoringWorker {
 
     try {
       await this.storage.logBatch(toWrite);
+      // Reset retry attempts on successful flush
+      this.retryAttempts = 0;
     } catch (error) {
       console.error("Failed to flush monitoring logs:", error);
 
       // Add to retry queue (limit to prevent memory issues)
-      if (this.retryQueue.length < this.config.maxQueueSize) {
+      if (toWrite.length <= this.config.maxQueueSize) {
         this.retryQueue.push(...toWrite);
       } else {
         console.warn(
-          `Retry queue full (${this.retryQueue.length}), dropping ${toWrite.length} events`,
+          `Retry queue would exceed limit (${toWrite.length} > ${this.config.maxQueueSize}), dropping events`,
         );
       }
 
-      // Schedule retry with exponential backoff
+      // Schedule retry with exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+      this.retryAttempts++;
+      const backoffMs = Math.min(
+        1000 * Math.pow(2, this.retryAttempts - 1),
+        30000,
+      );
+
       setTimeout(() => {
         this.flush().catch((err) => console.error("Retry flush failed:", err));
-      }, 5000); // 5 second backoff
+      }, backoffMs);
     }
   }
 

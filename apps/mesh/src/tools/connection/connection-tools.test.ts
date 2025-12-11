@@ -67,6 +67,7 @@ describe("Connection Tools", () => {
             updatedAt: new Date().toISOString(),
           }),
         } as never,
+        monitoring: null as never,
       },
       vault: null as never,
       authInstance: null as never,
@@ -99,6 +100,7 @@ describe("Connection Tools", () => {
         requestId: "req_123",
         timestamp: new Date(),
       },
+      monitoring: null as never,
     };
   });
 

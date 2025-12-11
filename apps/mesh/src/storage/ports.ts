@@ -55,7 +55,7 @@ export interface MonitoringStorage {
     endDate?: Date;
     limit?: number;
     offset?: number;
-  }): Promise<MonitoringLog[]>;
+  }): Promise<{ logs: MonitoringLog[]; total: number }>;
   getStats(filters: {
     organizationId: string;
     startDate?: Date;

@@ -8,7 +8,7 @@
 import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
 import type { MonitoringStorage } from "./ports";
-import type { Database, MonitoringLog, MonitoringLogTable } from "./types";
+import type { Database, MonitoringLog } from "./types";
 
 // ============================================================================
 // Monitoring Storage Implementation
@@ -42,24 +42,40 @@ export class SqlMonitoringStorage implements MonitoringStorage {
     endDate?: Date;
     limit?: number;
     offset?: number;
-  }): Promise<MonitoringLog[]> {
+  }): Promise<{ logs: MonitoringLog[]; total: number }> {
     let query = this.db.selectFrom("monitoring_logs").selectAll();
+    let countQuery = this.db
+      .selectFrom("monitoring_logs")
+      .select((eb) => eb.fn.count("id").as("count"));
 
-    // Apply filters
+    // Apply filters to both queries
     if (filters.organizationId) {
       query = query.where("organization_id", "=", filters.organizationId);
+      countQuery = countQuery.where(
+        "organization_id",
+        "=",
+        filters.organizationId,
+      );
     }
     if (filters.connectionId) {
       query = query.where("connection_id", "=", filters.connectionId);
+      countQuery = countQuery.where("connection_id", "=", filters.connectionId);
     }
     if (filters.toolName) {
       query = query.where("tool_name", "=", filters.toolName);
+      countQuery = countQuery.where("tool_name", "=", filters.toolName);
     }
     if (filters.isError !== undefined) {
       query = query.where("is_error", "=", filters.isError ? 1 : 0);
+      countQuery = countQuery.where("is_error", "=", filters.isError ? 1 : 0);
     }
     if (filters.startDate) {
       query = query.where(
+        "timestamp",
+        ">=",
+        filters.startDate.toISOString() as never,
+      );
+      countQuery = countQuery.where(
         "timestamp",
         ">=",
         filters.startDate.toISOString() as never,
@@ -71,12 +87,17 @@ export class SqlMonitoringStorage implements MonitoringStorage {
         "<=",
         filters.endDate.toISOString() as never,
       );
+      countQuery = countQuery.where(
+        "timestamp",
+        "<=",
+        filters.endDate.toISOString() as never,
+      );
     }
 
     // Order by timestamp descending (most recent first)
     query = query.orderBy("timestamp", "desc");
 
-    // Pagination
+    // Pagination (only applies to data query, not count)
     if (filters.limit) {
       query = query.limit(filters.limit);
     }
@@ -84,8 +105,16 @@ export class SqlMonitoringStorage implements MonitoringStorage {
       query = query.offset(filters.offset);
     }
 
-    const rows = await query.execute();
-    return rows.map((row) => this.fromDbRow(row));
+    // Execute both queries in parallel
+    const [rows, countResult] = await Promise.all([
+      query.execute(),
+      countQuery.executeTakeFirst(),
+    ]);
+
+    const total = Number(countResult?.count || 0);
+    const logs = rows.map((row) => this.fromDbRow(row));
+
+    return { logs, total };
   }
 
   async getStats(filters: {
@@ -163,7 +192,7 @@ export class SqlMonitoringStorage implements MonitoringStorage {
   // Private Helper Methods
   // ============================================================================
 
-  private toDbRow(log: MonitoringLog): Omit<MonitoringLogTable, never> {
+  private toDbRow(log: MonitoringLog) {
     const id = log.id || `log_${nanoid()}`;
 
     return {
@@ -186,20 +215,42 @@ export class SqlMonitoringStorage implements MonitoringStorage {
     };
   }
 
-  private fromDbRow(row: MonitoringLogTable): MonitoringLog {
+  private fromDbRow(row: {
+    id: string;
+    organization_id: string;
+    connection_id: string;
+    connection_title: string;
+    tool_name: string;
+    input: string | Record<string, unknown>;
+    output: string | Record<string, unknown>;
+    is_error: number;
+    error_message: string | null;
+    duration_ms: number;
+    timestamp: string | Date;
+    user_id: string | null;
+    request_id: string;
+  }): MonitoringLog {
+    const input =
+      typeof row.input === "string" ? JSON.parse(row.input) : row.input;
+    const output =
+      typeof row.output === "string" ? JSON.parse(row.output) : row.output;
+    const timestamp =
+      typeof row.timestamp === "string"
+        ? new Date(row.timestamp)
+        : row.timestamp;
+
     return {
       id: row.id,
       organizationId: row.organization_id,
       connectionId: row.connection_id,
       connectionTitle: row.connection_title,
       toolName: row.tool_name,
-      input: typeof row.input === "string" ? JSON.parse(row.input) : row.input,
-      output:
-        typeof row.output === "string" ? JSON.parse(row.output) : row.output,
+      input,
+      output,
       isError: row.is_error === 1,
       errorMessage: row.error_message,
       durationMs: row.duration_ms,
-      timestamp: row.timestamp,
+      timestamp,
       userId: row.user_id,
       requestId: row.request_id,
     };

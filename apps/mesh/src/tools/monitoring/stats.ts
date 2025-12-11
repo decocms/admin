@@ -14,9 +14,29 @@ export const MONITORING_STATS = defineTool({
   inputSchema: z.object({
     startDate: z
       .string()
+      .datetime()
       .optional()
-      .describe("Filter by start date (ISO string)"),
-    endDate: z.string().optional().describe("Filter by end date (ISO string)"),
+      .describe("Filter by start date (ISO 8601 datetime string)"),
+    endDate: z
+      .string()
+      .datetime()
+      .optional()
+      .describe("Filter by end date (ISO 8601 datetime string)"),
+  }),
+  outputSchema: z.object({
+    totalCalls: z.number().describe("Total number of tool calls"),
+    errorRate: z.number().describe("Error rate as a decimal (0 to 1)"),
+    avgDurationMs: z.number().describe("Average call duration in milliseconds"),
+    p50DurationMs: z
+      .number()
+      .describe("50th percentile (median) duration in milliseconds"),
+    p95DurationMs: z
+      .number()
+      .describe("95th percentile duration in milliseconds"),
+    p99DurationMs: z
+      .number()
+      .describe("99th percentile duration in milliseconds"),
+    errorRatePercent: z.string().describe("Error rate as a percentage string"),
   }),
   handler: async (input, ctx) => {
     const org = requireOrganization(ctx);

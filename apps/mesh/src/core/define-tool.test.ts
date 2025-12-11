@@ -37,6 +37,19 @@ const createMockContext = (): MeshContext => ({
       get: vi.fn(),
       upsert: vi.fn(),
     } as never,
+    monitoring: {
+      log: vi.fn().mockResolvedValue(undefined),
+      logBatch: vi.fn().mockResolvedValue(undefined),
+      query: vi.fn().mockResolvedValue({ logs: [], total: 0 }),
+      getStats: vi.fn().mockResolvedValue({
+        totalCalls: 0,
+        errorRate: 0,
+        avgDurationMs: 0,
+        p50DurationMs: 0,
+        p95DurationMs: 0,
+        p99DurationMs: 0,
+      }),
+    } as never,
   },
   vault: null as never,
   authInstance: null as never,
@@ -86,6 +99,10 @@ const createMockContext = (): MeshContext => ({
     requestId: "req_123",
     timestamp: new Date(),
   },
+  monitoring: {
+    logToolCall: vi.fn().mockResolvedValue(undefined),
+    flush: vi.fn().mockResolvedValue(undefined),
+  } as never,
 });
 
 describe("defineTool", () => {

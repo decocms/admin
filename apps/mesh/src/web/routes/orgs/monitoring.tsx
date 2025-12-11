@@ -97,7 +97,10 @@ interface MonitoringStatsProps {
   isStreaming: boolean;
 }
 
-function MonitoringStatsContent({ dateRange, isStreaming }: MonitoringStatsProps) {
+function MonitoringStatsContent({
+  dateRange,
+  isStreaming,
+}: MonitoringStatsProps) {
   const toolCaller = useMemo(() => createToolCaller(), []);
 
   const statsParams = useMemo(
@@ -135,17 +138,13 @@ function MonitoringStatsContent({ dateRange, isStreaming }: MonitoringStatsProps
           </div>
         </div>
         <div>
-          <div className="text-xs text-muted-foreground mb-1">
-            Avg Duration
-          </div>
+          <div className="text-xs text-muted-foreground mb-1">Avg Duration</div>
           <div className="text-lg font-semibold">
             {`${Math.round(stats?.avgDurationMs || 0)}ms`}
           </div>
         </div>
         <div>
-          <div className="text-xs text-muted-foreground mb-1">
-            P95 Duration
-          </div>
+          <div className="text-xs text-muted-foreground mb-1">P95 Duration</div>
           <div className="text-lg font-semibold">
             {`${Math.round(stats?.p95DurationMs || 0)}ms`}
           </div>
@@ -363,7 +362,11 @@ interface MonitoringLogRowProps {
   onToggle: () => void;
 }
 
-function MonitoringLogRow({ log, isExpanded, onToggle }: MonitoringLogRowProps) {
+function MonitoringLogRow({
+  log,
+  isExpanded,
+  onToggle,
+}: MonitoringLogRowProps) {
   return (
     <>
       <TableRow

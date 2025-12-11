@@ -94,14 +94,23 @@ export interface Organization {
   createdAt: Date | string;
 }
 
+export interface SidebarItem {
+  title: string;
+  url: string;
+  connectionId: string;
+  icon: string;
+}
+
 export interface OrganizationSettingsTable {
   organizationId: string;
+  sidebar_items: JsonArray<SidebarItem[]> | null;
   createdAt: ColumnType<Date, Date | string, never>;
   updatedAt: ColumnType<Date, Date | string, Date | string>;
 }
 
 export interface OrganizationSettings {
   organizationId: string;
+  sidebar_items: SidebarItem[] | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -336,6 +345,44 @@ export interface DownstreamToken {
 // Database Schema
 // ============================================================================
 
+// ============================================================================
+// Better Auth Organization Tables (managed by Better Auth plugin)
+// ============================================================================
+
+/**
+ * Better Auth organization table
+ */
+export interface BetterAuthOrganizationTable {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  metadata: string | null;
+  createdAt: ColumnType<Date, string, string>;
+}
+
+/**
+ * Better Auth member table (organization membership)
+ */
+export interface BetterAuthMemberTable {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  createdAt: ColumnType<Date, string, string>;
+}
+
+/**
+ * Better Auth organization role table (custom roles)
+ */
+export interface BetterAuthOrganizationRoleTable {
+  id: string;
+  organizationId: string;
+  role: string;
+  permission: string; // JSON string
+  createdAt: ColumnType<Date, string, string>;
+}
+
 /**
  * Complete database schema
  * All tables exist within the organization scope (database boundary)
@@ -356,4 +403,9 @@ export interface Database {
   oauth_authorization_codes: OAuthAuthorizationCodeTable;
   oauth_refresh_tokens: OAuthRefreshTokenTable;
   downstream_tokens: DownstreamTokenTable;
+
+  // Better Auth organization tables (managed by Better Auth plugin)
+  organization: BetterAuthOrganizationTable;
+  member: BetterAuthMemberTable;
+  organizationRole: BetterAuthOrganizationRoleTable;
 }

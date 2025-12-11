@@ -59,34 +59,29 @@ type CallStreamableToolMiddleware = (
  * Authorization middleware - checks access to tool on connection
  * Inspired by withMCPAuthorization from @deco/sdk
  *
- * Permissions format: { 'conn_<UUID>': ['TOOL1', 'TOOL2', '*'] }
- * This checks if the user has permission for the specific tool on this connection
+ * Permission check: { '<connectionId>': ['toolName'] }
+ * Delegates to Better Auth's hasPermission API via boundAuth
  */
 function withConnectionAuthorization(
   ctx: MeshContext,
   connectionId: string,
 ): CallToolMiddleware {
   return async (request, next) => {
-    if (!ctx.auth.apiKey) {
-      return await next();
-    }
-
     try {
       const toolName = request.params.name;
 
       // Create AccessControl with connectionId set
-      // This allows it to check: does user have permission for this TOOL on this CONNECTION?
-      // Example: { 'conn_123': ['SEND_MESSAGE'] } - allows SEND_MESSAGE on conn_123
+      // This checks: does user have permission for this TOOL on this CONNECTION?
+      // Better Auth resolves the user's role permissions internally
       const connectionAccessControl = new AccessControl(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName, // Tool being called
-        ctx.auth.apiKey?.permissions,
-        ctx.auth.user?.role,
-        connectionId, // Connection ID to filter by
+        ctx.boundAuth, // Bound auth client (encapsulates headers)
+        ctx.auth.user?.role, // Role for built-in role bypass
+        connectionId, // Connection ID for permission check
       );
 
-      // Check permission for this specific tool on this connection
       await connectionAccessControl.check(toolName);
 
       return await next();
@@ -114,10 +109,6 @@ function withStreamableConnectionAuthorization(
   connectionId: string,
 ): CallStreamableToolMiddleware {
   return async (request, next) => {
-    if (!ctx.auth.apiKey) {
-      return await next();
-    }
-
     try {
       const toolName = request.params.name;
 
@@ -125,7 +116,7 @@ function withStreamableConnectionAuthorization(
         ctx.authInstance,
         ctx.auth.user?.id ?? ctx.auth.apiKey?.userId,
         toolName,
-        ctx.auth.apiKey?.permissions,
+        ctx.boundAuth, // Bound auth client (encapsulates headers)
         ctx.auth.user?.role,
         connectionId,
       );
@@ -279,6 +270,7 @@ export async function createMCPProxy(
   };
 
   // Create authorization middlewares
+  // Uses boundAuth for permission checks (delegates to Better Auth)
   const authMiddleware = withConnectionAuthorization(ctx, connectionId);
   const streamableAuthMiddleware = withStreamableConnectionAuthorization(
     ctx,
@@ -523,6 +515,10 @@ app.all("/:connectionId", async (c) => {
 
     if (err.message.includes("not found")) {
       return c.json({ error: err.message }, 404);
+    }
+    if (err.message.includes("does not belong to the active organization")) {
+      // Return 404 to prevent leaking connection existence across organizations
+      return c.json({ error: "Connection not found" }, 404);
     }
     if (err.message.includes("inactive")) {
       return c.json({ error: err.message }, 503);

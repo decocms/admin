@@ -5,9 +5,8 @@
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { RequestInfo } from "@modelcontextprotocol/sdk/types.js";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, vi } from "vitest";
 import { auth } from "../auth";
 import app from "./index";
 
@@ -86,91 +85,6 @@ describe("MCP Integration", () => {
       }
     });
 
-    it.skip("should list all management tools via MCP protocol", async () => {
-      // TODO: Fix integration test - requires complex Better Auth mocking
-      // Create transport with Authorization header - will use mocked global fetch
-      const transport = new StreamableHTTPClientTransport(
-        new URL("http://localhost:3000/mcp"),
-      );
-
-      // Create MCP client
-      client = new Client({
-        name: "test-client",
-        version: "1.0.0",
-      });
-
-      // Connect client to transport
-      await client.connect(transport);
-
-      // List tools using MCP protocol
-      const result = await client.listTools();
-
-      // Verify response structure
-      expect(result).toBeDefined();
-      expect(result.tools).toBeDefined();
-      expect(Array.isArray(result.tools)).toBe(true);
-
-      // Verify all 10 expected tools are present
-      const expectedTools = [
-        "ORGANIZATION_CREATE",
-        "ORGANIZATION_LIST",
-        "ORGANIZATION_GET",
-        "ORGANIZATION_UPDATE",
-        "ORGANIZATION_DELETE",
-        "COLLECTION_CONNECTIONS_CREATE",
-        "COLLECTION_CONNECTIONS_LIST",
-        "COLLECTION_CONNECTIONS_GET",
-        "COLLECTION_CONNECTIONS_DELETE",
-        "CONNECTION_TEST",
-      ];
-
-      expect(result.tools.length).toBe(expectedTools.length);
-
-      const toolNames = result.tools.map((tool) => tool.name);
-      for (const expectedTool of expectedTools) {
-        expect(toolNames).toContain(expectedTool);
-      }
-
-      // Verify each tool has required properties
-      for (const tool of result.tools) {
-        expect(tool.name).toBeDefined();
-        expect(typeof tool.name).toBe("string");
-        expect(tool.description).toBeDefined();
-        expect(tool.inputSchema).toBeDefined();
-      }
-    });
-
-    it.skip("should call a management tool via MCP protocol", async () => {
-      // TODO: Fix integration test - requires complex Better Auth mocking
-      // Create transport with Authorization header
-      const transport = new StreamableHTTPClientTransport(
-        new URL("http://localhost:3000/mcp"),
-      );
-
-      // Create MCP client
-      client = new Client({
-        name: "test-client",
-        version: "1.0.0",
-      });
-
-      // Connect client to transport
-      await client.connect(transport);
-
-      // Call ORGANIZATION_LIST tool
-      const result = await client
-        .callTool({
-          name: "ORGANIZATION_LIST",
-          arguments: {},
-        })
-        .catch((err) => {
-          console.error("Error calling tool:", err);
-          throw err;
-        });
-
-      // Verify response structure
-      expect(result).toBeDefined();
-      expect(result.content).toBeDefined();
-      expect(Array.isArray(result.content)).toBe(true);
-    });
+    // Integration tests for MCP protocol removed - require complex Better Auth mocking
   });
 });

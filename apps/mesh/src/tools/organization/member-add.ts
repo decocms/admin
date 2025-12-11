@@ -15,7 +15,7 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
   inputSchema: z.object({
     organizationId: z.string().optional(), // Optional: defaults to active organization
     userId: z.string(),
-    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["member"])
+    role: z.array(z.string()), // Array of role names (e.g., ["admin"], ["user"])
   }),
 
   outputSchema: z.object({
@@ -42,12 +42,10 @@ export const ORGANIZATION_MEMBER_ADD = defineTool({
     }
 
     // Add member via Better Auth
-    const result = await ctx.authInstance.api.addMember({
-      body: {
-        organizationId,
-        userId: input.userId,
-        role: input.role as ("user" | "admin")[], // Better Auth expects specific role values
-      },
+    const result = await ctx.boundAuth.organization.addMember({
+      organizationId,
+      userId: input.userId,
+      role: input.role,
     });
 
     if (!result) {

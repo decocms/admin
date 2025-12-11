@@ -16,6 +16,7 @@ import {
   TOOL_CONNECTION_CONFIGURE,
 } from "@/web/utils/constants";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
+import { PinToSidebarButton } from "@/web/components/pin-to-sidebar-button";
 import {
   useConnection,
   useConnectionsCollection,
@@ -976,6 +977,7 @@ function CollectionContent({
   const navigate = useNavigate();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id || "unknown";
+  const connection = useConnection(connectionId);
 
   const toolCaller = createToolCaller(connectionId);
   const collection = useCollection(connectionId, collectionName, toolCaller);
@@ -1117,6 +1119,11 @@ function CollectionContent({
           sortDirection={sortDirection}
           onSort={handleSort}
           sortOptions={sortOptions}
+        />
+        <PinToSidebarButton
+          connectionId={connectionId}
+          title={`${collectionName}s`}
+          icon={connection?.icon ?? "grid_view"}
         />
         {showCreateInToolbar && createButton}
       </ViewActions>

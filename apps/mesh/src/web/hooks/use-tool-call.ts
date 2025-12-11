@@ -19,6 +19,8 @@ export interface UseToolCallOptions<TInput, _TOutput> {
   toolName: string;
   /** The input parameters for the tool */
   toolInputParams: TInput;
+  /** Connection ID to scope the cache (optional) */
+  connectionId?: string;
   /** Whether the query is enabled */
   enabled?: boolean;
   /** Cache time in milliseconds */
@@ -47,6 +49,7 @@ export function useToolCall<TInput, TOutput>(
     toolCaller,
     toolName,
     toolInputParams,
+    connectionId,
     enabled = true,
     staleTime = 60_000,
   } = options;
@@ -55,7 +58,7 @@ export function useToolCall<TInput, TOutput>(
   const paramsKey = JSON.stringify(toolInputParams);
 
   return useQuery({
-    queryKey: KEYS.toolCall(toolName, paramsKey),
+    queryKey: KEYS.toolCall(toolName, paramsKey, connectionId),
     queryFn: async () => {
       console.log("toolName", toolName, toolInputParams);
       const result = await toolCaller(toolName, toolInputParams);

@@ -48,12 +48,9 @@ export const ORGANIZATION_UPDATE = defineTool({
       updateData.metadata = { description: input.description };
 
     // Update organization via Better Auth
-    const result = await ctx.authInstance.api.updateOrganization({
-      body: {
-        organizationId: input.id,
-        data: updateData,
-      },
-      headers: new Headers(), // Better Auth requires headers
+    const result = await ctx.boundAuth.organization.update({
+      organizationId: input.id,
+      data: updateData,
     });
 
     if (!result) {

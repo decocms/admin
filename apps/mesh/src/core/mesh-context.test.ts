@@ -19,6 +19,20 @@ const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
   },
   vault: null as never,
   authInstance: null as never,
+  boundAuth: {
+    hasPermission: async () => false,
+    organization: {
+      create: async () => ({ data: null, error: null }),
+      update: async () => ({ data: null, error: null }),
+      delete: async () => {},
+      get: async () => ({ data: null, error: null }),
+      list: async () => ({ data: [], error: null }),
+      addMember: async () => ({ data: null, error: null }),
+      removeMember: async () => {},
+      listMembers: async () => ({ data: [], error: null }),
+      updateMemberRole: async () => ({ data: null, error: null }),
+    },
+  } as never,
   access: null as never,
   db: null as never,
   tracer: null as never,
@@ -97,7 +111,6 @@ describe("MeshContext Utilities", () => {
             id: "key_1",
             name: "Test Key",
             userId: "user_2",
-            permissions: {},
           },
         },
       });
@@ -117,7 +130,6 @@ describe("MeshContext Utilities", () => {
             id: "key_1",
             name: "Test Key",
             userId: "user_2",
-            permissions: {},
           },
         },
       });
@@ -152,7 +164,6 @@ describe("MeshContext Utilities", () => {
             id: "key_1",
             name: "Test",
             userId: "user_1",
-            permissions: {},
           },
         },
       });
@@ -187,7 +198,6 @@ describe("MeshContext Utilities", () => {
             id: "key_1",
             name: "Test",
             userId: "user_1",
-            permissions: {},
           },
         },
       });

@@ -17,9 +17,14 @@ import { AuditLogStorage } from "../storage/audit-log";
 import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database } from "../storage/types";
 import { AccessControl } from "./access-control";
-import type { MeshContext, BetterAuthInstance } from "./mesh-context";
+import type {
+  MeshContext,
+  BetterAuthInstance,
+  BoundAuthClient,
+} from "./mesh-context";
 import { CredentialVault } from "../encryption/credential-vault";
 import { verifyMeshToken } from "../auth/jwt";
+import type { Permission } from "../storage/types";
 
 // ============================================================================
 // Configuration
@@ -66,34 +71,6 @@ interface OAuthSession {
 // Authentication Helpers
 // ============================================================================
 
-/**
- * Parse OAuth scopes into Better Auth permission format
- *
- * Input: "openid profile email self:*"
- * Output: { "self": ["*"] }
- *
- * Input: "openid profile email self:PROJECT_CREATE self:CONNECTION_LIST"
- * Output: { "self": ["PROJECT_CREATE", "COLLECTION_CONNECTIONS_LIST"] }
- */
-function scopesToPermissions(scopes: string): Record<string, string[]> {
-  const permissions: Record<string, string[]> = {};
-
-  // Split scopes and filter for self: prefixed ones
-  const scopeList = scopes.split(" ").filter((s) => s.trim());
-
-  for (const scope of scopeList) {
-    const [connection, tool] = scope.split(":");
-    if (connection && tool) {
-      if (!permissions[connection]) {
-        permissions[connection] = [];
-      }
-      permissions[connection].push(tool);
-    }
-  }
-
-  return permissions;
-}
-
 interface OrganizationContext {
   id: string;
   slug: string;
@@ -107,17 +84,268 @@ interface AuthenticatedUser {
   role?: string;
 }
 
+// Type for the hasPermission API (from @decocms/better-auth organization plugin)
+type HasPermissionAPI = (params: {
+  headers: Headers;
+  body: { permission: Permission };
+}) => Promise<{ success?: boolean; error?: unknown } | null>;
+
+/**
+ * Check if API key permissions grant access to the requested permission
+ * API key permissions are a simple { resource: [tools] } map
+ */
+function checkApiKeyPermission(
+  apiKeyPermissions: Permission,
+  requestedPermission: Permission,
+): boolean {
+  for (const [resource, tools] of Object.entries(requestedPermission)) {
+    // Check if the API key has permission for this resource
+    const grantedTools = apiKeyPermissions[resource];
+
+    // No permission for this resource at all
+    if (!grantedTools || grantedTools.length === 0) {
+      // Also check wildcard resource "*"
+      const wildcardTools = apiKeyPermissions["*"];
+      if (!wildcardTools || wildcardTools.length === 0) {
+        return false;
+      }
+      // Check if wildcard grants the tools
+      if (wildcardTools.includes("*")) {
+        continue; // Wildcard grants all tools
+      }
+      for (const tool of tools) {
+        if (!wildcardTools.includes(tool)) {
+          return false;
+        }
+      }
+      continue;
+    }
+
+    // Wildcard grants all tools for this resource
+    if (grantedTools.includes("*")) {
+      continue;
+    }
+
+    // Check each requested tool
+    for (const tool of tools) {
+      if (!grantedTools.includes(tool)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Auth context needed to create a bound auth client
+ *
+ * Two permission flows:
+ * 1. API Key / MCP OAuth → permissions are queried and stored here
+ * 2. Browser sessions → use Better Auth's hasPermission API (no stored permissions)
+ */
+interface AuthContext {
+  headers: Headers;
+  auth: BetterAuthInstance;
+  role?: string; // User's role (for built-in role bypass)
+  permissions?: Permission; // Permissions from API key or custom role (MCP OAuth)
+}
+
+/**
+ * Create a bound auth client that encapsulates HTTP headers and auth context
+ * MeshContext stays HTTP-agnostic while delegating all Better Auth calls
+ *
+ * Two permission flows:
+ * 1. API Key / MCP OAuth → check directly against stored `permissions`
+ * 2. Browser sessions → delegate to Better Auth's hasPermission API
+ */
+function createBoundAuthClient(ctx: AuthContext): BoundAuthClient {
+  const { auth, headers, role, permissions } = ctx;
+
+  // Get hasPermission from Better Auth's organization plugin (for browser sessions)
+  const hasPermissionApi = (auth.api as { hasPermission?: HasPermissionAPI })
+    .hasPermission;
+
+  return {
+    hasPermission: async (
+      requestedPermission: Permission,
+    ): Promise<boolean> => {
+      // Built-in roles bypass all permission checks
+      if (
+        role &&
+        BUILTIN_ROLES.includes(role as (typeof BUILTIN_ROLES)[number])
+      ) {
+        return true;
+      }
+
+      // Flow 1: API Key / MCP OAuth - check against stored permissions
+      if (permissions) {
+        return checkApiKeyPermission(permissions, requestedPermission);
+      }
+
+      // Flow 2: Browser sessions - delegate to Better Auth's hasPermission API
+      if (!hasPermissionApi) {
+        console.error("[Auth] hasPermission API not available");
+        return false;
+      }
+
+      try {
+        // Check exact permission first: { resource: [tool] }
+        const exactResult = await hasPermissionApi({
+          headers,
+          body: { permission: requestedPermission },
+        });
+
+        if (exactResult?.success === true) {
+          return true;
+        }
+
+        // Check wildcard permission: { resource: ["*"] }
+        // Better Auth may not handle wildcards, so we check explicitly
+        const wildcardPermission: Permission = {};
+        for (const resource of Object.keys(requestedPermission)) {
+          wildcardPermission[resource] = ["*"];
+        }
+
+        const wildcardResult = await hasPermissionApi({
+          headers,
+          body: { permission: wildcardPermission },
+        });
+
+        return wildcardResult?.success === true;
+      } catch (err) {
+        console.error("[Auth] Permission check failed:", err);
+        return false;
+      }
+    },
+
+    organization: {
+      create: async (data) => {
+        return auth.api.createOrganization({
+          headers,
+          body: data,
+        } as unknown as Parameters<typeof auth.api.createOrganization>[0]);
+      },
+
+      update: async (data) => {
+        return auth.api.updateOrganization({
+          headers,
+          body: data,
+        });
+      },
+
+      delete: async (organizationId) => {
+        await auth.api.deleteOrganization({
+          headers,
+          body: { organizationId },
+        });
+      },
+
+      get: async (organizationId) => {
+        return auth.api.getFullOrganization({
+          headers,
+          query: organizationId ? { organizationId } : undefined,
+        });
+      },
+
+      list: async (userId?: string) => {
+        return auth.api.listOrganizations({
+          headers,
+          query: userId ? { userId } : undefined,
+        });
+      },
+
+      addMember: async (data) => {
+        return auth.api.addMember({
+          headers,
+          body: data,
+        } as unknown as Parameters<typeof auth.api.addMember>[0]);
+      },
+
+      removeMember: async (data) => {
+        await auth.api.removeMember({
+          headers,
+          body: data,
+        });
+      },
+
+      listMembers: async (options) => {
+        return auth.api.listMembers({
+          headers,
+          query: options
+            ? {
+                organizationId: options.organizationId,
+                limit: options.limit,
+                offset: options.offset,
+              }
+            : undefined,
+        });
+      },
+
+      updateMemberRole: async (data) => {
+        return auth.api.updateMemberRole({
+          headers,
+          body: data,
+        } as unknown as Parameters<typeof auth.api.updateMemberRole>[0]);
+      },
+    },
+  };
+}
+
+// Import built-in roles from auth config
+import { BUILTIN_ROLES } from "../auth";
+
+/**
+ * Fetch role permissions from the database
+ * Returns undefined for built-in roles (they bypass permission checks)
+ */
+async function fetchRolePermissions(
+  db: Kysely<Database>,
+  organizationId: string,
+  role: string,
+): Promise<Permission | undefined> {
+  // Built-in roles bypass permission checks
+  if (BUILTIN_ROLES.includes(role as (typeof BUILTIN_ROLES)[number])) {
+    return undefined;
+  }
+
+  // Query custom role permissions from the organizationRole table
+  const roleRecord = await db
+    .selectFrom("organizationRole")
+    .select(["permission"])
+    .where("organizationId", "=", organizationId)
+    .where("role", "=", role)
+    .executeTakeFirst();
+
+  if (!roleRecord?.permission) {
+    return undefined;
+  }
+
+  // Parse JSON permission string
+  try {
+    return JSON.parse(roleRecord.permission) as Permission;
+  } catch {
+    console.error(`[Auth] Failed to parse permissions for role: ${role}`);
+    return undefined;
+  }
+}
+
 /**
  * Authenticate request using either OAuth session or API key
  * Returns unified authentication data with organization context
+ *
+ * Two permission flows:
+ * 1. API Key / MCP OAuth → permissions are queried and returned
+ * 2. Browser sessions → no permissions stored (use Better Auth's hasPermission API)
  */
 async function authenticateRequest(
   c: Context,
   auth: BetterAuthInstance,
+  db: Kysely<Database>,
 ): Promise<{
   user?: AuthenticatedUser;
-  permissions: Record<string, string[]>;
   role?: string;
+  permissions?: Permission; // Permissions from API key or custom role (for non-browser sessions)
   apiKeyId?: string;
   organization?: OrganizationContext;
 }> {
@@ -131,31 +359,48 @@ async function authenticateRequest(
     })) as OAuthSession | null;
 
     if (session) {
-      // Parse OAuth scopes into permissions
-      const scopes = session.scopes || "";
-      const permissions = scopesToPermissions(scopes);
-
-      // Load user from userId in session
       const userId = session.userId;
 
-      // Get active organization from Better Auth organization plugin
-      // The session might include organization context
-      const orgData = await auth.api
-        .getFullOrganization({
-          headers: c.req.raw.headers,
-        })
-        .catch(() => null);
+      // For MCP OAuth sessions, we need to query the database directly
+      // because getFullOrganization requires a browser session (cookies)
+      // Query user's first organization membership
+      const membership = await db
+        .selectFrom("member")
+        .innerJoin("organization", "organization.id", "member.organizationId")
+        .select([
+          "member.role",
+          "member.organizationId",
+          "organization.id as orgId",
+          "organization.slug as orgSlug",
+          "organization.name as orgName",
+        ])
+        .where("member.userId", "=", userId)
+        .executeTakeFirst();
+
+      const role = membership?.role;
+      const organization = membership
+        ? {
+            id: membership.orgId,
+            slug: membership.orgSlug,
+            name: membership.orgName,
+          }
+        : undefined;
+
+      // Fetch role permissions for MCP OAuth sessions (non-browser)
+      let permissions: Permission | undefined;
+      if (membership && role) {
+        permissions = await fetchRolePermissions(
+          db,
+          membership.organizationId,
+          role,
+        );
+      }
 
       return {
-        user: { id: userId },
+        user: { id: userId, role },
+        role,
         permissions,
-        organization: orgData
-          ? {
-              id: orgData.id,
-              slug: orgData.slug,
-              name: orgData.name,
-            }
-          : undefined,
+        organization,
       };
     }
   } catch (error) {
@@ -175,7 +420,6 @@ async function authenticateRequest(
       if (meshJwtPayload) {
         return {
           user: { id: meshJwtPayload.sub },
-          permissions: meshJwtPayload.permissions || {},
         };
       }
     } catch {
@@ -194,9 +438,12 @@ async function authenticateRequest(
           | OrganizationContext
           | undefined;
 
+        // API keys have permissions stored directly on them
+        const permissions = result.key.permissions as Permission | undefined;
+
         return {
-          permissions: result.key.permissions || {},
           apiKeyId: result.key.id,
+          permissions, // Store the API key's permissions
           organization: orgMetadata
             ? {
                 id: orgMetadata.id,
@@ -219,8 +466,10 @@ async function authenticateRequest(
 
     if (session) {
       let organization: OrganizationContext | undefined;
+      let role: string | undefined;
 
       if (session.session.activeOrganizationId) {
+        // Get full organization data (includes members with roles)
         const orgData = await auth.api
           .getFullOrganization({
             headers: c.req.raw.headers,
@@ -233,6 +482,15 @@ async function authenticateRequest(
             slug: orgData.slug,
             name: orgData.name,
           };
+
+          // Extract user's role from the members array
+          const currentMember = orgData.members?.find(
+            (m: { userId: string }) => m.userId === session.user.id,
+          );
+          role = currentMember?.role;
+
+          // Browser sessions use Better Auth's hasPermission API
+          // No need to fetch permissions - they're checked via the API
         } else {
           organization = {
             id: session.session.activeOrganizationId,
@@ -243,10 +501,9 @@ async function authenticateRequest(
       }
 
       return {
-        user: { id: session.user.id, email: session.user.email },
-        permissions: {
-          self: ["*"],
-        },
+        user: { id: session.user.id, email: session.user.email, role },
+        role,
+        // No permissions - browser sessions use hasPermission API
         organization,
       };
     }
@@ -256,10 +513,8 @@ async function authenticateRequest(
   }
 
   // No valid authentication found - return empty auth data
-  // Access control will check this and throw UnauthorizedError if needed
   return {
     user: undefined,
-    permissions: {},
   };
 }
 
@@ -293,7 +548,15 @@ export function createMeshContextFactory(
   // Return factory function
   return async (c: Context): Promise<MeshContext> => {
     // Authenticate request (OAuth session or API key)
-    const authResult = await authenticateRequest(c, config.auth);
+    const authResult = await authenticateRequest(c, config.auth, config.db);
+
+    // Create bound auth client (encapsulates HTTP headers and auth context)
+    const boundAuth = createBoundAuthClient({
+      auth: config.auth,
+      headers: c.req.raw.headers,
+      role: authResult.role,
+      permissions: authResult.permissions,
+    });
 
     // Build auth object for MeshContext
     const auth: MeshContext["auth"] = {
@@ -305,7 +568,6 @@ export function createMeshContextFactory(
         id: authResult.apiKeyId,
         name: "", // Not needed for access control
         userId: "", // Not needed for access control
-        permissions: authResult.permissions,
       };
     }
 
@@ -316,13 +578,13 @@ export function createMeshContextFactory(
     const url = new URL(c.req.url);
     const baseUrl = process.env.BASE_URL ?? `${url.protocol}//${url.host}`;
 
-    // Create AccessControl instance with unified permissions
+    // Create AccessControl instance with bound auth client
     const access = new AccessControl(
       config.auth,
       auth.user?.id,
       undefined, // toolName set later by defineTool
-      authResult.permissions, // Unified permissions from OAuth or API key
-      authResult.role, // Role from OAuth session or undefined for API keys
+      boundAuth, // Bound auth client for permission checks
+      authResult.role, // Role from session (for built-in role bypass)
       "self", // Default connectionId for management APIs
     );
 
@@ -332,6 +594,7 @@ export function createMeshContextFactory(
       storage,
       vault,
       authInstance: config.auth,
+      boundAuth, // Pre-bound auth client for permission checks
       access,
       db: config.db,
       tracer: config.observability.tracer,

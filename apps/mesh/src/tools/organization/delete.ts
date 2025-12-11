@@ -29,12 +29,7 @@ export const ORGANIZATION_DELETE = defineTool({
     await ctx.access.check();
 
     // Delete organization via Better Auth
-    await ctx.authInstance.api.deleteOrganization({
-      body: {
-        organizationId: input.id,
-      },
-      headers: new Headers(), // Better Auth requires headers
-    });
+    await ctx.boundAuth.organization.delete(input.id);
 
     return {
       success: true,

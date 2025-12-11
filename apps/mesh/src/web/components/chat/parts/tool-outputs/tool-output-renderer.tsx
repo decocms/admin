@@ -79,7 +79,9 @@ function ConnectionRenderer({
   compact?: boolean;
 }) {
   const connection = useConnection(connectionId);
-  const { org } = useProjectContext();
+  const {
+    org: { slug: org },
+  } = useProjectContext();
   const navigate = useNavigate();
 
   if (!connection) return null;

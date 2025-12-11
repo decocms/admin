@@ -7,6 +7,7 @@ import {
   useConnection,
   useConnections,
   useConnectionsCollection,
+  type ConnectionEntity,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
@@ -15,6 +16,14 @@ import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { extractConnectionData } from "@/web/utils/extract-connection-data";
 import { slugify } from "@/web/utils/slugify";
+import { getGitHubAvatarUrl, extractGitHubRepo } from "@/web/utils/github-icon";
+import {
+  findListToolName,
+  getConnectionTypeLabel,
+  extractSchemaVersion,
+  extractItemsFromResponse,
+} from "@/web/utils/registry-utils";
+import { ReadmeViewer } from "@/web/components/store/readme-viewer";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -27,15 +36,29 @@ function getPublisherInfo(
   items: RegistryItem[],
   publisherName: string,
   publisherConnection?: { icon: string | null } | null,
+  registryConnection?: ConnectionEntity | null,
+  totalCount?: number | null,
 ): { logo?: string; count: number } {
   if (!publisherName || publisherName === "Unknown") {
     return { count: 0 };
   }
 
+  // For official registry, use registry connection icon and totalCount from API
+  if (publisherName === "io.modelcontextprotocol.registry/official") {
+    const icon = registryConnection?.icon;
+    return {
+      logo: icon || undefined,
+      count: totalCount ?? items.length,
+    };
+  }
+
   const publisherLower = publisherName.toLowerCase();
   const matchingItems = items.filter((item) => {
-    const itemPublisher =
-      item.publisher || item._meta?.["mcp.mesh"]?.scopeName || "Unknown";
+    const officialMeta =
+      item._meta?.["io.modelcontextprotocol.registry/official"];
+    const itemPublisher = officialMeta
+      ? "io.modelcontextprotocol.registry/official"
+      : item.publisher || item._meta?.["mcp.mesh"]?.scopeName || "Unknown";
     return itemPublisher.toLowerCase() === publisherLower;
   });
 
@@ -159,14 +182,44 @@ function ToolsTable({
 function extractItemData(item: RegistryItem) {
   const publisherMeta = item.server?._meta?.["mcp.mesh/publisher-provided"];
   const decoMeta = item._meta?.["mcp.mesh"];
+  const officialMeta =
+    item._meta?.["io.modelcontextprotocol.registry/official"];
+  const server = item.server;
+
+  // Extract connection type from remotes
+  const connectionType = getConnectionTypeLabel(server?.remotes?.[0]?.type);
+
+  // Extract schema version from $schema URL
+  const schemaVersion = extractSchemaVersion(server?.$schema);
+
+  // Extract publisher - prioritize official registry meta
+  const publisher = officialMeta
+    ? "io.modelcontextprotocol.registry/official"
+    : item.publisher || decoMeta?.scopeName || "Unknown";
+
+  // Get icon with GitHub fallback
+  const githubIcon = getGitHubAvatarUrl(server?.repository);
+
+  const icon =
+    item.icon ||
+    item.image ||
+    item.logo ||
+    item.server?.icons?.[0]?.src ||
+    githubIcon ||
+    null;
 
   return {
     name: item.name || item.title || item.server?.title || "Unnamed Item",
     description:
       item.description || item.summary || item.server?.description || "",
-    icon: item.icon || item.image || item.logo || item.server?.icons?.[0]?.src,
+    icon: icon,
     verified: item.verified || decoMeta?.verified,
-    publisher: item.publisher || decoMeta?.scopeName || "Unknown",
+    publisher: publisher,
+    version: server?.version || null,
+    websiteUrl: server?.websiteUrl || null,
+    repository: server?.repository || null,
+    schemaVersion: schemaVersion,
+    connectionType: connectionType,
     tools: item.tools || item.server?.tools || publisherMeta?.tools || [],
     models: item.models || item.server?.models || publisherMeta?.models || [],
     emails: item.emails || item.server?.emails || publisherMeta?.emails || [],
@@ -208,14 +261,7 @@ export default function StoreAppDetail() {
   const registryConnection = useConnection(effectiveRegistryId);
 
   // Find the LIST tool from the registry connection
-  const listToolName = !registryConnection?.tools
-    ? ""
-    : (() => {
-        const listTool = registryConnection.tools.find((tool) =>
-          tool.name.endsWith("_LIST"),
-        );
-        return listTool?.name || "";
-      })();
+  const listToolName = findListToolName(registryConnection?.tools);
 
   const toolCaller = createToolCaller(effectiveRegistryId);
 
@@ -227,30 +273,22 @@ export default function StoreAppDetail() {
     toolCaller,
     toolName: listToolName,
     toolInputParams: {},
+    connectionId: effectiveRegistryId,
     enabled: !!listToolName && !!effectiveRegistryId,
   });
 
-  // Extract items from results without transformation
-  const items: RegistryItem[] = !listResults
-    ? []
-    : // Direct array response
-      Array.isArray(listResults)
-      ? listResults
-      : // Object with nested array
-        typeof listResults === "object" && listResults !== null
-        ? (() => {
-            const itemsKey = Object.keys(listResults).find((key) =>
-              Array.isArray(listResults[key as keyof typeof listResults]),
-            );
+  // Extract items and totalCount from results
+  const items = extractItemsFromResponse<RegistryItem>(listResults);
+  let totalCount: number | null = null;
 
-            if (itemsKey) {
-              return listResults[
-                itemsKey as keyof typeof listResults
-              ] as RegistryItem[];
-            }
-            return [];
-          })()
-        : [];
+  if (listResults && typeof listResults === "object" && listResults !== null) {
+    if (
+      "totalCount" in listResults &&
+      typeof listResults.totalCount === "number"
+    ) {
+      totalCount = listResults.totalCount;
+    }
+  }
 
   // Find the item matching the appName slug
   const selectedItem = items.find((item) => {
@@ -270,10 +308,24 @@ export default function StoreAppDetail() {
   // Calculate publisher info (logo and apps count) (moved before conditionals to ensure hook order)
   const publisherInfo = !data
     ? { count: 0 }
-    : getPublisherInfo(items, data.publisher, publisherConnection);
+    : getPublisherInfo(
+        items,
+        data.publisher,
+        publisherConnection,
+        registryConnection ?? null,
+        totalCount,
+      );
+
+  // Check if repository is available for README tab
+  const repo = data?.repository ? extractGitHubRepo(data.repository) : null;
 
   const availableTabs = [
     { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
+    {
+      id: "readme",
+      label: "README",
+      visible: !!data?.repository && !!repo,
+    },
   ].filter((tab) => tab.visible);
 
   // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
@@ -286,7 +338,7 @@ export default function StoreAppDetail() {
 
     const connectionData = extractConnectionData(
       selectedItem,
-      org,
+      org.id,
       session.user.id,
     );
 
@@ -308,7 +360,7 @@ export default function StoreAppDetail() {
       if (newConnection?.id && org) {
         navigate({
           to: "/$org/mcps/$connectionId",
-          params: { org, connectionId: newConnection.id },
+          params: { org: org.slug, connectionId: newConnection.id },
         });
       }
     } catch (err) {
@@ -322,7 +374,7 @@ export default function StoreAppDetail() {
   const handleBackClick = () => {
     navigate({
       to: "/$org/store",
-      params: { org },
+      params: { org: org.slug },
     });
   };
 
@@ -407,11 +459,24 @@ export default function StoreAppDetail() {
           <div className="max-w-7xl mx-auto h-full">
             {/* SECTION 1: Hero (Full Width) */}
             <div className="pl-10 flex items-start gap-6 pb-12 pr-10 border-b border-border">
-              <div className="shrink-0 w-16 h-16 rounded-2xl bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
+              <div className="shrink-0 w-16 h-16 rounded-2xl bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center text-3xl font-bold text-primary overflow-hidden">
                 {data.icon ? (
                   <img
                     src={data.icon}
                     alt={data.name}
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = data.name
+                          .substring(0, 2)
+                          .toUpperCase();
+                      }
+                    }}
                     className="w-full h-full object-cover rounded-2xl"
                   />
                 ) : (
@@ -480,15 +545,40 @@ export default function StoreAppDetail() {
                         <img
                           src={publisherInfo.logo}
                           alt={data.publisher}
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            // Fallback to initials if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const initials =
+                                data.publisher ===
+                                "io.modelcontextprotocol.registry/official"
+                                  ? "OR"
+                                  : data.publisher
+                                      .substring(0, 2)
+                                      .toUpperCase();
+                              parent.innerHTML = initials;
+                            }
+                          }}
                           className="w-full h-full object-cover"
                         />
+                      ) : data.publisher ===
+                        "io.modelcontextprotocol.registry/official" ? (
+                        "OR"
                       ) : (
                         data.publisher.substring(0, 2).toUpperCase()
                       )}
                     </div>
                     <div>
-                      <div className="font-medium capitalize">
-                        {data.publisher}
+                      <div className="font-medium">
+                        {data.publisher ===
+                        "io.modelcontextprotocol.registry/official"
+                          ? "Official Registry"
+                          : data.publisher.charAt(0).toUpperCase() +
+                            data.publisher.slice(1)}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         {publisherInfo.count > 0 ? (
@@ -511,6 +601,74 @@ export default function StoreAppDetail() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Technical Details */}
+                <div className="px-5 py-5 border-b border-border space-y-4">
+                  <h2 className="text-lg font-medium mb-3">
+                    Technical Details
+                  </h2>
+
+                  {data.version && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Version</span>
+                      <span className="text-foreground font-medium">
+                        v{data.version}
+                      </span>
+                    </div>
+                  )}
+
+                  {data.connectionType && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">
+                        Connection Type
+                      </span>
+                      <span className="text-foreground font-medium">
+                        {data.connectionType}
+                      </span>
+                    </div>
+                  )}
+
+                  {data.schemaVersion && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">
+                        Schema Version
+                      </span>
+                      <span className="text-foreground font-medium">
+                        {data.schemaVersion}
+                      </span>
+                    </div>
+                  )}
+
+                  {data.websiteUrl && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Website</span>
+                      <a
+                        href={data.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <span>Visit</span>
+                        <Icon name="open_in_new" size={14} />
+                      </a>
+                    </div>
+                  )}
+
+                  {data.repository?.url && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Repository</span>
+                      <a
+                        href={data.repository.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <span>GitHub</span>
+                        <Icon name="open_in_new" size={14} />
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Last Updated */}
@@ -626,6 +784,13 @@ export default function StoreAppDetail() {
                       <p>CDN configuration available</p>
                     </div>
                   )}
+
+                {/* README Tab Content */}
+                {effectiveActiveTabId === "readme" && (
+                  <div className="flex-1 overflow-y-auto bg-background">
+                    <ReadmeViewer repository={data?.repository} />
+                  </div>
+                )}
               </div>
             </div>
           </div>

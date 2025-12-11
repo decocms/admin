@@ -44,11 +44,7 @@ export const ORGANIZATION_LIST = defineTool({
       throw new Error("User ID required to list organizations");
     }
 
-    const organizations = await ctx.authInstance.api.listOrganizations({
-      query: {
-        userId,
-      },
-    });
+    const organizations = await ctx.boundAuth.organization.list(userId);
 
     return {
       organizations,

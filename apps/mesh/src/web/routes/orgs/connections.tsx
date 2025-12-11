@@ -113,7 +113,7 @@ function OrgMcpsContent() {
 
   // Consolidated list UI state (search, filters, sorting, view mode)
   const listState = useListState<ConnectionEntity>({
-    namespace: org,
+    namespace: org.slug,
     resource: "connections",
   });
 
@@ -128,13 +128,13 @@ function OrgMcpsContent() {
   const openCreateDialog = () => {
     navigate({
       to: "/$org/mcps",
-      params: { org },
+      params: { org: org.slug },
       search: { action: "create" },
     });
   };
 
   const closeCreateDialog = () => {
-    navigate({ to: "/$org/mcps", params: { org }, search: {} });
+    navigate({ to: "/$org/mcps", params: { org: org.slug }, search: {} });
   };
 
   // React Hook Form setup
@@ -226,7 +226,7 @@ function OrgMcpsContent() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           created_by: session?.user?.id || "system",
-          organization_id: org,
+          organization_id: org.id,
           icon: null,
           app_name: null,
           app_id: null,
@@ -349,7 +349,7 @@ function OrgMcpsContent() {
                 e.stopPropagation();
                 navigate({
                   to: "/$org/mcps/$connectionId",
-                  params: { org, connectionId: connection.id },
+                  params: { org: org.slug, connectionId: connection.id },
                 });
               }}
             >
@@ -607,7 +607,7 @@ function OrgMcpsContent() {
                   onClick={() =>
                     navigate({
                       to: "/$org/mcps/$connectionId",
-                      params: { org, connectionId: connection.id },
+                      params: { org: org.slug, connectionId: connection.id },
                     })
                   }
                 >
@@ -632,7 +632,10 @@ function OrgMcpsContent() {
                             e.stopPropagation();
                             navigate({
                               to: "/$org/mcps/$connectionId",
-                              params: { org, connectionId: connection.id },
+                              params: {
+                                org: org.slug,
+                                connectionId: connection.id,
+                              },
                             });
                           }}
                         >
@@ -682,7 +685,7 @@ function OrgMcpsContent() {
           onRowClick={(connection) =>
             navigate({
               to: "/$org/mcps/$connectionId",
-              params: { org, connectionId: connection.id },
+              params: { org: org.slug, connectionId: connection.id },
             })
           }
           emptyState={

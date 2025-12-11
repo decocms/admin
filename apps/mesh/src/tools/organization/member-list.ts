@@ -54,12 +54,10 @@ export const ORGANIZATION_MEMBER_LIST = defineTool({
     }
 
     // List members via Better Auth
-    const result = await ctx.authInstance.api.listMembers({
-      query: {
-        organizationId,
-        limit: input.limit,
-        offset: input.offset,
-      },
+    const result = await ctx.boundAuth.organization.listMembers({
+      organizationId,
+      limit: input.limit,
+      offset: input.offset,
     });
 
     return {

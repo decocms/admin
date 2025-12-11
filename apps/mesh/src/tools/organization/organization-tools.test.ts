@@ -10,9 +10,13 @@ import {
   ORGANIZATION_MEMBER_LIST,
   ORGANIZATION_MEMBER_UPDATE_ROLE,
 } from "./index";
-import type { BetterAuthInstance, MeshContext } from "../../core/mesh-context";
+import type {
+  BetterAuthInstance,
+  BoundAuthClient,
+  MeshContext,
+} from "../../core/mesh-context";
 
-// Mock Better Auth instance
+// Mock Better Auth instance (for legacy authInstance property)
 const createMockAuth = () => ({
   api: {
     createOrganization: vi.fn().mockResolvedValue({
@@ -81,61 +85,119 @@ const createMockAuth = () => ({
   },
 });
 
-const createMockContext = (
-  authInstance: ReturnType<typeof createMockAuth> = createMockAuth(),
-): MeshContext => ({
-  auth: {
-    user: {
-      id: "user_1",
-      email: "[email protected]",
-      name: "Test",
-      role: "admin",
-    },
-  },
+// Mock BoundAuthClient that wraps the mock auth
+const createMockBoundAuth = (
+  mockAuth: ReturnType<typeof createMockAuth>,
+): BoundAuthClient => ({
+  hasPermission: vi.fn().mockResolvedValue(true),
   organization: {
-    id: "org_123",
-    slug: "test-org",
-    name: "Test Organization",
-  },
-  storage: {
-    connections: null as never,
-    auditLogs: null as never,
-    organizationSettings: {
-      get: vi.fn(),
-      upsert: vi.fn(),
-    } as never,
-  },
-  vault: null as never,
-  authInstance: authInstance as unknown as BetterAuthInstance,
-  access: {
-    granted: () => true,
-    check: vi.fn().mockResolvedValue(undefined),
-    grant: () => {},
-    setToolName: () => {},
-  } as never,
-  db: null as never,
-  tracer: {
-    startActiveSpan: (
-      _name: string,
-      _opts: unknown,
-      fn: (span: unknown) => unknown,
-    ) =>
-      fn({
-        setStatus: () => {},
-        recordException: () => {},
-        end: () => {},
-      }),
-  } as never,
-  meter: {
-    createHistogram: () => ({ record: () => {} }),
-    createCounter: () => ({ add: () => {} }),
-  } as never,
-  baseUrl: "https://mesh.example.com",
-  metadata: {
-    requestId: "req_123",
-    timestamp: new Date(),
+    create: vi.fn(async (data) => {
+      return mockAuth.api.createOrganization({
+        body: data,
+      });
+    }),
+    update: vi.fn(async (data) => {
+      return mockAuth.api.updateOrganization({
+        body: data,
+        headers: new Headers(),
+      });
+    }),
+    delete: vi.fn(async (organizationId) => {
+      return mockAuth.api.deleteOrganization({
+        body: { organizationId },
+        headers: new Headers(),
+      });
+    }),
+    get: vi.fn(async () => {
+      return mockAuth.api.getFullOrganization();
+    }),
+    list: vi.fn(async (userId) => {
+      return mockAuth.api.listOrganizations({
+        query: { userId },
+      });
+    }),
+    addMember: vi.fn(async (data) => {
+      return mockAuth.api.addMember({
+        body: data,
+      });
+    }),
+    removeMember: vi.fn(async (data) => {
+      return mockAuth.api.removeMember({
+        body: data,
+      });
+    }),
+    listMembers: vi.fn(async (options) => {
+      return mockAuth.api.listMembers({
+        query: options,
+      });
+    }),
+    updateMemberRole: vi.fn(async (data) => {
+      return mockAuth.api.updateMemberRole({
+        body: data,
+      });
+    }),
   },
 });
+
+const createMockContext = (
+  authInstance: ReturnType<typeof createMockAuth> = createMockAuth(),
+): MeshContext => {
+  const boundAuth = createMockBoundAuth(authInstance);
+  return {
+    auth: {
+      user: {
+        id: "user_1",
+        email: "[email protected]",
+        name: "Test",
+        role: "admin",
+      },
+    },
+    organization: {
+      id: "org_123",
+      slug: "test-org",
+      name: "Test Organization",
+    },
+    storage: {
+      connections: null as never,
+      auditLogs: null as never,
+      organizationSettings: {
+        get: vi.fn(),
+        upsert: vi.fn(),
+      } as never,
+    },
+    vault: null as never,
+    authInstance: authInstance as unknown as BetterAuthInstance,
+    boundAuth,
+    access: {
+      granted: () => true,
+      check: vi.fn().mockResolvedValue(undefined),
+      grant: () => {},
+      setToolName: () => {},
+    } as never,
+    db: null as never,
+    tracer: {
+      startActiveSpan: (
+        _name: string,
+        _opts: unknown,
+        fn: (span: unknown) => unknown,
+      ) =>
+        fn({
+          setStatus: () => {},
+          recordException: () => {},
+          end: () => {},
+        }),
+    } as never,
+    meter: {
+      createHistogram: () => ({ record: () => {} }),
+      createCounter: () => ({ add: () => {} }),
+    } as never,
+    baseUrl: "https://mesh.example.com",
+    metadata: {
+      requestId: "req_123",
+      timestamp: new Date(),
+    },
+  };
+};
 
 describe("Organization Tools", () => {
   describe("ORGANIZATION_CREATE", () => {
@@ -299,7 +361,7 @@ describe("Organization Tools", () => {
       const result = await ORGANIZATION_MEMBER_ADD.execute(
         {
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );
@@ -308,7 +370,7 @@ describe("Organization Tools", () => {
         body: {
           organizationId: "org_123",
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
       });
 
@@ -324,7 +386,7 @@ describe("Organization Tools", () => {
       await ORGANIZATION_MEMBER_ADD.execute(
         {
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );
@@ -344,7 +406,7 @@ describe("Organization Tools", () => {
         {
           organizationId: "org_456",
           userId: "user_456",
-          role: ["member"],
+          role: ["user"],
         },
         ctx,
       );
@@ -389,9 +451,11 @@ describe("Organization Tools", () => {
       const result = await ORGANIZATION_MEMBER_LIST.execute({}, ctx);
 
       expect(mockAuth.api.listMembers).toHaveBeenCalledWith({
-        query: expect.objectContaining({
+        query: {
           organizationId: "org_123",
-        }),
+          limit: undefined,
+          offset: undefined,
+        },
       });
 
       expect(result.members).toHaveLength(1);
@@ -412,10 +476,11 @@ describe("Organization Tools", () => {
       );
 
       expect(mockAuth.api.listMembers).toHaveBeenCalledWith({
-        query: expect.objectContaining({
+        query: {
+          organizationId: "org_123",
           limit: 10,
           offset: 5,
-        }),
+        },
       });
     });
   });

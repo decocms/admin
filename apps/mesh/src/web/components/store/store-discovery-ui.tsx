@@ -3,53 +3,73 @@ import { slugify } from "@/web/utils/slugify";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CollectionSearch } from "../collections/collection-search";
 import {
   type RegistryItem,
   RegistryItemsSection,
 } from "./registry-items-section";
 
+/**
+ * Filter items by search term across name and description
+ */
+function filterItemsBySearch(
+  items: RegistryItem[],
+  search: string,
+): RegistryItem[] {
+  if (!search) return items;
+  const searchLower = search.toLowerCase();
+  return items.filter(
+    (item) =>
+      (item.name || item.title || "").toLowerCase().includes(searchLower) ||
+      (item.description || item.server?.description || "")
+        .toLowerCase()
+        .includes(searchLower),
+  );
+}
+
+/**
+ * Check if an item is verified
+ */
+function isItemVerified(item: RegistryItem): boolean {
+  return (
+    item.verified === true ||
+    item._meta?.["mcp.mesh"]?.verified === true ||
+    item.server?._meta?.["mcp.mesh"]?.verified === true
+  );
+}
+
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
   isLoading: boolean;
+  isLoadingMore?: boolean;
   error: Error | null;
   registryId: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  totalCount?: number | null;
 }
 
 export function StoreDiscoveryUI({
   items,
   isLoading,
+  isLoadingMore = false,
   error,
   registryId,
+  hasMore = false,
+  onLoadMore,
+  totalCount,
 }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { org } = useProjectContext();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtered items based on search
-  const filteredItems = !search
-    ? items
-    : (() => {
-        const searchLower = search.toLowerCase();
-        return items.filter(
-          (item) =>
-            (item.name || item.title || "")
-              .toLowerCase()
-              .includes(searchLower) ||
-            (item.description || item.server?.description || "")
-              .toLowerCase()
-              .includes(searchLower),
-        );
-      })();
+  const filteredItems = filterItemsBySearch(items, search);
 
   // Verified items
-  const verifiedItems = filteredItems.filter(
-    (item) =>
-      item.verified === true ||
-      item._meta?.["mcp.mesh"]?.verified === true ||
-      item.server?._meta?.["mcp.mesh"]?.verified === true,
-  );
+  const verifiedItems = filteredItems.filter(isItemVerified);
 
   // Non-verified items
   const allItems = filteredItems.filter(
@@ -61,9 +81,23 @@ export function StoreDiscoveryUI({
     const appNameSlug = slugify(itemName);
     navigate({
       to: "/$org/store/$appName",
-      params: { org, appName: appNameSlug },
+      params: { org: org.slug, appName: appNameSlug },
       search: { registryId },
     });
+  };
+
+  // Infinite scroll: load more when near bottom
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || !onLoadMore || search || isLoadingMore) return;
+
+    const target = e.currentTarget;
+    const scrollBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    // Load more when within 200px of bottom
+    if (scrollBottom < 200) {
+      onLoadMore();
+    }
   };
   // Loading state
   if (isLoading) {
@@ -103,7 +137,11 @@ export function StoreDiscoveryUI({
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto"
+        onScroll={handleScroll}
+      >
         <div className="p-5">
           <div>
             {items.length === 0 ? (
@@ -145,7 +183,18 @@ export function StoreDiscoveryUI({
                     items={allItems}
                     title="All"
                     onItemClick={handleItemClick}
+                    totalCount={totalCount}
                   />
+                )}
+
+                {/* Loading indicator */}
+                {hasMore && !search && isLoadingMore && (
+                  <div className="flex justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">Loading more items...</span>
+                    </div>
+                  </div>
                 )}
               </div>
             )}

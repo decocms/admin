@@ -5,13 +5,13 @@ import { useConnections } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { useNavigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
 import { CollectionHeader } from "@/web/components/collections/collection-header";
+import { useLocalStorage } from "@/web/hooks/use-local-storage";
+import { LOCALSTORAGE_KEYS } from "@/web/lib/localstorage-keys";
 
 export default function StorePage() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
-  const [selectedRegistry, setSelectedRegistry] = useState<string>("");
   const allConnections = useConnections();
 
   // Check if we're viewing a child route (app detail)
@@ -29,13 +29,38 @@ export default function StorePage() {
     icon: c.icon || undefined,
   }));
 
+  // Persist selected registry in localStorage (scoped by org)
+  // If the saved registry is no longer available, fallback to first available
+  const [selectedRegistry, setSelectedRegistry] = useLocalStorage<string>(
+    LOCALSTORAGE_KEYS.selectedRegistry(org.slug),
+    (existing) => {
+      // If connections haven't loaded yet, preserve existing value
+      if (registryConnections.length === 0) {
+        return existing || "";
+      }
+
+      // Validate existing value against current registry connections
+      if (existing) {
+        const savedRegistryExists = registryConnections.some(
+          (c) => c.id === existing,
+        );
+        if (savedRegistryExists) {
+          return existing;
+        }
+      }
+
+      // Fallback to first available registry
+      return registryConnections[0]?.id || "";
+    },
+  );
+
   const effectiveRegistry =
     selectedRegistry || registryConnections[0]?.id || "";
 
   const handleAddNewRegistry = () => {
     navigate({
       to: "/$org/mcps",
-      params: { org },
+      params: { org: org.slug },
       search: { action: "create" },
     });
   };

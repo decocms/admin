@@ -317,7 +317,7 @@ export function DecoChatPanel() {
                 onClick={() =>
                   navigate({
                     to: "/$org/mcps",
-                    params: { org },
+                    params: { org: org.slug },
                     search: { action: "create" },
                   })
                 }

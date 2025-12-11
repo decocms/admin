@@ -8,7 +8,11 @@ import { ssoClient } from "@better-auth/sso/client";
 
 export const authClient = createAuthClient({
   plugins: [
-    organizationClient(),
+    organizationClient({
+      dynamicAccessControl: {
+        enabled: true,
+      },
+    }),
     adminClient(),
     ssoClient(),
     magicLinkClient(),

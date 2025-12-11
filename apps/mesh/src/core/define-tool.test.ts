@@ -40,6 +40,20 @@ const createMockContext = (): MeshContext => ({
   },
   vault: null as never,
   authInstance: null as never,
+  boundAuth: {
+    hasPermission: async () => false,
+    organization: {
+      create: async () => ({ data: null, error: null }),
+      update: async () => ({ data: null, error: null }),
+      delete: async () => {},
+      get: async () => ({ data: null, error: null }),
+      list: async () => ({ data: [], error: null }),
+      addMember: async () => ({ data: null, error: null }),
+      removeMember: async () => {},
+      listMembers: async () => ({ data: [], error: null }),
+      updateMemberRole: async () => ({ data: null, error: null }),
+    },
+  } as never,
   access: {
     granted: vi.fn().mockReturnValue(true),
     check: vi.fn().mockResolvedValue(undefined),

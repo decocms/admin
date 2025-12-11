@@ -360,114 +360,114 @@ export function ToolDetail({
           </p>
         </div>
 
-      {/* Stats Row */}
-      <div className="flex items-center gap-4 py-2 shrink-0">
-        {/* MCP Status */}
-        <div className="flex items-center gap-2">
-          {mcp.state === "ready" ? (
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          ) : mcp.state === "connecting" || mcp.state === "authenticating" ? (
-            <Loader2 className="h-3 w-3 animate-spin text-yellow-500" />
-          ) : (
-            <div className="h-2 w-2 rounded-full bg-red-500" />
-          )}
-          <span className="font-mono text-sm capitalize text-muted-foreground">
-            {mcp.state.replace("_", " ")}
-          </span>
-        </div>
-        <div className="w-px h-4 bg-border" />
-
-        {/* Execution Stats */}
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="font-mono text-sm">{stats?.duration || "-"}</span>
-        </div>
-        <div className="w-px h-4 bg-border" />
-        <div className="flex items-center gap-2">
-          <Box className="h-4 w-4 text-muted-foreground" />
-          <span className="font-mono text-sm">{stats?.tokens || "-"}</span>
-        </div>
-        <div className="w-px h-4 bg-border" />
-        <div className="flex items-center gap-2">
-          <Database className="h-4 w-4 text-muted-foreground" />
-          <span className="font-mono text-sm">{stats?.bytes || "-"}</span>
-        </div>
-      </div>
-
-      {/* Error Alert */}
-      {executionError && (
-        <Alert
-          variant="destructive"
-          className="max-w-[800px] w-full bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900"
-        >
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Execution Failed</AlertTitle>
-          <AlertDescription>{executionError}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex flex-col gap-4 w-full max-w-[800px] items-center h-full flex-1 min-h-0">
-        {/* Input Section */}
-        <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-0">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-sm bg-primary/10 flex items-center justify-center">
-                <Play className="h-3 w-3 text-primary" />
-              </div>
-              <span className="font-medium text-sm">Input</span>
-            </div>
-            <Button
-              size="sm"
-              variant="default"
-              className="h-8 gap-2"
-              onClick={handleExecute}
-              disabled={isExecuting}
-            >
-              {isExecuting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="h-3.5 w-3.5 fill-current" />
-              )}
-              Execute tool
-            </Button>
-          </div>
-
-          <div className="p-4 space-y-4 shrink-0 overflow-auto max-h-[40%]">
-            {(mcp.state === "pending_auth" ||
-              (!connection.connection_token && mcp.state === "failed")) && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Authorization Required</AlertTitle>
-                <AlertDescription>
-                  This tool requires authorization. Please{" "}
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto font-normal underline text-destructive"
-                    onClick={() => onBack()}
-                  >
-                    go back
-                  </Button>{" "}
-                  and authorize the connection in the inspector.
-                </AlertDescription>
-              </Alert>
+        {/* Stats Row */}
+        <div className="flex items-center gap-4 py-2 shrink-0">
+          {/* MCP Status */}
+          <div className="flex items-center gap-2">
+            {mcp.state === "ready" ? (
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            ) : mcp.state === "connecting" || mcp.state === "authenticating" ? (
+              <Loader2 className="h-3 w-3 animate-spin text-yellow-500" />
+            ) : (
+              <div className="h-2 w-2 rounded-full bg-red-500" />
             )}
-
-            <ToolInput
-              inputSchema={tool.inputSchema as JsonSchema}
-              inputParams={inputParams}
-              setInputParams={setInputParams}
-              handleInputChange={handleInputChange}
-            />
+            <span className="font-mono text-sm capitalize text-muted-foreground">
+              {mcp.state.replace("_", " ")}
+            </span>
           </div>
-          <div className="flex-1 min-h-0">
-            <ExecutionResult
-              executionResult={executionResult}
-              placeholder="Run the tool to see results"
-            />
+          <div className="w-px h-4 bg-border" />
+
+          {/* Execution Stats */}
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="font-mono text-sm">{stats?.duration || "-"}</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <Box className="h-4 w-4 text-muted-foreground" />
+            <span className="font-mono text-sm">{stats?.tokens || "-"}</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <Database className="h-4 w-4 text-muted-foreground" />
+            <span className="font-mono text-sm">{stats?.bytes || "-"}</span>
           </div>
         </div>
-      </div>
+
+        {/* Error Alert */}
+        {executionError && (
+          <Alert
+            variant="destructive"
+            className="max-w-[800px] w-full bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Execution Failed</AlertTitle>
+            <AlertDescription>{executionError}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex flex-col gap-4 w-full max-w-[800px] items-center h-full flex-1 min-h-0">
+          {/* Input Section */}
+          <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-sm bg-primary/10 flex items-center justify-center">
+                  <Play className="h-3 w-3 text-primary" />
+                </div>
+                <span className="font-medium text-sm">Input</span>
+              </div>
+              <Button
+                size="sm"
+                variant="default"
+                className="h-8 gap-2"
+                onClick={handleExecute}
+                disabled={isExecuting}
+              >
+                {isExecuting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                )}
+                Execute tool
+              </Button>
+            </div>
+
+            <div className="p-4 space-y-4 shrink-0 overflow-auto max-h-[40%]">
+              {(mcp.state === "pending_auth" ||
+                (!connection.connection_token && mcp.state === "failed")) && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Authorization Required</AlertTitle>
+                  <AlertDescription>
+                    This tool requires authorization. Please{" "}
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-normal underline text-destructive"
+                      onClick={() => onBack()}
+                    >
+                      go back
+                    </Button>{" "}
+                    and authorize the connection in the inspector.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <ToolInput
+                inputSchema={tool.inputSchema as JsonSchema}
+                inputParams={inputParams}
+                setInputParams={setInputParams}
+                handleInputChange={handleInputChange}
+              />
+            </div>
+            <div className="flex-1 min-h-0">
+              <ExecutionResult
+                executionResult={executionResult}
+                placeholder="Run the tool to see results"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </ViewLayout>
   );

@@ -28,7 +28,7 @@ export default function OAuthCallback() {
           // Show error and close window after delay
           setTimeout(() => {
             window.close();
-          }, 5000);
+          }, 3000);
           return;
         }
 

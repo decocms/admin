@@ -37,7 +37,6 @@ export const ALL_TOOLS = [
 
   // Database tools
   DatabaseTools.DATABASES_RUN_SQL,
-
 ] as const satisfies { name: ToolName }[];
 
 export type MCPMeshTools = typeof ALL_TOOLS;

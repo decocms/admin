@@ -23,7 +23,7 @@ function customServerMessage(): Plugin {
           console.log("");
           console.log(`  ${bold}🚀 MCP Mesh Client${reset}`);
           console.log(
-            `  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://localhost:8002/${reset}`,
+            `  ${dim}➜${reset}  ${bold}Local:${reset}     ${cyan}http://localhost:3000/${reset}`,
           );
           console.log("");
         }, 200);

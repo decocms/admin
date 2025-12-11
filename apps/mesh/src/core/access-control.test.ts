@@ -4,7 +4,8 @@ import {
   ForbiddenError,
   UnauthorizedError,
 } from "./access-control";
-import type { BetterAuthInstance } from "./mesh-context";
+import type { BetterAuthInstance, BoundAuthClient } from "./mesh-context";
+import type { Permission } from "../storage/types";
 
 const createMockAuth = (): BetterAuthInstance => {
   const mockUserHasPermission = vi.fn();
@@ -14,6 +15,40 @@ const createMockAuth = (): BetterAuthInstance => {
     },
     handler: vi.fn().mockResolvedValue(new Response()),
   } as unknown as BetterAuthInstance;
+};
+
+/**
+ * Create a mock BoundAuthClient that checks permissions against a given Permission object
+ */
+const createMockBoundAuth = (permissions: Permission): BoundAuthClient => {
+  return {
+    hasPermission: vi.fn(async (requestedPermission: Permission) => {
+      // Check if any of the requested permissions match
+      for (const [connectionId, tools] of Object.entries(requestedPermission)) {
+        const allowedTools = permissions[connectionId];
+        if (!allowedTools) continue;
+
+        // Check if any requested tool is allowed
+        for (const tool of tools as string[]) {
+          if (allowedTools.includes(tool) || allowedTools.includes("*")) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }),
+    organization: {
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      get: vi.fn(),
+      list: vi.fn(),
+      addMember: vi.fn(),
+      removeMember: vi.fn(),
+      listMembers: vi.fn(),
+      updateMemberRole: vi.fn(),
+    },
+  } as unknown as BoundAuthClient;
 };
 
 describe("AccessControl", () => {
@@ -38,7 +73,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "TEST_TOOL",
-        { self: ["TEST_TOOL"] }, // Has permission on self connection
+        createMockBoundAuth({ self: ["TEST_TOOL"] }), // Has permission on self connection
         "user",
       );
 
@@ -51,7 +86,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "TEST_TOOL",
-        { self: ["OTHER_TOOL"] }, // Has OTHER_TOOL but not TEST_TOOL
+        createMockBoundAuth({ self: ["OTHER_TOOL"] }), // Has OTHER_TOOL but not TEST_TOOL
         "user",
       );
 
@@ -64,7 +99,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "MY_TOOL",
-        { self: ["MY_TOOL"] }, // Permission on self connection
+        createMockBoundAuth({ self: ["MY_TOOL"] }), // Permission on self connection
         "user",
       );
 
@@ -77,7 +112,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        { conn_123: ["SEND_MESSAGE"] },
+        createMockBoundAuth({ conn_123: ["SEND_MESSAGE"] }),
         "user",
         "conn_123", // Checking conn_123
       );
@@ -91,7 +126,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        { self: ["TOOL2"] }, // Has TOOL2 on self connection
+        createMockBoundAuth({ self: ["TOOL2"] }), // Has TOOL2 on self connection
         "user",
       );
 
@@ -102,12 +137,18 @@ describe("AccessControl", () => {
 
     it("should skip check if already granted", async () => {
       const mockAuth = createMockAuth();
-      const ac = new AccessControl(mockAuth, "user_1");
+      const mockBoundAuth = createMockBoundAuth({});
+      const ac = new AccessControl(
+        mockAuth,
+        "user_1",
+        undefined,
+        mockBoundAuth,
+      );
 
       ac.grant(); // Grant first
 
       await ac.check("ANYTHING"); // Should not check
-      expect(mockAuth.api.userHasPermission).not.toHaveBeenCalled();
+      expect(mockBoundAuth.hasPermission).not.toHaveBeenCalled();
     });
 
     it("should bypass checks for admin role", async () => {
@@ -115,7 +156,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "TEST_TOOL",
-        {}, // No permissions
+        createMockBoundAuth({}), // No permissions
         "admin", // Admin role
       );
 
@@ -128,7 +169,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "SEND_MESSAGE",
-        { conn_123: ["SEND_MESSAGE"] },
+        createMockBoundAuth({ conn_123: ["SEND_MESSAGE"] }),
         "user",
         "conn_123", // Connection ID
       );
@@ -142,7 +183,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined, // No tool name
-        {},
+        createMockBoundAuth({}),
         "user",
       );
 
@@ -156,7 +197,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        { conn_123: ["*"] }, // Wildcard
+        createMockBoundAuth({ conn_123: ["*"] }), // Wildcard
         "user",
         "conn_123", // Checking conn_123
       );
@@ -170,7 +211,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         undefined, // No user
         "TEST_TOOL",
-        undefined, // No permissions
+        undefined, // No boundAuth
         undefined,
       );
 
@@ -195,7 +236,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "TEST_TOOL",
-        { self: ["TEST_TOOL"] }, // Permission on self connection
+        createMockBoundAuth({ self: ["TEST_TOOL"] }), // Permission on self connection
         "user",
       );
 
@@ -208,7 +249,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         "TEST_TOOL",
-        {}, // No permissions
+        createMockBoundAuth({}), // No permissions
         "user", // Not admin
       );
 
@@ -228,7 +269,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        { self: ["EXACT_MATCH"] }, // Permission on self connection
+        createMockBoundAuth({ self: ["EXACT_MATCH"] }), // Permission on self connection
         "user",
       );
 
@@ -241,7 +282,7 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        { conn_123: ["SEND_MESSAGE", "LIST_THREADS"] },
+        createMockBoundAuth({ conn_123: ["SEND_MESSAGE", "LIST_THREADS"] }),
         "user",
         "conn_123", // Checking conn_123
       );
@@ -255,10 +296,10 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        {
+        createMockBoundAuth({
           conn_123: ["SEND_MESSAGE"],
           conn_456: ["SEND_MESSAGE"],
-        },
+        }),
         "user",
         "conn_123", // Only check this connection
       );
@@ -272,9 +313,9 @@ describe("AccessControl", () => {
         createMockAuth(),
         "user_1",
         undefined,
-        {
+        createMockBoundAuth({
           conn_456: ["SEND_MESSAGE"], // Different connection
-        },
+        }),
         "user",
         "conn_123", // Checking this connection
       );
@@ -284,62 +325,64 @@ describe("AccessControl", () => {
   });
 
   describe("Better Auth integration", () => {
-    it("should use Better Auth API when available", async () => {
-      const mockAuth = createMockAuth();
-      vi.spyOn(mockAuth.api, "userHasPermission").mockResolvedValue({
-        error: null,
-        success: true,
-      } as never);
+    it("should use BoundAuthClient hasPermission when available", async () => {
+      const mockBoundAuth = createMockBoundAuth({ self: ["TEST_TOOL"] });
 
-      const ac = new AccessControl(mockAuth, "user_1", "TEST_TOOL", {}, "user");
+      const ac = new AccessControl(
+        createMockAuth(),
+        "user_1",
+        "TEST_TOOL",
+        mockBoundAuth,
+        "user",
+      );
 
       await ac.check();
 
-      expect(mockAuth.api.userHasPermission).toHaveBeenCalledWith({
-        body: expect.objectContaining({
-          userId: "user_1",
-          role: "user",
-        }),
+      expect(mockBoundAuth.hasPermission).toHaveBeenCalledWith({
+        self: ["TEST_TOOL"],
       });
       expect(ac.granted()).toBe(true);
     });
 
-    it("should fall back to manual check when Better Auth fails", async () => {
-      const mockAuth = createMockAuth();
-      vi.spyOn(mockAuth.api, "userHasPermission").mockRejectedValue(
-        new Error("API error"),
-      );
+    it("should deny access when hasPermission returns false", async () => {
+      // Create a mock that always returns false
+      const mockBoundAuth: BoundAuthClient = {
+        hasPermission: vi.fn().mockResolvedValue(false),
+        organization: {
+          create: vi.fn(),
+          update: vi.fn(),
+          delete: vi.fn(),
+          get: vi.fn(),
+          list: vi.fn(),
+          addMember: vi.fn(),
+          removeMember: vi.fn(),
+          listMembers: vi.fn(),
+          updateMemberRole: vi.fn(),
+        },
+      } as unknown as BoundAuthClient;
 
       const ac = new AccessControl(
-        mockAuth,
+        createMockAuth(),
         "user_1",
-        undefined,
-        { self: ["TEST_TOOL"] }, // Permission on self connection
+        "TEST_TOOL",
+        mockBoundAuth,
         "user",
       );
 
-      // Should not throw - falls back to manual check
-      await ac.check("TEST_TOOL");
-      expect(ac.granted()).toBe(true);
+      await expect(ac.check()).rejects.toThrow(ForbiddenError);
+      expect(ac.granted()).toBe(false);
     });
 
-    it("should fall back to manual check when Better Auth not configured", async () => {
-      // Create a mock without the userHasPermission API
-      const mockAuthWithoutApi = {
-        api: {},
-        handler: vi.fn().mockResolvedValue(new Response()),
-      } as unknown as BetterAuthInstance;
-
+    it("should deny access when no BoundAuthClient provided", async () => {
       const ac = new AccessControl(
-        mockAuthWithoutApi,
+        createMockAuth(),
         "user_1",
-        undefined,
-        { self: ["TEST_TOOL"] }, // Permission on self connection
+        "TEST_TOOL",
+        undefined, // No bound auth
         "user",
       );
 
-      await ac.check("TEST_TOOL");
-      expect(ac.granted()).toBe(true);
+      await expect(ac.check()).rejects.toThrow(ForbiddenError);
     });
   });
 });

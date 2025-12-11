@@ -1,11 +1,9 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CollectionHeader } from "@/web/components/collections/collection-header.tsx";
+import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
+import { authClient } from "@/web/lib/auth-client";
+import { KEYS } from "@/web/lib/query-keys";
+import { useProjectContext } from "@/web/providers/project-context-provider";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Form,
   FormControl,
@@ -16,14 +14,15 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { authClient } from "@/web/lib/auth-client";
-import { useProjectContext } from "@/web/providers/project-context-provider";
-import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
-import { CollectionHeader } from "@/web/components/collections/collection-header.tsx";
-import { toast } from "sonner";
-import { KEYS } from "@/web/lib/query-keys";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 const organizationSettingsSchema = z.object({
   name: z.string().min(1, "Name is required").max(255, "Name is too long"),
@@ -174,33 +173,17 @@ export default function OrgSettings() {
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("organization");
 
-  const {
-    data: organizationsData,
-    error: organizationsError,
-    isPending: organizationsPending,
-  } = authClient.useListOrganizations();
-
-  const organizations = organizationsData;
-  const organizationsLoading = organizationsPending && !organizations?.length;
-
-  const currentOrganization =
-    organizations?.find((organization) => organization.slug === org) ?? null;
-
   const form = useForm<OrganizationSettingsFormValues>({
     resolver: zodResolver(organizationSettingsSchema),
     values: {
-      name: currentOrganization?.name ?? "",
-      slug: currentOrganization?.slug ?? "",
-      logo: currentOrganization?.logo ?? "",
+      name: org.name ?? "",
+      slug: org.slug ?? "",
+      logo: org.logo ?? "",
     },
   });
 
   const updateOrgMutation = useMutation({
     mutationFn: async (data: OrganizationSettingsFormValues) => {
-      if (!currentOrganization?.id) {
-        throw new Error("Organization ID not found");
-      }
-
       const updateData: Record<string, unknown> = {
         name: data.name,
         slug: data.slug,
@@ -212,7 +195,7 @@ export default function OrgSettings() {
       }
 
       const result = await authClient.organization.update({
-        organizationId: currentOrganization.id,
+        organizationId: org.id,
         data: updateData,
       });
 
@@ -226,10 +209,13 @@ export default function OrgSettings() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: KEYS.organizations() });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.activeOrganization(org.slug),
+      });
       toast.success("Organization settings updated successfully");
 
       // If slug changed, navigate to new slug
-      if (data?.data?.slug && data.data.slug !== org) {
+      if (data?.data?.slug && data.data.slug !== org.slug) {
         navigate({
           to: "/$org/settings",
           params: { org: data.data.slug },
@@ -252,68 +238,6 @@ export default function OrgSettings() {
     setIsSaving(true);
     updateOrgMutation.mutate(data);
   };
-
-  if (organizationsError) {
-    return (
-      <CollectionPage>
-        <CollectionHeader title="Settings" />
-        <div className="flex-1 overflow-auto p-6">
-          <div className="text-center">
-            <p className="text-sm text-destructive">
-              Unable to load organizations. Please try again later.
-            </p>
-            <Button
-              className="mt-4"
-              variant="outline"
-              onClick={() => navigate({ to: "/" })}
-            >
-              Go back
-            </Button>
-          </div>
-        </div>
-      </CollectionPage>
-    );
-  }
-
-  if (organizationsLoading) {
-    return (
-      <CollectionPage>
-        <CollectionHeader title="Settings" />
-        <div className="flex-1 overflow-auto">
-          <div className="flex h-full">
-            <div className="w-64 border-r border-border p-4">
-              <Skeleton className="h-8 w-full" />
-            </div>
-            <div className="flex-1 p-8">
-              <Skeleton className="h-48 w-full max-w-2xl" />
-            </div>
-          </div>
-        </div>
-      </CollectionPage>
-    );
-  }
-
-  if (!currentOrganization) {
-    return (
-      <CollectionPage>
-        <CollectionHeader title="Settings" />
-        <div className="flex-1 overflow-auto p-6">
-          <div className="text-center py-12">
-            <h2 className="text-lg font-semibold text-foreground mb-2">
-              Organization not found
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              The organization "{org}" doesn't exist or you don't have access to
-              it.
-            </p>
-            <Button variant="outline" onClick={() => navigate({ to: "/" })}>
-              Go to home
-            </Button>
-          </div>
-        </div>
-      </CollectionPage>
-    );
-  }
 
   const hasChanges = form.formState.isDirty;
 
@@ -474,7 +398,10 @@ export default function OrgSettings() {
                   <div>
                     <Button
                       onClick={() =>
-                        navigate({ to: "/$org/mcps", params: { org } })
+                        navigate({
+                          to: "/$org/mcps",
+                          params: { org: org.slug },
+                        })
                       }
                     >
                       Manage Connections

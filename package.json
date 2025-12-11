@@ -1,13 +1,13 @@
 {
-  "name": "@decocms/mesh",
+  "name": "@decocms/mesh-monorepo",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --filter=mcp-mesh --elide-lines=0 dev",
+    "dev": "bun run --cwd=apps/mesh dev",
     "fmt": "biome format --write",
     "lint": "oxlint",
-    "check": "tsc --noEmit",
+    "check": "bun run --workspaces --elide-lines=0 check",
+    "check:ci": "bun run --workspaces check",
     "test": "vitest run",
     "fmt:check": "biome format",
     "test:watch": "vitest",
@@ -16,6 +16,7 @@
     "build:runtime": "bun run --filter=@decocms/runtime build",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "exorcise": "bun run clean && bun install --force",
     "knip": "knip"
   },
   "workspaces": [
@@ -25,7 +26,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.5",
     "@types/node": "^24.9.1",
-    "knip": "^5.66.2",
+    "knip": "^5.73.1",
     "oxlint": "1.23.0",
     "typescript": "^5.9.3",
     "vitest": "3.2.4",

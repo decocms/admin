@@ -10,6 +10,8 @@ import {
   MCP_REGISTRY_DECOCMS_KEY,
   MCP_REGISTRY_PUBLISHER_KEY,
 } from "@/web/utils/constants";
+import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
+import { getConnectionTypeLabel } from "@/web/utils/registry-utils";
 
 /**
  * Extract connection data from a registry item for installation
@@ -35,15 +37,10 @@ export function extractConnectionData(
 
   const remote = server?.remotes?.[0];
 
-  const connectionTypeMap: Record<string, "HTTP" | "SSE" | "Websocket"> = {
-    http: "HTTP",
-    sse: "SSE",
-    websocket: "Websocket",
-  };
-
-  const connectionType = remote?.type
-    ? connectionTypeMap[remote.type] || "HTTP"
-    : "HTTP";
+  const connectionType = (getConnectionTypeLabel(remote?.type) || "HTTP") as
+    | "HTTP"
+    | "SSE"
+    | "Websocket";
 
   const now = new Date().toISOString();
 
@@ -56,7 +53,9 @@ export function extractConnectionData(
 
   const description = server?.description || null;
 
-  const icon = server?.icons?.[0]?.src || null;
+  // Get icon with GitHub fallback
+  const icon =
+    server?.icons?.[0]?.src || getGitHubAvatarUrl(server?.repository) || null;
 
   const rawOauthConfig = appMetadata?.oauth_config as
     | Record<string, unknown>

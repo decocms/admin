@@ -29,14 +29,13 @@ jobs:
         run: bun run lint
 
       - name: Run check
-        run: bun run check
+        run: bun run check:ci
 
-      - name: Run mesh check
-        run: bun run check
-        working-directory: apps/mesh
-
-      - name: Run test
+      - name: Run package tests
         run: bun run test
+
+      - name: Run mesh tests
+        run: bun --cwd=apps/mesh test
 
       - name: Run knip
         run: bun run knip

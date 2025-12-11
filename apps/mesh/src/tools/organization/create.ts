@@ -48,16 +48,14 @@ export const ORGANIZATION_CREATE = defineTool({
       throw new Error("User ID required to create organization");
     }
 
-    // Create organization via Better Auth
-    const result = await ctx.authInstance.api.createOrganization({
-      body: {
-        name: input.name,
-        slug: input.slug,
-        metadata: input.description
-          ? { description: input.description }
-          : undefined,
-        userId, // Server-side creation
-      },
+    // Create organization via bound auth client
+    const result = await ctx.boundAuth.organization.create({
+      name: input.name,
+      slug: input.slug,
+      metadata: input.description
+        ? { description: input.description }
+        : undefined,
+      userId, // Server-side creation
     });
 
     if (!result) {

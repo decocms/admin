@@ -11,7 +11,7 @@ export type LocatorStructured = {
 
 export type ProjectLocator = `${string}/${string}`;
 
-const ORG_ADMIN_PROJECT_SLUG = "org-admin";
+export const ORG_ADMIN_PROJECT_SLUG = "org-admin";
 
 export const Locator = {
   from({ org, project }: LocatorStructured): ProjectLocator {

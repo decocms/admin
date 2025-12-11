@@ -24,6 +24,97 @@ export type { AccessControl, CredentialVault };
 // Authentication State
 // ============================================================================
 
+// ============================================================================
+// Better Auth API Types (derived from BetterAuthInstance)
+// ============================================================================
+
+// Extract return type from Better Auth API methods
+type BetterAuthApi = BetterAuthInstance["api"];
+
+// Organization API return types
+export type CreateOrganizationResult = Awaited<
+  ReturnType<BetterAuthApi["createOrganization"]>
+>;
+export type UpdateOrganizationResult = Awaited<
+  ReturnType<BetterAuthApi["updateOrganization"]>
+>;
+export type GetFullOrganizationResult = Awaited<
+  ReturnType<BetterAuthApi["getFullOrganization"]>
+>;
+export type ListOrganizationsResult = Awaited<
+  ReturnType<BetterAuthApi["listOrganizations"]>
+>;
+export type AddMemberResult = Awaited<ReturnType<BetterAuthApi["addMember"]>>;
+export type ListMembersResult = Awaited<
+  ReturnType<BetterAuthApi["listMembers"]>
+>;
+export type UpdateMemberRoleResult = Awaited<
+  ReturnType<BetterAuthApi["updateMemberRole"]>
+>;
+
+/**
+ * Bound auth client for Better Auth operations
+ * Encapsulates HTTP context internally, keeping MeshContext HTTP-agnostic
+ * Return types are derived from BetterAuthInstance.api using Awaited<ReturnType<>>
+ */
+export interface BoundAuthClient {
+  /**
+   * Check if the authenticated user has the specified permission
+   * Delegates to Better Auth's Organization plugin hasPermission API
+   */
+  hasPermission(permission: Permission): Promise<boolean>;
+
+  // Organization APIs (bound with headers)
+  organization: {
+    create(data: {
+      name: string;
+      slug: string;
+      userId?: string;
+      logo?: string;
+      metadata?: Record<string, unknown>;
+    }): Promise<CreateOrganizationResult>;
+
+    update(data: {
+      organizationId: string;
+      data: {
+        name?: string;
+        slug?: string;
+        metadata?: Record<string, unknown>;
+      };
+    }): Promise<UpdateOrganizationResult>;
+
+    delete(organizationId: string): Promise<void>;
+
+    get(organizationId?: string): Promise<GetFullOrganizationResult>;
+
+    list(userId?: string): Promise<ListOrganizationsResult>;
+
+    // Member operations
+    addMember(data: {
+      userId: string;
+      role: string | string[];
+      organizationId?: string;
+    }): Promise<AddMemberResult>;
+
+    removeMember(data: {
+      memberIdOrEmail: string;
+      organizationId?: string;
+    }): Promise<void>;
+
+    listMembers(options?: {
+      organizationId?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<ListMembersResult>;
+
+    updateMemberRole(data: {
+      memberId: string;
+      role: string | string[];
+      organizationId?: string;
+    }): Promise<UpdateMemberRoleResult>;
+  };
+}
+
 /**
  * Authentication state from Better Auth
  */
@@ -32,14 +123,13 @@ export interface MeshAuth {
     id: string;
     email?: string;
     name?: string;
-    role?: string; // From Better Auth Admin plugin
+    role?: string; // From Better Auth organization plugin
   };
 
   apiKey?: {
     id: string;
     name: string;
     userId: string;
-    permissions: Permission; // Better Auth permission model
     metadata?: Record<string, unknown>;
     remaining?: number; // Remaining requests (rate limiting)
     expiresAt?: Date;
@@ -79,7 +169,7 @@ export interface RequestMetadata {
 // ============================================================================
 
 // Forward declare storage types
-import { BetterAuthInstance } from "@/auth";
+import type { BetterAuthInstance } from "@/auth";
 import type { AuditLogStorage } from "../storage/audit-log";
 import type { ConnectionStorage } from "../storage/connection";
 import type { OrganizationSettingsStorage } from "../storage/organization-settings";
@@ -126,6 +216,7 @@ export interface MeshContext {
   // Security services
   vault: CredentialVault; // For encrypting connection credentials
   authInstance: BetterAuthInstance; // Better Auth instance
+  boundAuth: BoundAuthClient; // Pre-bound auth client for permission checks
 
   // Access control (for authorization)
   access: AccessControl;

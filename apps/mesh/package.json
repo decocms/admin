@@ -1,5 +1,5 @@
 {
-  "name": "mcp-mesh",
+  "name": "@decocms/mesh",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -50,11 +50,13 @@
     "@tanstack/react-router": "^1.139.7",
     "@tanstack/react-router-devtools": "^1.139.7",
     "ai": "^5.0.101",
-    "better-auth": "1.4.1",
+    "@decocms/better-auth": "1.5.17",
+    "better-auth": "1.4.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "fetch-to-node": "^2.1.0",
+    "github-markdown-css": "^5.8.1",
     "hono": "^4.10.7",
     "idb-keyval": "^6.2.2",
     "input-otp": "^1.4.2",

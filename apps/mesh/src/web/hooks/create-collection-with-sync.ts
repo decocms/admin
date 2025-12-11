@@ -56,7 +56,7 @@ type DeleteTransactionType<
 > = ExtractTransaction<HandlerParam<DeleteHandler<T, TIndexKeys>>>;
 
 export interface CreateCollectionWithSyncOptions<
-  T extends { id: string },
+  T extends object,
   TIndexKeys extends string = string,
 > extends Omit<
     TestConfig<T & object, TIndexKeys>,
@@ -84,7 +84,7 @@ export interface CreateCollectionWithSyncOptions<
  * Returns the configuration object that should be passed to `createCollection`.
  */
 export function createCollectionWithSync<
-  T extends { id: string },
+  T extends object,
   TIndexKeys extends string = string,
 >(
   options: CreateCollectionWithSyncOptions<T, TIndexKeys>,
@@ -95,6 +95,7 @@ export function createCollectionWithSync<
     onInsert,
     onUpdate,
     onDelete,
+    getKey,
     singleResult,
     ...rest
   } = options;
@@ -104,6 +105,7 @@ export function createCollectionWithSync<
 
   const collectionConfig = {
     id: name,
+    getKey,
     ...(singleResult !== undefined && { singleResult }),
     ...rest,
     ...(sync && {
@@ -149,7 +151,7 @@ export function createCollectionWithSync<
                 // Process each item
                 for (const item of itemsToDispatch) {
                   // Check current state via collection from args
-                  const current = collection.get(item.id as TIndexKeys);
+                  const current = collection.get(getKey(item) as TIndexKeys);
 
                   // Only update if:
                   // - Item doesn't exist in collection (new insert), OR

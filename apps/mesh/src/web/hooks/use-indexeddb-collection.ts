@@ -15,7 +15,7 @@ export function createIndexedDBCollection<T extends { id: string }>(
   return createCollection<T, string>(
     createCollectionWithSync<T, string>({
       id: name,
-      getKey: (item: T) => item.id,
+      getKey: (item) => item.id,
 
       sync: {
         rowUpdateMode: "full",

@@ -38,11 +38,9 @@ export const ORGANIZATION_MEMBER_REMOVE = defineTool({
     }
 
     // Remove member via Better Auth
-    await ctx.authInstance.api.removeMember({
-      body: {
-        organizationId,
-        memberIdOrEmail: input.memberIdOrEmail,
-      },
+    await ctx.boundAuth.organization.removeMember({
+      organizationId,
+      memberIdOrEmail: input.memberIdOrEmail,
     });
 
     return {

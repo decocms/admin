@@ -24,7 +24,8 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
-import { ViewLayout } from "./layout";
+import { PinToSidebarButton } from "../pin-to-sidebar-button";
+import { ViewActions, ViewLayout } from "./layout";
 
 // Helper to normalize URL for MCP
 export interface ToolDetailsViewProps {
@@ -32,6 +33,12 @@ export interface ToolDetailsViewProps {
   onBack: () => void;
   onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }
+
+const beautifyToolName = (toolName: string) => {
+  return toolName
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toLocaleLowerCase());
+};
 
 export function ToolDetailsView({
   itemId: toolName,
@@ -172,6 +179,14 @@ export function ToolDetailsView({
 
   return (
     <ViewLayout onBack={onBack}>
+      <ViewActions>
+        <PinToSidebarButton
+          connectionId={connectionId}
+          title={tool?.title ?? beautifyToolName(toolName)}
+          icon="build"
+        />
+      </ViewActions>
+
       <div className="flex flex-col items-center w-full max-w-[1500px] mx-auto p-10 gap-4">
         {/* Tool Title & Description */}
         <div className="flex flex-col items-center gap-2 text-center">

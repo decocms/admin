@@ -6,9 +6,6 @@
   "bin": {
     "create-deco": "./index.js"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "create",
     "deco",

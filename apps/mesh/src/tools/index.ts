@@ -2,14 +2,17 @@
  * Tool Registry
  *
  * Central export for all MCP Mesh management tools
+ * Types are inferred from ALL_TOOLS - this is the source of truth.
  */
 
 import * as ConnectionTools from "./connection";
 import * as DatabaseTools from "./database";
 import * as OrganizationTools from "./organization";
+import { ToolName } from "./registry";
+
 export { ConnectionTools };
 
-// All available tools
+// All available tools - types are inferred
 export const ALL_TOOLS = [
   OrganizationTools.ORGANIZATION_CREATE,
   OrganizationTools.ORGANIZATION_LIST,
@@ -34,6 +37,9 @@ export const ALL_TOOLS = [
 
   // Database tools
   DatabaseTools.DATABASES_RUN_SQL,
-] as const;
+] as const satisfies { name: ToolName }[];
 
 export type MCPMeshTools = typeof ALL_TOOLS;
+
+// Derive tool name type from ALL_TOOLS
+export type ToolNameFromTools = (typeof ALL_TOOLS)[number]["name"];

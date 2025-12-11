@@ -17,6 +17,10 @@ export const KEYS = {
   // Organization members (scoped by org)
   members: (locator: ProjectLocator) => [locator, "members"] as const,
 
+  // Organization roles (scoped by org)
+  organizationRoles: (locator: ProjectLocator) =>
+    [locator, "organization-roles"] as const,
+
   // Connections (scoped by project)
   connections: (locator: ProjectLocator) => [locator, "connections"] as const,
   connectionsByBinding: (locator: ProjectLocator, binding: string) =>
@@ -43,10 +47,19 @@ export const KEYS = {
     [connectionId, "collections", "discovery"] as const,
 
   // Tool call results (generic caching for MCP tool calls)
-  toolCall: (toolName: string, paramsKey: string) =>
-    ["tool-call", toolName, paramsKey] as const,
+  // connectionId is optional - if provided, scopes the cache to that connection
+  toolCall: (toolName: string, paramsKey: string, connectionId?: string) =>
+    connectionId
+      ? (["tool-call", connectionId, toolName, paramsKey] as const)
+      : (["tool-call", toolName, paramsKey] as const),
 
   // Collection items (scoped by connection and collection name)
   collectionItems: (connectionId: string, collectionName: string) =>
     ["collection", connectionId, collectionName] as const,
+
+  // GitHub README (scoped by owner and repo)
+  githubReadme: (
+    owner: string | null | undefined,
+    repo: string | null | undefined,
+  ) => ["github-readme", owner, repo] as const,
 } as const;

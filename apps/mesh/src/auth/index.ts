@@ -80,7 +80,7 @@ if (
 
     sendInvitationEmail = async (data) => {
       const inviterName = data.inviter.user?.name || data.inviter.user?.email;
-      const acceptUrl = `${process.env.BASE_URL || "http://localhost:8002"}/auth/accept-invitation?invitationId=${data.invitation.id}`;
+      const acceptUrl = `${process.env.BASE_URL || "http://localhost:3000"}/auth/accept-invitation?invitationId=${data.invitation.id}`;
 
       await sendEmail({
         to: data.email,
@@ -212,7 +212,7 @@ const database = getDbDialect(databaseUrl);
  */
 export const auth = betterAuth({
   // Base URL for OAuth - will be overridden by request context
-  baseURL: process.env.BASE_URL || "http://localhost:8002",
+  baseURL: process.env.BASE_URL || "http://localhost:3000",
 
   // Better Auth can use the dialect directly
   database,

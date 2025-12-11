@@ -54,7 +54,7 @@ function lazy<T>(factory: () => Promise<T>): Promise<T> {
   return new Lazy(factory) as unknown as Promise<T>;
 }
 
-export function responseToStream(
+function responseToStream(
   response: Response,
 ): ReadableStream<LanguageModelV2StreamPart> {
   if (!response.body) {

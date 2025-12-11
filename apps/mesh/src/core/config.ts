@@ -1,6 +1,10 @@
 import { EmailProviderConfig } from "@/auth/email-providers";
 import { MagicLinkConfig } from "@/auth/magic-link";
 import { SSOConfig } from "@/auth/sso";
+import {
+  DEFAULT_MONITORING_CONFIG,
+  type MonitoringConfig,
+} from "@/monitoring/types";
 import { BetterAuthOptions } from "better-auth";
 import { existsSync, readFileSync } from "fs";
 
@@ -17,33 +21,61 @@ export interface Config {
     inviteEmailProviderId?: string;
     jwt?: { secret?: string };
   };
+  monitoring?: Partial<MonitoringConfig>;
 }
 
 const configPath = "./config.json";
 const authConfigPath = "./auth-config.json";
 /**
- * Load optional auth configuration from file
+ * Load optional configuration from file
  */
 function loadConfig(): Config {
   if (existsSync(configPath)) {
     try {
       const content = readFileSync(configPath, "utf-8");
-      return { auth: DEFAULT_AUTH_CONFIG, ...JSON.parse(content) };
+      const parsed = JSON.parse(content);
+      return {
+        auth: DEFAULT_AUTH_CONFIG,
+        monitoring: DEFAULT_MONITORING_CONFIG,
+        ...parsed,
+      };
     } catch {
-      return { auth: DEFAULT_AUTH_CONFIG };
+      return {
+        auth: DEFAULT_AUTH_CONFIG,
+        monitoring: DEFAULT_MONITORING_CONFIG,
+      };
     }
   }
 
   if (existsSync(authConfigPath)) {
     try {
       const content = readFileSync(authConfigPath, "utf-8");
-      return { auth: JSON.parse(content) };
+      return {
+        auth: JSON.parse(content),
+        monitoring: DEFAULT_MONITORING_CONFIG,
+      };
     } catch {
-      return { auth: DEFAULT_AUTH_CONFIG };
+      return {
+        auth: DEFAULT_AUTH_CONFIG,
+        monitoring: DEFAULT_MONITORING_CONFIG,
+      };
     }
   }
 
-  return { auth: DEFAULT_AUTH_CONFIG };
+  return {
+    auth: DEFAULT_AUTH_CONFIG,
+    monitoring: DEFAULT_MONITORING_CONFIG,
+  };
 }
 
 export const config = loadConfig();
+
+/**
+ * Get monitoring configuration with defaults
+ */
+export function getMonitoringConfig(): MonitoringConfig {
+  return {
+    ...DEFAULT_MONITORING_CONFIG,
+    ...config.monitoring,
+  };
+}

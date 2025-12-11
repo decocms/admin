@@ -8,7 +8,7 @@
     "lint": "oxlint",
     "check": "bun run --workspaces --elide-lines=0 check",
     "check:ci": "bun run --workspaces check",
-    "test": "vitest run",
+    "test": "vitest run && bun run --cwd=apps/mesh test",
     "fmt:check": "biome format",
     "test:watch": "vitest",
     "docs:dev": "cd docs && npm run dev",

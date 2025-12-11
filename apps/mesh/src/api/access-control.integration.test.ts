@@ -13,7 +13,7 @@ import { createDatabase, closeDatabase } from "../database";
 import { createTestSchema } from "../storage/test-helpers";
 import type { Kysely } from "kysely";
 import type { Database, Permission } from "../storage/types";
-import app from "./index";
+import { createApp } from "./index";
 
 // ============================================================================
 // Types
@@ -74,6 +74,7 @@ interface MCPRequest {
 
 describe("Access Control Integration Tests", () => {
   let db: Kysely<Database>;
+  let app: ReturnType<typeof createApp>;
   let testUsers: Map<string, TestUser>;
   let testOrganizations: Map<string, TestOrganization>;
   let testConnections: Map<string, TestConnection>;
@@ -91,6 +92,9 @@ describe("Access Control Integration Tests", () => {
     // Create in-memory database
     db = createDatabase(":memory:");
     await createTestSchema(db);
+
+    // Create app instance with test database
+    app = createApp({ db, skipAssetServer: true });
 
     // Initialize test data maps
     testUsers = new Map();

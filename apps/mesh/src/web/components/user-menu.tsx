@@ -9,8 +9,12 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { authClient } from "@/web/lib/auth-client";
-import { GitHubIcon } from "@daveyplate/better-auth-ui";
-import { useState } from "react";
+import {
+  AuthUIContext,
+  GitHubIcon,
+  UserInvitationsCard,
+} from "@daveyplate/better-auth-ui";
+import { useContext, useState } from "react";
 
 function ProfileDialog({
   open,
@@ -79,39 +83,63 @@ function ProfileDialog({
   );
 }
 
-export function MeshUserMenu() {
-  const { data: session } = authClient.useSession();
+function InvitationsDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Invitations</DialogTitle>
+          <DialogDescription>
+            Your pending organization invitations
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[420px] overflow-auto pr-1">
+          <UserInvitationsCard />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MeshUserMenuBase({
+  user,
+  userImage,
+  hasInvites,
+  showInvitesItem,
+}: {
+  user: { id: string; name?: string; email: string };
+  userImage?: string;
+  hasInvites: boolean;
+  showInvitesItem: boolean;
+}) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [invitesOpen, setInvitesOpen] = useState(false);
 
   // Return skeleton/placeholder if no session yet
-  if (!session?.user) {
-    return (
-      <Avatar
-        url={undefined}
-        fallback="U"
-        shape="circle"
-        size="sm"
-        className="cursor-pointer"
-        muted
-      />
-    );
-  }
-
-  const user = session.user;
-  const userImage = (user as { image?: string }).image;
-
   return (
     <>
       <UserMenu
         user={user}
         trigger={() => (
-          <Avatar
-            url={userImage}
-            fallback={user.name || user.email || "U"}
-            shape="circle"
-            size="sm"
-            className="cursor-pointer hover:ring-2 ring-muted-foreground transition-all"
-          />
+          <div className="relative">
+            <Avatar
+              url={userImage}
+              fallback={user.name || user.email || "U"}
+              shape="circle"
+              size="sm"
+              className="cursor-pointer hover:ring-2 ring-muted-foreground transition-all"
+            />
+            {hasInvites && (
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+            )}
+          </div>
         )}
         align="end"
       >
@@ -119,6 +147,16 @@ export function MeshUserMenu() {
           <Icon name="account_circle" className="text-muted-foreground" />
           Profile
         </UserMenu.Item>
+
+        {showInvitesItem && (
+          <UserMenu.Item onClick={() => setInvitesOpen(true)}>
+            <Icon name="mail" className="text-muted-foreground" />
+            Invitations
+            {hasInvites && (
+              <span className="ml-auto h-2 w-2 rounded-full bg-destructive" />
+            )}
+          </UserMenu.Item>
+        )}
 
         <UserMenu.Separator />
 
@@ -171,6 +209,49 @@ export function MeshUserMenu() {
           userImage={userImage}
         />
       )}
+
+      {showInvitesItem && invitesOpen && (
+        <InvitationsDialog open={invitesOpen} onOpenChange={setInvitesOpen} />
+      )}
     </>
+  );
+}
+
+export function MeshUserMenu() {
+  const { data: session } = authClient.useSession();
+  const authUi = useContext(AuthUIContext);
+  const { data: _invitations } = authUi.hooks.useListUserInvitations();
+
+  const invitations = _invitations ?? [];
+  const hasInvites = invitations.length > 0;
+
+  // Return skeleton/placeholder if no session yet
+  if (!session?.user) {
+    return (
+      <Avatar
+        url={undefined}
+        fallback="U"
+        shape="circle"
+        size="sm"
+        className="cursor-pointer"
+        muted
+      />
+    );
+  }
+
+  const user = session.user;
+  const userMenuUser = {
+    ...user,
+    name: user.name ?? undefined,
+  } as typeof user;
+  const userImage = (user as { image?: string }).image;
+
+  return (
+    <MeshUserMenuBase
+      user={userMenuUser}
+      userImage={userImage}
+      hasInvites={hasInvites}
+      showInvitesItem={true}
+    />
   );
 }

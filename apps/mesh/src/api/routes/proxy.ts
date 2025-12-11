@@ -11,6 +11,7 @@
  * - Supports StreamableHTTP transport
  */
 
+import { getMonitoringConfig } from "@/core/config";
 import { ConnectionEntity } from "@/tools/connection/schema";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -319,6 +320,26 @@ export async function createMCPProxy(
               status: "success",
             });
 
+            // Log to monitoring (blocking)
+            if (getMonitoringConfig().enabled && ctx.organization) {
+              await ctx.storage.monitoring.log({
+                organizationId: ctx.organization.id,
+                connectionId,
+                connectionTitle: connection.title,
+                toolName: request.params.name,
+                input: (request.params.arguments ?? {}) as Record<
+                  string,
+                  unknown
+                >,
+                output: result as Record<string, unknown>,
+                isError: (result.isError as boolean) ?? false,
+                durationMs: duration,
+                timestamp: new Date(),
+                userId: ctx.auth.user?.id || ctx.auth.apiKey?.userId || null,
+                requestId: ctx.metadata.requestId,
+              });
+            }
+
             span.end();
             return result as CallToolResult;
           } catch (error) {
@@ -340,6 +361,27 @@ export async function createMCPProxy(
               "tool.name": request.params.name,
               error: err.message,
             });
+
+            // Log error to monitoring (blocking)
+            if (getMonitoringConfig().enabled && ctx.organization) {
+              await ctx.storage.monitoring.log({
+                organizationId: ctx.organization.id,
+                connectionId,
+                connectionTitle: connection.title,
+                toolName: request.params.name,
+                input: (request.params.arguments ?? {}) as Record<
+                  string,
+                  unknown
+                >,
+                output: {},
+                isError: true,
+                errorMessage: err.message,
+                durationMs: duration,
+                timestamp: new Date(),
+                userId: ctx.auth.user?.id || ctx.auth.apiKey?.userId || null,
+                requestId: ctx.metadata.requestId,
+              });
+            }
 
             span.recordException(err);
             span.end();

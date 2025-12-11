@@ -8,9 +8,7 @@
     "lint": "oxlint",
     "check": "bun run --workspaces --elide-lines=0 check",
     "check:ci": "bun run --workspaces check",
-    "test": "vitest run && bun run --cwd=apps/mesh test",
     "fmt:check": "biome format",
-    "test:watch": "vitest",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "build:runtime": "bun run --filter=@decocms/runtime build",
@@ -29,7 +27,6 @@
     "knip": "^5.73.1",
     "oxlint": "1.23.0",
     "typescript": "^5.9.3",
-    "vitest": "3.2.4",
     "react": "^19.2.0"
   },
   "overrides": {

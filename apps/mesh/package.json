@@ -89,8 +89,7 @@
     "concurrently": "^9.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.1",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.0.5"
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "module": "src/index.ts",
   "private": true

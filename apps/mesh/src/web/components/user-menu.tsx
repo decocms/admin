@@ -220,6 +220,10 @@ function MeshUserMenuBase({
 export function MeshUserMenu() {
   const { data: session } = authClient.useSession();
   const authUi = useContext(AuthUIContext);
+  const { data: _invitations } = authUi.hooks.useListUserInvitations();
+
+  const invitations = _invitations ?? [];
+  const hasInvites = invitations.length > 0;
 
   // Return skeleton/placeholder if no session yet
   if (!session?.user) {
@@ -241,10 +245,6 @@ export function MeshUserMenu() {
     name: user.name ?? undefined,
   } as typeof user;
   const userImage = (user as { image?: string }).image;
-
-  const invitationsQuery = authUi?.hooks?.useListUserInvitations?.();
-  const invitations = (invitationsQuery as any)?.data ?? [];
-  const hasInvites = Array.isArray(invitations) && invitations.length > 0;
 
   return (
     <MeshUserMenuBase

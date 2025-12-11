@@ -7,7 +7,7 @@
 
 import { UNKNOWN_CONNECTION_ID, createToolCaller } from "../../../tools/client";
 import {
-  useCollection,
+  getCollection,
   useCollectionList,
   type UseCollectionListOptions,
 } from "../use-collections";
@@ -46,7 +46,7 @@ export function useAgentsFromConnection(
   // in the same order (Rules of Hooks compliance)
   const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
-  const collection = useCollection<Agent>(
+  const collection = getCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "AGENT",
     toolCaller,

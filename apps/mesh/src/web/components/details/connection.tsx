@@ -22,7 +22,7 @@ import {
   useBindingConnections,
   useCollectionBindings,
 } from "@/web/hooks/use-binding";
-import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
+import { getCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
 import {
   AlertDialog,
@@ -1131,7 +1131,7 @@ function CollectionContent({
   const connection = useConnection(connectionId);
 
   const toolCaller = createToolCaller(connectionId);
-  const collection = useCollection(connectionId, collectionName, toolCaller);
+  const collection = getCollection(connectionId, collectionName, toolCaller);
 
   const {
     search,

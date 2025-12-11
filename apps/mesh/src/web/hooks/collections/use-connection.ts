@@ -10,7 +10,7 @@ import { createToolCaller } from "../../../tools/client";
 import type { ConnectionEntity } from "../../../tools/connection/schema";
 import {
   type CollectionFilter,
-  useCollection,
+  getCollection,
   useCollectionItem,
   useCollectionList,
   type UseCollectionListOptions,
@@ -35,7 +35,7 @@ export function useConnectionsCollection() {
   // Use org as the connectionKey, and default toolCaller (mesh tools)
   const toolCaller = createToolCaller();
 
-  return useCollection<ConnectionEntity>(org.slug, "CONNECTIONS", toolCaller);
+  return getCollection<ConnectionEntity>(org.slug, "CONNECTIONS", toolCaller);
 }
 
 /**

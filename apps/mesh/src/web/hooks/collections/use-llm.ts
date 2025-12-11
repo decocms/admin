@@ -9,7 +9,7 @@ import type { ModelCollectionEntitySchema } from "@decocms/bindings/llm";
 import { z } from "zod";
 import { UNKNOWN_CONNECTION_ID, createToolCaller } from "../../../tools/client";
 import {
-  useCollection,
+  getCollection,
   useCollectionList,
   type UseCollectionListOptions,
 } from "../use-collections";
@@ -37,7 +37,7 @@ export function useLLMsFromConnection(
   // in the same order (Rules of Hooks compliance)
   const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
-  const collection = useCollection<LLM>(
+  const collection = getCollection<LLM>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "LLM",
     toolCaller,

@@ -229,7 +229,7 @@ const collectionCache = new Map<string, Collection<any, string>>();
  * @param toolCaller - The tool caller function for making API calls
  * @returns A TanStack DB collection instance
  */
-export function useCollection<T extends CollectionEntity>(
+export function getCollection<T extends CollectionEntity>(
   connectionKey: string | undefined | null,
   collectionName: string,
   toolCaller: ToolCaller,

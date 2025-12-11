@@ -1,17 +1,18 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Select,
-  SelectItem,
   SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
+import { Loader2 } from "lucide-react";
+import { Suspense, useState } from "react";
+import { toast } from "sonner";
 import { useConnections } from "../hooks/collections/use-connection";
 import { useBindingConnections } from "../hooks/use-binding";
+import { ErrorBoundary } from "./error-boundary";
 
 interface BindingSelectorProps {
   value: string;
@@ -41,7 +42,7 @@ interface BindingSelectorProps {
   className?: string;
 }
 
-export function BindingSelector({
+function BindingSelectorContent({
   value,
   onValueChange,
   placeholder = "Select a connection...",
@@ -51,6 +52,8 @@ export function BindingSelector({
   className,
 }: BindingSelectorProps) {
   const [isLocalInstalling, setIsLocalInstalling] = useState(false);
+  // useInstallFromRegistry suspends during loading and throws on error
+  // Data is guaranteed to be available here
   const { installByBinding, isInstalling: isGlobalInstalling } =
     useInstallFromRegistry();
 
@@ -187,5 +190,42 @@ export function BindingSelector({
         )}
       </SelectContent>
     </Select>
+  );
+}
+
+export function BindingSelector(props: BindingSelectorProps) {
+  return (
+    <ErrorBoundary
+      fallback={
+        <Select value={props.value} onValueChange={props.onValueChange}>
+          <SelectTrigger className={props.className ?? "w-[200px] h-8!"}>
+            <SelectValue placeholder={props.placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <div className="px-2 py-4 text-center text-sm text-destructive">
+              Failed to load registry items
+            </div>
+          </SelectContent>
+        </Select>
+      }
+    >
+      <Suspense
+        fallback={
+          <Select value={props.value} onValueChange={props.onValueChange}>
+            <SelectTrigger className={props.className ?? "w-[200px] h-8!"}>
+              <SelectValue placeholder={props.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                Loading...
+              </div>
+            </SelectContent>
+          </Select>
+        }
+      >
+        <BindingSelectorContent {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

@@ -2,15 +2,15 @@ import { createToolCaller } from "@/tools/client";
 import { CollectionSearch } from "@/web/components/collections/collection-search";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper";
 import { EmptyState } from "@/web/components/empty-state";
+import { ErrorBoundary } from "@/web/components/error-boundary";
 import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import {
-  useConnection,
   useConnections,
   useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
-import { useToolCall } from "@/web/hooks/use-tool-call";
+import { getCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import { extractConnectionData } from "@/web/utils/extract-connection-data";
@@ -19,7 +19,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
@@ -176,7 +176,7 @@ function extractItemData(item: RegistryItem) {
   };
 }
 
-export default function StoreAppDetail() {
+function StoreAppDetailContent() {
   const { org } = useProjectContext();
   const navigate = useNavigate();
   // Get appName from the child route (just /$appName)
@@ -205,52 +205,13 @@ export default function StoreAppDetail() {
   const effectiveRegistryId =
     registryIdParam || registryConnections[0]?.id || "";
 
-  const registryConnection = useConnection(effectiveRegistryId);
-
-  // Find the LIST tool from the registry connection
-  const listToolName = !registryConnection?.tools
-    ? ""
-    : (() => {
-        const listTool = registryConnection.tools.find((tool) =>
-          tool.name.endsWith("_LIST"),
-        );
-        return listTool?.name || "";
-      })();
-
   const toolCaller = createToolCaller(effectiveRegistryId);
-
-  const {
-    data: listResults,
-    isLoading,
-    error,
-  } = useToolCall({
+  const collection = getCollection(
+    effectiveRegistryId,
+    "REGISTRY_APP",
     toolCaller,
-    toolName: listToolName,
-    toolInputParams: {},
-    enabled: !!listToolName && !!effectiveRegistryId,
-  });
-
-  // Extract items from results without transformation
-  const items: RegistryItem[] = !listResults
-    ? []
-    : // Direct array response
-      Array.isArray(listResults)
-      ? listResults
-      : // Object with nested array
-        typeof listResults === "object" && listResults !== null
-        ? (() => {
-            const itemsKey = Object.keys(listResults).find((key) =>
-              Array.isArray(listResults[key as keyof typeof listResults]),
-            );
-
-            if (itemsKey) {
-              return listResults[
-                itemsKey as keyof typeof listResults
-              ] as RegistryItem[];
-            }
-            return [];
-          })()
-        : [];
+  );
+  const items = useCollectionList(collection) as RegistryItem[];
 
   // Find the item matching the appName slug
   const selectedItem = items.find((item) => {
@@ -325,39 +286,6 @@ export default function StoreAppDetail() {
       params: { org: org.slug },
     });
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Icon
-          name="progress_activity"
-          size={48}
-          className="animate-spin mb-4"
-        />
-        <p className="text-sm text-muted-foreground">Loading app details...</p>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Icon name="error" size={48} className="text-destructive mb-4" />
-        <h3 className="text-lg font-medium mb-2">Error loading app</h3>
-        <p className="text-muted-foreground max-w-md text-center">
-          {error instanceof Error ? error.message : "Unknown error occurred"}
-        </p>
-        <button
-          onClick={handleBackClick}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          Go Back
-        </button>
-      </div>
-    );
-  }
 
   // Not found state
   if (!selectedItem) {
@@ -632,5 +560,38 @@ export default function StoreAppDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StoreAppDetail() {
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="flex flex-col items-center justify-center h-full">
+          <Icon name="error" size={48} className="text-destructive mb-4" />
+          <h3 className="text-lg font-medium mb-2">Error loading app</h3>
+          <p className="text-muted-foreground max-w-md text-center">
+            Failed to load app details. Please try again.
+          </p>
+        </div>
+      }
+    >
+      <Suspense
+        fallback={
+          <div className="flex flex-col items-center justify-center h-full">
+            <Icon
+              name="progress_activity"
+              size={48}
+              className="animate-spin mb-4"
+            />
+            <p className="text-sm text-muted-foreground">
+              Loading app details...
+            </p>
+          </div>
+        }
+      >
+        <StoreAppDetailContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

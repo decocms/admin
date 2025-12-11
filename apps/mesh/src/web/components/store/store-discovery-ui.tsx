@@ -2,7 +2,6 @@ import { useProjectContext } from "@/web/providers/project-context-provider";
 import { slugify } from "@/web/utils/slugify";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { CollectionSearch } from "../collections/collection-search";
 import {
@@ -12,17 +11,10 @@ import {
 
 interface StoreDiscoveryUIProps {
   items: RegistryItem[];
-  isLoading: boolean;
-  error: Error | null;
   registryId: string;
 }
 
-export function StoreDiscoveryUI({
-  items,
-  isLoading,
-  error,
-  registryId,
-}: StoreDiscoveryUIProps) {
+export function StoreDiscoveryUI({ items, registryId }: StoreDiscoveryUIProps) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { org } = useProjectContext();
@@ -65,28 +57,6 @@ export function StoreDiscoveryUI({
       search: { registryId },
     });
   };
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-        <p className="text-sm text-muted-foreground">Loading store items...</p>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Icon name="error" size={48} className="text-destructive mb-4" />
-        <h3 className="text-lg font-medium mb-2">Error loading store</h3>
-        <p className="text-muted-foreground max-w-md text-center">
-          {error instanceof Error ? error.message : "Unknown error occurred"}
-        </p>
-      </div>
-    );
-  }
 
   // Main list view
   return (

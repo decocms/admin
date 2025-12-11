@@ -3,23 +3,23 @@
  * Provides inline installation without navigation.
  */
 
-import { useState } from "react";
-import { toast } from "sonner";
 import { createToolCaller } from "@/tools/client";
-import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import type { ConnectionEntity } from "@/tools/connection/schema";
+import type { RegistryItem } from "@/web/components/store/registry-items-section";
 import {
-  useConnectionsCollection,
   useConnections,
+  useConnectionsCollection,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
-import { useToolCall } from "@/web/hooks/use-tool-call";
+import { getCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
 import {
   extractConnectionData,
   findRegistryItemByBinding,
 } from "@/web/utils/extract-connection-data";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface InstallResult {
   id: string;
@@ -37,20 +37,19 @@ interface UseInstallFromRegistryResult {
    */
   isInstalling: boolean;
   /**
-   * Whether registry items are still loading
-   */
-  isLoading: boolean;
-  /**
    * Registry items (for debugging/display)
+   * Note: This hook uses Suspense, so it must be wrapped in a Suspense boundary.
+   * Registry items are guaranteed to be available when the hook doesn't suspend.
    */
   registryItems: RegistryItem[];
-
-  isError: boolean;
 }
 
 /**
  * Hook that provides inline MCP installation from registry.
  * Use this when you want to install a specific MCP without navigating away.
+ *
+ * Note: This hook uses Suspense, so it must be wrapped in a Suspense boundary.
+ * Components using this hook should handle loading and error states via Suspense/ErrorBoundary.
  */
 export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   const { org } = useProjectContext();
@@ -64,55 +63,10 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
 
   // Use first registry connection (could be extended to search all registries)
   const registryId = registryConnections[0]?.id || "";
-  const registryConnection = registryConnections[0];
-
-  // Find the LIST tool from the registry connection
-  const listToolName = (() => {
-    if (!registryConnection?.tools) return "";
-    const listTool = registryConnection.tools.find((tool) =>
-      tool.name.endsWith("_LIST"),
-    );
-    return listTool?.name || "";
-  })();
 
   const toolCaller = createToolCaller(registryId);
-
-  // Fetch registry items
-  const {
-    data: listResults,
-    isLoading,
-    isError,
-  } = useToolCall({
-    toolCaller,
-    toolName: listToolName,
-    toolInputParams: {},
-    enabled: !!listToolName && !!registryId,
-  });
-
-  // Extract items from results
-  const registryItems: RegistryItem[] = (() => {
-    if (!listResults) return [];
-
-    // Direct array response
-    if (Array.isArray(listResults)) {
-      return listResults;
-    }
-
-    // Object with nested array
-    if (typeof listResults === "object" && listResults !== null) {
-      const itemsKey = Object.keys(listResults).find((key) =>
-        Array.isArray(listResults[key as keyof typeof listResults]),
-      );
-
-      if (itemsKey) {
-        return listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-      }
-    }
-
-    return [];
-  })();
+  const collection = getCollection(registryId, "REGISTRY_APP", toolCaller);
+  const registryItems = useCollectionList(collection) as RegistryItem[];
 
   // Installation function
   const installByBinding = async (
@@ -166,8 +120,6 @@ export function useInstallFromRegistry(): UseInstallFromRegistryResult {
   return {
     installByBinding,
     isInstalling,
-    isLoading,
     registryItems,
-    isError,
   };
 }

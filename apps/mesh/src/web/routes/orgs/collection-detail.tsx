@@ -2,7 +2,7 @@ import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
 import { AgentDetailsView } from "@/web/components/details/agent.tsx";
 import { ToolDetailsView } from "@/web/components/details/tool.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
-import { useCollection } from "@/web/hooks/use-collections";
+import { getCollection } from "@/web/hooks/use-collections";
 import { EmptyState } from "@deco/ui/components/empty-state.tsx";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
@@ -66,7 +66,7 @@ function CollectionDetailsContent() {
 
   const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
-  const collection = useCollection(
+  const collection = getCollection(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     collectionName,
     toolCaller,

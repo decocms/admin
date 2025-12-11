@@ -1,6 +1,6 @@
 import { UNKNOWN_CONNECTION_ID, createToolCaller } from "@/tools/client";
 import { ToolSetSelector } from "@/web/components/tool-set-selector.tsx";
-import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
+import { getCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -102,7 +102,7 @@ export function AgentDetailsView({
 
   const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
 
-  const collection = useCollection<Agent>(
+  const collection = getCollection<Agent>(
     connectionId ?? UNKNOWN_CONNECTION_ID,
     "AGENT",
     toolCaller,

@@ -7,10 +7,7 @@ import type {
   EdgeChange,
 } from "@xyflow/react";
 import type { Step } from "@decocms/bindings/workflow";
-import {
-  useWorkflowSteps,
-  useWorkflowActions,
-} from "@/web/stores/workflow";
+import { useWorkflowSteps, useWorkflowActions } from "@/web/stores/workflow";
 import { computeStepLevels, buildDagEdges } from "./dag-utils";
 
 // ============================================
@@ -154,8 +151,7 @@ export function useWorkflowNodes(): WorkflowNode[] {
         if (stepResult?.error) style = "error";
         else if (!stepResult?.output) style = "pending";
         else if (stepResult?.output) style = "success";
-        else if (isSignal && !isConsumed)
-          style = "waiting_for_signal";
+        else if (isSignal && !isConsumed) style = "waiting_for_signal";
 
         return {
           id: step.name,

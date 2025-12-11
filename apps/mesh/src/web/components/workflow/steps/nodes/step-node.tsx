@@ -1,12 +1,6 @@
 import { memo, useRef, useSyncExternalStore } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import {
-  BellIcon,
-  CheckIcon,
-  ClockIcon,
-  CodeXml,
-  Wrench,
-} from "lucide-react";
+import { BellIcon, CheckIcon, ClockIcon, CodeXml, Wrench } from "lucide-react";
 import type {
   Step,
   StepAction,
@@ -38,7 +32,6 @@ import { createToolCaller } from "@/tools/client";
 import { useWorkflowBindingConnection } from "@/web/hooks/workflows/use-workflow-binding-connection";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { Spinner } from "@deco/ui/components/spinner.js";
-
 
 // ============================================
 // Duration Component
@@ -104,7 +97,6 @@ function Duration({
   );
 }
 
-
 // ============================================
 // Step Menu
 // ============================================
@@ -161,7 +153,7 @@ function checkIfIsWaitForSignalAction(
 }
 
 function useSendSignalMutation() {
-  const { id: connectionId } = useWorkflowBindingConnection() 
+  const { id: connectionId } = useWorkflowBindingConnection();
   const toolCaller = createToolCaller(connectionId);
 
   const { mutateAsync: sendSignal, isPending } = useToolCallMutation({
@@ -299,7 +291,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
               }
               isRunning={false}
             />
-
           </div>
 
           <CardAction className="group-hover:opacity-100 opacity-0 transition-opacity shrink-0">

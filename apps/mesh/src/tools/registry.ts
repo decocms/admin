@@ -44,7 +44,6 @@ const TOOL_CATEGORIES: Record<
   COLLECTION_CONNECTIONS_UPDATE: { category: "Connections" },
   COLLECTION_CONNECTIONS_DELETE: { category: "Connections", dangerous: true },
   CONNECTION_TEST: { category: "Connections" },
-  CONNECTION_CONFIGURE: { category: "Connections" },
 };
 
 /**

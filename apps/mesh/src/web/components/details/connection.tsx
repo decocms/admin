@@ -11,10 +11,7 @@ import {
 } from "@/web/components/collections/collections-list.tsx";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 import { ErrorBoundary } from "@/web/components/error-boundary";
-import {
-  BaseCollectionJsonSchema,
-  TOOL_CONNECTION_CONFIGURE,
-} from "@/web/utils/constants";
+import { BaseCollectionJsonSchema } from "@/web/utils/constants";
 import { IntegrationIcon } from "@/web/components/integration-icon.tsx";
 import { PinToSidebarButton } from "@/web/components/pin-to-sidebar-button";
 import {
@@ -40,7 +37,7 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import {
-  Form,
+  Form as ShadcnForm,
   FormControl,
   FormField,
   FormItem,
@@ -66,17 +63,20 @@ import {
 } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, Lock, Plus } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
 import { ViewLayout, ViewTabs, ViewActions } from "./layout";
-import {
-  McpConfigurationForm,
-  useMcpConfiguration,
-} from "./mcp-configuration-form";
+import { useMcpConfiguration } from "@/web/hooks/use-mcp-configuration";
+import { useProjectContext } from "@/web/providers/project-context-provider";
+import RjsfForm from "@rjsf/shadcn";
+import validator from "@rjsf/validator-ajv8";
+import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
+import { BindingSelector } from "../binding-selector";
+import type { UseFormReturn } from "react-hook-form";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -99,37 +99,6 @@ function ConnectionInspectorViewContent() {
     binding: "MCP",
   });
   const hasMcpBinding = mcpBindingConnections.length > 0;
-
-  // Update connection handler
-  const handleUpdateConnection = async (
-    updatedConnection: Partial<ConnectionEntity>,
-  ) => {
-    if (!connection || !connectionsCollection) return;
-
-    try {
-      const tx = connectionsCollection.update(
-        connection.id,
-        (draft: ConnectionEntity) => {
-          if (updatedConnection.title !== undefined)
-            draft.title = updatedConnection.title;
-          if (updatedConnection.description !== undefined)
-            draft.description = updatedConnection.description;
-          if (updatedConnection.connection_type !== undefined)
-            draft.connection_type = updatedConnection.connection_type;
-          if (updatedConnection.connection_url !== undefined)
-            draft.connection_url = updatedConnection.connection_url;
-          if (updatedConnection.connection_token !== undefined)
-            draft.connection_token = updatedConnection.connection_token;
-        },
-      );
-      await tx.isPersisted.promise;
-      toast.success("Connection updated successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to update connection: ${message}`);
-      throw error;
-    }
-  };
 
   // Initialize MCP connection
   const normalizeUrl = (url: string) => {
@@ -335,7 +304,6 @@ function ConnectionInspectorViewContent() {
             <div className="flex-1">
               <SettingsTab
                 connection={connection}
-                onUpdate={handleUpdateConnection}
                 hasMcpBinding={hasMcpBinding}
               />
             </div>
@@ -389,30 +357,25 @@ const connectionFormSchema = ConnectionEntitySchema.pick({
   connection_type: true,
   connection_url: true,
   connection_token: true,
+  configuration_scopes: true,
+  configuration_state: true,
 }).partial({
   description: true,
   connection_token: true,
 });
 
-type ConnectionFormData = z.infer<typeof connectionFormSchema>;
+export type ConnectionFormData = z.infer<typeof connectionFormSchema>;
 
 interface SettingsTabProps {
   connection: ConnectionEntity;
-  onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
   hasMcpBinding: boolean;
 }
 
-function SettingsTab({
-  connection,
-  onUpdate,
-  hasMcpBinding,
-}: SettingsTabProps) {
-  const [isSavingConnection, setIsSavingConnection] = useState(false);
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
+function SettingsTab({ connection, hasMcpBinding }: SettingsTabProps) {
   const connectionsCollection = useConnectionsCollection();
 
-  // Connection settings form
-  const connectionForm = useForm<ConnectionFormData>({
+  // Connection related form.
+  const form = useForm<ConnectionFormData>({
     resolver: zodResolver(connectionFormSchema),
     defaultValues: {
       title: connection.title,
@@ -420,123 +383,42 @@ function SettingsTab({
       connection_type: connection.connection_type,
       connection_url: connection.connection_url,
       connection_token: connection.connection_token,
+      configuration_scopes: connection.configuration_scopes,
+      configuration_state: connection.configuration_state,
     },
   });
 
-  // Reset form when connection changes (external update)
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    connectionForm.reset({
-      title: connection.title,
-      description: connection.description,
-      connection_type: connection.connection_type,
-      connection_url: connection.connection_url,
-      connection_token: connection.connection_token,
+  const isDirty = form.formState.isDirty;
+
+  const handleSaveConnection = () => {
+    const data = form.getValues();
+    if (!connectionsCollection) return;
+
+    const tx = connectionsCollection.update(connection.id, (draft) => {
+      draft.title = data.title ?? draft.title;
+      draft.description = data.description ?? draft.description;
+      draft.connection_type = data.connection_type ?? draft.connection_type;
+      draft.connection_url = data.connection_url ?? draft.connection_url;
+      draft.connection_token = data.connection_token ?? draft.connection_token;
+      draft.configuration_state =
+        data.configuration_state ?? draft.configuration_state;
+      draft.configuration_scopes =
+        data.configuration_scopes ?? draft.configuration_scopes;
     });
-  }, [connection, connectionForm]);
 
-  // MCP config state
-  const [mcpFormState, setMcpFormState] = useState<Record<string, unknown>>(
-    connection.configuration_state ?? {},
-  );
-  const [mcpInitialState, setMcpInitialState] = useState<
-    Record<string, unknown>
-  >(connection.configuration_state ?? {});
-
-  const {
-    stateSchema: mcpStateSchema,
-    scopes: fetchedScopes,
-    isLoading: isMcpConfigLoading,
-    error: mcpConfigError,
-  } = useMcpConfiguration(connection.id);
-
-  const mcpScopes = isMcpConfigLoading
-    ? (connection.configuration_scopes ?? [])
-    : fetchedScopes;
-
-  // Reset MCP state when connection changes
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    if (connection.configuration_state) {
-      setMcpFormState(connection.configuration_state);
-      setMcpInitialState(connection.configuration_state);
-    }
-  }, [connection]);
-
-  // Track if MCP config has changes
-  const mcpHasChanges =
-    JSON.stringify(mcpFormState) !== JSON.stringify(mcpInitialState);
-
-  const handleSaveConnection = async () => {
-    const isValid = await connectionForm.trigger();
-    if (!isValid) return;
-
-    setIsSavingConnection(true);
-    try {
-      const data = connectionForm.getValues();
-      await onUpdate({
-        ...data,
-        description: data.description || null,
-        connection_token: data.connection_token || null,
-      });
-      connectionForm.reset(data);
-      toast.success("Connection updated successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    tx.isPersisted.promise.catch((e) => {
+      const message = e instanceof Error ? e.message : String(e);
       toast.error(`Failed to update connection: ${message}`);
-    } finally {
-      setIsSavingConnection(false);
-    }
+    });
+
+    form.reset(data);
   };
-
-  const handleSaveMcpConfig = async () => {
-    setIsSavingConfig(true);
-    try {
-      const meshToolCaller = createToolCaller();
-      await meshToolCaller(TOOL_CONNECTION_CONFIGURE, {
-        connectionId: connection.id,
-        scopes: mcpScopes,
-        state: mcpFormState,
-      });
-
-      // Update local collection to keep cache in sync
-      connectionsCollection.update(connection.id, (draft) => {
-        draft.configuration_state = mcpFormState;
-        draft.configuration_scopes = mcpScopes;
-      });
-
-      setMcpInitialState(mcpFormState);
-
-      toast.success("Configuration saved successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to save configuration: ${message}`);
-    } finally {
-      setIsSavingConfig(false);
-    }
-  };
-
-  const isSaving = isSavingConnection || isSavingConfig;
-  const hasConnectionChanges = connectionForm.formState.isDirty;
-  const hasAnyChanges = hasConnectionChanges || mcpHasChanges;
 
   return (
     <>
-      {hasAnyChanges && (
+      {isDirty && (
         <ViewActions>
-          <Button
-            onClick={async () => {
-              if (hasConnectionChanges) {
-                await handleSaveConnection();
-              }
-              if (mcpHasChanges) {
-                await handleSaveMcpConfig();
-              }
-            }}
-            disabled={isSaving}
-            size="sm"
-          >
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button onClick={handleSaveConnection} disabled={!isDirty} size="sm">
             Save Changes
           </Button>
         </ViewActions>
@@ -545,26 +427,295 @@ function SettingsTab({
       <div className="flex h-full">
         {/* Left sidebar - Connection Settings (2/5) */}
         <div className="w-2/5 shrink-0 border-r border-border overflow-auto">
-          <ConnectionSettingsFormUI
-            form={connectionForm}
-            connection={connection}
-          />
+          <ConnectionSettingsFormUI form={form} connection={connection} />
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
         {hasMcpBinding && (
-          <div className="w-3/5 min-w-0 overflow-auto">
-            <McpConfigurationForm
-              formState={mcpFormState}
-              onFormStateChange={setMcpFormState}
-              stateSchema={mcpStateSchema}
-              isLoading={isMcpConfigLoading}
-              error={mcpConfigError}
-            />
-          </div>
+          <Suspense
+            fallback={
+              <div className="w-3/5 min-w-0 overflow-auto flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            }
+          >
+            <div className="w-3/5 min-w-0 overflow-auto" key={connection.id}>
+              <McpConfigurationForm form={form} connection={connection} />
+            </div>
+          </Suspense>
         )}
       </div>
     </>
+  );
+}
+
+export interface McpConfigurationFormProps {
+  form: UseFormReturn<ConnectionFormData>;
+  connection: ConnectionEntity;
+  isLoading?: boolean;
+}
+
+interface FormContext {
+  onFieldChange: (fieldPath: string, value: unknown) => void;
+  formData: Record<string, unknown>;
+  onAddNew: () => void;
+}
+
+/**
+ * Check if a schema property represents a binding field
+ */
+function isBindingField(schema: Record<string, unknown>): boolean {
+  const properties = schema.properties as Record<string, unknown> | undefined;
+  if (!properties) return false;
+
+  const typeProperty = properties.__type as Record<string, unknown> | undefined;
+  const bindingProperty = properties.__binding as
+    | Record<string, unknown>
+    | undefined;
+
+  return !!(typeProperty?.const || bindingProperty?.const);
+}
+
+/**
+ * Extract binding info from schema
+ */
+function getBindingInfo(schema: Record<string, unknown>): {
+  bindingType?: string;
+  bindingSchema?: unknown;
+} {
+  const properties = schema.properties as Record<string, unknown> | undefined;
+  if (!properties) return {};
+
+  const typeProperty = properties.__type as Record<string, unknown> | undefined;
+  const bindingProperty = properties.__binding as
+    | Record<string, unknown>
+    | undefined;
+
+  return {
+    bindingType: typeProperty?.const as string | undefined,
+    bindingSchema: bindingProperty?.const,
+  };
+}
+
+/**
+ * Extract field name from child element id
+ * e.g., "root_llm___type" -> "llm", "root_model_value" -> "model"
+ */
+function extractFieldName(childId: string): string {
+  // Remove "root_" prefix and get the first segment
+  const withoutRoot = childId.replace(/^root_/, "");
+  // Split by underscore and get the first part (the field name)
+  const parts = withoutRoot.split("_");
+  return parts[0] || "";
+}
+
+/**
+ * Custom ObjectFieldTemplate that handles binding fields specially
+ */
+function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
+  const { schema, formData, title, description, registry } = props;
+  const formContext = registry.formContext as FormContext | undefined;
+
+  // Extract the field name from the first child element's content key/id
+  // Each element in properties has a content with a key that contains the field path
+  const firstChildKey = props.properties[0]?.content?.key as string | undefined;
+
+  // Use title if available (it's the actual field name like "DATABASE")
+  // Fall back to extracting from child key only if title is not available
+  const fieldPath =
+    title || (firstChildKey ? extractFieldName(firstChildKey) : "");
+
+  // Check if this is a binding field (has __type or __binding in properties)
+  if (isBindingField(schema as Record<string, unknown>)) {
+    const { bindingType, bindingSchema } = getBindingInfo(
+      schema as Record<string, unknown>,
+    );
+    const currentValue = (formData?.value as string) || "";
+
+    const handleBindingChange = (newValue: string) => {
+      const newFieldData = {
+        ...formData,
+        value: newValue,
+        ...(bindingType && { __type: bindingType }),
+      };
+      formContext?.onFieldChange(fieldPath, newFieldData);
+    };
+
+    // Format title to Title Case
+    // e.g., "DATABASE" -> "Database", "llm_model" -> "Llm Model"
+    const formatTitle = (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const displayTitle = title ? formatTitle(title) : formatTitle(fieldPath);
+
+    return (
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex-1 min-w-0">
+          <label className="text-sm font-medium truncate block">
+            {displayTitle}
+          </label>
+          {description && (
+            <p className="text-xs text-muted-foreground truncate">
+              {description}
+            </p>
+          )}
+        </div>
+        <BindingSelector
+          value={currentValue}
+          onValueChange={handleBindingChange}
+          placeholder={`Select ${displayTitle.toLowerCase()}...`}
+          binding={
+            // Only use bindingSchema if it's an array of tools, not a string starting with @
+            bindingSchema && !String(bindingSchema).startsWith("@")
+              ? (bindingSchema as
+                  | string
+                  | Array<{
+                      name: string;
+                      inputSchema?: Record<string, unknown>;
+                      outputSchema?: Record<string, unknown>;
+                    }>)
+              : undefined
+          }
+          bindingType={bindingType}
+          onAddNew={() => formContext?.onAddNew()}
+          className="w-[200px] shrink-0"
+        />
+      </div>
+    );
+  }
+
+  // Default rendering for non-binding objects
+  return (
+    <div className="flex flex-col gap-4">
+      {props.properties.map((element) => element.content)}
+    </div>
+  );
+}
+
+/**
+ * Custom FieldTemplate for better styling
+ */
+function CustomFieldTemplate(props: FieldTemplateProps) {
+  const { label, children, description, id, schema } = props;
+
+  // Skip rendering for binding internal fields
+  if (id.includes("__type") || id.includes("__binding")) {
+    return null;
+  }
+
+  // For object types, let ObjectFieldTemplate handle everything
+  if (schema.type === "object") {
+    return children;
+  }
+
+  return (
+    <div className="flex items-center gap-3 justify-between">
+      <div className="flex-1 min-w-0">
+        {label && (
+          <label className="text-sm font-medium truncate block" htmlFor={id}>
+            {label}
+          </label>
+        )}
+        {description && (
+          <p className="text-xs text-muted-foreground truncate">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="w-[200px] shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function McpConfigurationForm({ connection, form }: McpConfigurationFormProps) {
+  const { org } = useProjectContext();
+  const navigate = useNavigate();
+
+  const {
+    data: { stateSchema },
+  } = useMcpConfiguration(connection.id);
+
+  // Watch form values to sync with JSON Schema form
+  const formData = form.watch().configuration_state || {};
+
+  const handleChange = (data: { formData?: Record<string, unknown> }) => {
+    if (data.formData) {
+      // Update react-hook-form when JSON Schema form changes
+      // Update configuration_state field
+      form.setValue(
+        "configuration_state",
+        data.formData as Record<string, unknown> | null,
+        {
+          shouldDirty: true,
+        },
+      );
+    }
+  };
+
+  const handleFieldChange = (fieldPath: string, value: unknown) => {
+    // Update react-hook-form when a field changes
+    const currentState = form.getValues().configuration_state || {};
+    form.setValue(
+      "configuration_state",
+      {
+        ...currentState,
+        [fieldPath]: value,
+      } as Record<string, unknown> | null,
+      {
+        shouldDirty: true,
+      },
+    );
+  };
+
+  const handleAddNew = () => {
+    navigate({
+      to: "/$org/mcps",
+      params: { org: org.slug },
+      search: { action: "create" },
+    });
+  };
+
+  const formContext: FormContext = {
+    onFieldChange: handleFieldChange,
+    formData,
+    onAddNew: handleAddNew,
+  };
+
+  const hasProperties =
+    stateSchema.properties &&
+    typeof stateSchema.properties === "object" &&
+    Object.keys(stateSchema.properties).length > 0;
+
+  if (!hasProperties) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        No configuration available
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-auto p-5">
+      <RjsfForm
+        schema={stateSchema}
+        validator={validator}
+        formData={formData}
+        onChange={handleChange}
+        formContext={formContext}
+        liveValidate={false}
+        showErrorList={false}
+        templates={{
+          ObjectFieldTemplate: CustomObjectFieldTemplate,
+          FieldTemplate: CustomFieldTemplate,
+        }}
+      >
+        {/* Hide default submit button */}
+        <></>
+      </RjsfForm>
+    </div>
   );
 }
 
@@ -576,7 +727,7 @@ function ConnectionSettingsFormUI({
   connection: ConnectionEntity;
 }) {
   return (
-    <Form {...form}>
+    <ShadcnForm {...form}>
       <div className="flex flex-col">
         {/* Header section - Icon, Title, Description */}
         <div className="flex flex-col gap-4 p-5 border-b border-border">
@@ -716,7 +867,7 @@ function ConnectionSettingsFormUI({
         </div>
       </div>
       <CursorIDEIntegration connection={connection} />
-    </Form>
+    </ShadcnForm>
   );
 }
 
@@ -997,12 +1148,11 @@ function CollectionContent({
     defaultSortKey: "updated_at",
   });
 
-  const items =
-    useCollectionList(collection, {
-      searchTerm,
-      sortKey,
-      sortDirection,
-    }) ?? [];
+  const items = useCollectionList(collection, {
+    searchTerm,
+    sortKey,
+    sortDirection,
+  });
 
   // Collection is read-only if ALL mutation tools are missing
   const isReadOnly = !hasCreateTool && !hasUpdateTool && !hasDeleteTool;

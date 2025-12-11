@@ -181,10 +181,9 @@ curl -X POST http://localhost:3000/mcp \
 | `COLLECTION_CONNECTIONS_CREATE` | Register MCP connection |
 | `COLLECTION_CONNECTIONS_LIST` | List connections |
 | `COLLECTION_CONNECTIONS_GET` | Get connection details |
-| `COLLECTION_CONNECTIONS_UPDATE` | Update connection |
+| `COLLECTION_CONNECTIONS_UPDATE` | Update connection (including configuration) |
 | `COLLECTION_CONNECTIONS_DELETE` | Delete connection |
 | `CONNECTION_TEST` | Test connection health |
-| `CONNECTION_CONFIGURE` | Configure connection |
 
 #### Proxy API (`/mcp/:connectionId`)
 

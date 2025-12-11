@@ -5,14 +5,12 @@ import {
   CheckIcon,
   ClockIcon,
   CodeXml,
-  Repeat,
   Wrench,
 } from "lucide-react";
 import type {
   Step,
   StepAction,
   WaitForSignalAction,
-  LoopConfig,
 } from "@decocms/bindings/workflow";
 import {
   Card,
@@ -36,16 +34,11 @@ import {
   useCurrentStepName,
 } from "@/web/stores/workflow";
 import type { StepNodeData } from "../use-workflow-flow";
-import { useLoopIterations } from "../use-step-execution";
 import { createToolCaller } from "@/tools/client";
 import { useWorkflowBindingConnection } from "@/web/hooks/workflows/use-workflow-binding-connection";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { Spinner } from "@deco/ui/components/spinner.js";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+
 
 // ============================================
 // Duration Component
@@ -111,60 +104,6 @@ function Duration({
   );
 }
 
-// ============================================
-// Loop Indicator
-// ============================================
-
-function getLoopDescription(loop: LoopConfig): string {
-  if (loop.for) {
-    const limit = loop.limit ? ` (max ${loop.limit})` : "";
-    return `Iterates over ${loop.for.items}${limit}`;
-  }
-  if (loop.until) {
-    return `Repeats until ${loop.until.path} ${loop.until.condition ?? "="} ${loop.until.value}`;
-  }
-  if (loop.while) {
-    return `Repeats while ${loop.while.path} ${loop.while.condition} ${loop.while.value}`;
-  }
-  return "Loop step";
-}
-
-function LoopIndicator({
-  loop,
-  iterationCount,
-  isRunning,
-}: {
-  loop: LoopConfig;
-  iterationCount: number;
-  isRunning: boolean;
-}) {
-  const limit = loop.limit;
-  const hasProgress = iterationCount > 0 || isRunning;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          className={cn(
-            "flex items-center gap-0.5 text-[10px] font-medium rounded-full px-1.5 py-0.5",
-            "bg-muted/80 text-muted-foreground",
-            isRunning && "animate-pulse bg-primary/20 text-primary",
-          )}
-        >
-          <Repeat className="w-2.5 h-2.5" />
-          {hasProgress && (
-            <span className="tabular-nums">
-              {limit ? `${iterationCount}/${limit}` : `×${iterationCount}`}
-            </span>
-          )}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs max-w-[200px]">
-        {getLoopDescription(loop)}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
 
 // ============================================
 // Step Menu
@@ -222,7 +161,7 @@ function checkIfIsWaitForSignalAction(
 }
 
 function useSendSignalMutation() {
-  const { id: connectionId } = useWorkflowBindingConnection();
+  const { id: connectionId } = useWorkflowBindingConnection() 
   const toolCaller = createToolCaller(connectionId);
 
   const { mutateAsync: sendSignal, isPending } = useToolCallMutation({
@@ -260,15 +199,9 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
   const isAddingStep = useIsAddingStep();
   const { addDependencyToDraftStep, cancelAddingStep } = useWorkflowActions();
   const { sendSignal, isPending: isSendingSignal } = useSendSignalMutation();
-  const { iterationCount, isLoopRunning } = useLoopIterations(step.name);
   const currentStepName = useCurrentStepName();
   const isDraftStep = useIsDraftStep(step.name);
   const isConsumed = !!stepResult?.output;
-  const hasLoop = !!step.config?.loop;
-  const isRunning =
-    !!stepResult?.created_at &&
-    !stepResult?.completed_at_epoch_ms &&
-    !stepResult?.error;
 
   const displayIcon = (() => {
     if (!step.action) return null;
@@ -364,16 +297,9 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
                   ? new Date(stepResult.completed_at_epoch_ms).toISOString()
                   : undefined
               }
-              isRunning={isRunning}
+              isRunning={false}
             />
 
-            {hasLoop && (
-              <LoopIndicator
-                loop={step.config!.loop!}
-                iterationCount={iterationCount}
-                isRunning={isLoopRunning || isRunning}
-              />
-            )}
           </div>
 
           <CardAction className="group-hover:opacity-100 opacity-0 transition-opacity shrink-0">

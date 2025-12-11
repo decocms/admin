@@ -10,10 +10,8 @@ import type { Step } from "@decocms/bindings/workflow";
 import {
   useWorkflowSteps,
   useWorkflowActions,
-  useTrackingExecutionId,
 } from "@/web/stores/workflow";
 import { computeStepLevels, buildDagEdges } from "./dag-utils";
-import { useWorkflowExecution } from "./use-step-execution";
 
 // ============================================
 // Types
@@ -115,12 +113,9 @@ function computeNodePositions(
  */
 export function useWorkflowNodes(): WorkflowNode[] {
   const steps = useWorkflowSteps();
-  const trackingExecutionId = useTrackingExecutionId();
-  const { getStepResult, isFetching, isFetched } = useWorkflowExecution();
 
   return (() => {
     const positions = computeNodePositions(steps);
-    const isExecuting = !!trackingExecutionId;
 
     // Find manual trigger step
     const manualTriggerStep = steps.find((step) => step.name === "Manual");
@@ -132,8 +127,8 @@ export function useWorkflowNodes(): WorkflowNode[] {
       position: positions.get(TRIGGER_NODE_ID) ?? { x: 0, y: 0 },
       data: {
         step: manualTriggerStep ?? null,
-        isFetched,
-        isRunning: isFetching && isExecuting,
+        isFetched: false,
+        isRunning: false,
         isPending: false,
       } as TriggerNodeData,
       draggable: false,
@@ -143,7 +138,12 @@ export function useWorkflowNodes(): WorkflowNode[] {
     const stepNodes: WorkflowNode[] = steps
       .filter((step) => !!step && step.name !== "Manual")
       .map((step) => {
-        const stepResult = getStepResult(step.name);
+        const stepResult = {
+          output: null,
+          error: null,
+          created_at: null,
+          completed_at_epoch_ms: null,
+        };
         console.log("🚀 ~ stepNodes ~ step:", step);
         console.log("🚀 ~ stepNodes ~ stepResult:", stepResult);
         const action = step.action;
@@ -152,9 +152,9 @@ export function useWorkflowNodes(): WorkflowNode[] {
 
         let style: StepStyle = undefined;
         if (stepResult?.error) style = "error";
-        else if (isFetching && !stepResult?.output) style = "pending";
+        else if (!stepResult?.output) style = "pending";
         else if (stepResult?.output) style = "success";
-        else if (isSignal && !isConsumed && isFetching)
+        else if (isSignal && !isConsumed)
           style = "waiting_for_signal";
 
         return {
@@ -163,8 +163,8 @@ export function useWorkflowNodes(): WorkflowNode[] {
           position: positions.get(step.name) ?? { x: 0, y: 0 },
           data: {
             step,
-            stepResult: stepResult ?? null,
-            isFetching,
+            stepResult: stepResult as unknown as StepResult,
+            isFetching: false,
             style,
           } as StepNodeData,
           draggable: true,

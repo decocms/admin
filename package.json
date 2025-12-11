@@ -9,6 +9,7 @@
     "check": "bun run --workspaces --elide-lines=0 check",
     "check:ci": "bun run --workspaces check",
     "fmt:check": "biome format",
+    "test": "bun test",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "build:runtime": "bun run --filter=@decocms/runtime build",

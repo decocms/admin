@@ -505,50 +505,6 @@ export async function createMCPProxy(
   };
 }
 
-// ============================================================================
-// Route Handler
-// ============================================================================
-
-/**
- * Stream tool call to a downstream connection
- *
- * Route: POST /mcp/:connectionId/stream/:toolName
- * Used for STREAM_* tools that return ndjson streams
- *
- * This bypasses the MCP JSON-RPC protocol and calls the tool directly
- * via the /call-tool/:toolName endpoint on the downstream connection.
- */
-app.post("/:connectionId/stream/:toolName", async (c) => {
-  const connectionId = c.req.param("connectionId");
-  const toolName = c.req.param("toolName");
-  const ctx = c.get("meshContext");
-
-  try {
-    const proxy = await createMCPProxy(connectionId, ctx);
-    const args = await c.req.json();
-
-    // Call the streamable tool directly (returns Response with ndjson stream)
-    const response = await proxy.callStreamableTool(toolName, args);
-
-    // Return the streaming response directly to the client
-    return response;
-  } catch (error) {
-    const err = error as Error;
-
-    if (err.message.includes("not found")) {
-      return c.json({ error: err.message }, 404);
-    }
-    if (err.message.includes("inactive")) {
-      return c.json({ error: err.message }, 503);
-    }
-
-    return c.json(
-      { error: "Internal server error", message: err.message },
-      500,
-    );
-  }
-});
-
 /**
  * Proxy MCP request to a downstream connection
  *

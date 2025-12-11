@@ -327,7 +327,10 @@ export async function createMCPProxy(
                 connectionId,
                 connectionTitle: connection.title,
                 toolName: request.params.name,
-                input: (request.params.arguments ?? {}) as Record<string, unknown>,
+                input: (request.params.arguments ?? {}) as Record<
+                  string,
+                  unknown
+                >,
                 output: result as Record<string, unknown>,
                 isError: (result.isError as boolean) ?? false,
                 durationMs: duration,
@@ -366,7 +369,10 @@ export async function createMCPProxy(
                 connectionId,
                 connectionTitle: connection.title,
                 toolName: request.params.name,
-                input: (request.params.arguments ?? {}) as Record<string, unknown>,
+                input: (request.params.arguments ?? {}) as Record<
+                  string,
+                  unknown
+                >,
                 output: {},
                 isError: true,
                 errorMessage: err.message,

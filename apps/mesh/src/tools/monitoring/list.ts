@@ -9,13 +9,13 @@ import { defineTool } from "../../core/define-tool";
 import { z } from "zod";
 
 const monitoringLogSchema = z.object({
-  id: z.string().describe("Unique log identifier"),
+  id: z.string().optional().describe("Unique log identifier"),
   organizationId: z.string().describe("Organization ID"),
   connectionId: z.string().describe("Connection ID"),
   connectionTitle: z.string().describe("Connection display name"),
   toolName: z.string().describe("Name of the tool that was called"),
-  input: z.record(z.unknown()).nullable().describe("Redacted tool input"),
-  output: z.record(z.unknown()).nullable().describe("Redacted tool output"),
+  input: z.record(z.unknown()).describe("Redacted tool input"),
+  output: z.record(z.unknown()).describe("Redacted tool output"),
   isError: z.boolean().describe("Whether the call resulted in an error"),
   errorMessage: z.string().nullish().describe("Error message if applicable"),
   durationMs: z.number().describe("Call duration in milliseconds"),

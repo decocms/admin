@@ -110,7 +110,10 @@ export class RegexRedactor implements Redactor {
           const matches = text.match(pattern.regex);
           if (matches) {
             redactionCount += matches.length;
-            span.setAttribute(`redaction.${pattern.type}.count`, matches.length);
+            span.setAttribute(
+              `redaction.${pattern.type}.count`,
+              matches.length,
+            );
           }
           redacted = redacted.replace(
             pattern.regex,
@@ -124,26 +127,5 @@ export class RegexRedactor implements Redactor {
         span.end();
       }
     });
-  }
-}
-
-// ============================================================================
-// Factory Function
-// ============================================================================
-
-/**
- * Create a redactor instance based on configuration
- */
-export function createRedactor(type: "regex" | "presidio" = "regex"): Redactor {
-  switch (type) {
-    case "regex":
-      return new RegexRedactor();
-    case "presidio":
-      // Future: implement PresidioRedactor
-      throw new Error(
-        "Presidio redactor not yet implemented. Using regex fallback.",
-      );
-    default:
-      return new RegexRedactor();
   }
 }

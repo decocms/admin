@@ -100,7 +100,6 @@ describe("Connection Tools", () => {
         requestId: "req_123",
         timestamp: new Date(),
       },
-      monitoring: null as never,
     };
   });
 

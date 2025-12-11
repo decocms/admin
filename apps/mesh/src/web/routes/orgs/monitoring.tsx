@@ -29,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@deco/ui/components/popover.tsx";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import { CollectionPage } from "@/web/components/collections/collection-page.tsx";
 import { CollectionHeader } from "@/web/components/collections/collection-header.tsx";
 import { createToolCaller } from "@/tools/client";
@@ -100,15 +100,12 @@ function MonitoringStatsContent({
   dateRange,
   isStreaming,
 }: MonitoringStatsProps) {
-  const toolCaller = useMemo(() => createToolCaller(), []);
+  const toolCaller = createToolCaller();
 
-  const statsParams = useMemo(
-    () => ({
-      startDate: dateRange.startDate.toISOString(),
-      endDate: dateRange.endDate.toISOString(),
-    }),
-    [dateRange],
-  );
+  const statsParams = {
+    startDate: dateRange.startDate.toISOString(),
+    endDate: dateRange.endDate.toISOString(),
+  };
 
   const { data: stats } = useSuspenseToolCall<
     typeof statsParams,
@@ -475,26 +472,23 @@ function MonitoringLogsTableContent({
   isStreaming,
   onUpdateFilters,
 }: MonitoringLogsTableProps) {
-  const toolCaller = useMemo(() => createToolCaller(), []);
+  const toolCaller = createToolCaller();
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const logsParams = useMemo(
-    () => ({
-      connectionId: connectionIds.length > 0 ? connectionIds[0] : undefined,
-      toolName: toolFilter || undefined,
-      isError:
-        statusFilter === "errors"
-          ? true
-          : statusFilter === "success"
-            ? false
-            : undefined,
-      startDate: dateRange.startDate.toISOString(),
-      endDate: dateRange.endDate.toISOString(),
-      limit: pageSize,
-      offset: page * pageSize,
-    }),
-    [connectionIds, toolFilter, statusFilter, dateRange, page, pageSize],
-  );
+  const logsParams = {
+    connectionId: connectionIds.length > 0 ? connectionIds[0] : undefined,
+    toolName: toolFilter || undefined,
+    isError:
+      statusFilter === "errors"
+        ? true
+        : statusFilter === "success"
+          ? false
+          : undefined,
+    startDate: dateRange.startDate.toISOString(),
+    endDate: dateRange.endDate.toISOString(),
+    limit: pageSize,
+    offset: page * pageSize,
+  };
 
   const { data: logs } = useSuspenseToolCall<
     typeof logsParams,
@@ -508,31 +502,25 @@ function MonitoringLogsTableContent({
   });
 
   // Filter logs by search query and multiple connections (client-side)
-  const filteredLogs = useMemo(() => {
-    if (!logs?.logs) return [];
+  let filteredLogs = logs?.logs ?? [];
 
-    let filtered = logs.logs;
+  // Filter by multiple connection IDs (if more than one selected)
+  if (connectionIds.length > 1) {
+    filteredLogs = filteredLogs.filter((log) =>
+      connectionIds.includes(log.connectionId),
+    );
+  }
 
-    // Filter by multiple connection IDs (if more than one selected)
-    if (connectionIds.length > 1) {
-      filtered = filtered.filter((log) =>
-        connectionIds.includes(log.connectionId),
-      );
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (log) =>
-          log.toolName.toLowerCase().includes(lowerQuery) ||
-          log.connectionTitle.toLowerCase().includes(lowerQuery) ||
-          log.errorMessage?.toLowerCase().includes(lowerQuery),
-      );
-    }
-
-    return filtered;
-  }, [logs, searchQuery, connectionIds]);
+  // Filter by search query
+  if (searchQuery) {
+    const lowerQuery = searchQuery.toLowerCase();
+    filteredLogs = filteredLogs.filter(
+      (log) =>
+        log.toolName.toLowerCase().includes(lowerQuery) ||
+        log.connectionTitle.toLowerCase().includes(lowerQuery) ||
+        log.errorMessage?.toLowerCase().includes(lowerQuery),
+    );
+  }
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -693,14 +681,10 @@ export default function MonitoringDashboard() {
   const pageSize = 50;
 
   // Build connection options for MultiSelect
-  const connectionOptions = useMemo(
-    () =>
-      allConnections.map((conn) => ({
-        value: conn.id,
-        label: conn.title || conn.id,
-      })),
-    [allConnections],
-  );
+  const connectionOptions = allConnections.map((conn) => ({
+    value: conn.id,
+    label: conn.title || conn.id,
+  }));
 
   // Streaming state
   const [isStreaming, setIsStreaming] = useState(true);
@@ -715,51 +699,46 @@ export default function MonitoringDashboard() {
   };
 
   // Calculate date range based on time range selection
-  const dateRange = useMemo(() => {
-    const now = new Date();
-    const startDate = new Date();
+  const now = new Date();
+  const startDate = new Date();
 
-    switch (timeRange) {
-      case "24h":
-        startDate.setHours(now.getHours() - 24);
-        break;
-      case "7d":
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case "30d":
-        startDate.setDate(now.getDate() - 30);
-        break;
-    }
+  switch (timeRange) {
+    case "24h":
+      startDate.setHours(now.getHours() - 24);
+      break;
+    case "7d":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "30d":
+      startDate.setDate(now.getDate() - 30);
+      break;
+  }
 
-    // When streaming, set endDate 1 hour in the future to capture new logs
-    const endDate = new Date(now);
-    if (isStreaming) {
-      endDate.setHours(endDate.getHours() + 1);
-    }
+  // When streaming, set endDate 1 hour in the future to capture new logs
+  const endDate = new Date(now);
+  if (isStreaming) {
+    endDate.setHours(endDate.getHours() + 1);
+  }
 
-    return { startDate, endDate };
-  }, [timeRange, isStreaming]);
+  const dateRange = { startDate, endDate };
 
-  const timeRangeLabel = useMemo(() => {
-    switch (timeRange) {
-      case "24h":
-        return "Last 24 hours";
-      case "7d":
-        return "Last 7 days";
-      case "30d":
-        return "Last 30 days";
-      default:
-        return "Last 24 hours";
-    }
-  }, [timeRange]);
+  let timeRangeLabel = "Last 24 hours";
+  switch (timeRange) {
+    case "24h":
+      timeRangeLabel = "Last 24 hours";
+      break;
+    case "7d":
+      timeRangeLabel = "Last 7 days";
+      break;
+    case "30d":
+      timeRangeLabel = "Last 30 days";
+      break;
+  }
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (connectionIds.length > 0) count++;
-    if (toolFilter) count++;
-    if (statusFilter !== "all") count++;
-    return count;
-  }, [connectionIds, toolFilter, statusFilter]);
+  let activeFiltersCount = 0;
+  if (connectionIds.length > 0) activeFiltersCount++;
+  if (toolFilter) activeFiltersCount++;
+  if (statusFilter !== "all") activeFiltersCount++;
 
   return (
     <CollectionPage>

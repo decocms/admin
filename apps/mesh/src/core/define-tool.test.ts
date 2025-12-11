@@ -96,10 +96,6 @@ const createMockContext = (): MeshContext => ({
     requestId: "req_123",
     timestamp: new Date(),
   },
-  monitoring: {
-    logToolCall: vi.fn().mockResolvedValue(undefined),
-    flush: vi.fn().mockResolvedValue(undefined),
-  } as never,
 });
 
 describe("defineTool", () => {

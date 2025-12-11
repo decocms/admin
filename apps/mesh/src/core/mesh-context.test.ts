@@ -43,7 +43,6 @@ const createMockContext = (overrides?: Partial<MeshContext>): MeshContext => ({
     requestId: "req_123",
     timestamp: new Date(),
   },
-  monitoring: null as never,
   ...overrides,
 });
 

@@ -197,7 +197,6 @@ const createMockContext = (
       requestId: "req_123",
       timestamp: new Date(),
     },
-    monitoring: null as never,
   };
 };
 

@@ -29,6 +29,12 @@ async function getProjectSidebarItems({
       onClick: () => navigate({ to: "/$org/mcps", params: { org } }),
     },
     {
+      key: "monitoring",
+      label: "Monitoring",
+      icon: "monitoring",
+      onClick: () => navigate({ to: "/$org/monitoring", params: { org } }),
+    },
+    {
       key: "members",
       label: "Members",
       icon: "group",

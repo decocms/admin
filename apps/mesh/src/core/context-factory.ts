@@ -15,7 +15,6 @@ import { verifyMeshToken } from "../auth/jwt";
 import { CredentialVault } from "../encryption/credential-vault";
 import { AuditLogStorage } from "../storage/audit-log";
 import { ConnectionStorage } from "../storage/connection";
-import { SqlMonitoringStorage } from "../storage/monitoring";
 import { OrganizationSettingsStorage } from "../storage/organization-settings";
 import type { Database, Permission } from "../storage/types";
 import { AccessControl } from "./access-control";
@@ -321,6 +320,7 @@ function createBoundAuthClient(ctx: AuthContext): BoundAuthClient {
 }
 
 // Import built-in roles from separate module to avoid circular dependency
+import { SqlMonitoringStorage } from "@/storage/monitoring";
 import { BUILTIN_ROLES } from "../auth/roles";
 
 /**
@@ -446,7 +446,6 @@ async function authenticateRequest(
       if (meshJwtPayload) {
         return {
           user: { id: meshJwtPayload.sub },
-          permissions: meshJwtPayload.permissions, // Pass through the JWT permissions
         };
       }
     } catch {

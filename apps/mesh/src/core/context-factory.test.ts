@@ -21,25 +21,19 @@ describe("createMeshContextFactory", () => {
     await closeDatabase(db);
   });
 
-  const createMockHonoContext: any = (overrides?: any) => ({
-    req: {
-      url: "https://mesh.example.com/mcp/tools",
-      path: "/mcp/tools",
-      header: vi.fn((name: string) => {
-        if (name === "Authorization") return "Bearer test_key";
-        if (name === "User-Agent") return "Test/1.0";
-        if (name === "X-Forwarded-For") return "192.168.1.1";
-        return undefined;
-      }),
-      raw: {
-        headers: new Headers({
-          Authorization: "Bearer test_key",
-        }),
+  // Helper to create a mock Request object (factory expects Request, not Hono context)
+  const createMockRequest = (options?: {
+    url?: string;
+    headers?: Record<string, string>;
+  }): Request => {
+    const url = options?.url ?? "https://mesh.example.com/mcp/tools";
+    const headers = new Headers(
+      options?.headers ?? {
+        Authorization: "Bearer test_key",
       },
-      ...overrides?.req,
-    },
-    ...overrides,
-  });
+    );
+    return new Request(url, { headers });
+  };
 
   const createMockAuth = (): any => ({
     api: {
@@ -89,7 +83,7 @@ describe("createMeshContextFactory", () => {
   });
 
   describe("MeshContext creation", () => {
-    it("should create MeshContext from Hono context", async () => {
+    it("should create MeshContext from Request", async () => {
       const factory = createMeshContextFactory({
         db,
         auth: createMinimalMockAuth() as unknown as BetterAuthInstance,
@@ -100,16 +94,12 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: "https://mesh.example.com/mcp/tools",
-          path: "/mcp/tools",
-          header: vi.fn(() => undefined), // No Authorization
-          raw: { headers: new Headers() },
-        },
+      const request = createMockRequest({
+        url: "https://mesh.example.com/mcp/tools",
+        headers: {}, // No Authorization
       });
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx).toBeDefined();
       expect(meshCtx.auth).toBeDefined();
@@ -130,16 +120,12 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: "http://localhost:3000/mcp/tools",
-          path: "/mcp/tools",
-          header: vi.fn(() => undefined),
-          raw: { headers: new Headers() },
-        },
+      const request = createMockRequest({
+        url: "http://localhost:3000/mcp/tools",
+        headers: {},
       });
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx.baseUrl).toBe("http://localhost:3000");
     });
@@ -155,20 +141,15 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: "https://mesh.example.com/mcp/tools",
-          path: "/mcp/tools", // Organization-scoped
-          header: vi.fn((name: string) => {
-            if (name === "User-Agent") return "Test/1.0";
-            if (name === "X-Forwarded-For") return "192.168.1.1";
-            return undefined;
-          }),
-          raw: { headers: new Headers() },
+      const request = createMockRequest({
+        url: "https://mesh.example.com/mcp/tools",
+        headers: {
+          "User-Agent": "Test/1.0",
+          "X-Forwarded-For": "192.168.1.1",
         },
       });
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx.metadata.userAgent).toBe("Test/1.0");
       expect(meshCtx.metadata.ipAddress).toBe("192.168.1.1");
@@ -188,9 +169,9 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext();
+      const request = createMockRequest();
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx.organization).toBeDefined();
       expect(meshCtx.organization?.id).toBe("org_123");
@@ -223,8 +204,8 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext();
-      const meshCtx = await factory(honoCtx);
+      const request = createMockRequest();
+      const meshCtx = await factory(request);
 
       expect(meshCtx.organization).toBeUndefined();
     });
@@ -242,16 +223,12 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: "https://mesh.example.com/mcp/tools",
-          path: "/mcp/tools",
-          header: vi.fn(() => undefined),
-          raw: { headers: new Headers() },
-        },
+      const request = createMockRequest({
+        url: "https://mesh.example.com/mcp/tools",
+        headers: {},
       });
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx.storage.connections).toBeDefined();
       expect(meshCtx.storage.auditLogs).toBeDefined();
@@ -271,16 +248,12 @@ describe("createMeshContextFactory", () => {
         },
       });
 
-      const honoCtx = createMockHonoContext({
-        req: {
-          url: "https://mesh.example.com/mcp/tools",
-          path: "/mcp/tools",
-          header: vi.fn(() => undefined),
-          raw: { headers: new Headers() },
-        },
+      const request = createMockRequest({
+        url: "https://mesh.example.com/mcp/tools",
+        headers: {},
       });
 
-      const meshCtx = await factory(honoCtx);
+      const meshCtx = await factory(request);
 
       expect(meshCtx.access).toBeDefined();
       expect(meshCtx.access.granted).toBeDefined();

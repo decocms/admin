@@ -212,6 +212,16 @@ export const MANAGEMENT_TOOLS: ToolMetadata[] = [
     category: "Monitoring",
   },
   {
+    name: "API_KEY_CREATE",
+    description: "Create API key",
+    category: "API Keys",
+  },
+  {
+    name: "API_KEY_LIST",
+    description: "List API keys",
+    category: "API Keys",
+  },
+  {
     name: "API_KEY_UPDATE",
     description: "Update API key",
     category: "API Keys",

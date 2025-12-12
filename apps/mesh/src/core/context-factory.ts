@@ -587,14 +587,6 @@ export function createMeshContextFactory(
   return async (req: Request): Promise<MeshContext> => {
     // Authenticate request (OAuth session or API key)
     const authResult = await authenticateRequest(req, config.auth, config.db);
-    authResult.organization &&
-      (await config.auth.api.setActiveOrganization({
-        headers: req.headers,
-        body: {
-          organizationId: authResult.organization.id,
-          organizationSlug: authResult.organization.slug,
-        },
-      }));
 
     // Create bound auth client (encapsulates HTTP headers and auth context)
     const boundAuth = createBoundAuthClient({

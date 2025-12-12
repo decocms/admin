@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   WorkflowDetailsView,
   WorkflowExecutionDetailsView,
-} from "@/web/components/details/workflow";
+} from "@/web/components/details/workflow/index.tsx";
 
 interface CollectionDetailsProps {
   itemId: string;

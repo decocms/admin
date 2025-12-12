@@ -1,10 +1,3 @@
-/**
- * Utility to extract TypeScript interfaces/types from code and convert to JSON Schema.
- * Works in the browser by using Monaco's TypeScript language service.
- */
-
-import type { Monaco } from "@monaco-editor/react";
-
 export interface JsonSchema {
   type?: string;
   properties?: Record<string, JsonSchema>;
@@ -597,64 +590,6 @@ export function extractOutputSchema(code: string): JsonSchema | null {
   }
 
   return null;
-}
-
-/**
- * Extract JSON Schema from TypeScript code using Monaco's TypeScript language service.
- * This provides more accurate type information by using the actual TypeScript compiler.
- *
- * @param monaco - Monaco instance
- * @param code - TypeScript code string
- * @param filePath - Virtual file path for the code
- * @returns JSON Schema or null if unable to extract
- */
-export async function extractOutputSchemaWithMonaco(
-  monaco: Monaco,
-  code: string,
-  filePath: string,
-): Promise<JsonSchema | null> {
-  try {
-    // Get the TypeScript worker
-    const getWorker = await monaco.languages.typescript.getTypeScriptWorker();
-    const uri = monaco.Uri.parse(filePath);
-    const worker = await getWorker(uri);
-
-    // Create a temporary model for the code
-    const existingModel = monaco.editor.getModel(uri);
-    const model =
-      existingModel || monaco.editor.createModel(code, "typescript", uri);
-
-    if (!existingModel) {
-      model.setValue(code);
-    }
-
-    // Find the Output interface position
-    const outputMatch = code.match(/interface\s+Output\s*\{/);
-    if (outputMatch && outputMatch.index !== undefined) {
-      // Get type information at the Output interface position
-      const position = model.getPositionAt(
-        outputMatch.index + "interface ".length,
-      );
-      const offset = model.getOffsetAt(position);
-
-      // Get quick info (hover information) which includes the type
-      const quickInfo = await worker.getQuickInfoAtPosition(filePath, offset);
-
-      if (quickInfo?.displayParts) {
-        const typeString = quickInfo.displayParts
-          .map((p: { text: string }) => p.text)
-          .join("");
-        console.log("[extractOutputSchemaWithMonaco] Type info:", typeString);
-      }
-    }
-
-    // Fall back to regex-based extraction
-    return extractOutputSchema(code);
-  } catch (error) {
-    console.error("[extractOutputSchemaWithMonaco] Error:", error);
-    // Fall back to regex-based extraction
-    return extractOutputSchema(code);
-  }
 }
 
 /**

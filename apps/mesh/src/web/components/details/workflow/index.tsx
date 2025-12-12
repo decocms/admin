@@ -18,7 +18,7 @@ import {
 import { WorkflowActions } from "./components/actions";
 import { StepTabs, WorkflowTabs } from "./components/tabs";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { MonacoCodeEditor } from "../../monaco-editor";
+import { MonacoCodeEditor } from "./components/monaco-editor";
 export interface WorkflowDetailsViewProps {
   itemId: string;
   onBack: () => void;

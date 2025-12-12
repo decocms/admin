@@ -11,7 +11,7 @@ import {
 } from "@decocms/bindings/workflow";
 import { Step, ToolCallAction, CodeAction } from "@decocms/bindings/workflow";
 import { createContext, useContext, useState } from "react";
-import { jsonSchemaToTypeScript } from "@/web/lib/typescript-to-json-schema";
+import { jsonSchemaToTypeScript } from "../typescript-to-json-schema";
 
 type CurrentStepTab = "input" | "output" | "action";
 export type StepType = "tool" | "code" | "sleep" | "wait_for_signal";

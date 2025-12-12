@@ -27,6 +27,7 @@ import authRoutes from "./routes/auth";
 import managementRoutes from "./routes/management";
 import modelsRoutes from "./routes/models";
 import proxyRoutes from "./routes/proxy";
+import registryRoutes from "./routes/registry";
 
 // Define Hono variables type
 type Variables = {

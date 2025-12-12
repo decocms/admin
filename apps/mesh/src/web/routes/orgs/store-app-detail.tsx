@@ -241,28 +241,47 @@ export default function StoreAppDetail() {
         totalCount = listResults.totalCount;
       }
 
-      // Find the items array - supports "versions", "servers", "items" keys
-      let itemsKey: string | undefined;
-      if ("versions" in listResults && Array.isArray(listResults.versions)) {
-        itemsKey = "versions";
-      } else if (
-        "servers" in listResults &&
-        Array.isArray(listResults.servers)
-      ) {
-        itemsKey = "servers";
+      // Handle Deco format: { item: { server: {...} } }
+      // Convert to standard RegistryItem format
+      if ("item" in listResults && listResults.item) {
+        const itemWrapper = listResults.item as {
+          id?: string;
+          title?: string;
+          server?: unknown;
+          _meta?: unknown;
+        };
+        items = [
+          {
+            id: itemWrapper.id || "",
+            title: itemWrapper.title,
+            server: itemWrapper.server as RegistryItem["server"],
+            _meta: itemWrapper._meta as RegistryItem["_meta"],
+          },
+        ];
       } else {
-        itemsKey = Object.keys(listResults).find((key) =>
-          Array.isArray(listResults[key as keyof typeof listResults]),
-        );
-      }
+        // Find the items array - supports "versions", "servers", "items" keys
+        let itemsKey: string | undefined;
+        if ("versions" in listResults && Array.isArray(listResults.versions)) {
+          itemsKey = "versions";
+        } else if (
+          "servers" in listResults &&
+          Array.isArray(listResults.servers)
+        ) {
+          itemsKey = "servers";
+        } else {
+          itemsKey = Object.keys(listResults).find((key) =>
+            Array.isArray(listResults[key as keyof typeof listResults]),
+          );
+        }
 
-      if (itemsKey) {
-        items = listResults[
-          itemsKey as keyof typeof listResults
-        ] as RegistryItem[];
-        // If VERSIONS tool, store all versions for dropdown
-        if (itemsKey === "versions" || toolName?.includes("VERSIONS")) {
-          allVersions = items;
+        if (itemsKey) {
+          items = listResults[
+            itemsKey as keyof typeof listResults
+          ] as RegistryItem[];
+          // If VERSIONS tool, store all versions for dropdown
+          if (itemsKey === "versions" || toolName?.includes("VERSIONS")) {
+            allVersions = items;
+          }
         }
       }
     }

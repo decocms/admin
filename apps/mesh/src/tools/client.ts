@@ -62,14 +62,6 @@ export function createToolCaller<TArgs = unknown, TOutput = unknown>(
 
   return async (toolName: string, args: TArgs): Promise<TOutput> => {
     // Debug logging for tool calls
-    console.log("[createToolCaller] Making request:", {
-      endpoint,
-      toolName,
-      args: JSON.stringify(args),
-      argsType: typeof args,
-      argsKeys: args && typeof args === "object" ? Object.keys(args) : [],
-    });
-
     const requestBody = {
       jsonrpc: "2.0",
       id: 1,
@@ -79,11 +71,6 @@ export function createToolCaller<TArgs = unknown, TOutput = unknown>(
         arguments: args,
       },
     };
-
-    console.log(
-      "[createToolCaller] Request body:",
-      JSON.stringify(requestBody, null, 2),
-    );
 
     const response = await fetch(endpoint, {
       method: "POST",

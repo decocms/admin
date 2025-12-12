@@ -22,6 +22,12 @@ interface PublishAppConfig {
   icon?: string;
   metadata?: Record<string, unknown>;
   unlisted?: boolean;
+  tools?: Array<{
+    name: string;
+    description: string;
+    inputSchema: unknown;
+    outputSchema?: unknown;
+  }>;
 }
 
 interface PublishOptions {
@@ -181,6 +187,7 @@ export async function publishApp({
       icon: appConfig.icon,
       metadata: appConfig.metadata,
       unlisted: appConfig.unlisted,
+      tools: appConfig.tools,
     },
   });
 

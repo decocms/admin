@@ -81,6 +81,15 @@ export function extractConnectionData(
     | null
     | undefined;
 
+  // Extract repository info for README support
+  const repository = server?.repository
+    ? {
+        url: server.repository.url,
+        source: server.repository.source,
+        subfolder: server.repository.subfolder,
+      }
+    : null;
+
   return {
     id: crypto.randomUUID(),
     title,
@@ -95,6 +104,7 @@ export function extractConnectionData(
     oauth_config: oauthConfig,
     configuration_state: configState ?? null,
     configuration_scopes: configScopes ?? null,
+    repository,
     metadata: {
       ...appMetadata,
       source: "store",

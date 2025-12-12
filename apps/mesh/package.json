@@ -26,6 +26,7 @@
     "@decocms/vite-plugin": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@modelcontextprotocol/sdk": "1.20.2",
+    "@monaco-editor/react": "^4.7.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-prometheus": "^0.208.0",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.207.0",
@@ -49,6 +50,7 @@
     "@tanstack/react-query": "^5.90.11",
     "@tanstack/react-router": "^1.139.7",
     "@tanstack/react-router-devtools": "^1.139.7",
+    "@xyflow/react": "^12.10.0",
     "ai": "^5.0.101",
     "@decocms/better-auth": "1.5.17",
     "better-auth": "1.4.5",
@@ -74,8 +76,9 @@
     "tailwindcss": "^4.1.17",
     "use-mcp": "^0.0.21",
     "zod": "^3.25.76",
-    "zod-from-json-schema": "0.0.5",
-    "zod-to-json-schema": "3.25.0"
+    "zod-to-json-schema": "3.25.0",
+    "zustand": "^5.0.9",
+    "zod-from-json-schema": "0.0.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",

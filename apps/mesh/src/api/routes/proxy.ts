@@ -539,10 +539,6 @@ export async function createMCPProxy(
   };
 }
 
-// ============================================================================
-// Route Handler
-// ============================================================================
-
 /**
  * Proxy MCP request to a downstream connection
  *

@@ -9,7 +9,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
   Box,
@@ -26,6 +25,9 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { PinToSidebarButton } from "../pin-to-sidebar-button";
 import { ViewActions, ViewLayout } from "./layout";
+import { useParams } from "@tanstack/react-router";
+import { JsonSchema } from "@/web/utils/constants";
+import { ScrollArea } from "@deco/ui/components/scroll-area.js";
 
 // Helper to normalize URL for MCP
 export interface ToolDetailsViewProps {
@@ -47,8 +49,46 @@ export function ToolDetailsView({
   const params = useParams({ strict: false });
   const connectionId = params.connectionId ?? UNKNOWN_CONNECTION_ID;
 
-  const connection = useConnection(connectionId);
-  const [inputParams, setInputParams] = useState<Record<string, unknown>>({});
+  const { tool, mcp, connection, isLoading } = useTool(toolName, connectionId);
+
+  // Show loading state while MCP is discovering tools
+  if (isLoading || !tool) {
+    return (
+      <ViewLayout onBack={onBack}>
+        <div className="flex flex-col h-full items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-muted-foreground text-sm">
+            {isLoading
+              ? "Connecting to MCP server..."
+              : `Tool "${toolName}" not found`}
+          </p>
+        </div>
+      </ViewLayout>
+    );
+  }
+
+  return (
+    <ViewLayout onBack={onBack}>
+      <ToolDetail
+        tool={tool}
+        mcp={mcp}
+        connection={connection}
+        onBack={onBack}
+      />
+    </ViewLayout>
+  );
+}
+
+function useToolState(
+  inputSchema: JsonSchema,
+  defaultInputParams?: Record<string, unknown>,
+) {
+  const resolvedInputParams = useToolInputParams(
+    inputSchema,
+    defaultInputParams ?? {},
+  );
+  const [inputParams, setInputParams] =
+    useState<Record<string, unknown>>(resolvedInputParams);
   const [executionResult, setExecutionResult] = useState<Record<
     string,
     unknown
@@ -61,8 +101,86 @@ export function ToolDetailsView({
     bytes?: string;
     cost?: string;
   } | null>(null);
-  const [viewMode, setViewMode] = useState<"json" | "view">("json");
+  return {
+    inputParams,
+    setInputParams,
+    executionResult,
+    setExecutionResult,
+    executionError,
+    setExecutionError,
+    isExecuting,
+    setIsExecuting,
+    stats,
+    setStats,
+  };
+}
 
+const generateDefaultValue = (
+  schema: JsonSchema,
+  onlyRequired = true,
+): unknown => {
+  if (!schema) return "";
+
+  switch (schema.type) {
+    case "object": {
+      const obj: Record<string, unknown> = {};
+      if (schema.properties) {
+        const requiredKeys = schema.required ?? [];
+        Object.entries(schema.properties).forEach(([key, propSchema]) => {
+          // Only include required fields when onlyRequired is true
+          if (!onlyRequired || requiredKeys.includes(key)) {
+            obj[key] = generateDefaultValue(
+              propSchema as JsonSchema,
+              onlyRequired,
+            );
+          }
+        });
+      }
+      return obj;
+    }
+    case "array": {
+      // Generate one default item based on items schema
+      if (schema.items) {
+        return [generateDefaultValue(schema.items as JsonSchema, onlyRequired)];
+      }
+      return [];
+    }
+    case "number":
+    case "integer": {
+      return 0;
+    }
+    case "boolean": {
+      return false;
+    }
+    case "string":
+    default: {
+      return "";
+    }
+  }
+};
+
+const generateInitialParams = (
+  inputSchema: JsonSchema,
+): Record<string, unknown> => {
+  const initialParams: Record<string, unknown> = {};
+  const inputSchemaProperties = inputSchema?.properties;
+  const requiredKeys = inputSchema?.required ?? [];
+  if (inputSchemaProperties) {
+    Object.entries(inputSchemaProperties).forEach(([key, propSchema]) => {
+      // Only include required fields at the top level
+      if (requiredKeys.includes(key)) {
+        initialParams[key] = generateDefaultValue(
+          propSchema as JsonSchema,
+          true,
+        );
+      }
+    });
+  }
+  return initialParams;
+};
+
+export function useTool(toolName: string, connectionId: string) {
+  const connection = useConnection(connectionId);
   // Use proxy URL when connection has a token (OAuth completed)
   // Use normalizedUrl directly when no token (OAuth flow needs direct access)
   const mcpProxyUrl = new URL(`/mcp/${connectionId}`, window.location.origin);
@@ -86,24 +204,57 @@ export function ToolDetailsView({
   // Find the tool definition
   const tool = mcp.tools?.find((t) => t.name === toolName);
 
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    if (
-      tool?.inputSchema?.properties &&
-      Object.keys(inputParams).length === 0
-    ) {
-      const initialParams: Record<string, unknown> = {};
-      // Simple initialization for now
-      Object.keys(tool.inputSchema.properties).forEach((key) => {
-        if (tool.inputSchema.required?.includes(key)) {
-          initialParams[key] = "";
-        } else {
-          initialParams[key] = undefined;
-        }
-      });
-      setInputParams(initialParams);
-    }
-  }, [tool, inputParams]);
+  // Check if MCP is still loading/discovering
+  const isLoading =
+    mcp.state === "connecting" ||
+    mcp.state === "authenticating" ||
+    mcp.state === "discovering";
+
+  return {
+    tool,
+    mcp,
+    connection,
+    isLoading,
+  };
+}
+
+type ToolDetailProps = {
+  tool: NonNullable<ReturnType<typeof useTool>["tool"]>;
+  mcp: ReturnType<typeof useTool>["mcp"];
+  connection: ReturnType<typeof useTool>["connection"];
+  onBack: () => void;
+  onInputChange?: (input: Record<string, unknown>) => void;
+  initialInputParams?: Record<string, unknown>;
+  withHeader?: boolean;
+};
+
+function useToolInputParams(
+  inputSchema: JsonSchema,
+  initialInputParams?: Record<string, unknown>,
+) {
+  return initialInputParams ?? generateInitialParams(inputSchema);
+}
+
+export function ToolDetail({
+  tool,
+  mcp,
+  connection,
+  onBack,
+  onInputChange,
+  initialInputParams,
+}: ToolDetailProps) {
+  const {
+    inputParams,
+    setInputParams,
+    executionResult,
+    setExecutionResult,
+    executionError,
+    setExecutionError,
+    isExecuting,
+    setIsExecuting,
+    stats,
+    setStats,
+  } = useToolState(tool.inputSchema as JsonSchema, initialInputParams);
 
   const handleExecute = async () => {
     setIsExecuting(true);
@@ -112,7 +263,7 @@ export function ToolDetailsView({
     setStats(null);
 
     const startTime = performance.now();
-    const toolCaller = createToolCaller(connectionId);
+    const toolCaller = createToolCaller(connection?.id ?? undefined);
 
     try {
       // Prepare arguments: try to parse JSON for object/array types
@@ -121,6 +272,12 @@ export function ToolDetailsView({
         Object.entries(tool.inputSchema.properties).forEach(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ([key, prop]: [string, any]) => {
+            const required = tool.inputSchema.required?.includes(key);
+            const notRequiredAndEmpty = !required && !args[key];
+            if (notRequiredAndEmpty) {
+              delete args[key];
+              return;
+            }
             if (
               (prop.type === "object" || prop.type === "array") &&
               typeof args[key] === "string"
@@ -135,7 +292,7 @@ export function ToolDetailsView({
         );
       }
 
-      const result = await toolCaller(toolName, args);
+      const result = await toolCaller(tool.name, args);
 
       const endTime = performance.now();
       const durationMs = Math.round(endTime - startTime);
@@ -167,6 +324,7 @@ export function ToolDetailsView({
 
   const handleInputChange = (key: string, value: string) => {
     setInputParams((prev) => ({ ...prev, [key]: value }));
+    onInputChange?.({ [key]: value });
   };
 
   if (!connection) {
@@ -177,12 +335,15 @@ export function ToolDetailsView({
     );
   }
 
+  if (!tool) {
+    return <div>Tool not found</div>;
+  }
   return (
     <ViewLayout onBack={onBack}>
       <ViewActions>
         <PinToSidebarButton
-          connectionId={connectionId}
-          title={tool?.title ?? beautifyToolName(toolName)}
+          connectionId={connection?.id ?? undefined}
+          title={tool?.title ?? beautifyToolName(tool.name)}
           icon="build"
         />
       </ViewActions>
@@ -190,14 +351,14 @@ export function ToolDetailsView({
       <div className="flex flex-col items-center w-full max-w-[1500px] mx-auto p-10 gap-4">
         {/* Tool Title & Description */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-medium text-foreground">{toolName}</h1>
+          <h1 className="text-2xl font-medium text-foreground">{tool.name}</h1>
           <p className="text-muted-foreground text-base">
             {tool?.description || "No description available"}
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center gap-4 py-2">
+        <div className="flex items-center gap-4 py-2 shrink-0">
           {/* MCP Status */}
           <div className="flex items-center gap-2">
             {mcp.state === "ready" ? (
@@ -243,10 +404,10 @@ export function ToolDetailsView({
         )}
 
         {/* Main Content Area */}
-        <div className="flex flex-col gap-4 w-full max-w-[800px] items-center">
+        <div className="flex flex-col gap-4 w-full max-w-[800px] items-center h-full flex-1 min-h-0">
           {/* Input Section */}
-          <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
+          <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-4 rounded-sm bg-primary/10 flex items-center justify-center">
                   <Play className="h-3 w-3 text-primary" />
@@ -269,7 +430,7 @@ export function ToolDetailsView({
               </Button>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 shrink-0 overflow-auto max-h-[40%]">
               {(mcp.state === "pending_auth" ||
                 (!connection.connection_token && mcp.state === "failed")) && (
                 <Alert variant="destructive" className="mb-4">
@@ -280,7 +441,7 @@ export function ToolDetailsView({
                     <Button
                       variant="link"
                       className="p-0 h-auto font-normal underline text-destructive"
-                      onClick={onBack}
+                      onClick={() => onBack()}
                     >
                       go back
                     </Button>{" "}
@@ -289,155 +450,188 @@ export function ToolDetailsView({
                 </Alert>
               )}
 
-              <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                Arguments
-              </div>
-
-              {tool?.inputSchema?.properties ? (
-                Object.entries(tool.inputSchema.properties).map(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  ([key, prop]: [string, any]) => (
-                    <div key={key} className="space-y-2">
-                      <div className="flex items-baseline gap-2">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {key}
-                        </label>
-                        {tool.inputSchema?.required?.includes(key) && (
-                          <span className="text-red-500 text-xs">*</span>
-                        )}
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {prop.type}
-                        </span>
-                      </div>
-                      {prop.description && (
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {prop.description}
-                        </p>
-                      )}
-                      {prop.type === "object" || prop.type === "array" ? (
-                        <Textarea
-                          className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                          value={
-                            typeof inputParams[key] === "object"
-                              ? JSON.stringify(inputParams[key], null, 2)
-                              : (inputParams[key] as string) || ""
-                          }
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          placeholder={`Enter ${key} as JSON...`}
-                        />
-                      ) : (
-                        <Input
-                          value={(inputParams[key] as string) || ""}
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          placeholder={`Enter ${key}...`}
-                        />
-                      )}
-                    </div>
-                  ),
-                )
-              ) : (
-                <div className="text-sm text-muted-foreground italic">
-                  No arguments defined in schema.
-                </div>
-              )}
-
-              {/* Fallback for no properties but valid schema */}
-              {tool?.inputSchema && !tool.inputSchema.properties && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Raw JSON Input</label>
-                  <textarea
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={
-                      typeof inputParams === "string"
-                        ? inputParams
-                        : JSON.stringify(inputParams, null, 2)
-                    }
-                    onChange={(e) => {
-                      try {
-                        setInputParams(JSON.parse(e.target.value));
-                      } catch {
-                        // Allow typing invalid JSON momentarily, but maybe store as string in a separate state if we want robust editing
-                        // For now, just let it be assuming user pastes valid JSON
-                      }
-                    }}
-                  />
-                </div>
-              )}
+              <ToolInput
+                inputSchema={tool.inputSchema as JsonSchema}
+                inputParams={inputParams}
+                setInputParams={setInputParams}
+                handleInputChange={handleInputChange}
+              />
             </div>
-          </div>
-
-          {/* Output Section */}
-          <div className="w-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-              <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                Execution Result
-              </span>
-              <div className="flex items-center bg-muted rounded-lg p-1 h-8">
-                <button
-                  onClick={() => setViewMode("json")}
-                  className={cn(
-                    "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                    viewMode === "json"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  JSON
-                </button>
-                <button
-                  onClick={() => setViewMode("view")}
-                  className={cn(
-                    "px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1",
-                    viewMode === "view"
-                      ? "bg-background shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  disabled
-                  title="Coming soon"
-                >
-                  Create view
-                  <Plus className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-
-            <div className="relative min-h-[200px] max-h-[500px] overflow-auto bg-zinc-950 text-zinc-50 p-4 font-mono text-xs">
-              {executionResult ? (
-                <pre className="whitespace-pre-wrap break-all">
-                  {JSON.stringify(executionResult, null, 2)}
-                </pre>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700">
-                  <Code className="h-8 w-8 mb-2 opacity-50" />
-                  <p>Run the tool to see results</p>
-                </div>
-              )}
-
-              {executionResult && (
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="h-8 w-8 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border-zinc-700"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        JSON.stringify(executionResult, null, 2),
-                      );
-                      toast.success("Copied to clipboard");
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+            <div className="flex-1 min-h-0">
+              <ExecutionResult
+                executionResult={executionResult}
+                placeholder="Run the tool to see results"
+              />
             </div>
           </div>
         </div>
       </div>
     </ViewLayout>
+  );
+}
+
+export function ExecutionResult({
+  executionResult,
+  placeholder,
+}: {
+  executionResult: Record<string, unknown> | null;
+  placeholder?: string;
+}) {
+  const [viewMode, setViewMode] = useState<"json" | "view">("json");
+  return (
+    <div className="w-full shadow-sm h-full border-t border-border overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
+        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+          Execution Result
+        </span>
+        <div className="flex items-center bg-muted rounded-lg p-1">
+          <button
+            onClick={() => setViewMode("json")}
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded-md transition-all",
+              viewMode === "json"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            JSON
+          </button>
+          <button
+            onClick={() => setViewMode("view")}
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1",
+              viewMode === "view"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            disabled
+            title="Coming soon"
+          >
+            Create view
+            <Plus className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+
+      <div className="relative bg-zinc-950 text-zinc-50 p-4 font-mono text-xs h-full flex-1">
+        {executionResult ? (
+          <ScrollArea className="h-full w-full">
+            <pre className="whitespace-pre-wrap break-all">
+              {JSON.stringify(executionResult, null, 2)}
+            </pre>
+          </ScrollArea>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-zinc-700 py-4 h-full">
+            <Code className="h-8 w-8 mb-2 opacity-50" />
+            {placeholder && <p>{placeholder}</p>}
+          </div>
+        )}
+
+        {executionResult && (
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-8 w-8 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border-zinc-700"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  JSON.stringify(executionResult, null, 2),
+                );
+                toast.success("Copied to clipboard");
+              }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function ToolInput({
+  inputSchema,
+  inputParams,
+  setInputParams,
+  handleInputChange,
+}: {
+  inputSchema: JsonSchema;
+  inputParams?: Record<string, unknown>;
+  setInputParams?: (params: Record<string, unknown>) => void;
+  handleInputChange?: (key: string, value: string) => void;
+}) {
+  return (
+    <>
+      {inputSchema?.properties ? (
+        Object.entries(inputSchema.properties).map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ([key, prop]: [string, any]) => (
+            <div key={key} className="space-y-2">
+              <div className="flex items-baseline gap-2">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  {key}
+                </label>
+                {inputSchema?.required?.includes(key) && (
+                  <span className="text-red-500 text-xs">*</span>
+                )}
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {prop.type}
+                </span>
+              </div>
+              {prop.description && (
+                <p className="text-xs text-muted-foreground mb-1">
+                  {prop.description}
+                </p>
+              )}
+              {prop.type === "object" || prop.type === "array" ? (
+                <Textarea
+                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                  value={
+                    typeof inputParams?.[key] === "object"
+                      ? JSON.stringify(inputParams?.[key], null, 2)
+                      : (inputParams?.[key] as string) || ""
+                  }
+                  onChange={(e) => handleInputChange?.(key, e.target.value)}
+                  placeholder={`Enter ${key} as JSON...`}
+                />
+              ) : (
+                <Input
+                  value={(inputParams?.[key] as string) || ""}
+                  onChange={(e) => handleInputChange?.(key, e.target.value)}
+                  placeholder={`Enter ${key}...`}
+                />
+              )}
+            </div>
+          ),
+        )
+      ) : (
+        <div className="text-sm text-muted-foreground italic">
+          No arguments defined in schema.
+        </div>
+      )}
+
+      {/* Fallback for no properties but valid schema */}
+      {inputSchema && !inputSchema.properties && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Raw JSON Input</label>
+          <textarea
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={
+              typeof inputParams === "string"
+                ? inputParams
+                : JSON.stringify(inputParams, null, 2)
+            }
+            onChange={(e) => {
+              try {
+                setInputParams?.(JSON.parse(e.target.value));
+              } catch {
+                // Allow typing invalid JSON momentarily, but maybe store as string in a separate state if we want robust editing
+                // For now, just let it be assuming user pastes valid JSON
+              }
+            }}
+          />
+        </div>
+      )}
+    </>
   );
 }

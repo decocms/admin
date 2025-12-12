@@ -109,6 +109,10 @@ const avatarVariants = cva("border border-border", {
       "2xl": "w-20 h-20 text-5xl font-semibold",
       "3xl": "w-32 h-32 text-7xl font-semibold",
     },
+    bg: {
+      primary: "bg-primary",
+      secondary: "bg-secondary",
+    },
   },
   compoundVariants: [
     // Square avatar roundedness based on size
@@ -185,6 +189,10 @@ interface BaseAvatarProps extends HTMLAttributes<HTMLDivElement> {
    * The size of the avatar
    */
   size?: "3xs" | "2xs" | "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
+  /**
+   * The background color of the avatar
+   */
+  bg?: "primary" | "secondary";
 }
 
 /**
@@ -198,6 +206,7 @@ function UnifiedAvatar({
   size = "base",
   objectFit = "cover",
   className,
+  bg,
   muted = false,
   ...props
 }: BaseAvatarProps) {
@@ -232,7 +241,8 @@ function UnifiedAvatar({
         <div
           className={cn(
             "flex items-center justify-center w-full h-full",
-            fallbackColor,
+            !bg && fallbackColor,
+            bg && avatarVariants({ bg }),
           )}
         >
           <Icon name={iconName} size={getIconSize(size)} />
@@ -279,6 +289,7 @@ export function Avatar({
   fallback,
   objectFit = "cover",
   className,
+  bg,
   muted = false,
   ...props
 }: AvatarProps) {
@@ -287,6 +298,7 @@ export function Avatar({
       shape={shape}
       url={url}
       fallback={fallback}
+      bg={bg}
       size={size ?? "base"}
       objectFit={objectFit}
       className={className}

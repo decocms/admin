@@ -5,7 +5,7 @@
  * Provides caching, loading states, and error handling out of the box.
  */
 
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ToolCaller } from "../../tools/client";
 import { KEYS } from "../lib/query-keys";
 
@@ -125,5 +125,28 @@ export function useSuspenseToolCall<TInput, TOutput>(
     },
     staleTime,
     refetchInterval,
+  });
+}
+
+export interface UseToolCallMutationOptions {
+  toolCaller: ToolCaller;
+  toolName: string;
+}
+export function useToolCallMutation<TInput>(
+  options: UseToolCallMutationOptions,
+) {
+  const { toolCaller, toolName } = options;
+
+  return useMutation({
+    mutationFn: async (input: TInput) => {
+      const result = await toolCaller(toolName, input);
+      return result;
+    },
+    onSuccess: (data) => {
+      console.log("tool call mutation success", data);
+    },
+    onError: (error) => {
+      console.error("tool call mutation error", error);
+    },
   });
 }

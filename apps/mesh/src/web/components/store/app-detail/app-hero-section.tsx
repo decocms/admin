@@ -10,6 +10,7 @@ interface AppHeroSectionProps {
   itemVersions: RegistryItem[];
   isInstalling: boolean;
   onInstall: (versionIndex?: number) => void;
+  canInstall?: boolean;
 }
 
 export function AppHeroSection({
@@ -17,6 +18,7 @@ export function AppHeroSection({
   itemVersions,
   isInstalling,
   onInstall,
+  canInstall = true,
 }: AppHeroSectionProps) {
   const [showVersions, setShowVersions] = useState(false);
   const [selectedVersionIndex, setSelectedVersionIndex] = useState<number>(0);
@@ -93,8 +95,9 @@ export function AppHeroSection({
         </div>
 
         {/* Install Button */}
-        <div className="shrink-0 relative" ref={versionDropdownRef}>
-          {itemVersions.length > 1 ? (
+        {canInstall ? (
+          <div className="shrink-0 relative" ref={versionDropdownRef}>
+            {itemVersions.length > 1 ? (
             <>
               <Button
                 variant="brand"
@@ -179,7 +182,12 @@ export function AppHeroSection({
               )}
             </Button>
           )}
-        </div>
+          </div>
+        ) : (
+          <div className="shrink-0 px-4 py-2 text-sm text-muted-foreground bg-muted rounded-lg">
+            Cannot be installed
+          </div>
+        )}
       </div>
     </div>
   );

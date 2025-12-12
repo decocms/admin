@@ -32,6 +32,7 @@ import {
   extractItemsFromResponse,
 } from "@/web/utils/registry-utils";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createToolCaller } from "@/tools/client";
@@ -349,6 +350,9 @@ export default function StoreAppDetail() {
     return null;
   }
 
+  // Check if app can be installed (must have remotes)
+  const canInstall = (selectedItem?.server?.remotes?.length ?? 0) > 0;
+
   return (
     <div className="flex flex-col h-full border-l border-border">
       {/* Header */}
@@ -358,12 +362,21 @@ export default function StoreAppDetail() {
       <div className="flex-1 overflow-y-auto pt-10 h-full">
         <div className="h-full">
           <div className="max-w-7xl mx-auto h-full">
+            {/* Not installable state */}
+            {!canInstall && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                <Icon name="info" size={16} className="inline mr-2" />
+                This app cannot be installed - no installation method available.
+              </div>
+            )}
+
             {/* SECTION 1: Hero (Full Width) */}
             <AppHeroSection
               data={data}
               itemVersions={[selectedItem]}
               isInstalling={isInstalling}
               onInstall={handleInstall}
+              canInstall={canInstall}
             />
 
             {/* SECTION 2 & 3: Two Column Layout */}

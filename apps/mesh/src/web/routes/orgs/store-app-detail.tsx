@@ -198,13 +198,14 @@ export default function StoreAppDetail() {
     toolName = versionsToolName || getToolName;
     // Different registries expect different parameters:
     // - Official registry: 'name' parameter
-    // - Deco registry: 'id' parameter
-    // Pass both to support multiple registry types
-    // The API will use whichever one is expected
-    toolInputParams = {
-      name: serverName,
-      id: itemId || serverName,
-    };
+    // - Deco registry: 'id' parameter (only - don't send name)
+    if (itemId) {
+      // Deco-style: only send id
+      toolInputParams = { id: itemId };
+    } else {
+      // Official registry style: send name
+      toolInputParams = { name: serverName };
+    }
   } else {
     // Use LIST tool
     toolName = listToolName;

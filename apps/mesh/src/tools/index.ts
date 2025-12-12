@@ -45,6 +45,9 @@ export const ALL_TOOLS = [
   // Monitoring tools
   MonitoringTools.MONITORING_LOGS_LIST,
   MonitoringTools.MONITORING_STATS,
+  // API Key tools
+  ApiKeyTools.API_KEY_CREATE,
+  ApiKeyTools.API_KEY_LIST,
   ApiKeyTools.API_KEY_UPDATE,
   ApiKeyTools.API_KEY_DELETE,
 ] as const satisfies { name: ToolName }[];

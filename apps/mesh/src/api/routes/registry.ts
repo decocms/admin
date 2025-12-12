@@ -8,13 +8,8 @@
 import { Hono } from "hono";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { MeshContext } from "../../core/mesh-context";
 
-type Variables = {
-  meshContext: MeshContext;
-};
-
-const app = new Hono<{ Variables: Variables }>();
+const app = new Hono();
 
 /**
  * POST /api/registry/tools

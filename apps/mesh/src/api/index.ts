@@ -224,9 +224,10 @@ export function createApp(options: CreateAppOptions = {}) {
   app.use("*", async (c, next) => {
     const path = c.req.path;
 
-    // Skip MeshContext for auth endpoints, static pages, health check, and metrics
+    // Skip MeshContext for auth endpoints, registry tools, static pages, health check, and metrics
     if (
       path.startsWith("/api/auth/") ||
+      path.startsWith("/api/registry/") ||
       path === "/health" ||
       path === "/metrics" ||
       path.startsWith("/.well-known/")

@@ -239,8 +239,8 @@ export default function StoreAppDetail() {
     registryId?: string;
   };
 
-  // Track active tab - initially "tools"
-  const [activeTabId, setActiveTabId] = useState<string>("tools");
+  // Track active tab - initially "readme" if available, otherwise first available tab
+  const [activeTabId, setActiveTabId] = useState<string>("readme");
 
   // Track search and sorting for tools
   const [search, setSearch] = useState<string>("");

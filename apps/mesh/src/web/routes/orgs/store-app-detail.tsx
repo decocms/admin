@@ -333,11 +333,12 @@ export default function StoreAppDetail() {
       availableTabs[0]?.id ||
       "overview";
 
-  const handleInstall = async () => {
-    if (!selectedItem || !org || !session?.user?.id) return;
+  const handleInstall = async (versionIndex?: number) => {
+    const version = allVersions[versionIndex ?? 0] || selectedItem;
+    if (!version || !org || !session?.user?.id) return;
 
     const connectionData = extractConnectionData(
-      selectedItem,
+      version,
       org.id,
       session.user.id,
     );
@@ -347,12 +348,19 @@ export default function StoreAppDetail() {
       return;
     }
 
+    // Build title with version and LATEST badge
+    const versionNumber = version.server?.version;
+    const isLatest = (version._meta?.["io.modelcontextprotocol.registry/official"] as any)?.isLatest;
+    const titleWithVersion = versionNumber 
+      ? `${connectionData.title} v${versionNumber}${isLatest ? " (LATEST)" : ""}`
+      : connectionData.title;
+
     setIsInstalling(true);
     try {
       const tx = connectionsCollection.insert(connectionData);
       await tx.isPersisted.promise;
 
-      toast.success(`${connectionData.title} installed successfully`);
+      toast.success(`${titleWithVersion} installed successfully`);
 
       // Use the deterministic ID to directly look up the connection
       const newConnection = connectionsCollection.get(connectionData.id);

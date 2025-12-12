@@ -138,11 +138,16 @@ export default function StoreAppDetail() {
   const navigate = useNavigate();
   // Get appName from the child route (just /$appName)
   const { appName } = useParams({ strict: false }) as { appName?: string };
-  const { registryId: registryIdParam, serverName } = useSearch({
+  const {
+    registryId: registryIdParam,
+    serverName,
+    itemId,
+  } = useSearch({
     strict: false,
   }) as {
     registryId?: string;
     serverName?: string;
+    itemId?: string;
   };
 
   // Track active tab - initially "readme"
@@ -196,7 +201,10 @@ export default function StoreAppDetail() {
     // - Deco registry: 'id' parameter
     // Pass both to support multiple registry types
     // The API will use whichever one is expected
-    toolInputParams = { name: serverName, id: serverName };
+    toolInputParams = {
+      name: serverName,
+      id: itemId || serverName,
+    };
   } else {
     // Use LIST tool
     toolName = listToolName;

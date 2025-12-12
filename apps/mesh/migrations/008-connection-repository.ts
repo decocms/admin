@@ -19,3 +19,4 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   // Remove repository field
   await db.schema.alterTable("connections").dropColumn("repository").execute();
 }
+

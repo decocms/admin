@@ -341,7 +341,10 @@ function SettingsTab({
   // oxlint-disable-next-line ban-use-effect/ban-use-effect
   useEffect(() => {
     const checkOauth = async () => {
-      const isTokenValid = await isOAuthTokenValid(connection.connection_url, connection?.connection_token);
+      const isTokenValid = await isOAuthTokenValid(
+        connection.connection_url,
+        connection?.connection_token,
+      );
       setIsOauthNecessaryResult(!isTokenValid);
     };
     checkOauth();
@@ -374,9 +377,7 @@ function SettingsTab({
   };
 
   const handleAuthenticate = async () => {
-    const { token, error } = await authenticateMcp(
-      connection.connection_url,
-    );
+    const { token, error } = await authenticateMcp(connection.connection_url);
     if (error) {
       toast.error(`Authentication failed: ${error}`);
       setIsSavingConnection(false);
@@ -390,7 +391,7 @@ function SettingsTab({
     }
 
     toast.success("Authentication successful");
-  }
+  };
 
   const handleSaveMcpConfig = async () => {
     setIsSavingConfig(true);
@@ -455,25 +456,25 @@ function SettingsTab({
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
-        {(
-          isOauthNecessaryResult ? (
-            <div className="w-3/5 min-w-0 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4 max-w-md text-center">
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-lg font-semibold">Authentication Required</h3>
-                  <p className="text-sm text-muted-foreground">
-                    This connection requires OAuth authentication to access resources.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleAuthenticate}
-                  size="lg"
-                >
-                  Authenticate
-                </Button>
+        {isOauthNecessaryResult ? (
+          <div className="w-3/5 min-w-0 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4 max-w-md text-center">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold">
+                  Authentication Required
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  This connection requires OAuth authentication to access
+                  resources.
+                </p>
               </div>
+              <Button onClick={handleAuthenticate} size="lg">
+                Authenticate
+              </Button>
             </div>
-          ) : hasMcpBinding && (
+          </div>
+        ) : (
+          hasMcpBinding && (
             <div className="w-3/5 min-w-0 overflow-auto">
               <McpConfigurationForm
                 formState={mcpFormState}
@@ -482,7 +483,7 @@ function SettingsTab({
                 isLoading={isMcpConfigLoading}
                 error={mcpConfigError}
               />
-            </div>            
+            </div>
           )
         )}
       </div>

@@ -212,15 +212,43 @@ export default function StoreAppDetail() {
   });
 
   // Extract items and totalCount from results
-  const items = extractItemsFromResponse<RegistryItem>(listResults);
+  let items: RegistryItem[] = [];
+  let allVersions: RegistryItem[] = []; // Store all versions for dropdown
   let totalCount: number | null = null;
 
-  if (listResults && typeof listResults === "object" && listResults !== null) {
-    if (
-      "totalCount" in listResults &&
-      typeof listResults.totalCount === "number"
-    ) {
-      totalCount = listResults.totalCount;
+  if (listResults) {
+    if (Array.isArray(listResults)) {
+      items = listResults;
+    } else if (typeof listResults === "object" && listResults !== null) {
+      // Check for totalCount in the response
+      if (
+        "totalCount" in listResults &&
+        typeof listResults.totalCount === "number"
+      ) {
+        totalCount = listResults.totalCount;
+      }
+
+      // Find the items array - supports "versions", "servers", "items" keys
+      let itemsKey: string | undefined;
+      if ("versions" in listResults && Array.isArray(listResults.versions)) {
+        itemsKey = "versions";
+      } else if ("servers" in listResults && Array.isArray(listResults.servers)) {
+        itemsKey = "servers";
+      } else {
+        itemsKey = Object.keys(listResults).find((key) =>
+          Array.isArray(listResults[key as keyof typeof listResults]),
+        );
+      }
+
+      if (itemsKey) {
+        items = listResults[
+          itemsKey as keyof typeof listResults
+        ] as RegistryItem[];
+        // If VERSIONS tool, store all versions for dropdown
+        if (itemsKey === "versions" || toolName?.includes("VERSIONS")) {
+          allVersions = items;
+        }
+      }
     }
   }
 
@@ -392,7 +420,7 @@ export default function StoreAppDetail() {
             {/* SECTION 1: Hero (Full Width) */}
             <AppHeroSection
               data={data}
-              itemVersions={[selectedItem]}
+              itemVersions={allVersions.length > 0 ? allVersions : [selectedItem]}
               isInstalling={isInstalling}
               onInstall={handleInstall}
               canInstall={canInstall}

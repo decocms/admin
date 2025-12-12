@@ -23,6 +23,7 @@ const CreateInputSchema = z.object({
   ),
 });
 
+export type CreateConnectionInput = z.infer<typeof CreateInputSchema>;
 /**
  * Output schema for created connection
  */

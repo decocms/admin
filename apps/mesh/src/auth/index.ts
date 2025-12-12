@@ -27,11 +27,13 @@ import {
   defaultStatements,
 } from "better-auth/plugins/organization/access";
 
+import { Self } from "@/api/routes/management";
 import { config } from "@/core/config";
 import { createAccessControl, Role } from "@decocms/better-auth/plugins/access";
 import { getDatabaseUrl, getDbDialect } from "../database";
 import { createEmailSender, findEmailProvider } from "./email-providers";
 import { createMagicLinkConfig } from "./magic-link";
+import { defaultOrgMcps } from "./org";
 import { createSSOConfig } from "./sso";
 
 const allTools = Object.values(getToolsByCategory())
@@ -107,6 +109,19 @@ const plugins = [
   // Organization plugin for multi-tenant organization management
   // https://www.better-auth.com/docs/plugins/organization
   organization({
+    organizationCreation: {
+      afterCreate: async (_data, req) => {
+        if (!req) {
+          return;
+        }
+        const selfAPI = await Self.forRequest(req);
+        await Promise.all(defaultOrgMcps.map((mcp) => mcp(selfAPI))).catch(
+          (err) => {
+            console.error("error creating default MCP connections", err);
+          },
+        );
+      },
+    },
     ac,
     creatorRole: "owner",
     allowUserToCreateOrganization: true, // Users can create organizations by default

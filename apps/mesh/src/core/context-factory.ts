@@ -10,22 +10,20 @@
  */
 
 import type { Meter, Tracer } from "@opentelemetry/api";
-import type { Context } from "hono";
 import type { Kysely } from "kysely";
+import { verifyMeshToken } from "../auth/jwt";
+import { CredentialVault } from "../encryption/credential-vault";
 import { AuditLogStorage } from "../storage/audit-log";
 import { ConnectionStorage } from "../storage/connection";
 import { SqlMonitoringStorage } from "../storage/monitoring";
 import { OrganizationSettingsStorage } from "../storage/organization-settings";
-import type { Database } from "../storage/types";
+import type { Database, Permission } from "../storage/types";
 import { AccessControl } from "./access-control";
 import type {
   BetterAuthInstance,
   BoundAuthClient,
   MeshContext,
 } from "./mesh-context";
-import { CredentialVault } from "../encryption/credential-vault";
-import { verifyMeshToken } from "../auth/jwt";
-import type { Permission } from "../storage/types";
 
 // ============================================================================
 // Configuration
@@ -340,7 +338,7 @@ async function fetchRolePermissions(
  * 2. Browser sessions → no permissions stored (use Better Auth's hasPermission API)
  */
 async function authenticateRequest(
-  c: Pick<Context, "req">,
+  req: Request,
   auth: BetterAuthInstance,
   db: Kysely<Database>,
 ): Promise<{
@@ -350,12 +348,12 @@ async function authenticateRequest(
   apiKeyId?: string;
   organization?: OrganizationContext;
 }> {
-  const authHeader = c.req.header("Authorization");
+  const authHeader = req.headers.get("Authorization");
 
   // Try OAuth session first (getMcpSession)
   try {
     const session = (await auth.api.getMcpSession({
-      headers: c.req.raw.headers,
+      headers: req.headers,
     })) as OAuthSession | null;
 
     if (session) {
@@ -461,7 +459,7 @@ async function authenticateRequest(
 
   try {
     const session = await auth.api.getSession({
-      headers: c.req.raw.headers,
+      headers: req.headers,
     });
 
     if (session) {
@@ -472,7 +470,7 @@ async function authenticateRequest(
         // Get full organization data (includes members with roles)
         const orgData = await auth.api
           .getFullOrganization({
-            headers: c.req.raw.headers,
+            headers: req.headers,
           })
           .catch(() => null);
 
@@ -522,6 +520,17 @@ async function authenticateRequest(
 // Context Factory
 // ============================================================================
 
+let createContextFn: (req: Request) => Promise<MeshContext>;
+
+export const ContextFactory = {
+  set: (fn: (req: Request) => Promise<MeshContext>) => {
+    createContextFn = fn;
+  },
+  create: async (req: Request) => {
+    return await createContextFn(req);
+  },
+};
+
 /**
  * Create a context factory function
  *
@@ -530,7 +539,7 @@ async function authenticateRequest(
  */
 export function createMeshContextFactory(
   config: MeshContextConfig,
-): (c: Pick<Context, "req">) => Promise<MeshContext> {
+): (c: Request) => Promise<MeshContext> {
   // Create vault instance for credential encryption
   const vault = new CredentialVault(config.encryption.key);
 
@@ -547,14 +556,14 @@ export function createMeshContextFactory(
   };
 
   // Return factory function
-  return async (c: Pick<Context, "req">): Promise<MeshContext> => {
+  return async (req: Request): Promise<MeshContext> => {
     // Authenticate request (OAuth session or API key)
-    const authResult = await authenticateRequest(c, config.auth, config.db);
+    const authResult = await authenticateRequest(req, config.auth, config.db);
 
     // Create bound auth client (encapsulates HTTP headers and auth context)
     const boundAuth = createBoundAuthClient({
       auth: config.auth,
-      headers: c.req.raw.headers,
+      headers: req.headers,
       role: authResult.role,
       permissions: authResult.permissions,
     });
@@ -576,7 +585,7 @@ export function createMeshContextFactory(
     const organization = authResult.organization;
 
     // Derive base URL from request
-    const url = new URL(c.req.url);
+    const url = new URL(req.url);
     const baseUrl = process.env.BASE_URL ?? `${url.protocol}//${url.host}`;
 
     // Create AccessControl instance with bound auth client
@@ -604,9 +613,11 @@ export function createMeshContextFactory(
       metadata: {
         requestId: crypto.randomUUID(),
         timestamp: new Date(),
-        userAgent: c.req.header("User-Agent"),
+        userAgent: req.headers.get("User-Agent") ?? undefined,
         ipAddress:
-          c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For"),
+          (req.headers.get("CF-Connecting-IP") ||
+            req.headers.get("X-Forwarded-For")) ??
+          undefined,
       },
     };
   };

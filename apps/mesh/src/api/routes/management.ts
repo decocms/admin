@@ -4,7 +4,9 @@
  * Exposes MCP Mesh management tools via MCP protocol at /mcp endpoint
  * Tools: PROJECT_CREATE, PROJECT_LIST, CONNECTION_CREATE, etc.
  */
+import { bindingClient } from "@decocms/bindings/client";
 import { Hono } from "hono";
+import { ContextFactory } from "../../core/context-factory";
 import type { MeshContext } from "../../core/mesh-context";
 import { ALL_TOOLS } from "../../tools";
 import { mcpServer, type ToolDefinition } from "../utils/mcp";
@@ -16,15 +18,7 @@ type Variables = {
 
 const app = new Hono<{ Variables: Variables }>();
 
-/**
- * MCP Server endpoint for management tools
- *
- * Route: POST /mcp
- * Exposes all PROJECT_* and CONNECTION_* tools via MCP protocol
- */
-app.all("/", async (c) => {
-  const ctx = c.get("meshContext");
-
+const managementMCP = (ctx: MeshContext) => {
   // Convert ALL_TOOLS to ToolDefinition format
   const tools: ToolDefinition[] = ALL_TOOLS.map((tool) => ({
     name: tool.name,
@@ -48,7 +42,26 @@ app.all("/", async (c) => {
     .build();
 
   // Handle the incoming MCP message
-  return server.fetch(c.req.raw);
+  return server;
+};
+
+/**
+ * MCP Server endpoint for management tools
+ *
+ * Route: POST /mcp
+ * Exposes all PROJECT_* and CONNECTION_* tools via MCP protocol
+ */
+app.all("/", async (c) => {
+  return managementMCP(c.get("meshContext")).fetch(c.req.raw);
 });
+const ManagementBinding = bindingClient(ALL_TOOLS);
+export const Self = {
+  forContext: (ctx: MeshContext) => {
+    return ManagementBinding.forClient(managementMCP(ctx));
+  },
+  forRequest: async (req: Request) => {
+    return Self.forContext(await ContextFactory.create(req));
+  },
+};
 
 export default app;

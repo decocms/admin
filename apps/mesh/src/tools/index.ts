@@ -5,6 +5,8 @@
  * Types are inferred from ALL_TOOLS - this is the source of truth.
  */
 
+import { mcpServer } from "@/api/utils/mcp";
+import { MeshContext } from "@/core/mesh-context";
 import * as ApiKeyTools from "./apiKeys";
 import * as ConnectionTools from "./connection";
 import * as DatabaseTools from "./database";
@@ -51,3 +53,30 @@ export type MCPMeshTools = typeof ALL_TOOLS;
 
 // Derive tool name type from ALL_TOOLS
 export type ToolNameFromTools = (typeof ALL_TOOLS)[number]["name"];
+
+export const managementMCP = (ctx: MeshContext) => {
+  // Convert ALL_TOOLS to ToolDefinition format
+  const tools = ALL_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    outputSchema: tool.outputSchema,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler: async (args: any) => {
+      ctx.access.setToolName(tool.name);
+      // Execute the tool with the mesh context
+      return await tool.execute(args, ctx);
+    },
+  }));
+
+  // Create and use MCP server with builder pattern
+  const server = mcpServer({
+    name: "mcp-mesh-management",
+    version: "1.0.0",
+  })
+    .withTools(tools)
+    .build();
+
+  // Handle the incoming MCP message
+  return server;
+};

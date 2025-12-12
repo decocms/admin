@@ -320,8 +320,8 @@ function createBoundAuthClient(ctx: AuthContext): BoundAuthClient {
   };
 }
 
-// Import built-in roles from auth config
-import { BUILTIN_ROLES } from "../auth";
+// Import built-in roles from separate module to avoid circular dependency
+import { BUILTIN_ROLES } from "../auth/roles";
 
 /**
  * Fetch role permissions from the database

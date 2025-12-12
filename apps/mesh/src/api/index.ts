@@ -277,7 +277,6 @@ export function createApp(options: CreateAppOptions = {}) {
   // Organizations managed via Better Auth organization plugin
   // Authentication is handled by context-factory middleware above
   app.route("/mcp", managementRoutes);
-  app.route("/mcp/self", managementRoutes);
 
   // Mount MCP proxy routes at /mcp/:connectionId
   // Connection IDs are globally unique UUIDs

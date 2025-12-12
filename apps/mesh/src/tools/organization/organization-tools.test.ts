@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import {
   ORGANIZATION_CREATE,
   ORGANIZATION_LIST,
@@ -461,7 +461,9 @@ describe("Organization Tools", () => {
 
       expect(result.members).toHaveLength(1);
       expect(result.members?.[0]?.userId).toBe("user_1");
-      expect(result.members?.[0]?.role).toEqual(["admin"]);
+      expect(result.members?.[0]?.role as unknown as string[]).toEqual([
+        "admin",
+      ]);
     });
 
     it("should support pagination", async () => {
@@ -507,7 +509,7 @@ describe("Organization Tools", () => {
         },
       });
 
-      expect(result.role).toEqual(["admin"]);
+      expect(result.role as unknown as string[]).toEqual(["admin"]);
     });
   });
 });

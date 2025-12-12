@@ -7,7 +7,7 @@
  * - Cross-organization isolation
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
 import { auth } from "../auth";
 import { createDatabase, closeDatabase } from "../database";
 import { createTestSchema } from "../storage/test-helpers";

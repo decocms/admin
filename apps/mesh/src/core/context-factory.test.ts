@@ -1,6 +1,6 @@
 /* oxlint-disable no-explicit-any */
 import type { Kysely } from "kysely";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "bun:test";
 import type { Meter, Tracer } from "@opentelemetry/api";
 import { closeDatabase, createDatabase } from "../database";
 import { createTestSchema } from "../storage/test-helpers";

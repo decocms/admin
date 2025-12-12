@@ -70,44 +70,6 @@ export function AppTabsContent({
         </div>
       )}
 
-      {/* Overview Tab Content */}
-      {effectiveActiveTabId === "overview" && (
-        <div className="p-4 bg-background">
-          <p className="text-muted-foreground leading-relaxed">
-            {data.description || "No overview available"}
-          </p>
-        </div>
-      )}
-
-      {/* Models Tab Content */}
-      {effectiveActiveTabId === "models" && data.models && (
-        <div className="p-4 bg-background text-muted-foreground">
-          <p>Models information</p>
-        </div>
-      )}
-
-      {/* Emails Tab Content */}
-      {effectiveActiveTabId === "emails" && data.emails && (
-        <div className="p-4 bg-background text-muted-foreground">
-          <p>Email configuration available</p>
-        </div>
-      )}
-
-      {/* Analytics Tab Content */}
-      {effectiveActiveTabId === "analytics" &&
-        (data.analytics as unknown) != null && (
-          <div className="p-4 bg-background text-muted-foreground">
-            <p>Analytics configuration available</p>
-          </div>
-        )}
-
-      {/* CDN Tab Content */}
-      {effectiveActiveTabId === "cdn" && (data.cdn as unknown) != null && (
-        <div className="p-4 bg-background text-muted-foreground">
-          <p>CDN configuration available</p>
-        </div>
-      )}
-
       {/* README Tab Content */}
       {effectiveActiveTabId === "readme" && (
         <div className="flex-1 overflow-y-auto bg-background">

@@ -279,8 +279,11 @@ function ConnectionInspectorViewContent() {
     );
   }
 
-  // Check if connection has repository info for README tab
-  const hasRepository = !!connection.repository?.url;
+  // Check if connection has repository info for README tab (stored in metadata)
+  const repository = connection.metadata?.repository as
+    | { url?: string; source?: string; subfolder?: string }
+    | undefined;
+  const hasRepository = !!repository?.url;
 
   const tabs = [
     { id: "settings", label: "Settings" },
@@ -345,7 +348,7 @@ function ConnectionInspectorViewContent() {
             </div>
           ) : activeTabId === "readme" && hasRepository ? (
             <div className="flex-1 overflow-y-auto bg-background">
-              <ReadmeViewer repository={connection.repository} />
+              <ReadmeViewer repository={repository} />
             </div>
           ) : (
             <ErrorBoundary>

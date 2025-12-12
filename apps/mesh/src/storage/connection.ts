@@ -22,17 +22,9 @@ const JSON_FIELDS = [
   "oauth_config",
   "configuration_scopes",
   "metadata",
-  "repository",
   "tools",
   "bindings",
 ] as const;
-
-/** Repository type for README support */
-type Repository = {
-  url?: string;
-  source?: string;
-  subfolder?: string;
-};
 
 /** Raw database row type */
 type RawConnectionRow = {
@@ -52,7 +44,6 @@ type RawConnectionRow = {
   configuration_state: string | null; // Encrypted
   configuration_scopes: string | string[] | null;
   metadata: string | Record<string, unknown> | null;
-  repository: string | Repository | null;
   tools: string | ToolDefinition[] | null;
   bindings: string | string[] | null;
   status: "active" | "inactive" | "error";
@@ -268,11 +259,6 @@ export class ConnectionStorage implements ConnectionStoragePort {
       configuration_state: decryptedConfigState,
       configuration_scopes: parseJson<string[]>(row.configuration_scopes),
       metadata: parseJson<Record<string, unknown>>(row.metadata),
-      repository: parseJson<{
-        url?: string;
-        source?: string;
-        subfolder?: string;
-      }>(row.repository),
       tools: parseJson<ToolDefinition[]>(row.tools),
       bindings: parseJson<string[]>(row.bindings),
       status: row.status,

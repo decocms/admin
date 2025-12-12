@@ -233,7 +233,6 @@ function OrgMcpsContent() {
           connection_headers: null,
           oauth_config: null,
           configuration_state: null,
-          repository: null,
           metadata: null,
           tools: null,
           bindings: null,

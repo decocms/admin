@@ -81,7 +81,7 @@ export function extractConnectionData(
     | null
     | undefined;
 
-  // Extract repository info for README support
+  // Extract repository info for README support (stored in metadata)
   const repository = server?.repository
     ? {
         url: server.repository.url,
@@ -104,7 +104,6 @@ export function extractConnectionData(
     oauth_config: oauthConfig,
     configuration_state: configState ?? null,
     configuration_scopes: configScopes ?? null,
-    repository,
     metadata: {
       ...appMetadata,
       source: "store",
@@ -113,6 +112,7 @@ export function extractConnectionData(
       scopeName: meshMeta?.scopeName ?? null,
       toolsCount: publisherMeta?.tools?.length ?? 0,
       publishedAt: meshMeta?.publishedAt ?? null,
+      repository, // Repository info for README display
     },
     created_at: now,
     updated_at: now,

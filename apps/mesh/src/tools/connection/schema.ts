@@ -82,15 +82,7 @@ export const ConnectionEntitySchema = z.object({
     .optional()
     .describe("Configuration scopes"),
 
-  metadata: z.record(z.unknown()).nullable().describe("Additional metadata"),
-  repository: z
-    .object({
-      url: z.string().optional(),
-      source: z.string().optional(),
-      subfolder: z.string().optional(),
-    })
-    .nullable()
-    .describe("Repository info for README"),
+  metadata: z.record(z.unknown()).nullable().describe("Additional metadata (includes repository info)"),
   tools: z
     .array(ToolDefinitionSchema)
     .nullable()
@@ -129,7 +121,6 @@ export const ConnectionCreateDataSchema = ConnectionEntitySchema.omit({
   configuration_state: true,
   configuration_scopes: true,
   metadata: true,
-  repository: true,
 });
 
 export type ConnectionCreateData = z.infer<typeof ConnectionCreateDataSchema>;

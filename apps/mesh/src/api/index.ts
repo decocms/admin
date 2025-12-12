@@ -16,10 +16,10 @@ import { createMeshContextFactory } from "../core/context-factory";
 import type { MeshContext } from "../core/mesh-context";
 import { getDb } from "../database";
 import type { Database } from "../storage/types";
-import { meter, tracer, prometheusExporter } from "../observability";
+import { meter, prometheusExporter, tracer } from "../observability";
 import { PrometheusSerializer } from "@opentelemetry/exporter-prometheus";
 import managementRoutes from "./routes/management";
-import proxyRoutes from "./routes/proxy";
+import proxyRoutes, { createMCPProxy } from "./routes/proxy";
 import authRoutes from "./routes/auth";
 import modelsRoutes from "./routes/models";
 import { applyAssetServerRoutes } from "@decocms/runtime/asset-server";
@@ -248,6 +248,35 @@ export function createApp(options: CreateAppOptions = {}) {
   // ============================================================================
 
   app.route("/api", modelsRoutes);
+
+  app.post("/api/scheduler", async (c) => {
+    try {
+      const meshContext = c.var.meshContext;
+      const connectionId = c.req.query("connectionId");
+      const sub = c.req.query("sub");
+      const toolName = c.req.query("toolName");
+      if (!connectionId || !sub || !toolName) {
+        return c.status(400);
+      }
+      const proxy = await createMCPProxy(connectionId, {
+        ...meshContext,
+        auth: {
+          ...meshContext.auth,
+          user: { id: sub, role: "owner" }, // lol someone pls help me here
+        },
+        baseUrl: meshContext.authInstance.options.baseURL,
+        toolName: toolName,
+      });
+      await proxy.client.callTool({
+        name: toolName,
+        arguments: {},
+      });
+      return c.status(204);
+    } catch (error) {
+      console.error("Error calling tool:", error);
+      return c.status(500);
+    }
+  });
 
   app.use("/mcp/:connectionId?", async (c, next) => {
     const meshContext = c.var.meshContext;

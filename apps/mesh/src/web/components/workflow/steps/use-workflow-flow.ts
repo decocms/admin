@@ -20,6 +20,7 @@ export type StepStyle =
   | "pending"
   | "waiting_for_signal"
   | "creating"
+  | "default"
   | undefined;
 
 export interface StepResult {
@@ -35,7 +36,6 @@ export interface StepNodeData extends Record<string, unknown> {
   step: Step;
   stepResult: StepResult | null;
   isFetching: boolean;
-  style: StepStyle;
 }
 
 export interface TriggerNodeData extends Record<string, unknown> {
@@ -110,7 +110,6 @@ function computeNodePositions(
  */
 export function useWorkflowNodes(): WorkflowNode[] {
   const steps = useWorkflowSteps();
-
   return (() => {
     const positions = computeNodePositions(steps);
 
@@ -135,33 +134,13 @@ export function useWorkflowNodes(): WorkflowNode[] {
     const stepNodes: WorkflowNode[] = steps
       .filter((step) => !!step && step.name !== "Manual")
       .map((step) => {
-        const stepResult = {
-          output: null,
-          error: null,
-          created_at: null,
-          completed_at_epoch_ms: null,
-        };
-        console.log("🚀 ~ stepNodes ~ step:", step);
-        console.log("🚀 ~ stepNodes ~ stepResult:", stepResult);
-        const action = step.action;
-        const isSignal = action && "signalName" in action;
-        const isConsumed = !!stepResult?.output;
-
-        let style: StepStyle = undefined;
-        if (stepResult?.error) style = "error";
-        else if (!stepResult?.output) style = "pending";
-        else if (stepResult?.output) style = "success";
-        else if (isSignal && !isConsumed) style = "waiting_for_signal";
-
         return {
           id: step.name,
           type: "step",
           position: positions.get(step.name) ?? { x: 0, y: 0 },
           data: {
             step,
-            stepResult: stepResult as unknown as StepResult,
             isFetching: false,
-            style,
           } as StepNodeData,
           draggable: true,
         };

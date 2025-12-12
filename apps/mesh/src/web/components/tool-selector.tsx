@@ -8,7 +8,7 @@ import {
   CommandInput,
 } from "@deco/ui/components/command.js";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 
 export interface ToolSelectorProps {
@@ -132,9 +132,11 @@ export function ToolSelector({
 export function ItemCard({
   item,
   selected,
+  backButton = false,
 }: {
   item: { icon: string | null; title: string };
   selected: boolean;
+  backButton?: boolean;
 }) {
   return (
     <div
@@ -143,6 +145,14 @@ export function ItemCard({
         selected && "bg-primary/10 hover:bg-primary/20",
       )}
     >
+      {backButton && (
+        <ChevronLeft
+          className={cn(
+            "h-4 w-4 shrink-0 transition-colors",
+            selected ? "text-foreground" : "text-muted-foreground/50",
+          )}
+        />
+      )}
       {item.icon !== null && (
         <IntegrationIcon icon={item.icon ?? null} name={item.title} size="sm" />
       )}
@@ -151,12 +161,6 @@ export function ItemCard({
           {item.title}
         </p>
       </div>
-      <ChevronRight
-        className={cn(
-          "h-4 w-4 shrink-0 transition-colors",
-          selected ? "text-foreground" : "text-muted-foreground/50",
-        )}
-      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import {
   useCurrentStep,
   useDraftStep,
   useIsAddingStep,
+  useTrackingExecutionId,
   useWorkflowActions,
 } from "@/web/stores/workflow";
 import {
@@ -27,6 +28,7 @@ import { Button } from "@deco/ui/components/button.js";
 import { ExecutionResult, ToolDetail, useTool } from "../details/tool";
 import { Loader2 } from "lucide-react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
+import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
 
 export function WorkflowTabs() {
   return (
@@ -58,6 +60,37 @@ export function WorkflowTabs() {
   );
 }
 
+function useStepResult(executionId: string, stepId: string) {
+  const { item: pollingExecution } = usePollingWorkflowExecution(executionId);
+  return pollingExecution?.step_results.find((s) => s.step_id === stepId);
+}
+
+function OutputTabContent({
+  executionId,
+  stepId,
+}: {
+  executionId: string;
+  stepId: string;
+}) {
+  const stepResult = useStepResult(executionId, stepId);
+  if (!stepResult) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="text-muted-foreground text-sm">Loading execution...</p>
+      </div>
+    );
+  }
+  return (
+    <div className="h-full">
+      <ExecutionResult
+        placeholder="No output found"
+        executionResult={stepResult.output as Record<string, unknown> | null}
+      />
+    </div>
+  );
+}
+
 export function StepTabs() {
   const activeTab = useActiveTab();
   const { setActiveTab, updateStep } = useWorkflowActions();
@@ -65,6 +98,7 @@ export function StepTabs() {
   const handleTabChange = (tab: "input" | "output" | "action") => {
     setActiveTab(tab);
   };
+  const selectedExecutionId = useTrackingExecutionId();
 
   return (
     <Tabs
@@ -72,7 +106,7 @@ export function StepTabs() {
       onValueChange={(value) =>
         handleTabChange(value as "input" | "output" | "action")
       }
-      className="w-1/3 h-full bg-sidebar border-l border-border"
+      className="w-1/3 h-full bg-sidebar border-l border-border gap-0"
     >
       <TabsList className="w-full rounded-none bg-transparent p-0 h-10">
         <TabsTrigger
@@ -85,16 +119,18 @@ export function StepTabs() {
         >
           Input
         </TabsTrigger>
-        <TabsTrigger
-          className={cn(
-            "border-0 border-b border-border p-0 h-full rounded-none w-full",
-            activeTab === "output" && "border-foreground",
-          )}
-          value="output"
-          onClick={() => setActiveTab("output")}
-        >
-          Output
-        </TabsTrigger>
+        {selectedExecutionId && (
+          <TabsTrigger
+            className={cn(
+              "border-0 border-b border-border p-0 h-full rounded-none w-full",
+              activeTab === "output" && "border-foreground",
+            )}
+            value="output"
+            onClick={() => setActiveTab("output")}
+          >
+            Output
+          </TabsTrigger>
+        )}
         <TabsTrigger
           className={cn(
             "border-0 border-b border-border p-0 h-full rounded-none w-full",
@@ -107,11 +143,11 @@ export function StepTabs() {
         </TabsTrigger>
       </TabsList>
       <TabsContent className="flex-1 h-[calc(100%-40px)]" value={activeTab}>
-        {currentStep && activeTab === "output" && (
+        {currentStep && activeTab === "output" && selectedExecutionId && (
           <div className="h-full">
-            <ExecutionResult
-              placeholder="No output found"
-              executionResult={{}}
+            <OutputTabContent
+              executionId={selectedExecutionId}
+              stepId={currentStep.name}
             />
           </div>
         )}
@@ -145,7 +181,12 @@ function ActionTab({
 }) {
   const { updateStep } = useWorkflowActions();
   if ("toolName" in step.action) {
-    return <ToolAction step={step as Step & { action: ToolCallAction }} />;
+    return (
+      <ToolAction
+        key={step.name}
+        step={step as Step & { action: ToolCallAction }}
+      />
+    );
   } else if ("code" in step.action) {
     return (
       <MonacoCodeEditor
@@ -181,19 +222,17 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(connectionId ?? null);
-  const [selectedToolName, setSelectedToolName] = useState<string | null>(
-    toolName ?? null,
-  );
+  const [isUsingTool, setIsUsingTool] = useState(!!toolName);
   const { updateStep } = useWorkflowActions();
   const currentStep = useCurrentStep();
   const isAddingStep = useIsAddingStep();
   const connections = useConnections();
 
   const updateStepAction = (newToolName: string | null) => {
-    setSelectedToolName(newToolName);
     if (isAddingStep) return;
     if (!currentStep?.name) return;
     if (!selectedConnectionId || !newToolName) return;
+    setIsUsingTool(true);
     updateStep(currentStep.name, {
       action: {
         ...step.action,
@@ -205,8 +244,6 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
-      {currentStep?.name}
-
       <div className="">
         {!selectedConnectionId && (
           <ConnectionSelector
@@ -216,7 +253,7 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
             }}
           />
         )}
-        {!selectedToolName && selectedConnectionId && (
+        {!isUsingTool && selectedConnectionId && (
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col border-t border-border">
             <div onClick={() => setSelectedConnectionId(null)}>
               <ItemCard
@@ -227,33 +264,28 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
                       ?.title ?? selectedConnectionId,
                 }}
                 selected={true}
+                backButton={true}
               />
             </div>
             <ToolSelector
               selectedConnectionId={selectedConnectionId}
-              selectedToolName={selectedToolName}
+              selectedToolName={toolName}
               onToolNameChange={updateStepAction}
             />
           </div>
         )}
       </div>
-      {selectedToolName && (
+      {toolName && isUsingTool && (
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col border-t border-border">
-          <div onClick={() => setSelectedToolName(null)}>
-            <ItemCard
-              item={{
-                icon: null,
-                title: selectedToolName ?? step.action.toolName,
-              }}
-              selected={true}
-            />
-          </div>
           <SelectedTool
-            selectedToolName={selectedToolName ?? step.action.toolName}
+            selectedToolName={toolName}
             selectedConnectionId={
               selectedConnectionId ?? step.action.connectionId
             }
             input={step.input ?? {}}
+            onBack={() => {
+              setIsUsingTool(false);
+            }}
           />
         </div>
       )}
@@ -347,10 +379,12 @@ function SelectedTool({
   selectedToolName,
   selectedConnectionId,
   input,
+  onBack,
 }: {
   selectedToolName: string;
   selectedConnectionId: string;
   input: Record<string, unknown>;
+  onBack: () => void;
 }) {
   const { tool, mcp, connection } = useTool(
     selectedToolName,
@@ -401,7 +435,7 @@ function SelectedTool({
       withHeader={false}
       onInputChange={handleInputChange}
       connection={connection}
-      onBack={() => {}}
+      onBack={onBack}
       initialInputParams={input}
     />
   );

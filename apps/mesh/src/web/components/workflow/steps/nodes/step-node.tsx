@@ -1,10 +1,11 @@
-import { memo, useRef, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { BellIcon, CheckIcon, ClockIcon, CodeXml, Wrench } from "lucide-react";
 import type {
   Step,
   StepAction,
   WaitForSignalAction,
+  WorkflowExecutionStepResult,
 } from "@decocms/bindings/workflow";
 import {
   Card,
@@ -32,6 +33,7 @@ import { createToolCaller } from "@/tools/client";
 import { useWorkflowBindingConnection } from "@/web/hooks/workflows/use-workflow-binding-connection";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { Spinner } from "@deco/ui/components/spinner.js";
+import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
 
 // ============================================
 // Duration Component
@@ -185,15 +187,35 @@ function useSendSignalMutation() {
   return { sendSignal: handleSendSignal, isPending };
 }
 
-export const StepNode = memo(function StepNode({ data }: NodeProps) {
-  const { step, stepResult, style } = data as StepNodeData;
+function getStepStyle(
+  step: Step,
+  stepResult?: WorkflowExecutionStepResult | null,
+) {
+  const isSignal = checkIfIsWaitForSignalAction(step.action);
+  if (!stepResult) return "default";
+  if (stepResult.error) return "error";
+  if (!stepResult.output) return "pending";
+  if (stepResult.output) return "success";
+  if (isSignal && !stepResult.completed_at_epoch_ms)
+    return "waiting_for_signal";
+  return "default";
+}
+
+export const StepNode = function StepNode({ data }: NodeProps) {
+  const { step } = data as StepNodeData;
   const trackingExecutionId = useTrackingExecutionId();
   const isAddingStep = useIsAddingStep();
   const { addDependencyToDraftStep, cancelAddingStep } = useWorkflowActions();
   const { sendSignal, isPending: isSendingSignal } = useSendSignalMutation();
   const currentStepName = useCurrentStepName();
   const isDraftStep = useIsDraftStep(step.name);
+  const { item: pollingExecution } =
+    usePollingWorkflowExecution(trackingExecutionId);
+  const stepResult = pollingExecution?.step_results.find(
+    (s) => s.step_id === step.name,
+  );
   const isConsumed = !!stepResult?.output;
+  const style = getStepStyle(step, stepResult);
 
   const displayIcon = (() => {
     if (!step.action) return null;
@@ -208,7 +230,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
   })();
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log("handleClick", isAddingStep, step.name);
     if (isAddingStep) {
       if (isDraftStep) {
         cancelAddingStep();
@@ -247,7 +268,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
         onClick={handleClick}
         className={cn(
           "w-[180px] min-w-[180px] p-0 px-3 h-12 flex items-center justify-center relative",
-          currentStepName === step.name && "bg-primary/10 border-primary",
           isDraftStep && "border-brand-purple-light bg-brand-purple-light/5",
           "transition-all duration-200",
           style === "pending" && "animate-pulse border-warning",
@@ -267,6 +287,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
                 "hover:scale-[1.02]",
               ]
             : "cursor-pointer",
+          currentStepName === step.name && "bg-primary/10 border-primary",
         )}
       >
         <CardHeader className="flex items-center justify-between gap-2 p-0 w-full">
@@ -307,6 +328,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       />
     </div>
   );
-});
+};
 
 export default StepNode;

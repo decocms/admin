@@ -12,8 +12,11 @@ export function WorkflowActions({
 }: {
   onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }) {
-  const { resetToOriginalWorkflow, setTrackingExecutionId } =
-    useWorkflowActions();
+  const {
+    resetToOriginalWorkflow,
+    setTrackingExecutionId,
+    setOriginalWorkflow,
+  } = useWorkflowActions();
   const workflow = useWorkflow();
   const trackingExecutionId = useTrackingExecutionId();
   const isDirty = useIsDirty();
@@ -43,7 +46,11 @@ export function WorkflowActions({
       </Button>
       <Button
         className="bg-[#d0ec1a] text-[#07401a] hover:bg-[#d0ec1a]/90 h-7 text-xs font-medium"
-        onClick={() => onUpdate(workflow)}
+        onClick={() => {
+          onUpdate(workflow).then(() => {
+            setOriginalWorkflow(workflow);
+          });
+        }}
         disabled={!isDirty}
       >
         Save changes

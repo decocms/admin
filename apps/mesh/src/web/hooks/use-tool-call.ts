@@ -5,7 +5,12 @@
  * Provides caching, loading states, and error handling out of the box.
  */
 
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  Query,
+  useMutation,
+  useQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type { ToolCaller } from "../../tools/client";
 import { KEYS } from "../lib/query-keys";
 
@@ -26,7 +31,18 @@ export interface UseToolCallOptions<TInput, _TOutput> {
   /** Cache time in milliseconds */
   staleTime?: number;
   /** Refetch interval in milliseconds (false to disable) */
-  refetchInterval?: number | false;
+  refetchInterval?:
+    | number
+    | ((
+        query: Query<
+          _TOutput,
+          Error,
+          _TOutput,
+          | readonly ["tool-call", string, string, string]
+          | readonly ["tool-call", string, string]
+        >,
+      ) => number)
+    | false;
 }
 
 /**

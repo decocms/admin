@@ -17,4 +17,5 @@ export { CONNECTION_TEST } from "./test";
 // Connection configuration tool
 export { CONNECTION_CONFIGURE } from "./configure";
 
-// Utility exports
+// Connection call tool
+export { CONNECTION_CALL_TOOL } from "./call-tool";

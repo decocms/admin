@@ -43,6 +43,7 @@ interface Actions {
   /** Complete add step by selecting parent step */
   completeAddingStep: () => void;
   addDependencyToDraftStep: (stepName: string) => void;
+  setOriginalWorkflow: (workflow: Workflow) => void;
 }
 
 interface Store extends State {
@@ -222,6 +223,11 @@ export const createWorkflowStore = (initialState: State) => {
                 currentStepName: newName,
               };
             }),
+          setOriginalWorkflow: (workflow) =>
+            set((state) => ({
+              ...state,
+              originalWorkflow: workflow,
+            })),
         },
       }),
       {

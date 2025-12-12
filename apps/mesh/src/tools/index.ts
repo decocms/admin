@@ -35,6 +35,7 @@ export const ALL_TOOLS = [
   ConnectionTools.COLLECTION_CONNECTIONS_DELETE,
   ConnectionTools.CONNECTION_TEST,
   ConnectionTools.CONNECTION_CONFIGURE,
+  ConnectionTools.CONNECTION_CALL_TOOL,
 
   // Database tools
   DatabaseTools.DATABASES_RUN_SQL,

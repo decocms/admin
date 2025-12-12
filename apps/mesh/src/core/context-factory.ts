@@ -419,6 +419,7 @@ async function authenticateRequest(
       if (meshJwtPayload) {
         return {
           user: { id: meshJwtPayload.sub },
+          permissions: meshJwtPayload.permissions,
         };
       }
     } catch {

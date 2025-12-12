@@ -44,6 +44,7 @@ const ALL_TOOL_NAMES = [
   "COLLECTION_CONNECTIONS_DELETE",
   "CONNECTION_TEST",
   "CONNECTION_CONFIGURE",
+  "CONNECTION_CALL_TOOL",
   // Database tools
   "DATABASES_RUN_SQL",
   // Monitoring tools
@@ -227,6 +228,8 @@ const TOOL_LABELS: Record<ToolName, string> = {
   CONNECTION_TEST: "Test connections",
   CONNECTION_CONFIGURE: "Configure connections",
   DATABASES_RUN_SQL: "Run SQL queries",
+  CONNECTION_CALL_TOOL:
+    "Allows other MCPs to call tools from any connection on this mesh",
   MONITORING_LOGS_LIST: "List monitoring logs",
   MONITORING_STATS: "View monitoring statistics",
 };

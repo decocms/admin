@@ -1,7 +1,6 @@
 import { EmptyState } from "@/web/components/empty-state";
 import { ReadmeViewer } from "@/web/components/store/readme-viewer";
 import { ToolsList, type Tool } from "@/web/components/tools";
-import { Loader2 } from "lucide-react";
 import type { AppData, TabItem } from "./types";
 
 interface AppTabsContentProps {
@@ -9,8 +8,6 @@ interface AppTabsContentProps {
   availableTabs: TabItem[];
   effectiveActiveTabId: string;
   effectiveTools: unknown[];
-  isLoadingRemoteTools: boolean;
-  remoteToolsError?: Error | null;
   onTabChange: (tabId: string) => void;
 }
 
@@ -19,8 +16,6 @@ export function AppTabsContent({
   availableTabs,
   effectiveActiveTabId,
   effectiveTools,
-  isLoadingRemoteTools,
-  remoteToolsError,
   onTabChange,
 }: AppTabsContentProps) {
   // Convert tools to the expected format
@@ -56,23 +51,7 @@ export function AppTabsContent({
       {/* Tools Tab Content */}
       {effectiveActiveTabId === "tools" && (
         <div className="flex flex-col flex-1">
-          {isLoadingRemoteTools ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2 text-sm text-muted-foreground">
-                Loading tools...
-              </span>
-            </div>
-          ) : remoteToolsError && effectiveTools.length === 0 ? (
-            <EmptyState
-              image={null}
-              title="Failed to load tools"
-              description={
-                remoteToolsError.message ||
-                "Unable to fetch tools from the remote server. Please try again later."
-              }
-            />
-          ) : effectiveTools.length > 0 ? (
+          {effectiveTools.length > 0 ? (
             <ToolsList
               tools={tools}
               showToolbar={false}

@@ -27,7 +27,6 @@ import authRoutes from "./routes/auth";
 import managementRoutes from "./routes/management";
 import modelsRoutes from "./routes/models";
 import proxyRoutes from "./routes/proxy";
-import registryRoutes from "./routes/registry";
 
 // Define Hono variables type
 type Variables = {
@@ -227,7 +226,6 @@ export function createApp(options: CreateAppOptions = {}) {
     // Skip MeshContext for auth endpoints, registry tools, static pages, health check, and metrics
     if (
       path.startsWith("/api/auth/") ||
-      path.startsWith("/api/registry/") ||
       path === "/health" ||
       path === "/metrics" ||
       path.startsWith("/.well-known/")
@@ -258,7 +256,6 @@ export function createApp(options: CreateAppOptions = {}) {
   // ============================================================================
 
   app.route("/api", modelsRoutes);
-  app.route("/api", registryRoutes);
 
   app.use("/mcp/:connectionId?", async (c, next) => {
     const meshContext = c.var.meshContext;

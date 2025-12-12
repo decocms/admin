@@ -21,8 +21,7 @@ interface ErrorStateProps {
 }
 
 export function AppDetailErrorState({ error, onBack }: ErrorStateProps) {
-  const errorMessage =
-    error instanceof Error ? error.message : "Unknown error occurred";
+  const errorMessage = error instanceof Error ? error.message : error;
 
   return (
     <div className="flex flex-col items-center justify-center h-full">

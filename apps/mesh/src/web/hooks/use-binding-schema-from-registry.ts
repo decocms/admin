@@ -2,8 +2,7 @@
  * Hook to fetch binding schema from registry for dynamic binding resolution.
  *
  * When a binding field has `__binding.const` as an app name (e.g., "@deco/database"),
- * this hook queries the registry to find a binding provider app and returns its tools
- * as the binding schema.
+ * this hook queries the registry by app name and returns its tools as the binding schema.
  */
 
 import { createToolCaller } from "@/tools/client";
@@ -21,8 +20,7 @@ import {
 import type { BindingDefinition } from "@/web/hooks/use-binding";
 
 /**
- * Registry item with binding metadata from the registry API response.
- * The API returns items with _meta["mcp.mesh"].binding flag for binding providers.
+ * Registry item from the registry API response.
  */
 interface RegistryItemWithBinding {
   id: string;
@@ -87,13 +85,6 @@ function parseAppName(appName: string): string {
 }
 
 /**
- * Check if a registry item is a binding provider
- */
-function isBindingProvider(item: RegistryItemWithBinding): boolean {
-  return item._meta?.[MCP_REGISTRY_DECOCMS_KEY]?.binding === true;
-}
-
-/**
  * Extract tools from a registry item as binding definitions
  */
 function extractBindingTools(
@@ -115,17 +106,16 @@ function extractBindingTools(
 /**
  * Hook to fetch binding schema from registry for an app name.
  *
- * Queries the registry with `where: { binder: appName }` to find apps that
- * implement the binding, then filters for the one marked as a binding provider
- * (`_meta["mcp.mesh"].binding === true`) and returns its tools.
+ * Queries the registry with `where: { appName }` to get the app directly
+ * and returns its tools as the binding schema.
  *
- * @param appName - The app name to resolve binding for (e.g., "@deco/database")
+ * @param appName - The app name to fetch (e.g., "@deco/database")
  * @returns Object with bindingSchema, isLoading, and error
  *
  * @example
  * ```tsx
  * const { bindingSchema, isLoading } = useBindingSchemaFromRegistry("@deco/database");
- * // bindingSchema will be the tools from the binding provider app
+ * // bindingSchema will be the tools from the app
  * ```
  */
 export function useBindingSchemaFromRegistry(
@@ -145,9 +135,9 @@ export function useBindingSchemaFromRegistry(
   // Parse the app name for the query - must be in "scope/appName" format
   const parsedAppName = appName ? parseAppName(appName) : "";
 
-  // Build the tool input params - always include where.binder when we have an app name
+  // Build the tool input params - query by appName directly
   const toolInputParams = parsedAppName
-    ? { where: { binder: parsedAppName } }
+    ? { where: { appName: parsedAppName } }
     : {};
 
   // Determine if the query should be enabled
@@ -163,31 +153,28 @@ export function useBindingSchemaFromRegistry(
   // Create tool caller only when we have a valid registry ID
   const toolCaller = createToolCaller(registryId || undefined);
 
-  // Query registry with binder filter
+  // Query registry by appName (returns list with single result)
   const {
     data: listResults,
     isLoading,
     error,
-  } = useToolCall<{ where: { binder: string } }, unknown>({
+  } = useToolCall<{ where: { appName: string } }, unknown>({
     toolCaller,
     toolName: listToolName,
-    toolInputParams: toolInputParams as { where: { binder: string } },
+    toolInputParams: toolInputParams as { where: { appName: string } },
     connectionId: registryId,
     enabled: isEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // Extract items from response
+  // Extract items from response (should be a single item when querying by appName)
   const items = extractItemsFromResponse<RegistryItemWithBinding>(listResults);
 
-  // Find the binding provider from the results
-  // Priority: 1) App with binding: true, 2) First matching app (fallback)
-  const bindingProvider = items.find(isBindingProvider) ?? items[0];
+  // Get the first (and typically only) item from the result
+  const app = items[0];
 
-  // Extract binding schema (tools) from the provider
-  const bindingSchema = bindingProvider
-    ? extractBindingTools(bindingProvider)
-    : undefined;
+  // Extract binding schema (tools) from the app
+  const bindingSchema = app ? extractBindingTools(app) : undefined;
 
   return {
     bindingSchema,

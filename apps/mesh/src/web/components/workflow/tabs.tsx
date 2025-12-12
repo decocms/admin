@@ -1,10 +1,11 @@
 import {
-  useActiveTab,
+  useCurrentStepTab,
   useCurrentStep,
   useDraftStep,
   useIsAddingStep,
   useTrackingExecutionId,
   useWorkflowActions,
+  useCurrentTab,
 } from "@/web/stores/workflow";
 import {
   Tabs,
@@ -25,37 +26,38 @@ import { MonacoCodeEditor } from "../monaco-editor";
 import { ConnectionSelector, ItemCard, ToolSelector } from "../tool-selector";
 import { Button } from "@deco/ui/components/button.js";
 import { ExecutionResult, ToolDetail, useTool } from "../details/tool";
-import { Loader2 } from "lucide-react";
+import { CodeXml, GitBranch, Loader2 } from "lucide-react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
 
 export function WorkflowTabs() {
+  const currentTab = useCurrentTab();
+  const { setCurrentTab } = useWorkflowActions();
   return (
-    <>
+    <div className="bg-muted border border-border rounded-lg flex">
       <Button
-        variant="secondary"
-        size="sm"
-        className="h-7 bg-muted text-foreground font-normal"
+        variant="outline"
+        size="xs"
+        className={cn(
+          "h-7 border-0 text-foreground",
+          currentTab !== "steps" && "bg-transparent text-muted-foreground",
+        )}
+        onClick={() => setCurrentTab("steps")}
       >
-        Steps
+        <GitBranch className="w-4 h-4" />
       </Button>
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-muted-foreground font-normal"
-        disabled={true}
+        variant="outline"
+        size="xs"
+        className={cn(
+          "h-7 border-0 text-foreground",
+          currentTab !== "code" && "bg-transparent text-muted-foreground",
+        )}
+        onClick={() => setCurrentTab("code")}
       >
-        Triggers
+        <CodeXml className="w-4 h-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-muted-foreground font-normal"
-        disabled={true}
-      >
-        Advanced
-      </Button>
-    </>
+    </div>
   );
 }
 
@@ -91,11 +93,11 @@ function OutputTabContent({
 }
 
 export function StepTabs() {
-  const activeTab = useActiveTab();
-  const { setActiveTab, updateStep } = useWorkflowActions();
+  const activeTab = useCurrentStepTab();
+  const { setCurrentStepTab, updateStep } = useWorkflowActions();
   const currentStep = useCurrentStep();
   const handleTabChange = (tab: "input" | "output" | "action") => {
-    setActiveTab(tab);
+    setCurrentStepTab(tab);
   };
   const selectedExecutionId = useTrackingExecutionId();
 
@@ -114,7 +116,7 @@ export function StepTabs() {
             activeTab === "input" && "border-foreground",
           )}
           value="input"
-          onClick={() => setActiveTab("input")}
+          onClick={() => setCurrentStepTab("input")}
         >
           Input
         </TabsTrigger>
@@ -125,7 +127,7 @@ export function StepTabs() {
               activeTab === "output" && "border-foreground",
             )}
             value="output"
-            onClick={() => setActiveTab("output")}
+            onClick={() => setCurrentStepTab("output")}
           >
             Output
           </TabsTrigger>
@@ -136,7 +138,7 @@ export function StepTabs() {
             activeTab === "action" && "border-foreground",
           )}
           value="action"
-          onClick={() => setActiveTab("action")}
+          onClick={() => setCurrentStepTab("action")}
         >
           Action
         </TabsTrigger>

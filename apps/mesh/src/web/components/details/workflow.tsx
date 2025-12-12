@@ -1,15 +1,24 @@
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { WorkflowExecutionWithStepResults } from "@decocms/bindings/workflow";
+import {
+  Workflow,
+  WorkflowExecutionWithStepResults,
+} from "@decocms/bindings/workflow";
 import { ViewActions, ViewLayout, ViewTabs } from "./layout";
 import { WorkflowSteps } from "../workflow/steps/index";
 import {
   useCurrentStepName,
+  useCurrentTab,
+  useWorkflow,
   WorkflowStoreProvider,
 } from "@/web/stores/workflow";
-import { useWorkflowCollectionItem } from "@/web/hooks/workflows/use-workflow-collection-item";
+import {
+  useWorkflowCollectionItem,
+  useWorkflowExecutionCollectionItem,
+} from "@/web/hooks/workflows/use-workflow-collection-item";
 import { WorkflowActions } from "../workflow/actions";
 import { StepTabs, WorkflowTabs } from "../workflow/tabs";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { MonacoCodeEditor } from "../monaco-editor";
 export interface WorkflowDetailsViewProps {
   itemId: string;
   onBack: () => void;
@@ -52,6 +61,52 @@ export function WorkflowDetailsView({
   );
 }
 
+export function WorkflowExecutionDetailsView({
+  itemId,
+  onBack,
+}: WorkflowDetailsViewProps) {
+  const { item } = useWorkflowExecutionCollectionItem(itemId);
+  const { item: workflow, update: updateWorkflow } = useWorkflowCollectionItem(
+    item?.workflow_id ?? "",
+  );
+  if (!workflow) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  return (
+    <WorkflowStoreProvider workflow={workflow} trackingExecutionId={itemId}>
+      <WorkflowDetails
+        onBack={onBack}
+        onUpdate={async (updates) => {
+          try {
+            updateWorkflow(updates);
+            toast.success("Workflow updated successfully");
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to update workflow",
+            );
+            throw error;
+          }
+        }}
+      />
+    </WorkflowStoreProvider>
+  );
+}
+
 interface WorkflowDetailsProps {
   onBack: () => void;
   onUpdate: (updates: Record<string, unknown>) => Promise<void>;
@@ -62,13 +117,46 @@ export interface StreamResponse {
   error?: string;
 }
 
+function WorkflowCode({
+  workflow,
+  onUpdate,
+}: {
+  workflow: Workflow;
+  onUpdate: (updates: Record<string, unknown>) => Promise<void>;
+}) {
+  const wf = {
+    title: workflow.title,
+    description: workflow.description,
+    steps: workflow.steps,
+  };
+  return (
+    <MonacoCodeEditor
+      height="100%"
+      code={JSON.stringify(wf, null, 2)}
+      language="json"
+      onSave={(code) => {
+        onUpdate(JSON.parse(code));
+      }}
+    />
+  );
+}
+
 export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
+  const currentTab = useCurrentTab();
   const currentStepName = useCurrentStepName();
+  const workflow = useWorkflow();
 
   return (
     <ViewLayout onBack={onBack}>
       <ViewTabs>
-        <WorkflowTabs />
+        <div className="flex items-center gap-3 font-sans">
+          <h2 className="text-base font-normal text-foreground">
+            {workflow.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {workflow.description}
+          </p>
+        </div>
       </ViewTabs>
 
       <ViewActions>
@@ -76,11 +164,20 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
       </ViewActions>
 
       {/* Main Content */}
-      <div className="flex w-full h-full bg-background overflow-hidden">
-        <div className="flex-1 h-full">
-          <WorkflowSteps />
+      <div className="flex w-full h-full bg-background overflow-hidden relative">
+        <div className="absolute top-4 left-4 z-50">
+          <WorkflowTabs />
         </div>
-        {currentStepName && <StepTabs />}
+        <div className="flex-1 h-full">
+          {currentTab === "steps" ? (
+            <WorkflowSteps />
+          ) : (
+            <div className="h-[calc(100%-60px)]">
+              <WorkflowCode workflow={workflow} onUpdate={onUpdate} />
+            </div>
+          )}
+        </div>
+        {currentStepName && currentTab === "steps" && <StepTabs />}
       </div>
     </ViewLayout>
   );

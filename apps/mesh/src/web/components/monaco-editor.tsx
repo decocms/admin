@@ -104,6 +104,7 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
 }: MonacoCodeEditorProps) {
   const [isDirty, setIsDirty] = useState(false);
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const lastSavedVersionIdRef = useRef<number | null>(null);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
@@ -197,14 +198,17 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
       });
     }
 
-    // Auto-format on load
-    setTimeout(() => {
-      formatWithPrettier(editor);
-    }, 300);
+    const model = editor.getModel();
+    if (model) {
+      // Initialize lastSavedVersionId
+      lastSavedVersionIdRef.current = model.getAlternativeVersionId();
 
-    editor.getModel()?.onDidChangeContent(() => {
-      setIsDirty(true);
-    });
+      model.onDidChangeContent(() => {
+        // Compute dirty state by comparing version IDs
+        const currentVersionId = model.getAlternativeVersionId();
+        setIsDirty(lastSavedVersionIdRef.current !== currentVersionId);
+      });
+    }
 
     // Add Ctrl+S / Cmd+S keybinding to format and save
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
@@ -214,6 +218,12 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
       // Then call onSave with the formatted value
       const value = editor.getValue();
       onSaveRef.current?.(value);
+
+      // Record the saved version ID
+      const model = editor.getModel();
+      if (model) {
+        lastSavedVersionIdRef.current = model.getAlternativeVersionId();
+      }
       setIsDirty(false);
     });
   };
@@ -229,13 +239,19 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
       await formatWithPrettier(editorRef.current);
       const value = editorRef.current.getValue();
       onSaveRef.current?.(value);
+
+      // Record the saved version ID
+      const model = editorRef.current.getModel();
+      if (model) {
+        lastSavedVersionIdRef.current = model.getAlternativeVersionId();
+      }
       setIsDirty(false);
     }
   };
 
   return (
     <div className="rounded-lg border border-base-border h-full">
-      <div className="flex justify-end gap-2 p-2 bg-[#1e1e1e] border-b border-[#3c3c3c]">
+      <div className="flex justify-end gap-2 p-4 bg-[#1e1e1e] border-b border-[#3c3c3c]">
         <button
           onClick={handleFormat}
           disabled={!isDirty}

@@ -77,10 +77,10 @@ const FloatingAddStepButton = memo(function FloatingAddStepButton() {
   const { startAddingStep, cancelAddingStep, completeAddingStep } =
     useWorkflowActions();
   const isAddingStep = useIsAddingStep();
-  const { setActiveTab } = useWorkflowActions();
+  const { setCurrentStepTab } = useWorkflowActions();
   const handleSelectType = (type: StepType) => {
     startAddingStep(type);
-    setActiveTab("action");
+    setCurrentStepTab("action");
     setIsExpanded(false);
   };
 

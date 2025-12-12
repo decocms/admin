@@ -12,8 +12,9 @@ import {
 import { Step, ToolCallAction } from "@decocms/bindings/workflow";
 import { createContext, useContext, useState } from "react";
 
-type ActiveTab = "input" | "output" | "action";
+type CurrentStepTab = "input" | "output" | "action";
 export type StepType = "tool" | "code" | "sleep" | "wait_for_signal";
+type CurrentTab = "steps" | "code";
 
 interface State {
   originalWorkflow: Workflow;
@@ -21,8 +22,9 @@ interface State {
   isAddingStep: boolean;
   workflow: Workflow;
   trackingExecutionId: string | undefined;
-  activeTab: ActiveTab;
+  currentStepTab: CurrentStepTab;
   currentStepName: string | undefined;
+  currentTab: CurrentTab;
 }
 
 interface Actions {
@@ -34,7 +36,8 @@ interface Actions {
   setCurrentStepName: (stepName: string) => void;
   updateStep: (stepName: string, updates: Partial<Step>) => void;
   setTrackingExecutionId: (executionId: string | undefined) => void;
-  setActiveTab: (activeTab: ActiveTab) => void;
+  setCurrentStepTab: (currentStepTab: CurrentStepTab) => void;
+  setCurrentTab: (currentTab: CurrentTab) => void;
   resetToOriginalWorkflow: () => void;
   /** Start the add step flow - user selects type first */
   startAddingStep: (type: StepType) => void;
@@ -91,10 +94,10 @@ export const createWorkflowStore = (initialState: State) => {
               ...state,
               draftStep: draftStep,
             })),
-          setActiveTab: (activeTab) =>
+          setCurrentStepTab: (currentStepTab) =>
             set((state) => ({
               ...state,
-              activeTab: activeTab,
+              currentStepTab: currentStepTab,
             })),
           setToolAction: (toolAction) =>
             set((state) => ({
@@ -228,6 +231,11 @@ export const createWorkflowStore = (initialState: State) => {
               ...state,
               originalWorkflow: workflow,
             })),
+          setCurrentTab: (currentTab) =>
+            set((state) => ({
+              ...state,
+              currentTab: currentTab,
+            })),
         },
       }),
       {
@@ -240,9 +248,10 @@ export const createWorkflowStore = (initialState: State) => {
           trackingExecutionId: state.trackingExecutionId,
           currentStepName: state.currentStepName,
           draftStep: state.draftStep,
-          activeTab: state.activeTab,
+          currentStepTab: state.currentStepTab,
           originalWorkflow: state.originalWorkflow,
           isAddingStep: state.isAddingStep,
+          currentTab: state.currentTab,
         }),
       },
     ),
@@ -252,9 +261,11 @@ export const createWorkflowStore = (initialState: State) => {
 export function WorkflowStoreProvider({
   children,
   workflow,
+  trackingExecutionId,
 }: {
   children: React.ReactNode;
   workflow: Workflow;
+  trackingExecutionId?: string;
 }) {
   const [store] = useState(() =>
     createWorkflowStore({
@@ -262,9 +273,10 @@ export function WorkflowStoreProvider({
       workflow,
       isAddingStep: false,
       currentStepName: undefined,
-      trackingExecutionId: undefined,
-      activeTab: "input",
+      trackingExecutionId,
+      currentStepTab: "input",
       draftStep: null,
+      currentTab: "steps",
     }),
   );
 
@@ -293,6 +305,10 @@ export function useWorkflow() {
 
 export function useWorkflowActions() {
   return useWorkflowStore((state) => state.actions);
+}
+
+export function useCurrentTab() {
+  return useWorkflowStore((state) => state.currentTab);
 }
 
 export function useCurrentStepName() {
@@ -325,8 +341,8 @@ export function useCurrentStep() {
   return undefined;
 }
 
-export function useActiveTab() {
-  return useWorkflowStore((state) => state.activeTab);
+export function useCurrentStepTab() {
+  return useWorkflowStore((state) => state.currentStepTab);
 }
 
 export function useWorkflowSteps() {

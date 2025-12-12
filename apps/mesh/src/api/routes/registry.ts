@@ -55,21 +55,29 @@ app.post("/registry/tools", async (c) => {
 
     // Add timeout to prevent hanging connections
     const connectTimeout = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Connection timeout after 15 seconds")), 15000);
+      setTimeout(
+        () => reject(new Error("Connection timeout after 15 seconds")),
+        15000,
+      );
     });
 
     const listToolsTimeout = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("List tools timeout after 20 seconds")), 20000);
+      setTimeout(
+        () => reject(new Error("List tools timeout after 20 seconds")),
+        20000,
+      );
     });
 
     console.log(`Attempting to fetch tools from: ${url}`);
-    
+
     await Promise.race([client.connect(transport), connectTimeout]);
     console.log(`Connected to MCP server: ${url}`);
-    
+
     const result = await Promise.race([client.listTools(), listToolsTimeout]);
 
-    console.log(`Successfully fetched ${result.tools?.length ?? 0} tools from ${url}`);
+    console.log(
+      `Successfully fetched ${result.tools?.length ?? 0} tools from ${url}`,
+    );
 
     if (!result.tools || result.tools.length === 0) {
       return c.json({ tools: [] });

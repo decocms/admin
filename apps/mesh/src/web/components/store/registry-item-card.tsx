@@ -187,7 +187,9 @@ export function RegistryItemCard({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{displayName}</p>
-                  {!canInstall && <p className="text-xs mt-1">No installation available</p>}
+                  {!canInstall && (
+                    <p className="text-xs mt-1">No installation available</p>
+                  )}
                 </TooltipContent>
               </Tooltip>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -19,4 +19,3 @@ export function AppDetailHeader({ onBack }: AppDetailHeaderProps) {
     </div>
   );
 }
-

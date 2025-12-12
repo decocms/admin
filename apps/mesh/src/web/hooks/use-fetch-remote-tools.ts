@@ -65,11 +65,13 @@ export function useFetchRemoteTools(options: UseFetchRemoteToolsOptions) {
       }
 
       const data = (await response.json()) as FetchRemoteToolsResponse;
-      
+
       // If there's an error in the response but we have tools, use them
       // Otherwise if there's an error, still return empty array (graceful fallback)
       if (data.error && (!data.tools || data.tools.length === 0)) {
-        console.warn(`Failed to fetch tools from ${url}: ${data.message || data.error}`);
+        console.warn(
+          `Failed to fetch tools from ${url}: ${data.message || data.error}`,
+        );
         return [];
       }
 

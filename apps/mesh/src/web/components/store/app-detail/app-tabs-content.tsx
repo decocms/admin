@@ -166,7 +166,10 @@ export function AppTabsContent({
             <EmptyState
               image={null}
               title="Failed to load tools"
-              description={remoteToolsError.message || "Unable to fetch tools from the remote server. Please try again later."}
+              description={
+                remoteToolsError.message ||
+                "Unable to fetch tools from the remote server. Please try again later."
+              }
             />
           ) : effectiveTools.length > 0 ? (
             <>
@@ -253,4 +256,3 @@ export function AppTabsContent({
     </div>
   );
 }
-

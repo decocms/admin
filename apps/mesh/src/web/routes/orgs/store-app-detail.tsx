@@ -231,7 +231,10 @@ export default function StoreAppDetail() {
       let itemsKey: string | undefined;
       if ("versions" in listResults && Array.isArray(listResults.versions)) {
         itemsKey = "versions";
-      } else if ("servers" in listResults && Array.isArray(listResults.servers)) {
+      } else if (
+        "servers" in listResults &&
+        Array.isArray(listResults.servers)
+      ) {
         itemsKey = "servers";
       } else {
         itemsKey = Object.keys(listResults).find((key) =>
@@ -286,9 +289,7 @@ export default function StoreAppDetail() {
   });
 
   // Combine local and remote tools - prefer local if available
-  const effectiveTools = hasLocalTools
-    ? data?.tools || []
-    : (remoteTools || []);
+  const effectiveTools = hasLocalTools ? data?.tools || [] : remoteTools || [];
 
   // Get publisher connection from database
   const publisherConnection = usePublisherConnection(
@@ -320,9 +321,7 @@ export default function StoreAppDetail() {
       id: "tools",
       label: "Tools",
       visible:
-        hasLocalTools ||
-        (remoteTools?.length || 0) > 0 ||
-        isLoadingRemoteTools,
+        hasLocalTools || (remoteTools?.length || 0) > 0 || isLoadingRemoteTools,
     },
   ].filter((tab) => tab.visible);
 
@@ -350,8 +349,10 @@ export default function StoreAppDetail() {
 
     // Build title with version and LATEST badge
     const versionNumber = version.server?.version;
-    const isLatest = (version._meta?.["io.modelcontextprotocol.registry/official"] as any)?.isLatest;
-    const titleWithVersion = versionNumber 
+    const isLatest = (
+      version._meta?.["io.modelcontextprotocol.registry/official"] as any
+    )?.isLatest;
+    const titleWithVersion = versionNumber
       ? `${connectionData.title} v${versionNumber}${isLatest ? " (LATEST)" : ""}`
       : connectionData.title;
 
@@ -428,7 +429,9 @@ export default function StoreAppDetail() {
             {/* SECTION 1: Hero (Full Width) */}
             <AppHeroSection
               data={data}
-              itemVersions={allVersions.length > 0 ? allVersions : [selectedItem]}
+              itemVersions={
+                allVersions.length > 0 ? allVersions : [selectedItem]
+              }
               isInstalling={isInstalling}
               onInstall={handleInstall}
               canInstall={canInstall}

@@ -45,4 +45,3 @@ export interface AppDetailProps {
   onBackClick: () => void;
   onTabChange: (tabId: string) => void;
 }
-

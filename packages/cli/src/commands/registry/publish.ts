@@ -82,7 +82,7 @@ function validateConfig(config: unknown): config is PublishAppConfig {
   }
 
   const conn = c.connection as Record<string, unknown>;
-  const validTypes = ["HTTP", "SSE", "Websocket", "Deco", "INNATE"];
+  const validTypes = ["HTTP", "SSE", "Websocket", "Deco", "INNATE", "BINDING"];
   if (!validTypes.includes(conn.type as string)) {
     throw new Error(
       `Invalid connection type '${conn.type}'. Must be one of: ${validTypes.join(", ")}`,

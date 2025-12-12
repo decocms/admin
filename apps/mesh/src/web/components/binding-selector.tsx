@@ -149,7 +149,7 @@ export function BindingSelector({
                     className="w-4 h-4 rounded"
                   />
                 ) : (
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                  <div className="w-4 h-4 rounded bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
                     {connection.title.slice(0, 1).toUpperCase()}
                   </div>
                 )}

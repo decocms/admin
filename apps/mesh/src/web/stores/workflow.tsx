@@ -9,8 +9,9 @@ import {
   DEFAULT_SLEEP_STEP,
   DEFAULT_WAIT_FOR_SIGNAL_STEP,
 } from "@decocms/bindings/workflow";
-import { Step, ToolCallAction } from "@decocms/bindings/workflow";
+import { Step, ToolCallAction, CodeAction } from "@decocms/bindings/workflow";
 import { createContext, useContext, useState } from "react";
+import { jsonSchemaToTypeScript } from "@/web/lib/typescript-to-json-schema";
 
 type CurrentStepTab = "input" | "output" | "action";
 export type StepType = "tool" | "code" | "sleep" | "wait_for_signal";
@@ -60,6 +61,38 @@ function generateUniqueName(baseName: string, existingSteps: Step[]): string {
   );
   if (!exists) return trimmedName;
   return `${trimmedName}_${Math.random().toString(36).substring(2, 6)}`;
+}
+
+/**
+ * Replace the Input interface in code with a new interface definition.
+ * If no Input interface exists, prepends the new one.
+ * Handles nested braces in the interface body.
+ */
+function replaceInputInterface(
+  code: string,
+  newInputInterface: string,
+): string {
+  // Find "interface Input {" and then match balanced braces
+  const startMatch = code.match(/interface\s+Input\s*\{/);
+  if (!startMatch || startMatch.index === undefined) {
+    // No existing Input interface, prepend the new one
+    return `${newInputInterface}\n\n${code.trimStart()}`;
+  }
+
+  const startIdx = startMatch.index;
+  const braceStart = startIdx + startMatch[0].length - 1; // Position of opening {
+
+  // Find the matching closing brace
+  let depth = 1;
+  let endIdx = braceStart + 1;
+  while (endIdx < code.length && depth > 0) {
+    if (code[endIdx] === "{") depth++;
+    else if (code[endIdx] === "}") depth--;
+    endIdx++;
+  }
+
+  // Replace the entire interface (from "interface Input" to closing "}")
+  return code.slice(0, startIdx) + newInputInterface + code.slice(endIdx);
 }
 
 function createDefaultStep(type: StepType, index: number): Step {
@@ -189,20 +222,41 @@ export const createWorkflowStore = (initialState: State) => {
           addDependencyToDraftStep: (stepName: string) =>
             set((state) => {
               const draftStep = state.draftStep;
-              const step = state.workflow.steps.find(
+              const referencedStep = state.workflow.steps.find(
                 (s) => s.name === stepName,
               );
-              if (!draftStep || !step) return state;
-              return {
-                ...state,
-                draftStep: {
-                  ...draftStep,
-                  input: {
-                    ...draftStep.input,
-                    _dependsOn: `@${stepName}`,
-                  },
+              if (!draftStep || !referencedStep) return state;
+
+              // Check if draft step is a code step and referenced step has outputSchema
+              const isCodeStep = draftStep.action && "code" in draftStep.action;
+              const hasOutputSchema = referencedStep.outputSchema;
+
+              let updatedDraftStep = {
+                ...draftStep,
+                input: {
+                  ...draftStep.input,
+                  _dependsOn: `@${stepName}`,
                 },
               };
+
+              // If creating a code step after a step with outputSchema, inject the Input interface
+              if (isCodeStep && hasOutputSchema) {
+                const inputInterface = jsonSchemaToTypeScript(
+                  hasOutputSchema as Record<string, unknown>,
+                  "Input",
+                );
+                const codeAction = draftStep.action as CodeAction;
+                const updatedCode = replaceInputInterface(
+                  codeAction.code,
+                  inputInterface,
+                );
+                updatedDraftStep = {
+                  ...updatedDraftStep,
+                  action: { ...codeAction, code: updatedCode },
+                };
+              }
+
+              return { ...state, draftStep: updatedDraftStep };
             }),
           completeAddingStep: () =>
             set((state) => {

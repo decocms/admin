@@ -135,7 +135,8 @@ function WorkflowCode({
       code={JSON.stringify(wf, null, 2)}
       language="json"
       onSave={(code) => {
-        onUpdate(JSON.parse(code));
+        const parsed = JSON.parse(code);
+        onUpdate(parsed);
       }}
     />
   );

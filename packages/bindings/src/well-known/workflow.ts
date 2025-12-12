@@ -122,18 +122,6 @@ export const LoopConfigSchema = z.object({
 export type LoopConfig = z.infer<typeof LoopConfigSchema>;
 
 /**
- * Parallel Group Config Schema - Explicit step grouping
- */
-export const ParallelGroupConfigSchema = z.object({
-  group: z.string().describe("Group ID - steps with same groupId run together"),
-  mode: z
-    .enum(["all", "race", "allSettled"])
-    .optional()
-    .describe("How to handle the parallel group"),
-});
-export type ParallelGroupConfig = z.infer<typeof ParallelGroupConfigSchema>;
-
-/**
  * Step Config Schema - Optional configuration for step execution
  */
 export const StepConfigSchema = z.object({
@@ -167,36 +155,16 @@ export const StepSchema = z.object({
     .describe(
       "Input object with @ref resolution or default values. Example: { 'user_id': '@input.user_id', 'product_id': '@input.product_id' }",
     ),
+  outputSchema: z
+    .record(z.unknown())
+    .nullish()
+    .describe("JsonSchema for the step output"),
   config: StepConfigSchema.optional().describe(
     "Step configuration (retry, forEach, parallel groups)",
   ),
 });
 
 export type Step = z.infer<typeof StepSchema>;
-
-/**
- * Trigger Schema - Fire another workflow when execution completes
- */
-export const TriggerSchema = z.object({
-  /**
-   * Target workflow ID to execute
-   */
-  workflowId: z.string().describe("Target workflow ID to trigger"),
-
-  /**
-   * Input for the new execution (uses @refs like step inputs)
-   * Maps output data to workflow input fields.
-   *
-   * If any @ref doesn't resolve (property missing), this trigger is SKIPPED.
-   */
-  input: z
-    .record(z.unknown())
-    .describe(
-      "Input mapping with @refs from current workflow output. Example: { 'user_id': '@stepName.user_id' }",
-    ),
-});
-
-export type Trigger = z.infer<typeof TriggerSchema>;
 
 /**
  * Workflow Execution Status
@@ -331,14 +299,6 @@ export const WorkflowSchema = BaseCollectionEntitySchema.extend({
     .describe(
       "Flat array of steps - parallelization is auto-determined from @ref dependencies",
     ),
-
-  /**
-   * Triggers to fire when execution completes successfully
-   */
-  triggers: z
-    .array(TriggerSchema)
-    .optional()
-    .describe("Workflows to trigger on completion"),
 });
 
 export type Workflow = z.infer<typeof WorkflowSchema>;
@@ -383,24 +343,16 @@ export const DEFAULT_CODE_STEP: Step = {
   action: {
     code: `
   interface Input {
-    name: string;
+    example: string;
   }
 
   interface Output {
-    name: string;
-    error?: string;
+    result: unknown;
   }
     
   export default async function(input: Input): Promise<Output> { 
-    try {
-      return {
-        name: input.name,
-      };
-    } catch (error) {
-      return {
-        name: input.name,
-        error: error instanceof Error ? error.message : JSON.stringify(error),
-      };
+    return {
+      result: input
     }
   }`,
   },
@@ -412,7 +364,6 @@ export const createDefaultWorkflow = (id?: string): Workflow => ({
   title: "Default Workflow",
   description: "The default workflow for the toolkit",
   steps: [DEFAULT_CODE_STEP],
-  triggers: [],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 });

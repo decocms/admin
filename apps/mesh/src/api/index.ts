@@ -256,7 +256,7 @@ export function createApp(options: CreateAppOptions = {}) {
       const sub = c.req.query("sub");
       const toolName = c.req.query("toolName");
       if (!connectionId || !sub || !toolName) {
-        return c.status(400);
+        return c.body(null, 400);
       }
       const proxy = await createMCPProxy(connectionId, {
         ...meshContext,
@@ -271,10 +271,10 @@ export function createApp(options: CreateAppOptions = {}) {
         name: toolName,
         arguments: {},
       });
-      return c.status(204);
+      return c.body(null, 204);
     } catch (error) {
       console.error("Error calling tool:", error);
-      return c.status(500);
+      return c.body(null, 500);
     }
   });
 

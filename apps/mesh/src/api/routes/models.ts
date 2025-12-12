@@ -322,6 +322,10 @@ function createConnectionTools(ctx: MeshContext, toolSet?: AgentToolSet) {
         // Create MCP client and call tool (reusing helper)
         let client: Client | null = null;
         try {
+          console.log(
+            "[CALL_MCP_TOOL] Creating client for connection:",
+            connection,
+          );
           client = await createConnectionClient(connection);
           const result = await client.callTool({
             name: toolName,

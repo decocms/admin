@@ -18,6 +18,7 @@ import {
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
+import { useRemoteMcpTools } from "@/web/hooks/use-remote-mcp-tools";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
 import { useProjectContext } from "@/web/providers/project-context-provider";
@@ -304,8 +305,19 @@ export default function StoreAppDetail() {
   // Extract data from item
   const data = selectedItem ? extractItemData(selectedItem) : null;
 
-  // Use local tools from the registry item
-  const effectiveTools = data?.tools || [];
+  // Check if we have local tools and get remote URL
+  const hasLocalTools = (data?.tools?.length || 0) > 0;
+  const remoteUrl = selectedItem?.server?.remotes?.[0]?.url || null;
+
+  // Fetch tools from remote MCP server if no local tools are available
+  const { tools: remoteTools, isLoading: isLoadingRemoteTools } =
+    useRemoteMcpTools({
+      url: remoteUrl,
+      enabled: !hasLocalTools && !!remoteUrl,
+    });
+
+  // Combine local and remote tools - prefer local if available
+  const effectiveTools = hasLocalTools ? data?.tools || [] : remoteTools;
 
   // Get publisher connection from database
   const publisherConnection = usePublisherConnection(
@@ -336,7 +348,10 @@ export default function StoreAppDetail() {
     {
       id: "tools",
       label: "Tools",
-      visible: effectiveTools.length > 0,
+      visible:
+        hasLocalTools ||
+        remoteTools.length > 0 ||
+        (isLoadingRemoteTools && !!remoteUrl),
     },
   ].filter((tab) => tab.visible);
 
@@ -467,6 +482,7 @@ export default function StoreAppDetail() {
                 availableTabs={availableTabs}
                 effectiveActiveTabId={effectiveActiveTabId}
                 effectiveTools={effectiveTools}
+                isLoadingTools={isLoadingRemoteTools}
                 onTabChange={setActiveTabId}
               />
             </div>

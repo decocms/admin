@@ -58,11 +58,21 @@ export function useFetchRemoteTools(options: UseFetchRemoteToolsOptions) {
         body: JSON.stringify({ url, headers }),
       });
 
-      if (!response.ok) {
+      // Always accept 200 OK responses, even with errors inside
+      // The backend returns 200 with error details for graceful fallback
+      if (!response.ok && response.status !== 200) {
         throw new Error(`Failed to fetch tools: ${response.status}`);
       }
 
       const data = (await response.json()) as FetchRemoteToolsResponse;
+      
+      // If there's an error in the response but we have tools, use them
+      // Otherwise if there's an error, still return empty array (graceful fallback)
+      if (data.error && (!data.tools || data.tools.length === 0)) {
+        console.warn(`Failed to fetch tools from ${url}: ${data.message || data.error}`);
+        return [];
+      }
+
       return data.tools ?? [];
     },
     enabled: enabled && !!url,

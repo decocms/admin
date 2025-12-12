@@ -29,7 +29,6 @@ import {
   findListToolName,
   getConnectionTypeLabel,
   extractSchemaVersion,
-  extractItemsFromResponse,
 } from "@/web/utils/registry-utils";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -280,6 +279,7 @@ export default function StoreAppDetail() {
   const {
     data: remoteTools,
     isLoading: isLoadingRemoteTools,
+    error: remoteToolsError,
   } = useFetchRemoteTools({
     url: remoteUrl,
     enabled: !hasLocalTools && !!remoteUrl,
@@ -450,6 +450,7 @@ export default function StoreAppDetail() {
                 effectiveActiveTabId={effectiveActiveTabId}
                 effectiveTools={effectiveTools}
                 isLoadingRemoteTools={isLoadingRemoteTools}
+                remoteToolsError={remoteToolsError}
                 onTabChange={setActiveTabId}
               />
             </div>

@@ -99,6 +99,7 @@ interface AppTabsContentProps {
   effectiveActiveTabId: string;
   effectiveTools: unknown[];
   isLoadingRemoteTools: boolean;
+  remoteToolsError?: Error | null;
   onTabChange: (tabId: string) => void;
 }
 
@@ -108,6 +109,7 @@ export function AppTabsContent({
   effectiveActiveTabId,
   effectiveTools,
   isLoadingRemoteTools,
+  remoteToolsError,
   onTabChange,
 }: AppTabsContentProps) {
   // Track search and sorting for tools
@@ -160,6 +162,12 @@ export function AppTabsContent({
                 Loading tools...
               </span>
             </div>
+          ) : remoteToolsError && effectiveTools.length === 0 ? (
+            <EmptyState
+              image={null}
+              title="Failed to load tools"
+              description={remoteToolsError.message || "Unable to fetch tools from the remote server. Please try again later."}
+            />
           ) : effectiveTools.length > 0 ? (
             <>
               {/* Search Section */}

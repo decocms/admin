@@ -62,6 +62,10 @@ export const KEYS = {
     owner: string | null | undefined,
     repo: string | null | undefined,
   ) => ["github-readme", owner, repo] as const,
+
+  // Remote tools from MCP server URL (for registry items preview)
+  remoteTools: (url: string) => ["remote-tools", url] as const,
+
   // Monitoring queries
   monitoringStats: () => ["monitoring", "stats"] as const,
   monitoringLogs: (filters: {

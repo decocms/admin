@@ -256,6 +256,7 @@ export function createApp(options: CreateAppOptions = {}) {
   // ============================================================================
 
   app.route("/api", modelsRoutes);
+  app.route("/api", registryRoutes);
 
   app.use("/mcp/:connectionId?", async (c, next) => {
     const meshContext = c.var.meshContext;

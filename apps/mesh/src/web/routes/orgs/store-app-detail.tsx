@@ -163,7 +163,21 @@ export default function StoreAppDetail() {
   // Find the LIST tool from the registry connection
   const listToolName = findListToolName(registryConnection?.tools);
 
+  const versionsToolName = !registryConnection?.tools
+    ? ""
+    : (() => {
+        const versionsTool = registryConnection.tools.find((tool) =>
+          tool.name.endsWith("_VERSIONS"),
+        );
+        return versionsTool?.name || "";
+      })();
+
   const toolCaller = createToolCaller(effectiveRegistryId);
+
+  // If serverName provided, use versions tool; otherwise use list tool
+  const shouldUseVersionsTool = !!serverName;
+  const toolName = shouldUseVersionsTool ? versionsToolName : listToolName;
+  const toolInputParams = shouldUseVersionsTool ? { name: serverName } : {};
 
   const {
     data: listResults,
@@ -171,10 +185,10 @@ export default function StoreAppDetail() {
     error,
   } = useToolCall({
     toolCaller,
-    toolName: listToolName,
-    toolInputParams: {},
+    toolName: toolName,
+    toolInputParams: toolInputParams,
     connectionId: effectiveRegistryId,
-    enabled: !!listToolName && !!effectiveRegistryId,
+    enabled: !!toolName && !!effectiveRegistryId,
   });
 
   // Extract items and totalCount from results

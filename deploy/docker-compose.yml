@@ -1,6 +1,6 @@
 services:
   mesh:
-    image: ${IMAGE_REPOSITORY:-ghcr.io/decocms/admin/mesh}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REPOSITORY:-ghcr.io/decocms/mesh/mesh}:${IMAGE_TAG:-latest}
     platform: linux/amd64
     container_name: deco-mcp-mesh
     restart: unless-stopped

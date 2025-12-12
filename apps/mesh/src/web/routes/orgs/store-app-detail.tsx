@@ -191,7 +191,12 @@ export default function StoreAppDetail() {
   if (shouldUseVersionsTool) {
     // Try VERSIONS first, fallback to GET
     toolName = versionsToolName || getToolName;
-    toolInputParams = { name: serverName };
+    // Different registries expect different parameters:
+    // - Official registry: 'name' parameter
+    // - Deco registry: 'id' parameter
+    // Pass both to support multiple registry types
+    // The API will use whichever one is expected
+    toolInputParams = { name: serverName, id: serverName };
   } else {
     // Use LIST tool
     toolName = listToolName;

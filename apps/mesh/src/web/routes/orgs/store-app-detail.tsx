@@ -138,10 +138,11 @@ export default function StoreAppDetail() {
   const navigate = useNavigate();
   // Get appName from the child route (just /$appName)
   const { appName } = useParams({ strict: false }) as { appName?: string };
-  const { registryId: registryIdParam } = useSearch({
+  const { registryId: registryIdParam, serverName } = useSearch({
     strict: false,
   }) as {
     registryId?: string;
+    serverName?: string;
   };
 
   // Track active tab - initially "readme"
@@ -189,11 +190,22 @@ export default function StoreAppDetail() {
     }
   }
 
-  // Find the item matching the appName slug
-  const selectedItem = items.find((item) => {
+  // Find the item matching the appName slug or serverName
+  let selectedItem = items.find((item) => {
     const itemName = item.name || item.title || item.server?.title || "";
     return slugify(itemName) === appName;
   });
+
+  // If not found in list but serverName provided, try to find by server name
+  if (!selectedItem && serverName) {
+    selectedItem = items.find((item) => {
+      const serverNameMatch =
+        item.server?.name === serverName ||
+        item.name === serverName ||
+        item.title === serverName;
+      return serverNameMatch;
+    });
+  }
 
   // Extract data from item
   const data = selectedItem ? extractItemData(selectedItem) : null;

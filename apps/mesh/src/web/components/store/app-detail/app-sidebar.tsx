@@ -145,7 +145,7 @@ export function AppSidebar({
 
         {data.repository?.url && (
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Repository</span>
+            <span className="text-muted-foreground">Source</span>
             <a
               href={data.repository.url}
               target="_blank"

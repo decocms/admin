@@ -12,7 +12,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.js";
-import { Textarea } from "@deco/ui/components/textarea.js";
 import { cn } from "@deco/ui/lib/utils.js";
 import { useState } from "react";
 import {
@@ -202,12 +201,13 @@ function ActionTab({
     );
   } else if ("sleepMs" in step.action || "sleepUntil" in step.action) {
     return (
-      <Textarea
-        value={JSON.stringify(step.action, null, 2)}
-        className="w-full h-full"
-        onChange={(e) => {
+      <MonacoCodeEditor
+        height="100%"
+        code={JSON.stringify(step.action, null, 2)}
+        language="json"
+        onSave={(action) => {
           updateStep(step.name, {
-            action: JSON.parse(e.target.value) as SleepAction,
+            action: JSON.parse(action) as SleepAction,
           });
         }}
       />

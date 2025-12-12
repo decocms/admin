@@ -211,6 +211,7 @@ export const StepNode = function StepNode({ data }: NodeProps) {
   const isDraftStep = useIsDraftStep(step.name);
   const { item: pollingExecution } =
     usePollingWorkflowExecution(trackingExecutionId);
+
   const stepResult = pollingExecution?.step_results.find(
     (s) => s.step_id === step.name,
   );
@@ -310,7 +311,11 @@ export const StepNode = function StepNode({ data }: NodeProps) {
                   ? new Date(stepResult.completed_at_epoch_ms).toISOString()
                   : undefined
               }
-              isRunning={false}
+              isRunning={
+                trackingExecutionId
+                  ? stepResult?.completed_at_epoch_ms === null
+                  : false
+              }
             />
           </div>
 

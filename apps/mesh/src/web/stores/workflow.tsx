@@ -196,7 +196,7 @@ export const createWorkflowStore = (initialState: State) => {
                   ...draftStep,
                   input: {
                     ...draftStep.input,
-                    _dependsOn: `${draftStep.input?._dependsOn ?? ""} @${stepName}`,
+                    _dependsOn: `@${stepName}`,
                   },
                 },
               };

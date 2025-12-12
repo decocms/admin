@@ -173,12 +173,31 @@ export default function StoreAppDetail() {
         return versionsTool?.name || "";
       })();
 
+  const getToolName = !registryConnection?.tools
+    ? ""
+    : (() => {
+        const getTool = registryConnection.tools.find((tool) =>
+          tool.name.endsWith("_GET"),
+        );
+        return getTool?.name || "";
+      })();
+
   const toolCaller = createToolCaller(effectiveRegistryId);
 
-  // If serverName provided, use versions tool; otherwise use list tool
+  // If serverName provided, use versions tool (or get as fallback); otherwise use list tool
   const shouldUseVersionsTool = !!serverName;
-  const toolName = shouldUseVersionsTool ? versionsToolName : listToolName;
-  const toolInputParams = shouldUseVersionsTool ? { name: serverName } : {};
+  let toolName = "";
+  let toolInputParams: Record<string, unknown> = {};
+
+  if (shouldUseVersionsTool) {
+    // Try VERSIONS first, fallback to GET
+    toolName = versionsToolName || getToolName;
+    toolInputParams = { name: serverName };
+  } else {
+    // Use LIST tool
+    toolName = listToolName;
+    toolInputParams = {};
+  }
 
   const {
     data: listResults,

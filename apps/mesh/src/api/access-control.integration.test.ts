@@ -110,6 +110,7 @@ describe("Access Control Integration Tests", () => {
 
     // Mock Better Auth methods
     vi.spyOn(auth.api, "getMcpSession").mockResolvedValue(null);
+    vi.spyOn(auth.api, "setActiveOrganization").mockResolvedValue(null as any);
   });
 
   afterEach(async () => {

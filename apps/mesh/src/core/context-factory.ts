@@ -587,6 +587,14 @@ export function createMeshContextFactory(
   return async (req: Request): Promise<MeshContext> => {
     // Authenticate request (OAuth session or API key)
     const authResult = await authenticateRequest(req, config.auth, config.db);
+    authResult.organization &&
+      (await config.auth.api.setActiveOrganization({
+        headers: req.headers,
+        body: {
+          organizationId: authResult.organization.id,
+          organizationSlug: authResult.organization.slug,
+        },
+      }));
 
     // Create bound auth client (encapsulates HTTP headers and auth context)
     const boundAuth = createBoundAuthClient({
@@ -597,12 +605,12 @@ export function createMeshContextFactory(
     });
 
     // Build auth object for MeshContext
-    const auth: MeshContext["auth"] = {
+    const meshAuth: MeshContext["auth"] = {
       user: authResult.user,
     };
 
     if (authResult.apiKeyId) {
-      auth.apiKey = {
+      meshAuth.apiKey = {
         id: authResult.apiKeyId,
         name: "", // Not needed for access control
         userId: "", // Not needed for access control
@@ -619,7 +627,7 @@ export function createMeshContextFactory(
     // Create AccessControl instance with bound auth client
     const access = new AccessControl(
       config.auth,
-      auth.user?.id,
+      meshAuth.user?.id,
       undefined, // toolName set later by defineTool
       boundAuth, // Bound auth client for permission checks
       authResult.role, // Role from session (for built-in role bypass)
@@ -627,7 +635,7 @@ export function createMeshContextFactory(
     );
 
     return {
-      auth,
+      auth: meshAuth,
       organization,
       storage,
       vault,

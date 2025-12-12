@@ -61,20 +61,17 @@ export function createToolCaller<TArgs = unknown, TOutput = unknown>(
   const endpoint = connectionId ? `/mcp/${connectionId}` : "/mcp";
 
   return async (toolName: string, args: TArgs): Promise<TOutput> => {
-    // Debug logging for tool calls
-    const requestBody = {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/call",
-      params: {
-        name: toolName,
-        arguments: args,
-      },
-    };
-
     const response = await fetch(endpoint, {
       method: "POST",
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: args,
+        },
+      }),
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",

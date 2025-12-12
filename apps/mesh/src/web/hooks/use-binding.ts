@@ -93,9 +93,7 @@ export function connectionImplementsBinding(
   }));
 
   const checker = createBindingChecker(bindingForChecker);
-  const result = checker.isImplementedBy(toolsForChecker);
-
-  return result;
+  return checker.isImplementedBy(toolsForChecker);
 }
 
 /**

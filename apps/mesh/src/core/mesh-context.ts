@@ -193,8 +193,8 @@ export interface MeshAuth {
  */
 export interface OrganizationScope {
   id: string;
-  slug: string;
-  name: string;
+  slug?: string;
+  name?: string;
 }
 
 // ============================================================================

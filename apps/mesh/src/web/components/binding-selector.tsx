@@ -76,8 +76,13 @@ export function BindingSelector({
   const connections = (() => {
     let result = filteredConnections;
 
-    // If we have a specific binding type (@scope/appName), filter connections that match
-    if (parsedBindingType) {
+    // Only filter by app_name/scopeName if:
+    // 1. We have a parsedBindingType (@scope/appName format)
+    // 2. AND we don't have a binding schema (tools array) for filtering
+    // When we have a binding schema, the tools-based filtering is sufficient
+    const hasBindingSchema = Array.isArray(binding) && binding.length > 0;
+
+    if (parsedBindingType && !hasBindingSchema) {
       result = result.filter((conn) => {
         const connAppName = conn.app_name;
         const connScopeName = (conn.metadata as Record<string, unknown> | null)

@@ -13,6 +13,14 @@ interface McpConfigurationResult {
   scopes?: string[];
 }
 
+type BindingSchema =
+  | string
+  | Array<{
+      name: string;
+      inputSchema?: Record<string, unknown>;
+      outputSchema?: Record<string, unknown>;
+    }>;
+
 export function useMcpConfiguration(connectionId: string) {
   const toolCaller = createToolCaller(connectionId);
 
@@ -43,12 +51,14 @@ export interface McpConfigurationFormProps {
   stateSchema: Record<string, unknown>;
   isLoading: boolean;
   error: Error | null;
+  onOpenMcpSelectModal?: () => void;
 }
 
 interface FormContext {
   onFieldChange: (fieldPath: string, value: unknown) => void;
   formData: Record<string, unknown>;
   onAddNew: () => void;
+  onOpenMcpSelectModal?: () => void;
 }
 
 /**
@@ -157,20 +167,10 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
           value={currentValue}
           onValueChange={handleBindingChange}
           placeholder={`Select ${displayTitle.toLowerCase()}...`}
-          binding={
-            // Only use bindingSchema if it's an array of tools, not a string starting with @
-            bindingSchema && !String(bindingSchema).startsWith("@")
-              ? (bindingSchema as
-                  | string
-                  | Array<{
-                      name: string;
-                      inputSchema?: Record<string, unknown>;
-                      outputSchema?: Record<string, unknown>;
-                    }>)
-              : undefined
-          }
-          bindingType={bindingType}
+          binding={bindingSchema as BindingSchema}
+          bindingType={bindingType as string | undefined}
           onAddNew={() => formContext?.onAddNew()}
+          onOpenMcpSelectModal={formContext?.onOpenMcpSelectModal}
           className="w-[200px] shrink-0"
         />
       </div>
@@ -226,6 +226,7 @@ export function McpConfigurationForm({
   stateSchema,
   isLoading,
   error,
+  onOpenMcpSelectModal,
 }: McpConfigurationFormProps) {
   const { org } = useProjectContext();
   const navigate = useNavigate();
@@ -253,6 +254,7 @@ export function McpConfigurationForm({
     onFieldChange: handleFieldChange,
     formData: formState,
     onAddNew: handleAddNew,
+    onOpenMcpSelectModal,
   };
 
   if (isLoading) {

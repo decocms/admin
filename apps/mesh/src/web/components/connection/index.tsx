@@ -20,6 +20,7 @@ import { PinToSidebarButton } from "@/web/components/pin-to-sidebar-button";
 import {
   useConnection,
   useConnectionsCollection,
+  useConnections,
 } from "@/web/hooks/collections/use-connection";
 import {
   useBindingConnections,
@@ -72,11 +73,12 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
-import { ViewLayout, ViewTabs, ViewActions } from "./layout";
+import { ViewLayout, ViewTabs, ViewActions } from "../details/layout";
 import {
   McpConfigurationForm,
   useMcpConfiguration,
 } from "./mcp-configuration-form";
+import { SelectMCPsModal } from "./mcp-select-modal";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -89,6 +91,12 @@ function ConnectionInspectorViewContent() {
 
   const connection = useConnection(connectionId);
   const connectionsCollection = useConnectionsCollection();
+
+  // Estado para controlar o modal de seleção de MCPs
+  const [isMcpSelectModalOpen, setIsMcpSelectModalOpen] = useState(false);
+
+  // Buscar todas as conexões para o modal
+  const allConnections = useConnections();
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
@@ -291,79 +299,101 @@ function ConnectionInspectorViewContent() {
 
   const activeCollection = collections.find((c) => c.name === activeTabId);
 
+  const handleMcpSelectConfirm = (selectedIds: string[]) => {
+    console.log("MCPs selecionados:", selectedIds);
+    setIsMcpSelectModalOpen(false);
+    // Aqui você pode adicionar a lógica para processar os MCPs selecionados
+  };
+
   return (
-    <ViewLayout onBack={() => router.history.back()}>
-      <ViewTabs>
-        <ResourceTabs
-          tabs={tabs}
-          activeTab={activeTabId}
-          onTabChange={handleTabChange}
-        />
-      </ViewTabs>
-      <div className="flex h-full w-full bg-background overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
-          {mcp.state === "pending_auth" ||
-          mcp.state === "authenticating" ||
-          (!connection.connection_token && mcp.state === "failed") ? (
-            <EmptyState
-              image={
-                <div className="bg-muted p-4 rounded-full">
-                  <Lock className="w-8 h-8 text-muted-foreground" />
-                </div>
-              }
-              title="Authorization Required"
-              description="This connection requires authorization to access tools and resources."
-              actions={
-                <Button
-                  onClick={() => mcp.authenticate()}
-                  disabled={mcp.state === "authenticating"}
-                >
-                  {mcp.state === "authenticating"
-                    ? "Authorizing..."
-                    : "Authorize"}
-                </Button>
-              }
-              className="h-full"
-            />
-          ) : activeTabId === "tools" ? (
-            <ToolsList
-              tools={mcp.tools}
-              connectionId={connectionId as string}
-              org={org as string}
-            />
-          ) : activeTabId === "settings" ? (
-            <div className="flex-1">
-              <SettingsTab
-                connection={connection}
-                onUpdate={handleUpdateConnection}
-                hasMcpBinding={hasMcpBinding}
-              />
-            </div>
-          ) : (
-            <ErrorBoundary>
-              <Suspense
-                fallback={
-                  <div className="flex h-full items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    <>
+      <ViewLayout onBack={() => router.history.back()}>
+        <ViewTabs>
+          <ResourceTabs
+            tabs={tabs}
+            activeTab={activeTabId}
+            onTabChange={handleTabChange}
+          />
+        </ViewTabs>
+        <div className="flex h-full w-full bg-background overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 bg-background overflow-auto">
+            {mcp.state === "pending_auth" ||
+            mcp.state === "authenticating" ||
+            (!connection.connection_token && mcp.state === "failed") ? (
+              <EmptyState
+                image={
+                  <div className="bg-muted p-4 rounded-full">
+                    <Lock className="w-8 h-8 text-muted-foreground" />
                   </div>
                 }
-              >
-                <CollectionContent
-                  key={activeTabId}
-                  connectionId={connectionId as string}
-                  collectionName={activeTabId}
-                  org={org as string}
-                  schema={activeCollection?.schema}
-                  hasCreateTool={activeCollection?.hasCreateTool ?? false}
-                  hasUpdateTool={activeCollection?.hasUpdateTool ?? false}
-                  hasDeleteTool={activeCollection?.hasDeleteTool ?? false}
+                title="Authorization Required"
+                description="This connection requires authorization to access tools and resources."
+                actions={
+                  <Button
+                    onClick={() => mcp.authenticate()}
+                    disabled={mcp.state === "authenticating"}
+                  >
+                    {mcp.state === "authenticating"
+                      ? "Authorizing..."
+                      : "Authorize"}
+                  </Button>
+                }
+                className="h-full"
+              />
+            ) : activeTabId === "tools" ? (
+              <ToolsList
+                tools={mcp.tools}
+                connectionId={connectionId as string}
+                org={org as string}
+              />
+            ) : activeTabId === "settings" ? (
+              <div className="flex-1">
+                <SettingsTab
+                  connection={connection}
+                  onUpdate={handleUpdateConnection}
+                  hasMcpBinding={hasMcpBinding}
+                  onOpenMcpSelectModal={() => setIsMcpSelectModalOpen(true)}
                 />
-              </Suspense>
-            </ErrorBoundary>
-          )}
+              </div>
+            ) : (
+              <ErrorBoundary>
+                <Suspense
+                  fallback={
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  }
+                >
+                  <CollectionContent
+                    key={activeTabId}
+                    connectionId={connectionId as string}
+                    collectionName={activeTabId}
+                    org={org as string}
+                    schema={activeCollection?.schema}
+                    hasCreateTool={activeCollection?.hasCreateTool ?? false}
+                    hasUpdateTool={activeCollection?.hasUpdateTool ?? false}
+                    hasDeleteTool={activeCollection?.hasDeleteTool ?? false}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
+          </div>
         </div>
-      </div>
-    </ViewLayout>
+      </ViewLayout>
+
+      {/* Modal de seleção de MCPs */}
+      <SelectMCPsModal
+        open={isMcpSelectModalOpen}
+        onOpenChange={setIsMcpSelectModalOpen}
+        connections={allConnections}
+        onConfirm={handleMcpSelectConfirm}
+        onBack={() => setIsMcpSelectModalOpen(false)}
+        onSeeStore={() => {
+          setIsMcpSelectModalOpen(false);
+          navigate({ to: "/$org/store", params: { org: org as string } });
+        }}
+      />
+    </>
   );
 }
 
@@ -400,12 +430,14 @@ interface SettingsTabProps {
   connection: ConnectionEntity;
   onUpdate: (connection: Partial<ConnectionEntity>) => Promise<void>;
   hasMcpBinding: boolean;
+  onOpenMcpSelectModal: () => void;
 }
 
 function SettingsTab({
   connection,
   onUpdate,
   hasMcpBinding,
+  onOpenMcpSelectModal,
 }: SettingsTabProps) {
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -560,6 +592,7 @@ function SettingsTab({
               stateSchema={mcpStateSchema}
               isLoading={isMcpConfigLoading}
               error={mcpConfigError}
+              onOpenMcpSelectModal={onOpenMcpSelectModal}
             />
           </div>
         )}

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -12,7 +11,6 @@ import {
 import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
 import { useConnections } from "../hooks/collections/use-connection";
 import { useBindingConnections } from "../hooks/use-binding";
-
 interface BindingSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
@@ -37,6 +35,8 @@ interface BindingSelectorProps {
   bindingType?: string;
   /** Callback when "Create connection" is clicked (fallback when no bindingType) */
   onAddNew?: () => void;
+  /** Callback to open MCP select modal */
+  onOpenMcpSelectModal?: () => void;
   /** Optional className for the trigger */
   className?: string;
 }
@@ -46,13 +46,16 @@ export function BindingSelector({
   onValueChange,
   placeholder = "Select a connection...",
   binding,
-  bindingType,
+  bindingType: _bindingType,
   onAddNew,
+  onOpenMcpSelectModal,
   className,
 }: BindingSelectorProps) {
   const [isLocalInstalling, setIsLocalInstalling] = useState(false);
-  const { installByBinding, isInstalling: isGlobalInstalling } =
-    useInstallFromRegistry();
+  const {
+    installByBinding: _installByBinding,
+    isInstalling: isGlobalInstalling,
+  } = useInstallFromRegistry();
 
   const isInstalling = isLocalInstalling || isGlobalInstalling;
 
@@ -60,72 +63,23 @@ export function BindingSelector({
   const allConnections = useConnections();
 
   // Filter connections by binding (works with both well-known binding names and inline binding schemas)
-  const filteredConnections = useBindingConnections({
+  const connections = useBindingConnections({
     connections: allConnections,
     binding: binding,
   });
 
-  // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })
-  const parsedBindingType = (() => {
-    if (!bindingType?.startsWith("@")) return null;
-    const [scope, appName] = bindingType.replace("@", "").split("/");
-    return scope && appName ? { scope, appName } : null;
-  })();
-
-  // Apply additional filtering by bindingType and include selected connection if not in filtered list
-  const connections = (() => {
-    let result = filteredConnections;
-
-    // If we have a specific binding type (@scope/appName), filter connections that match
-    if (parsedBindingType) {
-      result = result.filter((conn) => {
-        const connAppName = conn.app_name;
-        const connScopeName = (conn.metadata as Record<string, unknown> | null)
-          ?.scopeName as string | undefined;
-
-        // Match by app_name and scopeName
-        return (
-          connAppName === parsedBindingType.appName &&
-          connScopeName === parsedBindingType.scope
-        );
-      });
-    }
-
-    if (value && !result.some((c) => c.id === value)) {
-      const selectedConnection = allConnections?.find((c) => c.id === value);
-      if (selectedConnection) {
-        return [selectedConnection, ...result];
-      }
-    }
-
-    return result;
-  })();
-
-  // Check if we can do inline installation (bindingType starts with @)
-  const canInstallInline = bindingType?.startsWith("@");
-
   const handleCreateConnection = async () => {
-    // If we have a specific binding type that starts with @, try inline installation
-    if (canInstallInline && bindingType) {
-      setIsLocalInstalling(true);
-      try {
-        const result = await installByBinding(bindingType);
-        if (result) {
-          // Automatically select the newly installed connection
-          // The connection will appear in the list via allConnections
-          onValueChange(result.id);
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        toast.error(`Failed to install connection: ${message}`);
-      } finally {
-        setIsLocalInstalling(false);
-      }
+    setIsLocalInstalling(true);
+
+    // Se a função de abrir o modal foi passada, chama ela
+    if (onOpenMcpSelectModal) {
+      setIsLocalInstalling(false);
+      onOpenMcpSelectModal();
       return;
     }
 
-    // Fallback to onAddNew navigation
-    onAddNew?.();
+    // Caso contrário, mantém o comportamento original
+    setIsLocalInstalling(false);
   };
 
   return (
@@ -158,7 +112,7 @@ export function BindingSelector({
             </SelectItem>
           ))
         )}
-        {(onAddNew || canInstallInline) && (
+        {onAddNew && (
           <div className="border-t border-border">
             <button
               onClick={(e) => {
@@ -177,9 +131,7 @@ export function BindingSelector({
               ) : (
                 <>
                   <Icon name="add" size={16} />
-                  <span>
-                    {canInstallInline ? "Install MCP" : "Create connection"}
-                  </span>
+                  <span>Install MCP</span>
                 </>
               )}
             </button>

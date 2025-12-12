@@ -153,6 +153,14 @@ const plugins = [
     keyExpiration: {
       minExpiresIn: 5 / 1440, // 5 minutes in days (default is 1 day)
     },
+    enableSessionForAPIKeys: true,
+    customAPIKeyGetter: (ctx) => {
+      const header = ctx.headers?.get("Authorization");
+      if (header?.startsWith("Bearer ")) {
+        return header.replace("Bearer ", "").trim();
+      }
+      return null;
+    },
     permissions: {
       defaultPermissions: {
         self: [

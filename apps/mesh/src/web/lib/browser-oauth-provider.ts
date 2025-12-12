@@ -104,7 +104,7 @@ async function isOauthNecessary(serverUrl: string): Promise<boolean> {
       "[authenticateMcp] Error checking OAuth metadata, assuming no auth required:",
       metadataError,
     );
-    return false;
+    return true;
   }
   return true;
 }

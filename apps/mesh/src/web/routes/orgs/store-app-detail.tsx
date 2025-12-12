@@ -247,7 +247,6 @@ export default function StoreAppDetail() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
     "asc",
   );
-  const [isInstalling, setIsInstalling] = useState(false);
 
   const connectionsCollection = useConnectionsCollection();
   const allConnections = useConnections();
@@ -347,25 +346,18 @@ export default function StoreAppDetail() {
       return;
     }
 
-    setIsInstalling(true);
-    try {
-      const tx = connectionsCollection.insert(connectionData);
-      await tx.isPersisted.promise;
+    const tx = connectionsCollection.insert(connectionData);
 
-      toast.success(`${connectionData.title} installed successfully`);
+    navigate({
+      to: "/$org/mcps/$connectionId",
+      params: { org: org.slug, connectionId: connectionData.id },
+    });
 
-      if (tx.mutations[0]?.key && org) {
-        navigate({
-          to: "/$org/mcps/$connectionId",
-          params: { org: org.slug, connectionId: tx.mutations[0].key },
-        });
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error(`Failed to install app: ${message}`);
-    } finally {
-      setIsInstalling(false);
-    }
+    toast.success(`${connectionData.title} installed successfully`);
+
+    tx.isPersisted.promise.catch((err) => {
+      toast.error(`Failed to install app: ${err.message}`);
+    });
   };
 
   const handleBackClick = () => {
@@ -502,20 +494,10 @@ export default function StoreAppDetail() {
                 <Button
                   variant="brand"
                   onClick={handleInstall}
-                  disabled={isInstalling}
                   className="shrink-0"
                 >
-                  {isInstalling ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Installing...
-                    </>
-                  ) : (
-                    <>
-                      <Icon name="add" size={20} />
-                      Install App
-                    </>
-                  )}
+                  <Icon name="add" size={20} />
+                  Install App
                 </Button>
               </div>
             </div>

@@ -292,16 +292,28 @@ class McpServerBuilder {
               ],
             };
           }
-          const result = await tool?.handler(req.arguments ?? {});
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(result),
-              },
-            ],
-            structuredContent: result as { [x: string]: unknown } | undefined,
-          };
+          try {
+            const result = await tool?.handler(req.arguments ?? {});
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(result),
+                },
+              ],
+              structuredContent: result as { [x: string]: unknown } | undefined,
+            };
+          } catch (err) {
+            const error = err as Error;
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: ${error.message}`,
+                },
+              ],
+            };
+          }
         },
       },
       /**

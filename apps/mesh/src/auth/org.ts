@@ -90,7 +90,7 @@ export async function createDefaultOrgConnections(
           });
           connectionToken = key?.key;
         }
-        connectionStorage.create({
+        await connectionStorage.create({
           ...mcpConfig.data,
           organization_id: organizationId,
           created_by: createdBy,

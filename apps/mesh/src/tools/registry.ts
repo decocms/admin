@@ -277,6 +277,7 @@ export function getToolsByCategory() {
     Organizations: [],
     Connections: [],
     Monitoring: [],
+    "API Keys": [],
   };
 
   for (const tool of MANAGEMENT_TOOLS) {

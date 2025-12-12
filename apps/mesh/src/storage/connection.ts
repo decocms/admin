@@ -56,9 +56,22 @@ export class ConnectionStorage implements ConnectionStoragePort {
     private vault: CredentialVault,
   ) {}
 
+  private isValidConnectionId(id?: string): boolean {
+    if (!id) return false;
+    return /^conn_[a-zA-Z0-9_-]+$/.test(id);
+  }
+
   async create(data: Partial<ConnectionEntity>): Promise<ConnectionEntity> {
-    const id = `conn_${nanoid()}`;
+    const id = this.isValidConnectionId(data.id)
+      ? data.id!
+      : `conn_${nanoid()}`;
     const now = new Date().toISOString();
+
+    const existing = await this.findById(id);
+
+    if (existing) {
+      return this.update(id, data);
+    }
 
     const serialized = await this.serializeConnection({
       ...data,

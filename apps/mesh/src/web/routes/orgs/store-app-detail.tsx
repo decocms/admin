@@ -354,15 +354,10 @@ export default function StoreAppDetail() {
 
       toast.success(`${connectionData.title} installed successfully`);
 
-      // Redirect doesn't work because TanStack DB ignores the onInsert return value.
-      // Backend generates a new ID (conn_xxx), but the collection keeps the temporary UUID.
-      // The newConnection.id below will be the UUID, not the real conn_xxx from the backend.
-      // @ventura created a PR in TanStack DB to fix this
-      const newConnection = connectionsCollection.get(connectionData.id);
-      if (newConnection?.id && org) {
+      if (tx.mutations[0]?.key && org) {
         navigate({
           to: "/$org/mcps/$connectionId",
-          params: { org: org.slug, connectionId: newConnection.id },
+          params: { org: org.slug, connectionId: tx.mutations[0].key },
         });
       }
     } catch (err) {

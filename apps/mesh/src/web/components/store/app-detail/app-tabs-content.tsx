@@ -1,97 +1,8 @@
-import { CollectionSearch } from "@/web/components/collections/collection-search";
-import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper";
 import { EmptyState } from "@/web/components/empty-state";
 import { ReadmeViewer } from "@/web/components/store/readme-viewer";
+import { ToolsList, type Tool } from "@/web/components/tools";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
 import type { AppData, TabItem } from "./types";
-
-/** Component for rendering tools table */
-function ToolsTable({
-  tools,
-  search,
-  sortKey,
-  sortDirection,
-  onSort,
-}: {
-  tools: Array<Record<string, unknown>>;
-  search: string;
-  sortKey: string | undefined;
-  sortDirection: "asc" | "desc" | null;
-  onSort: (key: string) => void;
-}) {
-  // Filter tools
-  const filteredTools = !search.trim()
-    ? tools
-    : (() => {
-        const searchLower = search.toLowerCase();
-        return tools.filter((tool) => {
-          const name = (tool.name as string) || "";
-          const desc = (tool.description as string) || "";
-          return (
-            name.toLowerCase().includes(searchLower) ||
-            desc.toLowerCase().includes(searchLower)
-          );
-        });
-      })();
-
-  // Sort tools
-  const sortedTools =
-    !sortKey || !sortDirection
-      ? filteredTools
-      : [...filteredTools].sort((a, b) => {
-          const aVal = (a[sortKey] as string) || "";
-          const bVal = (b[sortKey] as string) || "";
-          const comparison = String(aVal).localeCompare(String(bVal));
-          return sortDirection === "asc" ? comparison : -comparison;
-        });
-
-  const columns = [
-    {
-      id: "name",
-      header: "Name",
-      render: (tool: Record<string, unknown>) => (
-        <span className="text-sm font-medium font-mono text-foreground">
-          {(tool.name as string) || "—"}
-        </span>
-      ),
-      sortable: true,
-    },
-    {
-      id: "description",
-      header: "Description",
-      render: (tool: Record<string, unknown>) => (
-        <span className="text-sm text-foreground">
-          {(tool.description as string) || "—"}
-        </span>
-      ),
-      cellClassName: "flex-1",
-      sortable: true,
-    },
-  ];
-
-  return (
-    <CollectionTableWrapper
-      columns={columns}
-      data={sortedTools}
-      isLoading={false}
-      sortKey={sortKey}
-      sortDirection={sortDirection}
-      onSort={onSort}
-      emptyState={
-        <EmptyState
-          image={null}
-          title={search ? "No tools found" : "No tools available"}
-          description={
-            search
-              ? "Try adjusting your search terms"
-              : "This app doesn't have any tools."
-          }
-        />
-      }
-    />
-  );
-}
 
 interface AppTabsContentProps {
   data: AppData;
@@ -112,24 +23,14 @@ export function AppTabsContent({
   remoteToolsError,
   onTabChange,
 }: AppTabsContentProps) {
-  // Track search and sorting for tools
-  const [search, setSearch] = useState<string>("");
-  const [sortKey, setSortKey] = useState<string | undefined>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    "asc",
-  );
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDirection((prev) =>
-        prev === "asc" ? "desc" : prev === "desc" ? null : "asc",
-      );
-      if (sortDirection === "desc") setSortKey(undefined);
-    } else {
-      setSortKey(key);
-      setSortDirection("asc");
-    }
-  };
+  // Convert tools to the expected format
+  const tools: Tool[] = effectiveTools.map((tool) => {
+    const t = tool as Record<string, unknown>;
+    return {
+      name: (t.name as string) || "",
+      description: (t.description as string) || undefined,
+    };
+  });
 
   return (
     <div className="lg:col-span-2 flex flex-col border-l border-border">
@@ -154,7 +55,7 @@ export function AppTabsContent({
 
       {/* Tools Tab Content */}
       {effectiveActiveTabId === "tools" && (
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1">
           {isLoadingRemoteTools ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -172,33 +73,11 @@ export function AppTabsContent({
               }
             />
           ) : effectiveTools.length > 0 ? (
-            <>
-              {/* Search Section */}
-              <div className="border-b border-border bg-background">
-                <CollectionSearch
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Search for tools..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setSearch("");
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Table Section */}
-              <div className="bg-background overflow-hidden">
-                <ToolsTable
-                  tools={effectiveTools as Array<Record<string, unknown>>}
-                  search={search}
-                  sortKey={sortKey}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                />
-              </div>
-            </>
+            <ToolsList
+              tools={tools}
+              showToolbar={false}
+              emptyMessage="This app doesn't have any tools."
+            />
           ) : (
             <EmptyState
               image={null}

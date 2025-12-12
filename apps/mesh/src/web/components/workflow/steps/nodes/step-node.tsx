@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { memo, useRef, useSyncExternalStore } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { BellIcon, CheckIcon, ClockIcon, CodeXml, Wrench } from "lucide-react";
 import type {
@@ -201,7 +201,7 @@ function getStepStyle(
   return "default";
 }
 
-export const StepNode = function StepNode({ data }: NodeProps) {
+export const StepNode = memo(function StepNode({ data }: NodeProps) {
   const { step } = data as StepNodeData;
   const trackingExecutionId = useTrackingExecutionId();
   const isAddingStep = useIsAddingStep();
@@ -333,6 +333,6 @@ export const StepNode = function StepNode({ data }: NodeProps) {
       />
     </div>
   );
-};
+});
 
 export default StepNode;

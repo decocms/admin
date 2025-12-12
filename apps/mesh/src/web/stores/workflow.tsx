@@ -330,12 +330,13 @@ export function useActiveTab() {
 }
 
 export function useWorkflowSteps() {
-  const workflow = useWorkflowStore((state) => state.workflow);
-  const draftStep = useDraftStep();
-  const allSteps = (() => {
-    return [...workflow.steps, draftStep].filter((step) => step !== null);
-  })();
-  return allSteps;
+  return useWorkflowStore((state) => {
+    const { workflow, draftStep } = state;
+    if (draftStep) {
+      return [...workflow.steps, draftStep];
+    }
+    return workflow.steps;
+  });
 }
 
 export function useIsDirty() {

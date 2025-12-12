@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   ReactFlow,
   Background,
@@ -51,7 +51,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 // Empty State
 // ============================================
 
-function EmptyState() {
+const EmptyState = memo(function EmptyState() {
   const { appendStep } = useWorkflowActions();
 
   const handleAdd = (type: StepType) => {
@@ -66,13 +66,13 @@ function EmptyState() {
       <AddFirstStepButton onAdd={handleAdd} />
     </div>
   );
-}
+});
 
 // ============================================
 // Floating Add Step Button
 // ============================================
 
-function FloatingAddStepButton() {
+const FloatingAddStepButton = memo(function FloatingAddStepButton() {
   const [isExpanded, setIsExpanded] = useState(false);
   const { startAddingStep, cancelAddingStep, completeAddingStep } =
     useWorkflowActions();
@@ -205,21 +205,27 @@ function FloatingAddStepButton() {
       </div>
     </div>
   );
-}
+});
 
 // ============================================
 // Workflow Canvas
 // ============================================
 
-export function WorkflowCanvas() {
+// Stable options objects defined outside component to avoid recreating on each render
+const fitViewOptions = {
+  padding: 0.3,
+  maxZoom: 1.5,
+} as const;
+
+const proOptions = { hideAttribution: true } as const;
+
+export const WorkflowCanvas = memo(function WorkflowCanvas() {
   const steps = useWorkflowSteps();
   const { nodes, edges, onNodesChange, onEdgesChange, onNodeClick } =
     useWorkflowFlow();
 
   // Check if workflow has actual steps (excluding Manual trigger)
-  const hasSteps = (() => {
-    return steps.some((s) => s.name !== "Manual");
-  })();
+  const hasSteps = steps.some((s) => s.name !== "Manual");
 
   return (
     <div
@@ -237,13 +243,10 @@ export function WorkflowCanvas() {
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
-        fitViewOptions={{
-          padding: 0.3,
-          maxZoom: 1.5,
-        }}
+        fitViewOptions={fitViewOptions}
         minZoom={0.3}
         maxZoom={2}
-        proOptions={{ hideAttribution: true }}
+        proOptions={proOptions}
         nodesDraggable={true}
         nodesConnectable={true}
         elementsSelectable={true}
@@ -276,6 +279,7 @@ export function WorkflowCanvas() {
       </ReactFlow>
     </div>
   );
-}
+});
 
+// Re-export for compatibility
 export default WorkflowCanvas;

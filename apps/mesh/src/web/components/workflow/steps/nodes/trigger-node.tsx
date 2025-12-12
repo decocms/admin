@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Play, Zap } from "lucide-react";
+import { Pause, Play, Zap } from "lucide-react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
 import { cn } from "@deco/ui/lib/utils.js";
@@ -13,6 +13,7 @@ import {
   useWorkflow,
   useWorkflowActions,
 } from "@/web/stores/workflow";
+import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
 
 // ============================================
 // Workflow Start Hook
@@ -44,6 +45,25 @@ function useWorkflowStart() {
   return { handleRunWorkflow, isPending };
 }
 
+function useWorkflowResume() {
+  const { id: connectionId } = useWorkflowBindingConnection();
+  const toolCaller = createToolCaller(connectionId);
+  const trackingExecutionId = useTrackingExecutionId();
+
+  const { mutateAsync: resumeWorkflow, isPending } = useToolCallMutation({
+    toolCaller,
+    toolName: "RESUME_EXECUTION",
+  });
+
+  const handleResumeWorkflow = async () => {
+    await resumeWorkflow({
+      executionId: trackingExecutionId,
+    });
+  };
+
+  return { handleResumeWorkflow, isPending };
+}
+
 function useWorkflowCancel() {
   const { id: connectionId } = useWorkflowBindingConnection();
   const toolCaller = createToolCaller(connectionId);
@@ -67,20 +87,55 @@ function useWorkflowCancel() {
 // Trigger Node Component
 // ============================================
 
-export const TriggerNode = memo(function TriggerNode() {
+function PauseButton() {
+  const { handleCancelWorkflow } = useWorkflowCancel();
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleCancelWorkflow();
+  };
+  return (
+    <Button variant="ghost" size="xs" onClick={handleTriggerClick}>
+      <Pause className="w-4 h-4 text-foreground cursor-pointer hover:text-primary transition-colors" />
+    </Button>
+  );
+}
+
+function PlayButton() {
   const { handleRunWorkflow } = useWorkflowStart();
-  const isAddingStep = useIsAddingStep();
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     handleRunWorkflow();
   };
-
-  const triggerIcon = (() => {
-    return (
+  return (
+    <Button variant="ghost" size="xs" onClick={handleTriggerClick}>
       <Play className="w-4 h-4 text-foreground cursor-pointer hover:text-primary transition-colors" />
-    );
-  })();
+    </Button>
+  );
+}
+
+function ResumeButton() {
+  const { handleResumeWorkflow } = useWorkflowResume();
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleResumeWorkflow();
+  };
+  return (
+    <Button variant="ghost" size="xs" onClick={handleTriggerClick}>
+      <Play className="w-4 h-4 text-primary cursor-pointer hover:text-primary transition-colors" />
+    </Button>
+  );
+}
+
+export const TriggerNode = memo(function TriggerNode() {
+  const isAddingStep = useIsAddingStep();
+  const trackingExecutionId = useTrackingExecutionId();
+  const { item: pollingExecution } =
+    usePollingWorkflowExecution(trackingExecutionId);
+  const isRunning = pollingExecution?.completed_at_epoch_ms === null;
+  const isPaused = pollingExecution?.status === "cancelled";
 
   return (
     <div className="relative">
@@ -110,9 +165,9 @@ export const TriggerNode = memo(function TriggerNode() {
           <CardHeader className="flex items-center justify-between gap-2 p-0 w-full">
             <div className="flex flex-1 items-center gap-2 min-w-0">
               <div className="h-6 w-6 p-1 shrink-0 flex items-center justify-center rounded-md">
-                <Button variant="ghost" size="xs" onClick={handleTriggerClick}>
-                  {triggerIcon}
-                </Button>
+                {isPaused && <ResumeButton />}
+                {isRunning && !isPaused && <PauseButton />}
+                {!isRunning && !isPaused && <PlayButton />}
               </div>
 
               <CardTitle className="p-0 text-sm font-medium truncate">

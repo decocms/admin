@@ -1,11 +1,4 @@
-import type {
-  Node,
-  Edge,
-  OnNodesChange,
-  OnEdgesChange,
-  NodeChange,
-  EdgeChange,
-} from "@xyflow/react";
+import type { Node, Edge, OnNodesChange, OnEdgesChange } from "@xyflow/react";
 import type { Step } from "@decocms/bindings/workflow";
 import { useWorkflowSteps, useWorkflowActions } from "@/web/stores/workflow";
 import { computeStepLevels, buildDagEdges } from "./dag-utils";
@@ -107,95 +100,93 @@ function computeNodePositions(
 
 /**
  * Hook to get React Flow nodes from workflow steps
+ * React Compiler handles memoization automatically
  */
 export function useWorkflowNodes(): WorkflowNode[] {
   const steps = useWorkflowSteps();
-  return (() => {
-    const positions = computeNodePositions(steps);
+  const positions = computeNodePositions(steps);
 
-    // Find manual trigger step
-    const manualTriggerStep = steps.find((step) => step.name === "Manual");
+  // Find manual trigger step
+  const manualTriggerStep = steps.find((step) => step.name === "Manual");
 
-    // Create trigger node
-    const triggerNode: WorkflowNode = {
-      id: TRIGGER_NODE_ID,
-      type: "trigger",
-      position: positions.get(TRIGGER_NODE_ID) ?? { x: 0, y: 0 },
-      data: {
-        step: manualTriggerStep ?? null,
-        isFetched: false,
-        isRunning: false,
-        isPending: false,
-      } as TriggerNodeData,
-      draggable: false,
-    };
+  // Create trigger node
+  const triggerNode: WorkflowNode = {
+    id: TRIGGER_NODE_ID,
+    type: "trigger",
+    position: positions.get(TRIGGER_NODE_ID) ?? { x: 0, y: 0 },
+    data: {
+      step: manualTriggerStep ?? null,
+      isFetched: false,
+      isRunning: false,
+      isPending: false,
+    } as TriggerNodeData,
+    draggable: false,
+  };
 
-    // Create step nodes
-    const stepNodes: WorkflowNode[] = steps
-      .filter((step) => !!step && step.name !== "Manual")
-      .map((step) => {
-        return {
-          id: step.name,
-          type: "step",
-          position: positions.get(step.name) ?? { x: 0, y: 0 },
-          data: {
-            step,
-            isFetching: false,
-          } as StepNodeData,
-          draggable: true,
-        };
-      });
+  // Create step nodes
+  const stepNodes: WorkflowNode[] = steps
+    .filter((step) => !!step && step.name !== "Manual")
+    .map((step) => {
+      return {
+        id: step.name,
+        type: "step",
+        position: positions.get(step.name) ?? { x: 0, y: 0 },
+        data: {
+          step,
+          isFetching: false,
+        } as StepNodeData,
+        draggable: true,
+      };
+    });
 
-    return [triggerNode, ...stepNodes];
-  })();
+  return [triggerNode, ...stepNodes];
 }
 
 /**
  * Hook to get React Flow edges from workflow steps
+ * React Compiler handles memoization automatically
  */
 export function useWorkflowEdges(): WorkflowEdge[] {
   const steps = useWorkflowSteps();
+  const dagEdges = buildDagEdges(steps);
 
-  return (() => {
-    const dagEdges = buildDagEdges(steps);
+  // Find root steps (no dependencies) and connect them to trigger
+  const stepsWithDeps = new Set(dagEdges.map(([, to]) => to));
+  const rootSteps = steps.filter(
+    (s) => s.name !== "Manual" && !stepsWithDeps.has(s.name),
+  );
 
-    // Find root steps (no dependencies) and connect them to trigger
-    const stepsWithDeps = new Set(dagEdges.map(([, to]) => to));
-    const rootSteps = steps.filter(
-      (s) => s.name !== "Manual" && !stepsWithDeps.has(s.name),
-    );
+  const edges: WorkflowEdge[] = [];
 
-    const edges: WorkflowEdge[] = [];
+  // Connect trigger to root steps
+  for (const step of rootSteps) {
+    edges.push({
+      id: `${TRIGGER_NODE_ID}-${step.name}`,
+      source: TRIGGER_NODE_ID,
+      target: step.name,
+      type: "default",
+      animated: false,
+    });
+  }
 
-    // Connect trigger to root steps
-    for (const step of rootSteps) {
-      edges.push({
-        id: `${TRIGGER_NODE_ID}-${step.name}`,
-        source: TRIGGER_NODE_ID,
-        target: step.name,
-        type: "default",
-        animated: false,
-      });
-    }
+  // Add DAG edges
+  for (const [from, to] of dagEdges) {
+    if (from === "Manual") continue;
+    edges.push({
+      id: `${from}-${to}`,
+      source: from,
+      target: to,
+      type: "default",
+      animated: false,
+    });
+  }
 
-    // Add DAG edges
-    for (const [from, to] of dagEdges) {
-      if (from === "Manual") continue;
-      edges.push({
-        id: `${from}-${to}`,
-        source: from,
-        target: to,
-        type: "default",
-        animated: false,
-      });
-    }
-
-    return edges;
-  })();
+  return edges;
 }
 
 /**
  * Hook to handle node selection
+ * React Compiler handles memoization automatically
  */
 export function useNodeSelection() {
   const { setCurrentStepName } = useWorkflowActions();
@@ -211,29 +202,29 @@ export function useNodeSelection() {
   return { onNodeClick };
 }
 
+// Stable no-op handlers defined outside component to avoid recreating on each render
+const noopNodesChange: OnNodesChange = () => {
+  // No-op: positions are derived from step levels
+};
+
+const noopEdgesChange: OnEdgesChange = () => {
+  // No-op: edges are derived from step dependencies
+};
+
 /**
  * Combined hook for all React Flow state
+ * Optimized for performance with stable references
  */
 export function useWorkflowFlow() {
   const nodes = useWorkflowNodes();
   const edges = useWorkflowEdges();
   const { onNodeClick } = useNodeSelection();
 
-  // For controlled React Flow, we need change handlers
-  // Since positions are derived, we make these no-ops
-  const onNodesChange: OnNodesChange = (_changes: NodeChange[]) => {
-    // No-op: positions are derived from step levels
-  };
-
-  const onEdgesChange: OnEdgesChange = (_changes: EdgeChange[]) => {
-    // No-op: edges are derived from step dependencies
-  };
-
   return {
     nodes,
     edges,
-    onNodesChange,
-    onEdgesChange,
+    onNodesChange: noopNodesChange,
+    onEdgesChange: noopEdgesChange,
     onNodeClick,
   };
 }

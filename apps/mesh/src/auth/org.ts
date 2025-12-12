@@ -9,6 +9,7 @@ import {
 } from "@/tools/connection/schema";
 import zodToJsonSchema from "zod-to-json-schema";
 import { auth } from "./index";
+import { fetchToolsFromMCP } from "@/tools/connection/fetch-tools";
 
 interface MCPCreationSpec {
   data: ConnectionCreateData;
@@ -110,7 +111,15 @@ export async function createDefaultOrgConnections(
         }
         await connectionStorage.create({
           ...mcpConfig.data,
-          tools: mcpConfig.tools,
+          tools:
+            mcpConfig.tools ??
+            (await fetchToolsFromMCP({
+              id: "pending",
+              title: mcpConfig.data.title,
+              connection_url: mcpConfig.data.connection_url,
+              connection_token: mcpConfig.data.connection_token,
+              connection_headers: mcpConfig.data.connection_headers,
+            }).catch(() => null)),
           organization_id: organizationId,
           created_by: createdBy,
           connection_token: mcpConfig.data.connection_token ?? connectionToken,

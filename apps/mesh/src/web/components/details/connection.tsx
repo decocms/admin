@@ -92,7 +92,6 @@ function ConnectionInspectorViewContent() {
 
   // Detect collection bindings
   const collections = useCollectionBindings(connection);
-  console.log("collections", collections, connection);
 
   // Detect MCP binding
   const mcpBindingConnections = useBindingConnections({

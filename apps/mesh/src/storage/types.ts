@@ -384,6 +384,45 @@ export interface BetterAuthOrganizationRoleTable {
 }
 
 /**
+ * Monitoring Log table definition
+ * Tracks all tool calls through the MCP proxy
+ */
+export interface MonitoringLogTable {
+  id: string;
+  organization_id: string;
+  connection_id: string;
+  connection_title: string;
+  tool_name: string;
+  input: JsonObject<Record<string, unknown>>; // Redacted JSON
+  output: JsonObject<Record<string, unknown>>; // Redacted JSON
+  is_error: number; // SQLite boolean (0 or 1)
+  error_message: string | null;
+  duration_ms: number;
+  timestamp: ColumnType<Date, Date | string, never>;
+  user_id: string | null;
+  request_id: string;
+}
+
+/**
+ * Monitoring Log runtime type
+ */
+export interface MonitoringLog {
+  id?: string;
+  organizationId: string;
+  connectionId: string;
+  connectionTitle: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  isError: boolean;
+  errorMessage?: string | null;
+  durationMs: number;
+  timestamp: Date | string;
+  userId: string | null;
+  requestId: string;
+}
+
+/**
  * Complete database schema
  * All tables exist within the organization scope (database boundary)
  *
@@ -397,6 +436,7 @@ export interface Database {
   organization_settings: OrganizationSettingsTable; // Organization-level configuration
   api_keys: ApiKeyTable; // Better Auth API keys
   audit_logs: AuditLogTable; // Audit trail
+  monitoring_logs: MonitoringLogTable; // Tool call monitoring logs
 
   // OAuth tables (for MCP OAuth server)
   oauth_clients: OAuthClientTable;

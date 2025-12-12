@@ -5,7 +5,7 @@
  * Provides caching, loading states, and error handling out of the box.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { ToolCaller } from "../../tools/client";
 import { KEYS } from "../lib/query-keys";
 
@@ -25,6 +25,24 @@ export interface UseToolCallOptions<TInput, _TOutput> {
   enabled?: boolean;
   /** Cache time in milliseconds */
   staleTime?: number;
+  /** Refetch interval in milliseconds (false to disable) */
+  refetchInterval?: number | false;
+}
+
+/**
+ * Options for useSuspenseToolCall hook (no enabled option)
+ */
+export interface UseSuspenseToolCallOptions<TInput, _TOutput> {
+  /** The tool caller function to use */
+  toolCaller: ToolCaller;
+  /** The name of the tool to call */
+  toolName: string;
+  /** The input parameters for the tool */
+  toolInputParams: TInput;
+  /** Cache time in milliseconds */
+  staleTime?: number;
+  /** Refetch interval in milliseconds (false to disable) */
+  refetchInterval?: number | false;
 }
 
 /**
@@ -52,6 +70,7 @@ export function useToolCall<TInput, TOutput>(
     connectionId,
     enabled = true,
     staleTime = 60_000,
+    refetchInterval,
   } = options;
 
   // Serialize the input params for the query key
@@ -65,5 +84,46 @@ export function useToolCall<TInput, TOutput>(
     },
     enabled,
     staleTime,
+    refetchInterval,
+  });
+}
+
+/**
+ * Generic hook for calling MCP tools with React Query Suspense mode
+ *
+ * @param options - Configuration for the tool call
+ * @returns Query result with data (no loading state, uses Suspense)
+ *
+ * @example
+ * ```tsx
+ * const { data } = useSuspenseToolCall({
+ *   toolCaller: createToolCaller(),
+ *   toolName: "COLLECTION_LLM_LIST",
+ *   toolInputParams: { limit: 10 },
+ * });
+ * ```
+ */
+export function useSuspenseToolCall<TInput, TOutput>(
+  options: UseSuspenseToolCallOptions<TInput, TOutput>,
+) {
+  const {
+    toolCaller,
+    toolName,
+    toolInputParams,
+    staleTime = 60_000,
+    refetchInterval,
+  } = options;
+
+  // Serialize the input params for the query key
+  const paramsKey = JSON.stringify(toolInputParams);
+
+  return useSuspenseQuery({
+    queryKey: KEYS.toolCall(toolName, paramsKey),
+    queryFn: async () => {
+      const result = await toolCaller(toolName, toolInputParams);
+      return result as TOutput;
+    },
+    staleTime,
+    refetchInterval,
   });
 }

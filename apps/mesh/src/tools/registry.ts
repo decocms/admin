@@ -18,7 +18,7 @@
 // Types
 // ============================================================================
 
-export type ToolCategory = "Organizations" | "Connections";
+export type ToolCategory = "Organizations" | "Connections" | "Monitoring";
 
 /**
  * All tool names - keep in sync with ALL_TOOLS in index.ts
@@ -46,6 +46,9 @@ const ALL_TOOL_NAMES = [
   "CONNECTION_CONFIGURE",
   // Database tools
   "DATABASES_RUN_SQL",
+  // Monitoring tools
+  "MONITORING_LOGS_LIST",
+  "MONITORING_STATS",
 ] as const;
 
 /**
@@ -188,6 +191,17 @@ export const MANAGEMENT_TOOLS: ToolMetadata[] = [
     category: "Connections",
     dangerous: true,
   },
+  // Monitoring tools
+  {
+    name: "MONITORING_LOGS_LIST",
+    description: "List monitoring logs",
+    category: "Monitoring",
+  },
+  {
+    name: "MONITORING_STATS",
+    description: "View monitoring statistics",
+    category: "Monitoring",
+  },
 ];
 
 /**
@@ -213,6 +227,8 @@ const TOOL_LABELS: Record<ToolName, string> = {
   CONNECTION_TEST: "Test connections",
   CONNECTION_CONFIGURE: "Configure connections",
   DATABASES_RUN_SQL: "Run SQL queries",
+  MONITORING_LOGS_LIST: "List monitoring logs",
+  MONITORING_STATS: "View monitoring statistics",
 };
 
 // ============================================================================
@@ -226,6 +242,7 @@ export function getToolsByCategory() {
   const grouped: Record<string, ToolMetadata[]> = {
     Organizations: [],
     Connections: [],
+    Monitoring: [],
   };
 
   for (const tool of MANAGEMENT_TOOLS) {

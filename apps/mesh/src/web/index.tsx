@@ -87,6 +87,12 @@ const orgSettingsRoute = createRoute({
   component: lazyRouteComponent(() => import("./routes/orgs/settings.tsx")),
 });
 
+const orgMonitoringRoute = createRoute({
+  getParentRoute: () => shellLayout,
+  path: "/$org/monitoring",
+  component: lazyRouteComponent(() => import("./routes/orgs/monitoring.tsx")),
+});
+
 const orgStoreRoute = createRoute({
   getParentRoute: () => shellLayout,
   path: "/$org/store",
@@ -142,6 +148,7 @@ const shellRouteTree = shellLayout.addChildren([
   orgHomeRoute,
   orgMembersRoute,
   orgConnectionsRoute,
+  orgMonitoringRoute,
   orgStoreRouteWithChildren,
   orgSettingsRoute,
   connectionLayoutRoute,

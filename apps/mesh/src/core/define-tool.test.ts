@@ -37,6 +37,16 @@ const createMockContext = (): MeshContext => ({
       get: vi.fn(),
       upsert: vi.fn(),
     } as never,
+    monitoring: {
+      log: vi.fn().mockResolvedValue(undefined),
+      logBatch: vi.fn().mockResolvedValue(undefined),
+      query: vi.fn().mockResolvedValue({ logs: [], total: 0 }),
+      getStats: vi.fn().mockResolvedValue({
+        totalCalls: 0,
+        errorRate: 0,
+        avgDurationMs: 0,
+      }),
+    } as never,
   },
   vault: null as never,
   authInstance: null as never,

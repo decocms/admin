@@ -71,8 +71,8 @@ interface OAuthSession {
 
 interface OrganizationContext {
   id: string;
-  slug: string;
-  name: string;
+  slug?: string;
+  name?: string;
 }
 
 interface AuthenticatedUser {
@@ -447,6 +447,11 @@ async function authenticateRequest(
         return {
           user: { id: meshJwtPayload.sub },
           permissions: meshJwtPayload.permissions,
+          organization: meshJwtPayload.metadata?.organizationId
+            ? {
+                id: meshJwtPayload.metadata?.organizationId,
+              }
+            : undefined,
         };
       }
     } catch {

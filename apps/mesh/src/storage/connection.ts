@@ -62,9 +62,12 @@ export class ConnectionStorage implements ConnectionStoragePort {
   }
 
   async create(data: Partial<ConnectionEntity>): Promise<ConnectionEntity> {
-    const id = this.isValidConnectionId(data.id)
-      ? data.id!
-      : generateConnectionId();
+    if (data.id !== undefined && !this.isValidConnectionId(data.id)) {
+      throw new Error(
+        `Invalid connection ID format: ${data.id}.`,
+      );
+    }
+    const id = data.id ?? generateConnectionId();
     const now = new Date().toISOString();
 
     const existing = await this.findById(id);

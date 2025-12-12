@@ -52,12 +52,16 @@ app.post("/registry/tools", async (c) => {
     });
 
     // Add timeout to prevent hanging connections
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Connection timeout")), 10000);
+    const connectTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Connection timeout")), 15000);
     });
 
-    await Promise.race([client.connect(transport), timeoutPromise]);
-    const result = await Promise.race([client.listTools(), timeoutPromise]);
+    const listToolsTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("List tools timeout")), 20000);
+    });
+
+    await Promise.race([client.connect(transport), connectTimeout]);
+    const result = await Promise.race([client.listTools(), listToolsTimeout]);
 
     if (!result.tools || result.tools.length === 0) {
       return c.json({ tools: [] });

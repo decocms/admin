@@ -77,6 +77,10 @@ import {
   McpConfigurationForm,
   useMcpConfiguration,
 } from "./mcp-configuration-form";
+import {
+  authenticateMcp,
+  isOAuthTokenValid,
+} from "@/web/lib/browser-oauth-provider";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -280,6 +284,7 @@ function SettingsTab({
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const connectionsCollection = useConnectionsCollection();
+  const [isOauthNecessaryResult, setIsOauthNecessaryResult] = useState(false);
 
   // Connection settings form
   const connectionForm = useForm<ConnectionFormData>({
@@ -333,6 +338,15 @@ function SettingsTab({
     }
   }, [connection]);
 
+  // oxlint-disable-next-line ban-use-effect/ban-use-effect
+  useEffect(() => {
+    const checkOauth = async () => {
+      const isTokenValid = await isOAuthTokenValid(connection.connection_url, connection?.connection_token);
+      setIsOauthNecessaryResult(!isTokenValid);
+    };
+    checkOauth();
+  }, [connection.connection_url, connection.connection_token]);
+
   // Track if MCP config has changes
   const mcpHasChanges =
     JSON.stringify(mcpFormState) !== JSON.stringify(mcpInitialState);
@@ -358,6 +372,25 @@ function SettingsTab({
       setIsSavingConnection(false);
     }
   };
+
+  const handleAuthenticate = async () => {
+    const { token, error } = await authenticateMcp(
+      connection.connection_url,
+    );
+    if (error) {
+      toast.error(`Authentication failed: ${error}`);
+      setIsSavingConnection(false);
+      return;
+    }
+
+    if (token) {
+      connectionsCollection.update(connection.id, (draft) => {
+        draft.connection_token = token;
+      });
+    }
+
+    toast.success("Authentication successful");
+  }
 
   const handleSaveMcpConfig = async () => {
     setIsSavingConfig(true);
@@ -422,16 +455,35 @@ function SettingsTab({
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
-        {hasMcpBinding && (
-          <div className="w-3/5 min-w-0 overflow-auto">
-            <McpConfigurationForm
-              formState={mcpFormState}
-              onFormStateChange={setMcpFormState}
-              stateSchema={mcpStateSchema}
-              isLoading={isMcpConfigLoading}
-              error={mcpConfigError}
-            />
-          </div>
+        {(
+          isOauthNecessaryResult ? (
+            <div className="w-3/5 min-w-0 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4 max-w-md text-center">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-lg font-semibold">Authentication Required</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This connection requires OAuth authentication to access resources.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleAuthenticate}
+                  size="lg"
+                >
+                  Authenticate
+                </Button>
+              </div>
+            </div>
+          ) : hasMcpBinding && (
+            <div className="w-3/5 min-w-0 overflow-auto">
+              <McpConfigurationForm
+                formState={mcpFormState}
+                onFormStateChange={setMcpFormState}
+                stateSchema={mcpStateSchema}
+                isLoading={isMcpConfigLoading}
+                error={mcpConfigError}
+              />
+            </div>            
+          )
         )}
       </div>
     </>

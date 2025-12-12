@@ -1,4 +1,3 @@
-import { createToolCaller } from "@/tools/client";
 import { CollectionSearch } from "@/web/components/collections/collection-search";
 import { CollectionTableWrapper } from "@/web/components/collections/collection-table-wrapper";
 import { EmptyState } from "@/web/components/empty-state";
@@ -10,6 +9,7 @@ import {
   type ConnectionEntity,
 } from "@/web/hooks/collections/use-connection";
 import { useRegistryConnections } from "@/web/hooks/use-binding";
+import { useFetchRemoteTools } from "@/web/hooks/use-fetch-remote-tools";
 import { usePublisherConnection } from "@/web/hooks/use-publisher-connection";
 import { useToolCall } from "@/web/hooks/use-tool-call";
 import { authClient } from "@/web/lib/auth-client";
@@ -30,6 +30,7 @@ import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createToolCaller } from "@/tools/client";
 
 /** Get publisher info (logo and app count) from items in the store or connection in database */
 function getPublisherInfo(
@@ -299,6 +300,24 @@ export default function StoreAppDetail() {
   // Extract data from item (moved before conditionals to ensure hook order)
   const data = selectedItem ? extractItemData(selectedItem) : null;
 
+  // Check if we have local tools and get remote URL
+  const hasLocalTools = (data?.tools?.length || 0) > 0;
+  const remoteUrl = selectedItem?.server?.remotes?.[0]?.url || null;
+
+  // Fetch tools from remote MCP server if no local tools are available
+  const {
+    data: remoteTools,
+    isLoading: isLoadingRemoteTools,
+  } = useFetchRemoteTools({
+    url: remoteUrl,
+    enabled: !hasLocalTools && !!remoteUrl,
+  });
+
+  // Combine local and remote tools - prefer local if available
+  const effectiveTools = hasLocalTools
+    ? data?.tools || []
+    : (remoteTools || []);
+
   // Get publisher connection from database (moved before conditionals to ensure hook order)
   const publisherConnection = usePublisherConnection(
     allConnections,
@@ -320,18 +339,27 @@ export default function StoreAppDetail() {
   const repo = data?.repository ? extractGitHubRepo(data.repository) : null;
 
   const availableTabs = [
-    { id: "tools", label: "Tools", visible: (data?.tools?.length || 0) > 0 },
     {
       id: "readme",
       label: "README",
       visible: !!data?.repository && !!repo,
     },
+    {
+      id: "tools",
+      label: "Tools",
+      visible:
+        hasLocalTools ||
+        (remoteTools?.length || 0) > 0 ||
+        isLoadingRemoteTools,
+    },
   ].filter((tab) => tab.visible);
 
-  // Calculate effective active tab - use current activeTabId if available, otherwise use first available tab
+  // Calculate effective active tab - prioritize README, then tools, otherwise first available
   const effectiveActiveTabId = availableTabs.find((t) => t.id === activeTabId)
     ? activeTabId
-    : availableTabs[0]?.id || "overview";
+    : availableTabs.find((t) => t.id === "readme")?.id ||
+      availableTabs[0]?.id ||
+      "overview";
 
   const handleInstall = async () => {
     if (!selectedItem || !org || !session?.user?.id) return;
@@ -702,47 +730,64 @@ export default function StoreAppDetail() {
                 )}
 
                 {/* Tools Tab Content */}
-                {effectiveActiveTabId === "tools" && data.tools.length > 0 && (
+                {effectiveActiveTabId === "tools" && (
                   <div className="flex flex-col">
-                    {/* Search Section */}
-                    <div className="border-b border-border bg-background">
-                      <CollectionSearch
-                        value={search}
-                        onChange={setSearch}
-                        placeholder="Search for tools..."
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") {
-                            setSearch("");
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
-                      />
-                    </div>
+                    {isLoadingRemoteTools ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          Loading tools...
+                        </span>
+                      </div>
+                    ) : effectiveTools.length > 0 ? (
+                      <>
+                        {/* Search Section */}
+                        <div className="border-b border-border bg-background">
+                          <CollectionSearch
+                            value={search}
+                            onChange={setSearch}
+                            placeholder="Search for tools..."
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                setSearch("");
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                          />
+                        </div>
 
-                    {/* Table Section */}
-                    <div className="bg-background overflow-hidden">
-                      <ToolsTable
-                        tools={data.tools as Array<Record<string, unknown>>}
-                        search={search}
-                        sortKey={sortKey}
-                        sortDirection={sortDirection}
-                        onSort={(key) => {
-                          if (sortKey === key) {
-                            setSortDirection((prev) =>
-                              prev === "asc"
-                                ? "desc"
-                                : prev === "desc"
-                                  ? null
-                                  : "asc",
-                            );
-                            if (sortDirection === "desc") setSortKey(undefined);
-                          } else {
-                            setSortKey(key);
-                            setSortDirection("asc");
-                          }
-                        }}
+                        {/* Table Section */}
+                        <div className="bg-background overflow-hidden">
+                          <ToolsTable
+                            tools={effectiveTools as Array<Record<string, unknown>>}
+                            search={search}
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={(key) => {
+                              if (sortKey === key) {
+                                setSortDirection((prev) =>
+                                  prev === "asc"
+                                    ? "desc"
+                                    : prev === "desc"
+                                      ? null
+                                      : "asc",
+                                );
+                                if (sortDirection === "desc") setSortKey(undefined);
+                              } else {
+                                setSortKey(key);
+                                setSortDirection("asc");
+                              }
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <EmptyState
+                        image={null}
+                        title="No tools available"
+                        description="This app doesn't have any tools."
                       />
-                    </div>
+                    )}
                   </div>
                 )}
 

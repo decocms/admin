@@ -3,22 +3,22 @@ import {
   Workflow,
   WorkflowExecutionWithStepResults,
 } from "@decocms/bindings/workflow";
-import { ViewActions, ViewLayout, ViewTabs } from "./layout";
-import { WorkflowSteps } from "../workflow/steps/index";
+import { ViewActions, ViewLayout, ViewTabs } from "../layout";
+import { WorkflowSteps } from "./components/steps/index";
 import {
   useCurrentStepName,
   useCurrentTab,
   useWorkflow,
   WorkflowStoreProvider,
-} from "@/web/stores/workflow";
+} from "@/web/components/details/workflow/stores/workflow";
 import {
   useWorkflowCollectionItem,
   useWorkflowExecutionCollectionItem,
-} from "@/web/hooks/workflows/use-workflow-collection-item";
-import { WorkflowActions } from "../workflow/actions";
-import { StepTabs, WorkflowTabs } from "../workflow/tabs";
+} from "./hooks/use-workflow-collection-item";
+import { WorkflowActions } from "./components/actions";
+import { StepTabs, WorkflowTabs } from "./components/tabs";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { MonacoCodeEditor } from "../monaco-editor";
+import { MonacoCodeEditor } from "../../monaco-editor";
 export interface WorkflowDetailsViewProps {
   itemId: string;
   onBack: () => void;

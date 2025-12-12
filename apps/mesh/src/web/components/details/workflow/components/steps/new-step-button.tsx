@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, BellIcon, ClockIcon, CodeXml, Wrench, X } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.js";
-import type { StepType } from "@/web/stores/workflow";
+import type { StepType } from "@/web/components/details/workflow/stores/workflow";
 
 // ============================================
 // Add First Step Button (for empty state)

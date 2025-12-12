@@ -1,5 +1,5 @@
 import { useParams } from "@tanstack/react-router";
-import { useCollection, useCollectionItem } from "../use-collections";
+import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
 import {
   Workflow,
   WorkflowExecution,
@@ -7,7 +7,7 @@ import {
 } from "@decocms/bindings/workflow";
 import { createToolCaller, UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import { useWorkflowBindingConnection } from "./use-workflow-binding-connection";
-import { useToolCall } from "../use-tool-call";
+import { useToolCall } from "@/web/hooks/use-tool-call";
 
 export function useWorkflowCollectionItem(itemId: string) {
   const { connectionId } = useParams({

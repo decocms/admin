@@ -6,7 +6,7 @@ import {
   useTrackingExecutionId,
   useWorkflowActions,
   useCurrentTab,
-} from "@/web/stores/workflow";
+} from "@/web/components/details/workflow/stores/workflow";
 import {
   Tabs,
   TabsContent,
@@ -22,14 +22,18 @@ import {
   ToolCallAction,
   WaitForSignalAction,
 } from "@decocms/bindings/workflow";
-import { MonacoCodeEditor } from "../monaco-editor";
-import { ConnectionSelector, ItemCard, ToolSelector } from "../tool-selector";
+import { MonacoCodeEditor } from "../../../monaco-editor";
+import {
+  ConnectionSelector,
+  ItemCard,
+  ToolSelector,
+} from "../../../tool-selector";
 import { Button } from "@deco/ui/components/button.js";
-import { ExecutionResult, ToolDetail, useTool } from "../details/tool";
+import { ExecutionResult, ToolDetail, useTool } from "../../tool";
 import { CodeXml, GitBranch, Loader2 } from "lucide-react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
-import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
 import { extractOutputSchema } from "@/web/lib/typescript-to-json-schema";
+import { usePollingWorkflowExecution } from "../hooks/use-workflow-collection-item";
 
 export function WorkflowTabs() {
   const currentTab = useCurrentTab();

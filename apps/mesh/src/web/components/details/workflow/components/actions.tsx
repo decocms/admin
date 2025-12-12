@@ -3,7 +3,7 @@ import {
   useTrackingExecutionId,
   useWorkflow,
   useWorkflowActions,
-} from "@/web/stores/workflow";
+} from "@/web/components/details/workflow/stores/workflow";
 import { Icon } from "@deco/ui/components/icon.js";
 import { Button } from "@deco/ui/components/button.js";
 

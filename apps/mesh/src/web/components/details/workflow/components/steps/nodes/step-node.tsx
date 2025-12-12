@@ -27,13 +27,13 @@ import {
   useTrackingExecutionId,
   useIsDraftStep,
   useCurrentStepName,
-} from "@/web/stores/workflow";
+} from "@/web/components/details/workflow/stores/workflow";
 import type { StepNodeData } from "../use-workflow-flow";
 import { createToolCaller } from "@/tools/client";
-import { useWorkflowBindingConnection } from "@/web/hooks/workflows/use-workflow-binding-connection";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { Spinner } from "@deco/ui/components/spinner.js";
-import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
+import { useWorkflowBindingConnection } from "../../../hooks/use-workflow-binding-connection";
+import { usePollingWorkflowExecution } from "../../../hooks/use-workflow-collection-item";
 
 // ============================================
 // Duration Component

@@ -165,6 +165,9 @@ export function ChatProvider({ children }: PropsWithChildren) {
         }
       }
     },
+    onToolCall: (toolCall) => {
+      console.log("[deco-chat] Tool call:", toolCall);
+    },
     onError: (error: Error) => {
       console.error("[deco-chat] Chat error:", error);
     },

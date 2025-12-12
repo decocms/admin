@@ -1,7 +1,13 @@
 import type { Node, Edge, OnNodesChange, OnEdgesChange } from "@xyflow/react";
-import type { Step } from "@decocms/bindings/workflow";
-import { useWorkflowSteps, useWorkflowActions } from "@/web/stores/workflow";
-import { computeStepLevels, buildDagEdges } from "./dag-utils";
+import {
+  buildDagEdges,
+  computeStepLevels,
+  type Step,
+} from "@decocms/bindings/workflow";
+import {
+  useWorkflowSteps,
+  useWorkflowActions,
+} from "@/web/components/details/workflow/stores/workflow";
 
 // ============================================
 // Types

@@ -68,10 +68,12 @@ export const COLLECTION_CONNECTIONS_UPDATE = defineTool({
         data.connection_headers ?? existing.connection_headers,
     }).catch(() => null);
     const tools = fetchedTools?.length ? fetchedTools : null;
+    console.log("[COLLECTION_CONNECTIONS_UPDATE] Tools:", tools);
 
     // Update the connection with the refreshed tools
     const updatePayload: Partial<ConnectionEntity> = { ...data, tools };
     const connection = await ctx.storage.connections.update(id, updatePayload);
+    console.log("[COLLECTION_CONNECTIONS_UPDATE] Connection:", connection);
 
     return {
       item: connection,

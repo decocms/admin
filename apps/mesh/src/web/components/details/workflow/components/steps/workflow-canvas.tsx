@@ -24,7 +24,7 @@ import {
   useWorkflowActions,
   type StepType,
   useIsAddingStep,
-} from "@/web/stores/workflow";
+} from "@/web/components/details/workflow/stores/workflow";
 import { useWorkflowFlow } from "./use-workflow-flow";
 import { StepNode, TriggerNode } from "./nodes";
 import { AddFirstStepButton } from "./new-step-button";

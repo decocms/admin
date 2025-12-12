@@ -539,6 +539,23 @@ export function getStepDependencies(
 }
 
 /**
+ * Build edges for the DAG: [fromStep, toStep][]
+ */
+export function buildDagEdges(steps: Step[]): [string, string][] {
+  const stepNames = new Set(steps.map((s) => s.name));
+  const edges: [string, string][] = [];
+
+  for (const step of steps) {
+    const deps = getStepDependencies(step, stepNames);
+    for (const dep of deps) {
+      edges.push([dep, step.name]);
+    }
+  }
+
+  return edges;
+}
+
+/**
  * Compute topological levels for all steps.
  * Level 0 = no dependencies on other steps
  * Level N = depends on at least one step at level N-1

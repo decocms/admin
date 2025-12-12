@@ -4,7 +4,6 @@ import { Pause, Play, Zap } from "lucide-react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
 import { cn } from "@deco/ui/lib/utils.js";
-import { useWorkflowBindingConnection } from "@/web/hooks/workflows/use-workflow-binding-connection";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { createToolCaller } from "@/tools/client";
 import {
@@ -12,8 +11,9 @@ import {
   useTrackingExecutionId,
   useWorkflow,
   useWorkflowActions,
-} from "@/web/stores/workflow";
-import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
+} from "@/web/components/details/workflow/stores/workflow";
+import { useWorkflowBindingConnection } from "../../../hooks/use-workflow-binding-connection";
+import { usePollingWorkflowExecution } from "../../../hooks/use-workflow-collection-item";
 
 // ============================================
 // Workflow Start Hook

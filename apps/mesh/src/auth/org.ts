@@ -45,6 +45,8 @@ const defaultOrgMcps: MCPCreationSpec[] = [
     permissions: {
       self: ["*"],
     },
+    // FIXME (@mcandeia) Tools are not being updated when new tools are added to the system
+    // so once installed tools remains static, should have a way to update them.
     tools: ALL_TOOLS.map((tool) => {
       return {
         name: tool.name,

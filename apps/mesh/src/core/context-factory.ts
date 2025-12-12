@@ -597,12 +597,12 @@ export function createMeshContextFactory(
     });
 
     // Build auth object for MeshContext
-    const auth: MeshContext["auth"] = {
+    const meshAuth: MeshContext["auth"] = {
       user: authResult.user,
     };
 
     if (authResult.apiKeyId) {
-      auth.apiKey = {
+      meshAuth.apiKey = {
         id: authResult.apiKeyId,
         name: "", // Not needed for access control
         userId: "", // Not needed for access control
@@ -619,7 +619,7 @@ export function createMeshContextFactory(
     // Create AccessControl instance with bound auth client
     const access = new AccessControl(
       config.auth,
-      auth.user?.id,
+      meshAuth.user?.id,
       undefined, // toolName set later by defineTool
       boundAuth, // Bound auth client for permission checks
       authResult.role, // Role from session (for built-in role bypass)
@@ -627,7 +627,7 @@ export function createMeshContextFactory(
     );
 
     return {
-      auth,
+      auth: meshAuth,
       organization,
       storage,
       vault,

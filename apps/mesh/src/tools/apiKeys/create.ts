@@ -30,12 +30,16 @@ export const API_KEY_CREATE = defineTool({
       throw new Error("User ID required to create API key");
     }
 
-    // Create the API key via Better Auth
+    // Create the API key via Better Auth with organization context
+    // This ensures the API key is scoped to the current organization
     const result = await ctx.boundAuth.apiKey.create({
       name: input.name,
       permissions: input.permissions,
       expiresIn: input.expiresIn,
-      metadata: input.metadata,
+      metadata: {
+        ...input.metadata,
+        organization: ctx.organization, // Embed org context for multi-tenancy
+      },
     });
 
     // Return the created key with its value (only time it's visible)

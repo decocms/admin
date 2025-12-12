@@ -2,12 +2,18 @@ import { getDb } from "@/database";
 import { CredentialVault } from "@/encryption/credential-vault";
 import { ConnectionStorage } from "@/storage/connection";
 import { Permission } from "@/storage/types";
-import { ConnectionCreateData } from "@/tools/connection/schema";
+import { ALL_TOOLS } from "@/tools";
+import {
+  ConnectionCreateData,
+  ToolDefinition,
+} from "@/tools/connection/schema";
+import zodToJsonSchema from "zod-to-json-schema";
 import { auth } from "./index";
 
 interface MCPCreationSpec {
   data: ConnectionCreateData;
   permissions?: Permission;
+  tools?: ToolDefinition[];
 }
 /**
  * Default MCP connections to create for new organizations
@@ -39,6 +45,16 @@ const defaultOrgMcps: MCPCreationSpec[] = [
     permissions: {
       self: ["*"],
     },
+    tools: ALL_TOOLS.map((tool) => {
+      return {
+        name: tool.name,
+        inputSchema: zodToJsonSchema(tool.inputSchema),
+        outputSchema: tool.outputSchema
+          ? zodToJsonSchema(tool.outputSchema)
+          : undefined,
+        description: tool.description,
+      };
+    }),
     data: {
       title: "Management MCP",
       description: "Management MCP for the organization",
@@ -92,6 +108,7 @@ export async function createDefaultOrgConnections(
         }
         await connectionStorage.create({
           ...mcpConfig.data,
+          tools: mcpConfig.tools,
           organization_id: organizationId,
           created_by: createdBy,
           connection_token: mcpConfig.data.connection_token ?? connectionToken,

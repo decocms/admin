@@ -54,6 +54,7 @@ describe("createMeshContextFactory", () => {
           },
         },
       }),
+      setActiveOrganization: vi.fn().mockResolvedValue(null),
     },
   });
 
@@ -191,6 +192,7 @@ describe("createMeshContextFactory", () => {
               metadata: {},
             },
           }),
+          setActiveOrganization: vi.fn().mockResolvedValue(null),
         },
       };
 
@@ -259,6 +261,169 @@ describe("createMeshContextFactory", () => {
       expect(meshCtx.access.granted).toBeDefined();
       expect(meshCtx.access.check).toBeDefined();
       expect(meshCtx.access.grant).toBeDefined();
+    });
+  });
+
+  describe("API Key organization scope", () => {
+    it("should set organization from API key metadata", async () => {
+      const mockAuthWithOrgInApiKey = {
+        api: {
+          getMcpSession: vi.fn().mockResolvedValue(null),
+          verifyApiKey: vi.fn().mockResolvedValue({
+            valid: true,
+            key: {
+              id: "key_org_a",
+              name: "Org A Key",
+              userId: "user_1",
+              permissions: { self: ["*"] },
+              metadata: {
+                organization: {
+                  id: "org_a",
+                  slug: "org-a",
+                  name: "Organization A",
+                },
+              },
+            },
+          }),
+          setActiveOrganization: vi.fn().mockResolvedValue(null),
+        },
+      };
+
+      const factory = createMeshContextFactory({
+        db,
+        auth: mockAuthWithOrgInApiKey as unknown as BetterAuthInstance,
+        encryption: { key: "test_key" },
+        observability: {
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
+        },
+      });
+
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer api_key_org_a" },
+      });
+
+      const meshCtx = await factory(request);
+
+      // Organization should be extracted from API key metadata
+      expect(meshCtx.organization).toBeDefined();
+      expect(meshCtx.organization?.id).toBe("org_a");
+      expect(meshCtx.organization?.slug).toBe("org-a");
+      expect(meshCtx.organization?.name).toBe("Organization A");
+    });
+
+    it("should have undefined organization when API key has no org metadata", async () => {
+      const mockAuthWithoutOrg = {
+        api: {
+          getMcpSession: vi.fn().mockResolvedValue(null),
+          verifyApiKey: vi.fn().mockResolvedValue({
+            valid: true,
+            key: {
+              id: "key_no_org",
+              name: "No Org Key",
+              userId: "user_1",
+              permissions: { self: ["*"] },
+              metadata: {}, // No organization
+            },
+          }),
+        },
+      };
+
+      const factory = createMeshContextFactory({
+        db,
+        auth: mockAuthWithoutOrg as unknown as BetterAuthInstance,
+        encryption: { key: "test_key" },
+        observability: {
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
+        },
+      });
+
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer api_key_no_org" },
+      });
+
+      const meshCtx = await factory(request);
+
+      // Organization should be undefined when not in API key metadata
+      expect(meshCtx.organization).toBeUndefined();
+    });
+
+    it("should set different organizations for different API keys", async () => {
+      // Create factory for Org A key
+      const mockAuthOrgA = {
+        api: {
+          getMcpSession: vi.fn().mockResolvedValue(null),
+          verifyApiKey: vi.fn().mockResolvedValue({
+            valid: true,
+            key: {
+              id: "key_org_a",
+              userId: "user_1",
+              permissions: { self: ["*"] },
+              metadata: {
+                organization: { id: "org_a", slug: "org-a", name: "Org A" },
+              },
+            },
+          }),
+          setActiveOrganization: vi.fn().mockResolvedValue(null),
+        },
+      };
+
+      const factoryA = createMeshContextFactory({
+        db,
+        auth: mockAuthOrgA as unknown as BetterAuthInstance,
+        encryption: { key: "test_key" },
+        observability: {
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
+        },
+      });
+
+      const requestA = createMockRequest({
+        headers: { Authorization: "Bearer api_key_org_a" },
+      });
+
+      const ctxA = await factoryA(requestA);
+      expect(ctxA.organization?.id).toBe("org_a");
+
+      // Create factory for Org B key
+      const mockAuthOrgB = {
+        api: {
+          getMcpSession: vi.fn().mockResolvedValue(null),
+          verifyApiKey: vi.fn().mockResolvedValue({
+            valid: true,
+            key: {
+              id: "key_org_b",
+              userId: "user_1", // Same user, different org
+              permissions: { self: ["*"] },
+              metadata: {
+                organization: { id: "org_b", slug: "org-b", name: "Org B" },
+              },
+            },
+          }),
+          setActiveOrganization: vi.fn().mockResolvedValue(null),
+        },
+      };
+
+      const factoryB = createMeshContextFactory({
+        db,
+        auth: mockAuthOrgB as unknown as BetterAuthInstance,
+        encryption: { key: "test_key" },
+        observability: {
+          tracer: {} as unknown as Tracer,
+          meter: {} as unknown as Meter,
+        },
+      });
+
+      const requestB = createMockRequest({
+        headers: { Authorization: "Bearer api_key_org_b" },
+      });
+
+      const ctxB = await factoryB(requestB);
+      expect(ctxB.organization?.id).toBe("org_b");
+
+      // Verify they are different organizations
+      expect(ctxA.organization?.id).not.toBe(ctxB.organization?.id);
     });
   });
 });

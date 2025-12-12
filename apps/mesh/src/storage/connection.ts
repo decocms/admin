@@ -14,7 +14,7 @@ import type {
   OAuthConfig,
   ToolDefinition,
 } from "../tools/connection/schema";
-import { generateConnectionId } from "@/shared/utils/generate_id";
+import { generateConnectionId } from "@/shared/utils/generate-id";
 
 /** JSON fields that need serialization/deserialization */
 const JSON_FIELDS = [

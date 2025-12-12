@@ -27,7 +27,6 @@ import { ReadmeViewer } from "@/web/components/store/readme-viewer";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 

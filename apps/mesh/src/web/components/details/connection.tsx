@@ -81,7 +81,7 @@ import {
   authenticateMcp,
   isOAuthTokenValid,
 } from "@/web/lib/browser-oauth-provider";
-import { generateConnectionId } from "@/shared/utils/generate_id";
+import { generateConnectionId } from "@/shared/utils/generate-id";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();

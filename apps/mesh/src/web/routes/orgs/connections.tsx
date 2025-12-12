@@ -67,7 +67,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
-import { generateConnectionId } from "@/shared/utils/generate_id";
+import { generateConnectionId } from "@/shared/utils/generate-id";
 
 // Form validation schema derived from ConnectionEntitySchema
 // Pick the relevant fields and adapt for form use

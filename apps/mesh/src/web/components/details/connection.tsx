@@ -81,7 +81,7 @@ import {
   authenticateMcp,
   isOAuthTokenValid,
 } from "@/web/lib/browser-oauth-provider";
-import { nanoid } from "nanoid";
+import { generateConnectionId } from "@/shared/utils/generate_id";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -948,7 +948,7 @@ function CollectionContent({
     const now = new Date().toISOString();
     collection.insert({
       ...item,
-      id: `conn_${nanoid()}`,
+      id: generateConnectionId(),
       title: `${item.title} (Copy)`,
       created_at: now,
       updated_at: now,
@@ -988,7 +988,7 @@ function CollectionContent({
 
     const now = new Date().toISOString();
     const newItem: BaseCollectionEntity = {
-      id: `conn_${nanoid()}`,
+      id: generateConnectionId(),
       title: "New Item",
       created_at: now,
       updated_at: now,

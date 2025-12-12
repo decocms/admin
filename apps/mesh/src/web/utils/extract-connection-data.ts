@@ -12,7 +12,7 @@ import {
 } from "@/web/utils/constants";
 import { getGitHubAvatarUrl } from "@/web/utils/github-icon";
 import { getConnectionTypeLabel } from "@/web/utils/registry-utils";
-import { nanoid } from "nanoid";
+import { generateConnectionId } from "@/shared/utils/generate_id";
 
 /**
  * Extract connection data from a registry item for installation
@@ -83,7 +83,7 @@ export function extractConnectionData(
     | undefined;
 
   return {
-    id: `conn_${nanoid()}`,
+    id: generateConnectionId(),
     title,
     description,
     icon,

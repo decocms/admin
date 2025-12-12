@@ -7,6 +7,7 @@ import validator from "@rjsf/validator-ajv8";
 import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
 import { BindingSelector } from "../binding-selector";
 import { useNavigate } from "@tanstack/react-router";
+import { useToolsFromBinding } from "@/web/hooks/use-tools-from-binding";
 
 interface McpConfigurationResult {
   stateSchema: Record<string, unknown>;
@@ -71,19 +72,14 @@ function isBindingField(schema: Record<string, unknown>): boolean {
  */
 function getBindingInfo(schema: Record<string, unknown>): {
   bindingType?: string;
-  bindingSchema?: unknown;
 } {
   const properties = schema.properties as Record<string, unknown> | undefined;
   if (!properties) return {};
 
   const typeProperty = properties.__type as Record<string, unknown> | undefined;
-  const bindingProperty = properties.__binding as
-    | Record<string, unknown>
-    | undefined;
 
   return {
     bindingType: typeProperty?.const as string | undefined,
-    bindingSchema: bindingProperty?.const,
   };
 }
 
@@ -117,18 +113,23 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
 
   // Check if this is a binding field (has __type or __binding in properties)
   if (isBindingField(schema as Record<string, unknown>)) {
-    const { bindingType, bindingSchema } = getBindingInfo(
-      schema as Record<string, unknown>,
-    );
-    const currentValue = (formData?.value as string) || "";
+    const { bindingType } = getBindingInfo(schema as Record<string, unknown>);
+
+    // Get tools from the store registry based on bindingType
+    const { tools: storeTools } = useToolsFromBinding(bindingType);
+    const toolNames = storeTools?.map((t) => t.name).filter(Boolean) as
+      | string[]
+      | undefined;
+
+    // Support both string format and object format for backwards compatibility
+    const currentValue =
+      typeof formData === "string"
+        ? formData
+        : (formData?.value as string) || "";
 
     const handleBindingChange = (newValue: string) => {
-      const newFieldData = {
-        ...formData,
-        value: newValue,
-        ...(bindingType && { __type: bindingType }),
-      };
-      formContext?.onFieldChange(fieldPath, newFieldData);
+      // Store just the connection ID string directly
+      formContext?.onFieldChange(fieldPath, newValue);
     };
 
     // Format title to Title Case
@@ -157,20 +158,8 @@ function CustomObjectFieldTemplate(props: ObjectFieldTemplateProps) {
           value={currentValue}
           onValueChange={handleBindingChange}
           placeholder={`Select ${displayTitle.toLowerCase()}...`}
-          binding={
-            // Only use bindingSchema if it's an array of tools, not a string starting with @
-            bindingSchema && !String(bindingSchema).startsWith("@")
-              ? (bindingSchema as
-                  | string
-                  | Array<{
-                      name: string;
-                      inputSchema?: Record<string, unknown>;
-                      outputSchema?: Record<string, unknown>;
-                    }>)
-              : undefined
-          }
+          tools={toolNames}
           bindingType={bindingType}
-          onAddNew={() => formContext?.onAddNew()}
           className="w-[200px] shrink-0"
         />
       </div>

@@ -128,6 +128,7 @@ export function findRegistryItemByBinding(
 
   // Parse @scope/appName format
   const [scope, appName] = bindingType.replace("@", "").split("/");
+  
   if (!scope || !appName) {
     return undefined;
   }
@@ -148,4 +149,61 @@ export function findRegistryItemByBinding(
 
     return false;
   });
+}
+
+/**
+ * Known binding types and their expected tool names.
+ * Used as fallback when the binding type is not found in the registry.
+ */
+const KNOWN_BINDING_TOOLS: Record<string, string[]> = {
+  "@deco/postgres": [
+    "DATABASES_RUN_SQL",
+    "DATABASES_LIST",
+    "DATABASES_GET",
+    "DATABASES_CREATE",
+    "DATABASES_UPDATE",
+    "DATABASES_DELETE",
+  ],
+};
+
+/**
+ * Get tools from a binding type in the registry
+ * @param items - Array of registry items from the store
+ * @param bindingType - Binding type string (e.g., "@deco/postgres")
+ * @returns Array of tool names or empty array if not found
+ */
+export function getToolsFromBindingType(
+  items: RegistryItem[],
+  bindingType: string,
+): Array<{ id?: string; name?: string; description?: string | null }> {
+  const registryItem = findRegistryItemByBinding(items, bindingType);
+
+  if (!registryItem) {
+    // Fallback: check if we have known tools for this binding type
+    const knownTools = KNOWN_BINDING_TOOLS[bindingType];
+    if (knownTools && knownTools.length > 0) {
+      return knownTools.map((name) => ({ name }));
+    }
+    
+    return [];
+  }
+
+  // Check for tools in the item itself first, then in the nested server object
+  const tools = registryItem.tools || registryItem.server?.tools;
+
+  if (!Array.isArray(tools)) {
+    // Fallback to known tools
+    const knownTools = KNOWN_BINDING_TOOLS[bindingType];
+    if (knownTools && knownTools.length > 0) {
+      return knownTools.map((name) => ({ name }));
+    }
+    
+    return [];
+  }
+
+  return tools as Array<{
+    id?: string;
+    name?: string;
+    description?: string | null;
+  }>;
 }

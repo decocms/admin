@@ -1,7 +1,3 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Select,
   SelectItem,
@@ -9,7 +5,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
 import { useConnections } from "../hooks/collections/use-connection";
 import { useBindingConnections } from "../hooks/use-binding";
 
@@ -30,13 +25,16 @@ interface BindingSelectorProps {
         outputSchema?: Record<string, unknown>;
       }>;
   /**
+   * Filter connections by specific tool names (e.g., ["DATABASES_RUN_SQL", "DATABASES_LIST"]).
+   * When provided, connections that have at least one of these tools will be shown.
+   */
+  tools?: string[];
+  /**
    * Specific MCP binding type for inline installation (e.g., "@deco/database").
    * When provided and starts with "@", clicking "Create connection" will
    * attempt to install the MCP directly from the registry.
    */
   bindingType?: string;
-  /** Callback when "Create connection" is clicked (fallback when no bindingType) */
-  onAddNew?: () => void;
   /** Optional className for the trigger */
   className?: string;
 }
@@ -46,50 +44,43 @@ export function BindingSelector({
   onValueChange,
   placeholder = "Select a connection...",
   binding,
-  bindingType,
-  onAddNew,
+  tools,
+  bindingType: _bindingType,
   className,
 }: BindingSelectorProps) {
-  const [isLocalInstalling, setIsLocalInstalling] = useState(false);
-  const { installByBinding, isInstalling: isGlobalInstalling } =
-    useInstallFromRegistry();
-
-  const isInstalling = isLocalInstalling || isGlobalInstalling;
-
   // Fetch all connections from local collection
   const allConnections = useConnections();
 
   // Filter connections by binding (works with both well-known binding names and inline binding schemas)
-  const filteredConnections = useBindingConnections({
-    connections: allConnections,
-    binding: binding,
-  });
+  // Or by tools if provided
+  const filteredConnections = (() => {
+    // Priority 1: Filter by tools if provided (e.g., "DATABASES_RUN_SQL")
+    // This searches connections that have these specific tools
+    if (tools && tools.length > 0) {
+      // Filter by tools: show connections that have at least one matching tool
+      // Tools from store -> compare -> tools from connections
+      return (
+        allConnections?.filter((conn) => {
+          if (!conn.tools || conn.tools.length === 0) return false;
+          const connectionToolNames = conn.tools.map((t) => t.name);
+          // Check if connection has any tool that matches the store tools
+          return tools.some((toolName) =>
+            connectionToolNames.includes(toolName),
+          );
+        }) ?? []
+      );
+    }
 
-  // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })
-  const parsedBindingType = (() => {
-    if (!bindingType?.startsWith("@")) return null;
-    const [scope, appName] = bindingType.replace("@", "").split("/");
-    return scope && appName ? { scope, appName } : null;
+    // Priority 2: Fall back to binding filter
+    return useBindingConnections({
+      connections: allConnections,
+      binding: binding,
+    });
   })();
 
-  // Apply additional filtering by bindingType and include selected connection if not in filtered list
+  // Include selected connection if not in filtered list
   const connections = (() => {
     let result = filteredConnections;
-
-    // If we have a specific binding type (@scope/appName), filter connections that match
-    if (parsedBindingType) {
-      result = result.filter((conn) => {
-        const connAppName = conn.app_name;
-        const connScopeName = (conn.metadata as Record<string, unknown> | null)
-          ?.scopeName as string | undefined;
-
-        // Match by app_name and scopeName
-        return (
-          connAppName === parsedBindingType.appName &&
-          connScopeName === parsedBindingType.scope
-        );
-      });
-    }
 
     if (value && !result.some((c) => c.id === value)) {
       const selectedConnection = allConnections?.find((c) => c.id === value);
@@ -100,33 +91,6 @@ export function BindingSelector({
 
     return result;
   })();
-
-  // Check if we can do inline installation (bindingType starts with @)
-  const canInstallInline = bindingType?.startsWith("@");
-
-  const handleCreateConnection = async () => {
-    // If we have a specific binding type that starts with @, try inline installation
-    if (canInstallInline && bindingType) {
-      setIsLocalInstalling(true);
-      try {
-        const result = await installByBinding(bindingType);
-        if (result) {
-          // Automatically select the newly installed connection
-          // The connection will appear in the list via allConnections
-          onValueChange(result.id);
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        toast.error(`Failed to install connection: ${message}`);
-      } finally {
-        setIsLocalInstalling(false);
-      }
-      return;
-    }
-
-    // Fallback to onAddNew navigation
-    onAddNew?.();
-  };
 
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -157,33 +121,6 @@ export function BindingSelector({
               </div>
             </SelectItem>
           ))
-        )}
-        {(onAddNew || canInstallInline) && (
-          <div className="border-t border-border">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCreateConnection();
-              }}
-              disabled={isInstalling}
-              className="w-full flex items-center gap-2 px-2 py-2 hover:bg-muted rounded-md text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isInstalling ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Installing...</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="add" size={16} />
-                  <span>
-                    {canInstallInline ? "Install MCP" : "Create connection"}
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
         )}
       </SelectContent>
     </Select>

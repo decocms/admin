@@ -288,6 +288,35 @@ function createBoundAuthClient(ctx: AuthContext): BoundAuthClient {
         } as unknown as Parameters<typeof auth.api.updateMemberRole>[0]);
       },
     },
+
+    apiKey: {
+      create: async (data) => {
+        return auth.api.createApiKey({
+          headers,
+          body: data,
+        });
+      },
+
+      list: async () => {
+        return auth.api.listApiKeys({
+          headers,
+        });
+      },
+
+      update: async (data) => {
+        return auth.api.updateApiKey({
+          headers,
+          body: data,
+        });
+      },
+
+      delete: async (keyId) => {
+        await auth.api.deleteApiKey({
+          headers,
+          body: { keyId },
+        });
+      },
+    },
   };
 }
 

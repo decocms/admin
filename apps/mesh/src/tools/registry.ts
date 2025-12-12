@@ -49,6 +49,8 @@ const ALL_TOOL_NAMES = [
   // Monitoring tools
   "MONITORING_LOGS_LIST",
   "MONITORING_STATS",
+  "API_KEY_UPDATE",
+  "API_KEY_DELETE",
 ] as const;
 
 /**
@@ -202,6 +204,17 @@ export const MANAGEMENT_TOOLS: ToolMetadata[] = [
     description: "View monitoring statistics",
     category: "Monitoring",
   },
+  {
+    name: "API_KEY_UPDATE",
+    description: "Update API key",
+    category: "API Keys",
+  },
+  {
+    name: "API_KEY_DELETE",
+    description: "Delete API key",
+    category: "API Keys",
+    dangerous: true,
+  },
 ];
 
 /**
@@ -229,6 +242,8 @@ const TOOL_LABELS: Record<ToolName, string> = {
   DATABASES_RUN_SQL: "Run SQL queries",
   MONITORING_LOGS_LIST: "List monitoring logs",
   MONITORING_STATS: "View monitoring statistics",
+  API_KEY_UPDATE: "Update API key",
+  API_KEY_DELETE: "Delete API key",
 };
 
 // ============================================================================

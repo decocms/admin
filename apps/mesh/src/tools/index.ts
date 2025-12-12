@@ -5,6 +5,7 @@
  * Types are inferred from ALL_TOOLS - this is the source of truth.
  */
 
+import * as ApiKeyTools from "./apiKeys";
 import * as ConnectionTools from "./connection";
 import * as DatabaseTools from "./database";
 import * as MonitoringTools from "./monitoring";
@@ -42,6 +43,8 @@ export const ALL_TOOLS = [
   // Monitoring tools
   MonitoringTools.MONITORING_LOGS_LIST,
   MonitoringTools.MONITORING_STATS,
+  ApiKeyTools.API_KEY_UPDATE,
+  ApiKeyTools.API_KEY_DELETE,
 ] as const satisfies { name: ToolName }[];
 
 export type MCPMeshTools = typeof ALL_TOOLS;

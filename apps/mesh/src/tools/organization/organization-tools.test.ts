@@ -137,6 +137,26 @@ const createMockBoundAuth = (
       });
     }),
   },
+  apiKey: {
+    create: vi.fn().mockResolvedValue({
+      id: "key_123",
+      name: "Test Key",
+      key: "mcp_test_key_123",
+      permissions: {},
+      expiresAt: null,
+      createdAt: new Date(),
+    }),
+    list: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockResolvedValue({
+      id: "key_123",
+      name: "Updated Key",
+      userId: "user_1",
+      permissions: {},
+      expiresAt: null,
+      createdAt: new Date(),
+    }),
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
 });
 
 const createMockContext = (

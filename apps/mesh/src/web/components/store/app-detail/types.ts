@@ -29,6 +29,7 @@ export interface TabItem {
   id: string;
   label: string;
   visible: boolean;
+  count?: number;
 }
 
 export interface AppDetailProps {

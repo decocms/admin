@@ -348,6 +348,7 @@ export default function StoreAppDetail() {
     {
       id: "tools",
       label: "Tools",
+      count: effectiveTools.length,
       visible:
         hasLocalTools ||
         remoteTools.length > 0 ||

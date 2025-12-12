@@ -1,6 +1,7 @@
 import { EmptyState } from "@/web/components/empty-state";
 import { ReadmeViewer } from "@/web/components/store/readme-viewer";
 import { ToolsList, type Tool } from "@/web/components/tools";
+import { ResourceTabs } from "@deco/ui/components/resource-tabs.tsx";
 import { Loader2 } from "lucide-react";
 import type { AppData, TabItem } from "./types";
 
@@ -34,20 +35,12 @@ export function AppTabsContent({
     <div className="lg:col-span-2 flex flex-col border-l border-border">
       {/* Tabs Section */}
       {availableTabs.length > 0 && (
-        <div className="flex items-center gap-2 p-4 border-b border-border bg-background">
-          {availableTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium px-3 py-1.5 h-8 rounded-lg border transition-colors ${
-                effectiveActiveTabId === tab.id
-                  ? "bg-muted border-input text-foreground"
-                  : "bg-transparent border-transparent text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="border-b border-border bg-background">
+          <ResourceTabs
+            tabs={availableTabs}
+            activeTab={effectiveActiveTabId}
+            onTabChange={onTabChange}
+          />
         </div>
       )}
 

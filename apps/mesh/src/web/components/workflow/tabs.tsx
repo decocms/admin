@@ -29,6 +29,7 @@ import { ExecutionResult, ToolDetail, useTool } from "../details/tool";
 import { CodeXml, GitBranch, Loader2 } from "lucide-react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
 import { usePollingWorkflowExecution } from "@/web/hooks/workflows/use-workflow-collection-item";
+import { extractOutputSchema } from "@/web/lib/typescript-to-json-schema";
 
 export function WorkflowTabs() {
   const currentTab = useCurrentTab();
@@ -190,16 +191,22 @@ function ActionTab({
     );
   } else if ("code" in step.action) {
     return (
-      <MonacoCodeEditor
-        height="100%"
-        code={step.action.code}
-        language="typescript"
-        onSave={(code) => {
-          updateStep(step.name, {
-            action: { ...step.action, code },
-          });
-        }}
-      />
+      <div className="h-[calc(100%-60px)]">
+        <MonacoCodeEditor
+          height="100%"
+          code={step.action.code}
+          language="typescript"
+          onSave={(code) => {
+            // Extract output schema from the TypeScript code
+            const outputSchema = extractOutputSchema(code);
+
+            updateStep(step.name, {
+              action: { ...step.action, code },
+              outputSchema: outputSchema as Record<string, unknown> | null,
+            });
+          }}
+        />
+      </div>
     );
   } else if ("sleepMs" in step.action || "sleepUntil" in step.action) {
     return (
@@ -225,23 +232,42 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
     string | null
   >(connectionId ?? null);
   const [isUsingTool, setIsUsingTool] = useState(!!toolName);
-  const { updateStep } = useWorkflowActions();
+  const { updateStep, setDraftStep } = useWorkflowActions();
   const currentStep = useCurrentStep();
   const isAddingStep = useIsAddingStep();
   const connections = useConnections();
+  const draftStep = useDraftStep();
 
-  const updateStepAction = (newToolName: string | null) => {
-    if (isAddingStep) return;
-    if (!currentStep?.name) return;
+  const handleToolSelect = (newToolName: string | null) => {
     if (!selectedConnectionId || !newToolName) return;
     setIsUsingTool(true);
-    updateStep(currentStep.name, {
-      action: {
-        ...step.action,
-        toolName: newToolName,
-        connectionId: selectedConnectionId,
-      },
-    });
+
+    // Get the tool's outputSchema from the connection
+    const tool = connections
+      .find((c) => c.id === selectedConnectionId)
+      ?.tools?.find((t) => t.name === newToolName);
+    const outputSchema =
+      (tool?.outputSchema as Record<string, unknown>) ?? null;
+
+    const newAction: ToolCallAction = {
+      toolName: newToolName,
+      connectionId: selectedConnectionId,
+    };
+
+    if (isAddingStep && draftStep) {
+      // Update draft step
+      setDraftStep({
+        ...draftStep,
+        action: newAction,
+        outputSchema,
+      });
+    } else if (currentStep?.name) {
+      // Update existing step
+      updateStep(currentStep.name, {
+        action: newAction,
+        outputSchema,
+      });
+    }
   };
 
   return (
@@ -272,7 +298,7 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
             <ToolSelector
               selectedConnectionId={selectedConnectionId}
               selectedToolName={toolName}
-              onToolNameChange={updateStepAction}
+              onToolNameChange={handleToolSelect}
             />
           </div>
         )}
@@ -295,88 +321,6 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
   );
 }
 
-function jsonSchemaToTypeScript(
-  schema: Record<string, unknown>,
-  typeName: string = "Output",
-): string {
-  function schemaToType(s: Record<string, unknown>): string {
-    if (!s || typeof s !== "object") return "unknown";
-
-    const type = s.type as string | string[] | undefined;
-
-    if (Array.isArray(type)) {
-      return type.map((t) => primitiveToTs(t)).join(" | ");
-    }
-
-    switch (type) {
-      case "string":
-        if (s.enum)
-          return (s.enum as string[]).map((e) => `"${e}"`).join(" | ");
-        return "string";
-      case "number":
-      case "integer":
-        return "number";
-      case "boolean":
-        return "boolean";
-      case "null":
-        return "null";
-      case "array":
-        const items = s.items as Record<string, unknown> | undefined;
-        return items ? `${schemaToType(items)}[]` : "unknown[]";
-      case "object":
-        return objectToType(s);
-      default:
-        if (s.anyOf)
-          return (s.anyOf as Record<string, unknown>[])
-            .map(schemaToType)
-            .join(" | ");
-        if (s.oneOf)
-          return (s.oneOf as Record<string, unknown>[])
-            .map(schemaToType)
-            .join(" | ");
-        if (s.allOf)
-          return (s.allOf as Record<string, unknown>[])
-            .map(schemaToType)
-            .join(" & ");
-        return "unknown";
-    }
-  }
-
-  function primitiveToTs(t: string): string {
-    switch (t) {
-      case "string":
-        return "string";
-      case "number":
-      case "integer":
-        return "number";
-      case "boolean":
-        return "boolean";
-      case "null":
-        return "null";
-      default:
-        return "unknown";
-    }
-  }
-
-  function objectToType(s: Record<string, unknown>): string {
-    const props = s.properties as
-      | Record<string, Record<string, unknown>>
-      | undefined;
-    if (!props) return "Record<string, unknown>";
-
-    const required = new Set((s.required as string[]) || []);
-    const lines = Object.entries(props).map(([key, value]) => {
-      const optional = required.has(key) ? "" : "?";
-      const desc = value.description ? `  /** ${value.description} */\n` : "";
-      return `${desc}  ${key}${optional}: ${schemaToType(value)};`;
-    });
-
-    return `{\n${lines.join("\n")}\n}`;
-  }
-
-  return `interface ${typeName} ${schemaToType(schema)}`;
-}
-
 function SelectedTool({
   selectedToolName,
   selectedConnectionId,
@@ -395,11 +339,6 @@ function SelectedTool({
   const draftStep = useDraftStep();
   const { setDraftStep, updateStep } = useWorkflowActions();
   const currentStep = useCurrentStep();
-
-  const ts = jsonSchemaToTypeScript(
-    tool?.outputSchema as Record<string, unknown>,
-  );
-  console.log(ts);
 
   const handleInputChange = (input: Record<string, unknown>) => {
     if (draftStep) {

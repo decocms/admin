@@ -6,8 +6,6 @@ import {
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
   AlertCircle,
@@ -28,6 +26,7 @@ import { ViewActions, ViewLayout } from "./layout";
 import { useParams } from "@tanstack/react-router";
 import { JsonSchema } from "@/web/utils/constants";
 import { ScrollArea } from "@deco/ui/components/scroll-area.js";
+import { MentionInput, MentionItem } from "../tiptap-mentions-input";
 
 // Helper to normalize URL for MCP
 export interface ToolDetailsViewProps {
@@ -226,6 +225,7 @@ type ToolDetailProps = {
   onInputChange?: (input: Record<string, unknown>) => void;
   initialInputParams?: Record<string, unknown>;
   withHeader?: boolean;
+  mentions?: MentionItem[];
 };
 
 function useToolInputParams(
@@ -242,6 +242,7 @@ export function ToolDetail({
   onBack,
   onInputChange,
   initialInputParams,
+  mentions,
 }: ToolDetailProps) {
   const {
     inputParams,
@@ -455,6 +456,7 @@ export function ToolDetail({
                 inputParams={inputParams}
                 setInputParams={setInputParams}
                 handleInputChange={handleInputChange}
+                mentions={mentions ?? []}
               />
             </div>
             <div className="flex-1 min-h-0">
@@ -549,89 +551,120 @@ export function ExecutionResult({
   );
 }
 
+function InputField({
+  name,
+  type,
+  description,
+  required,
+  value,
+  onChange,
+  mentions,
+}: {
+  name: string;
+  type: string;
+  description?: string;
+  required?: boolean;
+  value?: string;
+  onChange: (value: string) => void;
+  mentions: MentionItem[];
+}) {
+  const isMultiline = type === "object" || type === "array";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline gap-2">
+        <label className="text-sm font-medium leading-none">{name}</label>
+        {required && <span className="text-red-500 text-xs">*</span>}
+        <span className="text-xs text-muted-foreground ml-auto">{type}</span>
+      </div>
+      {description && (
+        <p className="text-xs text-muted-foreground mb-1">{description}</p>
+      )}
+      <MentionInput
+        mentions={mentions}
+        value={value}
+        onChange={onChange}
+        placeholder={
+          isMultiline ? `Enter ${name} as JSON...` : `Enter ${name}...`
+        }
+        multiline={isMultiline}
+        className={isMultiline ? "font-mono" : ""}
+      />
+    </div>
+  );
+}
+
 export function ToolInput({
   inputSchema,
   inputParams,
   setInputParams,
   handleInputChange,
+  mentions,
 }: {
   inputSchema: JsonSchema;
   inputParams?: Record<string, unknown>;
   setInputParams?: (params: Record<string, unknown>) => void;
   handleInputChange?: (key: string, value: string) => void;
+  mentions?: MentionItem[];
 }) {
-  return (
-    <>
-      {inputSchema?.properties ? (
-        Object.entries(inputSchema.properties).map(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ([key, prop]: [string, any]) => (
-            <div key={key} className="space-y-2">
-              <div className="flex items-baseline gap-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  {key}
-                </label>
-                {inputSchema?.required?.includes(key) && (
-                  <span className="text-red-500 text-xs">*</span>
-                )}
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {prop.type}
-                </span>
-              </div>
-              {prop.description && (
-                <p className="text-xs text-muted-foreground mb-1">
-                  {prop.description}
-                </p>
-              )}
-              {prop.type === "object" || prop.type === "array" ? (
-                <Textarea
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                  value={
-                    typeof inputParams?.[key] === "object"
-                      ? JSON.stringify(inputParams?.[key], null, 2)
-                      : (inputParams?.[key] as string) || ""
-                  }
-                  onChange={(e) => handleInputChange?.(key, e.target.value)}
-                  placeholder={`Enter ${key} as JSON...`}
-                />
-              ) : (
-                <Input
-                  value={(inputParams?.[key] as string) || ""}
-                  onChange={(e) => handleInputChange?.(key, e.target.value)}
-                  placeholder={`Enter ${key}...`}
-                />
-              )}
-            </div>
-          ),
-        )
-      ) : (
-        <div className="text-sm text-muted-foreground italic">
-          No arguments defined in schema.
-        </div>
-      )}
+  const mentionItems = mentions ?? [];
 
-      {/* Fallback for no properties but valid schema */}
-      {inputSchema && !inputSchema.properties && (
+  if (!inputSchema?.properties) {
+    if (inputSchema) {
+      return (
         <div className="space-y-2">
           <label className="text-sm font-medium">Raw JSON Input</label>
-          <textarea
-            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          <MentionInput
+            mentions={mentionItems}
             value={
               typeof inputParams === "string"
                 ? inputParams
                 : JSON.stringify(inputParams, null, 2)
             }
-            onChange={(e) => {
+            onChange={(text) => {
               try {
-                setInputParams?.(JSON.parse(e.target.value));
+                setInputParams?.(JSON.parse(text));
               } catch {
-                // Allow typing invalid JSON momentarily, but maybe store as string in a separate state if we want robust editing
-                // For now, just let it be assuming user pastes valid JSON
+                // Allow typing invalid JSON
               }
             }}
+            placeholder="Enter JSON..."
+            multiline
+            className="font-mono"
           />
         </div>
-      )}
+      );
+    }
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        No arguments defined in schema.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {Object.entries(inputSchema.properties).map(([key, prop]) => {
+        const p = prop as { type?: string; description?: string };
+        const rawValue = inputParams?.[key];
+        const value =
+          typeof rawValue === "object"
+            ? JSON.stringify(rawValue, null, 2)
+            : String(rawValue ?? "");
+
+        return (
+          <InputField
+            key={key}
+            name={key}
+            type={p.type ?? "string"}
+            description={p.description}
+            required={inputSchema.required?.includes(key)}
+            value={value}
+            onChange={(v) => handleInputChange?.(key, v)}
+            mentions={mentionItems}
+          />
+        );
+      })}
     </>
   );
 }

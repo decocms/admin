@@ -41,7 +41,7 @@ export interface UseToolCallOptions<TInput, _TOutput> {
           | readonly ["tool-call", string, string, string]
           | readonly ["tool-call", string, string]
         >,
-      ) => number)
+      ) => number | false)
     | false;
 }
 
@@ -100,7 +100,7 @@ export function useToolCall<TInput, TOutput>(
     },
     enabled,
     staleTime,
-    refetchInterval,
+    refetchInterval: refetchInterval ?? false,
   });
 }
 

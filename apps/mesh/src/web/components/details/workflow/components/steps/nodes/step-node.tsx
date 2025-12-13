@@ -1,6 +1,13 @@
 import { memo, useRef, useSyncExternalStore } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { BellIcon, CheckIcon, ClockIcon, CodeXml, Wrench } from "lucide-react";
+import {
+  BellIcon,
+  CheckIcon,
+  ClockIcon,
+  CodeXml,
+  Repeat,
+  Wrench,
+} from "lucide-react";
 import type {
   Step,
   StepAction,
@@ -34,6 +41,7 @@ import { useToolCallMutation } from "@/web/hooks/use-tool-call";
 import { Spinner } from "@deco/ui/components/spinner.js";
 import { useWorkflowBindingConnection } from "../../../hooks/use-workflow-binding-connection";
 import { usePollingWorkflowExecution } from "../../../hooks/use-workflow-collection-item";
+import { Badge } from "@deco/ui/components/badge.js";
 
 // ============================================
 // Duration Component
@@ -53,6 +61,22 @@ function formatDuration(milliseconds: number): string {
   return `${seconds.toFixed(1)}s`;
 }
 
+export function useCurrentTime() {
+  const timeRef = useRef(Date.now());
+  const subscribe = (callback: () => void) => {
+    const interval = setInterval(() => {
+      timeRef.current = Date.now();
+      callback();
+    }, 100);
+    return () => clearInterval(interval);
+  };
+  const getSnapshot = () => {
+    return timeRef.current;
+  };
+  const currentTime = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return currentTime;
+}
+
 function Duration({
   startTime,
   endTime,
@@ -62,22 +86,7 @@ function Duration({
   endTime: string | null | undefined;
   isRunning: boolean;
 }) {
-  const timeRef = useRef(Date.now());
-
-  const subscribe = (callback: () => void) => {
-    if (!isRunning) return () => {};
-    const interval = setInterval(() => {
-      timeRef.current = Date.now();
-      callback();
-    }, 100);
-    return () => clearInterval(interval);
-  };
-
-  const getSnapshot = () => {
-    return isRunning ? timeRef.current : 0;
-  };
-
-  const currentTime = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const currentTime = useCurrentTime();
 
   if (!startTime) return null;
 
@@ -108,11 +117,16 @@ function StepMenu({ step }: { step: Step }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="h-7 w-7 p-0 text-muted-foreground flex items-center justify-end rounded-lg cursor-pointer">
+      <DropdownMenuTrigger className="h-7 w-7 p-0 text-muted-foreground flex items-center justify-end rounded-lg cursor-pointer ring-0 outline-none">
         <Icon name="more_horiz" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => deleteStep(step.name)}>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteStep(step.name);
+          }}
+        >
           <Icon name="delete" className="w-4 h-4 text-muted-foreground" />
           Delete
         </DropdownMenuItem>
@@ -205,16 +219,22 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
   const { step } = data as StepNodeData;
   const trackingExecutionId = useTrackingExecutionId();
   const isAddingStep = useIsAddingStep();
-  const { addDependencyToDraftStep, cancelAddingStep } = useWorkflowActions();
+  const { addDependencyToDraftStep, cancelAddingStep, setCurrentStepName } =
+    useWorkflowActions();
   const { sendSignal, isPending: isSendingSignal } = useSendSignalMutation();
   const currentStepName = useCurrentStepName();
   const isDraftStep = useIsDraftStep(step.name);
   const { item: pollingExecution } =
     usePollingWorkflowExecution(trackingExecutionId);
 
-  const stepResult = pollingExecution?.step_results.find(
-    (s) => s.step_id === step.name,
-  );
+  const isForEachStep = step.config?.loop?.for !== undefined;
+
+  const stepResult = pollingExecution?.step_results.find((s) => {
+    if (isForEachStep) {
+      return s.step_id.startsWith(step.name + "[");
+    }
+    return s.step_id === step.name;
+  });
   const isConsumed = !!stepResult?.output;
   const style = getStepStyle(step, stepResult);
 
@@ -230,7 +250,11 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
     return getStepIcon(step);
   })();
 
-  const handleClick = (e: React.MouseEvent) => {
+  const selectStep = (e: React.MouseEvent) => {
+    if (step.name === currentStepName) {
+      setCurrentStepName(undefined);
+      return;
+    }
     if (isAddingStep) {
       if (isDraftStep) {
         cancelAddingStep();
@@ -239,10 +263,12 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       e.stopPropagation();
       addDependencyToDraftStep(step.name);
     }
+    setCurrentStepName(step.name);
   };
 
   const handleIconClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    selectStep(e);
     if (
       step.action &&
       checkIfIsWaitForSignalAction(step.action) &&
@@ -256,6 +282,14 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
     }
   };
 
+  const badgeContent = () => {
+    if (!trackingExecutionId) return <Repeat className="w-4 h-4" />;
+    if (isForEachStep) {
+      return `${Number(stepResult?.step_id.split("[").pop()?.split("]")[0]) + 1} / ${Object.keys(stepResult ?? {}).length}`;
+    }
+    return null;
+  };
+
   return (
     <div className="group relative">
       {/* Target handle - hidden, just for receiving edges */}
@@ -266,9 +300,8 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       />
 
       <Card
-        onClick={handleClick}
         className={cn(
-          "w-[180px] min-w-[180px] p-0 px-3 h-12 flex items-center justify-center relative",
+          "sm:w-40 lg:w-52 xl:w-64 p-0 px-3 h-12 flex items-center justify-center relative ",
           isDraftStep && "border-brand-purple-light bg-brand-purple-light/5",
           "transition-all duration-200",
           style === "pending" && "animate-pulse border-warning",
@@ -276,25 +309,37 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
           style === "success" && "border-success",
           style === "waiting_for_signal" && "border-primary animate-pulse",
           // Highlight when in add-step mode
-          isAddingStep
-            ? [
-                "cursor-pointer",
-                !isDraftStep &&
-                  "ring-2 ring-primary/30 ring-offset-1 ring-offset-background",
-                isDraftStep &&
-                  "ring-brand-purple-light/30 ring-offset-brand-purple-light/5 hover:bg-destructive/5! hover:border-destructive! hover:scale-[1]!",
-                !isDraftStep && "hover:ring-primary hover:ring-offset-2",
-                !isDraftStep && "hover:shadow-lg hover:shadow-primary/20",
-                "hover:scale-[1.02]",
-              ]
-            : "cursor-pointer",
-          currentStepName === step.name && "bg-primary/10 border-primary",
+          isAddingStep && [
+            "cursor-pointer",
+            !isDraftStep &&
+              "ring-2 ring-primary/30 ring-offset-1 ring-offset-background",
+            isDraftStep &&
+              "ring-brand-purple-light/30 ring-offset-brand-purple-light/5 hover:bg-destructive/5! hover:border-destructive! hover:scale-[1]!",
+            !isDraftStep && "hover:ring-primary hover:ring-offset-2",
+            !isDraftStep && "hover:shadow-lg hover:shadow-primary/20",
+            "hover:scale-[1.02]",
+          ],
+          "cursor-default",
+
+          currentStepName === step.name &&
+            "bg-primary/10 border-primary hover:bg-primary/20",
+          currentStepName !== step.name &&
+            "hover:bg-background hover:border-primary",
         )}
       >
+        {isForEachStep && (
+          <Badge className="absolute top-2 right-2 text-[8px] h-4 p-1 group-hover:opacity-0 group-hover:pointer-events-none">
+            <>{badgeContent()}</>
+          </Badge>
+        )}
         <CardHeader className="flex items-center justify-between gap-2 p-0 w-full">
           <div className="flex flex-1 items-center gap-2 min-w-0">
             <div
-              className="h-6 w-6 p-1 shrink-0 flex items-center justify-center rounded-md bg-primary"
+              className={cn(
+                "h-6 w-6 p-1 shrink-0 flex items-center justify-center rounded-md bg-primary cursor-pointer hover:bg-primary/80 transition-all",
+                currentStepName === step.name &&
+                  "bg-primary/10 border-primary hover:bg-primary/20",
+              )}
               onClick={handleIconClick}
             >
               {isSendingSignal ? <Spinner size="xs" /> : displayIcon}
@@ -313,7 +358,8 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
               }
               isRunning={
                 trackingExecutionId
-                  ? stepResult?.completed_at_epoch_ms === null
+                  ? stepResult?.completed_at_epoch_ms === null &&
+                    !stepResult?.error
                   : false
               }
             />

@@ -1,33 +1,38 @@
-import { useState, memo } from "react";
+import { memo, useState } from "react";
 import {
-  ReactFlow,
   Background,
   BackgroundVariant,
   Controls,
-  Panel,
-  type NodeTypes,
   type DefaultEdgeOptions,
+  type NodeTypes,
+  Panel,
+  ReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
-  Plus,
   BellIcon,
+  Check,
   ClockIcon,
   CodeXml,
+  Plus,
   Wrench,
   X,
-  Check,
 } from "lucide-react";
 import { cn } from "@deco/ui/lib/utils.js";
 import {
-  useWorkflowSteps,
-  useWorkflowActions,
   type StepType,
   useIsAddingStep,
+  useWorkflowActions,
+  useWorkflowSteps,
 } from "@/web/components/details/workflow/stores/workflow";
 import { useWorkflowFlow } from "./use-workflow-flow";
 import { StepNode, TriggerNode } from "./nodes";
 import { AddFirstStepButton } from "./new-step-button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.js";
 
 // ============================================
 // Node Types Configuration
@@ -72,15 +77,45 @@ const EmptyState = memo(function EmptyState() {
 // Floating Add Step Button
 // ============================================
 
+interface StepButton {
+  type: StepType;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const stepButtons: StepButton[] = [
+  {
+    type: "code",
+    icon: <CodeXml className="w-4 h-4" />,
+    label: "Code Step",
+  },
+  {
+    type: "tool",
+    icon: <Wrench className="w-4 h-4" />,
+    label: "Tool Step",
+  },
+  {
+    type: "sleep",
+    icon: <ClockIcon className="w-4 h-4" />,
+    label: "Sleep Step",
+  },
+  {
+    type: "wait_for_signal",
+    icon: <BellIcon className="w-4 h-4" />,
+    label: "Signal Step",
+  },
+];
+
 const FloatingAddStepButton = memo(function FloatingAddStepButton() {
   const [isExpanded, setIsExpanded] = useState(false);
   const { startAddingStep, cancelAddingStep, completeAddingStep } =
     useWorkflowActions();
   const isAddingStep = useIsAddingStep();
-  const { setCurrentStepTab } = useWorkflowActions();
+  const { setCurrentStepTab, setTrackingExecutionId } = useWorkflowActions();
   const handleSelectType = (type: StepType) => {
     startAddingStep(type);
     setCurrentStepTab("action");
+    setTrackingExecutionId(undefined);
     setIsExpanded(false);
   };
 
@@ -131,11 +166,12 @@ const FloatingAddStepButton = memo(function FloatingAddStepButton() {
     );
   }
 
+  const firstSlice = stepButtons.slice(0, Math.floor(stepButtons.length / 2));
+  const secondSlice = stepButtons.slice(Math.floor(stepButtons.length / 2));
   return (
     <div
       className={cn(
-        "w-8 h-8 rounded-full border-2 border-primary bg-background transition-all ease-in-out cursor-pointer",
-        "hover:bg-primary/20",
+        "w-8 h-8 rounded-full transition-all ease-in-out cursor-pointer",
       )}
     >
       <div className="w-full h-full flex items-center justify-center">
@@ -150,7 +186,12 @@ const FloatingAddStepButton = memo(function FloatingAddStepButton() {
             <button
               type="button"
               onClick={() => setIsExpanded(true)}
-              className="bg-transparent rounded-full flex items-center justify-center cursor-pointer transition-all ease-in-out"
+              className={cn(
+                "bg-transparent rounded-full flex items-center justify-center cursor-pointer transition-all ease-in-out h-8 w-8",
+                isExpanded && "hover:border-muted",
+                !isExpanded &&
+                  "hover:border-primary border-2 border-primary/50 transition-all ease-in-out",
+              )}
             >
               <Plus className="w-5 h-5 text-primary-foreground transition-all ease-in-out" />
             </button>
@@ -163,42 +204,43 @@ const FloatingAddStepButton = memo(function FloatingAddStepButton() {
               !isExpanded && "scale-0 opacity-0 pointer-events-none",
             )}
           >
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleSelectType("code")}
-                className="w-5 h-5 p-0.5 bg-background rounded-lg flex items-center justify-center hover:bg-primary/40 transition-all ease-in-out cursor-pointer"
-                title="Code"
-              >
-                <CodeXml className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleSelectType("tool")}
-                className="w-5 h-5 p-0.5 bg-background rounded-lg flex items-center justify-center hover:bg-primary/40 transition-all ease-in-out cursor-pointer"
-                title="Tool"
-              >
-                <Wrench className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-3 w-full h-full">
+              {firstSlice.map((button) => (
+                <Tooltip key={button.type}>
+                  <TooltipTrigger
+                    onClick={() => handleSelectType(button.type)}
+                    asChild
+                    className="hover:text-primary transition-all ease-in-out h-5 w-5 p-px"
+                  >
+                    {button.icon}
+                  </TooltipTrigger>
+                  <TooltipContent>{button.label}</TooltipContent>
+                </Tooltip>
+              ))}
               <button
                 type="button"
                 onClick={() => setIsExpanded(false)}
-                className="w-5 h-5 p-px rounded-full bg-transparent transition-all ease-in-out cursor-pointer flex items-center justify-center"
+                className={cn(
+                  "w-8 h-8 rounded-full bg-transparent transition-all ease-in-out cursor-pointer flex items-center justify-center border-2",
+                  isExpanded && "hover:border-muted border-primary/50",
+                  !isExpanded &&
+                    "hover:border-primary border-2 border-primary/50 transition-all ease-in-out",
+                )}
               >
                 <X className="w-4 h-4 text-primary-foreground transition-all ease-in-out" />
               </button>
-              <button
-                onClick={() => handleSelectType("sleep")}
-                className="w-5 h-5 p-0.5 bg-background rounded-lg flex items-center justify-center hover:bg-primary/40 transition-all ease-in-out cursor-pointer"
-                title="Sleep"
-              >
-                <ClockIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleSelectType("wait_for_signal")}
-                className="w-5 h-5 p-0.5 bg-background rounded-lg flex items-center justify-center hover:bg-primary/40 transition-all ease-in-out cursor-pointer"
-                title="Signal"
-              >
-                <BellIcon className="w-4 h-4" />
-              </button>
+              {secondSlice.map((button) => (
+                <Tooltip key={button.type}>
+                  <TooltipTrigger
+                    onClick={() => handleSelectType(button.type)}
+                    asChild
+                    className="hover:text-primary transition-all ease-in-out h-5 w-5 p-px"
+                  >
+                    {button.icon}
+                  </TooltipTrigger>
+                  <TooltipContent>{button.label}</TooltipContent>
+                </Tooltip>
+              ))}
             </div>
           </div>
         </div>
@@ -247,8 +289,8 @@ export const WorkflowCanvas = memo(function WorkflowCanvas() {
         minZoom={0.3}
         maxZoom={2}
         proOptions={proOptions}
-        nodesDraggable={true}
-        nodesConnectable={true}
+        nodesDraggable={false}
+        nodesConnectable={false}
         elementsSelectable={true}
         panOnDrag={true}
         zoomOnScroll={true}
@@ -258,7 +300,7 @@ export const WorkflowCanvas = memo(function WorkflowCanvas() {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={40}
           size={1}
           className="bg-background!"
         />

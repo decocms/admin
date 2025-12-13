@@ -34,7 +34,7 @@ interface Actions {
   setDraftStep: (draftStep: Step | null) => void;
   setIsAddingStep: (isAddingStep: boolean) => void;
   deleteStep: (stepName: string) => void;
-  setCurrentStepName: (stepName: string) => void;
+  setCurrentStepName: (stepName: string | undefined) => void;
   updateStep: (stepName: string, updates: Partial<Step>) => void;
   setTrackingExecutionId: (executionId: string | undefined) => void;
   setCurrentStepTab: (currentStepTab: CurrentStepTab) => void;
@@ -48,6 +48,7 @@ interface Actions {
   completeAddingStep: () => void;
   addDependencyToDraftStep: (stepName: string) => void;
   setOriginalWorkflow: (workflow: Workflow) => void;
+  setWorkflow: (workflow: Workflow) => void;
 }
 
 interface Store extends State {
@@ -290,6 +291,11 @@ export const createWorkflowStore = (initialState: State) => {
               ...state,
               currentTab: currentTab,
             })),
+          setWorkflow: (workflow) =>
+            set((state) => ({
+              ...state,
+              workflow: workflow,
+            })),
         },
       }),
       {
@@ -373,9 +379,9 @@ export function useCurrentStep() {
   const currentStepName = useCurrentStepName();
   const workflow = useWorkflowStore((state) => state.workflow);
   const draftStep = useDraftStep();
+  if (draftStep) return draftStep;
   const exact = workflow.steps.find((step) => step.name === currentStepName);
   if (exact) return exact;
-  if (draftStep) return draftStep;
   // Check for iteration match "stepName[index]"
   if (currentStepName && currentStepName.includes("[")) {
     const match = currentStepName.match(/^(.+)\[(\d+)\]$/);

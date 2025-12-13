@@ -39,7 +39,7 @@ import { CreateRoleDialog } from "@/web/components/create-role-dialog";
 import { useOrganizationRoles } from "@/web/hooks/use-organization-roles";
 import { EmptyState } from "@/web/components/empty-state.tsx";
 
-const useMembers = () => {
+export const useMembers = () => {
   const { locator } = useProjectContext();
   return useQuery({
     queryKey: KEYS.members(locator),

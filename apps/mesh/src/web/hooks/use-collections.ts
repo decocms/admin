@@ -20,9 +20,12 @@ import {
   like,
   or,
 } from "@tanstack/db";
+import {
+  type CollectionSyncUtils,
+  createCollectionWithSync,
+} from "./create-collection-with-sync";
 import { useLiveSuspenseQuery } from "@tanstack/react-db";
 import { type ToolCaller } from "../../tools/client";
-import { createCollectionWithSync } from "./create-collection-with-sync";
 
 /**
  * Collection entity base type that matches the collection binding pattern
@@ -70,9 +73,18 @@ export interface CreateCollectionOptions {
  * @param options - Configuration options for the collection
  * @returns A TanStack DB collection instance with persistence handlers
  */
+/**
+ * Collection type with sync utils for direct writes
+ */
+export type CollectionWithUtils<T extends CollectionEntity> = Collection<
+  T,
+  string,
+  CollectionSyncUtils<T>
+>;
+
 function createCollectionFromToolCaller<T extends CollectionEntity>(
   options: CreateCollectionOptions,
-): Collection<T, string> {
+): CollectionWithUtils<T> {
   const { toolCaller, collectionName, pageSize = 100 } = options;
 
   const upperName = collectionName.toUpperCase();
@@ -210,7 +222,11 @@ function createCollectionFromToolCaller<T extends CollectionEntity>(
     },
   });
 
-  const collection = createCollection<T, string>(collectionConfig);
+  const { utils, ...config } = collectionConfig;
+  const collection = createCollection<T, string, CollectionSyncUtils<T>>({
+    ...config,
+    utils,
+  });
 
   return collection;
 }
@@ -227,13 +243,13 @@ const collectionCache = new Map<string, Collection<any, string>>();
  * @param connectionKey - The unique key for the connection (e.g. connectionId or org slug)
  * @param collectionName - The name of the collection (e.g., "AGENT", "LLM")
  * @param toolCaller - The tool caller function for making API calls
- * @returns A TanStack DB collection instance
+ * @returns A TanStack DB collection instance with utils for direct writes
  */
 export function useCollection<T extends CollectionEntity>(
   connectionKey: string | undefined | null,
   collectionName: string,
   toolCaller: ToolCaller,
-): Collection<T, string> {
+): CollectionWithUtils<T> {
   // Use empty string key for null/undefined connectionKey to represent mesh tools
   const safeConnectionKey = connectionKey ?? "";
   const key = `${safeConnectionKey}:${collectionName}`;
@@ -246,7 +262,7 @@ export function useCollection<T extends CollectionEntity>(
     collectionCache.set(key, collection);
   }
 
-  return collectionCache.get(key) as Collection<T, string>;
+  return collectionCache.get(key) as CollectionWithUtils<T>;
 }
 
 /**

@@ -8,17 +8,33 @@ import { WorkflowSteps } from "./components/steps/index";
 import {
   useCurrentStepName,
   useCurrentTab,
+  useTrackingExecutionId,
   useWorkflow,
+  useWorkflowActions,
   WorkflowStoreProvider,
 } from "@/web/components/details/workflow/stores/workflow";
 import {
   useWorkflowCollectionItem,
   useWorkflowExecutionCollectionItem,
+  useWorkflowExecutionCollectionList,
 } from "./hooks/use-workflow-collection-item";
 import { WorkflowActions } from "./components/actions";
 import { StepTabs, WorkflowTabs } from "./components/tabs";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { MonacoCodeEditor } from "./components/monaco-editor";
+import {
+  Select,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@deco/ui/components/select.js";
+import { ClockIcon } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.js";
 export interface WorkflowDetailsViewProps {
   itemId: string;
   onBack: () => void;
@@ -124,6 +140,7 @@ function WorkflowCode({
   workflow: Workflow;
   onUpdate: (updates: Record<string, unknown>) => Promise<void>;
 }) {
+  const { setWorkflow } = useWorkflowActions();
   const wf = {
     title: workflow.title,
     description: workflow.description,
@@ -136,9 +153,61 @@ function WorkflowCode({
       language="json"
       onSave={(code) => {
         const parsed = JSON.parse(code);
+        setWorkflow({
+          ...workflow,
+          ...parsed,
+        });
         onUpdate(parsed);
       }}
     />
+  );
+}
+
+function useCurrentExecution() {
+  const trackingExecutionId = useTrackingExecutionId();
+  const { item: execution } =
+    useWorkflowExecutionCollectionItem(trackingExecutionId);
+  return execution;
+}
+
+export function useIsExecutionScheduled(id?: string) {
+  const { item: execution } = useWorkflowExecutionCollectionItem(id);
+  const currentTime = Date.now();
+  return (
+    (execution?.start_at_epoch_ms ?? 0) > currentTime &&
+    execution?.status !== "success" &&
+    execution?.status !== "error"
+  );
+}
+
+export function ExecutionScheduleTooltip({ id }: { id?: string }) {
+  const { item: execution } = useWorkflowExecutionCollectionItem(id);
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <ClockIcon size={12} />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          This execution is scheduled to start at{" "}
+          {new Date(execution?.start_at_epoch_ms ?? 0).toLocaleString()}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ExecutionItem({ id }: { id: string }) {
+  const isScheduled = useIsExecutionScheduled(id);
+  const { item: execution } = useWorkflowExecutionCollectionItem(id);
+  return (
+    <div>
+      {isScheduled && <ExecutionScheduleTooltip id={id} />}
+      <h3>
+        {new Date(execution?.created_at ?? 0).toLocaleString()} -{" "}
+        {execution?.status}
+      </h3>
+    </div>
   );
 }
 
@@ -146,7 +215,11 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
   const currentTab = useCurrentTab();
   const currentStepName = useCurrentStepName();
   const workflow = useWorkflow();
-
+  const { list: executions } = useWorkflowExecutionCollectionList({
+    workflowId: workflow.id,
+  });
+  const { setTrackingExecutionId } = useWorkflowActions();
+  const currentExecution = useCurrentExecution();
   return (
     <ViewLayout onBack={onBack}>
       <ViewTabs>
@@ -157,6 +230,23 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
           <p className="text-sm text-muted-foreground">
             {workflow.description}
           </p>
+        </div>
+        <div className="flex items-center gap-3 font-sans">
+          <Select
+            value={currentExecution?.id}
+            onValueChange={(value) => setTrackingExecutionId(value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select an execution" />
+            </SelectTrigger>
+            <SelectContent>
+              {executions.map((execution) => (
+                <SelectItem key={execution.id} value={execution.id}>
+                  <ExecutionItem id={execution.id} />
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </ViewTabs>
 

@@ -88,7 +88,10 @@ const LoadingPlaceholder = (
 interface MonacoCodeEditorProps {
   code: string;
   onChange?: (value: string | undefined) => void;
-  onSave?: (value: string) => void;
+  onSave?: (
+    value: string,
+    outputSchema: Record<string, unknown> | null,
+  ) => void;
   readOnly?: boolean;
   height?: string | number;
   language?: "typescript" | "json";
@@ -107,6 +110,7 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
   const lastSavedVersionIdRef = useRef<number | null>(null);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+  const monacoRef = useRef(null);
 
   // Store language in ref to avoid stale closures in editor callbacks
   const languageRef = useRef(language);
@@ -178,6 +182,7 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
 
     // Configure TypeScript AFTER mount (beforeMount was causing value not to display)
     if (language === "typescript") {
+      monacoRef.current = monaco;
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ESNext,
         module: monaco.languages.typescript.ModuleKind.ESNext,
@@ -214,10 +219,12 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
       // Format the document first
       await formatWithPrettier(editor);
+      const returnType = await getReturnType();
 
       // Then call onSave with the formatted value
       const value = editor.getValue();
-      onSaveRef.current?.(value);
+
+      onSaveRef.current?.(value, returnType as Record<string, unknown> | null);
 
       // Record the saved version ID
       const model = editor.getModel();
@@ -238,7 +245,8 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
     if (editorRef.current) {
       await formatWithPrettier(editorRef.current);
       const value = editorRef.current.getValue();
-      onSaveRef.current?.(value);
+      const returnType = await getReturnType();
+      onSaveRef.current?.(value, returnType as Record<string, unknown> | null);
 
       // Record the saved version ID
       const model = editorRef.current.getModel();
@@ -248,6 +256,256 @@ export const MonacoCodeEditor = memo(function MonacoCodeEditor({
       setIsDirty(false);
     }
   };
+
+  // Convert TypeScript type string to JSON Schema
+  function tsTypeToJsonSchema(typeStr: string): object {
+    typeStr = typeStr.trim();
+
+    // Handle primitives
+    if (typeStr === "string") return { type: "string" };
+    if (typeStr === "number") return { type: "number" };
+    if (typeStr === "boolean") return { type: "boolean" };
+    if (typeStr === "null") return { type: "null" };
+    if (typeStr === "undefined") return { type: "null" };
+    if (typeStr === "unknown" || typeStr === "any") return {};
+    if (typeStr === "never") return { not: {} };
+
+    // Handle arrays: T[] or Array<T>
+    if (typeStr.endsWith("[]")) {
+      const itemType = typeStr.slice(0, -2);
+      return { type: "array", items: tsTypeToJsonSchema(itemType) };
+    }
+    const arrayMatch = typeStr.match(/^Array<(.+)>$/);
+    if (arrayMatch && arrayMatch[1]) {
+      return { type: "array", items: tsTypeToJsonSchema(arrayMatch[1]) };
+    }
+
+    // Handle Record<K, V>
+    const recordMatch = typeStr.match(/^Record<(.+),\s*(.+)>$/);
+    if (recordMatch && recordMatch[2]) {
+      return {
+        type: "object",
+        additionalProperties: tsTypeToJsonSchema(recordMatch[2].trim()),
+      };
+    }
+
+    // Handle union types: A | B | C
+    if (typeStr.includes("|") && !typeStr.startsWith("{")) {
+      const parts = splitUnion(typeStr);
+      // Check if it's a string literal union
+      const allStringLiterals = parts.every((p) => /^["']/.test(p.trim()));
+      if (allStringLiterals) {
+        return {
+          type: "string",
+          enum: parts.map((p) => p.trim().replace(/^["']|["']$/g, "")),
+        };
+      }
+      return { anyOf: parts.map((p) => tsTypeToJsonSchema(p.trim())) };
+    }
+
+    // Handle string/number literals
+    if (/^["'].*["']$/.test(typeStr)) {
+      return { type: "string", const: typeStr.slice(1, -1) };
+    }
+    if (/^-?\d+(\.\d+)?$/.test(typeStr)) {
+      return { type: "number", const: parseFloat(typeStr) };
+    }
+
+    // Handle object types: { prop: type; ... }
+    if (typeStr.startsWith("{") && typeStr.endsWith("}")) {
+      return parseObjectType(typeStr);
+    }
+
+    // Fallback for complex types
+    return { description: `TypeScript type: ${typeStr}` };
+  }
+
+  // Split union types while respecting nested braces
+  function splitUnion(typeStr: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let current = "";
+
+    for (let i = 0; i < typeStr.length; i++) {
+      const char = typeStr[i];
+      if (char === "{" || char === "<" || char === "(") depth++;
+      else if (char === "}" || char === ">" || char === ")") depth--;
+      else if (char === "|" && depth === 0) {
+        parts.push(current.trim());
+        current = "";
+        continue;
+      }
+      current += char;
+    }
+    if (current.trim()) parts.push(current.trim());
+    return parts;
+  }
+
+  // Parse object type: { prop: type; prop2?: type2; ... }
+  function parseObjectType(typeStr: string): object {
+    // Remove outer braces
+    const inner = typeStr.slice(1, -1).trim();
+    if (!inner) return { type: "object", properties: {} };
+
+    const properties: Record<string, object> = {};
+    const required: string[] = [];
+
+    // Parse properties - handle nested objects by tracking brace depth
+    let depth = 0;
+    let currentProp = "";
+
+    for (let i = 0; i < inner.length; i++) {
+      const char = inner[i];
+      if (char === "{" || char === "<" || char === "(" || char === "[") depth++;
+      else if (char === "}" || char === ">" || char === ")" || char === "]")
+        depth--;
+      else if (char === ";" && depth === 0) {
+        if (currentProp.trim()) {
+          parseSingleProperty(currentProp.trim(), properties, required);
+        }
+        currentProp = "";
+        continue;
+      }
+      currentProp += char;
+    }
+    // Handle last property (may not end with ;)
+    if (currentProp.trim()) {
+      parseSingleProperty(currentProp.trim(), properties, required);
+    }
+
+    const schema: Record<string, unknown> = {
+      type: "object",
+      properties,
+    };
+    if (required.length > 0) {
+      schema.required = required;
+    }
+    return schema;
+  }
+
+  function parseSingleProperty(
+    propStr: string,
+    properties: Record<string, object>,
+    required: string[],
+  ) {
+    // Match: propName?: type or propName: type
+    const match = propStr.match(/^(\w+)(\?)?:\s*(.+)$/s);
+    if (match) {
+      const propName = match[1];
+      const optional = match[2];
+      const propType = match[3];
+      if (propName && propType) {
+        properties[propName] = tsTypeToJsonSchema(propType.trim());
+        if (!optional) {
+          required.push(propName);
+        }
+      }
+    }
+  }
+
+  async function getReturnType() {
+    if (!editorRef.current) return;
+
+    const model = editorRef.current.getModel();
+    const monaco = monacoRef.current;
+
+    if (!model) {
+      return null;
+    }
+
+    // Strategy: Append a helper type to the code and query its expanded type
+    const originalCode = model.getValue();
+
+    // Use a recursive Expand utility type to force TypeScript to inline all type references
+    const helperCode = `
+type __ExpandRecursively<T> = T extends (...args: infer A) => infer R
+  ? (...args: __ExpandRecursively<A>) => __ExpandRecursively<R>
+  : T extends object
+  ? T extends infer O ? { [K in keyof O]: __ExpandRecursively<O[K]> } : never
+  : T;
+type __InferredOutput = __ExpandRecursively<Awaited<ReturnType<typeof __default>>>;
+declare const __outputValue: __InferredOutput;
+`;
+
+    // Replace "export default" with a named function temporarily
+    const modifiedCode =
+      originalCode.replace(
+        /export default (async )?function/,
+        "export default $1function __default",
+      ) + helperCode;
+
+    // Set the modified code temporarily
+    model.setValue(modifiedCode);
+
+    // Find the __outputValue declaration to get its type
+    const matches = model.findMatches(
+      "__outputValue",
+      false,
+      false,
+      false,
+      null,
+      false,
+    );
+
+    if (!matches || matches.length === 0) {
+      model.setValue(originalCode);
+      return null;
+    }
+
+    const match = matches[0];
+    if (!match) {
+      model.setValue(originalCode);
+      return null;
+    }
+
+    const position = {
+      lineNumber: match.range.startLineNumber,
+      column: match.range.startColumn + 1,
+    };
+
+    try {
+      const worker = await (
+        monaco as any
+      )?.languages?.typescript?.getTypeScriptWorker();
+      if (!worker) {
+        model.setValue(originalCode);
+        return null;
+      }
+      const client = await worker(model.uri);
+
+      // Wait for TypeScript to process the modified code
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const offset = model.getOffsetAt(position);
+      const quickInfo = await client.getQuickInfoAtPosition(
+        model.uri.toString(),
+        offset,
+      );
+
+      // Restore original code
+      model.setValue(originalCode);
+
+      if (quickInfo) {
+        const displayString = quickInfo.displayParts
+          .map((part: { text: string }) => part.text)
+          .join("");
+
+        // Clean up the display string - remove "const __outputValue: " prefix
+        const typeOnly = displayString.replace(/^const __outputValue:\s*/, "");
+
+        // Convert to JSON Schema
+        const jsonSchema = tsTypeToJsonSchema(typeOnly);
+
+        return jsonSchema;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      model.setValue(originalCode);
+      console.error("Error getting return type:", error);
+      return null;
+    }
+  }
 
   return (
     <div className="rounded-lg border border-base-border h-full">

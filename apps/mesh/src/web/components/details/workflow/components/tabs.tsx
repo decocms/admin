@@ -6,6 +6,7 @@ import {
   useTrackingExecutionId,
   useWorkflowActions,
   useCurrentTab,
+  useWorkflowSteps,
 } from "@/web/components/details/workflow/stores/workflow";
 import {
   Tabs,
@@ -28,8 +29,8 @@ import { Button } from "@deco/ui/components/button.js";
 import { ExecutionResult, ToolDetail, useTool } from "../../tool";
 import { CodeXml, GitBranch, Loader2 } from "lucide-react";
 import { useConnections } from "@/web/hooks/collections/use-connection";
-import { extractOutputSchema } from "../typescript-to-json-schema";
 import { usePollingWorkflowExecution } from "../hooks/use-workflow-collection-item";
+import { MentionItem } from "@/web/components/tiptap-mentions-input";
 
 export function WorkflowTabs() {
   const currentTab = useCurrentTab();
@@ -64,6 +65,16 @@ export function WorkflowTabs() {
 
 function useStepResult(executionId: string, stepId: string) {
   const { item: pollingExecution } = usePollingWorkflowExecution(executionId);
+  const steps = useWorkflowSteps();
+  const step = steps.find((s) => s.name === stepId);
+  const isForEachStep = step?.config?.loop?.for !== undefined;
+  if (isForEachStep) {
+    const results = pollingExecution?.step_results
+      .filter((s) => s.step_id.startsWith(stepId + "["))
+      .map((s) => [s.step_id, s.output]);
+    if (!results) return null;
+    return Object.fromEntries(results);
+  }
   return pollingExecution?.step_results.find((s) => s.step_id === stepId);
 }
 
@@ -87,7 +98,7 @@ function OutputTabContent({
     <div className="h-full">
       <ExecutionResult
         placeholder="No output found"
-        executionResult={stepResult.output as Record<string, unknown> | null}
+        executionResult={stepResult}
       />
     </div>
   );
@@ -196,9 +207,8 @@ function ActionTab({
           height="100%"
           code={step.action.code}
           language="typescript"
-          onSave={(code) => {
+          onSave={(code, outputSchema) => {
             // Extract output schema from the TypeScript code
-            const outputSchema = extractOutputSchema(code);
 
             updateStep(step.name, {
               action: { ...step.action, code },
@@ -223,6 +233,32 @@ function ActionTab({
     );
   }
   return null;
+}
+
+function jsonSchemaToMentionItems(
+  schema: Record<string, unknown>,
+  prefix = "",
+): MentionItem[] {
+  if (schema?.type === "object" && schema?.properties) {
+    return Object.entries(schema.properties as Record<string, unknown>).map(
+      ([key, value]) => {
+        const children = jsonSchemaToMentionItems(
+          value as Record<string, unknown>,
+          `${prefix}${key}.`,
+        );
+        return {
+          id: `${prefix}${key}`,
+          label: key,
+          ...(children.length > 0 && { children }),
+        };
+      },
+    );
+  }
+  if (schema?.type === "array" && schema?.items) {
+    const itemSchema = schema?.items as Record<string, unknown>;
+    return jsonSchemaToMentionItems(itemSchema, prefix);
+  }
+  return [];
 }
 
 function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
@@ -273,7 +309,7 @@ function ToolAction({ step }: { step: Step & { action: ToolCallAction } }) {
   return (
     <div className="w-full h-full flex flex-col min-h-0">
       <div className="">
-        {!selectedConnectionId && (
+        {(!selectedConnectionId || !isUsingTool) && (
           <ConnectionSelector
             selectedConnectionId={selectedConnectionId}
             onConnectionSelect={(connectionId) => {
@@ -336,29 +372,50 @@ function SelectedTool({
     selectedToolName,
     selectedConnectionId,
   );
-  const draftStep = useDraftStep();
-  const { setDraftStep, updateStep } = useWorkflowActions();
+  const { updateStep } = useWorkflowActions();
   const currentStep = useCurrentStep();
+  const workflowSteps = useWorkflowSteps();
 
   const handleInputChange = (input: Record<string, unknown>) => {
-    if (draftStep) {
-      setDraftStep({
-        ...(draftStep ?? {}),
-        input: {
-          ...(draftStep?.input ?? {}),
-          ...input,
-        } as Record<string, unknown>,
-      } as Step);
-    } else {
-      if (!currentStep?.name) return;
-      updateStep(currentStep.name, {
-        input: {
-          ...(currentStep?.input ?? {}),
-          ...input,
-        } as Record<string, unknown>,
-      });
-    }
+    if (!currentStep?.name) return;
+    const recursivelyParseIfObjectOrArray = (
+      input: Record<string, unknown>,
+    ): Record<string, unknown> => {
+      return Object.fromEntries(
+        Object.entries(input).map(([key, value]) => {
+          if (typeof value === "object" && value !== null) {
+            return [
+              key,
+              recursivelyParseIfObjectOrArray(value as Record<string, unknown>),
+            ];
+          }
+          let parsedValue = value;
+          try {
+            parsedValue = JSON.parse(value as string);
+          } catch {
+            // Do nothing
+          }
+          return [key, parsedValue];
+        }),
+      );
+    };
+    const parsedInput = recursivelyParseIfObjectOrArray(input);
+    updateStep(currentStep.name, {
+      input: {
+        ...(currentStep?.input ?? {}),
+        ...parsedInput,
+      } as Record<string, unknown>,
+    });
   };
+
+  const allMentions = workflowSteps.map((step) => ({
+    id: step.name,
+    label: step.name,
+    children: jsonSchemaToMentionItems(
+      step.outputSchema as Record<string, unknown>,
+      `${step.name}.`,
+    ),
+  }));
 
   if (!tool || !mcp || !connection) {
     return (
@@ -378,6 +435,7 @@ function SelectedTool({
       connection={connection}
       onBack={onBack}
       initialInputParams={input}
+      mentions={allMentions}
     />
   );
 }

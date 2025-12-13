@@ -1,5 +1,10 @@
 import { useParams } from "@tanstack/react-router";
-import { useCollection, useCollectionItem } from "@/web/hooks/use-collections";
+import {
+  CollectionFilter,
+  useCollection,
+  useCollectionItem,
+  useCollectionList,
+} from "@/web/hooks/use-collections";
 import {
   Workflow,
   WorkflowExecution,
@@ -30,7 +35,40 @@ export function useWorkflowCollectionItem(itemId: string) {
   };
 }
 
-export function useWorkflowExecutionCollectionItem(itemId: string) {
+export function useWorkflowExecutionCollectionList({
+  workflowId,
+}: {
+  workflowId?: string;
+}) {
+  const { connectionId } = useParams({
+    strict: false,
+  });
+  const toolCaller = createToolCaller(connectionId ?? UNKNOWN_CONNECTION_ID);
+  const collection = useCollection<WorkflowExecution>(
+    connectionId ?? UNKNOWN_CONNECTION_ID,
+    "workflow_execution",
+    toolCaller,
+  );
+
+  const list = useCollectionList(collection, {
+    maxItems: 10,
+    sortKey: "created_at",
+    sortDirection: "desc",
+    filters: [
+      workflowId
+        ? {
+            column: "workflow_id",
+            value: workflowId,
+          }
+        : undefined,
+    ].filter(Boolean) as CollectionFilter[],
+  });
+  return {
+    list,
+  };
+}
+
+export function useWorkflowExecutionCollectionItem(itemId?: string) {
   const { connectionId } = useParams({
     strict: false,
   });
@@ -62,23 +100,55 @@ function useWorkflowGetExecutionStepResultTool() {
 
 export function usePollingWorkflowExecution(executionId?: string) {
   const { connectionId } = useWorkflowGetExecutionStepResultTool();
+  const toolCaller = createToolCaller(connectionId);
+  const collection = useCollection<WorkflowExecution>(
+    connectionId ?? UNKNOWN_CONNECTION_ID,
+    "workflow_execution",
+    toolCaller,
+  );
+
+  const existingExecution = useWorkflowExecutionCollectionItem(executionId);
+
   const { data } = useToolCall({
-    toolCaller: createToolCaller(connectionId),
+    toolCaller: toolCaller,
     toolName: "COLLECTION_WORKFLOW_EXECUTION_GET",
     toolInputParams: {
       id: executionId,
     },
     enabled: !!executionId,
-    refetchInterval: (query) => {
-      const data = query.state?.data as {
-        item:
-          | (WorkflowExecution & {
-              step_results: WorkflowExecutionStepResult[];
-            })
-          | null;
-      };
-      return data?.item?.completed_at_epoch_ms === null ? 1000 : 0;
-    },
+    refetchInterval: executionId
+      ? (query) => {
+          const completedAtEpochMs =
+            existingExecution?.item?.completed_at_epoch_ms;
+          const status = existingExecution?.item?.status;
+          const item = (query.state?.data as { item: WorkflowExecution | null })
+            ?.item;
+          const id = item?.id;
+          if (
+            (id && completedAtEpochMs !== null) ||
+            (status === "error" &&
+              (query.state?.data as { item: WorkflowExecution | null })?.item &&
+              id === executionId)
+          ) {
+            collection.utils.writeUpdate([
+              {
+                id,
+                title: item?.title ?? "",
+                created_at: item?.created_at ?? "",
+                updated_at: item?.updated_at ?? "",
+                status: item?.status ?? "enqueued",
+                workflow_id: item?.workflow_id ?? "",
+                description: item?.description ?? "",
+                deadline_at_epoch_ms: item?.deadline_at_epoch_ms ?? undefined,
+                start_at_epoch_ms: item?.start_at_epoch_ms ?? undefined,
+                timeout_ms: item?.timeout_ms ?? undefined,
+                completed_at_epoch_ms: completedAtEpochMs,
+              },
+            ]);
+          }
+          return item?.completed_at_epoch_ms === null ? 1000 : false;
+        }
+      : false,
   }) as {
     data: {
       item:
@@ -86,6 +156,7 @@ export function usePollingWorkflowExecution(executionId?: string) {
         | null;
     };
   };
+
   return {
     item: data?.item,
   };

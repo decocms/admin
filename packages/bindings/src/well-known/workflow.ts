@@ -419,6 +419,20 @@ export const WORKFLOW_BINDING = [
         .record(z.unknown())
         .optional()
         .describe("Input data for the workflow"),
+      startAtEpochMs: z
+        .number()
+        .default(Date.now())
+        .optional()
+        .describe(
+          "The start time of the workflow in epoch milliseconds. Defaults to now.",
+        ),
+      timeoutMs: z
+        .number()
+        .default(30000)
+        .optional()
+        .describe(
+          "The timeout for the workflow in milliseconds. Defaults to 30000.",
+        ),
     }),
     outputSchema: z.object({
       executionId: z.string(),

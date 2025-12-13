@@ -5,15 +5,20 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
 import { cn } from "@deco/ui/lib/utils.js";
 import { useToolCallMutation } from "@/web/hooks/use-tool-call";
-import { createToolCaller } from "@/tools/client";
+import { createToolCaller, UNKNOWN_CONNECTION_ID } from "@/tools/client";
 import {
   useIsAddingStep,
+  useIsDirty,
   useTrackingExecutionId,
   useWorkflow,
   useWorkflowActions,
 } from "@/web/components/details/workflow/stores/workflow";
 import { useWorkflowBindingConnection } from "../../../hooks/use-workflow-binding-connection";
-import { usePollingWorkflowExecution } from "../../../hooks/use-workflow-collection-item";
+import { useWorkflowExecutionCollectionItem } from "../../../hooks/use-workflow-collection-item";
+import { authClient } from "@/web/lib/auth-client";
+import { useCollection } from "@/web/hooks/use-collections";
+import { WorkflowExecution } from "@decocms/bindings/workflow";
+import { ExecutionScheduleTooltip, useIsExecutionScheduled } from "../../..";
 
 // ============================================
 // Workflow Start Hook
@@ -24,22 +29,44 @@ function useWorkflowStart() {
   const { setTrackingExecutionId } = useWorkflowActions();
   const toolCaller = createToolCaller(connectionId);
   const workflow = useWorkflow();
-
+  const collection = useCollection<WorkflowExecution>(
+    connectionId ?? UNKNOWN_CONNECTION_ID,
+    "workflow_execution",
+    toolCaller,
+  );
   const { mutateAsync: startWorkflow, isPending } = useToolCallMutation({
     toolCaller,
     toolName: "WORKFLOW_START",
   });
-
+  const { data: session } = authClient.useSession();
   const handleRunWorkflow = async () => {
+    const startAtEpochMs = Date.now() + 100;
+    const timeoutMs = 30000;
     const result = await startWorkflow({
       workflowId: workflow.id,
       input: {},
+      startAtEpochMs,
+      timeoutMs,
     });
+
     const executionId =
       (result as { executionId: string }).executionId ??
       (result as { structuredContent: { executionId: string } })
         .structuredContent.executionId;
+    await collection.utils.writeInsert({
+      id: executionId,
+      title: workflow.title,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      status: "enqueued",
+      workflow_id: workflow.id,
+      start_at_epoch_ms: startAtEpochMs,
+      timeout_ms: timeoutMs,
+      created_by: session?.user?.id,
+      input: {},
+    });
     setTrackingExecutionId(executionId);
+    return executionId;
   };
 
   return { handleRunWorkflow, isPending };
@@ -103,13 +130,18 @@ function PauseButton() {
 
 function PlayButton() {
   const { handleRunWorkflow } = useWorkflowStart();
-
+  const isDirty = useIsDirty();
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     handleRunWorkflow();
   };
   return (
-    <Button variant="ghost" size="xs" onClick={handleTriggerClick}>
+    <Button
+      variant="ghost"
+      size="xs"
+      onClick={handleTriggerClick}
+      disabled={isDirty}
+    >
       <Play className="w-4 h-4 text-foreground cursor-pointer hover:text-primary transition-colors" />
     </Button>
   );
@@ -132,11 +164,12 @@ function ResumeButton() {
 export const TriggerNode = memo(function TriggerNode() {
   const isAddingStep = useIsAddingStep();
   const trackingExecutionId = useTrackingExecutionId();
-  const { item: pollingExecution } =
-    usePollingWorkflowExecution(trackingExecutionId);
-  const isRunning = pollingExecution?.completed_at_epoch_ms === null;
-  const isPaused = pollingExecution?.status === "cancelled";
-
+  const { item: execution } =
+    useWorkflowExecutionCollectionItem(trackingExecutionId);
+  const isScheduled = useIsExecutionScheduled(trackingExecutionId);
+  const isRunning = execution?.completed_at_epoch_ms === null;
+  const isPaused = execution?.status === "cancelled";
+  const isDirty = useIsDirty();
   return (
     <div className="relative">
       <div className="flex flex-col items-start">
@@ -147,8 +180,9 @@ export const TriggerNode = memo(function TriggerNode() {
           </span>
         </div>
         <Card
+          title={isDirty ? "Save or discard changes to run" : undefined}
           className={cn(
-            "w-[180px] min-w-[180px] p-0 px-3 h-12 group flex items-center justify-center relative",
+            "sm:w-40 lg:w-52 xl:w-64 p-0 px-3 h-12 group flex items-center justify-center relative",
             "transition-all duration-200",
             // Highlight when in add-step mode
             isAddingStep
@@ -160,17 +194,26 @@ export const TriggerNode = memo(function TriggerNode() {
                   "hover:scale-[1.02]",
                 ]
               : "cursor-pointer",
+            isDirty && "cursor-auto",
           )}
         >
-          <CardHeader className="flex items-center justify-between gap-2 p-0 w-full">
+          <CardHeader className="flex items-center justify-between gap-2 p-0 w-full ">
             <div className="flex flex-1 items-center gap-2 min-w-0">
               <div className="h-6 w-6 p-1 shrink-0 flex items-center justify-center rounded-md">
+                {isScheduled && (
+                  <ExecutionScheduleTooltip id={trackingExecutionId} />
+                )}
                 {isPaused && <ResumeButton />}
                 {isRunning && !isPaused && <PauseButton />}
                 {!isRunning && !isPaused && <PlayButton />}
               </div>
 
-              <CardTitle className="p-0 text-sm font-medium truncate">
+              <CardTitle
+                className={cn(
+                  "p-0 text-sm font-medium truncate",
+                  isDirty && "text-muted-foreground",
+                )}
+              >
                 Manual
               </CardTitle>
             </div>

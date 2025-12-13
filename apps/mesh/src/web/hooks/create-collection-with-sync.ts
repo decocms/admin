@@ -19,6 +19,18 @@ interface SyncMutationEventDetail<T, TIndexKeys extends string> {
   reject: (error: unknown) => void;
 }
 
+/**
+ * Event type for direct writes to the sync store (no persistence)
+ */
+interface DirectWriteEventDetail<T> {
+  type: OperationType;
+  items: T[];
+  resolve: () => void;
+  reject: (error: unknown) => void;
+}
+
+type DirectWriteEvent<T> = CustomEvent<DirectWriteEventDetail<T>>;
+
 type SyncMutationEvent<T, TIndexKeys extends string> = CustomEvent<
   SyncMutationEventDetail<T, TIndexKeys>
 >;
@@ -75,6 +87,20 @@ export interface CreateCollectionWithSyncOptions<
 }
 
 /**
+ * Utility methods for direct writes to the sync store (without persistence)
+ * These are similar to TanStack Query DB Collection's utils
+ * @see https://tanstack.com/db/latest/docs/collections/query-collection
+ */
+export interface CollectionSyncUtils<T> {
+  /** Write items directly to the sync store without calling persistence handlers */
+  writeInsert: (items: T | T[]) => Promise<void>;
+  /** Update items directly in the sync store without calling persistence handlers */
+  writeUpdate: (items: T | T[]) => Promise<void>;
+  /** Delete items directly from the sync store without calling persistence handlers */
+  writeDelete: (items: T | T[]) => Promise<void>;
+}
+
+/**
  * A wrapper around TanStack DB's createCollection that automatically implements
  * a sync eventing system for optimistic updates and cross-tab/cross-component synchronization.
  *
@@ -82,13 +108,19 @@ export interface CreateCollectionWithSyncOptions<
  * respecting `updated_at` timestamps to prevent overwriting newer data.
  *
  * Returns the configuration object that should be passed to `createCollection`.
+ *
+ * Also provides `utils` for direct writes to the sync store (without persistence),
+ * similar to TanStack Query DB Collection.
+ * @see https://tanstack.com/db/latest/docs/collections/query-collection
  */
 export function createCollectionWithSync<
   T extends object,
   TIndexKeys extends string = string,
 >(
   options: CreateCollectionWithSyncOptions<T, TIndexKeys>,
-): Parameters<typeof createCollection<T, TIndexKeys>>[0] {
+): Parameters<typeof createCollection<T, TIndexKeys>>[0] & {
+  utils: CollectionSyncUtils<T>;
+} {
   const {
     id: name,
     sync,
@@ -182,11 +214,55 @@ export function createCollectionWithSync<
             });
           };
 
+          // Handler for direct writes to the sync store (no persistence)
+          const handleDirectWrite = (e: Event) => {
+            const { type, items, resolve, reject } = (e as DirectWriteEvent<T>)
+              .detail;
+
+            enqueue(async () => {
+              if (!isActive) {
+                reject(new Error(`Collection ${name} is no longer active`));
+                return;
+              }
+
+              try {
+                for (const item of items) {
+                  const current = collection.get(getKey(item) as TIndexKeys);
+
+                  // Only update if item doesn't exist or incoming data is newer
+                  if (
+                    current &&
+                    "updated_at" in current &&
+                    "updated_at" in item &&
+                    typeof current.updated_at === "string" &&
+                    typeof item.updated_at === "string" &&
+                    new Date(current.updated_at) > new Date(item.updated_at)
+                  ) {
+                    continue;
+                  }
+
+                  begin();
+                  write({ type, value: item });
+                  commit();
+                }
+                resolve();
+              } catch (error) {
+                console.error(`Error in direct ${type} for ${name}:`, error);
+                reject(error);
+              }
+            });
+          };
+
           syncEventTarget.addEventListener("mutation", handleMutation);
+          syncEventTarget.addEventListener("directWrite", handleDirectWrite);
 
           return () => {
             isActive = false;
             syncEventTarget.removeEventListener("mutation", handleMutation);
+            syncEventTarget.removeEventListener(
+              "directWrite",
+              handleDirectWrite,
+            );
             if (typeof cleanup === "function") {
               cleanup();
             }
@@ -250,5 +326,57 @@ export function createCollectionWithSync<
     },
   } as Parameters<typeof createCollection<T, TIndexKeys>>[0];
 
-  return collectionConfig;
+  /**
+   * Utility methods for direct writes to the sync store (without persistence)
+   * These dispatch events that bypass the persistence handlers (onInsert, onUpdate, onDelete)
+   */
+  const utils: CollectionSyncUtils<T> = {
+    writeInsert: (items: T | T[]) => {
+      const itemArray = Array.isArray(items) ? items : [items];
+      return new Promise<void>((resolve, reject) => {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("directWrite", {
+            detail: {
+              type: "insert" as const,
+              items: itemArray,
+              resolve,
+              reject,
+            },
+          }),
+        );
+      });
+    },
+    writeUpdate: (items: T | T[]) => {
+      const itemArray = Array.isArray(items) ? items : [items];
+      return new Promise<void>((resolve, reject) => {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("directWrite", {
+            detail: {
+              type: "update" as const,
+              items: itemArray,
+              resolve,
+              reject,
+            },
+          }),
+        );
+      });
+    },
+    writeDelete: (items: T | T[]) => {
+      const itemArray = Array.isArray(items) ? items : [items];
+      return new Promise<void>((resolve, reject) => {
+        syncEventTarget.dispatchEvent(
+          new CustomEvent("directWrite", {
+            detail: {
+              type: "delete" as const,
+              items: itemArray,
+              resolve,
+              reject,
+            },
+          }),
+        );
+      });
+    },
+  };
+
+  return { ...collectionConfig, utils };
 }

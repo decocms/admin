@@ -4,10 +4,7 @@ import {
   computeStepLevels,
   type Step,
 } from "@decocms/bindings/workflow";
-import {
-  useWorkflowSteps,
-  useWorkflowActions,
-} from "@/web/components/details/workflow/stores/workflow";
+import { useWorkflowSteps } from "@/web/components/details/workflow/stores/workflow";
 
 // ============================================
 // Types
@@ -53,7 +50,7 @@ export type WorkflowEdge = Edge;
 
 const NODE_WIDTH = 180;
 const NODE_HEIGHT = 48;
-const HORIZONTAL_GAP = 24;
+const HORIZONTAL_GAP = 100;
 const VERTICAL_GAP = 80;
 const TRIGGER_NODE_ID = "__trigger__";
 
@@ -195,15 +192,7 @@ export function useWorkflowEdges(): WorkflowEdge[] {
  * React Compiler handles memoization automatically
  */
 export function useNodeSelection() {
-  const { setCurrentStepName } = useWorkflowActions();
-
-  const onNodeClick = (_: React.MouseEvent, node: Node) => {
-    if (node.id === TRIGGER_NODE_ID) {
-      setCurrentStepName("Manual");
-    } else {
-      setCurrentStepName(node.id);
-    }
-  };
+  const onNodeClick = (_: React.MouseEvent, _node: Node) => {};
 
   return { onNodeClick };
 }

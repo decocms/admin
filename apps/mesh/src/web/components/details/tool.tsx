@@ -75,21 +75,24 @@ export function ToolDetailsView({
       return url;
     }
   };
-  
+
   const normalizedUrl = connection?.connection_url
     ? normalizeUrl(connection.connection_url)
     : "";
 
-    const hasToken = !!connection?.connection_token;
+  const hasToken = !!connection?.connection_token;
 
-    if (!hasToken) {
-      return (
-        <div className="flex h-full items-center justify-center">
-         <OAuthAuthenticationState onAuthenticate={() => onBack()} buttonText="Go back" />
-        </div>
-      );
-    }
-  
+  if (!hasToken) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <OAuthAuthenticationState
+          onAuthenticate={() => onBack()}
+          buttonText="Go back"
+        />
+      </div>
+    );
+  }
+
   const mcp = useMcp({
     url: normalizedUrl, // Em vez de mcpProxyUrl.href
     clientName: "MCP Tool Inspector",

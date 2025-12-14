@@ -27,6 +27,7 @@ import {
 } from "@/web/hooks/use-binding";
 import { useCollection, useCollectionList } from "@/web/hooks/use-collections";
 import { useListState } from "@/web/hooks/use-list-state";
+import { useOAuthTokenValidation } from "@/web/hooks/use-oauth-token-validation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,16 +73,14 @@ import { toast } from "sonner";
 import { useMcp } from "use-mcp/react";
 import { z } from "zod";
 import { authClient } from "@/web/lib/auth-client";
-import { ViewLayout, ViewTabs, ViewActions } from "./layout";
+import { ViewLayout, ViewTabs, ViewActions } from "../layout";
 import {
   McpConfigurationForm,
   useMcpConfiguration,
 } from "./mcp-configuration-form";
-import {
-  authenticateMcp,
-  isOAuthTokenValid,
-} from "@/web/lib/browser-oauth-provider";
+import { authenticateMcp } from "@/web/lib/browser-oauth-provider";
 import { generateConnectionId } from "@/shared/utils/generate-id";
+import { OAuthAuthenticationState } from "./oauth-authentication-state";
 
 function ConnectionInspectorViewContent() {
   const router = useRouter();
@@ -285,7 +284,11 @@ function SettingsTab({
   const [isSavingConnection, setIsSavingConnection] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const connectionsCollection = useConnectionsCollection();
-  const [isOauthNecessaryResult, setIsOauthNecessaryResult] = useState(false);
+
+  const { isOauthNecessary } = useOAuthTokenValidation(
+    connection.connection_url,
+    connection?.connection_token,
+  );
 
   // Connection settings form
   const connectionForm = useForm<ConnectionFormData>({
@@ -338,18 +341,6 @@ function SettingsTab({
       setMcpInitialState(connection.configuration_state);
     }
   }, [connection]);
-
-  // oxlint-disable-next-line ban-use-effect/ban-use-effect
-  useEffect(() => {
-    const checkOauth = async () => {
-      const isTokenValid = await isOAuthTokenValid(
-        connection.connection_url,
-        connection?.connection_token,
-      );
-      setIsOauthNecessaryResult(!isTokenValid);
-    };
-    checkOauth();
-  }, [connection.connection_url, connection.connection_token]);
 
   // Track if MCP config has changes
   const mcpHasChanges =
@@ -457,23 +448,8 @@ function SettingsTab({
         </div>
 
         {/* Right panel - MCP Configuration (3/5) */}
-        {isOauthNecessaryResult ? (
-          <div className="w-3/5 min-w-0 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4 max-w-md text-center">
-              <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold">
-                  Authentication Required
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  This connection requires OAuth authentication to access
-                  resources.
-                </p>
-              </div>
-              <Button onClick={handleAuthenticate} size="lg">
-                Authenticate
-              </Button>
-            </div>
-          </div>
+        {isOauthNecessary ? (
+          <OAuthAuthenticationState onAuthenticate={handleAuthenticate} />
         ) : (
           hasMcpBinding && (
             <div className="w-3/5 min-w-0 overflow-auto">

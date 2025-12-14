@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import type { FieldTemplateProps, ObjectFieldTemplateProps } from "@rjsf/utils";
-import { BindingSelector } from "../binding-selector";
+import { BindingSelector } from "./binding-selector";
 import { useNavigate } from "@tanstack/react-router";
 
 interface McpConfigurationResult {

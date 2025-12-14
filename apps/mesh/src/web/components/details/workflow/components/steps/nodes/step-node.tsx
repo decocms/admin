@@ -268,7 +268,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
 
   const handleIconClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    selectStep(e);
     if (
       step.action &&
       checkIfIsWaitForSignalAction(step.action) &&
@@ -300,8 +299,9 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
       />
 
       <Card
+        onClick={selectStep}
         className={cn(
-          "sm:w-40 lg:w-52 xl:w-64 p-0 px-3 h-12 flex items-center justify-center relative ",
+          "sm:w-40 lg:w-52 xl:w-64 p-0 px-3 h-12 flex items-center justify-center relative cursor-pointer",
           isDraftStep && "border-brand-purple-light bg-brand-purple-light/5",
           "transition-all duration-200",
           style === "pending" && "animate-pulse border-warning",
@@ -319,7 +319,6 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
             !isDraftStep && "hover:shadow-lg hover:shadow-primary/20",
             "hover:scale-[1.02]",
           ],
-          "cursor-default",
 
           currentStepName === step.name &&
             "bg-primary/10 border-primary hover:bg-primary/20",
@@ -327,7 +326,7 @@ export const StepNode = memo(function StepNode({ data }: NodeProps) {
             "hover:bg-background hover:border-primary",
         )}
       >
-        {isForEachStep && (
+        {isForEachStep && Object.keys(stepResult?.output ?? {}).length > 0 && (
           <Badge className="absolute top-2 right-2 text-[8px] h-4 p-1 group-hover:opacity-0 group-hover:pointer-events-none">
             <>{badgeContent()}</>
           </Badge>

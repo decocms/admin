@@ -291,6 +291,8 @@ function ConnectionInspectorViewContent() {
 
   const activeCollection = collections.find((c) => c.name === activeTabId);
 
+  console.log({ activeCollection });
+
   return (
     <ViewLayout onBack={() => router.history.back()}>
       <ViewTabs>

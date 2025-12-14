@@ -22,19 +22,28 @@ import { WorkflowActions } from "./components/actions";
 import { StepTabs, WorkflowTabs } from "./components/tabs";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { MonacoCodeEditor } from "./components/monaco-editor";
-import {
-  Select,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@deco/ui/components/select.js";
-import { ClockIcon } from "lucide-react";
+import { Check, ChevronsUpDown, ClockIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.js";
+import {
+  Command,
+  CommandItem,
+  CommandGroup,
+  CommandList,
+  CommandInput,
+  CommandEmpty,
+} from "@deco/ui/components/command.js";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@deco/ui/components/popover.js";
+import { Button } from "@deco/ui/components/button.js";
+import { useState } from "react";
+import { cn } from "@deco/ui/lib/utils.js";
 export interface WorkflowDetailsViewProps {
   itemId: string;
   onBack: () => void;
@@ -163,13 +172,6 @@ function WorkflowCode({
   );
 }
 
-function useCurrentExecution() {
-  const trackingExecutionId = useTrackingExecutionId();
-  const { item: execution } =
-    useWorkflowExecutionCollectionItem(trackingExecutionId);
-  return execution;
-}
-
 export function useIsExecutionScheduled(id?: string) {
   const { item: execution } = useWorkflowExecutionCollectionItem(id);
   const currentTime = Date.now();
@@ -197,17 +199,91 @@ export function ExecutionScheduleTooltip({ id }: { id?: string }) {
   );
 }
 
-function ExecutionItem({ id }: { id: string }) {
-  const isScheduled = useIsExecutionScheduled(id);
-  const { item: execution } = useWorkflowExecutionCollectionItem(id);
+function ExecutionSelect() {
+  const [open, setOpen] = useState(false);
+  const workflow = useWorkflow();
+  const { list: executions } = useWorkflowExecutionCollectionList({
+    workflowId: workflow.id,
+  });
+  const trackingExecutionId = useTrackingExecutionId();
+  const { setTrackingExecutionId } = useWorkflowActions();
+
+  const currentIndex = executions.findIndex(
+    (execution) => execution.id === trackingExecutionId,
+  );
+
+  const handleKeyNavigation = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextIndex =
+        currentIndex < executions.length - 1 ? currentIndex + 1 : 0;
+      setTrackingExecutionId(executions[nextIndex]?.id);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevIndex =
+        currentIndex > 0 ? currentIndex - 1 : executions.length - 1;
+      setTrackingExecutionId(executions[prevIndex]?.id);
+    }
+  };
+
   return (
-    <div>
-      {isScheduled && <ExecutionScheduleTooltip id={id} />}
-      <h3>
-        {new Date(execution?.created_at ?? 0).toLocaleString()} -{" "}
-        {execution?.status}
-      </h3>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-controls={`execution-select-${workflow.id}`}
+          aria-labelledby={`execution-select-${workflow.id}`}
+          aria-expanded={open}
+          className="w-[200px] justify-between"
+          onKeyDown={handleKeyNavigation}
+        >
+          {trackingExecutionId
+            ? new Date(
+                executions.find(
+                  (execution) => execution.id === trackingExecutionId,
+                )?.created_at ?? 0,
+              ).toLocaleString()
+            : "Select execution..."}
+          <ChevronsUpDown className="opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" onKeyDown={handleKeyNavigation}>
+        <Command shouldFilter={false}>
+          <CommandInput placeholder="Search execution..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No execution found.</CommandEmpty>
+            <CommandGroup>
+              {executions.map((execution) => (
+                <CommandItem
+                  key={execution.id}
+                  value={execution.id}
+                  onSelect={(currentValue) => {
+                    setTrackingExecutionId(
+                      currentValue === trackingExecutionId
+                        ? undefined
+                        : execution.id,
+                    );
+                    setOpen(false);
+                  }}
+                >
+                  {new Date(execution.created_at).toLocaleString()}-{" "}
+                  {execution.status}
+                  <Check
+                    className={cn(
+                      "ml-auto",
+                      trackingExecutionId === execution.id
+                        ? "opacity-100"
+                        : "opacity-0",
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -215,11 +291,6 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
   const currentTab = useCurrentTab();
   const currentStepName = useCurrentStepName();
   const workflow = useWorkflow();
-  const { list: executions } = useWorkflowExecutionCollectionList({
-    workflowId: workflow.id,
-  });
-  const { setTrackingExecutionId } = useWorkflowActions();
-  const currentExecution = useCurrentExecution();
   return (
     <ViewLayout onBack={onBack}>
       <ViewTabs>
@@ -231,26 +302,10 @@ export function WorkflowDetails({ onBack, onUpdate }: WorkflowDetailsProps) {
             {workflow.description}
           </p>
         </div>
-        <div className="flex items-center gap-3 font-sans">
-          <Select
-            value={currentExecution?.id}
-            onValueChange={(value) => setTrackingExecutionId(value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select an execution" />
-            </SelectTrigger>
-            <SelectContent>
-              {executions.map((execution) => (
-                <SelectItem key={execution.id} value={execution.id}>
-                  <ExecutionItem id={execution.id} />
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </ViewTabs>
 
       <ViewActions>
+        <ExecutionSelect />
         <WorkflowActions onUpdate={onUpdate} />
       </ViewActions>
 

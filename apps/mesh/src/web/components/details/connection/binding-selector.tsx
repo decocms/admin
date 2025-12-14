@@ -10,8 +10,8 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { useInstallFromRegistry } from "@/web/hooks/use-install-from-registry";
-import { useConnections } from "../hooks/collections/use-connection";
-import { useBindingConnections } from "../hooks/use-binding";
+import { useConnections } from "@/web/hooks/collections/use-connection";
+import { useBindingConnections } from "@/web/hooks/use-binding";
 
 interface BindingSelectorProps {
   value: string;
@@ -65,7 +65,6 @@ export function BindingSelector({
     binding: binding,
   });
 
-  // Parse bindingType to get scope and appName (e.g., "@deco/database" -> { scope: "deco", appName: "database" })
   const parsedBindingType = (() => {
     if (!bindingType?.startsWith("@")) return null;
     const [scope, appName] = bindingType.replace("@", "").split("/");
